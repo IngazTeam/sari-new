@@ -5,6 +5,7 @@ import {
   platformIntegrations,
   sallaConnections,
   tapSettings,
+  woocommerceSettings,
   zidSettings,
   whatsappConnections,
   whatsappConnectionRequests,
@@ -149,6 +150,21 @@ async function main() {
       await db.update(sallaConnections)
         .set({ accessToken: encryptSecret(row.accessToken) })
         .where(eq(sallaConnections.id, row.id));
+      updated++;
+    }
+  }
+
+  const wooCommerceRows = await db.select({
+    id: woocommerceSettings.id,
+    consumerKey: woocommerceSettings.consumerKey,
+    consumerSecret: woocommerceSettings.consumerSecret,
+  }).from(woocommerceSettings);
+  for (const row of wooCommerceRows) {
+    const changes: Record<string, string> = {};
+    if (!isEncryptedSecret(row.consumerKey)) changes.consumerKey = encryptSecret(row.consumerKey);
+    if (!isEncryptedSecret(row.consumerSecret)) changes.consumerSecret = encryptSecret(row.consumerSecret);
+    if (Object.keys(changes).length > 0) {
+      await db.update(woocommerceSettings).set(changes).where(eq(woocommerceSettings.id, row.id));
       updated++;
     }
   }

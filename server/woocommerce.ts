@@ -1,496 +1,273 @@
-/**
- * WooCommerce REST API Client
- * 
- * This module provides functions to interact with WooCommerce REST API
- * Supports: Products, Orders, Customers, and more
- */
-
-import axios, { AxiosInstance } from 'axios';
+import axios, { type Method } from 'axios';
+import dns from 'node:dns/promises';
+import https from 'node:https';
+import { z } from 'zod';
 import type { WooCommerceSettings } from '../drizzle/schema';
+import { isPrivateOrSpecialAddress } from './integrations/byaan-security';
 
-// ==================== Types ====================
+const WOO_API_TIMEOUT_MS = 12_000;
+const WOO_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+export const WOO_MAX_SYNC_PAGES = 20;
+export const WOO_PAGE_SIZE = 100;
+const WOO_PRODUCT_FIELDS = 'id,name,slug,sku,price,regular_price,sale_price,stock_status,stock_quantity,manage_stock,description,short_description,images,categories,date_modified_gmt,date_modified';
+const WOO_ORDER_FIELDS = 'id,number,status,currency,total,total_tax,shipping_total,discount_total,billing,line_items,payment_method,payment_method_title,transaction_id,date_created_gmt,date_created,date_modified_gmt,date_modified,date_paid_gmt,date_paid,date_completed_gmt,date_completed,customer_note';
+const DOMAIN_PATTERN = /^(?=.{4,253}$)(?!-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 
-export interface WooCommerceProduct {
-  id: number;
-  name: string;
-  slug: string;
-  permalink: string;
-  type: 'simple' | 'grouped' | 'external' | 'variable';
-  status: 'draft' | 'pending' | 'private' | 'publish';
-  featured: boolean;
-  catalog_visibility: string;
-  description: string;
-  short_description: string;
-  sku: string;
-  price: string;
-  regular_price: string;
-  sale_price: string;
-  on_sale: boolean;
-  purchasable: boolean;
-  total_sales: number;
-  virtual: boolean;
-  downloadable: boolean;
-  downloads: any[];
-  download_limit: number;
-  download_expiry: number;
-  external_url: string;
-  button_text: string;
-  tax_status: string;
-  tax_class: string;
-  manage_stock: boolean;
-  stock_quantity: number | null;
-  stock_status: 'instock' | 'outofstock' | 'onbackorder';
-  backorders: string;
-  backorders_allowed: boolean;
-  backordered: boolean;
-  sold_individually: boolean;
-  weight: string;
-  dimensions: {
-    length: string;
-    width: string;
-    height: string;
-  };
-  shipping_required: boolean;
-  shipping_taxable: boolean;
-  shipping_class: string;
-  shipping_class_id: number;
-  reviews_allowed: boolean;
-  average_rating: string;
-  rating_count: number;
-  related_ids: number[];
-  upsell_ids: number[];
-  cross_sell_ids: number[];
-  parent_id: number;
-  purchase_note: string;
-  categories: Array<{
-    id: number;
-    name: string;
-    slug: string;
-  }>;
-  tags: Array<{
-    id: number;
-    name: string;
-    slug: string;
-  }>;
-  images: Array<{
-    id: number;
-    src: string;
-    name: string;
-    alt: string;
-  }>;
-  attributes: any[];
-  default_attributes: any[];
-  variations: number[];
-  grouped_products: number[];
-  menu_order: number;
-  meta_data: any[];
-  date_created: string;
-  date_created_gmt: string;
-  date_modified: string;
-  date_modified_gmt: string;
+const optionalString = (max: number) => z.string().max(max).nullish().transform(value => value || '');
+const optionalNumber = z.number().finite().nullish().transform(value => value ?? null);
+
+const productSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(1).max(500),
+  slug: optionalString(500),
+  sku: optionalString(255),
+  price: optionalString(64),
+  regular_price: optionalString(64),
+  sale_price: optionalString(64),
+  stock_status: z.enum(['instock', 'outofstock', 'onbackorder']).catch('instock'),
+  stock_quantity: optionalNumber,
+  manage_stock: z.boolean().catch(false),
+  description: optionalString(100_000),
+  short_description: optionalString(25_000),
+  images: z.array(z.object({ src: z.string().url().max(1_000) }).passthrough()).max(100).catch([]),
+  categories: z.array(z.object({ id: z.number().int(), name: optionalString(255) }).passthrough()).max(100).catch([]),
+  date_modified_gmt: optionalString(64),
+  date_modified: optionalString(64),
+}).passthrough();
+
+const orderSchema = z.object({
+  id: z.number().int().positive(),
+  number: z.union([z.string(), z.number()]).transform(String).pipe(z.string().max(100)),
+  status: z.string().min(1).max(50),
+  currency: z.string().min(3).max(10),
+  total: optionalString(64),
+  total_tax: optionalString(64),
+  shipping_total: optionalString(64),
+  discount_total: optionalString(64),
+  billing: z.object({
+    first_name: optionalString(255),
+    last_name: optionalString(255),
+    email: optionalString(255),
+    phone: optionalString(50),
+  }).passthrough(),
+  shipping: z.record(z.string(), z.unknown()).catch({}),
+  line_items: z.array(z.object({
+    id: z.number().int().optional(),
+    name: z.string().max(500),
+    product_id: z.number().int().nonnegative().catch(0),
+    variation_id: z.number().int().nonnegative().catch(0),
+    quantity: z.number().finite(),
+    subtotal: optionalString(64),
+    total: optionalString(64),
+    sku: optionalString(255),
+  }).passthrough()).max(500),
+  payment_method: optionalString(100),
+  payment_method_title: optionalString(255),
+  transaction_id: optionalString(255),
+  date_created_gmt: optionalString(64),
+  date_created: optionalString(64),
+  date_modified_gmt: optionalString(64),
+  date_modified: optionalString(64),
+  date_paid_gmt: optionalString(64),
+  date_paid: optionalString(64),
+  date_completed_gmt: optionalString(64),
+  date_completed: optionalString(64),
+  customer_note: optionalString(10_000),
+}).passthrough();
+
+export type WooCommerceProduct = z.infer<typeof productSchema>;
+export type WooCommerceOrder = z.infer<typeof orderSchema>;
+
+export class WooCommerceApiError extends Error {
+  constructor(public readonly code: 'credentials' | 'endpoint' | 'network' | 'status' | 'response' | 'limit') {
+    super(code);
+  }
 }
 
-export interface WooCommerceOrder {
-  id: number;
-  parent_id: number;
-  number: string;
-  order_key: string;
-  created_via: string;
-  version: string;
-  status: string;
-  currency: string;
-  date_created: string;
-  date_created_gmt: string;
-  date_modified: string;
-  date_modified_gmt: string;
-  discount_total: string;
-  discount_tax: string;
-  shipping_total: string;
-  shipping_tax: string;
-  cart_tax: string;
-  total: string;
-  total_tax: string;
-  prices_include_tax: boolean;
-  customer_id: number;
-  customer_ip_address: string;
-  customer_user_agent: string;
-  customer_note: string;
-  billing: {
-    first_name: string;
-    last_name: string;
-    company: string;
-    address_1: string;
-    address_2: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-    email: string;
-    phone: string;
-  };
-  shipping: {
-    first_name: string;
-    last_name: string;
-    company: string;
-    address_1: string;
-    address_2: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-  };
-  payment_method: string;
-  payment_method_title: string;
-  transaction_id: string;
-  date_paid: string | null;
-  date_paid_gmt: string | null;
-  date_completed: string | null;
-  date_completed_gmt: string | null;
-  cart_hash: string;
-  meta_data: any[];
-  line_items: Array<{
-    id: number;
-    name: string;
-    product_id: number;
-    variation_id: number;
-    quantity: number;
-    tax_class: string;
-    subtotal: string;
-    subtotal_tax: string;
-    total: string;
-    total_tax: string;
-    taxes: any[];
-    meta_data: any[];
-    sku: string;
-    price: number;
-  }>;
-  tax_lines: any[];
-  shipping_lines: any[];
-  fee_lines: any[];
-  coupon_lines: any[];
-  refunds: any[];
+export function canonicalWooStoreUrl(input: string): string {
+  if (typeof input !== 'string' || input.length > 500 || CONTROL_CHARACTERS.test(input)) {
+    throw new WooCommerceApiError('endpoint');
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(input.trim());
+  } catch {
+    throw new WooCommerceApiError('endpoint');
+  }
+  const hostname = parsed.hostname.toLowerCase().replace(/\.$/, '');
+  if (
+    parsed.protocol !== 'https:'
+    || parsed.username
+    || parsed.password
+    || (parsed.port && parsed.port !== '443')
+    || parsed.search
+    || parsed.hash
+    || !DOMAIN_PATTERN.test(hostname)
+    || hostname === 'localhost'
+    || hostname.endsWith('.local')
+    || hostname.endsWith('.internal')
+  ) {
+    throw new WooCommerceApiError('endpoint');
+  }
+  const pathname = parsed.pathname.replace(/\/+$/, '');
+  if (pathname.length > 250 || /\/wp-json(?:\/|$)/i.test(pathname)) {
+    throw new WooCommerceApiError('endpoint');
+  }
+  return `https://${hostname}${pathname}`;
 }
 
-export interface WooCommerceCustomer {
-  id: number;
-  date_created: string;
-  date_created_gmt: string;
-  date_modified: string;
-  date_modified_gmt: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  username: string;
-  billing: {
-    first_name: string;
-    last_name: string;
-    company: string;
-    address_1: string;
-    address_2: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-    email: string;
-    phone: string;
-  };
-  shipping: {
-    first_name: string;
-    last_name: string;
-    company: string;
-    address_1: string;
-    address_2: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-  };
-  is_paying_customer: boolean;
-  avatar_url: string;
-  meta_data: any[];
+function normalizedCredential(value: string, prefix: 'ck_' | 'cs_'): string {
+  const normalized = String(value || '').trim();
+  if (
+    normalized.length < 23
+    || normalized.length > 160
+    || !normalized.startsWith(prefix)
+    || !/^[a-zA-Z0-9_]+$/.test(normalized)
+  ) {
+    throw new WooCommerceApiError('credentials');
+  }
+  return normalized;
 }
 
-// ==================== WooCommerce Client ====================
+export async function createPinnedWooHttpsAgent(storeUrl: string): Promise<https.Agent> {
+  const parsed = new URL(canonicalWooStoreUrl(storeUrl));
+  const addresses = await dns.lookup(parsed.hostname, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(item => isPrivateOrSpecialAddress(item.address))) {
+    throw new WooCommerceApiError('endpoint');
+  }
+  const pinned = addresses[0];
+  return new https.Agent({
+    keepAlive: false,
+    lookup: (_hostname, _options, callback) => callback(null, pinned.address, pinned.family),
+  });
+}
+
+function parseBoundedJson(data: unknown): unknown {
+  const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
+  if (buffer.byteLength > WOO_MAX_RESPONSE_BYTES) throw new WooCommerceApiError('response');
+  try {
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer));
+  } catch {
+    throw new WooCommerceApiError('response');
+  }
+}
+
+function positiveHeader(value: unknown, fallback: number): number {
+  const parsed = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
 
 export class WooCommerceClient {
-  private client: AxiosInstance;
-  private storeUrl: string;
+  private readonly storeUrl: string;
+  private readonly consumerKey: string;
+  private readonly consumerSecret: string;
 
-  constructor(settings: WooCommerceSettings) {
-    this.storeUrl = settings.storeUrl.replace(/\/$/, ''); // Remove trailing slash
-    
-    this.client = axios.create({
-      baseURL: `${this.storeUrl}/wp-json/wc/v3`,
-      auth: {
-        username: settings.consumerKey,
-        password: settings.consumerSecret,
-      },
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000, // 30 seconds
-    });
+  constructor(settings: Pick<WooCommerceSettings, 'storeUrl' | 'consumerKey' | 'consumerSecret'>) {
+    this.storeUrl = canonicalWooStoreUrl(settings.storeUrl);
+    this.consumerKey = normalizedCredential(settings.consumerKey, 'ck_');
+    this.consumerSecret = normalizedCredential(settings.consumerSecret, 'cs_');
   }
 
-  // ==================== Connection Test ====================
-
-  async testConnection(): Promise<{ success: boolean; message: string; storeInfo?: any }> {
-    try {
-      const response = await this.client.get('/system_status');
-      return {
-        success: true,
-        message: 'تم الاتصال بنجاح',
-        storeInfo: {
-          version: response.data.environment?.version || 'Unknown',
-          name: response.data.settings?.general?.title || 'Unknown',
-        },
-      };
-    } catch (error: any) {
-      console.error('[WooCommerce] Connection test failed:', error.message);
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || 'فشل الاتصال بالمتجر',
-      };
+  private trustedUrl(endpoint: string): string {
+    if (!endpoint.startsWith('/') || CONTROL_CHARACTERS.test(endpoint) || endpoint.includes('\\')) {
+      throw new WooCommerceApiError('endpoint');
     }
-  }
-
-  // ==================== Products ====================
-
-  async getProducts(params?: {
-    page?: number;
-    per_page?: number;
-    search?: string;
-    status?: string;
-    category?: number;
-    orderby?: string;
-    order?: 'asc' | 'desc';
-  }): Promise<WooCommerceProduct[]> {
-    try {
-      const response = await this.client.get('/products', { params });
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get products failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب المنتجات');
+    const root = new URL(`${this.storeUrl}/`);
+    const apiRoot = new URL('wp-json/wc/v3/', root);
+    const url = new URL(endpoint.slice(1), apiRoot);
+    if (url.origin !== root.origin || !url.pathname.startsWith(apiRoot.pathname) || url.username || url.password) {
+      throw new WooCommerceApiError('endpoint');
     }
+    return url.toString();
   }
 
-  async getProduct(productId: number): Promise<WooCommerceProduct> {
+  private async request(endpoint: string, options: {
+    method?: Method;
+    params?: Record<string, string | number>;
+    body?: Record<string, unknown>;
+  } = {}): Promise<{ body: unknown; headers: Record<string, unknown> }> {
+    let response;
     try {
-      const response = await this.client.get(`/products/${productId}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get product failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب المنتج');
-    }
-  }
-
-  async createProduct(product: Partial<WooCommerceProduct>): Promise<WooCommerceProduct> {
-    try {
-      const response = await this.client.post('/products', product);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Create product failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل إنشاء المنتج');
-    }
-  }
-
-  async updateProduct(productId: number, product: Partial<WooCommerceProduct>): Promise<WooCommerceProduct> {
-    try {
-      const response = await this.client.put(`/products/${productId}`, product);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Update product failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل تحديث المنتج');
-    }
-  }
-
-  async deleteProduct(productId: number, force: boolean = false): Promise<void> {
-    try {
-      await this.client.delete(`/products/${productId}`, { params: { force } });
-    } catch (error: any) {
-      console.error('[WooCommerce] Delete product failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل حذف المنتج');
-    }
-  }
-
-  async updateProductStock(productId: number, stockQuantity: number): Promise<WooCommerceProduct> {
-    try {
-      const response = await this.client.put(`/products/${productId}`, {
-        stock_quantity: stockQuantity,
-        manage_stock: true,
+      response = await axios.request<ArrayBuffer>({
+        url: this.trustedUrl(endpoint),
+        method: options.method || 'GET',
+        params: options.params,
+        data: options.body,
+        auth: { username: this.consumerKey, password: this.consumerSecret },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        timeout: WOO_API_TIMEOUT_MS,
+        maxRedirects: 0,
+        maxContentLength: WOO_MAX_RESPONSE_BYTES,
+        maxBodyLength: 64 * 1024,
+        responseType: 'arraybuffer',
+        validateStatus: () => true,
+        httpsAgent: await createPinnedWooHttpsAgent(this.storeUrl),
       });
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Update product stock failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل تحديث المخزون');
+    } catch (error) {
+      if (error instanceof WooCommerceApiError) throw error;
+      throw new WooCommerceApiError('network');
     }
+    if (response.status < 200 || response.status >= 300) throw new WooCommerceApiError('status');
+    return { body: parseBoundedJson(response.data), headers: response.headers as Record<string, unknown> };
   }
 
-  // ==================== Orders ====================
-
-  async getOrders(params?: {
-    page?: number;
-    per_page?: number;
-    status?: string;
-    customer?: number;
-    after?: string;
-    before?: string;
-    orderby?: string;
-    order?: 'asc' | 'desc';
-  }): Promise<WooCommerceOrder[]> {
-    try {
-      const response = await this.client.get('/orders', { params });
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get orders failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب الطلبات');
-    }
+  async testConnection(): Promise<{ version?: string; name?: string; currency?: string }> {
+    const { body } = await this.request('/system_status');
+    const parsed = z.object({
+      environment: z.object({ version: optionalString(50) }).passthrough().optional(),
+      settings: z.record(z.string(), z.unknown()).optional(),
+    }).passthrough().safeParse(body);
+    if (!parsed.success) throw new WooCommerceApiError('response');
+    return { version: parsed.data.environment?.version || undefined };
   }
 
-  async getOrder(orderId: number): Promise<WooCommerceOrder> {
-    try {
-      const response = await this.client.get(`/orders/${orderId}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get order failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب الطلب');
-    }
+  async getProductsPage(page: number): Promise<{ items: WooCommerceProduct[]; total: number; totalPages: number }> {
+    if (!Number.isInteger(page) || page < 1 || page > WOO_MAX_SYNC_PAGES) throw new WooCommerceApiError('limit');
+    const { body, headers } = await this.request('/products', {
+      params: { page, per_page: WOO_PAGE_SIZE, orderby: 'id', order: 'asc', _fields: WOO_PRODUCT_FIELDS },
+    });
+    const parsed = z.array(productSchema).max(WOO_PAGE_SIZE).safeParse(body);
+    if (!parsed.success) throw new WooCommerceApiError('response');
+    return {
+      items: parsed.data,
+      total: positiveHeader(headers['x-wp-total'], parsed.data.length),
+      totalPages: positiveHeader(headers['x-wp-totalpages'], parsed.data.length === WOO_PAGE_SIZE ? page + 1 : page),
+    };
   }
 
-  async createOrder(order: Partial<WooCommerceOrder>): Promise<WooCommerceOrder> {
-    try {
-      const response = await this.client.post('/orders', order);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Create order failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل إنشاء الطلب');
-    }
+  async getOrdersPage(page: number): Promise<{ items: WooCommerceOrder[]; total: number; totalPages: number }> {
+    if (!Number.isInteger(page) || page < 1 || page > WOO_MAX_SYNC_PAGES) throw new WooCommerceApiError('limit');
+    const { body, headers } = await this.request('/orders', {
+      params: { page, per_page: WOO_PAGE_SIZE, orderby: 'id', order: 'asc', _fields: WOO_ORDER_FIELDS },
+    });
+    const parsed = z.array(orderSchema).max(WOO_PAGE_SIZE).safeParse(body);
+    if (!parsed.success) throw new WooCommerceApiError('response');
+    return {
+      items: parsed.data,
+      total: positiveHeader(headers['x-wp-total'], parsed.data.length),
+      totalPages: positiveHeader(headers['x-wp-totalpages'], parsed.data.length === WOO_PAGE_SIZE ? page + 1 : page),
+    };
   }
 
-  async updateOrder(orderId: number, order: Partial<WooCommerceOrder>): Promise<WooCommerceOrder> {
-    try {
-      const response = await this.client.put(`/orders/${orderId}`, order);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Update order failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل تحديث الطلب');
-    }
-  }
-
-  async updateOrderStatus(orderId: number, status: string): Promise<WooCommerceOrder> {
-    try {
-      const response = await this.client.put(`/orders/${orderId}`, { status });
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Update order status failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل تحديث حالة الطلب');
-    }
-  }
-
-  // ==================== Customers ====================
-
-  async getCustomers(params?: {
-    page?: number;
-    per_page?: number;
-    search?: string;
-    email?: string;
-    role?: string;
-    orderby?: string;
-    order?: 'asc' | 'desc';
-  }): Promise<WooCommerceCustomer[]> {
-    try {
-      const response = await this.client.get('/customers', { params });
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get customers failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب العملاء');
-    }
-  }
-
-  async getCustomer(customerId: number): Promise<WooCommerceCustomer> {
-    try {
-      const response = await this.client.get(`/customers/${customerId}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Get customer failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل جلب العميل');
-    }
-  }
-
-  async createCustomer(customer: Partial<WooCommerceCustomer>): Promise<WooCommerceCustomer> {
-    try {
-      const response = await this.client.post('/customers', customer);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Create customer failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل إنشاء العميل');
-    }
-  }
-
-  async updateCustomer(customerId: number, customer: Partial<WooCommerceCustomer>): Promise<WooCommerceCustomer> {
-    try {
-      const response = await this.client.put(`/customers/${customerId}`, customer);
-      return response.data;
-    } catch (error: any) {
-      console.error('[WooCommerce] Update customer failed:', error.message);
-      throw new Error(error.response?.data?.message || 'فشل تحديث العميل');
-    }
+  async updateOrder(orderId: number, update: { status: string; customer_note?: string }): Promise<WooCommerceOrder> {
+    if (!Number.isInteger(orderId) || orderId < 1) throw new WooCommerceApiError('endpoint');
+    const { body } = await this.request(`/orders/${orderId}`, { method: 'PUT', body: update });
+    const parsed = orderSchema.safeParse(body);
+    if (!parsed.success) throw new WooCommerceApiError('response');
+    return parsed.data;
   }
 }
 
-// ==================== Helper Functions ====================
-
-/**
- * Create a WooCommerce client instance from settings
- */
-export function createWooCommerceClient(settings: WooCommerceSettings): WooCommerceClient {
+export function createWooCommerceClient(settings: Pick<WooCommerceSettings, 'storeUrl' | 'consumerKey' | 'consumerSecret'>): WooCommerceClient {
   return new WooCommerceClient(settings);
 }
 
-/**
- * Validate WooCommerce store URL
- */
 export function validateStoreUrl(url: string): boolean {
   try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    canonicalWooStoreUrl(url);
+    return true;
   } catch {
     return false;
   }
-}
-
-/**
- * Format WooCommerce price (string) to number
- */
-export function formatPrice(price: string): number {
-  return parseFloat(price) || 0;
-}
-
-/**
- * Format stock status to Arabic
- */
-export function formatStockStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    instock: 'متوفر',
-    outofstock: 'غير متوفر',
-    onbackorder: 'متوفر قريباً',
-  };
-  return statusMap[status] || status;
-}
-
-/**
- * Format order status to Arabic
- */
-export function formatOrderStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    pending: 'قيد الانتظار',
-    processing: 'قيد المعالجة',
-    'on-hold': 'معلق',
-    completed: 'مكتمل',
-    cancelled: 'ملغي',
-    refunded: 'مسترجع',
-    failed: 'فاشل',
-  };
-  return statusMap[status] || status;
 }

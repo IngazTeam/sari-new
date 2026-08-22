@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,35 +17,34 @@ interface Order {
   id: number;
   wooOrderId: number;
   orderNumber: string;
-  customerName: string;
+  customerName: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
   status: string;
   currency: string;
   total: string;
   subtotal: string;
-  shippingTotal: string;
-  taxTotal: string;
-  discountTotal: string;
+  shippingTotal: string | null;
+  totalTax: string | null;
+  discountTotal: string | null;
   paymentMethod: string | null;
   paymentMethodTitle: string | null;
   lineItems: string;
-  orderNotes: string | null;
-  notificationSent: number;
-  notificationSentAt: string | null;
-  wooCreatedAt: string;
-  wooUpdatedAt: string | null;
+  customerNote: string | null;
+  orderDate: string;
+  providerUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
+type OrderStatus = 'pending' | 'processing' | 'on-hold' | 'completed' | 'cancelled' | 'refunded' | 'failed';
+
 export default function WooCommerceOrders() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { data: merchant } = (trpc as any).merchant.get.useQuery();
-  const merchantCurrency = (merchant?.currency as Currency) || 'SAR';
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>("all");
+  const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isUpdateStatusOpen, setIsUpdateStatusOpen] = useState(false);
@@ -55,9 +54,9 @@ export default function WooCommerceOrders() {
 
   // Fetch orders
   const { data: ordersData, isLoading, refetch } = trpc.woocommerce.getOrders.useQuery({
-    limit: 100,
-    // @ts-ignore
-    offset: 0 as any,
+    page,
+    limit: 50,
+    status: statusFilter === 'all' ? undefined : statusFilter,
   });
 
   // Sync orders mutation
@@ -123,7 +122,7 @@ export default function WooCommerceOrders() {
   const filteredOrders = ordersData?.orders?.filter((order: any) => {
     const matchesSearch = 
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (order.customerPhone && order.customerPhone.includes(searchTerm));
     
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
@@ -133,14 +132,17 @@ export default function WooCommerceOrders() {
 
   // Calculate stats
   const stats = {
-    total: ordersData?.orders?.length || 0,
-    pending: ordersData?.orders?.filter((o: any) => o.status === 'pending').length || 0,
-    processing: ordersData?.orders?.filter((o: any) => o.status === 'processing').length || 0,
-    completed: ordersData?.orders?.filter((o: any) => o.status === 'completed').length || 0,
-    cancelled: ordersData?.orders?.filter((o: any) => o.status === 'cancelled').length || 0,
-    // @ts-ignore
-    totalRevenue: ordersData?.orders?.reduce((sum: number, o: Order) => sum + parseFloat(o.total), 0) || 0,
+    total: ordersData?.stats.total || 0,
+    pending: ordersData?.stats.statusCounts.pending || 0,
+    processing: ordersData?.stats.statusCounts.processing || 0,
+    completed: ordersData?.stats.statusCounts.completed || 0,
+    cancelled: ordersData?.stats.statusCounts.cancelled || 0,
+    totalRevenue: Number(ordersData?.stats.totalRevenue || 0),
   };
+  const totalPages = Math.max(1, Math.ceil((ordersData?.pagination.total || 0) / 50));
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const handleViewDetails = (order: any) => {
     setSelectedOrder(order);
@@ -273,7 +275,7 @@ export default function WooCommerceOrders() {
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(value: 'all' | OrderStatus) => { setStatusFilter(value); setPage(1); }}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder={t('wooCommerceOrdersPage.text8')} />
               </SelectTrigger>
@@ -289,6 +291,7 @@ export default function WooCommerceOrders() {
               </SelectContent>
             </Select>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">البحث النصي يفلتر الصفحة الحالية؛ فلتر الحالة والعدادات تشمل جميع الطلبات المتزامنة.</p>
         </CardContent>
       </Card>
 
@@ -309,7 +312,7 @@ export default function WooCommerceOrders() {
           ) : (
             <div className="space-y-4">
               {filteredOrders.map((order: any) => {
-                const lineItems = JSON.parse(order.lineItems || '[]');
+                const lineItems = parseLineItems(order.lineItems);
                 
                 return (
                   <div key={order.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
@@ -320,7 +323,7 @@ export default function WooCommerceOrders() {
                           <div>
                             <div className="font-semibold text-lg">طلب #{order.orderNumber}</div>
                             <div className="text-sm text-muted-foreground">
-                              {new Date(order.wooCreatedAt).toLocaleDateString('ar-SA', {
+                              {new Date(order.orderDate).toLocaleDateString('ar-SA', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
@@ -387,6 +390,11 @@ export default function WooCommerceOrders() {
               })}
             </div>
           )}
+          <div className="mt-6 flex items-center justify-between border-t pt-4">
+            <Button variant="outline" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={page <= 1 || isLoading}>السابق</Button>
+            <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
+            <Button variant="outline" onClick={() => setPage(current => Math.min(totalPages, current + 1))} disabled={page >= totalPages || isLoading}>التالي</Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -421,10 +429,10 @@ export default function WooCommerceOrders() {
               <div>
                 <Label>{t('wooCommerceOrdersPage.text29')}</Label>
                 <div className="mt-2 space-y-2">
-                  {JSON.parse(selectedOrder.lineItems || '[]').map((item: any, index: number) => (
+                  {parseLineItems(selectedOrder.lineItems).map((item, index) => (
                     <div key={index} className="flex justify-between border-b pb-2">
                       <span>{item.name} × {item.quantity}</span>
-                      <span className="font-medium">{formatCurrency(parseFloat(item.total), selectedOrder.currency as Currency, 'ar-SA')}</span>
+                      <span className="font-medium">{formatCurrency(Number(item.total || 0), selectedOrder.currency as Currency, 'ar-SA')}</span>
                     </div>
                   ))}
                 </div>
@@ -441,7 +449,7 @@ export default function WooCommerceOrders() {
                 </div>
                 <div>
                   <Label>{t('wooCommerceOrdersPage.text32')}</Label>
-                  <p className="font-medium">{selectedOrder.taxTotal} {selectedOrder.currency}</p>
+                  <p className="font-medium">{selectedOrder.totalTax || '0.00'} {selectedOrder.currency}</p>
                 </div>
                 <div>
                   <Label>{t('wooCommerceOrdersPage.text33')}</Label>
@@ -461,10 +469,10 @@ export default function WooCommerceOrders() {
                 </div>
               )}
 
-              {selectedOrder.orderNotes && (
+              {selectedOrder.customerNote && (
                 <div>
                   <Label>{t('wooCommerceOrdersPage.text36')}</Label>
-                  <p className="text-sm">{selectedOrder.orderNotes}</p>
+                  <p className="text-sm">{selectedOrder.customerNote}</p>
                 </div>
               )}
             </div>
@@ -524,4 +532,13 @@ export default function WooCommerceOrders() {
       </Dialog>
     </div>
   );
+}
+
+function parseLineItems(value: string): Array<{ name?: string; quantity?: number; total?: string | number }> {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, 500) : [];
+  } catch {
+    return [];
+  }
 }

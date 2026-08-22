@@ -281,6 +281,13 @@
       "when": 1787698800000,
       "tag": "0039_calendly_webhook_ingress",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1787702400000,
+      "tag": "0040_woocommerce_secure_sync",
+      "breakpoints": true
     }
   ]
 }

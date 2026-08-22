@@ -1,944 +1,497 @@
-/**
- * WooCommerce tRPC Router
- * 
- * Handles all WooCommerce integration operations
- */
-
-import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
-import { TRPCError } from "@trpc/server";
+import crypto from 'node:crypto';
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
 import {
-  createWooCommerceOrder,
-  createWooCommerceProduct,
-  createWooCommerceSettings,
   createWooCommerceSyncLog,
-  deleteWooCommerceOrdersByMerchant,
-  deleteWooCommerceProductsByMerchant,
-  deleteWooCommerceSettings,
+  deleteWooCommerceIntegration,
   getConversationsByMerchant,
   getLatestWooCommerceSyncLog,
-  getMerchantByUserId,
-  getWhatsAppConnectionByMerchantId,
-  getWooCommerceOrderById,
-  getWooCommerceOrderByWooId,
+  getPool,
+  getWooCommerceOrderByIdForMerchant,
   getWooCommerceOrders,
   getWooCommerceOrdersByMerchant,
   getWooCommerceOrdersByStatus,
   getWooCommerceOrdersStats,
-  getWooCommerceProductByWooId,
   getWooCommerceProducts,
   getWooCommerceProductsStats,
   getWooCommerceSettings,
-  getWooCommerceSyncLogById,
   getWooCommerceSyncLogs,
+  saveVerifiedWooCommerceSettings,
   searchWooCommerceProducts,
   updateWooCommerceConnectionStatus,
-  updateWooCommerceOrder,
-  updateWooCommerceProduct,
   updateWooCommerceSettings,
   updateWooCommerceSyncLog,
+  upsertWooCommerceOrdersSnapshot,
+  upsertWooCommerceProductsSnapshot,
 } from './db';
-import { createWooCommerceClient, validateStoreUrl } from "./woocommerce";
-import type { WooCommerceSettings } from "../drizzle/schema";
+import {
+  canonicalWooStoreUrl,
+  createWooCommerceClient,
+  WooCommerceApiError,
+} from './woocommerce';
+import {
+  fetchWooCommerceOrders,
+  fetchWooCommerceProducts,
+  normalizeWooCommerceOrder,
+  normalizeWooCommerceProduct,
+  wooSyncTimestamp,
+} from './integrations/woocommerce-sync';
+import { validateNewPlatformConnection } from './integrations/platform-checker';
+import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
 
-/** Resolve merchantId from userId — ctx.user has no merchantId field */
-async function getMerchantId(userId: number): Promise<number> {
-  const merchant = await getMerchantByUserId(userId);
-  if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-  return merchant.id;
+const pageInput = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  limit: z.number().int().min(1).max(100).default(50),
+});
+const orderStatus = z.enum(['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed']);
+const dateRangeInput = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).refine(value => Boolean(value.startDate) === Boolean(value.endDate), 'date_range_incomplete');
+
+function tenantId(ctx: { merchantId?: number }): number {
+  if (!ctx.merchantId) throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يوجد متجر مرتبط بهذه الجلسة' });
+  return ctx.merchantId;
+}
+
+function publicWooError(error: unknown): TRPCError {
+  if (error instanceof TRPCError) return error;
+  if (error instanceof WooCommerceApiError) {
+    if (error.code === 'endpoint') return new TRPCError({ code: 'BAD_REQUEST', message: 'رابط متجر WooCommerce غير آمن أو غير صالح' });
+    if (error.code === 'credentials' || error.code === 'status') {
+      return new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر توثيق اتصال WooCommerce؛ تحقق من الرابط والمفاتيح والصلاحيات' });
+    }
+    if (error.code === 'limit') {
+      return new TRPCError({ code: 'BAD_REQUEST', message: 'يتجاوز المتجر حد المزامنة الآمنة البالغ 2000 سجل؛ استخدم مزامنة مرحلية' });
+    }
+    return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر الوصول إلى WooCommerce بأمان؛ حاول لاحقًا' });
+  }
+  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إكمال عملية WooCommerce' });
+}
+
+async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
+  const pool = await getPool();
+  if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
+  const connection = await pool.getConnection();
+  const lockName = `sari:woocommerce:${merchantId}`;
+  let acquired = false;
+  try {
+    const [rows] = await connection.query<any[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
+    acquired = Number(rows[0]?.acquired) === 1;
+    if (!acquired) throw new TRPCError({ code: 'CONFLICT', message: 'توجد عملية WooCommerce أخرى قيد التنفيذ' });
+    return await action();
+  } finally {
+    if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
+    connection.release();
+  }
+}
+
+function settingsDto(settings: NonNullable<Awaited<ReturnType<typeof getWooCommerceSettings>>>) {
+  return {
+    storeUrl: settings.storeUrl,
+    isActive: settings.isActive,
+    connected: settings.isActive === 1 && settings.connectionStatus === 'connected',
+    connectionStatus: settings.connectionStatus,
+    hasConsumerKey: Boolean(settings.consumerKey),
+    hasConsumerSecret: Boolean(settings.consumerSecret),
+    lastSyncAt: settings.lastSyncAt,
+    lastTestAt: settings.lastTestAt,
+    storeVersion: settings.storeVersion,
+    storeName: settings.storeName,
+    storeCurrency: settings.storeCurrency,
+    syncMode: 'manual' as const,
+  };
+}
+
+function productDto(product: Awaited<ReturnType<typeof getWooCommerceProducts>>[number]) {
+  return {
+    id: product.id,
+    wooProductId: product.wooProductId,
+    name: product.name,
+    slug: product.slug,
+    sku: product.sku,
+    price: product.price,
+    regularPrice: product.regularPrice,
+    salePrice: product.salePrice,
+    stockStatus: product.stockStatus,
+    stockQuantity: product.stockQuantity,
+    manageStock: product.manageStock,
+    imageUrl: product.imageUrl,
+    categories: product.categories,
+    providerUpdatedAt: product.providerUpdatedAt,
+    lastSyncAt: product.lastSyncAt,
+  };
+}
+
+type WooOrderRow = Awaited<ReturnType<typeof getWooCommerceOrders>>[number];
+
+function orderDto(order: WooOrderRow) {
+  return {
+    id: order.id,
+    wooOrderId: order.wooOrderId,
+    orderNumber: order.orderNumber,
+    customerName: order.customerName,
+    customerEmail: order.customerEmail,
+    customerPhone: order.customerPhone,
+    status: order.status,
+    currency: order.currency,
+    total: order.total,
+    subtotal: order.subtotal,
+    totalTax: order.totalTax,
+    shippingTotal: order.shippingTotal,
+    discountTotal: order.discountTotal,
+    paymentMethod: order.paymentMethod,
+    paymentMethodTitle: order.paymentMethodTitle,
+    lineItems: order.lineItems,
+    customerNote: order.customerNote,
+    orderDate: order.orderDate,
+    providerUpdatedAt: order.providerUpdatedAt,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  };
+}
+
+function dateBounds(input: { startDate?: string; endDate?: string }): { start: Date; end: Date } | null {
+  if (!input.startDate || !input.endDate) return null;
+  const start = new Date(`${input.startDate}T00:00:00.000Z`);
+  const end = new Date(`${input.endDate}T23:59:59.999Z`);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end || end.getTime() - start.getTime() > 366 * 86_400_000) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'نطاق التاريخ غير صالح أو يتجاوز سنة' });
+  }
+  return { start, end };
+}
+
+function filterOrdersByDate<T extends { orderDate: string }>(orders: T[], range: { start: Date; end: Date } | null): T[] {
+  if (!range) return orders;
+  return orders.filter(order => {
+    const value = new Date(order.orderDate).getTime();
+    return Number.isFinite(value) && value >= range.start.getTime() && value <= range.end.getTime();
+  });
+}
+
+async function runManualSync(merchantId: number, type: 'products' | 'orders') {
+  return withWooCommerceLock(merchantId, async () => {
+    const settings = await getWooCommerceSettings(merchantId);
+    if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
+    }
+    const started = Date.now();
+    const startedAt = wooSyncTimestamp(new Date(started));
+    const logId = await createWooCommerceSyncLog({
+      merchantId,
+      syncType: type,
+      direction: 'import',
+      status: 'running',
+      startedAt,
+    });
+    try {
+      const client = createWooCommerceClient(settings);
+      if (type === 'products') {
+        const remote = await fetchWooCommerceProducts(client);
+        const normalized = remote.map(product => normalizeWooCommerceProduct(merchantId, product, startedAt));
+        await upsertWooCommerceProductsSnapshot(merchantId, normalized, true);
+      } else {
+        const remote = await fetchWooCommerceOrders(client);
+        const normalized = remote.map(order => normalizeWooCommerceOrder(merchantId, order, startedAt));
+        await upsertWooCommerceOrdersSnapshot(merchantId, normalized, true);
+      }
+      const count = type === 'products'
+        ? (await getWooCommerceProductsStats(merchantId)).total
+        : (await getWooCommerceOrdersStats(merchantId)).total;
+      await updateWooCommerceSyncLog(logId, {
+        status: 'success',
+        itemsProcessed: count,
+        itemsSuccess: count,
+        itemsFailed: 0,
+        completedAt: wooSyncTimestamp(),
+        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
+        errorMessage: null,
+      });
+      await updateWooCommerceSettings(merchantId, { lastSyncAt: wooSyncTimestamp() });
+      return { success: true, count };
+    } catch (error) {
+      await updateWooCommerceSyncLog(logId, {
+        status: 'failed',
+        completedAt: wooSyncTimestamp(),
+        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
+        errorMessage: error instanceof WooCommerceApiError ? error.code : 'sync_failed',
+      }).catch(() => undefined);
+      throw publicWooError(error);
+    }
+  });
 }
 
 export const woocommerceRouter = router({
-  // ==================== Settings ====================
-
-  getSettings: protectedProcedure.query(async ({ ctx }) => {
-    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-    
-    // Don't expose sensitive keys to frontend
-    if (settings) {
-      return {
-        ...settings,
-        consumerKey: settings.consumerKey ? '***' + settings.consumerKey.slice(-4) : '',
-        consumerSecret: settings.consumerSecret ? '***' + settings.consumerSecret.slice(-4) : '',
-      };
-    }
-    
-    return null;
+  getSettings: merchantProcedure.query(async ({ ctx }) => {
+    const settings = await getWooCommerceSettings(tenantId(ctx));
+    return settings ? settingsDto(settings) : null;
   }),
 
-  saveSettings: protectedProcedure
+  saveSettings: permissionProcedure('integrations.manage')
     .input(z.object({
-      storeUrl: z.string().url(),
-      consumerKey: z.string().min(10),
-      consumerSecret: z.string().min(10),
-      autoSyncProducts: z.boolean().optional(),
-      autoSyncOrders: z.boolean().optional(),
-      autoSyncCustomers: z.boolean().optional(),
-      syncInterval: z.number().optional(),
-    }))
+      storeUrl: z.string().trim().min(8).max(500),
+      consumerKey: z.string().trim().max(160).optional(),
+      consumerSecret: z.string().trim().max(160).optional(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      // Validate store URL
-      if (!validateStoreUrl(input.storeUrl)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'ط±ط§ط¨ط· ط§ظ„ظ…طھط¬ط± ط؛ظٹط± طµط­ظٹط­',
-        });
-      }
-
-      // Check if settings exist
-      const existingSettings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-      
-      // Only check for other platforms if creating new connection
-      if (!existingSettings) {
-        const { validateNewPlatformConnection } = await import('./integrations/platform-checker');
-        try {
-          await validateNewPlatformConnection((await getMerchantId(ctx.user.id)), 'ظˆظˆظƒظˆظ…ط±ط³');
-        } catch (error: any) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: error.message 
-          });
-        }
-      }
-
-      if (existingSettings) {
-        // Update existing settings
-        await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
-          storeUrl: input.storeUrl,
-          consumerKey: input.consumerKey,
-          consumerSecret: input.consumerSecret,
-          autoSyncProducts: input.autoSyncProducts ? 1 : 0,
-          autoSyncOrders: input.autoSyncOrders ? 1 : 0,
-          autoSyncCustomers: input.autoSyncCustomers ? 1 : 0,
-          syncInterval: input.syncInterval,
-          isActive: 1,
-        });
-      } else {
-        // Create new settings
-        await createWooCommerceSettings({
-          merchantId: (await getMerchantId(ctx.user.id)),
-          storeUrl: input.storeUrl,
-          consumerKey: input.consumerKey,
-          consumerSecret: input.consumerSecret,
-          autoSyncProducts: input.autoSyncProducts ? 1 : 0,
-          autoSyncOrders: input.autoSyncOrders ? 1 : 0,
-          autoSyncCustomers: input.autoSyncCustomers ? 1 : 0,
-          syncInterval: input.syncInterval || 60,
-          isActive: 1,
-        });
-      }
-
-      return { success: true, message: 'طھظ… ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط¨ظ†ط¬ط§ط­' };
-    }),
-
-  testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-
-    if (!settings) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط¥ط¹ط¯ط§ط¯ط§طھ WooCommerce',
-      });
-    }
-
-    const client = createWooCommerceClient(settings);
-    const result = await client.testConnection();
-
-    if (result.success) {
-      // Update connection status
-      await updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'connected', result.storeInfo);
-    } else {
-      await updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'error');
-    }
-
-    return result;
-  }),
-
-  disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    await deleteWooCommerceSettings((await getMerchantId(ctx.user.id)));
-    await deleteWooCommerceProductsByMerchant((await getMerchantId(ctx.user.id)));
-    await deleteWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-
-    return { success: true, message: 'طھظ… ظپطµظ„ ط§ظ„ط§طھطµط§ظ„ ط¨ظ†ط¬ط§ط­' };
-  }),
-
-  // ==================== Products ====================
-
-  getProducts: protectedProcedure
-    .input(z.object({
-      page: z.number().optional(),
-      limit: z.number().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const page = input.page || 1;
-      const limit = input.limit || 50;
-      const offset = (page - 1) * limit;
-
-      const products = await getWooCommerceProducts((await getMerchantId(ctx.user.id)), limit, offset);
-      const stats = await getWooCommerceProductsStats((await getMerchantId(ctx.user.id)));
-
-      return {
-        products,
-        stats,
-        pagination: {
-          page,
-          limit,
-          total: stats.total,
-        },
-      };
-    }),
-
-  searchProducts: protectedProcedure
-    .input(z.object({
-      search: z.string(),
-      limit: z.number().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const products = await searchWooCommerceProducts((await getMerchantId(ctx.user.id)), input.search, input.limit || 20);
-      return products;
-    }),
-
-  syncProducts: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-
-    if (!settings || settings.connectionStatus !== 'connected') {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: 'ظٹط¬ط¨ ط§ظ„ط§طھطµط§ظ„ ط¨ظ€ WooCommerce ط£ظˆظ„ط§ظ‹',
-      });
-    }
-
-    const client = createWooCommerceClient(settings);
-
-    // Create sync log
-    const logId = await createWooCommerceSyncLog({
-      merchantId: (await getMerchantId(ctx.user.id)),
-      syncType: 'products',
-      direction: 'import',
-      status: 'success',
-      startedAt: new Date().toISOString(),
-    });
-
-    let itemsProcessed = 0;
-    let itemsSuccess = 0;
-    let itemsFailed = 0;
-    const errors: string[] = [];
-
-    try {
-      // Fetch all products from WooCommerce (paginated)
-      let page = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const wooProducts = await client.getProducts({ page, per_page: 100 });
-
-        if (wooProducts.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        for (const wooProduct of wooProducts) {
-          itemsProcessed++;
-
-          try {
-            // Check if product already exists
-            const existingProduct = await getWooCommerceProductByWooId((await getMerchantId(ctx.user.id)), wooProduct.id);
-
-            const productData = {
-              merchantId: (await getMerchantId(ctx.user.id)),
-              wooProductId: wooProduct.id,
-              name: wooProduct.name,
-              slug: wooProduct.slug,
-              sku: wooProduct.sku || '',
-              price: wooProduct.price,
-              regularPrice: wooProduct.regular_price || wooProduct.price,
-              salePrice: wooProduct.sale_price || null,
-              stockStatus: wooProduct.stock_status,
-              stockQuantity: wooProduct.stock_quantity,
-              manageStock: wooProduct.manage_stock ? 1 : 0,
-              description: wooProduct.description || '',
-              shortDescription: wooProduct.short_description || '',
-              imageUrl: wooProduct.images[0]?.src || '',
-              categories: JSON.stringify(wooProduct.categories),
-              lastSyncAt: new Date().toISOString(),
-              syncStatus: 'synced' as const,
-            };
-
-            if (existingProduct) {
-              await updateWooCommerceProduct(existingProduct.id, productData);
-            } else {
-              await createWooCommerceProduct(productData);
-            }
-
-            itemsSuccess++;
-          } catch (error: any) {
-            itemsFailed++;
-            errors.push(`Product ${wooProduct.id}: ${error.message}`);
-          }
-        }
-
-        page++;
-      }
-
-      // Update sync log
-      await updateWooCommerceSyncLog(logId, {
-        status: itemsFailed > 0 ? 'partial' : 'success',
-        itemsProcessed,
-        itemsSuccess,
-        itemsFailed,
-        completedAt: new Date().toISOString(),
-        duration: Math.floor((Date.now() - new Date(await getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
-        errorMessage: errors.length > 0 ? errors.join('\n') : null,
-      });
-
-      // Update last sync time
-      await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
-        lastSyncAt: new Date().toISOString(),
-      });
-
-      return {
-        success: true,
-        message: `طھظ…طھ ظ…ط²ط§ظ…ظ†ط© ${itemsSuccess} ظ…ظ†طھط¬ ط¨ظ†ط¬ط§ط­`,
-        stats: {
-          processed: itemsProcessed,
-          success: itemsSuccess,
-          failed: itemsFailed,
-        },
-      };
-    } catch (error: any) {
-      await updateWooCommerceSyncLog(logId, {
-        status: 'failed',
-        itemsProcessed,
-        itemsSuccess,
-        itemsFailed,
-        completedAt: new Date().toISOString(),
-        errorMessage: error.message,
-      });
-
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: error.message || 'ظپط´ظ„طھ ط§ظ„ظ…ط²ط§ظ…ظ†ط©',
-      });
-    }
-  }),
-
-  // ==================== Orders ====================
-
-  getOrders: protectedProcedure
-    .input(z.object({
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      status: z.string().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const page = input.page || 1;
-      const limit = input.limit || 50;
-      const offset = (page - 1) * limit;
-
-      let orders;
-      if (input.status) {
-        orders = await getWooCommerceOrdersByStatus((await getMerchantId(ctx.user.id)), input.status, limit);
-      } else {
-        orders = await getWooCommerceOrders((await getMerchantId(ctx.user.id)), limit, offset);
-      }
-
-      const stats = await getWooCommerceOrdersStats((await getMerchantId(ctx.user.id)));
-
-      return {
-        orders,
-        stats,
-        pagination: {
-          page,
-          limit,
-          total: stats.total,
-        },
-      };
-    }),
-
-  getOrder: protectedProcedure
-    .input(z.object({
-      id: z.number(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const order = await getWooCommerceOrderById(input.id);
-
-      if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط§ظ„ط·ظ„ط¨',
-        });
-      }
-
-      return order;
-    }),
-
-  syncOrders: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-
-    if (!settings || settings.connectionStatus !== 'connected') {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: 'ظٹط¬ط¨ ط§ظ„ط§طھطµط§ظ„ ط¨ظ€ WooCommerce ط£ظˆظ„ط§ظ‹',
-      });
-    }
-
-    const client = createWooCommerceClient(settings);
-
-    // Create sync log
-    const logId = await createWooCommerceSyncLog({
-      merchantId: (await getMerchantId(ctx.user.id)),
-      syncType: 'orders',
-      direction: 'import',
-      status: 'success',
-      startedAt: new Date().toISOString(),
-    });
-
-    let itemsProcessed = 0;
-    let itemsSuccess = 0;
-    let itemsFailed = 0;
-    const errors: string[] = [];
-
-    try {
-      // Fetch orders from WooCommerce (last 30 days)
-      let page = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const wooOrders = await client.getOrders({ page, per_page: 100 });
-
-        if (wooOrders.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        for (const wooOrder of wooOrders) {
-          itemsProcessed++;
-
-          try {
-            // Check if order already exists
-            const existingOrder = await getWooCommerceOrderByWooId((await getMerchantId(ctx.user.id)), wooOrder.id);
-
-            const orderData = {
-              merchantId: (await getMerchantId(ctx.user.id)),
-              wooOrderId: wooOrder.id,
-              orderNumber: wooOrder.number,
-              status: wooOrder.status,
-              currency: wooOrder.currency,
-              total: wooOrder.total,
-              subtotal: wooOrder.line_items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0).toString(),
-              totalTax: wooOrder.total_tax,
-              shippingTotal: wooOrder.shipping_total,
-              discountTotal: wooOrder.discount_total,
-              customerEmail: wooOrder.billing.email,
-              customerPhone: wooOrder.billing.phone,
-              customerName: `${wooOrder.billing.first_name} ${wooOrder.billing.last_name}`,
-              billingAddress: JSON.stringify(wooOrder.billing),
-              shippingAddress: JSON.stringify(wooOrder.shipping),
-              lineItems: JSON.stringify(wooOrder.line_items),
-              paymentMethod: wooOrder.payment_method,
-              paymentMethodTitle: wooOrder.payment_method_title,
-              transactionId: wooOrder.transaction_id || '',
-              orderDate: wooOrder.date_created,
-              paidDate: wooOrder.date_paid || null,
-              completedDate: wooOrder.date_completed || null,
-              customerNote: wooOrder.customer_note || '',
-              lastSyncAt: new Date().toISOString(),
-              syncStatus: 'synced' as const,
-            };
-
-            if (existingOrder) {
-              await updateWooCommerceOrder(existingOrder.id, orderData);
-            } else {
-              await createWooCommerceOrder(orderData);
-            }
-
-            itemsSuccess++;
-          } catch (error: any) {
-            itemsFailed++;
-            errors.push(`Order ${wooOrder.id}: ${error.message}`);
-          }
-        }
-
-        page++;
-      }
-
-      // Update sync log
-      await updateWooCommerceSyncLog(logId, {
-        status: itemsFailed > 0 ? 'partial' : 'success',
-        itemsProcessed,
-        itemsSuccess,
-        itemsFailed,
-        completedAt: new Date().toISOString(),
-        duration: Math.floor((Date.now() - new Date(await getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
-        errorMessage: errors.length > 0 ? errors.join('\n') : null,
-      });
-
-      // Update last sync time
-      await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
-        lastSyncAt: new Date().toISOString(),
-      });
-
-      return {
-        success: true,
-        message: `طھظ…طھ ظ…ط²ط§ظ…ظ†ط© ${itemsSuccess} ط·ظ„ط¨ ط¨ظ†ط¬ط§ط­`,
-        stats: {
-          processed: itemsProcessed,
-          success: itemsSuccess,
-          failed: itemsFailed,
-        },
-      };
-    } catch (error: any) {
-      await updateWooCommerceSyncLog(logId, {
-        status: 'failed',
-        itemsProcessed,
-        itemsSuccess,
-        itemsFailed,
-        completedAt: new Date().toISOString(),
-        errorMessage: error.message,
-      });
-
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: error.message || 'ظپط´ظ„طھ ط§ظ„ظ…ط²ط§ظ…ظ†ط©',
-      });
-    }
-  }),
-
-  // ==================== Sync Logs ====================
-
-  getSyncLogs: protectedProcedure
-    .input(z.object({
-      limit: z.number().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const logs = await getWooCommerceSyncLogs((await getMerchantId(ctx.user.id)), input.limit || 50);
-      return logs;
-    }),
-
-  getLatestSync: protectedProcedure
-    .input(z.object({
-      syncType: z.enum(['products', 'orders', 'customers', 'manual']),
-    }))
-    .query(async ({ ctx, input }) => {
-      const log = await getLatestWooCommerceSyncLog((await getMerchantId(ctx.user.id)), input.syncType);
-      return log;
-    }),
-
-  // ==================== Order Management ====================
-
-  updateOrderStatus: protectedProcedure
-    .input(z.object({
-      orderId: z.number(),
-      status: z.enum(['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed']),
-      note: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
+      const merchantId = tenantId(ctx);
       try {
-        // Get order from local database
-        const order = await getWooCommerceOrderById(input.orderId);
-        
-        if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'ط§ظ„ط·ظ„ط¨ ط؛ظٹط± ظ…ظˆط¬ظˆط¯',
+        return await withWooCommerceLock(merchantId, async () => {
+          const existing = await getWooCommerceSettings(merchantId);
+          if (!existing) await validateNewPlatformConnection(merchantId, 'WooCommerce');
+          const storeUrl = canonicalWooStoreUrl(input.storeUrl);
+          const consumerKey = input.consumerKey || existing?.consumerKey;
+          const consumerSecret = input.consumerSecret || existing?.consumerSecret;
+          if (!consumerKey || !consumerSecret) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح WooCommerce وسرّه مطلوبان للربط الأول' });
+          }
+          const client = createWooCommerceClient({ storeUrl, consumerKey, consumerSecret });
+          const storeInfo = await client.testConnection();
+          const now = wooSyncTimestamp();
+          await saveVerifiedWooCommerceSettings({
+            merchantId,
+            storeUrl,
+            consumerKey,
+            consumerSecret,
+            isActive: 1,
+            connectionStatus: 'connected',
+            lastTestAt: now,
+            autoSyncProducts: 0,
+            autoSyncOrders: 0,
+            autoSyncCustomers: 0,
+            syncInterval: 60,
+            storeVersion: storeInfo.version || null,
+            storeName: storeInfo.name || null,
+            storeCurrency: storeInfo.currency || null,
           });
-        }
-
-        // Get WooCommerce settings
-        const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
-        
-        if (!settings) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط¥ط¹ط¯ط§ط¯ط§طھ WooCommerce',
-          });
-        }
-
-        // Update order status in WooCommerce
-        const client = createWooCommerceClient(settings);
-        await client.updateOrder(order.wooOrderId, {
-          status: input.status,
-          ...(input.note && {
-            customer_note: input.note,
-          }),
+          return { success: true, connected: true };
         });
+      } catch (error) {
+        throw publicWooError(error);
+      }
+    }),
 
-        // Update local database
-        await updateWooCommerceOrder(input.orderId, {
-          status: input.status,
-          ...(input.note && {
-            orderNotes: input.note,
-          }),
-        });
+  testConnection: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    const merchantId = tenantId(ctx);
+    try {
+      return await withWooCommerceLock(merchantId, async () => {
+        const settings = await getWooCommerceSettings(merchantId);
+        if (!settings) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم ربط WooCommerce' });
+        const info = await createWooCommerceClient(settings).testConnection();
+        await updateWooCommerceConnectionStatus(merchantId, 'connected', info);
+        return { success: true, connected: true };
+      });
+    } catch (error) {
+      if (!(error instanceof TRPCError)) await updateWooCommerceConnectionStatus(merchantId, 'error').catch(() => undefined);
+      throw publicWooError(error);
+    }
+  }),
 
-        return { 
-          success: true, 
-          message: 'طھظ… طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨ ط¨ظ†ط¬ط§ط­',
-          order: {
-            ...order,
+  disconnect: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    const merchantId = tenantId(ctx);
+    await withWooCommerceLock(merchantId, () => deleteWooCommerceIntegration(merchantId));
+    return { success: true };
+  }),
+
+  getProducts: merchantProcedure.input(pageInput).query(async ({ ctx, input }) => {
+    const merchantId = tenantId(ctx);
+    const products = await getWooCommerceProducts(merchantId, input.limit, (input.page - 1) * input.limit);
+    const stats = await getWooCommerceProductsStats(merchantId);
+    return { products: products.map(productDto), stats, pagination: { ...input, total: stats.total } };
+  }),
+
+  searchProducts: merchantProcedure
+    .input(z.object({ search: z.string().trim().min(3).max(120), limit: z.number().int().min(1).max(50).default(20) }).strict())
+    .query(async ({ ctx, input }) => (await searchWooCommerceProducts(tenantId(ctx), input.search, input.limit)).map(productDto)),
+
+  syncProducts: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    const result = await runManualSync(tenantId(ctx), 'products');
+    return { ...result, message: `تمت مزامنة ${result.count} منتج من WooCommerce` };
+  }),
+
+  getOrders: merchantProcedure
+    .input(pageInput.extend({ status: orderStatus.optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchantId = tenantId(ctx);
+      const offset = (input.page - 1) * input.limit;
+      const rows = input.status
+        ? await getWooCommerceOrdersByStatus(merchantId, input.status, input.limit, offset)
+        : await getWooCommerceOrders(merchantId, input.limit, offset);
+      const stats = await getWooCommerceOrdersStats(merchantId);
+      const total = input.status ? (stats.statusCounts[input.status] || 0) : stats.total;
+      return { orders: rows.map(orderDto), stats, pagination: { page: input.page, limit: input.limit, total } };
+    }),
+
+  getOrder: merchantProcedure.input(z.object({ id: z.number().int().positive() }).strict()).query(async ({ ctx, input }) => {
+    const order = await getWooCommerceOrderByIdForMerchant(tenantId(ctx), input.id);
+    if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
+    return orderDto(order);
+  }),
+
+  syncOrders: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    const result = await runManualSync(tenantId(ctx), 'orders');
+    return { ...result, message: `تمت مزامنة ${result.count} طلب من WooCommerce` };
+  }),
+
+  getSyncLogs: merchantProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).default(25) }).strict())
+    .query(({ ctx, input }) => getWooCommerceSyncLogs(tenantId(ctx), input.limit)),
+
+  getLatestSync: merchantProcedure
+    .input(z.object({ syncType: z.enum(['products', 'orders', 'customers', 'manual']) }).strict())
+    .query(({ ctx, input }) => getLatestWooCommerceSyncLog(tenantId(ctx), input.syncType)),
+
+  updateOrderStatus: permissionProcedure('orders.manage')
+    .input(z.object({ orderId: z.number().int().positive(), status: orderStatus, note: z.string().trim().max(1_000).optional() }).strict())
+    .mutation(async ({ ctx, input }) => {
+      const merchantId = tenantId(ctx);
+      try {
+        return await withWooCommerceLock(merchantId, async () => {
+          const order = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
+          if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
+          const settings = await getWooCommerceSettings(merchantId);
+          if (!settings || settings.connectionStatus !== 'connected') {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'اتصال WooCommerce غير جاهز' });
+          }
+          const canonical = await createWooCommerceClient(settings).updateOrder(order.wooOrderId, {
             status: input.status,
-          },
-        };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'ظپط´ظ„ طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨',
+            ...(input.note ? { customer_note: input.note } : {}),
+          });
+          const normalized = normalizeWooCommerceOrder(merchantId, canonical, wooSyncTimestamp());
+          await upsertWooCommerceOrdersSnapshot(merchantId, [normalized], false);
+          const updated = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
+          if (!updated) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر قراءة الطلب بعد التحديث' });
+          return { success: true, order: orderDto(updated) };
         });
+      } catch (error) {
+        throw publicWooError(error);
       }
     }),
 
-  sendOrderNotification: protectedProcedure
-    .input(z.object({
-      orderId: z.number(),
-      message: z.string().optional(),
-    }))
+  sendOrderNotification: permissionProcedure('orders.manage')
+    .input(z.object({ orderId: z.number().int().positive(), message: z.string().trim().min(1).max(2_000).optional() }).strict())
     .mutation(async ({ ctx, input }) => {
+      const merchantId = tenantId(ctx);
+      const order = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
+      if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
+      if (!order.customerPhone) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رقم هاتف صالح لهذا الطلب' });
+      const defaultMessage = `مرحبًا ${order.customerName || ''}\n\nتم تحديث طلبك #${order.orderNumber}.\nالحالة: ${order.status}\nالإجمالي: ${order.total} ${order.currency}`;
+      const message = input.message || defaultMessage;
+      const messageDigest = crypto.createHash('sha256').update(message, 'utf8').digest('hex').slice(0, 24);
       try {
-        // Get order from local database
-        const order = await getWooCommerceOrderById(input.orderId);
-        
-        if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'ط§ظ„ط·ظ„ط¨ ط؛ظٹط± ظ…ظˆط¬ظˆط¯',
-          });
-        }
-
-        if (!order.customerPhone) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'ط±ظ‚ظ… ظ‡ط§طھظپ ط§ظ„ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…طھظˆظپط±',
-          });
-        }
-
-        // Get merchant's WhatsApp connection
-        const whatsappConnection = await getWhatsAppConnectionByMerchantId((await getMerchantId(ctx.user.id)));
-        
-        if (!whatsappConnection || !whatsappConnection.isActive) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'ظ„ظ… ظٹطھظ… ط±ط¨ط· ط­ط³ط§ط¨ ظˆط§طھط³ط§ط¨',
-          });
-        }
-
-        // Parse line items
-        const lineItems = JSON.parse(order.lineItems || '[]');
-        
-        // Prepare notification message
-        const defaultMessage = `
-ظ…ط±ط­ط¨ط§ظ‹ ${order.customerName}! ًں‘‹
-
-ظ†ظˆط¯ ط¥ط¹ظ„ط§ظ…ظƒ ط¨طھط­ط¯ظٹط« ط­ط§ظ„ط© ط·ظ„ط¨ظƒ #${order.orderNumber}
-
-ًں“¦ ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨: ${getOrderStatusArabic(order.status)}
-ًں’° ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ: ${order.total} ${order.currency}
-
-ط§ظ„ظ…ظ†طھط¬ط§طھ:
-${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— ${item.quantity}`).join('\n')}
-
-ط´ظƒط±ط§ظ‹ ظ„ط«ظ‚طھظƒ ط¨ظ†ط§! ًں™ڈ
-        `.trim();
-
-        const messageToSend = input.message || defaultMessage;
-
-        // Send WhatsApp message using Green API
-        const { sendMessageWithCredentials } = await import('./whatsapp');
-        await sendMessageWithCredentials(
-          whatsappConnection.instanceId,
-          whatsappConnection.apiToken,
-          process.env.GREEN_API_URL || 'https://api.green-api.com',
-          order.customerPhone,
-          messageToSend
-        );
-
-        // Update notification status
-        await updateWooCommerceOrder(input.orderId, {
-          // @ts-ignore
-          notificationSent: 1,
-          notificationSentAt: new Date().toISOString(),
+        const sent = await sendMerchantWhatsApp({
+          merchantId,
+          idempotencyKey: `woo-order:${merchantId}:${order.wooOrderId}:${order.status}:${messageDigest}`,
+          to: order.customerPhone,
+          kind: 'text',
+          text: message,
+          retryFailed: true,
         });
-
-        return { 
-          success: true, 
-          message: 'طھظ… ط¥ط±ط³ط§ظ„ ط§ظ„ط¥ط´ط¹ط§ط± ط¨ظ†ط¬ط§ط­',
-        };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'ظپط´ظ„ ط¥ط±ط³ط§ظ„ ط§ظ„ط¥ط´ط¹ط§ط±',
-        });
+        if (sent.accepted && sent.providerMessageId) {
+          return { success: true, messageId: sent.providerMessageId, duplicate: sent.duplicate };
+        }
+        if (sent.errorCode === 'delivery_in_progress') {
+          throw new TRPCError({ code: 'CONFLICT', message: 'حالة تسليم الرسالة غير محسومة؛ لن نعيد إرسالها تلقائيًا' });
+        }
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر إرسال الرسالة عبر قناة WhatsApp النشطة' });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof WhatsAppDeliveryStateError) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'حالة تسليم الرسالة غير محسومة؛ راجع سجل التسليم قبل المحاولة' });
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر الوصول إلى خدمة إرسال WhatsApp' });
       }
     }),
 
-  // ==================== Analytics ====================
-
-  getSalesStats: protectedProcedure
-    .input(z.object({
-      period: z.enum(['daily', 'weekly', 'monthly']).default('daily'),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }))
+  getSalesStats: permissionProcedure('analytics.read')
+    .input(dateRangeInput.extend({ period: z.enum(['daily', 'weekly', 'monthly']).default('daily') }))
     .query(async ({ ctx, input }) => {
-      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-      
-      // Filter by date range if provided
-      let filteredOrders = orders;
-      if (input.startDate && input.endDate) {
-        filteredOrders = orders.filter(order => {
-          const orderDate = new Date(order.orderDate);
-          return orderDate >= new Date(input.startDate!) && orderDate <= new Date(input.endDate!);
-        });
-      }
-
-      // Calculate stats
-      const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.totalAmount || '0'), 0);
-      const totalOrders = filteredOrders.length;
-      const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
-      const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
-      const processingOrders = filteredOrders.filter(o => o.status === 'processing').length;
-      const cancelledOrders = filteredOrders.filter(o => o.status === 'cancelled').length;
-      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Group by period for chart data
-      const chartData: { date: string; revenue: number; orders: number }[] = [];
-      const groupedByDate = new Map<string, { revenue: number; orders: number }>();
-
-      filteredOrders.forEach(order => {
+      const rows = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input));
+      const completed = rows.filter(order => order.status === 'completed');
+      const totalRevenue = completed.reduce((sum, order) => sum + Number(order.total || 0), 0);
+      const grouped = new Map<string, { revenue: number; orders: number }>();
+      for (const order of completed) {
         const date = new Date(order.orderDate);
-        let key = '';
-        
-        if (input.period === 'daily') {
-          key = date.toISOString().split('T')[0];
-        } else if (input.period === 'weekly') {
-          const weekStart = new Date(date);
-          weekStart.setDate(date.getDate() - date.getDay());
-          key = weekStart.toISOString().split('T')[0];
-        } else if (input.period === 'monthly') {
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        }
-
-        const existing = groupedByDate.get(key) || { revenue: 0, orders: 0 };
-        existing.revenue += parseFloat(order.totalAmount || '0');
-        existing.orders += 1;
-        groupedByDate.set(key, existing);
-      });
-
-      groupedByDate.forEach((value, key) => {
-        chartData.push({ date: key, revenue: value.revenue, orders: value.orders });
-      });
-
-      chartData.sort((a, b) => a.date.localeCompare(b.date));
-
+        let key = date.toISOString().slice(0, 10);
+        if (input.period === 'weekly') {
+          date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+          key = date.toISOString().slice(0, 10);
+        } else if (input.period === 'monthly') key = date.toISOString().slice(0, 7);
+        const current = grouped.get(key) || { revenue: 0, orders: 0 };
+        current.revenue += Number(order.total || 0);
+        current.orders += 1;
+        grouped.set(key, current);
+      }
       return {
         totalRevenue,
-        totalOrders,
-        completedOrders,
-        pendingOrders,
-        processingOrders,
-        cancelledOrders,
-        averageOrderValue,
-        chartData,
+        totalOrders: rows.length,
+        completedOrders: completed.length,
+        pendingOrders: rows.filter(order => order.status === 'pending').length,
+        processingOrders: rows.filter(order => order.status === 'processing').length,
+        cancelledOrders: rows.filter(order => order.status === 'cancelled').length,
+        averageOrderValue: completed.length ? totalRevenue / completed.length : 0,
+        chartData: Array.from(grouped, ([date, value]) => ({ date, ...value })).sort((a, b) => a.date.localeCompare(b.date)),
+        revenueDefinition: 'completed_orders' as const,
       };
     }),
 
-  getTopProducts: protectedProcedure
-    .input(z.object({
-      limit: z.number().default(10),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }))
+  getTopProducts: permissionProcedure('analytics.read')
+    .input(dateRangeInput.extend({ limit: z.number().int().min(1).max(50).default(10) }))
     .query(async ({ ctx, input }) => {
-      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-      
-      // Filter by date range if provided
-      let filteredOrders = orders;
-      if (input.startDate && input.endDate) {
-        filteredOrders = orders.filter(order => {
-          const orderDate = new Date(order.orderDate);
-          return orderDate >= new Date(input.startDate!) && orderDate <= new Date(input.endDate!);
-        });
-      }
-
-      // Count product sales
-      const productSales = new Map<string, { name: string; quantity: number; revenue: number }>();
-
-      filteredOrders.forEach(order => {
+      const rows = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input))
+        .filter(order => order.status === 'completed');
+      const products = new Map<string, { name: string; quantity: number; revenue: number }>();
+      for (const order of rows) {
         try {
-          const items = JSON.parse(order.items || '[]');
-          items.forEach((item: any) => {
-            const productKey = item.product_id || item.name;
-            const existing = productSales.get(productKey) || { name: item.name, quantity: 0, revenue: 0 };
-            existing.quantity += item.quantity || 1;
-            existing.revenue += parseFloat(item.total || '0');
-            productSales.set(productKey, existing);
-          });
-        } catch (e) {
-          // Skip invalid JSON
-        }
-      });
-
-      // Convert to array and sort by quantity
-      const topProducts = Array.from(productSales.values())
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, input.limit);
-
-      return topProducts;
-    }),
-
-  getConversionRate: protectedProcedure
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      // Get WooCommerce orders
-      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-      
-      // Filter by date range if provided
-      let filteredOrders = orders;
-      if (input.startDate && input.endDate) {
-        filteredOrders = orders.filter(order => {
-          const orderDate = new Date(order.orderDate);
-          return orderDate >= new Date(input.startDate!) && orderDate <= new Date(input.endDate!);
-        });
+          const items = JSON.parse(order.lineItems || '[]');
+          if (!Array.isArray(items)) continue;
+          for (const item of items.slice(0, 500)) {
+            const name = String(item?.name || '').slice(0, 500);
+            if (!name) continue;
+            const key = String(item.product_id || name);
+            const current = products.get(key) || { name, quantity: 0, revenue: 0 };
+            current.quantity += Number(item.quantity || 0);
+            current.revenue += Number(item.total || 0);
+            products.set(key, current);
+          }
+        } catch { /* corrupted historical row is excluded */ }
       }
-
-      // Get WhatsApp conversations for the same period
-      const conversations = await getConversationsByMerchant((await getMerchantId(ctx.user.id)));
-      let filteredConversations = conversations;
-      if (input.startDate && input.endDate) {
-        filteredConversations = conversations.filter(conv => {
-          const convDate = new Date(conv.createdAt);
-          return convDate >= new Date(input.startDate!) && convDate <= new Date(input.endDate!);
-        });
-      }
-
-      const totalConversations = filteredConversations.length;
-      const totalOrders = filteredOrders.length;
-      const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
-
-      // Calculate conversion rates
-      const conversionRate = totalConversations > 0 ? (totalOrders / totalConversations) * 100 : 0;
-      const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
-
-      // Calculate revenue from WhatsApp-originated orders
-      const whatsappOrders = filteredOrders.filter(order => {
-        // Check if order has WhatsApp customer phone
-        return order.customerPhone && order.customerPhone.length > 0;
-      });
-      const whatsappRevenue = whatsappOrders.reduce((sum, order) => sum + parseFloat(order.totalAmount || '0'), 0);
-
-      return {
-        totalConversations,
-        totalOrders,
-        completedOrders,
-        conversionRate: Math.round(conversionRate * 100) / 100,
-        completionRate: Math.round(completionRate * 100) / 100,
-        whatsappOrders: whatsappOrders.length,
-        whatsappRevenue,
-      };
+      return Array.from(products.values()).sort((a, b) => b.quantity - a.quantity).slice(0, input.limit);
     }),
 
-  getCustomerStats: protectedProcedure
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-      
-      // Filter by date range if provided
-      let filteredOrders = orders;
-      if (input.startDate && input.endDate) {
-        filteredOrders = orders.filter(order => {
-          const orderDate = new Date(order.orderDate);
-          return orderDate >= new Date(input.startDate!) && orderDate <= new Date(input.endDate!);
-        });
-      }
+  getConversionRate: permissionProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
+    const merchantId = tenantId(ctx);
+    const orders = filterOrdersByDate(await getWooCommerceOrdersByMerchant(merchantId), dateBounds(input));
+    const conversations = await getConversationsByMerchant(merchantId);
+    const completedOrders = orders.filter(order => order.status === 'completed').length;
+    return {
+      attributionAvailable: false as const,
+      totalConversations: conversations.length,
+      totalOrders: orders.length,
+      completedOrders,
+      conversionRate: null,
+      completionRate: orders.length ? Math.round((completedOrders / orders.length) * 10_000) / 100 : 0,
+      whatsappOrders: null,
+      whatsappRevenue: null,
+    };
+  }),
 
-      // Count unique customers
-      const uniqueCustomers = new Set<string>();
-      const customerOrderCount = new Map<string, number>();
-
-      filteredOrders.forEach(order => {
-        const customerId = order.customerEmail || order.customerPhone || 'unknown';
-        uniqueCustomers.add(customerId);
-        customerOrderCount.set(customerId, (customerOrderCount.get(customerId) || 0) + 1);
-      });
-
-      // Calculate new vs returning customers
-      const newCustomers = Array.from(customerOrderCount.values()).filter(count => count === 1).length;
-      const returningCustomers = uniqueCustomers.size - newCustomers;
-
-      return {
-        totalCustomers: uniqueCustomers.size,
-        newCustomers,
-        returningCustomers,
-        repeatCustomerRate: uniqueCustomers.size > 0 ? (returningCustomers / uniqueCustomers.size) * 100 : 0,
-      };
-    }),
-
-  getRevenueChart: protectedProcedure
-    .input(z.object({
-      period: z.enum(['daily', 'weekly', 'monthly']).default('daily'),
-      startDate: z.string(),
-      endDate: z.string(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
-      
-      // Filter by date range
-      const filteredOrders = orders.filter(order => {
-        const orderDate = new Date(order.orderDate);
-        return orderDate >= new Date(input.startDate) && orderDate <= new Date(input.endDate);
-      });
-
-      // Group by period
-      const chartData: { date: string; revenue: number; orders: number }[] = [];
-      const groupedByDate = new Map<string, { revenue: number; orders: number }>();
-
-      filteredOrders.forEach(order => {
-        const date = new Date(order.orderDate);
-        let key = '';
-        
-        if (input.period === 'daily') {
-          key = date.toISOString().split('T')[0];
-        } else if (input.period === 'weekly') {
-          const weekStart = new Date(date);
-          weekStart.setDate(date.getDate() - date.getDay());
-          key = weekStart.toISOString().split('T')[0];
-        } else if (input.period === 'monthly') {
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        }
-
-        const existing = groupedByDate.get(key) || { revenue: 0, orders: 0 };
-        existing.revenue += parseFloat(order.totalAmount || '0');
-        existing.orders += 1;
-        groupedByDate.set(key, existing);
-      });
-
-      groupedByDate.forEach((value, key) => {
-        chartData.push({ date: key, revenue: value.revenue, orders: value.orders });
-      });
-
-      chartData.sort((a, b) => a.date.localeCompare(b.date));
-
-      return chartData;
-    }),
+  getCustomerStats: permissionProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
+    const orders = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input));
+    const counts = new Map<string, number>();
+    for (const order of orders) {
+      const key = order.customerEmail || order.customerPhone;
+      if (key) counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const singleOrderCustomers = Array.from(counts.values()).filter(count => count === 1).length;
+    const repeatCustomers = counts.size - singleOrderCustomers;
+    return {
+      totalCustomers: counts.size,
+      newCustomers: singleOrderCustomers,
+      returningCustomers: repeatCustomers,
+      repeatCustomerRate: counts.size ? (repeatCustomers / counts.size) * 100 : 0,
+      definition: 'orders_in_selected_period' as const,
+    };
+  }),
 });
-
-
-// Helper function to get order status in Arabic
-function getOrderStatusArabic(status: string): string {
-  const statusMap: Record<string, string> = {
-    'pending': 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±',
-    'processing': 'ظ‚ظٹط¯ ط§ظ„ظ…ط¹ط§ظ„ط¬ط©',
-    'on-hold': 'ظ…ط¹ظ„ظ‚',
-    'completed': 'ظ…ظƒطھظ…ظ„',
-    'cancelled': 'ظ…ظ„ط؛ظٹ',
-    'refunded': 'ظ…ط³طھط±ط¬ط¹',
-    'failed': 'ظپط§ط´ظ„',
-  };
-  
-  return statusMap[status] || status;
-}

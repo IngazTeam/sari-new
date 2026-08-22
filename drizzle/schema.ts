@@ -2686,8 +2686,8 @@ export const woocommerceSettings = mysqlTable("woocommerce_settings", {
 	connectionStatus: mysqlEnum(['connected', 'disconnected', 'error']).default('disconnected').notNull(),
 
 	// Sync Settings
-	autoSyncProducts: tinyint("auto_sync_products").default(1).notNull(),
-	autoSyncOrders: tinyint("auto_sync_orders").default(1).notNull(),
+	autoSyncProducts: tinyint("auto_sync_products").default(0).notNull(),
+	autoSyncOrders: tinyint("auto_sync_orders").default(0).notNull(),
 	autoSyncCustomers: tinyint("auto_sync_customers").default(0).notNull(),
 	syncInterval: int("sync_interval").default(60).notNull(), // minutes
 
@@ -2734,6 +2734,7 @@ export const woocommerceProducts = mysqlTable("woocommerce_products", {
 
 	// Sync
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
+	providerUpdatedAt: timestamp("provider_updated_at", { mode: 'string', fsp: 3 }),
 	syncStatus: mysqlEnum("sync_status", ['synced', 'pending', 'error']).default('synced').notNull(),
 
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
@@ -2788,6 +2789,7 @@ export const woocommerceOrders = mysqlTable("woocommerce_orders", {
 
 	// Sync
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
+	providerUpdatedAt: timestamp("provider_updated_at", { mode: 'string', fsp: 3 }),
 	syncStatus: mysqlEnum("sync_status", ['synced', 'pending', 'error']).default('synced').notNull(),
 
 	// Metadata
@@ -2813,7 +2815,7 @@ export const woocommerceSyncLogs = mysqlTable("woocommerce_sync_logs", {
 	direction: mysqlEnum(['import', 'export', 'bidirectional']).notNull(),
 
 	// Results
-	status: mysqlEnum(['success', 'partial', 'failed']).notNull(),
+	status: mysqlEnum(['running', 'success', 'partial', 'failed']).notNull(),
 	itemsProcessed: int("items_processed").default(0).notNull(),
 	itemsSuccess: int("items_success").default(0).notNull(),
 	itemsFailed: int("items_failed").default(0).notNull(),

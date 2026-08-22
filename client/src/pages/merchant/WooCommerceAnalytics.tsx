@@ -17,7 +17,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { useTranslation } from 'react-i18next';
 
 export default function WooCommerceAnalytics() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const arabic = i18n.language.startsWith('ar');
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -143,7 +144,9 @@ export default function WooCommerceAnalytics() {
               {t('wooCommerceAnalyticsPage.text47', { var0: (salesStats?.totalRevenue ?? 0).toFixed(2) })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('wooCommerceAnalyticsPage.text48', { var0: salesStats?.totalOrders })}
+              {arabic
+                ? `إيراد الطلبات المكتملة فقط · ${salesStats?.totalOrders ?? 0} طلبًا في الفترة`
+                : `Completed-order revenue only · ${salesStats?.totalOrders ?? 0} orders in range`}
             </p>
           </CardContent>
         </Card>
@@ -170,10 +173,10 @@ export default function WooCommerceAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(conversionRate?.conversionRate ?? 0).toFixed(2)}%
+              —
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('wooCommerceAnalyticsPage.text50', { var0: conversionRate?.totalConversations })}
+              {arabic ? 'لا تتوفر إحالة موثوقة بين المحادثة والطلب' : 'Conversation-to-order attribution is not available'}
             </p>
           </CardContent>
         </Card>
@@ -188,7 +191,9 @@ export default function WooCommerceAnalytics() {
               {customerStats?.totalCustomers}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('wooCommerceAnalyticsPage.text51', { var0: customerStats?.newCustomers, var1: customerStats?.returningCustomers })}
+              {arabic
+                ? `${customerStats?.newCustomers ?? 0} بطلب واحد · ${customerStats?.returningCustomers ?? 0} متكررون في الفترة`
+                : `${customerStats?.newCustomers ?? 0} with one order · ${customerStats?.returningCustomers ?? 0} repeat in range`}
             </p>
           </CardContent>
         </Card>
@@ -209,7 +214,7 @@ export default function WooCommerceAnalytics() {
             <CardHeader>
               <CardTitle>{t('wooCommerceAnalyticsPage.text16')}</CardTitle>
               <CardDescription>
-                {t('wooCommerceAnalyticsPage.text41')}
+                {arabic ? 'إيراد وعدد الطلبات المكتملة حسب التاريخ' : 'Completed-order revenue and count by date'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -284,7 +289,7 @@ export default function WooCommerceAnalytics() {
             <CardHeader>
               <CardTitle>{t('wooCommerceAnalyticsPage.text20')}</CardTitle>
               <CardDescription>
-                {t('wooCommerceAnalyticsPage.text42')}
+                {arabic ? 'المنتجات ضمن الطلبات المكتملة فقط' : 'Products from completed orders only'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -338,12 +343,12 @@ export default function WooCommerceAnalytics() {
               <CardHeader>
                 <CardTitle>{t('wooCommerceAnalyticsPage.text24')}</CardTitle>
                 <CardDescription>
-                  {t('wooCommerceAnalyticsPage.text43')}
+                  {arabic ? 'لا نعرض نسبة تخمينية دون معرّف إحالة يصل المحادثة بالطلب' : 'No estimated rate is shown without an attribution ID joining conversations to orders'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-5xl font-bold text-center text-primary mb-4">
-                  {(conversionRate?.conversionRate ?? 0).toFixed(2)}%
+                  —
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -366,7 +371,7 @@ export default function WooCommerceAnalytics() {
               <CardHeader>
                 <CardTitle>{t('wooCommerceAnalyticsPage.text28')}</CardTitle>
                 <CardDescription>
-                  {t('wooCommerceAnalyticsPage.text44')}
+                  {arabic ? 'نسبة الطلبات المكتملة إلى جميع الطلبات في الفترة' : 'Completed orders divided by all orders in the selected range'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -376,11 +381,11 @@ export default function WooCommerceAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text29')}</span>
-                    <span className="font-medium">{conversionRate?.whatsappOrders}</span>
+                    <span className="font-medium">—</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text30')}</span>
-                    <span className="font-medium">{(conversionRate?.whatsappRevenue ?? 0).toFixed(2)} ر.س</span>
+                    <span className="font-medium">—</span>
                   </div>
                 </div>
               </CardContent>
@@ -389,24 +394,24 @@ export default function WooCommerceAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('wooCommerceAnalyticsPage.text32')}</CardTitle>
+              <CardTitle>{arabic ? 'أعداد مستقلة في الفترة' : 'Independent totals in range'}</CardTitle>
               <CardDescription>
-                {t('wooCommerceAnalyticsPage.text45')}
+                {arabic ? 'هذه الأعداد ليست مسار تحويل ولا تثبت أن المحادثات أنتجت الطلبات' : 'These totals are not a funnel and do not prove that conversations produced orders'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="relative">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
                   <div className="h-16 bg-blue-500 flex items-center justify-center text-white font-bold rounded">
                     {t('wooCommerceAnalyticsPage.text53', { var0: conversionRate?.totalConversations })}
                   </div>
                 </div>
-                <div className="relative mx-8">
+                <div>
                   <div className="h-16 bg-green-500 flex items-center justify-center text-white font-bold rounded">
                     {t('wooCommerceAnalyticsPage.text54', { var0: conversionRate?.totalOrders })}
                   </div>
                 </div>
-                <div className="relative mx-16">
+                <div>
                   <div className="h-16 bg-emerald-600 flex items-center justify-center text-white font-bold rounded">
                     {t('wooCommerceAnalyticsPage.text55', { var0: conversionRate?.completedOrders })}
                   </div>
@@ -432,7 +437,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t('wooCommerceAnalyticsPage.text34')}</CardTitle>
+                <CardTitle>{arabic ? 'عملاء بطلب واحد في الفترة' : 'Customers with one order in range'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center text-blue-600">
@@ -443,7 +448,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t('wooCommerceAnalyticsPage.text35')}</CardTitle>
+                <CardTitle>{arabic ? 'عملاء متكررون في الفترة' : 'Repeat customers in range'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center text-green-600">
@@ -457,7 +462,7 @@ export default function WooCommerceAnalytics() {
             <CardHeader>
               <CardTitle>{t('wooCommerceAnalyticsPage.text36')}</CardTitle>
               <CardDescription>
-                {t('wooCommerceAnalyticsPage.text46')}
+                {arabic ? 'عميل لديه طلبان أو أكثر ضمن الفترة المحددة' : 'Customers with two or more orders inside the selected range'}
               </CardDescription>
             </CardHeader>
             <CardContent>

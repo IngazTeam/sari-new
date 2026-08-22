@@ -229,6 +229,7 @@ import {
   woocommerceSyncLogs,
   woocommerceWebhooks,
   NewWooCommerceSettings,
+  WooCommerceSettings,
   NewWooCommerceProduct,
   NewWooCommerceOrder,
   NewWooCommerceSyncLog,
@@ -352,6 +353,14 @@ function decryptTapSettingsRecord(record: TapSettings | undefined): TapSettings 
 
 function decryptSallaConnection(record: SallaConnection | undefined): SallaConnection | undefined {
   return record ? { ...record, accessToken: decryptSecret(record.accessToken) } : undefined;
+}
+
+function decryptWooCommerceSettings(record: WooCommerceSettings | undefined): WooCommerceSettings | undefined {
+  return record ? {
+    ...record,
+    consumerKey: decryptSecret(record.consumerKey),
+    consumerSecret: decryptSecret(record.consumerSecret),
+  } : undefined;
 }
 
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
@@ -10012,20 +10021,67 @@ export async function getZidIntegrationStats(merchantId: number) {
 
 // WooCommerce Settings
 export async function getWooCommerceSettings(merchantId: number) {
-  return await requireDb().select().from(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId)).limit(1).then(r => r[0] || null);
+  const record = await requireDb().select().from(woocommerceSettings)
+    .where(eq(woocommerceSettings.merchantId, merchantId)).limit(1).then(r => r[0]);
+  return decryptWooCommerceSettings(record) || null;
 }
 
 export async function createWooCommerceSettings(data: NewWooCommerceSettings) {
-  const [result] = await requireDb().insert(woocommerceSettings).values(data);
+  const [result] = await requireDb().insert(woocommerceSettings).values({
+    ...data,
+    consumerKey: encryptSecret(data.consumerKey),
+    consumerSecret: encryptSecret(data.consumerSecret),
+  });
   return (result as any).insertId;
 }
 
 export async function updateWooCommerceSettings(merchantId: number, data: Partial<NewWooCommerceSettings>) {
-  await requireDb().update(woocommerceSettings).set(data).where(eq(woocommerceSettings.merchantId, merchantId));
+  await requireDb().update(woocommerceSettings).set({
+    ...data,
+    ...(data.consumerKey !== undefined && { consumerKey: encryptSecret(data.consumerKey) }),
+    ...(data.consumerSecret !== undefined && { consumerSecret: encryptSecret(data.consumerSecret) }),
+  }).where(eq(woocommerceSettings.merchantId, merchantId));
+}
+
+export async function saveVerifiedWooCommerceSettings(data: NewWooCommerceSettings): Promise<void> {
+  await requireDb().transaction(async tx => {
+    const current = await tx.select({ id: woocommerceSettings.id, storeUrl: woocommerceSettings.storeUrl })
+      .from(woocommerceSettings)
+      .where(eq(woocommerceSettings.merchantId, data.merchantId))
+      .limit(1)
+      .for('update');
+    if (current[0] && current[0].storeUrl !== data.storeUrl) {
+      await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, data.merchantId));
+      await tx.delete(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, data.merchantId));
+      await tx.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, data.merchantId));
+      await tx.delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, data.merchantId));
+    }
+    const protectedData = {
+      ...data,
+      consumerKey: encryptSecret(data.consumerKey),
+      consumerSecret: encryptSecret(data.consumerSecret),
+    };
+    if (current[0]) {
+      await tx.update(woocommerceSettings).set(protectedData)
+        .where(and(eq(woocommerceSettings.id, current[0].id), eq(woocommerceSettings.merchantId, data.merchantId)));
+    } else {
+      await tx.insert(woocommerceSettings).values(protectedData);
+    }
+  });
 }
 
 export async function deleteWooCommerceSettings(merchantId: number) {
   await requireDb().delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
+}
+
+export async function deleteWooCommerceIntegration(merchantId: number): Promise<void> {
+  await requireDb().transaction(async tx => {
+    await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId));
+    await tx.delete(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, merchantId));
+    await tx.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
+    await tx.delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
+    await tx.delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
+  });
 }
 
 export async function updateWooCommerceConnectionStatus(merchantId: number, status: 'connected' | 'disconnected' | 'error', storeInfo?: { version?: string; name?: string; currency?: string }) {
@@ -10067,6 +10123,38 @@ export async function createWooCommerceProduct(data: NewWooCommerceProduct) {
   return (result as any).insertId;
 }
 
+export async function upsertWooCommerceProductsSnapshot(
+  merchantId: number,
+  rows: NewWooCommerceProduct[],
+  reconcileMissing = true,
+): Promise<void> {
+  await requireDb().transaction(async tx => {
+    for (const row of rows) {
+      if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
+      await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
+        set: { wooProductId: sql`${woocommerceProducts.wooProductId}` },
+      });
+      await tx.update(woocommerceProducts).set(row).where(and(
+        eq(woocommerceProducts.merchantId, merchantId),
+        eq(woocommerceProducts.wooProductId, row.wooProductId),
+        or(
+          isNull(woocommerceProducts.providerUpdatedAt),
+          lte(woocommerceProducts.providerUpdatedAt, row.providerUpdatedAt),
+        ),
+      ));
+    }
+    if (reconcileMissing) {
+      const filter = rows.length > 0
+        ? and(
+            eq(woocommerceProducts.merchantId, merchantId),
+            notInArray(woocommerceProducts.wooProductId, rows.map(row => row.wooProductId)),
+          )
+        : eq(woocommerceProducts.merchantId, merchantId);
+      await tx.delete(woocommerceProducts).where(filter);
+    }
+  });
+}
+
 export async function updateWooCommerceProduct(id: number, data: Partial<NewWooCommerceProduct>) {
   await requireDb().update(woocommerceProducts).set(data).where(eq(woocommerceProducts.id, id));
 }
@@ -10092,7 +10180,7 @@ export async function searchWooCommerceProducts(merchantId: number, searchTerm: 
 }
 
 export async function getWooCommerceProductsStats(merchantId: number) {
-  const allProducts = await db!.select().from(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
+  const allProducts = await requireDb().select().from(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
 
   return {
     total: allProducts.length,
@@ -10111,6 +10199,13 @@ export async function getWooCommerceOrderById(id: number) {
   return await requireDb().select().from(woocommerceOrders).where(eq(woocommerceOrders.id, id)).limit(1).then(r => r[0] || null);
 }
 
+export async function getWooCommerceOrderByIdForMerchant(merchantId: number, id: number) {
+  return await requireDb().select().from(woocommerceOrders).where(and(
+    eq(woocommerceOrders.id, id),
+    eq(woocommerceOrders.merchantId, merchantId),
+  )).limit(1).then(r => r[0] || null);
+}
+
 export async function getWooCommerceOrderByWooId(merchantId: number, wooOrderId: number) {
   return await requireDb().select().from(woocommerceOrders)
     .where(and(
@@ -10126,6 +10221,38 @@ export async function createWooCommerceOrder(data: NewWooCommerceOrder) {
   return (result as any).insertId;
 }
 
+export async function upsertWooCommerceOrdersSnapshot(
+  merchantId: number,
+  rows: NewWooCommerceOrder[],
+  reconcileMissing = true,
+): Promise<void> {
+  await requireDb().transaction(async tx => {
+    for (const row of rows) {
+      if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
+      await tx.insert(woocommerceOrders).values(row).onDuplicateKeyUpdate({
+        set: { wooOrderId: sql`${woocommerceOrders.wooOrderId}` },
+      });
+      await tx.update(woocommerceOrders).set(row).where(and(
+        eq(woocommerceOrders.merchantId, merchantId),
+        eq(woocommerceOrders.wooOrderId, row.wooOrderId),
+        or(
+          isNull(woocommerceOrders.providerUpdatedAt),
+          lte(woocommerceOrders.providerUpdatedAt, row.providerUpdatedAt),
+        ),
+      ));
+    }
+    if (reconcileMissing) {
+      const filter = rows.length > 0
+        ? and(
+            eq(woocommerceOrders.merchantId, merchantId),
+            notInArray(woocommerceOrders.wooOrderId, rows.map(row => row.wooOrderId)),
+          )
+        : eq(woocommerceOrders.merchantId, merchantId);
+      await tx.delete(woocommerceOrders).where(filter);
+    }
+  });
+}
+
 export async function updateWooCommerceOrder(id: number, data: Partial<NewWooCommerceOrder>) {
   await requireDb().update(woocommerceOrders).set(data).where(eq(woocommerceOrders.id, id));
 }
@@ -10138,31 +10265,33 @@ export async function deleteWooCommerceOrdersByMerchant(merchantId: number) {
   await requireDb().delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
 }
 
-export async function getWooCommerceOrdersByStatus(merchantId: number, status: string, limit: number = 50) {
+export async function getWooCommerceOrdersByStatus(merchantId: number, status: string, limit: number = 50, offset: number = 0) {
   return await requireDb().select().from(woocommerceOrders)
     .where(and(
       eq(woocommerceOrders.merchantId, merchantId),
       eq(woocommerceOrders.status, status)
     ))
     .orderBy(desc(woocommerceOrders.orderDate))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getWooCommerceOrdersStats(merchantId: number) {
-  const allOrders = await db!.select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
+  const allOrders = await requireDb().select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
 
   const statusCounts: Record<string, number> = {};
   let totalRevenue = 0;
 
   allOrders.forEach(order => {
     statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
-    totalRevenue += parseFloat(order.total.toString());
+    if (order.status === 'completed') totalRevenue += Number(order.total || 0);
   });
 
   return {
     total: allOrders.length,
     statusCounts,
     totalRevenue: totalRevenue.toFixed(2),
+    revenueDefinition: 'completed_orders' as const,
   };
 }
 
@@ -11840,12 +11969,7 @@ export async function getWhatsAppConnectionByMerchantId(merchantId: number): Pro
  * Used by: woocommerce_router.ts analytics endpoints
  */
 export async function getWooCommerceOrdersByMerchant(merchantId: number): Promise<any[]> {
-  try {
-    return await getWooCommerceOrders(merchantId, 10000, 0);
-  } catch (error) {
-    console.error('[DB] Error getting WooCommerce orders by merchant:', error);
-    return [];
-  }
+  return getWooCommerceOrders(merchantId, 2_000, 0);
 }
 
 /**
