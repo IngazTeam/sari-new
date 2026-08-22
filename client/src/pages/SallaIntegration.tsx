@@ -34,11 +34,9 @@ export default function SallaIntegration() {
     }
   };
 
-  // Get merchant ID from localStorage or context
-  const merchantId = parseInt(localStorage.getItem('merchantId') || '0');
-
   // Get connection status
   const { data: connection, isLoading, refetch } = trpc.salla.getConnection.useQuery();
+  const webhookHealth = connection?.webhookHealth;
 
   // Get sync logs
   const { data: syncLogs } = trpc.salla.getSyncLogs.useQuery(
@@ -172,6 +170,23 @@ export default function SallaIntegration() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {webhookHealth && webhookHealth.manualReview > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  توجد {webhookHealth.manualReview} أحداث من سلة تحتاج مراجعة تشغيلية.
+                  تواصل مع الدعم قبل إعادة أي حدث يدويًا لتجنب تكرار الطلب أو الإشعار.
+                </AlertDescription>
+              </Alert>
+            )}
+            {webhookHealth && webhookHealth.awaiting > 0 && webhookHealth.manualReview === 0 && (
+              <Alert>
+                <RefreshCw className="h-4 w-4" />
+                <AlertDescription>
+                  توجد {webhookHealth.awaiting} أحداث قيد المعالجة أو إعادة المحاولة تلقائيًا.
+                </AlertDescription>
+              </Alert>
+            )}
             {connection.lastSyncAt && (
               <div className="text-sm text-muted-foreground">
                 آخر مزامنة: {new Date(connection.lastSyncAt).toLocaleString('ar-SA')}

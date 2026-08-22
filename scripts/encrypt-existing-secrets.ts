@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import {
   merchantPaymentSettings,
   platformIntegrations,
+  sallaConnections,
   tapSettings,
   zidSettings,
   whatsappConnections,
@@ -131,6 +132,19 @@ async function main() {
     }
     if (Object.keys(changes).length > 0) {
       await db.update(zidSettings).set(changes).where(eq(zidSettings.id, row.id));
+      updated++;
+    }
+  }
+
+  const legacySallaRows = await db.select({
+    id: sallaConnections.id,
+    accessToken: sallaConnections.accessToken,
+  }).from(sallaConnections);
+  for (const row of legacySallaRows) {
+    if (!isEncryptedSecret(row.accessToken)) {
+      await db.update(sallaConnections)
+        .set({ accessToken: encryptSecret(row.accessToken) })
+        .where(eq(sallaConnections.id, row.id));
       updated++;
     }
   }

@@ -2663,11 +2663,15 @@ export const appRouter = router({
           return { connected: false };
         }
 
+        const { getSallaWebhookReceiptHealth } = await import('./integrations/salla-webhook-receipts');
+        const webhookHealth = await getSallaWebhookReceiptHealth(merchant.id);
+
         return {
           connected: true,
           storeUrl: connection.storeUrl,
           syncStatus: connection.syncStatus,
           lastSyncAt: connection.lastSyncAt,
+          webhookHealth,
         };
       }),
 
@@ -2698,7 +2702,7 @@ export const appRouter = router({
         const salla = new SallaIntegration(merchant.id, input.accessToken);
         const testResult = await salla.testConnection();
 
-        if (!testResult.success) {
+        if (!testResult.success || !testResult.storeInfo) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'فشل الاتصال بـ Salla. تأكد من صحة الرابط والـ Token'
@@ -2708,21 +2712,32 @@ export const appRouter = router({
         // Check if connection already exists
         const existing = await getSallaConnectionByMerchantId(merchant.id);
 
-        if (existing) {
-          // Update existing connection
-          await updateSallaConnection(merchant.id, {
-            storeUrl: input.storeUrl,
-            accessToken: input.accessToken,
-            syncStatus: 'active',
-          });
-        } else {
-          // Create new connection
-          await createSallaConnection({
-            merchantId: merchant.id,
-            storeUrl: input.storeUrl,
-            accessToken: input.accessToken,
-            syncStatus: 'active',
-          });
+        try {
+          if (existing) {
+            // The token-authorized Salla response is the identity authority.
+            await updateSallaConnection(merchant.id, {
+              sallaStoreId: testResult.storeInfo.id,
+              storeUrl: testResult.storeInfo.domain,
+              accessToken: input.accessToken,
+              syncStatus: 'active',
+            });
+          } else {
+            await createSallaConnection({
+              merchantId: merchant.id,
+              sallaStoreId: testResult.storeInfo.id,
+              storeUrl: testResult.storeInfo.domain,
+              accessToken: input.accessToken,
+              syncStatus: 'active',
+            });
+          }
+        } catch (error: any) {
+          if (error?.code === 'ER_DUP_ENTRY') {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'متجر سلة هذا مرتبط بحساب تاجر آخر',
+            });
+          }
+          throw error;
         }
 
         // Start initial sync in background

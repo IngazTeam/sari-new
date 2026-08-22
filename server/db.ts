@@ -348,6 +348,10 @@ function decryptTapSettingsRecord(record: TapSettings | undefined): TapSettings 
   } : undefined;
 }
 
+function decryptSallaConnection(record: SallaConnection | undefined): SallaConnection | undefined {
+  return record ? { ...record, accessToken: decryptSecret(record.accessToken) } : undefined;
+}
+
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
 // Sized for 2000+ merchants with concurrent access
 type SariDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -2100,7 +2104,10 @@ export async function createSallaConnection(connection: InsertSallaConnection): 
   const db = await getDb();
   if (!db) return undefined;
 
-  await db.insert(sallaConnections).values(connection);
+  await db.insert(sallaConnections).values({
+    ...connection,
+    accessToken: encryptSecret(connection.accessToken),
+  });
   return getSallaConnectionByMerchantId(connection.merchantId);
 }
 
@@ -2109,7 +2116,18 @@ export async function getSallaConnectionByMerchantId(merchantId: number): Promis
   if (!db) return undefined;
 
   const result = await db.select().from(sallaConnections).where(eq(sallaConnections.merchantId, merchantId)).limit(1);
-  return result[0];
+  return decryptSallaConnection(result[0]);
+}
+
+export async function getActiveSallaConnectionByStoreId(storeId: string): Promise<SallaConnection | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(sallaConnections).where(and(
+    eq(sallaConnections.sallaStoreId, storeId),
+    eq(sallaConnections.syncStatus, 'active'),
+  )).limit(1);
+  return decryptSallaConnection(result[0]);
 }
 
 export async function updateSallaConnection(merchantId: number, data: Partial<InsertSallaConnection>): Promise<void> {
@@ -2118,6 +2136,7 @@ export async function updateSallaConnection(merchantId: number, data: Partial<In
 
   await db.update(sallaConnections).set({
     ...data,
+    ...(data.accessToken !== undefined && { accessToken: encryptSecret(data.accessToken) }),
     updatedAt: formatDateForDB(new Date())
   }).where(eq(sallaConnections.merchantId, merchantId));
 }
@@ -2133,7 +2152,8 @@ export async function getAllSallaConnections(): Promise<SallaConnection[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(sallaConnections).where(eq(sallaConnections.syncStatus, 'active'));
+  const records = await db.select().from(sallaConnections).where(eq(sallaConnections.syncStatus, 'active'));
+  return records.map(record => decryptSallaConnection(record)!);
 }
 
 // ============================================

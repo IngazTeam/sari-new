@@ -39,6 +39,7 @@ import { logError } from "./logger";
 import { installProductionConsoleRedaction } from "../security/log-redaction";
 import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
+import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-receipts";
 import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -632,6 +633,9 @@ async function startServer() {
 
       // Opt-in, PII-minimized merchant alerts for newly accepted Zid orders.
       startZidOrderNotificationWorker();
+
+      // Durable Salla webhook effects with leases, retry and persistent replay protection.
+      startSallaWebhookReceiptWorker();
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();

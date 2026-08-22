@@ -622,6 +622,7 @@ export const rewards = mysqlTable("rewards", {
 export const sallaConnections = mysqlTable("salla_connections", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	sallaStoreId: varchar("salla_store_id", { length: 32 }),
 	storeUrl: varchar({ length: 255 }).notNull(),
 	accessToken: text().notNull(),
 	syncStatus: mysqlEnum(['active', 'syncing', 'error', 'paused']).default('active').notNull(),
@@ -631,8 +632,35 @@ export const sallaConnections = mysqlTable("salla_connections", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
-		index("salla_connections_merchantId_unique").on(table.merchantId),
+		uniqueIndex("salla_connections_merchantId_unique").on(table.merchantId),
+		uniqueIndex("salla_connections_store_id_unique").on(table.sallaStoreId),
 	]);
+
+export const sallaWebhookReceipts = mysqlTable("salla_webhook_receipts", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	sallaStoreId: varchar("salla_store_id", { length: 32 }).notNull(),
+	eventKey: varchar("event_key", { length: 64 }).notNull(),
+	eventType: varchar("event_type", { length: 64 }).notNull(),
+	resourceId: varchar("resource_id", { length: 32 }).notNull(),
+	status: mysqlEnum(['pending', 'processing', 'completed', 'failed', 'manual_review']).default('pending').notNull(),
+	attemptCount: int("attempt_count").default(0).notNull(),
+	effectApplied: tinyint("effect_applied").default(0).notNull(),
+	notificationRequired: tinyint("notification_required").default(0).notNull(),
+	notificationStatus: varchar("notification_status", { length: 16 }),
+	processingToken: varchar("processing_token", { length: 64 }),
+	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	processedAt: timestamp("processed_at", { mode: 'string', fsp: 3 }),
+	lastError: varchar("last_error", { length: 100 }),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("salla_webhook_receipts_event_unique").on(table.eventKey),
+	index("salla_webhook_receipts_dispatch_idx").on(table.status, table.availableAt, table.id),
+	index("salla_webhook_receipts_merchant_idx").on(table.merchantId, table.createdAt),
+	index("salla_webhook_receipts_store_idx").on(table.sallaStoreId),
+]);
 
 export const sariPersonalitySettings = mysqlTable("sari_personality_settings", {
 	id: int().autoincrement().primaryKey(),
@@ -1739,6 +1767,8 @@ export type Invoice = InferSelectModel<typeof invoices>;
 export type InsertInvoice = InferInsertModel<typeof invoices>;
 export type SallaConnection = InferSelectModel<typeof sallaConnections>;
 export type InsertSallaConnection = InferInsertModel<typeof sallaConnections>;
+export type SallaWebhookReceipt = InferSelectModel<typeof sallaWebhookReceipts>;
+export type InsertSallaWebhookReceipt = InferInsertModel<typeof sallaWebhookReceipts>;
 export type SyncLog = InferSelectModel<typeof syncLogs>;
 export type InsertSyncLog = InferInsertModel<typeof syncLogs>;
 export type Order = InferSelectModel<typeof orders>;

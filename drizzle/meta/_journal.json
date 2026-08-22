@@ -267,6 +267,13 @@
       "when": 1787527200000,
       "tag": "0037_atomic_order_payment_effects",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1787612400000,
+      "tag": "0038_salla_webhook_ingress",
+      "breakpoints": true
     }
   ]
 }

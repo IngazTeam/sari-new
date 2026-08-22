@@ -12,6 +12,33 @@ import {
 } from '../db';
 
 const SALLA_API_BASE = 'https://api.salla.dev/admin/v2';
+const sallaHttp = axios.create({
+  timeout: 10_000,
+  maxContentLength: 2 * 1024 * 1024,
+  maxBodyLength: 2 * 1024 * 1024,
+});
+
+export type SallaStoreIdentity = {
+  id: string;
+  domain: string;
+};
+
+export function normalizeSallaStoreIdentity(value: unknown): SallaStoreIdentity | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  const rawId = typeof candidate.id === 'number' && Number.isSafeInteger(candidate.id)
+    ? String(candidate.id)
+    : typeof candidate.id === 'string' ? candidate.id.trim() : '';
+  if (!/^[1-9][0-9]{0,19}$/.test(rawId)) return null;
+  if (typeof candidate.domain !== 'string') return null;
+  try {
+    const url = new URL(candidate.domain.trim());
+    if (url.protocol !== 'https:' || !url.hostname || url.username || url.password || url.port) return null;
+    return { id: rawId, domain: `https://${url.hostname.toLowerCase()}` };
+  } catch {
+    return null;
+  }
+}
 
 interface SallaProduct {
   id: string;
@@ -67,7 +94,7 @@ export class SallaIntegration {
 
       while (hasMore) {
         try {
-          const response = await axios.get(`${SALLA_API_BASE}/products`, {
+          const response = await sallaHttp.get(`${SALLA_API_BASE}/products`, {
             headers: {
               'Authorization': `Bearer ${this.accessToken}`,
               'Accept': 'application/json'
@@ -151,7 +178,7 @@ export class SallaIntegration {
 
       for (const product of localProducts) {
         try {
-          const response = await axios.get(
+          const response = await sallaHttp.get(
             `${SALLA_API_BASE}/products/${product.sallaProductId}`,
             {
               headers: { 
@@ -242,7 +269,7 @@ export class SallaIntegration {
     console.log(`[Salla] Creating order for merchant ${this.merchantId}`);
     
     try {
-      const response = await axios.post(
+      const response = await sallaHttp.post(
         `${SALLA_API_BASE}/orders`,
         {
           customer: {
@@ -318,7 +345,7 @@ export class SallaIntegration {
     try {
       const logId = await createSyncLog(this.merchantId, 'single_product', 'in_progress');
       
-      const response = await axios.get(
+      const response = await sallaHttp.get(
         `${SALLA_API_BASE}/products/${sallaProductId}`,
         {
           headers: { 
@@ -347,7 +374,7 @@ export class SallaIntegration {
     trackingUrl?: string;
   }> {
     try {
-      const response = await axios.get(
+      const response = await sallaHttp.get(
         `${SALLA_API_BASE}/orders/${sallaOrderId}`,
         {
           headers: {
@@ -360,7 +387,7 @@ export class SallaIntegration {
       const order = response.data.data;
 
       return {
-        status: order.status.name,
+        status: String(order.status?.slug || ''),
         trackingNumber: order.shipping?.tracking_number,
         trackingUrl: order.shipping?.tracking_url
       };
@@ -373,19 +400,17 @@ export class SallaIntegration {
   /**
    * اختبار الاتصال بـ Salla
    */
-  async testConnection(): Promise<{ success: boolean; storeInfo?: any }> {
+  async testConnection(): Promise<{ success: boolean; storeInfo?: SallaStoreIdentity }> {
     try {
-      const response = await axios.get(`${SALLA_API_BASE}/store/info`, {
+      const response = await sallaHttp.get(`${SALLA_API_BASE}/store/info`, {
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
           'Accept': 'application/json'
         }
       });
 
-      return {
-        success: true,
-        storeInfo: response.data.data
-      };
+      const storeInfo = normalizeSallaStoreIdentity(response.data.data);
+      return storeInfo ? { success: true, storeInfo } : { success: false };
     } catch (error: any) {
       console.error('[Salla] Connection test failed:', error.response?.data || error.message);
       return { success: false };

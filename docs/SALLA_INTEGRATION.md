@@ -21,13 +21,21 @@
 ```sql
 - id: معرف فريد
 - merchantId: معرف التاجر (unique)
+- salla_store_id: هوية المتجر التي يعيدها Salla بعد التحقق من الرمز (unique)
 - storeUrl: رابط المتجر (https://mystore.salla.sa)
-- accessToken: Personal Access Token من Salla
+- accessToken: رمز Salla مشفر AES-256-GCM في التخزين
 - syncStatus: حالة المزامنة (active, syncing, error, paused)
 - lastSyncAt: آخر وقت مزامنة
 - syncErrors: أخطاء المزامنة (JSON)
 - createdAt, updatedAt
 ```
+
+#### جدول `salla_webhook_receipts`
+
+دفتر إدخال دائم ومصغر للـwebhooks. يحفظ هوية المتجر والحدث ومعرف المورد
+وحالة المحاولة فقط؛ لا يحفظ body الخام أو بيانات العميل. مفتاح SHA-256 فريد
+يمنع replay، وعامل primary واحد يعالج الصفوف بقفل `SKIP LOCKED` وlease وbackoff
+ومراجعة يدوية للنتائج الملتبسة.
 
 #### جدول `sync_logs`
 يسجل جميع عمليات المزامنة.
@@ -151,29 +159,29 @@ updateOrderBySallaId(merchantId, sallaOrderId, data): Promise<void>
 
 #### `salla.getConnection`
 - الحصول على حالة الربط
-- Input: `{ merchantId }`
+- Input: لا يوجد؛ هوية التاجر مشتقة من الجلسة
 - Output: `{ connected, storeUrl?, syncStatus?, lastSyncAt? }`
 
 #### `salla.connect`
 - ربط متجر Salla
-- Input: `{ merchantId, storeUrl, accessToken }`
+- Input: `{ storeUrl, accessToken }`؛ `storeUrl` المدخل ليس سلطة هوية
 - Output: `{ success, message }`
-- يختبر الاتصال أولاً قبل الحفظ
+- يختبر الاتصال أولاً، ثم يحفظ `store.id` و`domain` من استجابة Salla المصرح بها
 - يبدأ مزامنة كاملة في الخلفية
 
 #### `salla.disconnect`
 - فصل المتجر
-- Input: `{ merchantId }`
+- Input: لا يوجد؛ هوية التاجر مشتقة من الجلسة
 - Output: `{ success, message }`
 
 #### `salla.syncNow`
 - مزامنة يدوية
-- Input: `{ merchantId, syncType: 'full' | 'stock' }`
+- Input: `{ syncType: 'full' | 'stock' }`
 - Output: `{ success, message }`
 
 #### `salla.getSyncLogs`
 - الحصول على سجل المزامنة
-- Input: `{ merchantId }`
+- Input: لا يوجد
 - Output: `SyncLog[]` (آخر 20 عملية)
 
 ---
@@ -213,6 +221,17 @@ Function: startHourlyStockSync()
 POST /api/webhooks/salla
 ```
 
+#### حدود الثقة والمعالجة
+
+1. يرفض المسار إذا غاب `SALLA_WEBHOOK_SECRET` أو البايتات الخام.
+2. يشترط `X-Salla-Security-Strategy: Signature` ويفحص HMAC-SHA256 على البايتات الأصلية بمقارنة ثابتة الزمن.
+3. يقبل فقط الأحداث الأربعة المعروفة وهوية متجر/مورد رقمية canonical.
+4. يربط المستأجر بمطابقة `salla_store_id` الدقيقة فقط؛ لا يبحث بالنطاق ولا يعدد الاتصالات.
+5. يكتب receipt فريدًا قبل `202`، ثم ينفذ العامل الأثر خارج دورة طلب HTTP.
+6. يجلب العامل النسخة الحالية من المورد من Salla؛ تحديثات الطلب لا تعتمد الاسم المترجم للحالة ولا ترجع الحالة للخلف.
+7. إشعارات حالة الطلب تستخدم دفتر WhatsApp canonical ومفتاح idempotency؛ النتيجة الملتبسة تنتقل للمراجعة اليدوية ولا تعاد عميانيًا.
+8. تعرض صفحة الربط أعداد الأحداث قيد المعالجة وحالات `manual_review` الخاصة بالتاجر فقط، بلا معرفات أحداث أو بيانات عملاء.
+
 #### الأحداث المدعومة
 
 ##### `product.updated`
@@ -230,8 +249,19 @@ POST /api/webhooks/salla
 
 ##### `order.updated`
 - يحدث: عند تحديث حالة طلب
-- الإجراء: تحديث حالة الطلب في قاعدة بياناتنا
-- TODO: إرسال إشعار واتساب للعميل عند الشحن
+- الإجراء: جلب الحالة canonical عبر API، تطبيق انتقال tenant-scoped غير قابل للتراجع، ثم إشعار idempotent عند الحاجة
+
+### بوابة نشر migration `0038`
+
+يجب تنفيذها بالترتيب التالي على staging ثم الإنتاج:
+
+1. شغّل `pnpm preflight:salla-webhook-identity` لعرض duplicate/plaintext/missing counts؛ أصلح أي duplicate قبل الترحيل.
+2. طبّق `pnpm db:migrate` لإضافة هوية المتجر والقيود وجدول receipts.
+3. شغّل `pnpm security:encrypt-secrets` مع `FIELD_ENCRYPTION_KEY` الصحيح.
+4. شغّل `pnpm backfill:salla-store-identity:dry-run` ثم `pnpm backfill:salla-store-identity`؛ لا يطبع أي token أو هوية متجر.
+5. أعد preflight ويجب أن تكون الهوية موجودة وكل العدادات صفرًا قبل تشغيل الإصدار.
+6. اختبر توقيعًا صحيحًا وخاطئًا، replay، توقف العامل واستئنافه، وتغيير ربط متجر أثناء receipt معلق.
+7. راقب `failed/manual_review` و5xx لمدة 24 ساعة؛ لا تحذف receipts ولا تعيد الإرسال اليدوي العشوائي.
 
 ---
 
