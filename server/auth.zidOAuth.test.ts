@@ -94,7 +94,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
     })).rejects.toMatchObject({ code: 'invalid_state' });
   });
 
-  it('replaces prior attempts and rejects expired and cross-tenant states', async () => {
+  it('rate-limits immediate restarts, then replaces prior attempts after the cooldown', async () => {
     const owner = await createMerchant();
     const other = await createMerchant();
     const sessionId = randomUUID();
@@ -103,6 +103,17 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
       userId: owner.user.id,
       sessionId,
     })).authorizationUrl);
+    await expect(beginZidOAuth({
+      merchantId: owner.merchantId,
+      userId: owner.user.id,
+      sessionId,
+    })).rejects.toMatchObject({ code: 'rate_limited' });
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+    await pool.execute(
+      'UPDATE zid_oauth_states SET created_at = DATE_SUB(NOW(), INTERVAL 11 SECOND) WHERE merchant_id = ?',
+      [owner.merchantId],
+    );
     const secondState = stateFrom((await beginZidOAuth({
       merchantId: owner.merchantId,
       userId: owner.user.id,
@@ -122,8 +133,6 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
       state: secondState,
     })).rejects.toMatchObject({ code: 'invalid_state' });
 
-    const pool = await getPool();
-    if (!pool) throw new Error('Database not initialized');
     await pool.execute(
       'UPDATE zid_oauth_states SET expires_at = DATE_SUB(NOW(), INTERVAL 1 SECOND) WHERE state_hash = ?',
       [privacyHashExact(`zid-oauth-state:${secondState}`)],
@@ -134,6 +143,21 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
       sessionId,
       state: secondState,
     })).rejects.toMatchObject({ code: 'invalid_state' });
+  });
+
+  it('allows exactly one winner when multiple servers start OAuth concurrently', async () => {
+    const account = await createMerchant();
+    const sessionId = randomUUID();
+    const attempts = await Promise.allSettled(Array.from({ length: 6 }, () => beginZidOAuth({
+      merchantId: account.merchantId,
+      userId: account.user.id,
+      sessionId,
+    })));
+    expect(attempts.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    expect(attempts.filter(result => result.status === 'rejected')).toHaveLength(5);
+    for (const result of attempts) {
+      if (result.status === 'rejected') expect(result.reason).toMatchObject({ code: 'rate_limited' });
+    }
   });
 
   it('allows exactly one winner under concurrent callback replay', async () => {

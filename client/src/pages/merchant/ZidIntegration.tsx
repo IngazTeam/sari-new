@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,9 +27,6 @@ import { useTranslation } from 'react-i18next';
 
 export default function ZidIntegration() {
   const { t } = useTranslation();
-  const [storeUrl, setStoreUrl] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [autoSync, setAutoSync] = useState(true);
   const [syncProducts, setSyncProducts] = useState(true);
   const [syncOrders, setSyncOrders] = useState(true);
@@ -61,22 +57,14 @@ export default function ZidIntegration() {
   );
 
   // Mutations
-  const connectMutation = trpc.zid.connect.useMutation({
-    onSuccess: (data: any) => {
-      toast.success(t('zidIntegrationPage.text44'), {
-        description: data.message,
-      });
-      setStoreUrl('');
-      setAccessToken('');
-      refetch();
+  const beginOAuthMutation = trpc.zid.beginOAuth.useMutation({
+    onSuccess: ({ authorizationUrl }) => {
+      window.location.assign(authorizationUrl);
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error(t('zidIntegrationPage.text45'), {
-        description: error.message,
+        description: 'تعذر بدء الربط الآمن. انتظر قليلًا ثم حاول مرة أخرى.',
       });
-    },
-    onSettled: () => {
-      setIsConnecting(false);
     },
   });
 
@@ -131,21 +119,6 @@ export default function ZidIntegration() {
       toast.error('تعذر إنشاء بيانات Webhook', { description: error.message });
     },
   });
-
-  const handleConnect = () => {
-    if (!storeUrl || !accessToken) {
-      toast.error(t('zidIntegrationPage.text51'), {
-        description: t('zidIntegrationPage.text43'),
-      });
-      return;
-    }
-
-    setIsConnecting(true);
-    connectMutation.mutate({
-      storeUrl,
-      accessToken,
-    });
-  };
 
   const handleDisconnect = () => {
     if (confirm(t('zidIntegrationPage.text52'))) {
@@ -468,49 +441,29 @@ export default function ZidIntegration() {
           </TabsContent>
         </Tabs>
       ) : (
-        /* Connection Form */
+        /* Server-owned OAuth connection */
         <Card>
           <CardHeader>
             <CardTitle>{t('zidIntegrationPage.text24')}</CardTitle>
             <CardDescription>
-              {t('zidIntegrationPage.text40')}
+              اربط متجرك من صفحة زد الرسمية دون نسخ أو حفظ رموز الوصول في المتصفح.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{t('zidIntegration.auto_0')}</AlertDescription>
+              <AlertDescription>
+                سيُنقلك ساري إلى زد للموافقة، ثم يعيدك تلقائيًا بعد اكتمال الربط الآمن.
+              </AlertDescription>
             </Alert>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="storeUrl">{t('zidIntegrationPage.text25')}</Label>
-                <Input
-                  id="storeUrl"
-                  placeholder="https://your-store.zid.store"
-                  value={storeUrl}
-                  onChange={(e) => setStoreUrl(e.target.value)}
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accessToken">Access Token</Label>
-                <Input
-                  id="accessToken"
-                  type="password"
-                  placeholder={t('zidIntegrationPage.text26')}
-                  value={accessToken}
-                  onChange={(e) => setAccessToken(e.target.value)}
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
             <div className="flex gap-3">
-              <Button onClick={handleConnect} disabled={isConnecting}>
-                {isConnecting && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                {t('zidIntegrationPage.text41')}
+              <Button
+                onClick={() => beginOAuthMutation.mutate()}
+                disabled={beginOAuthMutation.isPending}
+              >
+                {beginOAuthMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+                الربط الآمن مع زد
               </Button>
               <Button variant="outline" asChild>
                 <a href="https://web.zid.sa/market/app-store" target="_blank" rel="noopener noreferrer">

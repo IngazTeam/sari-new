@@ -93,60 +93,6 @@ export const zidRouter = router({
       };
     }),
 
-  // Connect to Zid store
-  connect: protectedProcedure
-    .input(z.object({
-      storeUrl: z.string().url().refine(value => new URL(value).protocol === 'https:', 'HTTPS is required'),
-      accessToken: z.string().min(16).max(16_384),
-      managerToken: z.string().min(16).max(16_384).optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      try {
-        // Verify the access token by fetching store manager profile
-        // Zid v1 API: GET /managers/account/profile
-        const profileResponse = await zidApiRequest(
-          '/managers/account/profile',
-          input.accessToken,
-          input.managerToken || input.accessToken
-        );
-
-        // Extract store name from profile response
-        const storeName = profileResponse?.user?.store?.name
-          || profileResponse?.store?.name
-          || profileResponse?.name
-          || 'متجر زد';
-
-        // Save integration — store both tokens
-        await createIntegration({
-          merchantId: merchant.id,
-          type: 'zid',
-          storeName,
-          storeUrl: input.storeUrl,
-          accessToken: input.accessToken,
-          isActive: true,
-          settings: JSON.stringify({
-            autoSync: true,
-            syncProducts: true,
-            syncOrders: true,
-            syncCustomers: true,
-            managerToken: encryptSecret(input.managerToken || input.accessToken),
-          }),
-        });
-        await deleteLegacyZidSettings(merchant.id).catch(() => {
-          console.warn('[Zid] Legacy credential cleanup pending');
-        });
-
-        return { success: true, message: 'تم ربط متجر زد بنجاح' };
-      } catch {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'فشل الاتصال بمتجر زد',
-        });
-      }
-    }),
-
   beginOAuth: protectedProcedure
     .mutation(async ({ ctx }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
@@ -161,6 +107,9 @@ export const zidRouter = router({
       } catch (error) {
         if (error instanceof ZidOAuthError && error.code === 'configuration') {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تكامل زد غير مهيأ على الخادم' });
+        }
+        if (error instanceof ZidOAuthError && error.code === 'rate_limited') {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'انتظر قليلًا قبل إعادة محاولة الربط' });
         }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر بدء ربط زد' });
       }

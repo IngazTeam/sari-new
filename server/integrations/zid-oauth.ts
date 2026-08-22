@@ -8,14 +8,22 @@ import { buildPublicUrl } from '../utils/public-url';
 const ZID_AUTHORIZE_URL = 'https://oauth.zid.sa/oauth/authorize';
 const ZID_TOKEN_URL = 'https://oauth.zid.sa/oauth/token';
 const OAUTH_STATE_TTL_MS = 10 * 60_000;
+const OAUTH_BEGIN_COOLDOWN_SECONDS = 10;
 const OAUTH_STATE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 type OAuthStateRow = RowDataPacket & { id: number };
 
 export class ZidOAuthError extends Error {
-  constructor(public readonly code: 'configuration' | 'invalid_state' | 'token_exchange') {
+  constructor(public readonly code: 'configuration' | 'invalid_state' | 'rate_limited' | 'token_exchange') {
     super(code);
   }
+}
+
+function isDuplicateKey(error: unknown): boolean {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && String((error as { code?: unknown }).code) === 'ER_DUP_ENTRY';
 }
 
 function oauthConfig(): { clientId: string; clientSecret: string; redirectUri: string } {
@@ -47,22 +55,36 @@ export async function beginZidOAuth(input: {
 
   const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-    // Keep only one authorization attempt per owner. This bounds storage and
-    // prevents one tenant from triggering cross-tenant cleanup work.
-    await connection.execute(
-      'DELETE FROM zid_oauth_states WHERE merchant_id = ? AND user_id = ?',
-      [input.merchantId, input.userId],
+    // The conditional write and unique merchant/user key form a distributed
+    // cooldown: one server may rotate an old state, while concurrent servers
+    // either miss the condition or lose the insert race and fail closed.
+    const [rotation] = await connection.execute<ResultSetHeader>(
+      `UPDATE zid_oauth_states
+          SET state_hash = ?, session_hash = ?, expires_at = ?, consumed_at = NULL, created_at = NOW()
+        WHERE merchant_id = ? AND user_id = ?
+          AND created_at <= DATE_SUB(NOW(), INTERVAL ${OAUTH_BEGIN_COOLDOWN_SECONDS} SECOND)`,
+      [
+        stateHash,
+        sessionDigest(input.userId, input.sessionId),
+        expiresAt,
+        input.merchantId,
+        input.userId,
+      ],
     );
-    await connection.execute(
-      `INSERT INTO zid_oauth_states
-        (merchant_id, user_id, state_hash, session_hash, expires_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [input.merchantId, input.userId, stateHash, sessionDigest(input.userId, input.sessionId), expiresAt],
-    );
-    await connection.commit();
+    if (rotation.affectedRows === 0) {
+      try {
+        await connection.execute(
+          `INSERT INTO zid_oauth_states
+            (merchant_id, user_id, state_hash, session_hash, expires_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [input.merchantId, input.userId, stateHash, sessionDigest(input.userId, input.sessionId), expiresAt],
+        );
+      } catch (error) {
+        if (isDuplicateKey(error)) throw new ZidOAuthError('rate_limited');
+        throw error;
+      }
+    }
   } catch (error) {
-    await connection.rollback().catch(() => undefined);
     throw error;
   } finally {
     connection.release();
