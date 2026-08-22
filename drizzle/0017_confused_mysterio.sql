@@ -1,0 +1,1 @@
+ALTER TABLE `zid_oauth_states` ADD CONSTRAINT `zid_oauth_states_merchant_user_unique` UNIQUE(`merchant_id`,`user_id`);

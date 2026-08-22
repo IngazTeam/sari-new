@@ -4,6 +4,12 @@ import { TRPCError } from '@trpc/server';
 import { decryptSecret, encryptSecret } from '../security/secrets';
 import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
+  beginZidOAuth,
+  consumeZidOAuthState,
+  exchangeZidAuthorizationCode,
+  ZidOAuthError,
+} from './zid-oauth';
+import {
   createIntegration,
   createSyncLog,
   deleteIntegrationByType,
@@ -39,8 +45,7 @@ async function zidApiRequest(endpoint: string, accessToken: string, managerToken
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Zid API Error: ${response.status} - ${error}`);
+    throw new Error(`ZID_API_REQUEST_FAILED_${response.status}`);
   }
 
   return response.json();
@@ -128,51 +133,51 @@ export const zidRouter = router({
       }
     }),
 
-  // Handle OAuth callback — exchange authorization code for access token
+  beginOAuth: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
+      try {
+        return await beginZidOAuth({
+          merchantId: merchant.id,
+          userId: ctx.user.id,
+          sessionId: ctx.session.sessionId,
+        });
+      } catch (error) {
+        if (error instanceof ZidOAuthError && error.code === 'configuration') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تكامل زد غير مهيأ على الخادم' });
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر بدء ربط زد' });
+      }
+    }),
+
+  // OAuth callback consumes a session-bound, one-time state before the server
+  // exchanges the code with its own confidential-client credentials.
   handleOAuthCallback: protectedProcedure
     .input(z.object({
-      code: z.string(),
-      clientId: z.string(),
-      clientSecret: z.string(),
-      redirectUri: z.string(),
+      code: z.string().min(1).max(4096),
+      state: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
 
       try {
-        // Exchange authorization code for access token via Zid OAuth
-        const tokenResponse = await fetch('https://oauth.zid.sa/oauth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            grant_type: 'authorization_code',
-            client_id: input.clientId,
-            client_secret: input.clientSecret,
-            redirect_uri: input.redirectUri,
-            code: input.code,
-          }),
+        await consumeZidOAuthState({
+          merchantId: merchant.id,
+          userId: ctx.user.id,
+          sessionId: ctx.session.sessionId,
+          state: input.state,
         });
-
-        if (!tokenResponse.ok) {
-          const errorBody = await tokenResponse.text();
-          console.error('[Zid OAuth] Token exchange failed:', errorBody);
-          throw new Error('فشل تبادل رمز التفويض مع Zid');
-        }
-
-        const tokenData = await tokenResponse.json();
-        const accessToken = tokenData.access_token;
-        const managerToken = tokenData.authorization?.manager_token || accessToken;
-
-        if (!accessToken) {
-          throw new Error('لم يتم الحصول على Access Token من Zid');
-        }
+        const tokens = await exchangeZidAuthorizationCode(input.code);
 
         // Verify the token by fetching store profile
         const profileResponse = await zidApiRequest(
           '/managers/account/profile',
-          accessToken,
-          managerToken
+          tokens.authorizationToken,
+          tokens.managerToken,
         );
 
         const storeName = profileResponse?.user?.store?.name
@@ -190,22 +195,29 @@ export const zidRouter = router({
           type: 'zid',
           storeName,
           storeUrl,
-          accessToken,
+          accessToken: tokens.authorizationToken,
+          refreshToken: tokens.refreshToken,
           isActive: true,
           settings: JSON.stringify({
             autoSync: true,
             syncProducts: true,
             syncOrders: true,
             syncCustomers: true,
-            managerToken: encryptSecret(managerToken),
+            managerToken: encryptSecret(tokens.managerToken),
+            tokenExpiresAt: tokens.expiresIn
+              ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
+              : null,
           }),
         });
 
         return { success: true, message: 'تم ربط متجر زد بنجاح عبر OAuth' };
-      } catch (error: any) {
+      } catch (error) {
+        if (error instanceof ZidOAuthError && error.code === 'invalid_state') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'انتهت أو استُخدمت محاولة الربط؛ ابدأ من جديد' });
+        }
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: error.message || 'فشل ربط متجر زد عبر OAuth',
+          message: 'فشل ربط متجر زد عبر OAuth؛ ابدأ محاولة جديدة',
         });
       }
     }),

@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -13,10 +11,6 @@ import { useTranslation } from 'react-i18next';
 export default function ZidSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
-
   // Get Zid status
   const { data: status, isLoading, refetch } = trpc.zid.getConnection.useQuery();
 
@@ -48,32 +42,18 @@ export default function ZidSettings() {
     },
   });
 
-  const handleConnect = () => {
-    if (!clientId || !clientSecret) {
+  const beginOAuthMutation = trpc.zid.beginOAuth.useMutation({
+    onSuccess: ({ authorizationUrl }) => {
+      window.location.assign(authorizationUrl);
+    },
+    onError: () => {
       toast({
-        title: 'خطأ',
-        description: 'يرجى إدخال Client ID و Client Secret',
+        title: 'تعذر بدء الربط',
+        description: 'تحقق من إعداد تكامل زد على الخادم ثم حاول مرة أخرى.',
         variant: 'destructive',
       });
-      return;
-    }
-
-    setIsConnecting(true);
-    
-    // Build redirect URI
-    const redirectUri = `${window.location.origin}/merchant/zid/callback`;
-    
-    // Get authorization URL
-    const authUrl = `https://oauth.zid.sa/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
-    
-    // Store credentials in sessionStorage for callback
-    sessionStorage.setItem('zid_client_id', clientId);
-    sessionStorage.setItem('zid_client_secret', clientSecret);
-    sessionStorage.setItem('zid_redirect_uri', redirectUri);
-    
-    // Redirect to Zid OAuth
-    window.location.href = authUrl;
-  };
+    },
+  });
 
   const handleDisconnect = () => {
     if (confirm('هل أنت متأكد من فصل الاتصال مع Zid؟')) {
@@ -128,54 +108,23 @@ export default function ZidSettings() {
             <>
               <Alert>
                 <AlertDescription>
-                  للحصول على Client ID و Client Secret، قم بإنشاء تطبيق في{' '}
-                  <a
-                    href="https://partners.zid.sa"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline"
-                  >
-                    Partner Dashboard
-                  </a>
+                  سيحوّلك ساري إلى زد لمنح الصلاحيات المطلوبة. بيانات التطبيق السرية محفوظة على الخادم ولا تُدخل أو تُخزن في المتصفح.
                 </AlertDescription>
               </Alert>
 
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="clientId">Client ID</Label>
-                  <Input
-                    id="clientId"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder={t('zidSettingsPage.text1')}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="clientSecret">Client Secret</Label>
-                  <Input
-                    id="clientSecret"
-                    type="password"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder={t('zidSettingsPage.text2')}
-                  />
-                </div>
-
-                <Button
-                  onClick={handleConnect}
-                  disabled={isConnecting}
-                  className="w-full"
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidSettings.auto_3')}</>
-                  ) : (
-                    <>
-                      <LinkIcon className="w-4 h-4 ml-2" />{t('zidSettings.auto_4')}</>
-                  )}
-                </Button>
-              </div>
+              <Button
+                onClick={() => beginOAuthMutation.mutate()}
+                disabled={beginOAuthMutation.isPending}
+                className="w-full"
+              >
+                {beginOAuthMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidSettings.auto_3')}</>
+                ) : (
+                  <>
+                    <LinkIcon className="w-4 h-4 ml-2" />{t('zidSettings.auto_4')}</>
+                )}
+              </Button>
             </>
           ) : (
             <div className="space-y-4">

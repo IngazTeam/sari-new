@@ -1533,6 +1533,22 @@ export const platformIntegrations = mysqlTable("platform_integrations", {
 		uniqueIndex("platform_integrations_merchant_type_unique").on(table.merchantId, table.platformType),
 	]);
 
+export const zidOauthStates = mysqlTable("zid_oauth_states", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	stateHash: varchar("state_hash", { length: 64 }).notNull(),
+	sessionHash: varchar("session_hash", { length: 64 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	consumedAt: timestamp("consumed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("zid_oauth_states_state_hash_unique").on(table.stateHash),
+	uniqueIndex("zid_oauth_states_merchant_user_unique").on(table.merchantId, table.userId),
+	index("zid_oauth_states_merchant_active_idx").on(table.merchantId, table.consumedAt, table.expiresAt),
+	index("zid_oauth_states_expiry_idx").on(table.expiresAt),
+]);
+
 export const googleIntegrations = mysqlTable("google_integrations", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

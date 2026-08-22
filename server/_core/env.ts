@@ -15,5 +15,8 @@ export const ENV = {
   // Google OAuth Configuration
   get googleClientId() { return process.env.VITE_GOOGLE_CLIENT_ID ?? ""; },
   get googleClientSecret() { return process.env.GOOGLE_CLIENT_SECRET ?? ""; },
+  // Zid OAuth confidential client (server-side only)
+  get zidClientId() { return process.env.ZID_CLIENT_ID ?? ""; },
+  get zidClientSecret() { return process.env.ZID_CLIENT_SECRET ?? ""; },
 };
 

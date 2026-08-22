@@ -1,0 +1,178 @@
+import crypto from 'node:crypto';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { privacyHashExact } from '../accounts/privacy-hash';
+import { ENV } from '../_core/env';
+import { getPool } from '../db';
+import { buildPublicUrl } from '../utils/public-url';
+
+const ZID_AUTHORIZE_URL = 'https://oauth.zid.sa/oauth/authorize';
+const ZID_TOKEN_URL = 'https://oauth.zid.sa/oauth/token';
+const OAUTH_STATE_TTL_MS = 10 * 60_000;
+const OAUTH_STATE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+type OAuthStateRow = RowDataPacket & { id: number };
+
+export class ZidOAuthError extends Error {
+  constructor(public readonly code: 'configuration' | 'invalid_state' | 'token_exchange') {
+    super(code);
+  }
+}
+
+function oauthConfig(): { clientId: string; clientSecret: string; redirectUri: string } {
+  const clientId = ENV.zidClientId.trim();
+  const clientSecret = ENV.zidClientSecret.trim();
+  if (!clientId || !clientSecret) throw new ZidOAuthError('configuration');
+  const redirectUri = buildPublicUrl('/merchant/zid/callback');
+  const parsed = new URL(redirectUri);
+  if (ENV.isProduction && parsed.protocol !== 'https:') throw new ZidOAuthError('configuration');
+  return { clientId, clientSecret, redirectUri };
+}
+
+function sessionDigest(userId: number, sessionId: string): string {
+  return privacyHashExact(`zid-oauth-session:${userId}:${sessionId}`);
+}
+
+export async function beginZidOAuth(input: {
+  merchantId: number;
+  userId: number;
+  sessionId: string;
+}): Promise<{ authorizationUrl: string }> {
+  const config = oauthConfig();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not initialized');
+  const state = crypto.randomBytes(32).toString('base64url');
+  const stateHash = privacyHashExact(`zid-oauth-state:${state}`);
+  const expiresAt = new Date(Date.now() + OAUTH_STATE_TTL_MS)
+    .toISOString().slice(0, 19).replace('T', ' ');
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    // Keep only one authorization attempt per owner. This bounds storage and
+    // prevents one tenant from triggering cross-tenant cleanup work.
+    await connection.execute(
+      'DELETE FROM zid_oauth_states WHERE merchant_id = ? AND user_id = ?',
+      [input.merchantId, input.userId],
+    );
+    await connection.execute(
+      `INSERT INTO zid_oauth_states
+        (merchant_id, user_id, state_hash, session_hash, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [input.merchantId, input.userId, stateHash, sessionDigest(input.userId, input.sessionId), expiresAt],
+    );
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    connection.release();
+  }
+
+  const authorizationUrl = new URL(ZID_AUTHORIZE_URL);
+  authorizationUrl.searchParams.set('client_id', config.clientId);
+  authorizationUrl.searchParams.set('redirect_uri', config.redirectUri);
+  authorizationUrl.searchParams.set('response_type', 'code');
+  authorizationUrl.searchParams.set('state', state);
+  return { authorizationUrl: authorizationUrl.toString() };
+}
+
+export async function consumeZidOAuthState(input: {
+  merchantId: number;
+  userId: number;
+  sessionId: string;
+  state: string;
+}): Promise<void> {
+  if (!OAUTH_STATE_PATTERN.test(input.state)) throw new ZidOAuthError('invalid_state');
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not initialized');
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<OAuthStateRow[]>(
+      `SELECT id FROM zid_oauth_states
+        WHERE merchant_id = ? AND user_id = ? AND state_hash = ? AND session_hash = ?
+          AND consumed_at IS NULL AND expires_at > NOW()
+        LIMIT 1 FOR UPDATE`,
+      [
+        input.merchantId,
+        input.userId,
+        privacyHashExact(`zid-oauth-state:${input.state}`),
+        sessionDigest(input.userId, input.sessionId),
+      ],
+    );
+    const row = rows[0];
+    if (!row) throw new ZidOAuthError('invalid_state');
+    const [claim] = await connection.execute<ResultSetHeader>(
+      `UPDATE zid_oauth_states SET consumed_at = NOW()
+        WHERE id = ? AND consumed_at IS NULL AND expires_at > NOW()`,
+      [row.id],
+    );
+    if (claim.affectedRows !== 1) throw new ZidOAuthError('invalid_state');
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export type ZidOAuthTokens = {
+  authorizationToken: string;
+  managerToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+};
+
+function requiredToken(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().replace(/^Bearer\s+/i, '');
+  return normalized.length >= 16 && normalized.length <= 16_384 ? normalized : null;
+}
+
+export async function exchangeZidAuthorizationCode(
+  code: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ZidOAuthTokens> {
+  const config = oauthConfig();
+  if (!code || code.length > 4096 || /[\u0000-\u001f\u007f]/.test(code)) {
+    throw new ZidOAuthError('token_exchange');
+  }
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    redirect_uri: config.redirectUri,
+    code,
+  });
+  let response: Response;
+  try {
+    response = await fetchImpl(ZID_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: body.toString(),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new ZidOAuthError('token_exchange');
+  }
+  if (!response.ok) throw new ZidOAuthError('token_exchange');
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = await response.json() as Record<string, unknown>;
+  } catch {
+    throw new ZidOAuthError('token_exchange');
+  }
+  const authorizationToken = requiredToken(payload.Authorization ?? payload.authorization);
+  const managerToken = requiredToken(payload.access_token);
+  if (!authorizationToken || !managerToken) throw new ZidOAuthError('token_exchange');
+  const refreshToken = requiredToken(payload.refresh_token) || undefined;
+  const expiresIn = typeof payload.expires_in === 'number' && Number.isFinite(payload.expires_in)
+    ? Math.max(0, Math.floor(payload.expires_in))
+    : undefined;
+  return { authorizationToken, managerToken, refreshToken, expiresIn };
+}

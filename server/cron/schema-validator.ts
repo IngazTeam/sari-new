@@ -25,6 +25,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'merchant_invitations', columns: ['token', 'recipient_hash', 'accepted_by_user_id', 'status', 'expires_at'] },
   { table: 'platform_integrations', columns: ['webhook_endpoint_id', 'webhook_auth_hash'] },
   { table: 'zid_webhooks', columns: ['payload_hash', 'attempt_count', 'claimed_at'] },
+  { table: 'zid_oauth_states', columns: ['state_hash', 'session_hash', 'expires_at', 'consumed_at'] },
   { table: 'merchants', columns: [
     'timezone', 'integration_source', 'provision_idempotency_hash', 'provision_payload_hash',
     'escalation_phones', 'emergency_phone',

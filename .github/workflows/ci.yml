@@ -95,3 +95,4 @@ jobs:
           server/auth.teamInvitations.test.ts
           server/auth.adminDeletion.test.ts
           server/auth.zidWebhook.test.ts
+          server/auth.zidOAuth.test.ts

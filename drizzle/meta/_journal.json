@@ -113,6 +113,20 @@
       "when": 1787356182105,
       "tag": "0015_young_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1787357065916,
+      "tag": "0016_quick_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1787357132784,
+      "tag": "0017_confused_mysterio",
+      "breakpoints": true
     }
   ]
 }

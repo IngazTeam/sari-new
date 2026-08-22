@@ -1,70 +1,49 @@
-import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
-import { useLocation, useRoute } from 'wouter';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+type CallbackStatus = 'loading' | 'success' | 'error';
+
 export default function ZidCallback() {
-  const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const [, params] = useRoute('/merchant/zid/callback');
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('ÌÇÑí ãÚÇáÌÉ ÇáÇÊÕÇá...');
+  const startedRef = useRef(false);
+  const [status, setStatus] = useState<CallbackStatus>('loading');
+  const [message, setMessage] = useState('Ø¬Ø§Ø±Ù Ø¥ÙƒÙ…Ø§Ù„ Ø§Ù„Ø±Ø¨Ø· Ø§Ù„Ø¢Ù…Ù† Ù…Ø¹ Ø²Ø¯...');
 
   const handleCallbackMutation = trpc.zid.handleOAuthCallback.useMutation({
     onSuccess: () => {
       setStatus('success');
-      setMessage('Êã ÑÈØ Zid ÈäÌÇÍ!');
-      setTimeout(() => {
-        navigate('/merchant/zid/settings');
-      }, 2000);
+      setMessage('ØªÙ… Ø±Ø¨Ø· Ù…ØªØ¬Ø± Ø²Ø¯ Ø¨Ù†Ø¬Ø§Ø­.');
+      window.setTimeout(() => navigate('/merchant/zid/settings'), 2000);
     },
-    onError: (error: any) => {
+    onError: () => {
       setStatus('error');
-      setMessage(error.message || 'İÔá İí ÑÈØ Zid');
+      setMessage('ØªØ¹Ø°Ø± Ø¥ÙƒÙ…Ø§Ù„ Ø§Ù„Ø±Ø¨Ø·. Ø£Ø¹Ø¯ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ù† ØµÙØ­Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø²Ø¯.');
     },
   });
 
   useEffect(() => {
-    const processCallback = async () => {
-      // Get code from URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-      if (!code) {
-        setStatus('error');
-        setMessage('ÑãÒ ÇáÊİæíÖ ÛíÑ ãæÌæÏ');
-        return;
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const providerError = urlParams.get('error');
 
-      // Get stored credentials
-      const clientId = sessionStorage.getItem('zid_client_id');
-      const clientSecret = sessionStorage.getItem('zid_client_secret');
-      const redirectUri = sessionStorage.getItem('zid_redirect_uri');
+    // OAuth authorization codes and state values must not remain in browser history.
+    window.history.replaceState({}, document.title, window.location.pathname);
 
-      if (!clientId || !clientSecret || !redirectUri) {
-        setStatus('error');
-        setMessage('ÈíÇäÇÊ ÇáÇÊÕÇá ÛíÑ ãæÌæÏÉ Ãæ ÇäÊåÊ ÕáÇÍíÉ ÇáÌáÓÉ. íÑÌì ÇáÈÏÁ ãä ÕİÍÉ ÇáÅÚÏÇÏÇÊ.');
-        return;
-      }
+    if (providerError || !code || !state) {
+      setStatus('error');
+      setMessage('Ù„Ù… ÙŠÙƒØªÙ…Ù„ ØªÙÙˆÙŠØ¶ Ø²Ø¯. Ø£Ø¹Ø¯ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ù† ØµÙØ­Ø© Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª.');
+      return;
+    }
 
-      // Clear session storage
-      sessionStorage.removeItem('zid_client_id');
-      sessionStorage.removeItem('zid_client_secret');
-      sessionStorage.removeItem('zid_redirect_uri');
-
-      // Handle callback
-      handleCallbackMutation.mutate({
-        code,
-        clientId,
-        clientSecret,
-        redirectUri: redirectUri || '',
-      });
-    };
-
-    processCallback();
+    handleCallbackMutation.mutate({ code, state });
   }, []);
 
   return (
@@ -75,15 +54,21 @@ export default function ZidCallback() {
             <CardTitle className="flex items-center gap-2">
               {status === 'loading' && (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />{t('zidCallback.auto_0')}</>
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  Ø¬Ø§Ø±Ù Ø±Ø¨Ø· Ø§Ù„Ù…ØªØ¬Ø±
+                </>
               )}
               {status === 'success' && (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-500" />{t('zidCallback.auto_1')}</>
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  Ø§ÙƒØªÙ…Ù„ Ø§Ù„Ø±Ø¨Ø·
+                </>
               )}
               {status === 'error' && (
                 <>
-                  <XCircle className="w-5 h-5 text-red-500" />{t('zidCallback.auto_2')}</>
+                  <XCircle className="w-5 h-5 text-red-500" />
+                  ØªØ¹Ø°Ø± Ø§Ù„Ø±Ø¨Ø·
+                </>
               )}
             </CardTitle>
             <CardDescription>{message}</CardDescription>
@@ -95,20 +80,12 @@ export default function ZidCallback() {
               </div>
             )}
             {status === 'success' && (
-              <div className="space-y-4">
-                <p className="text-center text-muted-foreground">{t('zidCallback.auto_3')}</p>
-              </div>
+              <p className="text-center text-muted-foreground">Ø³ÙŠØªÙ… ØªØ­ÙˆÙŠÙ„Ùƒ Ø¥Ù„Ù‰ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø²Ø¯...</p>
             )}
             {status === 'error' && (
-              <div className="space-y-4">
-                <p className="text-center text-muted-foreground">{t('zidCallback.auto_4')}</p>
-                <Button
-                  onClick={() => navigate('/merchant/zid/settings')}
-                  className="w-full"
-                >
-                  ÇáÚæÏÉ Åáì ÇáÅÚÏÇÏÇÊ
-                </Button>
-              </div>
+              <Button onClick={() => navigate('/merchant/zid/settings')} className="w-full">
+                Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª
+              </Button>
             )}
           </CardContent>
         </Card>
