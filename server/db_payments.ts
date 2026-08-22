@@ -659,7 +659,6 @@ export async function createWebhookLog(data: {
   paymentId: number;
   provider: string;
   eventType: string;
-  payload: string;
   processedAt: Date;
 }): Promise<void> {
   // ظٹظ…ظƒظ† ط¥ط¶ط§ظپط© ط¬ط¯ظˆظ„ webhook_logs ظ„ط§ط­ظ‚ط§ظ‹

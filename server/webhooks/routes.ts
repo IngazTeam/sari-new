@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'node:crypto';
-import { handleTapWebhook, verifyTapSignature } from './tap';
 import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
 import { handleGreenAPIWebhook } from './greenapi';
 import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cloud';
@@ -22,6 +21,7 @@ import { ENV } from '../_core/env';
 import { getMerchantPaymentSettings } from '../db';
 import * as dbPayments from '../db_payments';
 import { readPaymentLinkId } from '../payment/payment-link-policy';
+import { readTapWebhookChargeId, unwrapTapWebhookCharge, verifyTapWebhookHash } from '../payment/tap-webhook-security';
 import { processTapWebhook as processOrderPaymentWebhook } from './tap-webhook';
 import { processCanonicalSubscriptionCharge } from '../subscriptions/canonical-state';
 
@@ -33,23 +33,28 @@ const router = Router();
  */
 router.post('/tap', async (req: Request, res: Response) => {
   try {
-    const signature = req.headers['x-tap-signature'] as string;
-    const payload = JSON.stringify(req.body);
-    const charge = req.body?.data?.object || req.body;
-    const orderPayment = charge?.id
-      ? await dbPayments.getOrderPaymentByTapChargeId(String(charge.id))
+    const signature = req.get('hashstring')?.trim() || '';
+    const charge = unwrapTapWebhookCharge(req.body);
+    const chargeId = readTapWebhookChargeId(charge);
+    if (!charge || !chargeId) {
+      return res.status(400).json({ error: 'Invalid Tap charge payload' });
+    }
+    const orderPayment = chargeId
+      ? await dbPayments.getOrderPaymentByTapChargeId(chargeId)
       : null;
-    const subscriptionPayment = charge?.id && !orderPayment
-      ? await getPaymentTransactionByTapChargeId(String(charge.id))
+    const subscriptionPayment = chargeId && !orderPayment
+      ? await getPaymentTransactionByTapChargeId(chargeId)
       : null;
 
     // Payment links use each merchant's verified Tap key. Platform subscription
     // charges continue to use the platform key. Select the verifier from a local,
     // trusted payment record rather than untrusted webhook metadata.
     let verificationSecret = ENV.tapSecretKey;
+    let orderPaymentTestMode: boolean | null = null;
     if (orderPayment && readPaymentLinkId(orderPayment.metadata)) {
       const settings = await getMerchantPaymentSettings(orderPayment.merchantId);
       verificationSecret = settings?.tapSecretKey || '';
+      orderPaymentTestMode = settings ? Boolean(settings.tapTestMode) : null;
     } else if (subscriptionPayment) {
       const settings = await getTapSettings();
       verificationSecret = settings?.secretKey || '';
@@ -64,18 +69,31 @@ router.post('/tap', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Missing webhook signature' });
     }
 
-    const isValid = await verifyTapSignature(payload, signature, verificationSecret);
+    const isValid = verifyTapWebhookHash(charge, signature, verificationSecret);
     if (!isValid) {
       console.error('[Tap Webhook] Invalid signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
+    const subscriptionCharge = {
+      id: chargeId,
+      status: String(charge.status),
+      amount: Number(charge.amount),
+      currency: String(charge.currency),
+      live_mode: typeof charge.live_mode === 'boolean' ? charge.live_mode : undefined,
+    };
+
     // Route using a locally persisted charge ID, never untrusted webhook metadata.
     const result = orderPayment
-      ? await processOrderPaymentWebhook(req.body?.data?.object ? req.body : { data: { object: charge } })
+      ? orderPaymentTestMode == null
+        ? { success: false, message: 'Tap merchant settings unavailable' }
+        : await processOrderPaymentWebhook(
+          req.body?.data?.object ? req.body : { data: { object: charge } },
+          { testMode: orderPaymentTestMode },
+        )
       : subscriptionPayment
-        ? await processCanonicalSubscriptionCharge(charge)
-        : await handleTapWebhook(req.body);
+        ? await processCanonicalSubscriptionCharge(subscriptionCharge)
+        : { success: true, message: 'Unknown Tap charge ignored' };
 
     if (result.success) {
       return res.status(200).json({ message: result.message });

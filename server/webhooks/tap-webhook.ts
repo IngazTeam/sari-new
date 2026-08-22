@@ -7,7 +7,6 @@
  * - REFUNDED: استرجاع المبلغ
  */
 
-import * as crypto from 'node:crypto';
 import {
   getBookingById,
   getMerchantById,
@@ -43,7 +42,7 @@ interface TapWebhookPayload {
       };
       amount: number;
       currency: string;
-      status: 'INITIATED' | 'ABANDONED' | 'CANCELLED' | 'FAILED' | 'DECLINED' | 'RESTRICTED' | 'CAPTURED' | 'VOID' | 'TIMEDOUT' | 'UNKNOWN';
+      status: 'INITIATED' | 'AUTHORIZED' | 'ABANDONED' | 'CANCELLED' | 'FAILED' | 'DECLINED' | 'RESTRICTED' | 'CAPTURED' | 'VOID' | 'TIMEDOUT' | 'UNKNOWN' | 'REFUNDED';
       description: string;
       metadata: {
         orderId?: string;
@@ -56,7 +55,9 @@ interface TapWebhookPayload {
         transaction: string;
         order: string;
         payment: string;
+        gateway?: string;
       };
+      transaction?: { created?: string | number };
       receipt: {
         id: string;
         email: boolean;
@@ -85,70 +86,115 @@ interface TapWebhookPayload {
   };
 }
 
-/**
- * التحقق من توقيع Tap Webhook
- */
-export function verifyTapSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  try {
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(payload);
-    const computedSignature = hmac.digest('hex');
-    // SEC-05 FIX: Use timingSafeEqual to prevent timing attacks
-    if (computedSignature.length !== signature.length) return false;
-    return crypto.timingSafeEqual(Buffer.from(computedSignature), Buffer.from(signature));
-  } catch (error) {
-    console.error('[TapWebhook] Error verifying signature:', error);
-    return false;
+export type StoredTapPaymentStatus = 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
+type TapTransitionStatus = 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+
+export type TapWebhookTransition =
+  | { kind: 'transition'; status: TapTransitionStatus }
+  | { kind: 'noop' }
+  | { kind: 'invalid' };
+
+export function planTapWebhookTransition(
+  current: StoredTapPaymentStatus,
+  tapStatus: string,
+): TapWebhookTransition {
+  if (tapStatus === 'INITIATED') return { kind: 'noop' };
+  if (tapStatus === 'AUTHORIZED') {
+    if (current === 'pending') return { kind: 'transition', status: 'processing' };
+    return current === 'authorized' || current === 'captured' || current === 'refunded'
+      ? { kind: 'noop' }
+      : { kind: 'invalid' };
   }
+  if (tapStatus === 'CAPTURED') {
+    if (current === 'pending' || current === 'authorized') return { kind: 'transition', status: 'completed' };
+    return current === 'captured' || current === 'refunded' ? { kind: 'noop' } : { kind: 'invalid' };
+  }
+  if (tapStatus === 'REFUNDED') {
+    if (current === 'captured') return { kind: 'transition', status: 'refunded' };
+    return current === 'refunded' ? { kind: 'noop' } : { kind: 'invalid' };
+  }
+  if (['FAILED', 'DECLINED', 'TIMEDOUT', 'RESTRICTED', 'UNKNOWN'].includes(tapStatus)) {
+    if (current === 'pending' || current === 'authorized') return { kind: 'transition', status: 'failed' };
+    return current === 'failed' ? { kind: 'noop' } : { kind: 'invalid' };
+  }
+  if (['CANCELLED', 'ABANDONED', 'VOID'].includes(tapStatus)) {
+    if (current === 'pending' || current === 'authorized') return { kind: 'transition', status: 'cancelled' };
+    return current === 'cancelled' ? { kind: 'noop' } : { kind: 'invalid' };
+  }
+  return { kind: 'invalid' };
 }
 
 /**
  * معالجة webhook من Tap
  */
 export async function processTapWebhook(
-  payload: TapWebhookPayload
+  payload: TapWebhookPayload,
+  expected: { testMode: boolean },
 ): Promise<{ success: boolean; message: string }> {
   try {
     const charge = payload.data.object;
     const chargeId = charge.id;
     const status = charge.status;
 
-    console.log(`[TapWebhook] Processing webhook for charge ${chargeId}, status: ${status}`);
-
     // البحث عن المعاملة في قاعدة البيانات
     const payment = await dbPayments.getPaymentByTapChargeId(chargeId);
 
     if (!payment) {
-      console.warn(`[TapWebhook] Payment not found for charge ${chargeId}`);
+      console.warn('[TapWebhook] Payment not found for signed charge');
       return { success: false, message: 'Payment not found' };
     }
 
-    // SEC: Idempotency guard — skip if payment already reached a terminal status
-    const terminalStatuses = ['captured', 'completed', 'failed', 'cancelled', 'refunded'];
-    if (terminalStatuses.includes(payment.status)) {
-      console.log(`[TapWebhook] ⏭️ Duplicate webhook skipped: charge ${chargeId} already in terminal status '${payment.status}'`);
-      return { success: true, message: 'Webhook already processed (idempotent)' };
+    const receivedAmountInHalalas = Number.isFinite(Number(charge.amount))
+      ? Math.round(Number(charge.amount) * 100)
+      : Number.NaN;
+    if (
+      receivedAmountInHalalas !== payment.amount
+      || charge.currency !== payment.currency
+      || typeof charge.live_mode !== 'boolean'
+      || charge.live_mode !== !expected.testMode
+    ) {
+      console.warn('[TapWebhook] Tap amount, currency, or mode mismatch', {
+        merchantId: payment.merchantId,
+        paymentId: payment.id,
+      });
+      return { success: false, message: 'Tap payment identity mismatch' };
     }
 
-    // تحديث حالة المعاملة
-    const newStatus = mapTapStatusToPaymentStatus(status);
-    const transitioned = await dbPayments.transitionPaymentStatus(payment.id, payment.status, newStatus, {
-      tapResponse: JSON.stringify(charge)
+    const transition = planTapWebhookTransition(payment.status, status);
+    if (transition.kind === 'invalid') {
+      console.warn('[TapWebhook] Ignored invalid or out-of-order Tap transition', {
+        merchantId: payment.merchantId,
+        paymentId: payment.id,
+        currentStatus: payment.status,
+        providerStatus: status,
+      });
+      return { success: true, message: 'Invalid Tap transition ignored' };
+    }
+    if (transition.kind === 'noop') {
+      return { success: true, message: 'Webhook already reflected locally' };
+    }
+
+    const tapResponseSummary = JSON.stringify({
+      status,
+      amount: Number(charge.amount),
+      currency: charge.currency,
+      liveMode: charge.live_mode,
     });
+    const transitioned = await dbPayments.transitionPaymentStatus(
+      payment.id,
+      payment.status,
+      transition.status,
+      { tapResponse: tapResponseSummary },
+    );
     if (!transitioned) {
-      console.log(`[TapWebhook] ⏭️ Concurrent duplicate webhook skipped for charge ${chargeId}`);
       return { success: true, message: 'Webhook already processed (concurrent duplicate)' };
     }
 
     const paymentLinkId = readPaymentLinkId(payment.metadata);
     if (paymentLinkId) {
-      if (status === 'CAPTURED') {
+      if (transition.status === 'completed') {
         await dbPayments.incrementPaymentLinkUsage(paymentLinkId, payment.amount, true, payment.merchantId);
-      } else if (['FAILED', 'DECLINED', 'TIMEDOUT', 'CANCELLED', 'ABANDONED'].includes(status)) {
+      } else if (transition.status === 'failed' || transition.status === 'cancelled') {
         await dbPayments.incrementPaymentLinkUsage(paymentLinkId, payment.amount, false, payment.merchantId);
       }
     }
@@ -168,7 +214,7 @@ export async function processTapWebhook(
         payment.orderId,
         status,
         payment.merchantId,
-        charge.customer.phone.country_code + charge.customer.phone.number,
+        payment.customerPhone,
         Number.isSafeInteger(localConversationId) && localConversationId > 0 ? localConversationId : undefined,
       );
     } else if (payment.bookingId) {
@@ -176,7 +222,7 @@ export async function processTapWebhook(
         payment.bookingId,
         status,
         payment.merchantId,
-        charge.customer.phone.country_code + charge.customer.phone.number
+        payment.customerPhone,
       );
     }
 
@@ -186,7 +232,6 @@ export async function processTapWebhook(
       paymentId: payment.id,
       provider: 'tap',
       eventType: status,
-      payload: JSON.stringify(payload),
       processedAt: new Date()
     });
 
@@ -194,31 +239,6 @@ export async function processTapWebhook(
   } catch (error) {
     console.error('[TapWebhook] Error processing webhook:', error);
     return { success: false, message: 'Error processing webhook' };
-  }
-}
-
-/**
- * تحويل حالة Tap إلى حالة الدفع في النظام
- */
-function mapTapStatusToPaymentStatus(
-  tapStatus: string
-): 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled' {
-  switch (tapStatus) {
-    case 'CAPTURED':
-      return 'completed';
-    case 'FAILED':
-    case 'DECLINED':
-    case 'TIMEDOUT':
-      return 'failed';
-    case 'CANCELLED':
-    case 'ABANDONED':
-      return 'cancelled';
-    case 'VOID':
-      return 'refunded';
-    case 'INITIATED':
-      return 'processing';
-    default:
-      return 'pending';
   }
 }
 

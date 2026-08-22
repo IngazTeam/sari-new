@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.61 — محدّث بتكرار وهوية جلسات دفع Tap\
+**الإصدار:** 3.62 — محدّث بمصادقة webhook وآلة حالات Tap\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -108,6 +108,7 @@
 85. كشف الفحص الحي لإعدادات Tap في `sary.live` أن الواجهة القديمة تحمل السر المقنّع كقيمة قابلة للكتابة، وتتيح اختبار الاتصال به، وتعرض الرقم `0` قرب العنوان عندما تكون قيمة التوثيق العددية صفرًا. أُغلق ذلك محليًا بعقد قراءة لا يعيد `tapSecretKey` إطلاقًا ويعيد presence bit فقط، وبفصل توثيق الاعتمادات عن جاهزية الدفع الفعلية، والتحقق من تطابق المفتاحين العام والسري مع test/live، وإسقاط التوثيق القديم عند رفض Tap، وحارس إنشاء الرابط من سياسة readiness واحدة. الواجهة تبقي حقل السر فارغًا، تعطل الاختبار عند تعديلات غير محفوظة، ولا تعرض شارة الجاهزية عند تعطيل البوابة. اجتاز 32/32 فحصًا مركزًا و674/674 بوابة إصدار وTypeScript/Drizzle/build؛ يبقى نشر الكوميت ثم إعادة الاختبار الحي واختبار Tap sandbox الفعلي بتأكيد إرسال الاعتماد عند لحظة التنفيذ.
 86. أُغلق محليًا IDOR في آثار دفع Tap: كان endpoint مباشر غير مستخدم يقبل `metadata.type/orderId/bookingId` من التاجر وينشئ charge باعتماد المنصة، ثم كان webhook يثق بهوية الهدف المعادة من المزود ويحدث الطلب أو الحجز بالمعرف فقط بلا تحقق tenant. حُذفت واجهتا charge المكررتان غير المستهلكتين، وصار إنشاء رابط مربوط يرفض هدفين معًا ويثبت ملكية الطلب/الحجز، بينما webhook يقرأ الهوية من سجل الدفع المحلي فقط ويعيد التحقق من ملكية الطلب والحجز والخدمة قبل أي أثر. أُصلح أيضًا عداد الرابط كي لا يستهلك failure حصة نجاح. اجتاز 46/46 نطاقًا مركزًا و681/681 بوابة إصدار وTypeScript/build؛ يبقى نشر الإصلاح، tenant A/B على Tap sandbox، وإضافة idempotent reference الرسمي في المرحلة التالية.
 87. أُغلق محليًا تكرار charge وعدم موثوقية استجابة Tap في رابط الدفع: صار المتصفح ينشئ attempt UUID ثابتًا للنقرة وإعادة المحاولة داخل الصفحة، ويشتق الخادم منه ومن هوية الرابط مرجعًا opaque ثابتًا في `reference.idempotent` دون كشف token. الاتصال محصور بمهلة 10 ثوانٍ واستجابة 256KB، ولا يقبل إلا `INITIATED` متطابق المبلغ والعملة والوضع ورابط HTTPS على نطاق Tap. فُرض uniqueness مادي على `tap_charge_id/link_id` في `0033` مع preflight منقح، وأصبحت الكتابة تستعيد الفائز عند سباق insert وتتحقق من تطابق هوية الصف والرابط قبل الإرجاع. صُححت مدة Tap `MINUTE/HOUR/DAY` بدل تفسير الدقائق كساعات. اجتاز 64/64 نطاقًا مركزًا و690/690 بوابة إصدار وTypeScript/Drizzle/build؛ يبقى preflight وmigration وretry/race على MySQL وTap sandbox بعد النشر.
+88. أُغلق محليًا عدم تطابق مصادقة Tap webhook وانحراف حالات الدفع: كان المدخل الفعلي يبحث عن `x-tap-signature` ويحسب HMAC لـ`JSON.stringify(req.body)`، بينما عقد Tap الرسمي يرسل `hashstring` لحقل canonical مرتب. أضيف بناء وتحقق للحقول الرسمية مع دقة العملة وtiming-safe compare، وأزيلت mutationا webhook العامتان في tRPC وfallback legacy الذي كان يمنح نجاحًا لـ`AUTHORIZED`. آلة الحالات الآن تميز INITIATED/AUTHORIZED/CAPTURED وتسمح REFUNDED بعد CAPTURED دون terminal short-circuit، وتطابق المبلغ والعملة والوضع قبل CAS. لا يُخزن payload أو customer/card؛ تُحفظ خلاصة محدودة ويستخدم هاتف السجل المحلي. اجتاز 70/70 نطاقًا نهائيًا و700/700 بوابة إصدار وTypeScript/build؛ يبقى replay فعلي وkey-rotation window وCAPTURED→REFUNDED على Tap sandbox المنشور.
 
 **قرار الخطة:**
 
@@ -116,7 +117,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.61
+### حالة تنفيذ الجولة 3.62
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -143,6 +144,7 @@
 | أمن وصدق إعدادات Tap | مكتمل برمجيًا محليًا/النشر وsandbox معلقان | السر لا يعود للمتصفح ولو مقنّعًا، presence bit منفصل، readiness مشتقة، المفتاحان يطابقان الوضع، وفشل المزود يسقط التوثيق القديم؛ 32/32 مركز و674/674 بوابة إصدار |
 | ملكية أهداف دفع Tap | مكتمل برمجيًا محليًا/tenant sandbox معلق | حذف charge surfaces غير المستهلكة، ربط الطلب/الحجز محلي وtenant-scoped، webhook لا يثق metadata المزود، وفشل الدفع لا يستهلك حصة نجاح؛ 46/46 مركز و681/681 بوابة إصدار |
 | تكرار وهوية جلسات Tap | مكتمل برمجيًا محليًا/migration وsandbox معلقان | `reference.idempotent` ثابت وopaque، Tap client محدود، response integrity، uniqueness/preflight `0033` وinsert race recovery؛ 64/64 مركز و690/690 بوابة إصدار |
+| مصادقة webhook وآلة حالات Tap | مكتمل برمجيًا محليًا/sandbox معلق | `hashstring` الرسمي، مدخل HTTP واحد، لا AUTHORIZED كقبض، REFUNDED بعد CAPTURED، مطابقة هوية وخلاصة بلا PII؛ 70/70 نهائي و700/700 بوابة إصدار |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
 | Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
 | نموذج العملاء والمتدربين | مكتمل محليًا/DB وByaan staging معلقان | مصدر واحد يختار `customer_profiles` للمتاجر و`byaan_trainees` النشط لبيان، بلا SQL على `customers` غير المملوك وبعزل `merchant_id`؛ 7/7 بنتست و425/425 بوابة إصدار |
@@ -805,6 +807,24 @@
 8. على staging، شغّل preflight ثم `0033`، وأرسل طلبين متزامنين بنفس attempt عبر عمليتين؛ يجب charge واحد وصف واحد وURL واحد، ثم أعد المحاولة بعد timeout ضمن نافذة Tap الرسمية.
 
 **معيار القبول:** double-click/retry لا ينشئان charge أو صفًا ثانيًا، لا URL خارج Tap، لا اختلاف مبلغ/عملة/وضع، المهلة والحجم fail-closed، preflight و`0033` ناجحان، 690/690 محليًا، وMySQL race وTap sandbox منشوران ناجحان.
+
+### PROD-TAP-WEBHOOK-AUTH-001: مصادقة Tap الرسمية وآلة حالات غير قابلة للتراجع
+
+**الحالة في الجولة 3.62:** مكتمل برمجيًا محليًا؛ replay وkey rotation وrefund على sandbox والمنشور معلقة.
+
+المهام:
+
+1. قراءة header الرسمي `hashstring` فقط في `/api/webhooks/tap` وإزالة HMAC الجسم المعاد تسلسله واسم `x-tap-signature` غير الموثق.
+2. بناء canonical string بالترتيب `id/amount/currency/gateway/payment/status/created` ودقة ISO للعملة، ثم HMAC-SHA256 ومقارنة bytes ثابتة الزمن بعد تحقق hex والطول.
+3. اختيار المفتاح من charge ID محلي: إعداد التاجر لرابط الدفع أو إعداد المنصة للاشتراك، لا من metadata المزود.
+4. حذف مساري `handleWebhook: publicProcedure` اللذين سمحا للمتصفح بتقديم payload/signature وsecret بيئي منفصل عن مدخل HTTP الحقيقي.
+5. إزالة fallback Tap legacy غير المستخدم الذي كان يفسر `AUTHORIZED` كدفع مكتمل ويحدث اشتراكًا خارج state machine canonical.
+6. فرض انتقالات: INITIATED بلا أثر، AUTHORIZED إلى authorized فقط، CAPTURED وحده إلى captured، REFUNDED من captured فقط، ومنع الرجوع من captured/refunded إلى failure.
+7. مطابقة amount بالهللات وcurrency وlive_mode قبل compare-and-set، وعدم تحديث الصف إلى failed عند payload غير مطابق.
+8. عدم تخزين charge/payload الخام أو استخدام هاتف customer الخارجي؛ تخزين status/amount/currency/liveMode فقط واستخدام `order_payments.customer_phone`.
+9. على sandbox، اختبر valid hash وfield tamper وraw-body HMAC وduplicate/concurrent وAUTHORIZED→CAPTURED→REFUNDED وتدوير المفتاح أثناء charge قيد التنفيذ.
+
+**معيار القبول:** webhook Tap الصحيح يمر عبر `hashstring` الرسمي، tamper يفشل 401 بلا mutation، لا surface متصفح بديل، لا استحقاق قبل CAPTURED، refund بعد capture يعمل مرة واحدة، صفر PII خام مخزن، 700/700 محليًا، وsandbox replay/rotation ناجحان.
 
 ### REL-001: توحيد Node وpnpm والاعتماديات
 
@@ -1493,6 +1513,7 @@ WhatsAppChannel
 | PROD-TAP-SETTINGS-TRUTH-001 | P0 | سرية مفاتيح Tap وصدق الجاهزية | Backend/Frontend/QA | صفر secret في DTO، readiness صادقة، وTap sandbox منشور ناجح |
 | PROD-TAP-OWNERSHIP-001 | P0 | عزل أهداف الدفع وآثار webhook | Backend/QA | tenant A/B بلا cross-tenant mutation وfailure quota صادقة |
 | PROD-TAP-IDEMPOTENCY-001 | P0 | منع charge المكرر وتثبيت هوية Tap | Backend/QA/DevOps | attempt ثابت، unique DB، response integrity وretry/race على sandbox ناجحة |
+| PROD-TAP-WEBHOOK-AUTH-001 | P0 | مصادقة Tap الرسمية وآلة الحالات | Backend/QA/DevOps | hashstring صحيح، CAPTURED فقط يمنح النجاح، replay/refund/rotation مثبتة |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |
@@ -1548,6 +1569,7 @@ WhatsAppChannel
 - [ ] الرد الصوتي يصل عبر sandbox ويحمل provider message ID وحالة تسليم.
 - [ ] رابط الدفع العام وTap sandbox ناجحان ومبلغ VAT/الخصم متطابق.
 - [x] إنشاء charge للرابط محمي محليًا من double-click/retry بمرجع Tap ثابت وunique DB واستجابة مطابقة؛ تطبيق `0033` وMySQL/Tap sandbox معلقان.
+- [x] مدخل Tap webhook موحد محليًا على `hashstring` الرسمي وآلة حالات لا تمنح نجاحًا قبل CAPTURED ولا تخزن PII الخام؛ replay/refund/key rotation على sandbox معلق.
 - [ ] مصدر واحد للخطط والأسعار وحالة التجربة/التاجر.
 - [ ] صفر mock/hard-coded metrics في build الإنتاج وكل KPI قابل للتتبع.
 - [ ] الخصومات والموظفون وإعدادات الإشعارات والتصدير تعمل بحساب متجر جديد بعد reload.

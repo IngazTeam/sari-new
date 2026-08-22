@@ -2,10 +2,12 @@
  * اختبارات Tap Webhook Handler
  */
 
+import { createHmac } from 'node:crypto';
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as db from '../db';
 import * as dbPayments from '../db_payments';
-import { processTapWebhook, verifyTapSignature } from './tap-webhook';
+import { buildTapWebhookHashString, verifyTapWebhookHash } from '../payment/tap-webhook-security';
+import { processTapWebhook } from './tap-webhook';
 
 describe('Tap Webhook Handler', () => {
   let testMerchantId: number;
@@ -31,7 +33,7 @@ describe('Tap Webhook Handler', () => {
       customerPhone: '+966501234567',
       customerName: 'Test Customer',
       customerEmail: 'customer@example.com',
-      amount: 100,
+      amount: 10_000,
       currency: 'SAR',
       tapChargeId: testChargeId,
       tapPaymentUrl: 'https://tap.company/test',
@@ -41,27 +43,30 @@ describe('Tap Webhook Handler', () => {
     testPaymentId = payment!.id;
   });
 
-  describe('verifyTapSignature', () => {
+  describe('verifyTapWebhookHash', () => {
     it('should verify valid signature', () => {
-      const payload = JSON.stringify({ test: 'data' });
+      const payload = {
+        id: 'chg_test_123',
+        amount: 100,
+        currency: 'SAR',
+        status: 'CAPTURED',
+        reference: { gateway: 'gw_123', payment: 'pay_123' },
+        transaction: { created: '1787500000000' },
+      };
       const secret = 'test_secret_key';
-      
-      // إنشاء توقيع صحيح
-      const crypto = require('crypto');
-      const hmac = crypto.createHmac('sha256', secret);
-      hmac.update(payload);
-      const validSignature = hmac.digest('hex');
+      const canonical = buildTapWebhookHashString(payload)!;
+      const validSignature = createHmac('sha256', secret).update(canonical).digest('hex');
 
-      const isValid = verifyTapSignature(payload, validSignature, secret);
+      const isValid = verifyTapWebhookHash(payload, validSignature, secret);
       expect(isValid).toBe(true);
     });
 
     it('should reject invalid signature', () => {
-      const payload = JSON.stringify({ test: 'data' });
+      const payload = { test: 'data' };
       const secret = 'test_secret_key';
       const invalidSignature = 'invalid_signature';
 
-      const isValid = verifyTapSignature(payload, invalidSignature, secret);
+      const isValid = verifyTapWebhookHash(payload, invalidSignature, secret);
       expect(isValid).toBe(false);
     });
   });
@@ -130,7 +135,7 @@ describe('Tap Webhook Handler', () => {
         }
       };
 
-      const result = await processTapWebhook(webhookPayload);
+      const result = await processTapWebhook(webhookPayload, { testMode: true });
       
       expect(result.success).toBe(true);
       expect(result.message).toBe('Webhook processed successfully');
@@ -203,7 +208,7 @@ describe('Tap Webhook Handler', () => {
         }
       };
 
-      const result = await processTapWebhook(webhookPayload);
+      const result = await processTapWebhook(webhookPayload, { testMode: true });
       
       expect(result.success).toBe(true);
 
@@ -272,7 +277,7 @@ describe('Tap Webhook Handler', () => {
         }
       };
 
-      const result = await processTapWebhook(webhookPayload);
+      const result = await processTapWebhook(webhookPayload, { testMode: true });
       
       expect(result.success).toBe(false);
       expect(result.message).toBe('Payment not found');

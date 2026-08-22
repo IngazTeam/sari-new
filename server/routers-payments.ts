@@ -287,38 +287,6 @@ export const paymentsRouter = router({
             return { success: true };
         }),
 
-    // Webhook handler for Tap Payments
-    handleWebhook: publicProcedure
-        .input(z.object({
-            payload: z.any(),
-            signature: z.string().optional(),
-        }))
-        .mutation(async ({ input }) => {
-            const tapWebhook = await import('./webhooks/tap-webhook');
-
-            // SECURITY: Webhook signature verification is MANDATORY
-            if (!process.env.TAP_WEBHOOK_SECRET) {
-                console.error('[Webhook] TAP_WEBHOOK_SECRET not configured — rejecting webhook');
-                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Webhook not configured' });
-            }
-
-            if (!input.signature) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing webhook signature' });
-            }
-
-            const isValid = tapWebhook.verifyTapSignature(
-                JSON.stringify(input.payload),
-                input.signature,
-                process.env.TAP_WEBHOOK_SECRET
-            );
-
-            if (!isValid) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
-            }
-
-            const result = await tapWebhook.processTapWebhook(input.payload);
-            return result;
-        }),
 });
 
 export type PaymentsRouter = typeof paymentsRouter;
