@@ -21,18 +21,22 @@ export default function TapSettings() {
     publicKey: '',
     isLive: 0,
     webhookUrl: '',
-    webhookSecret: '',
     isActive: 1,
   });
+  const hasStoredSecret = Boolean(settings?.hasSecretKey);
+  const credentialsDirty = settings ? (
+    Boolean(formData.secretKey.trim())
+    || formData.publicKey !== settings.publicKey
+    || formData.isLive !== settings.isLive
+  ) : false;
 
   useEffect(() => {
     if (settings) {
       setFormData({
-        secretKey: settings.secretKey,
+        secretKey: '',
         publicKey: settings.publicKey,
         isLive: settings.isLive,
         webhookUrl: settings.webhookUrl || '',
-        webhookSecret: settings.webhookSecret || '',
         isActive: settings.isActive,
       });
     }
@@ -40,7 +44,14 @@ export default function TapSettings() {
 
   const handleSave = async () => {
     try {
-      await updateSettings.mutateAsync(formData);
+      await updateSettings.mutateAsync({
+        publicKey: formData.publicKey,
+        isLive: formData.isLive as 0 | 1,
+        webhookUrl: formData.webhookUrl,
+        isActive: formData.isActive as 0 | 1,
+        ...(formData.secretKey.trim() && { secretKey: formData.secretKey.trim() }),
+      });
+      setFormData(current => ({ ...current, secretKey: '' }));
       toast.success(t('adminTapSettingsPage.text22'));
       refetch();
     } catch (error) {
@@ -93,8 +104,6 @@ export default function TapSettings() {
                 {settings.lastTestStatus === 'success' ? 'الاتصال ناجح' : 'فشل الاتصال'}
               </p>
               <AlertDescription>
-                {settings.lastTestMessage}
-                <br />
                 <span className="text-sm text-muted-foreground">
                   آخر اختبار: {new Date(settings.lastTestAt).toLocaleString('ar-SA')}
                 </span>
@@ -117,7 +126,8 @@ export default function TapSettings() {
               type="password"
               value={formData.secretKey}
               onChange={(e) => setFormData({ ...formData, secretKey: e.target.value })}
-              placeholder="sk_test_..."
+              placeholder={hasStoredSecret ? 'محفوظ — اتركه فارغًا للإبقاء عليه' : 'sk_test_...'}
+              autoComplete="new-password"
             />
             <p className="text-sm text-muted-foreground">{t('tapSettings.auto_1')}</p>
           </div>
@@ -168,20 +178,12 @@ export default function TapSettings() {
             <p className="text-sm text-muted-foreground">{t('tapSettings.auto_5')}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="webhookSecret">Webhook Secret</Label>
-            <Input
-              id="webhookSecret"
-              type="password"
-              value={formData.webhookSecret}
-              onChange={(e) => setFormData({ ...formData, webhookSecret: e.target.value })}
-              placeholder="whsec_..."
-            />
-            <p className="text-sm text-muted-foreground">{t('tapSettings.auto_6')}</p>
-          </div>
-
           <div className="flex gap-3 pt-4">
-            <Button onClick={handleSave} disabled={updateSettings.isPending} className="flex-1">
+            <Button
+              onClick={handleSave}
+              disabled={updateSettings.isPending || (!hasStoredSecret && !formData.secretKey.trim())}
+              className="flex-1"
+            >
               {updateSettings.isPending ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('tapSettings.auto_7')}</>
@@ -192,7 +194,7 @@ export default function TapSettings() {
             <Button
               variant="outline"
               onClick={handleTestConnection}
-              disabled={testConnection.isPending}
+              disabled={testConnection.isPending || credentialsDirty || !hasStoredSecret}
             >
               {testConnection.isPending ? (
                 <>

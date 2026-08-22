@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.63 — محدّث بفحص اعتماد Tap المتسق مع نسخة الإعداد\
+**الإصدار:** 3.64 — محدّث بسرية إعدادات Tap العامة وتشفيرها\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -110,6 +110,7 @@
 87. أُغلق محليًا تكرار charge وعدم موثوقية استجابة Tap في رابط الدفع: صار المتصفح ينشئ attempt UUID ثابتًا للنقرة وإعادة المحاولة داخل الصفحة، ويشتق الخادم منه ومن هوية الرابط مرجعًا opaque ثابتًا في `reference.idempotent` دون كشف token. الاتصال محصور بمهلة 10 ثوانٍ واستجابة 256KB، ولا يقبل إلا `INITIATED` متطابق المبلغ والعملة والوضع ورابط HTTPS على نطاق Tap. فُرض uniqueness مادي على `tap_charge_id/link_id` في `0033` مع preflight منقح، وأصبحت الكتابة تستعيد الفائز عند سباق insert وتتحقق من تطابق هوية الصف والرابط قبل الإرجاع. صُححت مدة Tap `MINUTE/HOUR/DAY` بدل تفسير الدقائق كساعات. اجتاز 64/64 نطاقًا مركزًا و690/690 بوابة إصدار وTypeScript/Drizzle/build؛ يبقى preflight وmigration وretry/race على MySQL وTap sandbox بعد النشر.
 88. أُغلق محليًا عدم تطابق مصادقة Tap webhook وانحراف حالات الدفع: كان المدخل الفعلي يبحث عن `x-tap-signature` ويحسب HMAC لـ`JSON.stringify(req.body)`، بينما عقد Tap الرسمي يرسل `hashstring` لحقل canonical مرتب. أضيف بناء وتحقق للحقول الرسمية مع دقة العملة وtiming-safe compare، وأزيلت mutationا webhook العامتان في tRPC وfallback legacy الذي كان يمنح نجاحًا لـ`AUTHORIZED`. آلة الحالات الآن تميز INITIATED/AUTHORIZED/CAPTURED وتسمح REFUNDED بعد CAPTURED دون terminal short-circuit، وتطابق المبلغ والعملة والوضع قبل CAS. لا يُخزن payload أو customer/card؛ تُحفظ خلاصة محدودة ويستخدم هاتف السجل المحلي. اجتاز 70/70 نطاقًا نهائيًا و700/700 بوابة إصدار وTypeScript/build؛ يبقى replay فعلي وkey-rotation window وCAPTURED→REFUNDED على Tap sandbox المنشور.
 89. أُغلق محليًا فحص اعتماد Tap غير المطابق لعقد المزود وسباق الاعتماد القديم: كان المساران ينفذان `GET /charges` غير الموثق، يعكسان رسالة المزود، وقد يثبت اختبار بطيء اعتمادًا جديدًا لم يُختبر. صار الفحص المشترك يستخدم `POST /v2/charges/list` الرسمي بـ`limit=1` وحد 128KB ومهلة 10 ثوانٍ، ويتخلص من body. لا يبطل التوثيق إلا رفض 401/403، وتُطبق النتيجة داخل transaction بعد `FOR UPDATE` فقط إذا بقيت public/secret/mode مطابقة حرفيًا للنسخة المختبرة؛ وإلا تطلب الواجهة إعادة الاختبار. اجتاز 75/75 نطاق Tap مركزًا و705/705 بوابة إصدار وTypeScript/build؛ يبقى إثبات test/live بمفاتيح sandbox بعد النشر.
+90. أُغلقت محليًا سرية إعدادات Tap العامة: كانت شاشة الإدارة تعيد `secretKey/webhookSecret` كاملين للمتصفح وتعيد ملء حقول الكتابة، بينما دوال قاعدة البيانات تخزن النص الخام رغم تعليق «encrypted». أصبح DTO بلا السرّين مع presence bits، والحقل السري فارغ دائمًا ويحفظ القديم عند تركه فارغًا، وأزيل webhook secret المضلل لأن التحقق الرسمي يستخدم API secret. كل كتابة جديدة مشفرة AES-GCM وأضيف جدول `tap_settings` إلى migration الاعتمادات التاريخية. اختبار الاتصال يستخدم probe الرسمي المشترك وrow lock مطابقًا للـpublic/secret/live snapshot، وتغيير أي اعتماد يسقط نتيجة الاختبار القديمة. اجتاز 78/78 نطاقًا مركزًا و711/711 بوابة إصدار وTypeScript/build؛ يبقى تشغيل migration وإعادة الاختبار الحي على admin وTap sandbox.
 
 **قرار الخطة:**
 
@@ -118,7 +119,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.63
+### حالة تنفيذ الجولة 3.64
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -147,6 +148,7 @@
 | تكرار وهوية جلسات Tap | مكتمل برمجيًا محليًا/migration وsandbox معلقان | `reference.idempotent` ثابت وopaque، Tap client محدود، response integrity، uniqueness/preflight `0033` وinsert race recovery؛ 64/64 مركز و690/690 بوابة إصدار |
 | مصادقة webhook وآلة حالات Tap | مكتمل برمجيًا محليًا/sandbox معلق | `hashstring` الرسمي، مدخل HTTP واحد، لا AUTHORIZED كقبض، REFUNDED بعد CAPTURED، مطابقة هوية وخلاصة بلا PII؛ 70/70 نهائي و700/700 بوابة إصدار |
 | فحص اعتماد Tap واتساق النسخة | مكتمل برمجيًا محليًا/sandbox معلق | `POST /charges/list` الرسمي، body مهمل ومحدود، إبطال 401/403 فقط، ونتيجة مشروطة بتطابق public/secret/mode تحت row lock؛ 75/75 مركز و705/705 بوابة إصدار |
+| سرية إعدادات Tap العامة | مكتمل برمجيًا محليًا/migration وsandbox معلقان | DTO بلا secret/webhookSecret، حقول فارغة، تشفير كتابة وترحيل تاريخي، key-mode وprobe مربوط بنسخة global settings؛ 78/78 مركز و711/711 بوابة إصدار |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
 | Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
 | نموذج العملاء والمتدربين | مكتمل محليًا/DB وByaan staging معلقان | مصدر واحد يختار `customer_profiles` للمتاجر و`byaan_trainees` النشط لبيان، بلا SQL على `customers` غير المملوك وبعزل `merchant_id`؛ 7/7 بنتست و425/425 بوابة إصدار |
@@ -845,6 +847,23 @@
 
 **معيار القبول:** صفر `GET /charges`، صفر provider body في client/log/error، 401/403 فقط يبطلان التوثيق، نتيجة stale لا تكتب، 705/705 محليًا، وTap sandbox يثبت الحالات الأربع دون charge مالي.
 
+### PROD-TAP-PLATFORM-SECRETS-001: سرية وتشفير إعدادات Tap العامة
+
+**الحالة في الجولة 3.64:** مكتمل برمجيًا محليًا؛ تشغيل migration الاعتمادات وإعادة فحص admin/Tap sandbox بعد النشر معلقان.
+
+المهام:
+
+1. منع `tapSettings.getTapSettings` من إعادة `secretKey` أو `webhookSecret` وإرجاع `hasSecretKey/hasWebhookSecret` وحالة تحقق مشتقة فقط.
+2. إبقاء حقول السر فارغة في متصفح الإدارة؛ القيمة الفارغة تعني preserve ولا تعاد كتابة قيمة مقنّعة أو encrypted blob كأنها اعتماد.
+3. إزالة حقل webhook secret من الواجهة وعقد الكتابة؛ webhook Tap الرسمي يوقع بمفتاح API ولا يعتمد السر المنفصل القديم.
+4. تشفير `tap_settings.secret_key/webhook_secret` في كل create/update وفكهما داخليًا فقط، وإضافة الجدول إلى `encrypt-existing-secrets` للبيانات التاريخية.
+5. رفض public/secret إذا لم يطابقا test/live، وإسقاط `lastTest*` عند تغيير أي جزء من tuple قبل السماح بإظهار نجاح سابق.
+6. استخدام probe الرسمي المقيد نفسه، وتطبيق نجاح/رفض الاختبار بعد `FOR UPDATE` فقط إذا بقي id/public/secret/live مطابقًا للsnapshot.
+7. عدم تخزين provider error؛ يحفظ `verified/rejected` فقط، بينما timeout/5xx لا يغيران حالة الاعتماد.
+8. على staging، شغّل migration بمفتاح `FIELD_ENCRYPTION_KEY` من secret manager، تحقق من prefix المشفر دون طباعة القيمة، ثم نفذ read/save/test وrotation.
+
+**معيار القبول:** صفر سر في DTO/DOM، صفر plaintext جديد في DB، migration تاريخي ناجح، mode mismatch مرفوض، stale probe لا يكتب، 711/711 محليًا، وadmin/Tap sandbox المنشور ناجحان.
+
 ### REL-001: توحيد Node وpnpm والاعتماديات
 
 **الحالة في الجولة 2.0:** مكتمل محليًا؛ نجح frozen install من worktree نظيف وcheck/build، وإعادة التنفيذ في CI remote معلقة.
@@ -1534,6 +1553,7 @@ WhatsAppChannel
 | PROD-TAP-IDEMPOTENCY-001 | P0 | منع charge المكرر وتثبيت هوية Tap | Backend/QA/DevOps | attempt ثابت، unique DB، response integrity وretry/race على sandbox ناجحة |
 | PROD-TAP-WEBHOOK-AUTH-001 | P0 | مصادقة Tap الرسمية وآلة الحالات | Backend/QA/DevOps | hashstring صحيح، CAPTURED فقط يمنح النجاح، replay/refund/rotation مثبتة |
 | PROD-TAP-CREDENTIAL-PROBE-001 | P0 | فحص اعتماد Tap ومنع نتيجة stale | Backend/QA/DevOps | POST list رسمي، body مهمل، ونتيجة مرتبطة بنسخة الإعداد؛ test/live وسباق التغيير على sandbox ناجحان |
+| PROD-TAP-PLATFORM-SECRETS-001 | P0 | سرية وتشفير إعداد Tap العام | Backend/Frontend/QA/DevOps | DTO بلا أسرار، كتابة ومهاجرة مشفرة، وrotation/probe منشوران ناجحان |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |

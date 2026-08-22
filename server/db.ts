@@ -351,6 +351,14 @@ function decryptMerchantPaymentSettings(record: MerchantPaymentSettings | undefi
   } : undefined;
 }
 
+function decryptTapSettingsRecord(record: TapSettings | undefined): TapSettings | undefined {
+  return record ? {
+    ...record,
+    secretKey: decryptSecret(record.secretKey),
+    webhookSecret: decryptSecret(record.webhookSecret),
+  } : undefined;
+}
+
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
 // Sized for 2000+ merchants with concurrent access
 type SariDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -10916,20 +10924,85 @@ export async function getTapSettings() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const results = await db.select().from(tapSettings).limit(1);
-  return results[0];
+  return decryptTapSettingsRecord(results[0]);
 }
 
 export async function createTapSettings(data: NewTapSettings) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await requireDb().insert(tapSettings).values(data);
+  const [result] = await requireDb().insert(tapSettings).values({
+    ...data,
+    secretKey: encryptSecret(data.secretKey),
+    webhookSecret: encryptSecret(data.webhookSecret),
+  });
   return (result as any).insertId;
 }
 
 export async function updateTapSettings(id: number, data: Partial<NewTapSettings>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await requireDb().update(tapSettings).set(data).where(eq(tapSettings.id, id));
+  await requireDb().update(tapSettings).set({
+    ...data,
+    ...(data.secretKey !== undefined && { secretKey: encryptSecret(data.secretKey) }),
+    ...(data.webhookSecret !== undefined && { webhookSecret: encryptSecret(data.webhookSecret) }),
+  }).where(eq(tapSettings.id, id));
+}
+
+/** Apply a platform Tap probe only to the exact credential tuple tested. */
+export async function setTapSettingsTestResultIfCredentialsMatch(
+  settingsId: number,
+  expected: { publicKey: string; secretKey: string; isLive: boolean },
+  result: 'success' | 'failed',
+): Promise<boolean> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  let connectionReusable = false;
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<mysql.RowDataPacket[]>(
+      `SELECT id, public_key, secret_key, is_live
+         FROM tap_settings
+        WHERE id = ?
+        LIMIT 1 FOR UPDATE`,
+      [settingsId],
+    );
+    const current = rows[0];
+    const credentialsMatch = Boolean(current)
+      && current.public_key === expected.publicKey
+      && decryptSecret(current.secret_key) === expected.secretKey
+      && Boolean(current.is_live) === expected.isLive;
+    if (!credentialsMatch) {
+      await connection.rollback();
+      connectionReusable = true;
+      return false;
+    }
+
+    await connection.execute(
+      `UPDATE tap_settings
+          SET last_test_at = ?, last_test_status = ?, last_test_message = ?
+        WHERE id = ?`,
+      [
+        new Date().toISOString().slice(0, 19).replace('T', ' '),
+        result,
+        result === 'success' ? 'verified' : 'rejected',
+        current.id,
+      ],
+    );
+    await connection.commit();
+    connectionReusable = true;
+    return true;
+  } catch (error) {
+    try {
+      await connection.rollback();
+      connectionReusable = true;
+    } catch {
+      connectionReusable = false;
+    }
+    throw error;
+  } finally {
+    await finalizeWhatsAppInstanceLockConnection(connection, [], connectionReusable);
+  }
 }
 
 export async function deleteTapSettings(id: number) {

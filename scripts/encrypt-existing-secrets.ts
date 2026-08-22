@@ -4,6 +4,7 @@ import {
   merchantPaymentSettings,
   paymentGateways,
   platformIntegrations,
+  tapSettings,
   zidSettings,
   whatsappConnections,
   whatsappConnectionRequests,
@@ -81,6 +82,21 @@ async function main() {
     if (row.webhookSecret && !isEncryptedSecret(row.webhookSecret)) changes.webhookSecret = encryptSecret(row.webhookSecret);
     if (Object.keys(changes).length > 0) {
       await db.update(paymentGateways).set(changes).where(eq(paymentGateways.id, row.id));
+      updated++;
+    }
+  }
+
+  const platformTapSettings = await db.select({
+    id: tapSettings.id,
+    secretKey: tapSettings.secretKey,
+    webhookSecret: tapSettings.webhookSecret,
+  }).from(tapSettings);
+  for (const row of platformTapSettings) {
+    const changes: Record<string, string> = {};
+    if (row.secretKey && !isEncryptedSecret(row.secretKey)) changes.secretKey = encryptSecret(row.secretKey);
+    if (row.webhookSecret && !isEncryptedSecret(row.webhookSecret)) changes.webhookSecret = encryptSecret(row.webhookSecret);
+    if (Object.keys(changes).length > 0) {
+      await db.update(tapSettings).set(changes).where(eq(tapSettings.id, row.id));
       updated++;
     }
   }

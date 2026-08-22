@@ -44,7 +44,7 @@ import {
   updateSubscriptionPlan,
   updateTapSettings,
 } from '../db';
-import { createCharge, retrieveCharge, refundCharge, testConnection } from "../_core/tap";
+import { createCharge, retrieveCharge, refundCharge } from "../_core/tap";
 import { calculateProration } from "../_core/subscriptionManager";
 import {
   completeImmediateCanonicalPlanChange,
@@ -52,6 +52,11 @@ import {
   startCanonicalTrial,
 } from '../subscriptions/canonical-state';
 import { publicPaymentUrls } from '../utils/public-url';
+import { tapKeyMatchesMode, tapPublicKeyMatchesMode } from '../payment/payment-link-policy';
+import {
+  toPlatformTapSettingsView,
+  verifyPlatformTapCredentialsSnapshot,
+} from '../payment/platform-tap-settings';
 
 function assertBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -819,7 +824,8 @@ export const tapSettingsRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await getTapSettings();
+      const settings = await getTapSettings();
+      return settings ? toPlatformTapSettingsView(settings) : null;
     }),
 
   // Update settings
@@ -831,23 +837,49 @@ export const tapSettingsRouter = router({
       return next({ ctx });
     })
     .input(z.object({
-      secretKey: z.string(),
-      publicKey: z.string(),
-      isLive: z.number(),
-      webhookUrl: z.string().optional(),
-      webhookSecret: z.string().optional(),
-      isActive: z.number(),
-    }))
+      secretKey: z.string().trim().min(12).max(500).optional(),
+      publicKey: z.string().trim().min(12).max(500),
+      isLive: z.union([z.literal(0), z.literal(1)]),
+      webhookUrl: z.union([z.string().trim().url().max(500), z.literal('')]).optional(),
+      isActive: z.union([z.literal(0), z.literal(1)]),
+    }).strict())
     .mutation(async ({ input }) => {
       const existingSettings = await getTapSettings();
-
-      if (existingSettings) {
-        await updateTapSettings(existingSettings.id, input);
-      } else {
-        await createTapSettings(input);
+      const effectiveSecret = input.secretKey ?? existingSettings?.secretKey ?? '';
+      const testMode = !Boolean(input.isLive);
+      if (!tapKeyMatchesMode(effectiveSecret, testMode)
+        || !tapPublicKeyMatchesMode(input.publicKey, testMode)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
       }
 
-      return { success: true };
+      const credentialsChanged = !existingSettings
+        || effectiveSecret !== existingSettings.secretKey
+        || input.publicKey !== existingSettings.publicKey
+        || Boolean(input.isLive) !== Boolean(existingSettings.isLive);
+      const update = {
+        publicKey: input.publicKey,
+        isLive: input.isLive,
+        webhookUrl: input.webhookUrl || null,
+        isActive: input.isActive,
+        ...(input.secretKey !== undefined && { secretKey: input.secretKey }),
+        ...(credentialsChanged && {
+          lastTestAt: null,
+          lastTestStatus: null,
+          lastTestMessage: null,
+        }),
+      };
+
+      if (existingSettings) {
+        await updateTapSettings(existingSettings.id, update);
+      } else {
+        if (!input.secretKey) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح Tap السري مطلوب عند الإعداد الأول' });
+        }
+        await createTapSettings({ ...update, secretKey: input.secretKey });
+      }
+
+      const saved = await getTapSettings();
+      return { success: true, settings: saved ? toPlatformTapSettingsView(saved) : null };
     }),
 
   // Test connection
@@ -859,19 +891,29 @@ export const tapSettingsRouter = router({
       return next({ ctx });
     })
     .mutation(async () => {
-      const result = await testConnection();
-
-      // Update settings with test result
       const settings = await getTapSettings();
-      if (settings) {
-        await updateTapSettings(settings.id, {
-          lastTestAt: new Date().toISOString(),
-          lastTestStatus: result.success ? 'success' : 'failed',
-          lastTestMessage: result.message,
-        });
+      if (!settings) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعدادات Tap غير مكتملة' });
+      }
+      const testMode = !Boolean(settings.isLive);
+      if (!tapKeyMatchesMode(settings.secretKey, testMode)
+        || !tapPublicKeyMatchesMode(settings.publicKey, testMode)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
       }
 
-      return result;
+      const result = await verifyPlatformTapCredentialsSnapshot({
+        id: settings.id,
+        publicKey: settings.publicKey,
+        secretKey: settings.secretKey,
+        isLive: Boolean(settings.isLive),
+      });
+      if (result.outcome === 'verified') return { success: true, message: 'verified' };
+      if (result.outcome === 'changed') {
+        throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت إعدادات Tap أثناء الاختبار؛ أعد المحاولة' });
+      }
+      if (result.outcome === 'rejected') return { success: false, message: 'rejected' };
+      console.warn('[PlatformTapCredentials] Credential probe unavailable', { failure: result.failure });
+      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر الاتصال بـ Tap؛ حاول لاحقاً' });
     }),
 });
 

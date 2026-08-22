@@ -41,7 +41,6 @@ export interface TapChargeRequest {
 		sms: boolean;
 	};
 }
-
 export interface TapChargeResponse {
 	id: string;
 	object: string;
@@ -292,48 +291,5 @@ export async function verifyWebhook(payload: string, signature: string): Promise
 	} catch (error) {
 		console.error('[Tap] Webhook verification error:', error);
 		return false;
-	}
-}
-
-// ============================================
-// Test Connection
-// ============================================
-
-/**
- * Test connection to Tap API
- * 
- * @returns True if connection is successful
- */
-export async function testConnection(): Promise<{ success: boolean; message: string }> {
-	try {
-		const settings = await getTapSettings();
-		const baseUrl = getApiBaseUrl(!!settings.isLive);
-
-		// Try to retrieve a charge (will fail if no charges exist, but will confirm API key is valid)
-		const response = await fetch(`${baseUrl}/charges?limit=1`, {
-			method: 'GET',
-			headers: {
-				'Authorization': `Bearer ${settings.secretKey}`,
-				'Content-Type': 'application/json',
-			},
-		});
-
-		if (response.ok) {
-			return {
-				success: true,
-				message: 'Connection to Tap API successful',
-			};
-		} else {
-			const errorData = await response.json();
-			return {
-				success: false,
-				message: `Connection failed: ${errorData.message || response.statusText}`,
-			};
-		}
-	} catch (error) {
-		return {
-			success: false,
-			message: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-		};
 	}
 }
