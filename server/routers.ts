@@ -7619,7 +7619,8 @@ export const appRouter = router({
         }
 
         const settings = await getMerchantPaymentSettings(link.merchantId);
-        if (!settings?.tapEnabled || !settings.tapSecretKey || !settings.isVerified) {
+        const { isTapPaymentReady } = await import('./payment/payment-link-policy');
+        if (!settings || !isTapPaymentReady(settings)) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'بوابة الدفع غير جاهزة لهذا المتجر' });
         }
 
@@ -7723,58 +7724,6 @@ export const appRouter = router({
         const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
         if (!payment) throw new TRPCError({ code: 'NOT_FOUND', message: 'عملية الدفع غير موجودة' });
         return { status: payment.status };
-      }),
-
-    // Create payment charge
-    createCharge: protectedProcedure
-      .input(z.object({
-        amount: z.number().int().min(100).max(100_000_000),
-        currency: z.enum(['SAR']).default('SAR'),
-        customerName: z.string().trim().min(2).max(120),
-        customerEmail: z.string().email().optional(),
-        customerPhone: z.string().trim().min(9).max(20),
-        description: z.string().max(500).optional(),
-        orderId: z.number().int().positive().optional(),
-        bookingId: z.number().int().positive().optional(),
-        redirectUrl: z.string().url(),
-        // @ts-ignore
-        metadata: z.record(z.any()).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        const tapPayments = await import('./_core/tapPayments');
-
-        const charge = await tapPayments.createCharge({
-          ...input,
-          redirectUrl: (await import('./utils/public-url')).publicPaymentUrls.return(),
-          webhookUrl: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
-        });
-
-        const payment = await dbPayments.createOrderPayment({
-          merchantId: merchant.id,
-          orderId: input.orderId || null,
-          bookingId: input.bookingId || null,
-          customerPhone: input.customerPhone,
-          customerName: input.customerName,
-          customerEmail: input.customerEmail || null,
-          amount: input.amount,
-          currency: input.currency,
-          tapChargeId: charge.id,
-          tapPaymentUrl: charge.transaction.url,
-          status: 'pending',
-          description: input.description || null,
-          metadata: input.metadata ? JSON.stringify(input.metadata) : null,
-          expiresAt: new Date(Date.now() + charge.transaction.expiry.period * 60 * 60 * 1000).toISOString(),
-        });
-
-        return {
-          paymentId: payment?.id,
-          chargeId: charge.id,
-          paymentUrl: charge.transaction.url,
-          expiresAt: charge.transaction.expiry,
-        };
       }),
 
     verifyPayment: protectedProcedure
@@ -7921,12 +7870,26 @@ export const appRouter = router({
         isFixedAmount: z.boolean().default(true),
         maxUsageCount: z.number().int().min(1).max(100_000).optional(),
         expiresAt: z.string().optional(),
-        orderId: z.number().optional(),
-        bookingId: z.number().optional(),
+        orderId: z.number().int().positive().optional(),
+        bookingId: z.number().int().positive().optional(),
+      }).refine(input => !(input.orderId && input.bookingId), {
+        message: 'لا يمكن ربط رابط الدفع بطلب وحجز معاً',
       }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        if (input.orderId) {
+          const order = await getOrderById(input.orderId);
+          if (!order || order.merchantId !== merchant.id) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
+          }
+        }
+        if (input.bookingId) {
+          const booking = await getBookingById(input.bookingId);
+          if (!booking || booking.merchantId !== merchant.id) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
+          }
+        }
         const dbPayments = await import('./db_payments');
         const crypto = await import('node:crypto');
         const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
@@ -8159,90 +8122,6 @@ export const appRouter = router({
       }
     }),
 
-    // Create payment link using merchant's Tap keys
-    createPaymentLink: protectedProcedure
-      .input(z.object({
-        amount: z.number().min(1),
-        customerPhone: z.string(),
-        customerName: z.string().optional(),
-        customerEmail: z.string().email().optional(),
-        description: z.string().optional(),
-        orderId: z.number().optional(),
-        bookingId: z.number().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const settings = await getMerchantPaymentSettings(merchant.id);
-        const { isTapPaymentReady } = await import('./payment/payment-link-policy');
-        if (!settings || !isTapPaymentReady(settings)) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الدفع الإلكتروني غير مفعل' });
-        }
-
-        try {
-          const baseUrl = 'https://api.tap.company/v2';
-
-          // Create charge
-          const chargeData = {
-            amount: input.amount / 100, // Convert from halalas to SAR
-            currency: settings.defaultCurrency || 'SAR',
-            customer: {
-              first_name: input.customerName || 'Customer',
-              phone: {
-                country_code: '966',
-                number: input.customerPhone.replace(/^\+?966/, '').replace(/^0/, ''),
-              },
-              email: input.customerEmail,
-            },
-            source: { id: 'src_all' },
-            redirect: {
-              url: (await import('./utils/public-url')).publicPaymentUrls.return(),
-            },
-            post: {
-              url: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
-            },
-            description: input.description || `طلب من ${merchant.businessName}`,
-            metadata: {
-              merchantId: merchant.id,
-              orderId: input.orderId,
-              bookingId: input.bookingId,
-            },
-          };
-
-          const response = await fetch(`${baseUrl}/charges`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${settings.tapSecretKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(chargeData),
-          });
-
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: result.message || 'فشل إنشاء رابط الدفع'
-            });
-          }
-
-          return {
-            success: true,
-            paymentUrl: result.transaction?.url || result.redirect?.url,
-            chargeId: result.id,
-          };
-        } catch (error: any) {
-          if (error instanceof TRPCError) throw error;
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'حدث خطأ أثناء إنشاء رابط الدفع'
-          });
-        }
-      }),
   }),
 
   // AI Suggestions Router

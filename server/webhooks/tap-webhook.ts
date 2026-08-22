@@ -116,7 +116,6 @@ export async function processTapWebhook(
     const charge = payload.data.object;
     const chargeId = charge.id;
     const status = charge.status;
-    const metadata = charge.metadata;
 
     console.log(`[TapWebhook] Processing webhook for charge ${chargeId}, status: ${status}`);
 
@@ -154,18 +153,27 @@ export async function processTapWebhook(
       }
     }
 
-    // معالجة حسب نوع المعاملة
-    if (metadata.type === 'order' && metadata.orderId) {
+    // Resource identity comes from the tenant-scoped local payment intent, never
+    // from merchant-controlled provider metadata echoed in the webhook.
+    let localMetadata: Record<string, unknown> = {};
+    try {
+      const parsed = payment.metadata ? JSON.parse(payment.metadata) : {};
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) localMetadata = parsed;
+    } catch {
+      localMetadata = {};
+    }
+    const localConversationId = Number(localMetadata.conversationId);
+    if (payment.orderId) {
       await handleOrderPayment(
-        parseInt(metadata.orderId),
+        payment.orderId,
         status,
         payment.merchantId,
         charge.customer.phone.country_code + charge.customer.phone.number,
-        metadata.conversationId ? parseInt(String(metadata.conversationId)) : undefined
+        Number.isSafeInteger(localConversationId) && localConversationId > 0 ? localConversationId : undefined,
       );
-    } else if (metadata.type === 'booking' && metadata.bookingId) {
+    } else if (payment.bookingId) {
       await handleBookingPayment(
-        parseInt(metadata.bookingId),
+        payment.bookingId,
         status,
         payment.merchantId,
         charge.customer.phone.country_code + charge.customer.phone.number
@@ -227,8 +235,8 @@ async function handleOrderPayment(
 ): Promise<void> {
   try {
     const order = await getOrderById(orderId);
-    if (!order) {
-      console.warn(`[TapWebhook] Order ${orderId} not found`);
+    if (!order || order.merchantId !== merchantId) {
+      console.warn(`[TapWebhook] Order target is missing or outside the payment tenant`);
       return;
     }
 
@@ -347,12 +355,16 @@ async function handleBookingPayment(
 ): Promise<void> {
   try {
     const booking = await getBookingById(bookingId);
-    if (!booking) {
-      console.warn(`[TapWebhook] Booking ${bookingId} not found`);
+    if (!booking || booking.merchantId !== merchantId) {
+      console.warn(`[TapWebhook] Booking target is missing or outside the payment tenant`);
       return;
     }
 
     const service = await getServiceById(booking.serviceId);
+    if (!service || service.merchantId !== merchantId) {
+      console.warn('[TapWebhook] Booking service is missing or outside the payment tenant');
+      return;
+    }
     const serviceName = service?.name || 'الخدمة';
 
     if (status === 'CAPTURED') {

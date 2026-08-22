@@ -384,17 +384,17 @@ export async function incrementPaymentLinkUsage(
   await db
     .update(paymentLinks)
     .set({
-      usageCount: sql`${paymentLinks.usageCount} + 1`,
+      usageCount: sql`${paymentLinks.usageCount} + ${success ? 1 : 0}`,
       successfulPayments: sql`${paymentLinks.successfulPayments} + ${success ? 1 : 0}`,
       failedPayments: sql`${paymentLinks.failedPayments} + ${success ? 0 : 1}`,
       totalCollected: sql`${paymentLinks.totalCollected} + ${success ? amount : 0}`,
       status: sql`CASE
         WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
-          AND ${paymentLinks.usageCount} + 1 >= ${paymentLinks.maxUsageCount}
+          AND ${paymentLinks.usageCount} + ${success ? 1 : 0} >= ${paymentLinks.maxUsageCount}
         THEN 'completed' ELSE ${paymentLinks.status} END`,
       isActive: sql`CASE
         WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
-          AND ${paymentLinks.usageCount} + 1 >= ${paymentLinks.maxUsageCount}
+          AND ${paymentLinks.usageCount} + ${success ? 1 : 0} >= ${paymentLinks.maxUsageCount}
         THEN 0 ELSE ${paymentLinks.isActive} END`,
       updatedAt: new Date().toISOString(),
     })
