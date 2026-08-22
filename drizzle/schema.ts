@@ -3237,7 +3237,7 @@ export const sariApiKeys = mysqlTable("sari_api_keys", {
 	keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
 	keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
 	label: varchar({ length: 100 }).default('Default Key'),
-	permissions: text(),
+	permissions: text().notNull(),
 	isActive: tinyint("is_active").default(1).notNull(),
 	lastUsedAt: timestamp("last_used_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),

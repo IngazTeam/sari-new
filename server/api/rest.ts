@@ -48,6 +48,14 @@ import { registerMerchantAccount } from '../accounts/lifecycle';
 import { privacyHashExact } from '../accounts/privacy-hash';
 import { deliverEmailVerification } from '../accounts/email-verification-delivery';
 import { buildPublicUrl } from '../utils/public-url';
+import {
+  ApiKeyScope,
+  encodeApiKeyPermissions,
+  hasApiKeyScope,
+  normalizeApiKeyScopes,
+  parseApiKeyPermissions,
+  requiredApiKeyScope,
+} from './api-key-permissions';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -56,6 +64,7 @@ import { buildPublicUrl } from '../utils/public-url';
 interface AuthenticatedRequest extends Request {
   merchant?: any;
   apiKeyId?: number;
+  apiKeyScopes?: ApiKeyScope[];
 }
 
 interface PlatformRequest extends Request {
@@ -74,10 +83,21 @@ async function ensureApiKeysTable() {
 }
 
 /** Generate a new API key for a merchant */
-export async function generateApiKey(merchantId: number, label: string = 'Default Key'): Promise<{ key: string; prefix: string }> {
+export async function generateApiKey(
+  merchantId: number,
+  label: string = 'Default Key',
+  scopes?: unknown,
+): Promise<{ key: string; prefix: string; permissions: ApiKeyScope[] }> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant for API key');
+  if (typeof label !== 'string' || !label.trim() || label.trim().length > 100 || /[\u0000-\u001f\u007f]/.test(label)) {
+    throw new Error('Invalid API key label');
+  }
   await ensureApiKeysTable();
   const pool = await getPool();
   if (!pool) throw new Error('Database connection failed');
+
+  const permissions = normalizeApiKeyScopes(scopes);
+  const encodedPermissions = encodeApiKeyPermissions(permissions);
 
   // Generate: sari_sk_ + 32 random hex chars
   const rawKey = `sari_sk_${crypto.randomBytes(24).toString('hex')}`;
@@ -85,15 +105,15 @@ export async function generateApiKey(merchantId: number, label: string = 'Defaul
   const keyPrefix = rawKey.substring(0, 12); // sari_sk_xxxx
 
   await pool.execute(
-    `INSERT INTO sari_api_keys (merchant_id, key_hash, key_prefix, label) VALUES (?, ?, ?, ?)`,
-    [merchantId, keyHash, keyPrefix, label]
+    `INSERT INTO sari_api_keys (merchant_id, key_hash, key_prefix, label, permissions) VALUES (?, ?, ?, ?, ?)`,
+    [merchantId, keyHash, keyPrefix, label.trim(), encodedPermissions]
   );
 
-  return { key: rawKey, prefix: keyPrefix };
+  return { key: rawKey, prefix: keyPrefix, permissions };
 }
 
 /** Validate an API key and return the merchant */
-async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number } | null> {
+async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number; scopes: ApiKeyScope[] } | null> {
   await ensureApiKeysTable();
   const pool = await getPool();
   if (!pool) return null;
@@ -118,13 +138,19 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
   const merchant = await getMerchantById(apiKeyRow.merchant_id);
   if (!merchant || merchant.status !== 'active') return null;
 
+  const scopes = parseApiKeyPermissions(apiKeyRow.permissions);
+  if (!scopes) {
+    console.warn(`[SariAPI] API key ${apiKeyRow.id} has invalid permissions and was denied`);
+    return { merchant, keyId: apiKeyRow.id, scopes: [] };
+  }
+
   // Update last_used_at (fire-and-forget)
   pool.execute(
     `UPDATE sari_api_keys SET last_used_at = NOW() WHERE id = ?`,
     [apiKeyRow.id]
   ).catch(() => {});
 
-  return { merchant, keyId: apiKeyRow.id };
+  return { merchant, keyId: apiKeyRow.id, scopes };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -354,8 +380,9 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
     return res.status(401).json({ error: 'Invalid API key format', errorAr: 'تنسيق مفتاح API غير صالح' });
   }
 
-  // Rate limit by key prefix
-  if (!checkApiRateLimit(key.substring(0, 12))) {
+  // Hash the complete credential so two random keys cannot share a limiter
+  // bucket merely because their display prefixes collide.
+  if (!checkApiRateLimit(`api_${privacyHashExact(key)}`)) {
     return res.status(429).json({
       error: 'Rate limit exceeded',
       errorAr: 'تجاوزت الحد الأقصى للطلبات (100/دقيقة)',
@@ -370,6 +397,19 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
 
   req.merchant = result.merchant;
   req.apiKeyId = result.keyId;
+  req.apiKeyScopes = result.scopes;
+  next();
+}
+
+function apiKeyPermissionMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const required = requiredApiKeyScope(req.method, req.path);
+  if (!required || !hasApiKeyScope(req.apiKeyScopes || [], required)) {
+    return res.status(403).json({
+      error: 'API key does not have permission for this operation',
+      errorAr: 'مفتاح API لا يملك صلاحية هذه العملية',
+      code: 'insufficient_scope',
+    });
+  }
   next();
 }
 
@@ -458,6 +498,7 @@ sariPlatformRouter.use(express.json({ limit: '2mb' }));
 
 // Apply auth to merchant routes
 sariApiRouter.use(authMiddleware);
+sariApiRouter.use(apiKeyPermissionMiddleware);
 
 // Apply platform auth to platform routes
 sariPlatformRouter.use(platformAuthMiddleware);
@@ -476,6 +517,7 @@ sariApiRouter.get('/me', (req: AuthenticatedRequest, res: Response) => {
     currency: m.currency,
     autoReplyEnabled: m.autoReplyEnabled,
     createdAt: m.createdAt,
+    apiPermissions: req.apiKeyScopes,
   });
 });
 

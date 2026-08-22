@@ -204,6 +204,13 @@
       "when": 1787494800000,
       "tag": "0028_api_conversion_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1787498400000,
+      "tag": "0029_api_key_scope_enforcement",
+      "breakpoints": true
     }
   ]
 }
