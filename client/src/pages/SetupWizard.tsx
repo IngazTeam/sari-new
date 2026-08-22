@@ -44,6 +44,11 @@ function parseWizardData(value: string | null | undefined): Record<string, any> 
   }
 }
 
+function toMinorUnits(value: unknown): number {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : 0;
+}
+
 const STEP_TITLES = [
   'مرحباً بك!',
   'نوع نشاطك',
@@ -143,11 +148,11 @@ export default function SetupWizard() {
 
   // Update wizard data
   const updateWizardData = (stepData: Record<string, any>) => {
-    setWizardData(prev => {
-      const next = { ...prev, ...stepData };
-      wizardDataRef.current = next;
-      return next;
-    });
+    // Keep the ref synchronous so an immediate "next" click persists the
+    // exact reviewed values even when React batches the state render.
+    const next = { ...wizardDataRef.current, ...stepData };
+    wizardDataRef.current = next;
+    setWizardData(next);
   };
 
   // Navigate to next step
@@ -161,7 +166,7 @@ export default function SetupWizard() {
 
       // Auto-skip Templates (step 5) if products were scraped from website
       let nextStep = currentStep + 1;
-      if (nextStep === 5 && wizardData.extractedProducts?.length > 0) {
+      if (nextStep === 5 && wizardData.websiteAnalysis?.productCount > 0) {
         // Mark templates step as completed too
         if (!newCompletedSteps.includes(5)) {
           newCompletedSteps.push(5);
@@ -191,7 +196,7 @@ export default function SetupWizard() {
     if (currentStep > 1) {
       let prevStep = currentStep - 1;
       // Skip Templates (step 5) going back if products were scraped from website
-      if (prevStep === 5 && wizardData.extractedProducts?.length > 0) {
+      if (prevStep === 5 && wizardData.websiteAnalysis?.productCount > 0) {
         prevStep = 4; // Jump back to Website
       }
       setCurrentStep(prevStep);
@@ -224,7 +229,7 @@ export default function SetupWizard() {
         products: products.filter((p: any) => p?.name?.trim()).map((p: any) => ({
           name: p.name,
           description: p.description || '',
-          price: Number(p.price || 0),
+          priceMinor: toMinorUnits(p.price),
           currency: p.currency || 'SAR',
           imageUrl: p.imageUrl || '',
           productUrl: p.productUrl || '',
@@ -233,8 +238,14 @@ export default function SetupWizard() {
         services: services.filter((s: any) => s?.name?.trim()).map((s: any) => ({
           name: s.name,
           description: s.description || '',
-          price: Number(s.price || 0),
+          priceMinor: toMinorUnits(s.price),
         })),
+        websiteAnalysis: latestWizardData.websiteAnalysis?.confirmed && latestWizardData.websiteAnalysis?.websiteUrl
+          ? {
+              websiteUrl: latestWizardData.websiteAnalysis.websiteUrl,
+              platform: latestWizardData.websiteAnalysis.platform || 'unknown',
+            }
+          : undefined,
       });
 
       await Promise.all([
@@ -292,7 +303,7 @@ export default function SetupWizard() {
       case 9:
         return <LanguageStep {...stepProps} />;
       case 10:
-        return <CompleteStep {...stepProps} completeSetup={completeSetup} isLoading={isLoading} />;
+        return <CompleteStep {...stepProps} goToStep={goToStep} completeSetup={completeSetup} isLoading={isLoading} />;
       default:
         return null;
     }

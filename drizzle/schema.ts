@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, varchar, text, mediumtext, timestamp, tinyint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
@@ -1508,7 +1508,7 @@ export const setupWizardProgress = mysqlTable("setup_wizard_progress", {
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }).unique(),
 	currentStep: int("current_step").default(1).notNull(),
 	completedSteps: text("completed_steps"), // JSON array [1, 2, 3]
-	wizardData: text("wizard_data"), // JSON object with temporary data
+	wizardData: mediumtext("wizard_data"), // bounded JSON draft; see setup wizard router
 	isCompleted: tinyint("is_completed").default(0).notNull(),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),

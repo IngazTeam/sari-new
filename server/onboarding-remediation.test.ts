@@ -7,15 +7,17 @@ describe('onboarding remediation guards', () => {
   it('does not call a missing saveProducts procedure or malformed sendBeacon endpoint', () => {
     const wizard = read('./client/src/pages/SetupWizard.tsx');
     const catalogStep = read('./client/src/pages/setup-wizard/ProductsServicesStep.tsx');
+    const websiteStep = read('./client/src/pages/setup-wizard/WebsiteStep.tsx');
 
     expect(catalogStep).not.toContain('setupWizard.saveProducts');
+    expect(websiteStep).not.toContain('setupWizard.saveProducts');
     expect(wizard).not.toContain('sendBeacon');
     expect(wizard).toContain('wizardDataRef.current');
   });
 
   it('sends the final catalog in the typed completion contract', () => {
     const wizard = read('./client/src/pages/SetupWizard.tsx');
-    const routers = read('./server/routers.ts');
+    const routers = read('./server/routers-setup-wizard.ts');
     const start = routers.indexOf('completeSetup: protectedProcedure');
     const end = routers.indexOf('// Get templates', start);
     const completion = routers.slice(start, end);
@@ -27,7 +29,7 @@ describe('onboarding remediation guards', () => {
   });
 
   it('persists catalog idempotently before marking setup complete', () => {
-    const routers = read('./server/routers.ts');
+    const routers = read('./server/routers-setup-wizard.ts');
     const start = routers.indexOf('completeSetup: protectedProcedure');
     const end = routers.indexOf('// Get templates', start);
     const completion = routers.slice(start, end);

@@ -1,17 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check, Loader2, Rocket, Store, Briefcase, MessageSquare, Calendar, Settings, User } from 'lucide-react';
+import { AlertCircle, Check, Globe2, Loader2, Pencil, Rocket, Store, Briefcase, MessageSquare, Calendar, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface CompleteStepProps {
   wizardData: Record<string, any>;
+  goToStep: (step: number) => void;
   completeSetup: () => void;
   isLoading: boolean;
 }
 
 export default function CompleteStep({
   wizardData,
+  goToStep,
   completeSetup,
   isLoading,
 }: CompleteStepProps) {
@@ -20,6 +22,10 @@ export default function CompleteStep({
   const hasProducts = wizardData.products && wizardData.products.length > 0;
   const hasServices = wizardData.services && wizardData.services.length > 0;
   const hasIntegrations = wizardData.enableCalendar || wizardData.enableSheets;
+  const websiteReview = wizardData.websiteAnalysis?.confirmed ? wizardData.websiteAnalysis : null;
+  const hasValidProfile =
+    typeof wizardData.businessName === 'string' && wizardData.businessName.trim().length >= 2 &&
+    typeof wizardData.phone === 'string' && /^[+0-9][0-9\s()\-]{6,19}$/.test(wizardData.phone.trim());
 
   // WhatsApp Preview State
   const [previewMessages, setPreviewMessages] = useState<Array<{ sender: 'user' | 'bot', text: string }>>([]);
@@ -164,7 +170,12 @@ export default function CompleteStep({
               )}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text2')}</h3>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text2')}</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(3)} aria-label="تعديل معلومات النشاط">
+                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
+                </Button>
+              </div>
               <div className="space-y-1 text-sm text-gray-700">
                 <p><strong>{t('wizardCompleteStepPage.text3')}</strong> {wizardData.businessName || 'غير محدد'}</p>
                 <p><strong>{t('wizardCompleteStepPage.text4')}</strong> {
@@ -178,6 +189,36 @@ export default function CompleteStep({
           </div>
         </Card>
 
+        {/* Reviewed website analysis */}
+        <Card className="p-5 bg-gradient-to-br from-blue-50 to-cyan-100">
+          <div className="flex items-start space-x-3 space-x-reverse">
+            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <Globe2 className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900">تحليل الموقع</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(4)} aria-label="تعديل تحليل الموقع">
+                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
+                </Button>
+              </div>
+              {websiteReview ? (
+                <div className="space-y-1 text-sm text-gray-700">
+                  <p className="truncate" dir="ltr" title={websiteReview.websiteUrl}>{websiteReview.websiteUrl}</p>
+                  <p>{websiteReview.productCount || 0} عنصر جاهز للحفظ عند الإطلاق</p>
+                  <p className="text-xs text-blue-800">
+                    {websiteReview.profileSuggestionApplied
+                      ? 'اعتمدت اقتراحات الملف بعد موافقتك.'
+                      : 'بقي ملف النشاط المدخل يدويًا دون استبدال.'}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">تم تخطي تحليل الموقع، ويمكن إضافته لاحقًا.</p>
+              )}
+            </div>
+          </div>
+        </Card>
+
         {/* Products/Services */}
         <Card className="p-5 bg-gradient-to-br from-teal-50 to-teal-100">
           <div className="flex items-start space-x-3 space-x-reverse">
@@ -185,7 +226,12 @@ export default function CompleteStep({
               <Store className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text6')}</h3>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text6')}</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(6)} aria-label="تعديل المنتجات والخدمات">
+                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
+                </Button>
+              </div>
               <div className="space-y-1 text-sm text-gray-700">
                 {hasProducts && (
                   <p className="flex items-center space-x-1 space-x-reverse">
@@ -214,7 +260,12 @@ export default function CompleteStep({
               <MessageSquare className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text8')}</h3>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text8')}</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(8)} aria-label="تعديل شخصية ساري">
+                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
+                </Button>
+              </div>
               <div className="space-y-1 text-sm text-gray-700">
                 <p><strong>{t('wizardCompleteStepPage.text9')}</strong> {
                   wizardData.botTone === 'friendly' ? 'ودود ومرح' :
@@ -238,7 +289,12 @@ export default function CompleteStep({
               <Calendar className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text11')}</h3>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text11')}</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(7)} aria-label="تعديل التكاملات">
+                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
+                </Button>
+              </div>
               <div className="space-y-1 text-sm text-gray-700">
                 {wizardData.enableCalendar && (
                   <p className="flex items-center space-x-1 space-x-reverse">
@@ -291,10 +347,17 @@ export default function CompleteStep({
 
       {/* Complete Button */}
       <div className="text-center pt-6">
+        {!hasValidProfile && (
+          <div role="alert" className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <AlertCircle className="h-4 w-4" />
+            <span>راجع اسم النشاط ورقم الهاتف قبل الإطلاق.</span>
+            <Button type="button" variant="link" size="sm" onClick={() => goToStep(3)}>تعديل الآن</Button>
+          </div>
+        )}
         <Button
           size="lg"
           onClick={completeSetup}
-          disabled={isLoading}
+          disabled={isLoading || !hasValidProfile}
           className="px-12 py-6 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-green-200"
         >
           {isLoading ? (

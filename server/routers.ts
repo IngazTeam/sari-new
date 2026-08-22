@@ -14,6 +14,7 @@ import { zidRouter } from "./integrations/zid";
 import { calendlyRouter } from "./integrations/calendly";
 import { websiteAnalysisRouter } from "./routers-website-analysis";
 import { analysisRouter } from "./routers/analysis";
+import { setupWizardRouter } from "./routers-setup-wizard";
 import {
   subscriptionPlansRouter,
   subscriptionAddonsRouter,
@@ -81,7 +82,6 @@ import {
   checkAppointmentConflict,
   checkBookingConflict,
   claimReward,
-  completeSetupWizard,
   completeWhatsAppRequest,
   createABTest,
   createAppointment,
@@ -107,7 +107,6 @@ import {
   createService,
   createServiceCategory,
   createServicePackage,
-  createSetupWizardProgress,
   createStaffMember,
   createSubscription,
   createTemplateTranslation,
@@ -162,8 +161,6 @@ import {
   getBookingsByMerchant,
   getBookingsByService,
   getBotSettings,
-  getBusinessTemplateById,
-  getBusinessTemplatesWithTranslations,
   getCampaignById,
   getCampaignLogsWithStats,
   getCampaignsByMerchantId,
@@ -235,7 +232,6 @@ import {
   getServiceRatingStats,
   getServicesByCategory,
   getServicesByMerchant,
-  getSetupWizardProgress,
   getStaffMemberById,
   getStaffMembersByMerchant,
   getSubscriptionPlanById,
@@ -260,7 +256,6 @@ import {
   getWhatsAppRequestsByMerchantId,
   getWhatsappConnectionByMerchantId,
   incrementReferralCount,
-  incrementTemplateUsage,
   markAbandonedCartRecovered,
   markConvertedToSignup,
   markSignupPromptShown,
@@ -297,7 +292,6 @@ import {
   updateService,
   updateServiceCategory,
   updateServicePackage,
-  updateSetupWizardProgress,
   updateStaffMember,
   updateSubscription,
   updateTemplateTranslation,
@@ -332,36 +326,6 @@ import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
 import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
 import { toPublicPaymentGateway } from './security/secrets';
-
-const optionalWebUrl = z.string().trim().max(500).refine((value) => {
-  if (!value) return true;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}, 'Invalid web URL');
-
-const setupProductSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().trim().max(5000).optional().default(''),
-  price: z.number().int().nonnegative().max(100_000_000),
-  currency: z.enum(['SAR', 'USD']).optional().default('SAR'),
-  imageUrl: optionalWebUrl.optional().default(''),
-  productUrl: optionalWebUrl.optional().default(''),
-  category: z.string().trim().max(100).optional().default(''),
-});
-
-const setupServiceSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().trim().max(5000).optional().default(''),
-  price: z.number().nonnegative().max(1_000_000),
-});
-
-function normalizeCatalogName(value: string): string {
-  return value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
-}
 
 const passwordResetEmailSchema = z.string()
   .trim()
@@ -6345,237 +6309,8 @@ export const appRouter = router({
     }),
   }),
 
-  // Setup Wizard APIs
-  setupWizard: router({
-    // Get wizard progress
-    getProgress: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      let progress = await getSetupWizardProgress(merchant.id);
-      if (!progress) {
-        // Create initial progress
-        const progressId = await createSetupWizardProgress({
-          merchantId: merchant.id,
-          currentStep: 1,
-          completedSteps: JSON.stringify([]),
-          wizardData: JSON.stringify({}),
-          isCompleted: 0,
-        });
-        progress = await getSetupWizardProgress(merchant.id);
-      }
-      return progress;
-    }),
-
-    // Save progress
-    saveProgress: protectedProcedure
-      .input(z.object({
-        currentStep: z.number(),
-        completedSteps: z.array(z.number()),
-        wizardData: z.record(z.string(), z.any()),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        await updateSetupWizardProgress(merchant.id, {
-          currentStep: input.currentStep,
-          completedSteps: JSON.stringify(input.completedSteps),
-          wizardData: JSON.stringify(input.wizardData),
-        });
-
-        return { success: true };
-      }),
-
-    // Complete setup
-    completeSetup: protectedProcedure
-      .input(z.object({
-        businessType: z.enum(['store', 'services', 'both']).optional().default('store'),
-        businessName: z.string().trim().min(2).max(255),
-        phone: z.string().trim().min(7).max(30).regex(/^[+0-9][0-9\s()\-]+$/),
-        address: z.string().trim().max(500).optional(),
-        description: z.string().trim().max(10_000).optional(),
-        workingHoursType: z.enum(['24_7', 'weekdays', 'custom']).optional().default('24_7'),
-        workingHours: z.record(z.string(), z.any()).optional(),
-        botTone: z.enum(['friendly', 'professional', 'casual']).optional(),
-        botLanguage: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
-        welcomeMessage: z.string().trim().max(2000).optional(),
-        products: z.array(setupProductSchema).max(100).optional().default([]),
-        services: z.array(setupServiceSchema).max(100).optional().default([]),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        // Update merchant
-        await updateMerchant(merchant.id, {
-          businessType: input.businessType,
-          businessName: input.businessName,
-          phone: input.phone,
-          address: input.address,
-          description: input.description,
-          workingHoursType: input.workingHoursType,
-          workingHours: input.workingHours ? JSON.stringify(input.workingHours) : undefined,
-        });
-
-        // Update bot settings if provided
-        if (input.botTone || input.botLanguage || input.welcomeMessage) {
-          await updateBotSettings(merchant.id, {
-            tone: input.botTone,
-            language: input.botLanguage,
-            welcomeMessage: input.welcomeMessage,
-          });
-        }
-
-        // Persist catalog idempotently. Completion is marked only after every
-        // requested item is either present already or created successfully.
-        const existingProducts = await getProductsByMerchantId(merchant.id);
-        const productNames = new Set(existingProducts.map(product => normalizeCatalogName(product.name)));
-        let productsCreated = 0;
-        let productsSkipped = 0;
-        for (const product of input.products) {
-          const normalizedName = normalizeCatalogName(product.name);
-          if (productNames.has(normalizedName)) {
-            productsSkipped += 1;
-            continue;
-          }
-
-          const created = await createProduct({
-            merchantId: merchant.id,
-            name: product.name,
-            description: product.description || null,
-            price: product.price,
-            currency: product.currency,
-            imageUrl: product.imageUrl || null,
-            productUrl: product.productUrl || null,
-            category: product.category || null,
-            isActive: 1,
-            status: 'active',
-          });
-          if (!created) {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to save product: ${product.name}` });
-          }
-          productNames.add(normalizedName);
-          productsCreated += 1;
-        }
-
-        const existingServices = await getServicesByMerchant(merchant.id);
-        const serviceNames = new Set(existingServices.map(service => normalizeCatalogName(service.name)));
-        let servicesCreated = 0;
-        let servicesSkipped = 0;
-        for (const service of input.services) {
-          const normalizedName = normalizeCatalogName(service.name);
-          if (serviceNames.has(normalizedName)) {
-            servicesSkipped += 1;
-            continue;
-          }
-
-          const serviceId = await createService({
-            merchantId: merchant.id,
-            name: service.name,
-            description: service.description || null,
-            basePrice: Math.round(service.price * 100),
-            priceType: 'fixed',
-            durationMinutes: 30,
-            isActive: 1,
-          });
-          if (!serviceId) {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to save service: ${service.name}` });
-          }
-          serviceNames.add(normalizedName);
-          servicesCreated += 1;
-        }
-
-        // Mark setup as completed
-        await completeSetupWizard(merchant.id);
-
-        return {
-          success: true,
-          catalog: { productsCreated, productsSkipped, servicesCreated, servicesSkipped },
-        };
-      }),
-
-    // Get templates
-    getTemplates: publicProcedure
-      .input(z.object({
-        businessType: z.enum(['store', 'services', 'both']).optional(),
-        language: z.enum(['ar', 'en']).optional(),
-      }))
-      .query(async ({ input }) => {
-        return await getBusinessTemplatesWithTranslations(input.language, input.businessType);
-      }),
-
-    // Apply template
-    applyTemplate: protectedProcedure
-      .input(z.object({
-        templateId: z.number(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        const template = await getBusinessTemplateById(input.templateId);
-        if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
-
-        // Parse template data
-        const services = template.services ? JSON.parse(template.services) : [];
-        const products = template.products ? JSON.parse(template.products) : [];
-        const workingHours = template.working_hours ? JSON.parse(template.working_hours) : {};
-        const botPersonality = template.bot_personality ? JSON.parse(template.bot_personality) : {};
-
-        // Apply services
-        for (const service of services) {
-          await createService({
-            merchantId: merchant.id,
-            name: service.name,
-            description: service.description || '',
-            basePrice: service.price ? parseInt(service.price) * 100 : 0,
-            priceType: 'fixed',
-            durationMinutes: service.durationMinutes || 30,
-            category: service.category || null,
-          });
-        }
-
-        // Apply products
-        for (const product of products) {
-          await createProduct({
-            merchantId: merchant.id,
-            name: product.name,
-            description: product.description || '',
-            price: product.price ? parseInt(product.price) * 100 : 0,
-          });
-        }
-
-        // Update merchant working hours
-        await updateMerchant(merchant.id, {
-          workingHours: JSON.stringify(workingHours),
-        });
-
-        // Update bot personality
-        await updateBotSettings(merchant.id, botPersonality);
-
-        // Increment template usage
-        await incrementTemplateUsage(input.templateId);
-
-        return { success: true };
-      }),
-
-    // Reset wizard (allow merchant to restart setup)
-    resetWizard: protectedProcedure.mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // Reset wizard progress to initial state
-      await updateSetupWizardProgress(merchant.id, {
-        currentStep: 1,
-        completedSteps: JSON.stringify([]),
-        wizardData: JSON.stringify({}),
-        isCompleted: 0,
-      });
-
-      return { success: true };
-    }),
-  }),
+  // Canonical setup wizard lives in one module to prevent contract drift.
+  setupWizard: setupWizardRouter,
 
   // Google Calendar Integration
   calendar: router({

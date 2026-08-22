@@ -33,16 +33,111 @@ interface WebsiteStepProps {
     skipStep: () => void;
 }
 
+type WebsitePlatform = 'salla' | 'zid' | 'shopify' | 'woocommerce' | 'custom' | 'unknown';
+
+function safeText(value: unknown, maxLength: number): string {
+    return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
+function safeWebUrl(value: unknown): string {
+    const candidate = safeText(value, 500);
+    if (!candidate) return '';
+    try {
+        const parsed = new URL(candidate);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? candidate : '';
+    } catch {
+        return '';
+    }
+}
+
+function normalizePlatform(value: unknown): WebsitePlatform {
+    return ['salla', 'zid', 'shopify', 'woocommerce', 'custom'].includes(String(value))
+        ? value as WebsitePlatform
+        : 'unknown';
+}
+
+function toWizardProduct(product: any) {
+    const numericPrice = Number(product?.price || 0);
+    return {
+        id: crypto.randomUUID(),
+        name: safeText(product?.name, 255),
+        description: safeText(product?.description, 5000),
+        price: Number.isFinite(numericPrice) && numericPrice >= 0
+            ? String(Math.min(numericPrice, 1_000_000))
+            : '0',
+        currency: product?.currency === 'USD' ? 'USD' : 'SAR',
+        imageUrl: safeWebUrl(product?.imageUrl),
+        productUrl: safeWebUrl(product?.productUrl),
+        category: safeText(product?.category, 100),
+    };
+}
+
+function buildProfileSuggestion(result: any, sourceUrl: string) {
+    const values: Record<string, string> = {};
+    const businessName = safeText(result?.companyInfo?.name, 255);
+    const description = safeText(result?.companyInfo?.description, 10_000);
+    const address = safeText(result?.contactInfo?.address, 500);
+    const phone = safeText(result?.contactInfo?.phones?.[0], 20);
+
+    if (businessName.length >= 2) values.businessName = businessName;
+    if (description) values.description = description;
+    if (address) values.address = address;
+    if (/^[+0-9][0-9\s()\-]{6,19}$/.test(phone)) values.phone = phone;
+    if (result?.siteType === 'services') values.businessType = 'services';
+    if (result?.siteType === 'ecommerce') values.businessType = 'store';
+
+    return {
+        sourceUrl,
+        applied: false,
+        fields: Object.keys(values),
+        values,
+    };
+}
+
+function buildAnalysisSummary(result: any, websiteUrl: string, productCount: number) {
+    return {
+        success: true,
+        source: 'website',
+        status: 'previewed',
+        confirmed: false,
+        websiteUrl,
+        platform: normalizePlatform(result?.platform),
+        siteType: safeText(result?.siteType, 30),
+        companyInfo: {
+            name: safeText(result?.companyInfo?.name, 255),
+            description: safeText(result?.companyInfo?.description, 2000),
+            industry: safeText(result?.companyInfo?.industry, 100),
+        },
+        contactInfo: {
+            phones: Array.isArray(result?.contactInfo?.phones)
+                ? result.contactInfo.phones.slice(0, 3).map((value: unknown) => safeText(value, 20)).filter(Boolean)
+                : [],
+            emails: Array.isArray(result?.contactInfo?.emails)
+                ? result.contactInfo.emails.slice(0, 3).map((value: unknown) => safeText(value, 320)).filter(Boolean)
+                : [],
+            whatsappNumber: safeText(result?.contactInfo?.whatsappNumber, 20) || null,
+            address: safeText(result?.contactInfo?.address, 500) || null,
+        },
+        crawlStats: {
+            totalPages: Math.max(0, Math.min(30, Number(result?.crawlStats?.totalPages || 0))),
+        },
+        productCount,
+        faqCount: Math.max(0, Math.min(100, Number(result?.faqs?.length || 0))),
+        pageCount: Math.max(0, Math.min(30, Number(result?.pages?.length || 0))),
+    };
+}
+
 export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep, skipStep }: WebsiteStepProps) {
     const { t } = useTranslation();
     const [url, setUrl] = useState(wizardData.websiteUrl || '');
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
-    const [extractedProducts, setExtractedProducts] = useState<any[]>(wizardData.extractedProducts || []);
+    const [extractedProducts, setExtractedProducts] = useState<any[]>(
+        wizardData.websiteAnalysis?.source === 'website' ? wizardData.products || [] : []
+    );
+    const [profileSuggestion, setProfileSuggestion] = useState<any>(wizardData.websiteProfileSuggestion || null);
     const [error, setError] = useState('');
 
     const previewMutation = trpc.analysis.previewAnalysis.useMutation();
-    // @ts-ignore
-    const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
 
     const handleAnalyze = async () => {
         if (!url.trim()) {
@@ -61,62 +156,27 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
 
         try {
             const result = await previewMutation.mutateAsync({ websiteUrl: finalUrl });
+            const products = Array.isArray(result.products)
+                ? result.products.slice(0, 100).map(toWizardProduct).filter(product => product.name)
+                : [];
+            const suggestion = buildProfileSuggestion(result, finalUrl);
+            const summary = buildAnalysisSummary(result, finalUrl, products.length);
+
             setUrl(finalUrl);
-            setAnalysisResult(result);
+            setAnalysisResult(summary);
+            setExtractedProducts(products);
+            setProfileSuggestion(suggestion);
 
-            // Extract products from result
-            if (result.products?.length > 0) {
-                setExtractedProducts(result.products);
-            }
-
-            // Build wizard data update
             const wizardUpdate: Record<string, any> = {
                 websiteUrl: finalUrl,
-                websiteAnalysis: result,
+                websiteAnalysis: summary,
+                websiteProfileSuggestion: suggestion,
             };
 
-            // Pre-fill business info from companyInfo
-            if (result.companyInfo?.name) wizardUpdate.businessName = result.companyInfo.name;
-            if (result.companyInfo?.description) wizardUpdate.description = result.companyInfo.description;
-            if (result.companyInfo?.industry) wizardUpdate.industry = result.companyInfo.industry;
-            if (result.siteType) wizardUpdate.businessType = result.siteType === 'ecommerce' ? 'store' : result.siteType === 'services' ? 'services' : 'store';
-
-            // Pre-fill contact info
-            if (result.contactInfo) {
-                const ci = result.contactInfo;
-                if (ci.phones?.length > 0) wizardUpdate.phone = ci.phones[0];
-                if (ci.whatsappNumber) wizardUpdate.whatsappNumber = ci.whatsappNumber;
-                if (ci.emails?.length > 0) wizardUpdate.email = ci.emails[0];
-                if (ci.address) wizardUpdate.address = ci.address;
-            }
-
-            // Save products to wizard data + DB
-            if (result.products?.length > 0) {
-                const wizardProducts = result.products.map((p: any) => ({
-                    id: crypto.randomUUID(),
-                    name: p.name || '',
-                    description: p.description || '',
-                    price: p.price?.toString() || '',
-                    currency: p.currency || 'SAR',
-                    imageUrl: p.imageUrl || '',
-                    productUrl: p.productUrl || '',
-                    category: p.category || '',
-                }));
-                wizardUpdate.products = wizardProducts;
-                wizardUpdate.extractedProducts = result.products;
-
-                // Save to DB immediately
-                saveProductsMutation.mutate({
-                    products: wizardProducts.map((p: any) => ({
-                        name: p.name || '',
-                        description: p.description || '',
-                        price: p.price || '0',
-                        currency: p.currency || 'SAR',
-                        imageUrl: p.imageUrl || '',
-                        productUrl: p.productUrl || '',
-                        category: p.category || '',
-                    })),
-                });
+            // Website extraction is a proposal. It may seed the draft catalog,
+            // but it never overwrites the merchant's canonical profile silently.
+            if (products.length > 0 || wizardData.websiteAnalysis?.source === 'website') {
+                wizardUpdate.products = products;
             }
 
             updateWizardData(wizardUpdate);
@@ -125,40 +185,30 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         }
     };
 
-    const handleContinue = async () => {
+    const handleApplyProfileSuggestion = () => {
+        if (!profileSuggestion?.fields?.length) return;
+        const appliedSuggestion = { ...profileSuggestion, applied: true };
+        setProfileSuggestion(appliedSuggestion);
+        updateWizardData({
+            ...profileSuggestion.values,
+            websiteProfileSuggestion: appliedSuggestion,
+        });
+    };
+
+    const handleContinue = () => {
         const wizardUpdate: Record<string, any> = {
             websiteUrl: url,
-            websiteAnalysis: analysisResult,
+            websiteAnalysis: {
+                ...analysisResult,
+                status: 'confirmed',
+                confirmed: true,
+                profileSuggestionApplied: Boolean(profileSuggestion?.applied),
+            },
+            websiteProfileSuggestion: profileSuggestion,
         };
 
         if (extractedProducts.length > 0) {
-            const products = extractedProducts.map((p: any) => ({
-                id: crypto.randomUUID(),
-                name: p.name || '',
-                description: p.description || '',
-                price: p.price?.toString() || '',
-                currency: p.currency || 'SAR',
-                imageUrl: p.imageUrl || '',
-                productUrl: p.productUrl || '',
-                category: p.category || '',
-            }));
-            wizardUpdate.products = products;
-            wizardUpdate.extractedProducts = extractedProducts;
-            try {
-                await saveProductsMutation.mutateAsync({
-                    products: products.map((p: any) => ({
-                        name: p.name,
-                        description: p.description || '',
-                        price: p.price || '0',
-                        currency: p.currency || 'SAR',
-                        imageUrl: p.imageUrl || '',
-                        productUrl: p.productUrl || '',
-                        category: p.category || '',
-                    })),
-                });
-            } catch (err) {
-                console.error('Failed to save scraped products to DB:', err);
-            }
+            wizardUpdate.products = extractedProducts;
         }
 
         updateWizardData(wizardUpdate);
@@ -288,14 +338,16 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     </Card>
 
                     {/* Company Info */}
-                    {analysisResult.companyInfo?.name && (
+                    {profileSuggestion?.fields?.length > 0 && (
                         <Card className="p-4 border-blue-100 bg-blue-50/50">
                             <div className="flex items-start gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
                                     <Building2 className="w-5 h-5 text-blue-600" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 text-lg">{analysisResult.companyInfo.name}</h3>
+                                    <h3 className="font-bold text-gray-900 text-lg">
+                                        {analysisResult.companyInfo?.name || 'بيانات مقترحة من الموقع'}
+                                    </h3>
                                     {analysisResult.companyInfo.description && (
                                         <p className="text-sm text-gray-600 mt-1 line-clamp-3">{analysisResult.companyInfo.description}</p>
                                     )}
@@ -304,6 +356,23 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                             {analysisResult.companyInfo.industry}
                                         </span>
                                     )}
+                                    <p className="text-xs text-blue-800 mt-3">
+                                        هذه اقتراحات مستخرجة فقط، ولن تستبدل ملف نشاطك إلا بعد موافقتك.
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleApplyProfileSuggestion}
+                                        disabled={profileSuggestion.applied}
+                                        className="mt-3 border-blue-300 text-blue-800 hover:bg-blue-100"
+                                    >
+                                        {profileSuggestion.applied ? (
+                                            <><CheckCircle2 className="w-4 h-4 ml-1" />تم اعتماد الاقتراحات</>
+                                        ) : (
+                                            'استخدام البيانات المقترحة'
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         </Card>
@@ -416,14 +485,14 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         </span>
                                     </div>
                                 )}
-                                {analysisResult.faqs?.length > 0 && (
+                                {analysisResult.faqCount > 0 && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <HelpCircle className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_12')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-emerald-600">
-                                            ✅ {analysisResult.faqs.length} سؤال
+                                            ✅ {analysisResult.faqCount} سؤال
                                         </span>
                                     </div>
                                 )}
@@ -441,8 +510,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     <Button onClick={handleContinue} className="flex-1">
                         <ArrowRight className="w-4 h-4 ml-2" />
                         {extractedProducts.length > 0
-                            ? `متابعة مع ${extractedProducts.length} عنصر`
-                            : 'متابعة'
+                            ? `اعتماد التحليل والمتابعة مع ${extractedProducts.length} عنصر`
+                            : 'اعتماد التحليل والمتابعة'
                         }
                     </Button>
                 ) : (
