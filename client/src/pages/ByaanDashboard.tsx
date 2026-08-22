@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Byaan Integration Dashboard — Shows only when Byaan is connected
  * 
@@ -8,8 +7,9 @@
  * 3. الأسئلة الشائعة — FAQs from Byaan
  */
 
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { QueryStateCard } from "@/components/QueryStateCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,15 +31,32 @@ import { useToast } from "@/hooks/use-toast";
 export default function ByaanDashboard() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // === Data Fetching ===
-  const { data: status, isLoading: loadingStatus, refetch: refetchStatus } = trpc.byaan.getStatus.useQuery();
-  const { data: trainees = [], isLoading: loadingTrainees } = trpc.byaan.getTrainees.useQuery(
-    { search: searchQuery || undefined },
+  const {
+    data: status,
+    isLoading: loadingStatus,
+    isError: statusFailed,
+    isFetching: refreshingStatus,
+    refetch: refetchStatus,
+  } = trpc.byaan.getStatus.useQuery();
+  const {
+    data: trainees = [],
+    isLoading: loadingTrainees,
+    isError: traineesFailed,
+    refetch: refetchTrainees,
+  } = trpc.byaan.getTrainees.useQuery(
+    { search: deferredSearchQuery || undefined },
     { enabled: activeTab === "trainees" }
   );
-  const { data: faqs = [], isLoading: loadingFaqs, refetch: refetchFaqs } = trpc.byaan.getFaqs.useQuery(
+  const {
+    data: faqs = [],
+    isLoading: loadingFaqs,
+    isError: faqsFailed,
+    refetch: refetchFaqs,
+  } = trpc.byaan.getFaqs.useQuery(
     undefined,
     { enabled: activeTab === "faqs" }
   );
@@ -47,8 +64,8 @@ export default function ByaanDashboard() {
   // === Mutations ===
   const resyncMutation = trpc.byaan.triggerResync.useMutation({
     onSuccess: () => {
-      toast({ title: "✅ تم طلب المزامنة", description: "سيتم تحديث البيانات خلال لحظات" });
-      refetchStatus();
+      toast({ title: "✅ تم طلب المزامنة", description: "ستتحدث الحالة عند اكتمال المزامنة" });
+      void refetchStatus();
     },
     onError: (err) => {
       toast({ title: "❌ فشل", description: err.message, variant: "destructive" });
@@ -57,8 +74,11 @@ export default function ByaanDashboard() {
 
   const toggleFaqMutation = trpc.byaan.toggleFaq.useMutation({
     onSuccess: () => {
-      refetchFaqs();
+      void refetchFaqs();
       toast({ title: "✅ تم التحديث" });
+    },
+    onError: () => {
+      toast({ title: "تعذر تحديث السؤال", description: "أعد المحاولة بعد التحقق من اتصال بيان", variant: "destructive" });
     },
   });
 
@@ -66,6 +86,20 @@ export default function ByaanDashboard() {
     return (
       <div className="container py-6 flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (statusFailed) {
+    return (
+      <div className="container py-6">
+        <QueryStateCard
+          kind="error"
+          title="تعذر تحميل حالة بيان"
+          description="لم نعرض أرقامًا بديلة. تحقق من الاتصال ثم أعد المحاولة."
+          retryLabel={refreshingStatus ? "جاري المحاولة..." : "إعادة المحاولة"}
+          onRetry={() => { void refetchStatus(); }}
+        />
       </div>
     );
   }
@@ -118,6 +152,7 @@ export default function ByaanDashboard() {
           <Button
             variant="outline"
             size="sm"
+            type="button"
             onClick={() => resyncMutation.mutate()}
             disabled={resyncMutation.isPending}
           >
@@ -219,10 +254,12 @@ export default function ByaanDashboard() {
                     {conn?.syncStatus === 'active' ? 'نشط' : conn?.syncStatus}
                   </Badge>
                 </div>
-                {conn?.syncErrors && (
+                {conn?.hasSyncErrors && (
                   <div>
                     <p className="text-sm text-muted-foreground">أخطاء</p>
-                    <p className="text-sm text-destructive">{conn.syncErrors}</p>
+                    <p className="text-sm text-destructive">
+                      تعذر إكمال آخر مزامنة. أعد المحاولة، وإن استمرت المشكلة فتواصل مع الدعم.
+                    </p>
                   </div>
                 )}
               </div>
@@ -244,6 +281,7 @@ export default function ByaanDashboard() {
                   <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="ابحث بالاسم أو الجوال أو الإيميل..."
+                    aria-label="البحث في متدربي بيان"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pr-10"
@@ -257,6 +295,13 @@ export default function ByaanDashboard() {
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   <p className="text-muted-foreground mt-2">جاري التحميل...</p>
                 </div>
+              ) : traineesFailed ? (
+                <QueryStateCard
+                  kind="error"
+                  title="تعذر تحميل المتدربين"
+                  description="لم نعرض قائمة فارغة بدل الخطأ."
+                  onRetry={() => { void refetchTrainees(); }}
+                />
               ) : trainees.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   {searchQuery ? 'لا توجد نتائج للبحث' : 'لا يوجد متدربين بعد — اضغط إعادة مزامنة'}
@@ -303,7 +348,7 @@ export default function ByaanDashboard() {
                               <div className="flex flex-wrap gap-1">
                                 {trainee.enrolledCourses.slice(0, 3).map((c: string, i: number) => (
                                   <Badge key={i} variant="secondary" className="text-xs">
-                                    {typeof c === 'string' ? c : c?.name || '—'}
+                                    {c}
                                   </Badge>
                                 ))}
                                 {trainee.enrolledCourses.length > 3 && (
@@ -343,6 +388,13 @@ export default function ByaanDashboard() {
                 <div className="text-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                 </div>
+              ) : faqsFailed ? (
+                <QueryStateCard
+                  kind="error"
+                  title="تعذر تحميل الأسئلة الشائعة"
+                  description="لم نعرض قائمة فارغة بدل الخطأ."
+                  onRetry={() => { void refetchFaqs(); }}
+                />
               ) : faqs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   لا توجد أسئلة شائعة — ستظهر بعد المزامنة من بيان
@@ -373,6 +425,7 @@ export default function ByaanDashboard() {
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">يستخدمه البوت</span>
                               <Switch
+                                aria-label={`استخدام سؤال ${faq.question} في البوت`}
                                 checked={faq.useInBot}
                                 onCheckedChange={(val) => toggleFaqMutation.mutate({
                                   faqId: faq.id, field: 'use_in_bot', value: val,
@@ -382,6 +435,7 @@ export default function ByaanDashboard() {
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">نشط</span>
                               <Switch
+                                aria-label={`تغيير حالة سؤال ${faq.question}`}
                                 checked={faq.isActive}
                                 onCheckedChange={(val) => toggleFaqMutation.mutate({
                                   faqId: faq.id, field: 'is_active', value: val,

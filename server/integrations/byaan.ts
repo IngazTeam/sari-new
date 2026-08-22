@@ -10,7 +10,7 @@
  * Live API: ساري يطلب عمليات حية (تسجيل، دفع، نتائج)
  */
 
-import { getPool } from '../db';
+import { getPool, getProductCountByMerchantId } from '../db';
 import { normalizeCustomerProfileCount } from '../db/customer-intelligence';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import crypto from 'crypto';
@@ -398,17 +398,48 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
   return { created, updated, linked };
 }
 
-/** Get all trainees for a merchant */
-export async function getByaanTrainees(merchantId: number): Promise<any[]> {
+export interface ByaanTraineeListRow {
+  id: number;
+  external_id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  enrolled_courses: string | null;
+  status: string;
+  synced_at: string | null;
+  created_at: string;
+}
+
+/** Get a bounded, tenant-scoped trainee list for a merchant. */
+export async function getByaanTrainees(
+  merchantId: number,
+  options: { search?: string; limit?: number } = {},
+): Promise<ByaanTraineeListRow[]> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) return [];
+  await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return [];
-  try {
-    const [rows] = await (dbConn as any).execute(
-      `SELECT * FROM byaan_trainees WHERE merchant_id = ? AND status = 'active' ORDER BY name ASC`,
-      [merchantId]
-    );
-    return rows as any[];
-  } catch { return []; }
+  if (!dbConn) throw new Error('Byaan data unavailable');
+
+  const limit = Math.min(Math.max(Math.floor(options.limit || 100), 1), 200);
+  const search = String(options.search || '').trim().substring(0, 100);
+  const params: Array<string | number> = [merchantId];
+  let searchClause = '';
+  if (search) {
+    searchClause = ' AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)';
+    const pattern = `%${search}%`;
+    params.push(pattern, pattern, pattern);
+  }
+  params.push(limit);
+
+  const [rows] = await (dbConn as any).execute(
+    `SELECT id, external_id, name, phone, email, enrolled_courses, status, synced_at, created_at
+     FROM byaan_trainees
+     WHERE merchant_id = ? AND status = 'active'${searchClause}
+     ORDER BY name ASC
+     LIMIT ?`,
+    params,
+  );
+  return rows as ByaanTraineeListRow[];
 }
 
 /** Sync FAQs from Byaan into byaan_faqs table */
@@ -439,15 +470,15 @@ export async function syncByaanFaqs(merchantId: number, faqs: { id?: string; que
 
 /** Get all Byaan FAQs for a merchant */
 export async function getByaanFaqsByMerchant(merchantId: number): Promise<any[]> {
+  await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return [];
-  try {
-    const [rows] = await (dbConn as any).execute(
-      `SELECT * FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1 ORDER BY category, id`,
-      [merchantId]
-    );
-    return rows as any[];
-  } catch { return []; }
+  if (!dbConn) throw new Error('Byaan data unavailable');
+  const [rows] = await (dbConn as any).execute(
+    `SELECT id, external_id, question, answer, category, is_active, use_in_bot, synced_at
+     FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1 ORDER BY category, id`,
+    [merchantId],
+  );
+  return rows as any[];
 }
 
 /** Save Byaan site content */
@@ -478,20 +509,24 @@ export async function getActiveByaanTraineeCount(merchantId: number): Promise<nu
 
 /** Get sync stats for a merchant */
 export async function getByaanSyncStats(merchantId: number): Promise<{ trainees: number; faqs: number; courses: number; sitePages: number }> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 };
+  }
+  await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 };
-  try {
-    const [t] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_trainees WHERE merchant_id = ? AND status = 'active'`, [merchantId]);
-    const [f] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1`, [merchantId]);
-    const [p] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM products WHERE merchant_id = ?`, [merchantId]);
-    const [s] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_site_content WHERE merchant_id = ?`, [merchantId]);
-    return {
-      trainees: normalizeCustomerProfileCount((t as any[])?.[0]?.cnt),
-      faqs: normalizeCustomerProfileCount((f as any[])?.[0]?.cnt),
-      courses: normalizeCustomerProfileCount((p as any[])?.[0]?.cnt),
-      sitePages: normalizeCustomerProfileCount((s as any[])?.[0]?.cnt),
-    };
-  } catch { return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 }; }
+  if (!dbConn) throw new Error('Byaan data unavailable');
+  const [[t], [f], courses, [s]] = await Promise.all([
+    (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_trainees WHERE merchant_id = ? AND status = 'active'`, [merchantId]),
+    (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1`, [merchantId]),
+    getProductCountByMerchantId(merchantId),
+    (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_site_content WHERE merchant_id = ?`, [merchantId]),
+  ]);
+  return {
+    trainees: normalizeCustomerProfileCount((t as any[])?.[0]?.cnt),
+    faqs: normalizeCustomerProfileCount((f as any[])?.[0]?.cnt),
+    courses: normalizeCustomerProfileCount(courses),
+    sitePages: normalizeCustomerProfileCount((s as any[])?.[0]?.cnt),
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════

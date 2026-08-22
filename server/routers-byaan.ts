@@ -25,6 +25,20 @@ async function requireByaanMerchant(userId: number) {
   return merchant;
 }
 
+async function requireActiveByaanMerchant(userId: number) {
+  const merchant = await requireByaanMerchant(userId);
+  const { getByaanConnection } = await import('./integrations/byaan');
+  const connection = await getByaanConnection(merchant.id);
+  const source = merchant.integrationSource || 'none';
+  if (source !== 'byaan' || !connection?.is_active || !connection?.verified_at) {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: 'يلزم ربط بيان وتوثيق ملكية النطاق للوصول إلى هذه البيانات',
+    });
+  }
+  return { merchant, connection };
+}
+
 function sanitizeForTRPC(data: any): any {
   if (data === null || data === undefined) return data;
   if (data instanceof Buffer || data instanceof Uint8Array) return undefined;
@@ -41,6 +55,26 @@ function sanitizeForTRPC(data: any): any {
     return clean;
   }
   return data;
+}
+
+function parseEnrolledCourseNames(value: unknown): string[] {
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .slice(0, 100)
+      .map((course) => {
+        if (typeof course === 'string') return course.trim().substring(0, 255);
+        if (course && typeof course === 'object' && typeof course.name === 'string') {
+          return course.name.trim().substring(0, 255);
+        }
+        return '';
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 // PEN-BYAAN-06: Rate limiter for resync mutation (3 per 5 min per merchant)
@@ -92,18 +126,22 @@ export const byaanRouter = router({
       });
     }
 
-    const stats = await getByaanSyncStats(merchant.id);
-
-    const connected = Boolean(connection.is_active && connection.verified_at);
+    const integrationSource = merchant.integrationSource || 'none';
+    const connected = Boolean(
+      integrationSource === 'byaan' && connection.is_active && connection.verified_at,
+    );
+    const stats = connected
+      ? await getByaanSyncStats(merchant.id)
+      : { trainees: 0, faqs: 0, courses: 0, sitePages: 0 };
     return sanitizeForTRPC({
       connected,
       verificationPending: !connected,
-      integrationSource: 'byaan',
+      integrationSource,
       connection: {
         tenantDomain: connection.tenant_domain,
         syncStatus: connection.sync_status,
         lastSyncAt: connection.last_sync_at,
-        syncErrors: connection.sync_errors,
+        hasSyncErrors: Boolean(connection.sync_errors),
         isActive: connection.is_active,
       },
       stats,
@@ -117,24 +155,14 @@ export const byaanRouter = router({
       limit: z.number().min(1).max(200).default(100),
     }).optional())
     .query(async ({ ctx, input }) => {
-      const merchant = await requireByaanMerchant(ctx.user.id);
+      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
       const { getByaanTrainees } = await import('./integrations/byaan');
-      let trainees = await getByaanTrainees(merchant.id);
-
-      // Apply search filter
-      const search = input?.search?.trim().toLowerCase();
-      if (search) {
-        trainees = trainees.filter((t: any) =>
-          (t.name || '').toLowerCase().includes(search) ||
-          (t.phone || '').includes(search) ||
-          (t.email || '').toLowerCase().includes(search)
-        );
-      }
-
-      // Apply limit
       const limit = input?.limit || 100;
-      trainees = trainees.slice(0, limit);
+      const trainees = await getByaanTrainees(merchant.id, {
+        search: input?.search,
+        limit,
+      });
 
       // Parse enrolled_courses JSON
       return sanitizeForTRPC(trainees.map((t: any) => ({
@@ -143,7 +171,7 @@ export const byaanRouter = router({
         name: t.name,
         phone: t.phone,
         email: t.email,
-        enrolledCourses: t.enrolled_courses ? (() => { try { return JSON.parse(t.enrolled_courses); } catch { return []; } })() : [],
+        enrolledCourses: parseEnrolledCourseNames(t.enrolled_courses),
         status: t.status,
         syncedAt: t.synced_at,
         createdAt: t.created_at,
@@ -152,7 +180,7 @@ export const byaanRouter = router({
 
   // ── Get FAQs ──
   getFaqs: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireByaanMerchant(ctx.user.id);
+    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
     const { getByaanFaqsByMerchant } = await import('./integrations/byaan');
     const faqs = await getByaanFaqsByMerchant(merchant.id);
@@ -176,7 +204,7 @@ export const byaanRouter = router({
       value: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await requireByaanMerchant(ctx.user.id);
+      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
       const pool = await getPool();
       if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database error' });
@@ -208,38 +236,28 @@ export const byaanRouter = router({
 
   // ── Get site content ──
   getSiteContent: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireByaanMerchant(ctx.user.id);
+    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
     const pool = await getPool();
     if (!pool) return [];
 
-    try {
-      const [rows] = await pool.execute(
-        `SELECT * FROM byaan_site_content WHERE merchant_id = ? ORDER BY page_type`,
-        [merchant.id]
-      );
-      return sanitizeForTRPC(rows);
-    } catch { return []; }
+    const [rows] = await pool.execute(
+      `SELECT id, page_type, title, content, synced_at
+       FROM byaan_site_content WHERE merchant_id = ? ORDER BY page_type`,
+      [merchant.id],
+    );
+    return sanitizeForTRPC(rows);
   }),
 
   // ── Trigger resync from Sari side ──
   triggerResync: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await requireByaanMerchant(ctx.user.id);
+    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
     // PEN-BYAAN-06: Rate limit resync (3 per 5 min)
     if (!checkResyncLimit(merchant.id)) {
       throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'انتظر قليلاً قبل إعادة المزامنة (الحد: 3 كل 5 دقائق)' });
     }
-    const { getByaanConnection, requestByaanResync, updateByaanSyncStatus } = await import('./integrations/byaan');
-    const connection = await getByaanConnection(merchant.id);
-
-    if (!connection) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد ربط مع بيان' });
-    }
-
-    if (!connection.is_active || !connection.verified_at) {
-      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يلزم توثيق ملكية نطاق بيان قبل المزامنة' });
-    }
+    const { requestByaanResync, updateByaanSyncStatus } = await import('./integrations/byaan');
 
     await updateByaanSyncStatus(merchant.id, 'syncing');
     const result = await requestByaanResync(merchant.id);
