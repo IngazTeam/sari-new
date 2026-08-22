@@ -158,11 +158,15 @@ async function main() {
     id: woocommerceSettings.id,
     consumerKey: woocommerceSettings.consumerKey,
     consumerSecret: woocommerceSettings.consumerSecret,
+    webhookSigningSecret: woocommerceSettings.webhookSigningSecret,
   }).from(woocommerceSettings);
   for (const row of wooCommerceRows) {
     const changes: Record<string, string> = {};
     if (!isEncryptedSecret(row.consumerKey)) changes.consumerKey = encryptSecret(row.consumerKey);
     if (!isEncryptedSecret(row.consumerSecret)) changes.consumerSecret = encryptSecret(row.consumerSecret);
+    if (row.webhookSigningSecret && !isEncryptedSecret(row.webhookSigningSecret)) {
+      changes.webhookSigningSecret = encryptSecret(row.webhookSigningSecret);
+    }
     if (Object.keys(changes).length > 0) {
       await db.update(woocommerceSettings).set(changes).where(eq(woocommerceSettings.id, row.id));
       updated++;

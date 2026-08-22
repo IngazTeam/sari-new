@@ -20,6 +20,15 @@ import {
   parseCalendlyWebhook,
   verifyCalendlySignature,
 } from './calendly-security';
+import { getWooCommerceWebhookPrincipal } from '../db';
+import { enqueueWooCommerceWebhookReceipt } from '../integrations/woocommerce-webhook-receipts';
+import {
+  parseWooCommerceWebhookIdentity,
+  parseWooCommerceWebhookResourceId,
+  verifyWooCommerceWebhookSignature,
+  WOOCOMMERCE_ENDPOINT_PATTERN,
+  WOOCOMMERCE_WEBHOOK_MAX_BYTES,
+} from './woocommerce-security';
 import { getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
 import { ENV } from '../_core/env';
 import { getMerchantPaymentSettings } from '../db';
@@ -272,6 +281,42 @@ router.post('/calendly/:endpointId', async (req: Request & { rawBody?: Buffer },
     });
   } catch {
     console.error('[Calendly Webhook] ingress unavailable');
+    return res.status(503).json({ error: 'Webhook temporarily unavailable' });
+  }
+});
+
+/**
+ * WooCommerce Webhook Endpoint
+ * POST /api/webhooks/woocommerce/:endpointId
+ */
+router.post('/woocommerce/:endpointId', async (req: Request & { rawBody?: Buffer }, res: Response) => {
+  try {
+    const endpointId = String(req.params.endpointId || '');
+    const rawBody = req.rawBody;
+    if (!WOOCOMMERCE_ENDPOINT_PATTERN.test(endpointId)) return res.status(401).json({ error: 'Unauthorized' });
+    if (!rawBody) return res.status(500).json({ error: 'Webhook body unavailable' });
+    if (rawBody.length > WOOCOMMERCE_WEBHOOK_MAX_BYTES) return res.status(413).json({ error: 'Payload too large' });
+    const identity = parseWooCommerceWebhookIdentity(req.headers);
+    if (!identity) return res.status(400).json({ error: 'Invalid webhook identity' });
+    const principal = await getWooCommerceWebhookPrincipal(endpointId, identity.topic, identity.webhookId);
+    if (!principal) return res.status(401).json({ error: 'Unauthorized' });
+    if (!verifyWooCommerceWebhookSignature({
+      rawBody,
+      signatureHeader: req.headers['x-wc-webhook-signature'],
+      signingSecret: principal.signingSecret,
+    })) return res.status(401).json({ error: 'Unauthorized' });
+    const resourceId = parseWooCommerceWebhookResourceId(rawBody);
+    if (!resourceId) return res.status(400).json({ error: 'Invalid webhook payload' });
+    const result = await enqueueWooCommerceWebhookReceipt({
+      merchantId: principal.merchantId,
+      identity,
+      resourceId,
+    });
+    return res.status(result.duplicate ? 200 : 202).json({
+      message: result.duplicate ? 'Webhook already received' : 'Webhook accepted',
+    });
+  } catch {
+    console.error('[WooCommerce Webhook] ingress unavailable');
     return res.status(503).json({ error: 'Webhook temporarily unavailable' });
   }
 });

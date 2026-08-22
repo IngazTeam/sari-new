@@ -79,8 +79,18 @@ const orderSchema = z.object({
 export type WooCommerceProduct = z.infer<typeof productSchema>;
 export type WooCommerceOrder = z.infer<typeof orderSchema>;
 
+const webhookSchema = z.object({
+  id: z.number().int().positive(),
+  status: z.enum(['active', 'paused', 'disabled']),
+  topic: z.string().min(3).max(100),
+  delivery_url: z.string().url().max(1_000),
+}).passthrough();
+
 export class WooCommerceApiError extends Error {
-  constructor(public readonly code: 'credentials' | 'endpoint' | 'network' | 'status' | 'response' | 'limit') {
+  constructor(
+    public readonly code: 'credentials' | 'endpoint' | 'network' | 'status' | 'response' | 'limit' | 'not_found',
+    public readonly statusCode?: number,
+  ) {
     super(code);
   }
 }
@@ -184,7 +194,7 @@ export class WooCommerceClient {
 
   private async request(endpoint: string, options: {
     method?: Method;
-    params?: Record<string, string | number>;
+    params?: Record<string, string | number | boolean>;
     body?: Record<string, unknown>;
   } = {}): Promise<{ body: unknown; headers: Record<string, unknown> }> {
     let response;
@@ -208,7 +218,8 @@ export class WooCommerceClient {
       if (error instanceof WooCommerceApiError) throw error;
       throw new WooCommerceApiError('network');
     }
-    if (response.status < 200 || response.status >= 300) throw new WooCommerceApiError('status');
+    if (response.status === 404) throw new WooCommerceApiError('not_found', 404);
+    if (response.status < 200 || response.status >= 300) throw new WooCommerceApiError('status', response.status);
     return { body: parseBoundedJson(response.data), headers: response.headers as Record<string, unknown> };
   }
 
@@ -248,6 +259,81 @@ export class WooCommerceClient {
       total: positiveHeader(headers['x-wp-total'], parsed.data.length),
       totalPages: positiveHeader(headers['x-wp-totalpages'], parsed.data.length === WOO_PAGE_SIZE ? page + 1 : page),
     };
+  }
+
+  async getProduct(productId: number): Promise<WooCommerceProduct> {
+    if (!Number.isInteger(productId) || productId < 1) throw new WooCommerceApiError('endpoint');
+    const { body } = await this.request(`/products/${productId}`, { params: { _fields: WOO_PRODUCT_FIELDS } });
+    const parsed = productSchema.safeParse(body);
+    if (!parsed.success || parsed.data.id !== productId) throw new WooCommerceApiError('response');
+    return parsed.data;
+  }
+
+  async getOrder(orderId: number): Promise<WooCommerceOrder> {
+    if (!Number.isInteger(orderId) || orderId < 1) throw new WooCommerceApiError('endpoint');
+    const { body } = await this.request(`/orders/${orderId}`, { params: { _fields: WOO_ORDER_FIELDS } });
+    const parsed = orderSchema.safeParse(body);
+    if (!parsed.success || parsed.data.id !== orderId) throw new WooCommerceApiError('response');
+    return parsed.data;
+  }
+
+  async createWebhook(input: {
+    name: string;
+    topic: string;
+    deliveryUrl: string;
+    secret: string;
+  }): Promise<string> {
+    if (input.name.length < 3 || input.name.length > 100 || !/^(?:product|order)\.(?:created|updated|deleted)$/.test(input.topic)) {
+      throw new WooCommerceApiError('endpoint');
+    }
+    let delivery: URL;
+    try {
+      delivery = new URL(input.deliveryUrl);
+    } catch {
+      throw new WooCommerceApiError('endpoint');
+    }
+    if (delivery.protocol !== 'https:' || delivery.username || delivery.password || delivery.search || delivery.hash) {
+      throw new WooCommerceApiError('endpoint');
+    }
+    if (input.secret.length < 32 || input.secret.length > 512) throw new WooCommerceApiError('credentials');
+    const { body } = await this.request('/webhooks', {
+      method: 'POST',
+      body: {
+        name: input.name,
+        status: 'active',
+        topic: input.topic,
+        delivery_url: delivery.toString(),
+        secret: input.secret,
+      },
+    });
+    const parsed = webhookSchema.safeParse(body);
+    if (!parsed.success || parsed.data.status !== 'active' || parsed.data.topic !== input.topic || parsed.data.delivery_url !== delivery.toString()) {
+      throw new WooCommerceApiError('response');
+    }
+    return String(parsed.data.id);
+  }
+
+  async getWebhook(webhookId: string): Promise<{
+    id: string;
+    status: 'active' | 'paused' | 'disabled';
+    topic: string;
+    deliveryUrl: string;
+  }> {
+    if (!/^[1-9]\d{0,19}$/.test(webhookId)) throw new WooCommerceApiError('endpoint');
+    const { body } = await this.request(`/webhooks/${webhookId}`);
+    const parsed = webhookSchema.safeParse(body);
+    if (!parsed.success || String(parsed.data.id) !== webhookId) throw new WooCommerceApiError('response');
+    return {
+      id: webhookId,
+      status: parsed.data.status,
+      topic: parsed.data.topic,
+      deliveryUrl: parsed.data.delivery_url,
+    };
+  }
+
+  async deleteWebhook(webhookId: string): Promise<void> {
+    if (!/^[1-9]\d{0,19}$/.test(webhookId)) throw new WooCommerceApiError('endpoint');
+    await this.request(`/webhooks/${webhookId}`, { method: 'DELETE', params: { force: true } });
   }
 
   async updateOrder(orderId: number, update: { status: string; customer_note?: string }): Promise<WooCommerceOrder> {

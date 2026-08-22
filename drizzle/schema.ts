@@ -2678,6 +2678,8 @@ export const woocommerceSettings = mysqlTable("woocommerce_settings", {
 	storeUrl: varchar("store_url", { length: 500 }).notNull(),
 	consumerKey: varchar("consumer_key", { length: 500 }).notNull(),
 	consumerSecret: varchar("consumer_secret", { length: 500 }).notNull(),
+	webhookEndpointId: varchar("webhook_endpoint_id", { length: 48 }),
+	webhookSigningSecret: text("webhook_signing_secret"), // encrypted
 
 	// Status
 	isActive: tinyint("is_active").default(1).notNull(),
@@ -2702,6 +2704,7 @@ export const woocommerceSettings = mysqlTable("woocommerce_settings", {
 	(table) => [
 		index("woocommerce_settings_merchant_id_idx").on(table.merchantId),
 		uniqueIndex("woocommerce_settings_merchant_unique").on(table.merchantId),
+		uniqueIndex("woocommerce_settings_webhook_endpoint_unique").on(table.webhookEndpointId),
 	]);
 
 export const woocommerceProducts = mysqlTable("woocommerce_products", {
@@ -2867,6 +2870,44 @@ export const woocommerceWebhooks = mysqlTable("woocommerce_webhooks", {
 		index("woocommerce_webhooks_status_idx").on(table.status),
 	]);
 
+// Provider-side webhook identities. Keeping the remote webhook ID beside its
+// exact topic prevents a valid signature from being replayed under a different
+// registered topic after a connection rotation.
+export const woocommerceWebhookRegistrations = mysqlTable("woocommerce_webhook_registrations", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	topic: mysqlEnum(['product.created', 'product.updated', 'product.deleted', 'order.created', 'order.updated', 'order.deleted']).notNull(),
+	webhookId: varchar("webhook_id", { length: 32 }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("woocommerce_webhook_registrations_topic_unique").on(table.merchantId, table.topic),
+	uniqueIndex("woocommerce_webhook_registrations_remote_unique").on(table.merchantId, table.webhookId),
+]);
+
+// Durable PII-minimized inbox. Only provider identity is retained; the worker
+// fetches the current canonical resource through the authenticated REST API.
+export const woocommerceWebhookReceipts = mysqlTable("woocommerce_webhook_receipts", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	deliveryId: varchar("delivery_id", { length: 32 }).notNull(),
+	webhookId: varchar("webhook_id", { length: 32 }).notNull(),
+	topic: mysqlEnum(['product.created', 'product.updated', 'product.deleted', 'order.created', 'order.updated', 'order.deleted']).notNull(),
+	resourceId: int("resource_id").notNull(),
+	status: mysqlEnum(['pending', 'processing', 'completed', 'failed', 'manual_review', 'suppressed']).default('pending').notNull(),
+	attemptCount: int("attempt_count").default(0).notNull(),
+	processingToken: varchar("processing_token", { length: 64 }),
+	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	processedAt: timestamp("processed_at", { mode: 'string', fsp: 3 }),
+	lastError: varchar("last_error", { length: 100 }),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("woocommerce_webhook_receipts_delivery_unique").on(table.merchantId, table.deliveryId),
+	index("woocommerce_webhook_receipts_dispatch_idx").on(table.status, table.availableAt, table.id),
+	index("woocommerce_webhook_receipts_merchant_idx").on(table.merchantId, table.createdAt),
+]);
+
 // Type exports for WooCommerce tables
 export type WooCommerceSettings = InferSelectModel<typeof woocommerceSettings>;
 export type NewWooCommerceSettings = InferInsertModel<typeof woocommerceSettings>;
@@ -2878,6 +2919,10 @@ export type WooCommerceSyncLog = InferSelectModel<typeof woocommerceSyncLogs>;
 export type NewWooCommerceSyncLog = InferInsertModel<typeof woocommerceSyncLogs>;
 export type WooCommerceWebhook = InferSelectModel<typeof woocommerceWebhooks>;
 export type NewWooCommerceWebhook = InferInsertModel<typeof woocommerceWebhooks>;
+export type WooCommerceWebhookRegistration = InferSelectModel<typeof woocommerceWebhookRegistrations>;
+export type NewWooCommerceWebhookRegistration = InferInsertModel<typeof woocommerceWebhookRegistrations>;
+export type WooCommerceWebhookReceipt = InferSelectModel<typeof woocommerceWebhookReceipts>;
+export type NewWooCommerceWebhookReceipt = InferInsertModel<typeof woocommerceWebhookReceipts>;
 // Email Templates Table
 export const emailTemplates = mysqlTable("email_templates", {
 	id: int().autoincrement().notNull().primaryKey(),

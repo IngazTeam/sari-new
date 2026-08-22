@@ -28,7 +28,7 @@ export default function WooCommerceSettings() {
       setConsumerKey("");
       setConsumerSecret("");
       await settingsQuery.refetch();
-      toast.success(arabic ? "تم التحقق من الاتصال وحفظه بأمان" : "Connection verified and saved securely");
+      toast.success(arabic ? "تم التحقق من الاتصال وتسجيل التحديثات الفورية بأمان" : "Connection verified and secure live updates registered");
     },
     onError: error => toast.error(error.message),
   });
@@ -96,9 +96,13 @@ export default function WooCommerceSettings() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">{t("wooCommerceSettingsPage.text9")}</h1>
         <p className="text-muted-foreground">
-          {arabic
-            ? "اتصال HTTPS موثّق ومزامنة يدوية محدودة للمنتجات والطلبات. لا توجد مزامنة تلقائية في هذه النسخة."
-            : "Verified HTTPS connection with bounded manual product and order sync. Automatic sync is not available in this release."}
+          {settings?.webhook.ready
+            ? (arabic
+                ? "اتصال HTTPS موثّق وتحديثات تلقائية موقّعة للمنتجات والطلبات، مع مزامنة يدوية احتياطية."
+                : "Verified HTTPS connection with signed automatic product and order updates, plus manual fallback sync.")
+            : (arabic
+                ? "اتصال HTTPS موثّق ومزامنة يدوية محدودة حتى يكتمل تسجيل التحديثات التلقائية."
+                : "Verified HTTPS connection with bounded manual sync until automatic updates are registered.")}
         </p>
       </div>
 
@@ -109,6 +113,9 @@ export default function WooCommerceSettings() {
             {arabic ? "الاتصال متحقق" : "Connection verified"}
             {settings.storeName ? ` — ${settings.storeName}` : ""}
             {settings.lastSyncAt ? ` · ${new Date(settings.lastSyncAt).toLocaleString(arabic ? "ar-SA" : "en-US")}` : ""}
+            {settings.webhook.ready
+              ? ` · ${arabic ? "التحديثات التلقائية مسجّلة" : "automatic updates registered"}`
+              : ` · ${arabic ? "التحديثات التلقائية غير جاهزة" : "automatic updates not ready"}`}
           </AlertDescription>
         </Alert>
       )}
@@ -173,11 +180,15 @@ export default function WooCommerceSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{arabic ? "المزامنة اليدوية" : "Manual synchronization"}</CardTitle>
+          <CardTitle>{arabic ? "حالة المزامنة" : "Synchronization status"}</CardTitle>
           <CardDescription>
-            {arabic
-              ? "كل تشغيل يجلب لقطة مكتملة ومحدودة ثم يحدّث قاعدة البيانات ذريًا؛ لن تُحذف بيانات بسبب جلب ناقص."
-              : "Each run fetches a complete bounded snapshot before atomically updating the database, preventing deletion after partial fetches."}
+            {settings?.webhook.ready
+              ? (arabic
+                  ? `سُجلت 6 أحداث موقّعة لاستقبال تغييرات WooCommerce تلقائيًا. المستلم ينتظر: ${settings.webhook.health?.awaiting ?? 0}، مراجعة يدوية: ${settings.webhook.health?.manualReview ?? 0}. أعد اختبار الاتصال للتحقق من حالتها لدى WooCommerce، واستخدم الأزرار أدناه للمصالحة الكاملة عند الحاجة.`
+                  : `Six signed events are registered for automatic WooCommerce updates. Awaiting: ${settings.webhook.health?.awaiting ?? 0}; manual review: ${settings.webhook.health?.manualReview ?? 0}. Retest the connection to verify their current provider status, and use the buttons below for a full reconciliation when needed.`)
+              : (arabic
+                  ? "المزامنة التلقائية ليست جاهزة لهذا الاتصال. كل تشغيل يدوي يجلب لقطة مكتملة ومحدودة ثم يحدّث قاعدة البيانات ذريًا."
+                  : "Automatic synchronization is not ready for this connection. Each manual run fetches a complete bounded snapshot before an atomic update.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">

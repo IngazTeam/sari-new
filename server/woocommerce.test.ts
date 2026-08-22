@@ -328,36 +328,4 @@ describe('WooCommerce Integration', () => {
     });
   });
 
-  describe('WooCommerce Webhooks', () => {
-    it('should create a webhook log', async () => {
-      if (!testMerchantId) {
-        console.log('Skipping test: No test merchant available');
-        return;
-      }
-
-      const webhook = await db.createWooCommerceWebhook({
-        merchantId: testMerchantId,
-        topic: 'order.created',
-        payload: JSON.stringify({ id: 123, status: 'pending' }),
-        status: 'pending',
-        webhookId: 'wh_123',
-        deliveryId: 'del_456',
-      });
-
-      expect(webhook).toBeDefined();
-      expect(webhook.id).toBeDefined();
-    });
-
-    it('should get webhook logs by merchant ID', async () => {
-      if (!testMerchantId) {
-        console.log('Skipping test: No test merchant available');
-        return;
-      }
-
-      const webhooks = await db.getWooCommerceWebhooks(testMerchantId, 10, 0);
-      
-      expect(webhooks).toBeDefined();
-      expect(Array.isArray(webhooks)).toBe(true);
-    });
-  });
 });

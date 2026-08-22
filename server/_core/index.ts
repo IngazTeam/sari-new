@@ -41,6 +41,7 @@ import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
 import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-receipts";
 import { startCalendlyWebhookReceiptWorker } from "../integrations/calendly-webhook-receipts";
+import { startWooCommerceWebhookReceiptWorker } from "../integrations/woocommerce-webhook-receipts";
 import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -640,6 +641,9 @@ async function startServer() {
 
       // Durable Calendly invitee projection with canonical provider fetches.
       startCalendlyWebhookReceiptWorker();
+
+      // Durable WooCommerce projections from signed, provider-registered events.
+      startWooCommerceWebhookReceiptWorker();
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();

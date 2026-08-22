@@ -228,12 +228,13 @@ import {
   woocommerceOrders,
   woocommerceSyncLogs,
   woocommerceWebhooks,
+  woocommerceWebhookRegistrations,
+  woocommerceWebhookReceipts,
   NewWooCommerceSettings,
   WooCommerceSettings,
   NewWooCommerceProduct,
   NewWooCommerceOrder,
   NewWooCommerceSyncLog,
-  NewWooCommerceWebhook,
   subscriptionPlans,
   SubscriptionPlan,
   NewSubscriptionPlan,
@@ -360,6 +361,7 @@ function decryptWooCommerceSettings(record: WooCommerceSettings | undefined): Wo
     ...record,
     consumerKey: decryptSecret(record.consumerKey),
     consumerSecret: decryptSecret(record.consumerSecret),
+    webhookSigningSecret: decryptSecret(record.webhookSigningSecret),
   } : undefined;
 }
 
@@ -10031,25 +10033,60 @@ export async function createWooCommerceSettings(data: NewWooCommerceSettings) {
     ...data,
     consumerKey: encryptSecret(data.consumerKey),
     consumerSecret: encryptSecret(data.consumerSecret),
+    webhookSigningSecret: encryptSecret(data.webhookSigningSecret),
   });
   return (result as any).insertId;
 }
 
 export async function updateWooCommerceSettings(merchantId: number, data: Partial<NewWooCommerceSettings>) {
+  if (
+    data.storeUrl !== undefined
+    || data.consumerKey !== undefined
+    || data.consumerSecret !== undefined
+    || data.webhookEndpointId !== undefined
+    || data.webhookSigningSecret !== undefined
+    || data.connectionStatus !== undefined
+  ) throw new Error('WOOCOMMERCE_VERIFIED_CONNECTION_UPDATE_REQUIRED');
   await requireDb().update(woocommerceSettings).set({
     ...data,
-    ...(data.consumerKey !== undefined && { consumerKey: encryptSecret(data.consumerKey) }),
-    ...(data.consumerSecret !== undefined && { consumerSecret: encryptSecret(data.consumerSecret) }),
   }).where(eq(woocommerceSettings.merchantId, merchantId));
 }
 
-export async function saveVerifiedWooCommerceSettings(data: NewWooCommerceSettings): Promise<void> {
+export type WooCommerceWebhookRegistrationInput = {
+  topic: 'product.created' | 'product.updated' | 'product.deleted' | 'order.created' | 'order.updated' | 'order.deleted';
+  webhookId: string;
+};
+
+export async function saveVerifiedWooCommerceSettings(
+  data: NewWooCommerceSettings,
+  registrations: readonly WooCommerceWebhookRegistrationInput[] = [],
+): Promise<void> {
+  const uniqueTopics = new Set(registrations.map(item => item.topic));
+  const uniqueWebhookIds = new Set(registrations.map(item => item.webhookId));
+  const allowedTopics = new Set([
+    'product.created', 'product.updated', 'product.deleted',
+    'order.created', 'order.updated', 'order.deleted',
+  ]);
+  if (
+    registrations.length !== 6
+    || uniqueTopics.size !== registrations.length
+    || uniqueWebhookIds.size !== registrations.length
+    || registrations.some(item => !allowedTopics.has(item.topic))
+    || registrations.some(item => !/^[1-9]\d{0,19}$/.test(item.webhookId))
+    || !data.webhookEndpointId
+    || !/^[A-Za-z0-9_-]{32,48}$/.test(data.webhookEndpointId)
+    || !data.webhookSigningSecret
+    || data.webhookSigningSecret.length < 32
+    || data.webhookSigningSecret.length > 512
+  ) throw new Error('WOOCOMMERCE_WEBHOOK_REGISTRATION_INVALID');
   await requireDb().transaction(async tx => {
     const current = await tx.select({ id: woocommerceSettings.id, storeUrl: woocommerceSettings.storeUrl })
       .from(woocommerceSettings)
       .where(eq(woocommerceSettings.merchantId, data.merchantId))
       .limit(1)
       .for('update');
+    await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, data.merchantId));
+    await tx.delete(woocommerceWebhookRegistrations).where(eq(woocommerceWebhookRegistrations.merchantId, data.merchantId));
     if (current[0] && current[0].storeUrl !== data.storeUrl) {
       await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, data.merchantId));
       await tx.delete(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, data.merchantId));
@@ -10060,6 +10097,7 @@ export async function saveVerifiedWooCommerceSettings(data: NewWooCommerceSettin
       ...data,
       consumerKey: encryptSecret(data.consumerKey),
       consumerSecret: encryptSecret(data.consumerSecret),
+      webhookSigningSecret: encryptSecret(data.webhookSigningSecret),
     };
     if (current[0]) {
       await tx.update(woocommerceSettings).set(protectedData)
@@ -10067,7 +10105,45 @@ export async function saveVerifiedWooCommerceSettings(data: NewWooCommerceSettin
     } else {
       await tx.insert(woocommerceSettings).values(protectedData);
     }
+    await tx.insert(woocommerceWebhookRegistrations).values(registrations.map(registration => ({
+      merchantId: data.merchantId,
+      topic: registration.topic,
+      webhookId: registration.webhookId,
+    })));
   });
+}
+
+export async function getWooCommerceWebhookRegistrations(merchantId: number): Promise<WooCommerceWebhookRegistrationInput[]> {
+  return requireDb().select({
+    topic: woocommerceWebhookRegistrations.topic,
+    webhookId: woocommerceWebhookRegistrations.webhookId,
+  }).from(woocommerceWebhookRegistrations)
+    .where(eq(woocommerceWebhookRegistrations.merchantId, merchantId));
+}
+
+export async function getWooCommerceWebhookPrincipal(
+  endpointId: string,
+  topic: WooCommerceWebhookRegistrationInput['topic'],
+  webhookId: string,
+): Promise<{ merchantId: number; signingSecret: string } | null> {
+  const row = await requireDb().select({
+    merchantId: woocommerceSettings.merchantId,
+    signingSecret: woocommerceSettings.webhookSigningSecret,
+  }).from(woocommerceSettings)
+    .innerJoin(woocommerceWebhookRegistrations, and(
+      eq(woocommerceWebhookRegistrations.merchantId, woocommerceSettings.merchantId),
+      eq(woocommerceWebhookRegistrations.topic, topic),
+      eq(woocommerceWebhookRegistrations.webhookId, webhookId),
+    ))
+    .where(and(
+      eq(woocommerceSettings.webhookEndpointId, endpointId),
+      eq(woocommerceSettings.isActive, 1),
+      eq(woocommerceSettings.connectionStatus, 'connected'),
+    ))
+    .limit(1)
+    .then(rows => rows[0]);
+  if (!row?.signingSecret) return null;
+  return { merchantId: row.merchantId, signingSecret: decryptSecret(row.signingSecret) };
 }
 
 export async function deleteWooCommerceSettings(merchantId: number) {
@@ -10076,6 +10152,8 @@ export async function deleteWooCommerceSettings(merchantId: number) {
 
 export async function deleteWooCommerceIntegration(merchantId: number): Promise<void> {
   await requireDb().transaction(async tx => {
+    await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, merchantId));
+    await tx.delete(woocommerceWebhookRegistrations).where(eq(woocommerceWebhookRegistrations.merchantId, merchantId));
     await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId));
     await tx.delete(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, merchantId));
     await tx.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
@@ -10199,6 +10277,13 @@ export async function getWooCommerceOrderById(id: number) {
   return await requireDb().select().from(woocommerceOrders).where(eq(woocommerceOrders.id, id)).limit(1).then(r => r[0] || null);
 }
 
+export async function deleteWooCommerceProductByWooId(merchantId: number, wooProductId: number): Promise<void> {
+  await requireDb().delete(woocommerceProducts).where(and(
+    eq(woocommerceProducts.merchantId, merchantId),
+    eq(woocommerceProducts.wooProductId, wooProductId),
+  ));
+}
+
 export async function getWooCommerceOrderByIdForMerchant(merchantId: number, id: number) {
   return await requireDb().select().from(woocommerceOrders).where(and(
     eq(woocommerceOrders.id, id),
@@ -10276,6 +10361,13 @@ export async function getWooCommerceOrdersByStatus(merchantId: number, status: s
     .offset(offset);
 }
 
+export async function deleteWooCommerceOrderByWooId(merchantId: number, wooOrderId: number): Promise<void> {
+  await requireDb().delete(woocommerceOrders).where(and(
+    eq(woocommerceOrders.merchantId, merchantId),
+    eq(woocommerceOrders.wooOrderId, wooOrderId),
+  ));
+}
+
 export async function getWooCommerceOrdersStats(merchantId: number) {
   const allOrders = await requireDb().select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
 
@@ -10326,34 +10418,6 @@ export async function getLatestWooCommerceSyncLog(merchantId: number, syncType: 
     .orderBy(desc(woocommerceSyncLogs.createdAt))
     .limit(1)
     .then(r => r[0] || null);
-}
-
-// WooCommerce Webhooks
-export async function createWooCommerceWebhook(data: NewWooCommerceWebhook) {
-  const db = await getDb();
-  if (!db) return 0;
-  const [result] = await requireDb().insert(woocommerceWebhooks).values(data);
-  return (result as any).insertId;
-}
-
-export async function updateWooCommerceWebhook(id: number, data: Partial<NewWooCommerceWebhook>) {
-  await requireDb().update(woocommerceWebhooks).set(data).where(eq(woocommerceWebhooks.id, id));
-}
-
-export async function getWooCommerceWebhooks(merchantId: number, limit: number = 50) {
-  const db = await getDb();
-  if (!db) return [];
-  return await requireDb().select().from(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId)).orderBy(desc(woocommerceWebhooks.createdAt)).limit(limit);
-}
-
-export async function getPendingWooCommerceWebhooks(merchantId: number, limit: number = 10) {
-  return await requireDb().select().from(woocommerceWebhooks)
-    .where(and(
-      eq(woocommerceWebhooks.merchantId, merchantId),
-      eq(woocommerceWebhooks.status, 'pending')
-    ))
-    .orderBy(woocommerceWebhooks.createdAt)
-    .limit(limit);
 }
 
 // Export db instance for direct access (live binding to module-level variable)

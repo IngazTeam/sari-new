@@ -17,6 +17,7 @@ import {
   getWooCommerceProductsStats,
   getWooCommerceSettings,
   getWooCommerceSyncLogs,
+  getWooCommerceWebhookRegistrations,
   saveVerifiedWooCommerceSettings,
   searchWooCommerceProducts,
   updateWooCommerceConnectionStatus,
@@ -37,6 +38,12 @@ import {
   normalizeWooCommerceProduct,
   wooSyncTimestamp,
 } from './integrations/woocommerce-sync';
+import {
+  deleteWooCommerceWebhookRegistrations,
+  registerWooCommerceWebhooks,
+  verifyWooCommerceWebhookRegistrations,
+} from './integrations/woocommerce-webhook-registration';
+import { getWooCommerceWebhookHealth } from './integrations/woocommerce-webhook-receipts';
 import { validateNewPlatformConnection } from './integrations/platform-checker';
 import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
 
@@ -87,7 +94,26 @@ async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<
   }
 }
 
-function settingsDto(settings: NonNullable<Awaited<ReturnType<typeof getWooCommerceSettings>>>) {
+async function cleanupRemoteWebhookRegistrations(
+  settings: Parameters<typeof createWooCommerceClient>[0],
+  registrations: Awaited<ReturnType<typeof getWooCommerceWebhookRegistrations>>,
+): Promise<void> {
+  if (!registrations.length) return;
+  try {
+    await deleteWooCommerceWebhookRegistrations(createWooCommerceClient(settings), registrations);
+  } catch {
+    console.warn('[WooCommerce] unable to initialize remote webhook cleanup');
+  }
+}
+
+async function settingsDto(settings: NonNullable<Awaited<ReturnType<typeof getWooCommerceSettings>>>) {
+  const registrations = await getWooCommerceWebhookRegistrations(settings.merchantId);
+  const webhookReady = Boolean(
+    settings.webhookEndpointId
+    && settings.webhookSigningSecret
+    && registrations.length === 6,
+  );
+  const webhookHealth = webhookReady ? await getWooCommerceWebhookHealth(settings.merchantId) : null;
   return {
     storeUrl: settings.storeUrl,
     isActive: settings.isActive,
@@ -100,7 +126,12 @@ function settingsDto(settings: NonNullable<Awaited<ReturnType<typeof getWooComme
     storeVersion: settings.storeVersion,
     storeName: settings.storeName,
     storeCurrency: settings.storeCurrency,
-    syncMode: 'manual' as const,
+    syncMode: webhookReady ? 'webhook' as const : 'manual' as const,
+    webhook: {
+      ready: webhookReady,
+      registeredTopics: registrations.length,
+      health: webhookHealth,
+    },
   };
 }
 
@@ -225,7 +256,7 @@ async function runManualSync(merchantId: number, type: 'products' | 'orders') {
 export const woocommerceRouter = router({
   getSettings: merchantProcedure.query(async ({ ctx }) => {
     const settings = await getWooCommerceSettings(tenantId(ctx));
-    return settings ? settingsDto(settings) : null;
+    return settings ? await settingsDto(settings) : null;
   }),
 
   saveSettings: permissionProcedure('integrations.manage')
@@ -248,24 +279,44 @@ export const woocommerceRouter = router({
           }
           const client = createWooCommerceClient({ storeUrl, consumerKey, consumerSecret });
           const storeInfo = await client.testConnection();
-          const now = wooSyncTimestamp();
-          await saveVerifiedWooCommerceSettings({
-            merchantId,
-            storeUrl,
-            consumerKey,
-            consumerSecret,
-            isActive: 1,
-            connectionStatus: 'connected',
-            lastTestAt: now,
-            autoSyncProducts: 0,
-            autoSyncOrders: 0,
-            autoSyncCustomers: 0,
-            syncInterval: 60,
-            storeVersion: storeInfo.version || null,
-            storeName: storeInfo.name || null,
-            storeCurrency: storeInfo.currency || null,
+          const previousRegistrations = existing
+            ? await getWooCommerceWebhookRegistrations(merchantId)
+            : [];
+          const webhookEndpointId = crypto.randomBytes(32).toString('base64url');
+          const webhookSigningSecret = crypto.randomBytes(48).toString('base64url');
+          const registrations = await registerWooCommerceWebhooks({
+            client,
+            endpointId: webhookEndpointId,
+            signingSecret: webhookSigningSecret,
           });
-          return { success: true, connected: true };
+          const now = wooSyncTimestamp();
+          try {
+            await saveVerifiedWooCommerceSettings({
+              merchantId,
+              storeUrl,
+              consumerKey,
+              consumerSecret,
+              webhookEndpointId,
+              webhookSigningSecret,
+              isActive: 1,
+              connectionStatus: 'connected',
+              lastTestAt: now,
+              autoSyncProducts: 0,
+              autoSyncOrders: 0,
+              autoSyncCustomers: 0,
+              syncInterval: 60,
+              storeVersion: storeInfo.version || null,
+              storeName: storeInfo.name || null,
+              storeCurrency: storeInfo.currency || null,
+            }, registrations);
+          } catch (error) {
+            await deleteWooCommerceWebhookRegistrations(client, registrations);
+            throw error;
+          }
+          if (existing && previousRegistrations.length) {
+            await cleanupRemoteWebhookRegistrations(existing, previousRegistrations);
+          }
+          return { success: true, connected: true, webhookReady: true };
         });
       } catch (error) {
         throw publicWooError(error);
@@ -278,9 +329,57 @@ export const woocommerceRouter = router({
       return await withWooCommerceLock(merchantId, async () => {
         const settings = await getWooCommerceSettings(merchantId);
         if (!settings) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم ربط WooCommerce' });
-        const info = await createWooCommerceClient(settings).testConnection();
-        await updateWooCommerceConnectionStatus(merchantId, 'connected', info);
-        return { success: true, connected: true };
+        const client = createWooCommerceClient(settings);
+        const info = await client.testConnection();
+        const previousRegistrations = await getWooCommerceWebhookRegistrations(merchantId);
+        const storedWebhookIdentityReady = Boolean(
+          settings.webhookEndpointId
+          && settings.webhookSigningSecret
+          && previousRegistrations.length === 6,
+        );
+        const webhookReady = storedWebhookIdentityReady
+          && await verifyWooCommerceWebhookRegistrations({
+            client,
+            endpointId: settings.webhookEndpointId!,
+            registrations: previousRegistrations,
+          });
+        if (webhookReady) {
+          await updateWooCommerceConnectionStatus(merchantId, 'connected', info);
+          return { success: true, connected: true, webhookReady: true };
+        }
+        const webhookEndpointId = crypto.randomBytes(32).toString('base64url');
+        const webhookSigningSecret = crypto.randomBytes(48).toString('base64url');
+        const registrations = await registerWooCommerceWebhooks({
+          client,
+          endpointId: webhookEndpointId,
+          signingSecret: webhookSigningSecret,
+        });
+        try {
+          await saveVerifiedWooCommerceSettings({
+            merchantId,
+            storeUrl: settings.storeUrl,
+            consumerKey: settings.consumerKey,
+            consumerSecret: settings.consumerSecret,
+            webhookEndpointId,
+            webhookSigningSecret,
+            isActive: 1,
+            connectionStatus: 'connected',
+            lastSyncAt: settings.lastSyncAt,
+            lastTestAt: wooSyncTimestamp(),
+            autoSyncProducts: 0,
+            autoSyncOrders: 0,
+            autoSyncCustomers: 0,
+            syncInterval: settings.syncInterval,
+            storeVersion: info.version || settings.storeVersion,
+            storeName: info.name || settings.storeName,
+            storeCurrency: info.currency || settings.storeCurrency,
+          }, registrations);
+        } catch (error) {
+          await deleteWooCommerceWebhookRegistrations(client, registrations);
+          throw error;
+        }
+        await cleanupRemoteWebhookRegistrations(settings, previousRegistrations);
+        return { success: true, connected: true, webhookReady: true };
       });
     } catch (error) {
       if (!(error instanceof TRPCError)) await updateWooCommerceConnectionStatus(merchantId, 'error').catch(() => undefined);
@@ -290,7 +389,12 @@ export const woocommerceRouter = router({
 
   disconnect: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
     const merchantId = tenantId(ctx);
-    await withWooCommerceLock(merchantId, () => deleteWooCommerceIntegration(merchantId));
+    await withWooCommerceLock(merchantId, async () => {
+      const settings = await getWooCommerceSettings(merchantId);
+      const registrations = await getWooCommerceWebhookRegistrations(merchantId);
+      if (settings) await cleanupRemoteWebhookRegistrations(settings, registrations);
+      await deleteWooCommerceIntegration(merchantId);
+    });
     return { success: true };
   }),
 
