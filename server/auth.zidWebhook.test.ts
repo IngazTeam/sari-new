@@ -60,6 +60,12 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid webhook authentication and repla
     await expect(authenticateZidWebhook('a'.repeat(48), firstAuthorization)).resolves.toBeNull();
     await expect(authenticateZidWebhook(firstEndpoint, firstAuthorization)).resolves.toEqual({
       merchantId: account.merchantId,
+      policy: {
+        valid: true,
+        autoSync: true,
+        syncProducts: true,
+        syncOrders: true,
+      },
     });
 
     const second = await rotateZidWebhookCredentials(account.merchantId);
@@ -67,7 +73,15 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid webhook authentication and repla
     await expect(authenticateZidWebhook(firstEndpoint, firstAuthorization)).resolves.toBeNull();
     await expect(
       authenticateZidWebhook(secondEndpoint, createZidBasicAuthorization(second.password)),
-    ).resolves.toEqual({ merchantId: account.merchantId });
+    ).resolves.toEqual({
+      merchantId: account.merchantId,
+      policy: {
+        valid: true,
+        autoSync: true,
+        syncProducts: true,
+        syncOrders: true,
+      },
+    });
   });
 
   it('claims concurrent deliveries once, minimizes payload storage, and retries a failed receipt once', async () => {

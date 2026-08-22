@@ -45,6 +45,7 @@ import {
   fetchAllZidCustomers,
   fetchAllZidOrders,
 } from './zid-commerce-sync';
+import { parseZidSettings } from './zid-settings';
 const sensitiveActionInput = z.object({
   password: z.string().min(8).max(128).optional(),
 }).optional();
@@ -79,16 +80,6 @@ async function requireZidReauthentication(input: {
 
 function requestIp(ctx: { req: { ip?: string; socket?: { remoteAddress?: string } } }): string {
   return String(ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown').slice(0, 45);
-}
-
-function parseZidSettings(value: string | null | undefined): Record<string, unknown> {
-  if (!value) return {};
-  try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
 }
 
 function mysqlTimestamp(date = new Date()): string {
@@ -185,10 +176,10 @@ export const zidRouter = router({
           ? `/api/webhooks/zid/${integration.webhookEndpointId}`
           : null,
         settings: {
-          autoSync: settings.autoSync !== false,
-          syncProducts: settings.syncProducts !== false,
-          syncOrders: settings.syncOrders !== false,
-          syncCustomers: settings.syncCustomers !== false,
+          autoSync: settings.autoSync,
+          syncProducts: settings.syncProducts,
+          syncOrders: settings.syncOrders,
+          syncCustomers: settings.syncCustomers,
         },
       };
     }),
@@ -534,6 +525,7 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
   }
 
   const settings = parseZidSettings(integration.settings);
+  if (!settings.valid || !settings.autoSync) return;
   const normalizedEvent: Record<string, string> = {
     'order.create': 'order.created',
     'order.update': 'order.updated',

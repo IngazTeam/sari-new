@@ -2,6 +2,11 @@ import crypto from 'node:crypto';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 import { privacyHashExact } from '../accounts/privacy-hash';
+import {
+  parseZidSettings,
+  zidWebhookPolicy,
+  type ZidWebhookPolicy,
+} from '../integrations/zid-settings';
 
 const ENDPOINT_PATTERN = /^[a-f0-9]{48}$/;
 const AUTHORIZATION_PATTERN = /^Basic [A-Za-z0-9+/]+={0,2}$/;
@@ -11,6 +16,7 @@ const CLAIM_LEASE_MINUTES = 10;
 type AuthRow = RowDataPacket & {
   merchantId: number;
   webhookAuthHash: string;
+  settings: string | null;
 };
 
 type ReceiptRow = RowDataPacket & {
@@ -85,14 +91,15 @@ export async function rotateZidWebhookCredentials(merchantId: number): Promise<{
 export async function authenticateZidWebhook(
   endpointId: string,
   authorization: string | undefined,
-): Promise<{ merchantId: number } | null> {
+): Promise<{ merchantId: number; policy: ZidWebhookPolicy } | null> {
   if (!ENDPOINT_PATTERN.test(endpointId)) return null;
   if (!authorization || authorization.length > 512 || !AUTHORIZATION_PATTERN.test(authorization)) return null;
 
   const pool = await getPool();
   if (!pool) throw new Error('Database not initialized');
   const [rows] = await pool.execute<AuthRow[]>(
-    `SELECT pi.merchant_id AS merchantId, pi.webhook_auth_hash AS webhookAuthHash
+    `SELECT pi.merchant_id AS merchantId, pi.webhook_auth_hash AS webhookAuthHash,
+            pi.settings AS settings
        FROM platform_integrations pi
        INNER JOIN merchants m ON m.id = pi.merchant_id
       WHERE pi.webhook_endpoint_id = ? AND pi.platform_type = 'zid'
@@ -103,9 +110,11 @@ export async function authenticateZidWebhook(
   );
   const row = rows[0];
   if (!row?.webhookAuthHash) return null;
-  return constantTimeHexEqual(privacyHashExact(authorization), row.webhookAuthHash)
-    ? { merchantId: Number(row.merchantId) }
-    : null;
+  if (!constantTimeHexEqual(privacyHashExact(authorization), row.webhookAuthHash)) return null;
+  return {
+    merchantId: Number(row.merchantId),
+    policy: zidWebhookPolicy(parseZidSettings(row.settings)),
+  };
 }
 
 export function hashZidWebhookPayload(rawBody: Buffer): string {

@@ -8,6 +8,7 @@ import { verifyGreenWebhookAuthorization } from './greenapi-auth';
 import { updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { handleSallaWebhook } from './salla';
 import { parseZidWebhookPayload, processZidWebhook } from './zid-webhook';
+import { isZidWebhookEventEnabled } from '../integrations/zid-settings';
 import {
   authenticateZidWebhook,
   claimZidWebhook,
@@ -222,6 +223,9 @@ router.post('/zid/:endpointId', async (req: Request & { rawBody?: Buffer }, res:
     const payload = parseZidWebhookPayload(req.body);
     if (!payload) return res.status(400).json({ error: 'Invalid webhook payload' });
     if (!req.rawBody) return res.status(500).json({ error: 'Webhook body unavailable' });
+    if (!isZidWebhookEventEnabled(principal.policy, payload.event)) {
+      return res.status(200).json({ message: 'Webhook event disabled or unsupported' });
+    }
 
     const claim = await claimZidWebhook({
       merchantId: principal.merchantId,
