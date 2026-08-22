@@ -164,4 +164,44 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
       ],
     )).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
   });
+
+  it('releases merchant and phone locks after a transaction failure so retry succeeds', async () => {
+    const merchantA = await createMerchant('failure-owner');
+    const merchantB = await createMerchant('failure-retry');
+    const duplicateInstanceId = `${TEST_PREFIX}failure-${crypto.randomUUID().slice(0, 12)}`;
+    const first = await createWhatsAppInstance({
+      merchantId: merchantA,
+      provider: 'mock',
+      instanceId: duplicateInstanceId,
+      token: 'test-token-failure-owner',
+      apiUrl: 'https://example.test',
+      phoneNumber: '+966505556677',
+      status: 'active',
+      isPrimary: 0,
+    });
+    expect(first).toBeDefined();
+
+    const retryPhone = '+966505556688';
+    await expect(createWhatsAppInstance({
+      merchantId: merchantB,
+      provider: 'mock',
+      instanceId: duplicateInstanceId,
+      token: 'test-token-failed-insert',
+      apiUrl: 'https://example.test',
+      phoneNumber: retryPhone,
+      status: 'active',
+      isPrimary: 0,
+    })).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+
+    await expect(createWhatsAppInstance({
+      merchantId: merchantB,
+      provider: 'mock',
+      instanceId: `${TEST_PREFIX}failure-retry-${crypto.randomUUID().slice(0, 12)}`,
+      token: 'test-token-successful-retry',
+      apiUrl: 'https://example.test',
+      phoneNumber: retryPhone,
+      status: 'active',
+      isPrimary: 0,
+    })).resolves.toMatchObject({ merchantId: merchantB, status: 'active' });
+  });
 });

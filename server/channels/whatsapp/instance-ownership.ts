@@ -85,6 +85,21 @@ export async function releaseWhatsAppInstanceLocks(
 }
 
 /**
+ * A connection that may still contain an open/failed transaction must never be
+ * returned to the pool. Named-lock release is still attempted before destroy so
+ * healthy sessions do not retain locks longer than necessary.
+ */
+export async function finalizeWhatsAppInstanceLockConnection(
+  connection: PoolConnection,
+  names: string[],
+  reusable = true,
+): Promise<void> {
+  const releasedAll = await releaseWhatsAppInstanceLocks(connection, names);
+  if (reusable && releasedAll) connection.release();
+  else connection.destroy();
+}
+
+/**
  * Must run while the caller holds the shared phone lock. Formatting differences
  * such as +966, 00966, spaces, and dashes resolve to one ownership identity.
  */

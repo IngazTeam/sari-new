@@ -1,12 +1,12 @@
-import type { RowDataPacket } from 'mysql2/promise';
+import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import {
   acquireWhatsAppInstanceLock,
   activeWhatsAppPhoneIdentityHash,
   assertWhatsAppPhoneAvailable,
+  finalizeWhatsAppInstanceLockConnection,
   isWhatsAppActivePhoneUniqueConflict,
-  releaseWhatsAppInstanceLocks,
   WhatsAppPhoneOwnershipConflictError,
   whatsAppMerchantLockNamespace,
   whatsAppPhoneLockNamespace,
@@ -128,6 +128,15 @@ function mapPublicInstance(row: PublicInstanceRow | LockedInstanceRow & { instan
   };
 }
 
+async function rollbackRestInstanceTransaction(connection: PoolConnection): Promise<boolean> {
+  try {
+    await connection.rollback();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function listPublicWhatsAppInstances(merchantId: number): Promise<PublicWhatsAppInstance[]> {
   assertPositiveId(merchantId, 'merchant ID');
   await assertInstanceSchema();
@@ -192,6 +201,16 @@ export async function mutateRestWhatsAppInstance(
   const connection = await pool.getConnection();
   const heldLocks: string[] = [];
   let transactionOpen = false;
+  let connectionReusable = true;
+
+  const rollbackOrFail = async (): Promise<void> => {
+    const rolledBack = await rollbackRestInstanceTransaction(connection);
+    transactionOpen = false;
+    if (!rolledBack) {
+      connectionReusable = false;
+      throw new Error('WhatsApp instance transaction recovery failed');
+    }
+  };
 
   try {
     heldLocks.push(await acquireWhatsAppInstanceLock(connection, whatsAppMerchantLockNamespace(merchantId)));
@@ -212,8 +231,7 @@ export async function mutateRestWhatsAppInstance(
     );
     const target = targetRows[0];
     if (!target) {
-      await connection.rollback();
-      transactionOpen = false;
+      await rollbackOrFail();
       return { kind: 'not_found' };
     }
 
@@ -225,8 +243,7 @@ export async function mutateRestWhatsAppInstance(
       ? activeWhatsAppPhoneIdentityHash(target.phoneNumber)
       : null;
     if (normalized.isPrimary === true && !finalActive) {
-      await connection.rollback();
-      transactionOpen = false;
+      await rollbackOrFail();
       return { kind: 'primary_requires_active' };
     }
 
@@ -236,8 +253,7 @@ export async function mutateRestWhatsAppInstance(
         await assertWhatsAppPhoneAvailable(connection, target.phoneNumber, instanceId);
       } catch (error) {
         if (!(error instanceof WhatsAppPhoneOwnershipConflictError)) throw error;
-        await connection.rollback();
-        transactionOpen = false;
+        await rollbackOrFail();
         return { kind: 'phone_conflict' };
       }
     }
@@ -311,14 +327,12 @@ export async function mutateRestWhatsAppInstance(
     transactionOpen = false;
     return { kind: 'updated', instance: mapPublicInstance(updatedRows[0]) };
   } catch (error) {
-    if (transactionOpen) await connection.rollback();
+    if (transactionOpen) await rollbackOrFail();
     if (isWhatsAppActivePhoneUniqueConflict(error)) {
       return { kind: 'phone_conflict' };
     }
     throw error;
   } finally {
-    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
-    if (releasedAll) connection.release();
-    else connection.destroy();
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks, connectionReusable);
   }
 }

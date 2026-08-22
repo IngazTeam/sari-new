@@ -7,8 +7,8 @@ import {
   acquireWhatsAppInstanceLock,
   activeWhatsAppPhoneIdentityHash,
   assertWhatsAppPhoneAvailable,
+  finalizeWhatsAppInstanceLockConnection,
   isWhatsAppActivePhoneUniqueConflict,
-  releaseWhatsAppInstanceLocks,
   WhatsAppPhoneOwnershipConflictError,
   whatsAppMerchantLockNamespace,
   whatsAppPhoneLockNamespace,
@@ -3015,9 +3015,7 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
     }
     throw error;
   } finally {
-    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
-    if (releasedAll) connection.release();
-    else connection.destroy();
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks);
   }
 }
 
@@ -3172,9 +3170,7 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
     }
     throw error;
   } finally {
-    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
-    if (releasedAll) connection.release();
-    else connection.destroy();
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks);
   }
 }
 
@@ -3219,9 +3215,7 @@ export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: numbe
         ));
     });
   } finally {
-    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
-    if (releasedAll) connection.release();
-    else connection.destroy();
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks);
   }
 }
 
