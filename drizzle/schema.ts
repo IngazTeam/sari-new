@@ -1934,6 +1934,7 @@ export const paymentLinks = mysqlTable("payment_links", {
 },
 	(table) => [
 		uniqueIndex("payment_links_link_id_unique").on(table.linkId),
+		uniqueIndex("payment_links_order_id_unique").on(table.orderId),
 		index("payment_links_merchant_id_idx").on(table.merchantId),
 	]);
 

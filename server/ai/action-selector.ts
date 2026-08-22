@@ -18,7 +18,6 @@ import type { CustomerProfile } from '../db/customer-intelligence';
 import type { CustomerIntent } from './session-context';
 import {
   createOrder,
-  getMerchantById,
   getMerchantPaymentSettings,
   getOrdersByCustomerPhone,
   getProductsByMerchantId,
@@ -540,83 +539,49 @@ export async function executeAction(params: {
 
           console.log(`[ActionSelector] ✅ Order #${order.id} created in DB (${matchedItems.length} items, ${totalAmount} ر.س)`);
 
-          // 3. Try to create Tap payment link
+          // 4. Issue one local order link; the customer checkout creates the Tap charge.
           let paymentUrl: string | null = null;
           try {
-            const paymentSettings = await getMerchantPaymentSettings(merchantId);
-            if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey && paymentSettings.isVerified) {
-              const merchant = await getMerchantById(merchantId);
-              const chargeData = {
-                amount: totalAmount / 100, // هللات → ريال
-                currency: paymentSettings.defaultCurrency || 'SAR',
-                customer: {
-                  first_name: customerName || 'Customer',
-                  phone: {
-                    country_code: '966',
-                    number: customerPhone.replace(/^\+?966/, '').replace(/^0/, ''),
-                  },
-                },
-                source: { id: 'src_all' },
-                redirect: {
-                  url: (await import('../utils/public-url')).publicPaymentUrls.return(),
-                },
-                post: {
-                  url: (await import('../utils/public-url')).publicPaymentUrls.webhook(),
-                },
-                description: `طلب #${order.id} من ${merchant?.businessName || 'المتجر'}`,
-                metadata: {
-                  merchantId: merchantId.toString(),
-                  orderId: order.id.toString(),
-                  type: 'order',  // Must match tap-webhook.ts handler check
-                  conversationId: conversationId.toString(), // P0-FIX: Attribution
-                },
-              };
+            const { issueCanonicalOrderPaymentLink } = await import('../payment/order-payment-link');
+            const issued = await issueCanonicalOrderPaymentLink({
+              merchantId,
+              orderId: order.id,
+              requestedAmountInHalalas: totalAmount,
+              title: `طلب واتساب #${order.id}`,
+            });
+            if (issued.issued) {
+              paymentUrl = issued.paymentUrl;
 
-              const tapResponse = await fetch('https://api.tap.company/v2/charges', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${paymentSettings.tapSecretKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(chargeData),
+              // Projection only: payment authority remains the signed webhook.
+              try {
+                const { getPool } = await import('../db');
+                const pool2 = await getPool();
+                if (pool2) {
+                  await pool2.execute(
+                    `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ? AND merchantId = ?`,
+                    [conversationId, merchantId]
+                  );
+                }
+              } catch { /* non-blocking */ }
+
+              console.log('[ActionSelector] Canonical order payment link issued', {
+                merchantId,
+                orderId: order.id,
+                reused: issued.reused,
               });
-
-              const tapResult = await tapResponse.json();
-              if (tapResponse.ok && (tapResult.transaction?.url || tapResult.redirect?.url)) {
-                paymentUrl = tapResult.transaction?.url || tapResult.redirect?.url;
-
-                // Save payment record
-                const { createOrderPayment } = await import('../db_payments');
-                await createOrderPayment({
-                  merchantId,
-                  orderId: order.id,
-                  bookingId: null,
-                  customerPhone,
-                  amount: totalAmount,
-                  currency: paymentSettings.defaultCurrency || 'SAR',
-                  tapChargeId: tapResult.id,
-                  tapPaymentUrl: paymentUrl,
-                  status: 'pending',
-                  description: `طلب واتساب #${order.id}`,
-                });
-
-                // P0-FIX: Update deal_stage + payment_link_sent_at for pipeline tracking
-                try {
-                  const { getPool } = await import('../db');
-                  const pool2 = await getPool();
-                  if (pool2) {
-                    await pool2.execute(
-                      `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ? AND merchantId = ?`,
-                      [conversationId, merchantId]
-                    );
-                  }
-                } catch { /* non-blocking */ }
-
-                console.log(`[ActionSelector] ✅ Tap payment link created: ${paymentUrl}`);
-              }
+            } else {
+              console.warn('[ActionSelector] Canonical order payment link unavailable', {
+                merchantId,
+                orderId: order.id,
+                reason: issued.reason,
+              });
             }
           } catch (tapErr: any) {
-            console.warn(`[ActionSelector] Tap payment failed (non-blocking): ${tapErr.message}`);
+            console.warn('[ActionSelector] Canonical order payment link failed', {
+              merchantId,
+              orderId: order.id,
+              failure: tapErr?.name || 'unknown',
+            });
           }
 
           // 5. Send confirmation message to customer
@@ -636,7 +601,7 @@ export async function executeAction(params: {
               `*المنتجات:*\n${itemsText}\n` +
               taxLine + `\n\n` +
               `🔗 *لإتمام الدفع:*\n${paymentUrl}\n\n` +
-              `⏰ الرابط صالح لمدة 24 ساعة\n` +
+              `⏰ افتح الرابط للاطلاع على صلاحيته وإكمال الدفع\n` +
               `📱 سنرسل لك تحديثات عن حالة طلبك\n\n` +
               `شكراً لثقتك بنا! 🌟`
             );
@@ -708,4 +673,3 @@ export async function executeAction(params: {
     console.warn(`[ActionSelector] Action execution failed: ${err.message}`);
   }
 }
-

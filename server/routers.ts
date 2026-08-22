@@ -7822,6 +7822,29 @@ export const appRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
           }
         }
+        if (input.orderId) {
+          if (!input.isFixedAmount || (input.maxUsageCount != null && input.maxUsageCount !== 1)) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط الطلب يجب أن يكون ثابتًا ولا يستخدم إلا مرة واحدة' });
+          }
+          const { issueCanonicalOrderPaymentLink } = await import('./payment/order-payment-link');
+          const issued = await issueCanonicalOrderPaymentLink({
+            merchantId: merchant.id,
+            orderId: input.orderId,
+            requestedAmountInHalalas: input.amount,
+            title: input.title,
+            description: input.description,
+            expiresAt: input.expiresAt,
+          });
+          if (!issued.issued) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: issued.reason === 'gateway_not_ready'
+                ? 'بوابة الدفع غير جاهزة لهذا المتجر'
+                : 'الطلب أو رابط الدفع غير متاح',
+            });
+          }
+          return { linkId: issued.link.linkId, paymentUrl: issued.paymentUrl, link: issued.link };
+        }
         const dbPayments = await import('./db_payments');
         const crypto = await import('node:crypto');
         const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;

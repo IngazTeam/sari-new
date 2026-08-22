@@ -14,17 +14,13 @@ import { SallaIntegration } from '../integrations/salla';
 import {
   createOrder,
   getMerchantById,
-  getMerchantPaymentSettings,
   getProductById,
   getProductsByMerchantId,
   getReferralCodeByCode,
   getSallaConnectionByMerchantId,
   getUserById,
   incrementDiscountCodeUsage,
-  updateOrder,
 } from '../db';
-import * as dbPayments from '../db_payments';
-// import { createPaymentLink } from '../_core/tapPayments';
 // import { sendWhatsAppMessage } from '../greenapi-wrapper';
 import { 
   extractDiscountCodeFromMessage, 
@@ -299,82 +295,37 @@ export async function createOrderFromChat(
       throw new Error('Failed to save order in database');
     }
 
-    // إنشاء رابط دفع Tap باستخدام مفاتيح التاجر
+    // إصدار رابط طلب محلي؛ إنشاء Tap charge يحدث فقط داخل checkout المركزي.
     let tapPaymentUrl: string | null = null;
     try {
-      // جلب إعدادات الدفع للتاجر
-      const paymentSettings = await getMerchantPaymentSettings(merchantId);
-      
-      if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey && paymentSettings.isVerified) {
-        const baseUrl = 'https://api.tap.company/v2';
-        const merchant = await getMerchantById(merchantId);
-        
-        const chargeData = {
-          amount: finalAmount / 100, // تحويل من الهللات إلى ريال
-          currency: paymentSettings.defaultCurrency || 'SAR',
-          customer: {
-            first_name: customerName || 'Customer',
-            phone: {
-              country_code: '966',
-              number: customerPhone.replace(/^\+?966/, '').replace(/^0/, ''),
-            },
-          },
-          source: { id: 'src_all' },
-          redirect: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.return(),
-          },
-          post: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.webhook(),
-          },
-          description: `طلب رقم ${order.orderNumber} من ${merchant?.businessName || 'المتجر'}`,
-          metadata: {
-            merchantId: merchantId.toString(),
-            orderId: order.id.toString(),
-            orderNumber: order.orderNumber || '',
-            type: 'order'
-          },
-        };
-
-        const response = await fetch(`${baseUrl}/charges`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${paymentSettings.tapSecretKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(chargeData),
+      const { issueCanonicalOrderPaymentLink } = await import('../payment/order-payment-link');
+      const issued = await issueCanonicalOrderPaymentLink({
+        merchantId,
+        orderId: order.id,
+        requestedAmountInHalalas: finalAmount,
+        title: `طلب رقم ${order.orderNumber || order.id}`,
+      });
+      if (issued.issued) {
+        tapPaymentUrl = issued.paymentUrl;
+        console.log('[OrderFromChat] Canonical order payment link issued', {
+          merchantId,
+          orderId: order.id,
+          reused: issued.reused,
         });
-
-        const result = await response.json();
-
-        if (response.ok && (result.transaction?.url || result.redirect?.url)) {
-          tapPaymentUrl = result.transaction?.url || result.redirect?.url;
-          
-          // حفظ رابط الدفع في قاعدة البيانات
-          await dbPayments.createOrderPayment({
-            merchantId,
-            orderId: order.id,
-            bookingId: null,
-            customerPhone,
-            customerName,
-            amount: finalAmount,
-            currency: paymentSettings.defaultCurrency || 'SAR',
-            tapChargeId: result.id,
-            tapPaymentUrl: tapPaymentUrl,
-            status: 'pending',
-            description: `طلب رقم ${order.orderNumber}`,
-          });
-
-          // تحديث رابط الدفع في الطلب
-          await updateOrder(order.id, { paymentUrl: tapPaymentUrl });
-
-          console.log('[OrderFromChat] Tap payment link created:', tapPaymentUrl);
-        } else {
-          console.warn('[OrderFromChat] Tap API error:', result);
-        }
+      } else {
+        console.warn('[OrderFromChat] Canonical order payment link unavailable', {
+          merchantId,
+          orderId: order.id,
+          reason: issued.reason,
+        });
       }
     } catch (error) {
-      console.error('[OrderFromChat] Error creating Tap payment link:', error);
-      // نستمر حتى لو فشل إنشاء رابط Tap، سنستخدم رابط Salla
+      console.error('[OrderFromChat] Canonical order payment link failed', {
+        merchantId,
+        orderId: order.id,
+        failure: error instanceof Error ? error.name : 'unknown',
+      });
+      // نستمر حتى لو تعذر الرابط المحلي، ونستخدم رابط Salla إن وجد.
     }
 
     // Notify admin about new order
