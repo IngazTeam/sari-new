@@ -1,6 +1,9 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
-import type { ApiListPagination } from './api-read-model-core';
+import type {
+  ApiListPagination,
+  PlatformConversationQuery,
+} from './api-read-model-core';
 
 export interface ApiProductReadModel {
   id: number;
@@ -56,6 +59,11 @@ export interface ApiKnowledgeOverview {
   };
 }
 
+export interface PlatformConversationMetrics {
+  total: number;
+  responded: number;
+}
+
 interface CountRow {
   total: number | string | bigint;
 }
@@ -76,6 +84,20 @@ async function requiredPool() {
   const pool = await getPool();
   if (!pool) throw new Error('API read data unavailable');
   return pool;
+}
+
+function mapConversationRow(row: Record<string, any>): ApiConversationReadModel {
+  return {
+    id: Number(row.id),
+    customerPhone: row.customerPhone,
+    customerName: row.customerName ?? null,
+    lastMessage: row.lastMessage ?? null,
+    lastMessageAt: row.lastMessageAt,
+    messageCount: exactCount(row.messageCount),
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export async function listApiProducts(
@@ -233,18 +255,79 @@ export async function listApiConversations(
 
   return {
     total: exactCount(countRows[0]?.total ?? 0),
-    data: rows.map(row => ({
-      id: Number(row.id),
-      customerPhone: row.customerPhone,
-      customerName: row.customerName ?? null,
-      lastMessage: row.lastMessage ?? null,
-      lastMessageAt: row.lastMessageAt,
-      messageCount: exactCount(row.messageCount),
-      status: row.status,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    })),
+    data: rows.map(mapConversationRow),
   };
+}
+
+export async function listPlatformConversations(
+  merchantId: number,
+  query: PlatformConversationQuery,
+): Promise<{ total: number; data: ApiConversationReadModel[] }> {
+  positiveMerchantId(merchantId);
+  await assertRuntimeSchema('platform conversation read model', [
+    {
+      table: 'conversations',
+      columns: [
+        'id', 'merchantId', 'customerPhone', 'customerName', 'lastMessage', 'lastMessageAt',
+        'status', 'createdAt', 'updatedAt',
+      ],
+    },
+    { table: 'messages', columns: ['id', 'conversationId'] },
+  ]);
+  const pool = await requiredPool();
+  const statusClause = query.status === 'all' ? '' : ' AND status = ?';
+  const statusParams = query.status === 'all' ? [] : [query.status];
+  const [countResult, dataResult] = await Promise.all([
+    pool.execute(
+      `SELECT COUNT(*) AS total FROM conversations WHERE \`merchantId\` = ?${statusClause}`,
+      [merchantId, ...statusParams],
+    ),
+    pool.execute(
+      `SELECT page.id, page.customerPhone, page.customerName, page.lastMessage,
+              page.lastMessageAt, page.status, page.createdAt, page.updatedAt,
+              COUNT(messages.id) AS messageCount
+         FROM (
+           SELECT id, \`customerPhone\` AS customerPhone, \`customerName\` AS customerName,
+                  \`lastMessage\` AS lastMessage, \`lastMessageAt\` AS lastMessageAt,
+                  status, \`createdAt\` AS createdAt, \`updatedAt\` AS updatedAt
+             FROM conversations
+            WHERE \`merchantId\` = ?${statusClause}
+            ORDER BY \`lastMessageAt\` DESC, id DESC
+            LIMIT ? OFFSET ?
+         ) AS page
+         LEFT JOIN messages ON messages.\`conversationId\` = page.id
+        GROUP BY page.id, page.customerPhone, page.customerName, page.lastMessage,
+                 page.lastMessageAt, page.status, page.createdAt, page.updatedAt
+        ORDER BY page.lastMessageAt DESC, page.id DESC`,
+      [merchantId, ...statusParams, query.limit, query.offset],
+    ),
+  ]);
+  const countRows = countResult[0] as CountRow[];
+  const rows = dataResult[0] as Array<Record<string, any>>;
+  return { total: exactCount(countRows[0]?.total ?? 0), data: rows.map(mapConversationRow) };
+}
+
+export async function getPlatformConversationMetrics(merchantId: number): Promise<PlatformConversationMetrics> {
+  positiveMerchantId(merchantId);
+  await assertRuntimeSchema('platform conversation metrics', [
+    { table: 'conversations', columns: ['id', 'merchantId'] },
+    { table: 'messages', columns: ['conversationId', 'direction'] },
+  ]);
+  const pool = await requiredPool();
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS total,
+            COALESCE(SUM(CASE WHEN EXISTS (
+              SELECT 1 FROM messages
+               WHERE messages.\`conversationId\` = conversations.id
+                 AND messages.direction = 'outgoing'
+            ) THEN 1 ELSE 0 END), 0) AS responded
+       FROM conversations
+      WHERE conversations.\`merchantId\` = ?`,
+    [merchantId],
+  );
+  const row = (rows as Array<Record<string, unknown>>)[0];
+  if (!row) throw new Error('Platform conversation metrics unavailable');
+  return { total: exactCount(row.total), responded: exactCount(row.responded) };
 }
 
 export async function getApiKnowledgeOverview(merchantId: number): Promise<ApiKnowledgeOverview> {

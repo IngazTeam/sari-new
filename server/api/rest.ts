@@ -21,9 +21,6 @@ import {
   createProduct,
   deactivateInstancesByPhoneNumber,
   getActiveInstanceByPhoneNumber,
-  getConversationCountByMerchantId,
-  getConversationsByMerchantId,
-  getExtractedFaqsByMerchantId,
   getKnowledgeDocByMerchantId,
   getMerchantById,
   getPool,
@@ -53,11 +50,17 @@ import {
   parseApiKeyPermissions,
   requiredApiKeyScope,
 } from './api-key-permissions';
-import { normalizeApiListPagination } from './api-read-model-core';
+import {
+  normalizeApiListPagination,
+  normalizePlatformConversationQuery,
+  normalizePlatformEnrollmentQuery,
+} from './api-read-model-core';
 import {
   getApiKnowledgeOverview,
+  getPlatformConversationMetrics,
   listApiConversations,
   listApiFaqs,
+  listPlatformConversations,
   listApiProducts,
 } from './api-read-model';
 import { reserveApiRateLimit } from './distributed-rate-limit';
@@ -1862,20 +1865,15 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
     const merchantId = merchant.id;
 
     const { getConversionSummary } = await import('../integrations/byaan');
-    const [conversations, products, faqs, conversionSummary] = await Promise.all([
-      getConversationsByMerchantId(merchantId),
-      (getProductsByMerchantId as any)(merchantId),
-      getExtractedFaqsByMerchantId(merchantId),
+    const [overview, conversationMetrics, conversionSummary] = await Promise.all([
+      getApiKnowledgeOverview(merchantId),
+      getPlatformConversationMetrics(merchantId),
       getConversionSummary(merchantId),
     ]);
 
-    // Calculate response rate: conversations with at least one bot reply / total
-    const totalConversations = conversations.length;
-    const respondedConversations = conversations.filter((c: any) =>
-      c.messageCount > 1 || c.status === 'completed'
-    ).length;
+    const totalConversations = conversationMetrics.total;
     const responseRate = totalConversations > 0
-      ? Math.round((respondedConversations / totalConversations) * 100)
+      ? Math.round((conversationMetrics.responded / totalConversations) * 100)
       : 0;
 
     res.json({
@@ -1884,8 +1882,8 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
       totalRevenue: conversionSummary.totalRevenue,
       responseRate,
       // Extra fields for richer dashboards
-      totalProducts: products.length,
-      totalFaqs: faqs.length,
+      totalProducts: overview.products,
+      totalFaqs: overview.faqs,
     });
   } catch (e) {
     console.error('[SariAPI] Platform merchant stats failed:', e);
@@ -1899,33 +1897,12 @@ sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, r
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 15, 1), 100);
-    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
-    // SEC-4: Whitelist status filter values
-    const rawStatus = req.query.status as string;
-    const validStatuses = ['all', 'active', 'completed', 'expired', 'pending'];
-    const statusFilter = rawStatus && validStatuses.includes(rawStatus) ? rawStatus : undefined;
-    const offset = (page - 1) * limit;
-
-    // Get total count for pagination
-    const totalCount = await getConversationCountByMerchantId(merchant.id);
-
-    // Get paginated conversations
-    const conversations = await getConversationsByMerchantId(merchant.id, { limit: limit + 1, offset });
-
-    // Check if there's a next page
-    const hasNext = conversations.length > limit;
-    const paginatedConversations = conversations.slice(0, limit);
-
-    // Filter by status if requested
-    const filtered = statusFilter && statusFilter !== 'all'
-      ? paginatedConversations.filter((c: any) => c.status === statusFilter)
-      : paginatedConversations;
-
-    const totalPages = Math.ceil(totalCount / limit);
+    const query = normalizePlatformConversationQuery(req.query);
+    const result = await listPlatformConversations(merchant.id, query);
+    const totalPages = Math.ceil(result.total / query.limit);
 
     res.json({
-      conversations: filtered.map((c: any) => ({
+      conversations: result.data.map(c => ({
         id: `conv_${c.id}`,
         customerName: c.customerName || 'غير معروف',
         phone: c.customerPhone,
@@ -1935,16 +1912,20 @@ sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, r
         status: c.status || 'active',
       })),
       pagination: {
-        from: offset + 1,
-        to: Math.min(offset + filtered.length, totalCount),
-        total: totalCount,
-        prevPage: page > 1 ? page - 1 : null,
-        nextPage: hasNext ? page + 1 : null,
-        currentPage: page,
+        from: result.data.length > 0 ? query.offset + 1 : 0,
+        to: query.offset + result.data.length,
+        total: result.total,
+        prevPage: query.page > 1 ? query.page - 1 : null,
+        nextPage: query.offset + result.data.length < result.total ? query.page + 1 : null,
+        currentPage: query.page,
         totalPages,
+        status: query.status,
       },
     });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiReadModelValidationError') {
+      return res.status(400).json({ error: 'Invalid conversations query', errorAr: 'معاملات المحادثات غير صالحة' });
+    }
     console.error('[SariAPI] Platform merchant conversations failed:', e);
     res.status(500).json({ error: 'Failed to fetch conversations', errorAr: 'فشل جلب المحادثات' });
   }
@@ -1983,11 +1964,7 @@ sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res
   if (!merchant) return merchantNotFound(res);
 
   try {
-    // SEC-4: Whitelist period values
-    const rawPeriod = req.query.period as string;
-    const validPeriods = ['week', 'month', 'year'];
-    const period = rawPeriod && validPeriods.includes(rawPeriod) ? rawPeriod : 'month';
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 200);
+    const { period, limit } = normalizePlatformEnrollmentQuery(req.query);
 
     // Resolve the period before querying so totals are calculated by MySQL over
     // the complete ledger, not an in-memory slice of the newest rows.
@@ -2030,6 +2007,9 @@ sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res
       })),
     });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiReadModelValidationError') {
+      return res.status(400).json({ error: 'Invalid enrollments query', errorAr: 'معاملات التسجيلات غير صالحة' });
+    }
     console.error('[SariAPI] Platform merchant enrollments failed:', e);
     res.status(500).json({ error: 'Failed to fetch enrollments', errorAr: 'فشل جلب التسجيلات' });
   }
