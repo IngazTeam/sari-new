@@ -12,6 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { chromiumLaunchArgs, resolveChromiumExecutable } from '../browser/chromium-runtime';
 
 interface QuotationItem {
   name: string;
@@ -77,38 +78,16 @@ export async function generateQuotationPDF(data: QuotationData): Promise<string>
 async function renderHTMLtoPDF(html: string): Promise<Buffer> {
   const puppeteerCore = await import('puppeteer-core');
   
-  // Find Chromium executable
-  let chromiumPath: string | null = null;
-  try {
-    // @ts-ignore — chromium package has no type declarations
-    const chromium = await import('chromium');
-    chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
-  } catch { /* chromium package not available */ }
-  
-  // Fallback: check system-installed Chromium
-  if (!chromiumPath) {
-    const { existsSync } = await import('fs');
-    const systemPaths = [
-      '/usr/bin/chromium-browser', '/usr/bin/chromium',
-      '/snap/bin/chromium', '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome',
-    ];
-    for (const p of systemPaths) {
-      if (existsSync(p)) {
-        chromiumPath = p;
-        break;
-      }
-    }
-  }
+  const chromiumPath = resolveChromiumExecutable();
   
   if (!chromiumPath) {
-    throw new Error('[QuotationPDF] Chromium not found. Install chromium package or set system Chromium path.');
+    throw new Error('[QuotationPDF] Chromium not found. Set CHROMIUM_EXECUTABLE_PATH or install a supported system Chrome/Chromium.');
   }
   
   const browser = await puppeteerCore.launch({
     headless: true,
     executablePath: chromiumPath,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    args: chromiumLaunchArgs(),
     timeout: 15000,
   });
   

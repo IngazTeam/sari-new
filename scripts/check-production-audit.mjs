@@ -28,23 +28,13 @@ if (critical.length > 0) {
   throw new Error(`Production audit found ${critical.length} critical advisories`);
 }
 
-const acceptedHighUrl = 'https://github.com/advisories/GHSA-jmr9-qjv8-65gv';
-const acceptedHighPath = '. > chromium@3.0.3 > extract-zip@1.7.0';
-const unexpectedHigh = high.filter((advisory) => {
-  const paths = advisory.findings?.flatMap((finding) => finding.paths ?? []) ?? [];
-  return advisory.url !== acceptedHighUrl
-    || advisory.module_name !== 'extract-zip'
-    || paths.length !== 1
-    || paths[0] !== acceptedHighPath;
-});
-
-if (unexpectedHigh.length > 0 || high.length !== 1) {
+if (high.length > 0) {
   const summary = high.map((advisory) => `${advisory.module_name}: ${advisory.url}`).join(', ');
-  throw new Error(`Unexpected high production advisories (${high.length}): ${summary || 'none'}`);
+  throw new Error(`Production audit found ${high.length} high advisories: ${summary}`);
 }
 
 const counts = report.metadata?.vulnerabilities ?? {};
 console.log(
-  `[dependency-audit] critical=0; high=1 accepted (${acceptedHighUrl}); ` +
+  `[dependency-audit] critical=0; high=0; ` +
   `moderate=${counts.moderate ?? 0}; low=${counts.low ?? 0}`,
 );

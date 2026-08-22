@@ -8,6 +8,7 @@
 import { invokeLLM } from "./llm";
 import { JSDOM } from "jsdom";
 import { execFileSync } from "child_process";
+import { chromiumLaunchArgs, resolveChromiumExecutable } from "../browser/chromium-runtime";
 
 /**
  * Validate URL to prevent SSRF attacks (internal IP, metadata endpoints, etc.)
@@ -499,32 +500,14 @@ export async function scrapeWebsite(url: string): Promise<{
   // Strategy 3: Puppeteer headless browser — renders JavaScript for SPA sites
   try {
     const puppeteerCore = await import('puppeteer-core').catch(() => null);
-    let chromiumPath: string | null = null;
-    try {
-      // @ts-ignore — chromium package has no type declarations
-      const chromium = await import('chromium');
-      chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
-    } catch { /* chromium package not available */ }
-
-    // Fallback: check system-installed Chromium (apt/snap)
-    if (!chromiumPath) {
-      const { existsSync } = await import('fs');
-      const systemPaths = ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/snap/bin/chromium', '/usr/bin/google-chrome-stable', '/usr/bin/google-chrome'];
-      for (const p of systemPaths) {
-        if (existsSync(p)) {
-          chromiumPath = p;
-          console.log(`[WebsiteAnalyzer] Found system Chromium at: ${p}`);
-          break;
-        }
-      }
-    }
+    const chromiumPath = resolveChromiumExecutable();
     
     if (puppeteerCore && chromiumPath) {
       console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url} (chromium: ${chromiumPath})`);
       const browser = await puppeteerCore.launch({
         headless: true,
         executablePath: chromiumPath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        args: chromiumLaunchArgs(),
         timeout: 15000,
       });
       try {
@@ -981,22 +964,11 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
       if (spaDetected) {
         try {
           const puppeteerCore = await import('puppeteer-core').catch(() => null);
-          let chromiumPath: string | null = null;
-          try {
-            // @ts-ignore
-            const chromium = await import('chromium');
-            chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
-          } catch {}
-          if (!chromiumPath) {
-            const { existsSync } = await import('fs');
-            for (const p of ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/snap/bin/chromium', '/usr/bin/google-chrome-stable', '/usr/bin/google-chrome']) {
-              if (existsSync(p)) { chromiumPath = p; break; }
-            }
-          }
+          const chromiumPath = resolveChromiumExecutable();
           if (puppeteerCore && chromiumPath) {
             const browser = await puppeteerCore.launch({
               headless: true, executablePath: chromiumPath,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+              args: chromiumLaunchArgs(),
               timeout: 15000,
             });
             try {

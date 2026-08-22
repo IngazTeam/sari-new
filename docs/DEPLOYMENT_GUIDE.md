@@ -298,6 +298,8 @@ sudo ufw status
 
 لا يُنفذ اختبار حمل على الإنتاج. أداة المستودع ترفض نطاقات الإنتاج افتراضيًا وبصورة غير قابلة للتجاوز من خيارات التشغيل.
 
+تشغيل تحليل صفحات JavaScript وتوليد عروض الأسعار PDF يتطلب Chrome/Chromium محدثًا يديره النظام. إعداد المسار وسياسة sandbox واختبار النشر موثقة في [`CHROMIUM_RUNTIME_RUNBOOK.md`](./CHROMIUM_RUNTIME_RUNBOOK.md).
+
 ---
 
 ## 1️⃣1️⃣ إعداد Monitoring

@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.28 — محدّث ببوابات حمل واستعادة آمنة قابلة للتكرار دون ادعاء نجاح تشغيلي قبل staging\
+**الإصدار:** 3.29 — محدّث بإزالة آخر High معروف وتوحيد Chrome/Chromium runtime الآمن\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -75,6 +75,7 @@
 52. أُغلق غياب بيان من صفحة مراكز التدريب برمجيًا محليًا دون توسيع الوعد عن العقد المثبت: أضيف spotlight يشرح اتجاه بيانات الدورات والمتدربين والأسئلة من بيان إلى ساري، ويصف التسجيل والدفع والنتائج والشهادات كعمليات حية مشروطة بدعم tenant وبعد إثبات ملكية النطاق. استُبدل CTA العام بطلب تقييم توافق يفتح نموذج الدعم بموضوع ومصدر allowlisted لا يعكسان query المستخدم، ويُحفظ المصدر في التذكرة/البريد. اجتاز بنتست المرحلة 8/8، واختبارات النطاق 37/37، وبوابة الإصدار 395/395؛ يبقى tenant بيان staging مطابق واختبار E2E قبل تحويل الصياغة المؤهلة إلى ادعاء تكامل جاهز عامًا.
 53. أُغلق محليًا تضارب وعود التفعيل والدفع والسرعة في الأسطح العامة الحرجة: أزيلت أزمنة 5/10 دقائق و30 ثانية و24/7 ومزامنة/تسوية فورية وحجم حملات غير مثبت، وصار الإعداد مرتبطًا بحالة اكتمال المتجر والقناة والتكاملات. نُقح دليل الدفع من Moyasar وPCI/ترخيص ووسائل وعمولة غير مثبتة إلى Tap فقط بعقد test/live ومفاتيح متحققة وطلب محفوظ وcallback يطابق المبلغ والعملة والمرجع. حُدثت structured data وSEO ومركز المساعدة وصفحات الطلبات والتدريب، وأضيف حارس يمنع ارتداد الادعاءات. اجتاز 8/8 بنتست خاص، و32/32 فحص نطاق، و403/403 بوابة إصدار؛ يبقى قياس median/p90 ودليل Tap sandbox قبل نشر أي رقم أو ختم امتثال/ترخيص.
 54. أُغلقت محليًا فجوة أدوات `OPS-002` دون تنفيذ حمل على الإنتاج أو استعادة على قاعدة حية: بوابة الحمل لا تسمح إلا بـGET على health/readiness، ترفض نطاق الإنتاج وكل نطاقاته الفرعية دائمًا وتلزم origin staging مطابقًا وحدودًا قصوى، وتقيس p50/p95/p99 و5xx والخطأ. أضيف manifest داخل transaction قراءة فقط وconsistent snapshot، يربط المصدر بهويته ويقارن schema hashes وأعداد تسعة جداول canonical في قاعدة restore/drill/test منفصلة مع إقرار صريح ومسار artifact محصور. استُبدلت وصفة backup التي تكشف كلمة المرور بـRunbook للتشفير وPITR/RPO/RTO والدليل. اجتاز 10/10 بنتست مخصص و413/413 بوابة إصدار وTypeScript/build؛ يبقى الحمل وتمرين الاستعادة الفعليان على staging قبل إغلاق `OPS-002`.
+55. أُزيل آخر High معروف من شجرة الإنتاج بحذف `chromium@3.0.3` ومسار `extract-zip@1.7.0` وإلغاء allowlist المؤقتة. توحد تحليل المواقع وPDF على resolver واحد يقبل مسارًا مطلقًا موجودًا أو Chrome/Chromium نظاميًا، ويبقي sandbox مفعّلًا إلا بإقرار container معزول دقيق. صار `pnpm-lock.yaml` lockfile الوحيد، وأضيف Runbook للتثبيت والصورة والـsmoke. نجح audit مباشر بنتيجة 0 Critical و0 High و11 Moderate و6 Low، و13/13 فحص نطاق، و418/418 بوابة إصدار في 45 ملفًا، وTypeScript/frozen lock/build/bundle budget؛ يلزم ضبط `CHROMIUM_EXECUTABLE_PATH` وsmoke تحليل/PDF على صورة staging قبل النشر.
 
 **قرار الخطة:**
 
@@ -83,7 +84,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.28
+### حالة تنفيذ الجولة 3.29
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -108,17 +109,18 @@
 | تموضع بيان لمراكز التدريب | مكتمل برمجيًا محليًا/Byaan E2E والنشر معلقان | spotlight باتجاهات بيانات صادقة وqualification صريح، CTA قطاعي إلى دعم حقيقي، lead source allowlisted غير منعكس؛ 8/8 بنتست و395/395 بوابة إصدار |
 | صدق الادعاءات العامة والدفع | مكتمل برمجيًا محليًا/قياس وTap sandbox معلقان | إزالة أزمنة/24x7/scale/instant غير المثبتة، Tap وحده، test/live+verified keys، طلب محفوظ وcallback مطابق، SEO/schema/help متسقة؛ 8/8 بنتست و403/403 بوابة إصدار |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
+| Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
 | رابط الدفع العام | مكتمل محليًا | `/pay/:linkId` وstatus/return/callback، URL canonical، والمبلغ من الخادم فقط |
 | Tap وwebhooks | مكتمل تعاقديًا محليًا | ربط المفتاح بالوضع، منع غير المتحقق، تحقق مبلغ/عملة/مرجع، انتقال ذري ونهائي واحد |
 | التشغيل والصلاحيات | مكتمل محليًا | حارس `/admin`، health محدود، readiness باستعلام DB، 5xx منقح، وفشل process صريح |
-| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 413/413 بوابة إصدار في 44 ملفًا، وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,299 bytes raw / 171,510 bytes gzip |
+| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 418/418 بوابة إصدار في 45 ملفًا، frozen lock وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,299 bytes raw / 171,510 bytes gzip |
 | احتواء الأسرار والـPII | مكتمل محليًا/تشغيليًا مشروط | إزالة 197 artifact من الشجرة الحالية، تشفير AES-256-GCM، DTOs منقحة، logs منقحة و295/295 اختبار اختراق وانحدار؛ يلزم تدوير المفاتيح وتنظيف التاريخ وتطبيق migration 0003 |
 | مصدر حقيقة المخطط | مكتمل محليًا/تشغيليًا مشروط | صفر DDL في runtime، migrations `0003` و`0004` مسجّلة مع snapshots، readiness يفشل عند schema drift، و264/264 اختبار اختراق وانحدار للحزم المستهدفة؛ يلزم تطبيق staging وrestore drill |
 | التسجيل والموافقات وحقوق البيانات | مكتمل محليًا/تشغيليًا مشروط | تسجيل ذري، إيصالات موافقة مؤرخة، تسويق اختياري، تصدير وحذف وDSR وطابور admin واحتفاظ مشفر؛ 13/13 بنتست مخصص و173/173 بوابة أمن وانحدار، ويلزم تطبيق `0006` و`0007` وتمرين staging ومراجعة قانونية |
 | WhatsApp وبيان | مكتمل محليًا/خارجيًا محجوب | Meta Embedded Signup وتوقيع raw webhook، Green Bearer، provider delivery idempotency، وبيان ownership/HMAC/outbox؛ 21/21 بنتست مخصص وTypeScript/Drizzle/Vite/server build ناجحة، ويلزم `0008` وsandbox/canary |
 | صدق المنتج والتسويق | مكتمل محليًا/إنتاجيًا معلق | Try Sari ذري ومقيد، Analytics واحدة، السعر من DB، صفحات claims القديمة معزولة، وأرقام 3×≈100 مؤهلة؛ 7/7 بنتست مخصص وTypeScript ناجحان |
 | قابلية الإصدار والأداء | مكتمل محليًا/CI remote معلق | frozen install نظيف، Node 22.17.1 وpnpm 10.4.1، workflow بصلاحية دنيا وMySQL، 95/95 اختبارًا، main `172.37 kB gzip` و0 critical audit |
-| تقليص ثغرات الاعتماديات | مكتمل محليًا/استثناء واحد | High من 21 إلى 1، direct upgrades وoverrides مصححة، audit policy تمنع أي ارتداد، 96/96 اختبارًا؛ Chromium القديم باقٍ |
+| تقليص ثغرات الاعتماديات | مكتمل محليًا/smoke صورة النشر معلق | High من 21 إلى 0، لا allowlist، Chromium القديم وlockfile المنافس أزيلا، audit مباشر 0 Critical/0 High؛ بقي 11 Moderate و6 Low للمراجعة الدورية |
 | استعادة كلمة المرور والبريد الأمني | مكتمل محليًا/تكامل DB معلق | rate limit موزع، رد موحد، token digest، transaction وإبطال متوازٍ، HMAC للـPII، وقوالب مهربة؛ 103/103 بوابة إصدار |
 | إبطال الجلسات بعد تغيير الاعتماد | مكتمل محليًا/النشر معلق | HMAC credential binding، رفض JWT القديمة، مقارنة ثابتة الزمن في middleware وverify endpoint؛ 111/111 بوابة إصدار |
 | سجل الجلسات وlogout | مكتمل محليًا/migration معلق | session ID 256-bit مخزن digest، registry fail-closed، logout محدد، reset يلغي الجميع، وإزالة JWT الموازي؛ 122/122 بوابة إصدار |
@@ -143,7 +145,7 @@
 | مراقبة صحة إشعارات Zid | مكتمل محليًا/migration والنشر معلقان | protected tenant aggregate، لا معرفات أو PII، polling محدود وتنبيه مراجعة بلا blind retry؛ 9/9 بنتست و298/298 بوابة إصدار |
 | إقرار حالات إشعارات Zid | مكتمل محليًا/migration والنشر معلقان | tenant authority من الجلسة، conditional acknowledge بلا IDs أو حذف أو إرسال، وحوار صريح؛ 8/8 بنتست و306/306 بوابة إصدار |
 
-**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0024` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، ومنح `orders.read` و`third_customers_read` ومطابقة طلبات/عملاء sandbox بعد `0019`، وتشغيل preflight المعرفات وإثبات المصالحة بعد `0020` ثم `preflight:zid-product-identity` قبل `0021` و`preflight:zid-order-identity` قبل `0022`، وتطبيق `0023` ثم اختبار opt-in/opt-out وإعادة تشغيل worker بعد الانهيار على Meta/Green sandbox مع مراجعة `manual_review`، وتطبيق `0024` قبل اختبار onboarding بكتالوج كبير، وإعادة رحلة A/B عبر حالات readiness الأربع والتأكد أن الاستكشاف لا يغير الحالة، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
+**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0024` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، ومنح `orders.read` و`third_customers_read` ومطابقة طلبات/عملاء sandbox بعد `0019`، وتشغيل preflight المعرفات وإثبات المصالحة بعد `0020` ثم `preflight:zid-product-identity` قبل `0021` و`preflight:zid-order-identity` قبل `0022`، وتطبيق `0023` ثم اختبار opt-in/opt-out وإعادة تشغيل worker بعد الانهيار على Meta/Green sandbox مع مراجعة `manual_review`، وتطبيق `0024` قبل اختبار onboarding بكتالوج كبير، وإعادة رحلة A/B عبر حالات readiness الأربع والتأكد أن الاستكشاف لا يغير الحالة، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وضبط Chromium النظامي واختبار تحليل SPA وPDF على صورة staging.
 
 ### سجل الكوميتات المنفذة
 
@@ -1108,6 +1110,7 @@ WhatsAppChannel
 - [x] بيان ظاهر الآن في صفحة مراكز التدريب بصياغة تفرق بين مزامنة البيانات والعمليات الحية المشروطة، وتوضح verification/E2E، وCTA القطاعي يلتقط lead source allowlisted عبر الدعم الحقيقي؛ 8/8 بنتست مرحلة و395/395 بوابة إصدار وTypeScript/build ناجحة. يبقى tenant بيان staging وإعادة اختبار المنشور.
 - [x] الأسطح العامة الحرجة لا تعد بـ5/10 دقائق أو 24/7 أو تسوية/مزامنة فورية أو Moyasar/PCI/ترخيص غير مثبت؛ دليل الدفع وSEO/schema/help مرتبطة بـTap المتحقق وطلب محفوظ وcallback مطابق؛ 8/8 بنتست و403/403 بوابة إصدار وTypeScript/build ناجحة. يبقى القياس المنشور وTap sandbox.
 - [x] أدوات load/restore آمنة ومحدودة ومربوطة بـRunbook ومصدر manifest canonical وtransaction قراءة فقط؛ 10/10 بنتست و413/413 بوابة إصدار وTypeScript/build ناجحة. لا يغلق `OPS-002` حتى نجاح حمل واستعادة فعليين على staging.
+- [x] آخر High معروف أزيل مع Chromium القديم، وصار resolver/Sandbox/lockfile/audit بعقد fail-closed؛ audit مباشر 0 Critical/0 High و418/418 بوابة إصدار. يبقى smoke Chrome/PDF على صورة staging و11 Moderate و6 Low تحت المتابعة.
 - [ ] migrations موحدة للمسارات المستخدمة.
 - [ ] قناة Meta الرسمية جاهزة أو خطة انتقال معتمدة بزمن محدد.
 - [ ] الموافقة وإلغاء الاشتراك يعملان.
