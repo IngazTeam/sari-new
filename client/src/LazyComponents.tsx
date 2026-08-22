@@ -50,7 +50,7 @@ export const LazyWooCommerceAnalytics = lazy(() => import('./pages/merchant/WooC
 
 // Zid Integration
 export const LazyZidIntegration = lazy(() => import('./pages/merchant/ZidIntegration'));
-export const LazyZidSettings = lazy(() => import('./pages/ZidSettings'));
+export const LazyZidSettings = LazyZidIntegration;
 export const LazyZidProducts = lazy(() => import('./pages/ZidProducts'));
 export const LazyZidSyncLogs = lazy(() => import('./pages/ZidSyncLogs'));
 

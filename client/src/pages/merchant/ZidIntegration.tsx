@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Loader2, 
   Store, 
@@ -25,12 +36,16 @@ import {
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
+type SensitiveZidAction = 'connect' | 'disconnect' | 'rotate';
+
 export default function ZidIntegration() {
   const { t } = useTranslation();
   const [autoSync, setAutoSync] = useState(true);
   const [syncProducts, setSyncProducts] = useState(true);
   const [syncOrders, setSyncOrders] = useState(true);
   const [syncCustomers, setSyncCustomers] = useState(true);
+  const [sensitiveAction, setSensitiveAction] = useState<SensitiveZidAction | null>(null);
+  const [reauthPassword, setReauthPassword] = useState('');
   const [webhookCredentials, setWebhookCredentials] = useState<{
     endpointPath: string;
     username: string;
@@ -62,8 +77,9 @@ export default function ZidIntegration() {
       window.location.assign(authorizationUrl);
     },
     onError: () => {
+      setReauthPassword('');
       toast.error(t('zidIntegrationPage.text45'), {
-        description: 'تعذر بدء الربط الآمن. انتظر قليلًا ثم حاول مرة أخرى.',
+        description: 'تعذر تأكيد الهوية أو بدء الربط. أعد تسجيل الدخول أو أدخل كلمة المرور الصحيحة.',
       });
     },
   });
@@ -73,11 +89,13 @@ export default function ZidIntegration() {
       toast.success(t('zidIntegrationPage.text46'), {
         description: data.message,
       });
+      closeSensitiveAction();
       refetch();
     },
-    onError: (error: any) => {
+    onError: () => {
+      setReauthPassword('');
       toast.error(t('zidIntegrationPage.text47'), {
-        description: error.message,
+        description: 'تعذر تأكيد الهوية أو فصل التكامل. حاول مرة أخرى.',
       });
     },
   });
@@ -89,9 +107,9 @@ export default function ZidIntegration() {
       });
       refetch();
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error(t('zidIntegrationPage.text49'), {
-        description: error.message,
+        description: 'تعذر إكمال المزامنة. حاول مرة أخرى أو أعد ربط زد.',
       });
     },
   });
@@ -100,9 +118,9 @@ export default function ZidIntegration() {
     onSuccess: () => {
       toast.success(t('zidIntegrationPage.text0'));
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error(t('zidIntegrationPage.text50'), {
-        description: error.message,
+        description: 'تعذر حفظ إعدادات المزامنة.',
       });
     },
   });
@@ -110,22 +128,38 @@ export default function ZidIntegration() {
   const rotateWebhookMutation = trpc.zid.rotateWebhookCredentials.useMutation({
     onSuccess: (credentials) => {
       setWebhookCredentials(credentials);
+      closeSensitiveAction();
       refetch();
       toast.success('تم إنشاء بيانات Webhook', {
         description: 'انسخ كلمة المرور الآن؛ لن نعرضها مرة أخرى.',
       });
     },
-    onError: (error: any) => {
-      toast.error('تعذر إنشاء بيانات Webhook', { description: error.message });
+    onError: () => {
+      setReauthPassword('');
+      toast.error('تعذر إنشاء بيانات Webhook', {
+        description: 'تعذر تأكيد الهوية أو تدوير البيانات. حاول مرة أخرى.',
+      });
     },
   });
 
-  const handleDisconnect = () => {
-    if (confirm(t('zidIntegrationPage.text52'))) {
-      setWebhookCredentials(null);
-      disconnectMutation.mutate();
-    }
+  const closeSensitiveAction = () => {
+    setSensitiveAction(null);
+    setReauthPassword('');
   };
+
+  const submitSensitiveAction = () => {
+    const credentials = reauthPassword ? { password: reauthPassword } : {};
+    if (sensitiveAction === 'connect') beginOAuthMutation.mutate(credentials);
+    if (sensitiveAction === 'disconnect') {
+      setWebhookCredentials(null);
+      disconnectMutation.mutate(credentials);
+    }
+    if (sensitiveAction === 'rotate') rotateWebhookMutation.mutate(credentials);
+  };
+
+  const sensitiveActionPending = beginOAuthMutation.isPending
+    || disconnectMutation.isPending
+    || rotateWebhookMutation.isPending;
 
   const handleSync = () => {
     syncMutation.mutate();
@@ -300,7 +334,7 @@ export default function ZidIntegration() {
                     )}
                     {t('zidIntegrationPage.text37')}
                   </Button>
-                  <Button variant="destructive" onClick={handleDisconnect}>
+                  <Button variant="destructive" onClick={() => setSensitiveAction('disconnect')}>
                     {t('zidIntegrationPage.text38')}
                   </Button>
                 </div>
@@ -352,7 +386,7 @@ export default function ZidIntegration() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => rotateWebhookMutation.mutate()}
+                        onClick={() => setSensitiveAction('rotate')}
                         disabled={rotateWebhookMutation.isPending}
                       >
                         {rotateWebhookMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
@@ -459,7 +493,7 @@ export default function ZidIntegration() {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => beginOAuthMutation.mutate()}
+                onClick={() => setSensitiveAction('connect')}
                 disabled={beginOAuthMutation.isPending}
               >
                 {beginOAuthMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
@@ -475,6 +509,49 @@ export default function ZidIntegration() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog
+        open={sensitiveAction !== null}
+        onOpenChange={(open) => { if (!open) closeSensitiveAction(); }}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الهوية قبل الإجراء</AlertDialogTitle>
+            <AlertDialogDescription>
+              {sensitiveAction === 'connect' && 'ستبدأ عملية ربط متجر زد ومنح الصلاحيات.'}
+              {sensitiveAction === 'disconnect' && 'سيُحذف اتصال زد واعتماداته من ساري.'}
+              {sensitiveAction === 'rotate' && 'ستُبطل كلمة مرور Webhook الحالية فورًا.'}
+              {' '}إذا مر أكثر من خمس دقائق على تسجيل الدخول، أدخل كلمة مرور حسابك.
+              وللحساب دون كلمة مرور، أعد تسجيل الدخول ثم نفذ الإجراء خلال خمس دقائق.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="zidReauthPassword">كلمة المرور الحالية</Label>
+            <Input
+              id="zidReauthPassword"
+              type="password"
+              autoComplete="current-password"
+              value={reauthPassword}
+              onChange={(event) => setReauthPassword(event.target.value)}
+              maxLength={128}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sensitiveActionPending}>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              className={sensitiveAction === 'disconnect' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : undefined}
+              disabled={sensitiveActionPending || (reauthPassword.length > 0 && reauthPassword.length < 8)}
+              onClick={(event) => {
+                event.preventDefault();
+                submitSensitiveAction();
+              }}
+            >
+              {sensitiveActionPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+              تأكيد وتنفيذ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

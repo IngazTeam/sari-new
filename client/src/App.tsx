@@ -132,7 +132,6 @@ const InsightsDashboard = lazyLoad(() => import("./pages/merchant/InsightsDashbo
 const DataSync = lazyLoad(() => import("./pages/merchant/DataSync"));
 const PerformanceMetrics = lazyLoad(() => import("./pages/merchant/PerformanceMetrics"));
 const ZidIntegration = lazyLoad(() => import("./pages/merchant/ZidIntegration"));
-const ZidSettings = lazyLoad(() => import("./pages/ZidSettings"));
 const ZidCallback = lazyLoad(() => import("./pages/ZidCallback"));
 const ZidProducts = lazyLoad(() => import("./pages/ZidProducts"));
 const ZidSyncLogs = lazyLoad(() => import("./pages/ZidSyncLogs"));
@@ -402,7 +401,7 @@ function Router() {
 
       <Route path="/merchant/zid/settings">
         <DashboardLayout>
-          <ZidSettings />
+          <ZidIntegration />
         </DashboardLayout>
       </Route>
 

@@ -26,9 +26,42 @@ import {
 } from '../db';
 import { deleteAllZidConnections, deleteZidSettings as deleteLegacyZidSettings } from '../db_zid';
 import { getValidZidApiCredentials } from './zid-token-manager';
+import { assertRecentReauthentication, ReauthenticationError } from '../security/reauthentication';
 
 // Zid API Base URL
 const ZID_API_BASE = 'https://api.zid.sa/v1';
+const sensitiveActionInput = z.object({
+  password: z.string().min(8).max(128).optional(),
+}).optional();
+
+async function requireZidReauthentication(input: {
+  userId: number;
+  sessionId: string | undefined;
+  password?: string;
+  ipAddress: string;
+}): Promise<void> {
+  if (!input.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'تعذر تأكيد الهوية' });
+  try {
+    await assertRecentReauthentication({
+      userId: input.userId,
+      sessionId: input.sessionId,
+      password: input.password,
+      ipAddress: input.ipAddress,
+    });
+  } catch (error) {
+    if (error instanceof ReauthenticationError && error.code === 'rate_limited') {
+      throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'محاولات كثيرة؛ حاول لاحقًا' });
+    }
+    if (error instanceof ReauthenticationError) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'تعذر تأكيد الهوية' });
+    }
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر تأكيد الهوية' });
+  }
+}
+
+function requestIp(ctx: { req: { ip?: string; socket?: { remoteAddress?: string } } }): string {
+  return String(ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown').slice(0, 45);
+}
 
 // Helper function to make Zid API requests
 // Zid v1 API requires both Authorization (OAuth) and X-Manager-Token headers
@@ -94,7 +127,14 @@ export const zidRouter = router({
     }),
 
   beginOAuth: protectedProcedure
-    .mutation(async ({ ctx }) => {
+    .input(sensitiveActionInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireZidReauthentication({
+        userId: ctx.user.id,
+        sessionId: ctx.session?.sessionId,
+        password: input?.password,
+        ipAddress: requestIp(ctx),
+      });
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
@@ -190,7 +230,14 @@ export const zidRouter = router({
 
   // Disconnect from Zid store
   disconnect: protectedProcedure
-    .mutation(async ({ ctx }) => {
+    .input(sensitiveActionInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireZidReauthentication({
+        userId: ctx.user.id,
+        sessionId: ctx.session?.sessionId,
+        password: input?.password,
+        ipAddress: requestIp(ctx),
+      });
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       await deleteAllZidConnections(merchant.id);
@@ -238,13 +285,13 @@ export const zidRouter = router({
           success: true,
           message: `تمت مزامنة ${syncedProducts} منتج بنجاح`
         };
-      } catch (error: any) {
+      } catch {
         // @ts-ignore
         await createSyncLog(merchant.id, 'zid_sync' as any, 'error');
 
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'فشلت المزامنة',
+          message: 'فشلت مزامنة متجر زد',
         });
       }
     }),
@@ -280,7 +327,14 @@ export const zidRouter = router({
     }),
 
   rotateWebhookCredentials: protectedProcedure
-    .mutation(async ({ ctx }) => {
+    .input(sensitiveActionInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireZidReauthentication({
+        userId: ctx.user.id,
+        sessionId: ctx.session?.sessionId,
+        password: input?.password,
+        ipAddress: requestIp(ctx),
+      });
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       try {
