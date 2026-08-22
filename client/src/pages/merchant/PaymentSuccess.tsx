@@ -1,35 +1,41 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Clock3, Loader2, XCircle } from "lucide-react";
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useRef } from "react";
 import { useTranslation } from 'react-i18next';
+import { PAYMENT_PROVIDER_REFERENCE_PATTERN } from '@shared/subscription-payment-status';
+
+const MAX_LEGACY_STATUS_POLLS = 30;
 
 export default function PaymentSuccess() {
   const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split('?')[1]);
-  const subscriptionId = parseInt(params.get('subscriptionId') || '0');
+  const subscriptionId = Number.parseInt(params.get('subscriptionId') || '0', 10);
   const transactionId = params.get('tap_id') || params.get('token') || '';
-  
-  const [verified, setVerified] = useState(false);
-  const verifyMutation = trpc.subscriptionPayments.verifyPayment.useMutation({
-    onSuccess: () => {
-      setVerified(true);
+  const pollCount = useRef(0);
+  const validReference = Number.isSafeInteger(subscriptionId)
+    && subscriptionId > 0
+    && PAYMENT_PROVIDER_REFERENCE_PATTERN.test(transactionId);
+  const paymentStatus = trpc.subscriptionPayments.verifyPayment.useQuery(
+    { subscriptionId, transactionId },
+    {
+      enabled: validReference,
+      retry: false,
+      refetchInterval: query => {
+        pollCount.current += 1;
+        const result = query.state.data?.status;
+        return pollCount.current >= MAX_LEGACY_STATUS_POLLS || result === 'completed' || result === 'failed'
+          ? false
+          : 2000;
+      },
+      refetchIntervalInBackground: false,
     },
-  });
+  );
 
-  useEffect(() => {
-    if (subscriptionId && transactionId && !verified) {
-      verifyMutation.mutate({
-        subscriptionId,
-        transactionId,
-      });
-    }
-  }, [subscriptionId, transactionId]);
-
-  if (verifyMutation.isPending) {
+  if (validReference && paymentStatus.isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="max-w-md w-full">
@@ -45,18 +51,33 @@ export default function PaymentSuccess() {
     );
   }
 
+  const completed = paymentStatus.data?.status === 'completed';
+  const failed = !validReference || paymentStatus.data?.status === 'failed';
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="max-w-md w-full">
         <CardContent className="pt-6 text-center space-y-6">
-          <div className="bg-green-100 dark:bg-green-950 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+          <div className="bg-muted w-20 h-20 rounded-full flex items-center justify-center mx-auto">
+            {completed
+              ? <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+              : failed
+                ? <XCircle className="h-12 w-12 text-destructive" />
+                : <Clock3 className="h-12 w-12 text-amber-600" />}
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-2">{t('paymentSuccessPage.text1')}</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {completed ? t('paymentSuccessPage.text1') : failed ? 'تعذر تأكيد الدفع' : 'الدفع قيد التأكيد'}
+            </h2>
             <p className="text-muted-foreground">
-              {t('paymentSuccessPage.text4')}
+              {completed
+                ? t('paymentSuccessPage.text4')
+                : failed
+                  ? 'الرابط غير صالح أو تعذر قراءة العملية. لم يتم تغيير اشتراكك.'
+                  : paymentStatus.isError
+                    ? 'تعذر تحديث الحالة مؤقتًا. سنحاول تلقائيًا، ولا تُعد الدفع الآن.'
+                    : 'ننتظر إشعار مزود الدفع الموقّع. لا تُعد الدفع الآن، وراجع الاشتراك بعد قليل.'}
             </p>
           </div>
 

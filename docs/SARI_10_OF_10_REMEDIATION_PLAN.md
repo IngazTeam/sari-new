@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.65 — محدّث بتوحيد checkout اشتراكات Tap ومنع التكرار\
+**الإصدار:** 3.66 — محدّث بحصر callback الاشتراكات في القراءة المحلية\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -112,6 +112,7 @@
 89. أُغلق محليًا فحص اعتماد Tap غير المطابق لعقد المزود وسباق الاعتماد القديم: كان المساران ينفذان `GET /charges` غير الموثق، يعكسان رسالة المزود، وقد يثبت اختبار بطيء اعتمادًا جديدًا لم يُختبر. صار الفحص المشترك يستخدم `POST /v2/charges/list` الرسمي بـ`limit=1` وحد 128KB ومهلة 10 ثوانٍ، ويتخلص من body. لا يبطل التوثيق إلا رفض 401/403، وتُطبق النتيجة داخل transaction بعد `FOR UPDATE` فقط إذا بقيت public/secret/mode مطابقة حرفيًا للنسخة المختبرة؛ وإلا تطلب الواجهة إعادة الاختبار. اجتاز 75/75 نطاق Tap مركزًا و705/705 بوابة إصدار وTypeScript/build؛ يبقى إثبات test/live بمفاتيح sandbox بعد النشر.
 90. أُغلقت محليًا سرية إعدادات Tap العامة: كانت شاشة الإدارة تعيد `secretKey/webhookSecret` كاملين للمتصفح وتعيد ملء حقول الكتابة، بينما دوال قاعدة البيانات تخزن النص الخام رغم تعليق «encrypted». أصبح DTO بلا السرّين مع presence bits، والحقل السري فارغ دائمًا ويحفظ القديم عند تركه فارغًا، وأزيل webhook secret المضلل لأن التحقق الرسمي يستخدم API secret. كل كتابة جديدة مشفرة AES-GCM وأضيف جدول `tap_settings` إلى migration الاعتمادات التاريخية. اختبار الاتصال يستخدم probe الرسمي المشترك وrow lock مطابقًا للـpublic/secret/live snapshot، وتغيير أي اعتماد يسقط نتيجة الاختبار القديمة. اجتاز 78/78 نطاقًا مركزًا و711/711 بوابة إصدار وTypeScript/build؛ يبقى تشغيل migration وإعادة الاختبار الحي على admin وTap sandbox.
 91. وُحد محليًا checkout اشتراكات Tap للشراء والترقية والإضافة والتسجيل: كانت أربعة مسارات تنشئ transaction وcharge جديدين عند كل retry، تستخدم عميلًا قديمًا غير محدود، ترسل معرفات merchant/transaction/plan/addon في metadata، وتخزن `JSON.stringify(charge)` بما يحمله من PII. صار كل سطح يطلب UUID ثابتًا، ويُحجز intent واحد بقيد `(merchant_id, checkout_attempt_id)` في `0034`، ويُشتق `reference.idempotent` opaque. عميل Tap المقيد والتحقق الصارم يقبلان INITIATED ومبلغًا/عملةً/وضعًا ورابط Tap مطابقًا فقط، والـDB تربط charge بـCAS وتخزن summary تشغيلية مع URL/expiry بلا customer. outage أو استجابة ملتبسة لا تحول الصف إلى failed كي تعاد المحاولة بنفس الهوية. أصلح redirect الترقية المدفوعة، وأصبح نجاح الإعداد العام يتطلب marker `verified` الجديد فيبطل نتائج GET التاريخية. اجتاز 102/102 نطاقًا مركزًا و719/719 بوابة إصدار وTypeScript/Drizzle/build؛ يبقى تطبيق `0034` وMySQL race وTap sandbox.
+92. أُغلق محليًا منح الاشتراك واستدعاء المزود من browser callback: كان `payment.handlePaymentCallback` العام يقبل أي نص ويطلب charge من Tap ثم يشغّل انتقال entitlement، وكان مسار `subscriptionPayments.verifyPayment` القديم يفعل الأمر نفسه لـTap/PayPal من المتصفح؛ كما كانت صفحة النجاح القديمة تعلن النجاح لمجرد رجوع mutation بلا خطأ. أصبح webhook الموقّع وحده يغيّر الدفع والاشتراك. callback العام query محلية بمعرف صارم وإجابة status واحدة؛ المرجع غير الموجود والمعلق كلاهما `processing` لمنع enumeration، والفشل/refund يختصران إلى `failed`. المسار القديم tenant-owned query محلية فقط، والواجهتان polling محدود 30 مرة دون خلفية وتعرضان pending صادقًا بعد المهلة. وُحد ملف callback قديم بتشفير تالف كـalias للصفحة canonical، وحُدثت حواجز Zid التاريخية لعقود OAuth وBasic Auth الحالية. اجتاز نطاق callback/state/claims 91/91، وملفا الأمن التاريخي وcallback 55/55، وبوابة الإصدار 725/725 مع TypeScript/build؛ يبقى replay منشور يثبت أن redirect لا يتصل بالمزود وأن webhook وحده يفعّل الاشتراك.
 
 **قرار الخطة:**
 
@@ -120,7 +121,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.65
+### حالة تنفيذ الجولة 3.66
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -151,6 +152,7 @@
 | فحص اعتماد Tap واتساق النسخة | مكتمل برمجيًا محليًا/sandbox معلق | `POST /charges/list` الرسمي، body مهمل ومحدود، إبطال 401/403 فقط، ونتيجة مشروطة بتطابق public/secret/mode تحت row lock؛ 75/75 مركز و705/705 بوابة إصدار |
 | سرية إعدادات Tap العامة | مكتمل برمجيًا محليًا/migration وsandbox معلقان | DTO بلا secret/webhookSecret، حقول فارغة، تشفير كتابة وترحيل تاريخي، key-mode وprobe مربوط بنسخة global settings؛ 78/78 مركز و711/711 بوابة إصدار |
 | Checkout اشتراكات Tap | مكتمل برمجيًا محليًا/`0034` وsandbox معلقان | UUID ثابت وunique intent، idempotent opaque، bounded client وresponse integrity، CAS وخلاصة بلا PII، redirect ترقية صحيح؛ 102/102 مركز و719/719 بوابة إصدار |
+| سلطة callback اشتراكات Tap | مكتمل برمجيًا محليًا/replay منشور معلق | webhook الموقّع وحده يغيّر entitlement، callbackان local query فقط، unknown=pending، مراجع strict وpolling محدود؛ 91/91 مركز و725/725 بوابة إصدار |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
 | Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
 | نموذج العملاء والمتدربين | مكتمل محليًا/DB وByaan staging معلقان | مصدر واحد يختار `customer_profiles` للمتاجر و`byaan_trainees` النشط لبيان، بلا SQL على `customers` غير المملوك وبعزل `merchant_id`؛ 7/7 بنتست و425/425 بوابة إصدار |
@@ -885,6 +887,23 @@
 
 **معيار القبول:** intent وcharge واحدان لكل attempt، كل المبالغ/العملات/الأوضاع مطابقة، لا raw charge مخزن، retry الغامض آمن، 719/719 محليًا، وMySQL race/Tap sandbox المنشوران ناجحان.
 
+### PROD-TAP-SUBSCRIPTION-CALLBACK-001: حصر سلطة الدفع في webhook الموقّع
+
+**الحالة في الجولة 3.66:** مكتمل برمجيًا محليًا؛ replay وترتيب redirect/webhook على النسخة المنشورة معلقان.
+
+المهام:
+
+1. حذف أي استدعاء Tap/PayPal وأي انتقال اشتراك من callback أو return page يطلقه المتصفح؛ signed webhook وحده يستدعي المعالج canonical.
+2. تحويل callback العام إلى query محلية تبدأ بالبحث المفهرس عن charge المحفوظ، وتعيد حقل `status` فقط بلا مبلغ أو عملة أو متجر أو اشتراك.
+3. جعل unknown وpending غير قابلين للتمييز علنًا، وتجميع failed/refunded في نتيجة failed عامة لمنع enumeration وتسريب دورة العملية.
+4. حصر Tap charge ID في 8–128 رمزًا opaque من الحروف/الأرقام/underscore/hyphen، وحصر مراجع الجلسات القديمة في 8–255، مع مخطط strict يرفض URL/path/query injection.
+5. تحويل verify القديم المحمي إلى query tenant-owned على سجل محلي فقط، دون capture أو update أو provider request.
+6. إيقاف polling بعد 30 قراءة كل ثانيتين، وتعطيله في الخلفية، وإظهار pending صريحًا يطلب عدم إعادة الدفع بدل فشل أو نجاح كاذب.
+7. إزالة تنفيذ callback القديم ذي الترميز التالف والإبقاء عليه alias للواجهة canonical لمنع عودة منطق ثالث.
+8. على staging، اختبر redirect قبل webhook وبعده ومع webhook مكرر/متأخر وفاشل، وأثبت من سجلات outbound أن redirect يسبب صفر طلبات للمزود وصفر كتابة entitlement.
+
+**معيار القبول:** صفر provider call أو entitlement mutation من browser callbacks، unknown=pending وبلا metadata، polling bounded، webhook الموقّع وحده يمنح النجاح، 725/725 محليًا، وreplay المنشور للحالات السابقة ناجح.
+
 ### REL-001: توحيد Node وpnpm والاعتماديات
 
 **الحالة في الجولة 2.0:** مكتمل محليًا؛ نجح frozen install من worktree نظيف وcheck/build، وإعادة التنفيذ في CI remote معلقة.
@@ -1576,6 +1595,7 @@ WhatsAppChannel
 | PROD-TAP-CREDENTIAL-PROBE-001 | P0 | فحص اعتماد Tap ومنع نتيجة stale | Backend/QA/DevOps | POST list رسمي، body مهمل، ونتيجة مرتبطة بنسخة الإعداد؛ test/live وسباق التغيير على sandbox ناجحان |
 | PROD-TAP-PLATFORM-SECRETS-001 | P0 | سرية وتشفير إعداد Tap العام | Backend/Frontend/QA/DevOps | DTO بلا أسرار، كتابة ومهاجرة مشفرة، وrotation/probe منشوران ناجحان |
 | PROD-TAP-SUBSCRIPTION-CHECKOUT-001 | P0 | منع تكرار وتسريب checkout الاشتراكات | Backend/Frontend/QA/DevOps | `0034`، intent/charge واحد، response integrity وخلاصة بلا PII وrace/retry ناجحان |
+| PROD-TAP-SUBSCRIPTION-CALLBACK-001 | P0 | منع browser callback من منح الاشتراك أو استدعاء المزود | Backend/Frontend/QA | query محلية coarse ومحدودة، webhook وحده يكتب، وredirect/webhook replay منشور ناجح |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |

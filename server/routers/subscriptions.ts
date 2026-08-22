@@ -7,6 +7,10 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import {
+  TAP_CHARGE_ID_PATTERN,
+  toPublicSubscriptionPaymentStatus,
+} from '@shared/subscription-payment-status';
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import {
   cancelMerchantAddon,
@@ -43,11 +47,9 @@ import {
   updateSubscriptionPlan,
   updateTapSettings,
 } from '../db';
-import { retrieveCharge, refundCharge } from "../_core/tap";
 import { calculateProration } from "../_core/subscriptionManager";
 import {
   completeImmediateCanonicalPlanChange,
-  processCanonicalSubscriptionCharge,
   startCanonicalTrial,
 } from '../subscriptions/canonical-state';
 import { tapKeyMatchesMode, tapPublicKeyMatchesMode } from '../payment/payment-link-policy';
@@ -704,22 +706,17 @@ export const merchantAddonsRouter = router({
 // ============================================
 
 export const paymentRouter = router({
-  // Handle payment callback
-  handlePaymentCallback: publicProcedure
+  // Browser redirects are presentation-only. The signed Tap webhook is the
+  // sole authority allowed to commit payment and entitlement transitions.
+  getPaymentCallbackStatus: publicProcedure
     .input(z.object({
-      tap_id: z.string(),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        const charge = await retrieveCharge(input.tap_id);
-        return await processCanonicalSubscriptionCharge(charge);
-      } catch (error) {
-        console.error('[Payment] Callback error:', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to process payment callback',
-        });
-      }
+      tap_id: z.string().trim().regex(TAP_CHARGE_ID_PATTERN),
+    }).strict())
+    .query(async ({ input }) => {
+      const transaction = await getPaymentTransactionByTapChargeId(input.tap_id);
+      return {
+        status: toPublicSubscriptionPaymentStatus(transaction?.status),
+      };
     }),
 
   // List transactions (merchant)

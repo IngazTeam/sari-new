@@ -306,8 +306,9 @@ import {
   validatePasswordResetToken,
 } from './db';
 import {
-  processCanonicalSubscriptionCharge,
-} from './subscriptions/canonical-state';
+  PAYMENT_PROVIDER_REFERENCE_PATTERN,
+  toPublicSubscriptionPaymentStatus,
+} from '@shared/subscription-payment-status';
 import { registerMerchantAccount } from './accounts/lifecycle';
 import {
   consumePasswordResetTokenAndUpdatePassword,
@@ -2597,13 +2598,14 @@ export const appRouter = router({
         });
       }),
 
-    // Drain-only verification for payment sessions issued before canonical cutover.
+    // Drain-only local status for sessions issued before canonical cutover.
+    // Provider callbacks never mutate entitlement; signed webhooks are authoritative.
     verifyPayment: protectedProcedure
       .input(z.object({
-        subscriptionId: z.number(),
-        transactionId: z.string(),
-      }))
-      .mutation(async ({ ctx, input }) => {
+        subscriptionId: z.number().int().positive(),
+        transactionId: z.string().trim().regex(PAYMENT_PROVIDER_REFERENCE_PATTERN),
+      }).strict())
+      .query(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND' });
@@ -2615,24 +2617,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
         }
 
-        // Verify based on gateway
-        if (payment.paymentMethod === 'tap') {
-          const { retrieveCharge } = await import('./_core/tap');
-          const charge = await retrieveCharge(input.transactionId);
-          return processCanonicalSubscriptionCharge(charge);
-        } else if (payment.paymentMethod === 'paypal') {
-          const { capturePayPalOrder } = await import('./payment/paypal');
-          const result = await capturePayPalOrder(input.transactionId);
-
-          if (result.success && result.status === 'COMPLETED') {
-            await updateSubscription(input.subscriptionId, { status: 'active' });
-            await updateMerchant(merchant.id, { subscriptionId: input.subscriptionId });
-          }
-
-          return result;
-        }
-
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid payment method' });
+        return { status: toPublicSubscriptionPaymentStatus(payment.status) };
       }),
   }),
 
