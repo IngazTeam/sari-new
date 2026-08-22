@@ -39,6 +39,7 @@ import { logError } from "./logger";
 import { installProductionConsoleRedaction } from "../security/log-redaction";
 import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
+import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -85,6 +86,10 @@ async function startServer() {
   // Reject abusive sources before allocating/parsing up to 2 MB per delivery.
   app.use('/api/webhooks', webhookLimiter, express.json({ limit: '2mb', verify: retainSignedRawBody }));
   app.use('/api/v1/platform', express.json({ limit: '2mb', verify: retainSignedRawBody }));
+  // Parse public-support requests under a tight route-specific cap. The later
+  // global parser skips an already parsed body, so this endpoint never receives
+  // the 26 MB allowance required by voice transcription.
+  app.use('/api/public', express.json({ limit: '32kb' }));
   app.use(express.json({ limit: "26mb" }));
   app.use(express.urlencoded({ limit: "1mb", extended: true }));
   // Body-aware security checks must run after parsers.
@@ -143,6 +148,10 @@ async function startServer() {
       });
     }
   });
+
+  // Public service status and support intake. The support POST has its own
+  // long-window limiter in addition to strict input and origin validation.
+  app.use('/api/public', publicSupportRouter);
 
   // Auth endpoints (rate limited: 5 attempts per 15 minutes)
   app.use("/api/auth", authLimiter, authRoutes);

@@ -50,7 +50,6 @@ const CompanyAbout = lazyLoad(() => import("./pages/CompanyAbout"));
 const Blog = lazyLoad(() => import("./pages/resources/Blog"));
 const HelpCenter = lazyLoad(() => import("./pages/resources/HelpCenter"));
 const SuccessStories = lazyLoad(() => import("./pages/resources/SuccessStories"));
-const Contact = lazyLoad(() => import("./pages/company/Contact"));
 const Terms = lazyLoad(() => import("./pages/company/Terms"));
 const Privacy = lazyLoad(() => import("./pages/company/Privacy"));
 const TrySari = lazyLoad(() => import("./pages/TrySari"));
@@ -276,7 +275,9 @@ function Router() {
       <Route path="/resources/blog" component={Blog} />
       <Route path="/resources/help-center" component={HelpCenter} />
       <Route path="/resources/success-stories" component={SuccessStories} />
-      <Route path="/company/contact" component={Contact} />
+      <Route path="/company/contact">
+        <Redirect to="/support" />
+      </Route>
       <Route path="/company/terms" component={Terms} />
       <Route path="/company/privacy" component={Privacy} />
       <Route path="/try-sari" component={TrySari} />

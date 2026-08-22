@@ -228,7 +228,13 @@ const seoConfigsAr = {
     title: "اتصل بنا | ساري",
     description: "تواصل مع فريق ساري للاستفسارات والدعم الفني. نحن هنا لمساعدتك.",
     keywords: "اتصل بساري, دعم فني, تواصل معنا",
-    canonicalUrl: `${BASE_URL}/company/contact`,
+    canonicalUrl: `${BASE_URL}/support`,
+  },
+  support: {
+    title: "الدعم وحالة الخدمة | ساري",
+    description: "افحص حالة خدمة ساري وافتح طلب دعم موثق أو تواصل عبر بريد الدعم الرسمي.",
+    keywords: "دعم ساري, حالة خدمة ساري, تذكرة دعم",
+    canonicalUrl: `${BASE_URL}/support`,
   },
   blog: {
     title: "المدونة | ساري - نصائح المبيعات والتسويق",
@@ -373,7 +379,13 @@ const seoConfigsEn = {
     title: "Contact Us | Sari",
     description: "Get in touch with the Sari team for inquiries and technical support. We're here to help.",
     keywords: "contact Sari, technical support, get in touch, customer service",
-    canonicalUrl: `${BASE_URL}/company/contact`,
+    canonicalUrl: `${BASE_URL}/support`,
+  },
+  support: {
+    title: "Support and Service Status | Sari",
+    description: "Check Sari's live service status, open a traceable support request, or use the official support email.",
+    keywords: "Sari support, Sari service status, support ticket",
+    canonicalUrl: `${BASE_URL}/support`,
   },
   blog: {
     title: "Blog | Sari - Sales & Marketing Tips",

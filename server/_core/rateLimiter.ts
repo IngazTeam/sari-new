@@ -79,6 +79,19 @@ export const strictLimiter = rateLimit({
 });
 
 /**
+ * Public support form limiter.
+ * A longer window keeps automated inbox/ticket spam bounded without sharing
+ * the much stricter authentication quota.
+ */
+export const supportLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: rateLimitHandler,
+});
+
+/**
  * OpenAI Rate Limiter
  * Limits: 30 requests per minute per IP
  * Protects against abuse of AI endpoints
