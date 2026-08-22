@@ -130,20 +130,15 @@ function requiredToken(value: unknown): string | null {
   return normalized.length >= 16 && normalized.length <= 16_384 ? normalized : null;
 }
 
-export async function exchangeZidAuthorizationCode(
-  code: string,
+async function requestZidTokens(
+  grant: Record<string, string>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<ZidOAuthTokens> {
   const config = oauthConfig();
-  if (!code || code.length > 4096 || /[\u0000-\u001f\u007f]/.test(code)) {
-    throw new ZidOAuthError('token_exchange');
-  }
   const body = new URLSearchParams({
-    grant_type: 'authorization_code',
     client_id: config.clientId,
     client_secret: config.clientSecret,
-    redirect_uri: config.redirectUri,
-    code,
+    ...grant,
   });
   let response: Response;
   try {
@@ -171,8 +166,38 @@ export async function exchangeZidAuthorizationCode(
   const managerToken = requiredToken(payload.access_token);
   if (!authorizationToken || !managerToken) throw new ZidOAuthError('token_exchange');
   const refreshToken = requiredToken(payload.refresh_token) || undefined;
-  const expiresIn = typeof payload.expires_in === 'number' && Number.isFinite(payload.expires_in)
-    ? Math.max(0, Math.floor(payload.expires_in))
+  const rawExpiresIn = typeof payload.expires_in === 'string'
+    ? Number(payload.expires_in)
+    : payload.expires_in;
+  const expiresIn = typeof rawExpiresIn === 'number' && Number.isFinite(rawExpiresIn)
+    ? Math.max(0, Math.floor(rawExpiresIn))
     : undefined;
   return { authorizationToken, managerToken, refreshToken, expiresIn };
+}
+
+export async function exchangeZidAuthorizationCode(
+  code: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ZidOAuthTokens> {
+  if (!code || code.length > 4096 || /[\u0000-\u001f\u007f]/.test(code)) {
+    throw new ZidOAuthError('token_exchange');
+  }
+  const redirectUri = oauthConfig().redirectUri;
+  return requestZidTokens({
+    grant_type: 'authorization_code',
+    redirect_uri: redirectUri,
+    code,
+  }, fetchImpl);
+}
+
+export async function refreshZidAuthorization(
+  refreshToken: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ZidOAuthTokens> {
+  const normalized = requiredToken(refreshToken);
+  if (!normalized) throw new ZidOAuthError('token_exchange');
+  return requestZidTokens({
+    grant_type: 'refresh_token',
+    refresh_token: normalized,
+  }, fetchImpl);
 }

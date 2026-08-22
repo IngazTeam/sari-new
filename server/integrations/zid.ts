@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
-import { decryptSecret, encryptSecret } from '../security/secrets';
+import { encryptSecret } from '../security/secrets';
 import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
   beginZidOAuth,
@@ -25,6 +25,7 @@ import {
   upsertProductFromZid,
 } from '../db';
 import { deleteAllZidConnections, deleteZidSettings as deleteLegacyZidSettings } from '../db_zid';
+import { getValidZidApiCredentials } from './zid-token-manager';
 
 // Zid API Base URL
 const ZID_API_BASE = 'https://api.zid.sa/v1';
@@ -263,9 +264,12 @@ export const zidRouter = router({
 
       try {
         // Sync products — Zid v1 endpoint: /managers/store/products
-        const settings = integration.settings ? JSON.parse(integration.settings) : {};
-        const managerToken = decryptSecret(settings.managerToken) || integration.accessToken;
-        const products = await zidApiRequest('/managers/store/products', integration.accessToken, managerToken);
+        const credentials = await getValidZidApiCredentials({ merchantId: merchant.id });
+        const products = await zidApiRequest(
+          '/managers/store/products',
+          credentials.authorizationToken,
+          credentials.managerToken,
+        );
         let syncedProducts = 0;
 
         if (products.data) {

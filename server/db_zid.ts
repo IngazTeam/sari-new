@@ -15,6 +15,7 @@ import { platformIntegrations, zidSettings, zidSyncLogs } from "../drizzle/schem
 import type { ZidSettings, InsertZidSettings, ZidSyncLog, InsertZidSyncLog } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { decryptSecret, encryptSecret } from './security/secrets';
+import { getValidZidApiCredentials } from './integrations/zid-token-manager';
 
 // ==================== Zid Settings ====================
 
@@ -26,6 +27,7 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
   // The legacy shape is retained only as an adapter for the order automation.
   const integration = await getIntegrationByType(merchantId, 'zid');
   if (integration?.isActive === 1) {
+    const credentials = await getValidZidApiCredentials({ merchantId });
     let integrationSettings: Record<string, unknown> = {};
     try {
       const parsed = integration.settings ? JSON.parse(integration.settings) : {};
@@ -33,9 +35,6 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
     } catch {
       integrationSettings = {};
     }
-    const managerToken = typeof integrationSettings.managerToken === 'string'
-      ? decryptSecret(integrationSettings.managerToken)
-      : null;
     const lastSync = integration.lastSyncAt || null;
     return {
       id: integration.id,
@@ -44,9 +43,9 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
       clientSecret: null,
       // ZidClient's legacy names are inverted: accessToken is sent as
       // X-Manager-Token and managerToken is sent as Authorization.
-      accessToken: managerToken,
-      managerToken: integration.accessToken,
-      refreshToken: integration.refreshToken,
+      accessToken: credentials.managerToken,
+      managerToken: credentials.authorizationToken,
+      refreshToken: credentials.refreshToken || null,
       storeId: typeof integrationSettings.storeId === 'string' ? integrationSettings.storeId : null,
       storeName: integration.storeName,
       storeUrl: integration.storeUrl,
@@ -57,9 +56,7 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
       lastProductSync: lastSync,
       lastOrderSync: lastSync,
       lastCustomerSync: lastSync,
-      tokenExpiresAt: typeof integrationSettings.tokenExpiresAt === 'string'
-        ? integrationSettings.tokenExpiresAt
-        : null,
+      tokenExpiresAt: credentials.tokenExpiresAt || null,
       createdAt: integration.createdAt,
       updatedAt: integration.updatedAt,
     };

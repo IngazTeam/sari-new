@@ -97,3 +97,4 @@ jobs:
           server/auth.zidWebhook.test.ts
           server/auth.zidOAuth.test.ts
           server/auth.zidConvergence.test.ts
+          server/auth.zidTokenRefresh.test.ts
