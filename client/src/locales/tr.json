@@ -4014,7 +4014,14 @@
     "text59": "Delivered",
     "text60": "Awaiting delivery",
     "text61": "Suppressed",
-    "text62": "We could not confirm delivery of {{count}} alert(s). Review your WhatsApp connection and orders to avoid duplicate handling."
+    "text62": "We could not confirm delivery of {{count}} alert(s). Review your WhatsApp connection and orders to avoid duplicate handling.",
+    "text63": "I reviewed these cases",
+    "text64": "Confirm review completion",
+    "text65": "Use this only after reviewing the orders and WhatsApp status. It hides ambiguous alerts without resending any message and cannot be undone from this page.",
+    "text66": "Cancel",
+    "text67": "Confirm without sending",
+    "text68": "Closed {{count}} review case(s) without resending",
+    "text69": "Could not close review cases"
   },
   "adminAdminRecommendationsPage": {
     "text0": "Total Recommendations",

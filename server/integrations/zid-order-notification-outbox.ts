@@ -122,6 +122,22 @@ export async function getZidOrderNotificationHealth(merchantId: number): Promise
   };
 }
 
+export async function acknowledgeZidOrderNotificationIncidents(
+  merchantId: number,
+): Promise<{ acknowledged: number }> {
+  if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
+  await ensureOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const [result] = await pool.execute(
+    `UPDATE zid_order_notification_outbox
+        SET status = 'suppressed', last_error = 'merchant_acknowledged', updated_at = NOW(3)
+      WHERE merchant_id = ? AND status = 'manual_review'`,
+    [merchantId],
+  );
+  return { acknowledged: Number((result as any)?.affectedRows || 0) };
+}
+
 async function setTerminalStatus(
   id: number,
   status: 'delivered' | 'suppressed' | 'manual_review',

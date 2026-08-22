@@ -40,11 +40,13 @@ type SensitiveZidAction = 'connect' | 'disconnect' | 'rotate';
 
 export default function ZidIntegration() {
   const { t } = useTranslation();
+  const utils = trpc.useUtils();
   const [autoSync, setAutoSync] = useState(true);
   const [syncProducts, setSyncProducts] = useState(true);
   const [syncOrders, setSyncOrders] = useState(true);
   const [syncCustomers, setSyncCustomers] = useState(true);
   const [notifyMerchantOrders, setNotifyMerchantOrders] = useState(false);
+  const [acknowledgeReviewOpen, setAcknowledgeReviewOpen] = useState(false);
   const [sensitiveAction, setSensitiveAction] = useState<SensitiveZidAction | null>(null);
   const [reauthPassword, setReauthPassword] = useState('');
   const [webhookCredentials, setWebhookCredentials] = useState<{
@@ -129,6 +131,17 @@ export default function ZidIntegration() {
       toast.error(t('zidIntegrationPage.text50'), {
         description: 'تعذر حفظ إعدادات المزامنة.',
       });
+    },
+  });
+
+  const acknowledgeIncidentsMutation = trpc.zid.acknowledgeNotificationIncidents.useMutation({
+    onSuccess: async ({ acknowledged }) => {
+      setAcknowledgeReviewOpen(false);
+      await utils.zid.getNotificationHealth.invalidate();
+      toast.success(t('zidIntegrationPage.text68', { count: acknowledged }));
+    },
+    onError: () => {
+      toast.error(t('zidIntegrationPage.text69'));
     },
   });
 
@@ -367,8 +380,16 @@ export default function ZidIntegration() {
                 {(notificationHealth?.needsReview || 0) > 0 && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      {t('zidIntegrationPage.text62', { count: notificationHealth?.needsReview })}
+                    <AlertDescription className="flex flex-col items-start gap-3">
+                      <span>{t('zidIntegrationPage.text62', { count: notificationHealth?.needsReview })}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAcknowledgeReviewOpen(true)}
+                      >
+                        {t('zidIntegrationPage.text63')}
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -600,6 +621,32 @@ export default function ZidIntegration() {
             >
               {sensitiveActionPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
               تأكيد وتنفيذ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={acknowledgeReviewOpen} onOpenChange={setAcknowledgeReviewOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('zidIntegrationPage.text64')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('zidIntegrationPage.text65')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={acknowledgeIncidentsMutation.isPending}>
+              {t('zidIntegrationPage.text66')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={acknowledgeIncidentsMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                acknowledgeIncidentsMutation.mutate();
+              }}
+            >
+              {acknowledgeIncidentsMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+              {t('zidIntegrationPage.text67')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
