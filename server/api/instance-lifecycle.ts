@@ -112,6 +112,9 @@ async function assertInstanceSchema(): Promise<void> {
   await assertRuntimeSchema('REST WhatsApp instance lifecycle', [{
     table: 'whatsapp_instances',
     columns: ['id', 'merchant_id', 'instance_id', 'phone_number', 'active_phone_identity_hash', 'status', 'is_primary', 'created_at'],
+    generatedColumns: ['active_primary_merchant_id'],
+    uniqueIndexes: ['whatsapp_instances_active_primary_merchant_unique'],
+    checkConstraints: ['whatsapp_instances_primary_requires_active_check'],
   }]);
 }
 
