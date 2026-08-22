@@ -152,30 +152,34 @@ export const byaanRouter = router({
   getTrainees: protectedProcedure
     .input(z.object({
       search: z.string().max(100).optional(),
-      limit: z.number().min(1).max(200).default(100),
+      limit: z.number().int().min(1).max(200).default(50),
+      cursor: z.number().int().positive().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
-      const { getByaanTrainees } = await import('./integrations/byaan');
-      const limit = input?.limit || 100;
-      const trainees = await getByaanTrainees(merchant.id, {
+      const { getByaanTraineePage } = await import('./integrations/byaan');
+      const page = await getByaanTraineePage(merchant.id, {
         search: input?.search,
-        limit,
+        limit: input?.limit || 50,
+        cursor: input?.cursor,
       });
 
       // Parse enrolled_courses JSON
-      return sanitizeForTRPC(trainees.map((t: any) => ({
-        id: t.id,
-        externalId: t.external_id,
-        name: t.name,
-        phone: t.phone,
-        email: t.email,
-        enrolledCourses: parseEnrolledCourseNames(t.enrolled_courses),
-        status: t.status,
-        syncedAt: t.synced_at,
-        createdAt: t.created_at,
-      })));
+      return sanitizeForTRPC({
+        items: page.items.map((t) => ({
+          id: t.id,
+          externalId: t.external_id,
+          name: t.name,
+          phone: t.phone,
+          email: t.email,
+          enrolledCourses: parseEnrolledCourseNames(t.enrolled_courses),
+          status: t.status,
+          syncedAt: t.synced_at,
+          createdAt: t.created_at,
+        })),
+        nextCursor: page.nextCursor,
+      });
     }),
 
   // ── Get FAQs ──

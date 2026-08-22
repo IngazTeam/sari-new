@@ -3182,6 +3182,7 @@ export const byaanTrainees = mysqlTable("byaan_trainees", {
 }, (table) => [
 	uniqueIndex("uq_byaan_trainee").on(table.merchantId, table.externalId),
 	index("idx_byaan_trainee_phone").on(table.merchantId, table.phone),
+	index("idx_byaan_trainee_list").on(table.merchantId, table.status, table.id),
 ]);
 
 export type ByaanTrainee = InferSelectModel<typeof byaanTrainees>;

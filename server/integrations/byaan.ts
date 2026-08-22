@@ -410,36 +410,57 @@ export interface ByaanTraineeListRow {
   created_at: string;
 }
 
-/** Get a bounded, tenant-scoped trainee list for a merchant. */
-export async function getByaanTrainees(
+export interface ByaanTraineePage {
+  items: ByaanTraineeListRow[];
+  nextCursor: number | null;
+}
+
+/** Get a bounded, keyset-paginated trainee page for a merchant. */
+export async function getByaanTraineePage(
   merchantId: number,
-  options: { search?: string; limit?: number } = {},
-): Promise<ByaanTraineeListRow[]> {
-  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) return [];
+  options: { search?: string; limit?: number; cursor?: number } = {},
+): Promise<ByaanTraineePage> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    return { items: [], nextCursor: null };
+  }
   await ensureByaanTables();
   const dbConn = await getPool();
   if (!dbConn) throw new Error('Byaan data unavailable');
 
   const limit = Math.min(Math.max(Math.floor(options.limit || 100), 1), 200);
+  const cursor = Number.isSafeInteger(options.cursor) && Number(options.cursor) > 0
+    ? Number(options.cursor)
+    : null;
   const search = String(options.search || '').trim().substring(0, 100);
   const params: Array<string | number> = [merchantId];
+  let cursorClause = '';
+  if (cursor) {
+    cursorClause = ' AND id > ?';
+    params.push(cursor);
+  }
   let searchClause = '';
   if (search) {
     searchClause = ' AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)';
     const pattern = `%${search}%`;
     params.push(pattern, pattern, pattern);
   }
-  params.push(limit);
+  params.push(limit + 1);
 
   const [rows] = await (dbConn as any).execute(
     `SELECT id, external_id, name, phone, email, enrolled_courses, status, synced_at, created_at
      FROM byaan_trainees
-     WHERE merchant_id = ? AND status = 'active'${searchClause}
-     ORDER BY name ASC
+     WHERE merchant_id = ? AND status = 'active'${cursorClause}${searchClause}
+     ORDER BY id ASC
      LIMIT ?`,
     params,
   );
-  return rows as ByaanTraineeListRow[];
+  const candidates = rows as ByaanTraineeListRow[];
+  const hasMore = candidates.length > limit;
+  const items = hasMore ? candidates.slice(0, limit) : candidates;
+  return {
+    items,
+    nextCursor: hasMore ? items[items.length - 1]?.id || null : null,
+  };
 }
 
 /** Sync FAQs from Byaan into byaan_faqs table */

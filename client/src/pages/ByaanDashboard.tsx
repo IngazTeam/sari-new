@@ -32,6 +32,8 @@ export default function ByaanDashboard() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+  const [traineeCursor, setTraineeCursor] = useState<number | undefined>();
+  const [traineeCursorHistory, setTraineeCursorHistory] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // === Data Fetching ===
@@ -43,14 +45,15 @@ export default function ByaanDashboard() {
     refetch: refetchStatus,
   } = trpc.byaan.getStatus.useQuery();
   const {
-    data: trainees = [],
+    data: traineePage,
     isLoading: loadingTrainees,
     isError: traineesFailed,
     refetch: refetchTrainees,
   } = trpc.byaan.getTrainees.useQuery(
-    { search: deferredSearchQuery || undefined },
+    { search: deferredSearchQuery || undefined, cursor: traineeCursor, limit: 50 },
     { enabled: activeTab === "trainees" }
   );
+  const trainees = traineePage?.items || [];
   const {
     data: faqs = [],
     isLoading: loadingFaqs,
@@ -81,6 +84,19 @@ export default function ByaanDashboard() {
       toast({ title: "تعذر تحديث السؤال", description: "أعد المحاولة بعد التحقق من اتصال بيان", variant: "destructive" });
     },
   });
+
+  const showNextTraineePage = () => {
+    if (!traineePage?.nextCursor) return;
+    setTraineeCursorHistory((history) => [...history, traineeCursor || 0]);
+    setTraineeCursor(traineePage.nextCursor);
+  };
+
+  const showPreviousTraineePage = () => {
+    if (traineeCursorHistory.length === 0) return;
+    const previousCursor = traineeCursorHistory[traineeCursorHistory.length - 1];
+    setTraineeCursorHistory((history) => history.slice(0, -1));
+    setTraineeCursor(previousCursor || undefined);
+  };
 
   if (loadingStatus) {
     return (
@@ -283,7 +299,11 @@ export default function ByaanDashboard() {
                     placeholder="ابحث بالاسم أو الجوال أو الإيميل..."
                     aria-label="البحث في متدربي بيان"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setTraineeCursor(undefined);
+                      setTraineeCursorHistory([]);
+                    }}
                     className="pr-10"
                   />
                 </div>
@@ -368,6 +388,31 @@ export default function ByaanDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+              {!loadingTrainees && !traineesFailed && trainees.length > 0 && (
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={showPreviousTraineePage}
+                    disabled={traineeCursorHistory.length === 0}
+                  >
+                    الصفحة السابقة
+                  </Button>
+                  <span className="text-sm text-muted-foreground" aria-live="polite">
+                    الصفحة {traineeCursorHistory.length + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={showNextTraineePage}
+                    disabled={!traineePage?.nextCursor}
+                  >
+                    الصفحة التالية
+                  </Button>
                 </div>
               )}
             </CardContent>
