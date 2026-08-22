@@ -2,7 +2,9 @@ import crypto from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   createWhatsAppInstance,
+  deleteWhatsAppInstance,
   getPool,
+  markWhatsAppInstanceExpired,
   setWhatsAppInstanceAsPrimary,
   updateWhatsAppInstance,
 } from './db';
@@ -249,5 +251,42 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
     await operation.catch(() => undefined);
     if (timeoutError) throw timeoutError;
     expect(result).toMatchObject({ merchantId, status: 'active' });
+  });
+
+  it('serializes primary deletion and expiry and promotes the final active instance', async () => {
+    const merchantId = await createMerchant('primary-failover');
+    const [first, second, third] = await Promise.all([
+      createInstance(merchantId, 'failover-a', '+966505556701'),
+      createInstance(merchantId, 'failover-b', '+966505556702'),
+      createInstance(merchantId, 'failover-c', '+966505556703'),
+    ]);
+    await setWhatsAppInstanceAsPrimary(first.id, merchantId);
+
+    await Promise.all([
+      deleteWhatsAppInstance(first.id),
+      markWhatsAppInstanceExpired(second.id),
+    ]);
+
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+    const [rows] = await pool.execute<any[]>(
+      `SELECT id, status, is_primary AS isPrimary, active_phone_identity_hash AS activePhoneIdentityHash
+         FROM whatsapp_instances
+        WHERE merchant_id = ?
+        ORDER BY id`,
+      [merchantId],
+    );
+    expect(rows.find(row => Number(row.id) === first.id)).toBeUndefined();
+    expect(rows.find(row => Number(row.id) === second.id)).toMatchObject({
+      status: 'expired',
+      isPrimary: 0,
+      activePhoneIdentityHash: null,
+    });
+    expect(rows.find(row => Number(row.id) === third.id)).toMatchObject({
+      status: 'active',
+      isPrimary: 1,
+    });
+    expect(rows.filter(row => row.status === 'active')).toHaveLength(1);
+    expect(rows.filter(row => row.status === 'active' && Number(row.isPrimary) === 1)).toHaveLength(1);
   });
 });

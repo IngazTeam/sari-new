@@ -353,11 +353,35 @@ function decryptMerchantPaymentSettings(record: MerchantPaymentSettings | undefi
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
 // Sized for 2000+ merchants with concurrent access
 type SariDb = ReturnType<typeof drizzle<typeof schema>>;
+type SariTransaction = Parameters<Parameters<SariDb['transaction']>[0]>[0];
 let _db: SariDb | null = null;
 let _pool: mysql.Pool | null = null;
 
 function getConnectionDb(connection: mysql.PoolConnection): SariDb {
   return drizzle({ client: connection, schema, mode: 'default' }) as unknown as SariDb;
+}
+
+async function ensureWhatsAppActivePrimary(tx: SariTransaction, merchantId: number): Promise<void> {
+  const [replacement] = await tx.select({ id: whatsappInstances.id })
+    .from(whatsappInstances)
+    .where(and(
+      eq(whatsappInstances.merchantId, merchantId),
+      eq(whatsappInstances.status, 'active'),
+    ))
+    .orderBy(desc(whatsappInstances.isPrimary), whatsappInstances.createdAt, whatsappInstances.id)
+    .limit(1);
+  if (!replacement) return;
+  const updatedAt = formatDateForDB(new Date());
+  await tx.update(whatsappInstances)
+    .set({ isPrimary: 0, updatedAt })
+    .where(eq(whatsappInstances.merchantId, merchantId));
+  await tx.update(whatsappInstances)
+    .set({ isPrimary: 1, updatedAt })
+    .where(and(
+      eq(whatsappInstances.id, replacement.id),
+      eq(whatsappInstances.merchantId, merchantId),
+      eq(whatsappInstances.status, 'active'),
+    ));
 }
 
 // Module-level alias أ¢â‚¬â€‌ used by 237+ functions below that call db.select/insert/update/delete
@@ -3234,8 +3258,40 @@ export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: numbe
 export async function deleteWhatsAppInstance(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-
-  await db.delete(whatsappInstances).where(eq(whatsappInstances.id, id));
+  if (!Number.isSafeInteger(id) || id < 1) throw new Error('Invalid WhatsApp instance ID');
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  const connectionDb = getConnectionDb(connection);
+  const heldLocks: string[] = [];
+  try {
+    const [initial] = await connectionDb.select({ merchantId: whatsappInstances.merchantId })
+      .from(whatsappInstances)
+      .where(eq(whatsappInstances.id, id))
+      .limit(1);
+    if (!initial) return;
+    heldLocks.push(await acquireWhatsAppInstanceLock(
+      connection,
+      whatsAppMerchantLockNamespace(initial.merchantId),
+    ));
+    await connectionDb.transaction(async tx => {
+      const [current] = await tx.select({ merchantId: whatsappInstances.merchantId })
+        .from(whatsappInstances)
+        .where(eq(whatsappInstances.id, id))
+        .limit(1);
+      if (!current) return;
+      if (current.merchantId !== initial.merchantId) {
+        throw new Error('WhatsApp instance ownership changed during deletion');
+      }
+      await tx.delete(whatsappInstances).where(and(
+        eq(whatsappInstances.id, id),
+        eq(whatsappInstances.merchantId, current.merchantId),
+      ));
+      await ensureWhatsAppActivePrimary(tx, current.merchantId);
+    });
+  } finally {
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks);
+  }
 }
 
 /**
@@ -3275,15 +3331,47 @@ export async function getExpiredWhatsAppInstances(): Promise<WhatsAppInstance[]>
 export async function markWhatsAppInstanceExpired(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-
-  await db.update(whatsappInstances)
-    .set({
-      status: 'expired',
-      isPrimary: 0,
-      activePhoneIdentityHash: null,
-      updatedAt: formatDateForDB(new Date()),
-    })
-    .where(eq(whatsappInstances.id, id));
+  if (!Number.isSafeInteger(id) || id < 1) throw new Error('Invalid WhatsApp instance ID');
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  const connectionDb = getConnectionDb(connection);
+  const heldLocks: string[] = [];
+  try {
+    const [initial] = await connectionDb.select({ merchantId: whatsappInstances.merchantId })
+      .from(whatsappInstances)
+      .where(eq(whatsappInstances.id, id))
+      .limit(1);
+    if (!initial) return;
+    heldLocks.push(await acquireWhatsAppInstanceLock(
+      connection,
+      whatsAppMerchantLockNamespace(initial.merchantId),
+    ));
+    await connectionDb.transaction(async tx => {
+      const [current] = await tx.select({ merchantId: whatsappInstances.merchantId })
+        .from(whatsappInstances)
+        .where(eq(whatsappInstances.id, id))
+        .limit(1);
+      if (!current) return;
+      if (current.merchantId !== initial.merchantId) {
+        throw new Error('WhatsApp instance ownership changed during expiry');
+      }
+      await tx.update(whatsappInstances)
+        .set({
+          status: 'expired',
+          isPrimary: 0,
+          activePhoneIdentityHash: null,
+          updatedAt: formatDateForDB(new Date()),
+        })
+        .where(and(
+          eq(whatsappInstances.id, id),
+          eq(whatsappInstances.merchantId, current.merchantId),
+        ));
+      await ensureWhatsAppActivePrimary(tx, current.merchantId);
+    });
+  } finally {
+    await finalizeWhatsAppInstanceLockConnection(connection, heldLocks);
+  }
 }
 
 
