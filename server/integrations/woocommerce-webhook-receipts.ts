@@ -13,6 +13,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { normalizeWooCommerceOrder, normalizeWooCommerceProduct, wooSyncTimestamp } from './woocommerce-sync';
 import { createWooCommerceClient, WooCommerceApiError } from '../woocommerce';
 import type { WooCommerceWebhookIdentity, WooCommerceWebhookTopic } from '../webhooks/woocommerce-security';
+import { withWooCommerceMerchantLock, WooCommerceMerchantLockError } from './woocommerce-lock';
 
 const MAX_ATTEMPTS = 8;
 const STALE_LEASE_MINUTES = 10;
@@ -171,23 +172,6 @@ async function suppressReceipt(row: ReceiptRow, code: string): Promise<void> {
   if (Number((result as any).affectedRows || 0) !== 1) throw new WooCommerceReceiptError('lease_lost');
 }
 
-async function withWooCommerceReceiptLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
-  const pool = await getPool();
-  if (!pool) throw new WooCommerceReceiptError('database_unavailable');
-  const connection = await pool.getConnection();
-  const lockName = `sari:woocommerce:${merchantId}`;
-  let acquired = false;
-  try {
-    const [rows] = await connection.query<RowDataPacket[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
-    acquired = Number(rows[0]?.acquired) === 1;
-    if (!acquired) throw new WooCommerceReceiptError('merchant_lock_timeout');
-    return await action();
-  } finally {
-    if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
-    connection.release();
-  }
-}
-
 async function processReceiptUnlocked(row: ReceiptRow): Promise<'completed' | 'suppressed'> {
   const merchantId = Number(row.merchant_id);
   const resourceId = Number(row.resource_id);
@@ -220,7 +204,12 @@ async function processReceiptUnlocked(row: ReceiptRow): Promise<'completed' | 's
 }
 
 async function processReceipt(row: ReceiptRow): Promise<'completed' | 'suppressed'> {
-  return withWooCommerceReceiptLock(Number(row.merchant_id), () => processReceiptUnlocked(row));
+  try {
+    return await withWooCommerceMerchantLock(Number(row.merchant_id), () => processReceiptUnlocked(row));
+  } catch (error) {
+    if (error instanceof WooCommerceMerchantLockError) throw new WooCommerceReceiptError(error.code);
+    throw error;
+  }
 }
 
 async function completeReceipt(row: ReceiptRow): Promise<void> {

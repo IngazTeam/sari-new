@@ -7,7 +7,6 @@ import {
   deleteWooCommerceIntegration,
   getConversationsByMerchant,
   getLatestWooCommerceSyncLog,
-  getPool,
   getWooCommerceOrderByIdForMerchant,
   getWooCommerceOrders,
   getWooCommerceOrdersByMerchant,
@@ -45,6 +44,7 @@ import {
   verifyWooCommerceWebhookRegistrations,
 } from './integrations/woocommerce-webhook-registration';
 import { getWooCommerceWebhookHealth } from './integrations/woocommerce-webhook-receipts';
+import { withWooCommerceMerchantLock, WooCommerceMerchantLockError } from './integrations/woocommerce-lock';
 import { validateNewPlatformConnection } from './integrations/platform-checker';
 import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
 
@@ -79,19 +79,16 @@ function publicWooError(error: unknown): TRPCError {
 }
 
 async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
-  const pool = await getPool();
-  if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
-  const connection = await pool.getConnection();
-  const lockName = `sari:woocommerce:${merchantId}`;
-  let acquired = false;
   try {
-    const [rows] = await connection.query<any[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
-    acquired = Number(rows[0]?.acquired) === 1;
-    if (!acquired) throw new TRPCError({ code: 'CONFLICT', message: 'توجد عملية WooCommerce أخرى قيد التنفيذ' });
-    return await action();
-  } finally {
-    if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
-    connection.release();
+    return await withWooCommerceMerchantLock(merchantId, action);
+  } catch (error) {
+    if (error instanceof WooCommerceMerchantLockError) {
+      if (error.code === 'merchant_lock_timeout') {
+        throw new TRPCError({ code: 'CONFLICT', message: 'توجد عملية WooCommerce أخرى قيد التنفيذ' });
+      }
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
+    }
+    throw error;
   }
 }
 
