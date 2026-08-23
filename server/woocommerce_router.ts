@@ -47,6 +47,7 @@ import { getWooCommerceWebhookHealth } from './integrations/woocommerce-webhook-
 import { withWooCommerceMerchantLock, WooCommerceMerchantLockError } from './integrations/woocommerce-lock';
 import { validateNewPlatformConnection } from './integrations/platform-checker';
 import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
+import type { TrpcContext } from './_core/context';
 
 const pageInput = z.object({
   page: z.number().int().min(1).max(10_000).default(1),
@@ -78,9 +79,9 @@ function publicWooError(error: unknown): TRPCError {
   return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إكمال عملية WooCommerce' });
 }
 
-async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
+async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>, signal?: AbortSignal): Promise<T> {
   try {
-    return await withWooCommerceMerchantLock(merchantId, action);
+    return await withWooCommerceMerchantLock(merchantId, action, signal);
   } catch (error) {
     if (error instanceof WooCommerceMerchantLockError) {
       if (error.code === 'merchant_lock_timeout') {
@@ -89,9 +90,75 @@ async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<
       if (error.code === 'operation_capacity') {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'خدمة WooCommerce مشغولة؛ حاول بعد قليل' });
       }
+      if (error.code === 'operation_cancelled') {
+        throw new TRPCError({ code: 'CLIENT_CLOSED_REQUEST', message: 'تم إلغاء الطلب' });
+      }
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
     }
     throw error;
+  }
+}
+
+type WooCommerceRequestContext = Pick<TrpcContext, 'req' | 'res'>;
+
+type WooCommerceRequestLifecycle = {
+  controller: AbortController;
+  refs: number;
+  req: WooCommerceRequestContext['req'];
+  res: WooCommerceRequestContext['res'];
+  abort: () => void;
+  close: () => void;
+};
+
+const wooCommerceRequestLifecycles = new WeakMap<object, WooCommerceRequestLifecycle>();
+
+function retainWooCommerceRequestLifecycle(ctx: WooCommerceRequestContext): WooCommerceRequestLifecycle {
+  const existing = wooCommerceRequestLifecycles.get(ctx.req);
+  if (existing) {
+    existing.refs += 1;
+    return existing;
+  }
+
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const close = () => {
+    if (!ctx.res.writableEnded) controller.abort();
+  };
+  const lifecycle: WooCommerceRequestLifecycle = {
+    controller,
+    refs: 1,
+    req: ctx.req,
+    res: ctx.res,
+    abort,
+    close,
+  };
+  wooCommerceRequestLifecycles.set(ctx.req, lifecycle);
+  ctx.req.once('aborted', abort);
+  ctx.res.once('close', close);
+  if (ctx.req.aborted || ctx.req.destroyed) controller.abort();
+  return lifecycle;
+}
+
+function releaseWooCommerceRequestLifecycle(lifecycle: WooCommerceRequestLifecycle): void {
+  lifecycle.refs -= 1;
+  if (lifecycle.refs > 0) return;
+  lifecycle.req.off('aborted', lifecycle.abort);
+  lifecycle.res.off('close', lifecycle.close);
+  if (wooCommerceRequestLifecycles.get(lifecycle.req) === lifecycle) {
+    wooCommerceRequestLifecycles.delete(lifecycle.req);
+  }
+}
+
+async function withWooCommerceRequestLock<T>(
+  ctx: WooCommerceRequestContext,
+  merchantId: number,
+  action: () => Promise<T>,
+): Promise<T> {
+  const lifecycle = retainWooCommerceRequestLifecycle(ctx);
+  try {
+    return await withWooCommerceLock(merchantId, action, lifecycle.controller.signal);
+  } finally {
+    releaseWooCommerceRequestLifecycle(lifecycle);
   }
 }
 
@@ -202,8 +269,8 @@ function filterOrdersByDate<T extends { orderDate: string }>(orders: T[], range:
   });
 }
 
-async function runManualSync(merchantId: number, type: 'products' | 'orders') {
-  return withWooCommerceLock(merchantId, async () => {
+async function runManualSync(ctx: WooCommerceRequestContext, merchantId: number, type: 'products' | 'orders') {
+  return withWooCommerceRequestLock(ctx, merchantId, async () => {
     const settings = await getWooCommerceSettings(merchantId);
     if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
       throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
@@ -254,8 +321,8 @@ async function runManualSync(merchantId: number, type: 'products' | 'orders') {
   });
 }
 
-async function runFullWooCommerceReconciliation(merchantId: number) {
-  return withWooCommerceLock(merchantId, async () => {
+async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestContext, merchantId: number) {
+  return withWooCommerceRequestLock(ctx, merchantId, async () => {
     const settings = await getWooCommerceSettings(merchantId);
     if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
       throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
@@ -320,7 +387,7 @@ export const woocommerceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const merchantId = tenantId(ctx);
       try {
-        return await withWooCommerceLock(merchantId, async () => {
+        return await withWooCommerceRequestLock(ctx, merchantId, async () => {
           const existing = await getWooCommerceSettings(merchantId);
           if (!existing) await validateNewPlatformConnection(merchantId, 'WooCommerce');
           const storeUrl = canonicalWooStoreUrl(input.storeUrl);
@@ -378,7 +445,7 @@ export const woocommerceRouter = router({
   testConnection: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
     const merchantId = tenantId(ctx);
     try {
-      return await withWooCommerceLock(merchantId, async () => {
+      return await withWooCommerceRequestLock(ctx, merchantId, async () => {
         const settings = await getWooCommerceSettings(merchantId);
         if (!settings) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم ربط WooCommerce' });
         const client = createWooCommerceClient(settings);
@@ -441,7 +508,7 @@ export const woocommerceRouter = router({
 
   disconnect: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
     const merchantId = tenantId(ctx);
-    await withWooCommerceLock(merchantId, async () => {
+    await withWooCommerceRequestLock(ctx, merchantId, async () => {
       const settings = await getWooCommerceSettings(merchantId);
       const registrations = await getWooCommerceWebhookRegistrations(merchantId);
       if (settings) await cleanupRemoteWebhookRegistrations(settings, registrations);
@@ -462,7 +529,7 @@ export const woocommerceRouter = router({
     .query(async ({ ctx, input }) => (await searchWooCommerceProducts(tenantId(ctx), input.search, input.limit)).map(productDto)),
 
   syncProducts: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
-    const result = await runManualSync(tenantId(ctx), 'products');
+    const result = await runManualSync(ctx, tenantId(ctx), 'products');
     return { ...result, message: `تمت مزامنة ${result.count} منتج من WooCommerce` };
   }),
 
@@ -486,12 +553,12 @@ export const woocommerceRouter = router({
   }),
 
   syncOrders: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
-    const result = await runManualSync(tenantId(ctx), 'orders');
+    const result = await runManualSync(ctx, tenantId(ctx), 'orders');
     return { ...result, message: `تمت مزامنة ${result.count} طلب من WooCommerce` };
   }),
 
   reconcileWebhookIncidents: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
-    return runFullWooCommerceReconciliation(tenantId(ctx));
+    return runFullWooCommerceReconciliation(ctx, tenantId(ctx));
   }),
 
   getSyncLogs: merchantProcedure
@@ -507,7 +574,7 @@ export const woocommerceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const merchantId = tenantId(ctx);
       try {
-        return await withWooCommerceLock(merchantId, async () => {
+        return await withWooCommerceRequestLock(ctx, merchantId, async () => {
           const order = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
           if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
           const settings = await getWooCommerceSettings(merchantId);

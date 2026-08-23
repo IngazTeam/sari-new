@@ -2,7 +2,7 @@ import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 
 export class WooCommerceMerchantLockError extends Error {
-  constructor(readonly code: 'invalid_merchant' | 'database_unavailable' | 'merchant_lock_timeout' | 'operation_capacity') {
+  constructor(readonly code: 'invalid_merchant' | 'database_unavailable' | 'merchant_lock_timeout' | 'operation_capacity' | 'operation_cancelled') {
     super(code);
     this.name = 'WooCommerceMerchantLockError';
   }
@@ -18,6 +18,8 @@ type AdmissionWaiter = {
   resolve: (release: () => void) => void;
   reject: (error: WooCommerceMerchantLockError) => void;
   timer: ReturnType<typeof setTimeout>;
+  signal?: AbortSignal;
+  onAbort?: () => void;
 };
 
 export type WooCommerceAdmissionSnapshot = Readonly<{
@@ -30,6 +32,7 @@ export type WooCommerceAdmissionSnapshot = Readonly<{
   rejectedMerchantLimit: number;
   rejectedInvalidIdentity: number;
   timedOut: number;
+  cancelled: number;
   activeLimit: number;
   queueLimit: number;
   merchantQueueLimit: number;
@@ -48,6 +51,7 @@ export class WooCommerceAdmissionGate {
   private rejectedMerchantLimit = 0;
   private rejectedInvalidIdentity = 0;
   private timedOut = 0;
+  private cancelled = 0;
 
   constructor(
     readonly maxActive: number,
@@ -63,10 +67,14 @@ export class WooCommerceAdmissionGate {
     }
   }
 
-  acquire(key: string): Promise<() => void> {
+  acquire(key: string, signal?: AbortSignal): Promise<() => void> {
     if (typeof key !== 'string' || key.length === 0 || key.length > 128) {
       this.rejectedInvalidIdentity += 1;
       return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
+    }
+    if (signal?.aborted) {
+      this.cancelled += 1;
+      return Promise.reject(new WooCommerceMerchantLockError('operation_cancelled'));
     }
     if (this.active < this.maxActive && !this.activeKeys.has(key)) {
       this.active += 1;
@@ -94,15 +102,29 @@ export class WooCommerceAdmissionGate {
           if (index >= 0) {
             this.waiters.splice(index, 1);
             this.decrementQueued(key);
+            this.detachAbort(waiter);
             this.timedOut += 1;
+            reject(new WooCommerceMerchantLockError('operation_capacity'));
           }
-          reject(new WooCommerceMerchantLockError('operation_capacity'));
         }, this.waitMs),
+        signal,
+      };
+      waiter.onAbort = () => {
+        const index = this.waiters.indexOf(waiter);
+        if (index < 0) return;
+        this.waiters.splice(index, 1);
+        this.decrementQueued(key);
+        clearTimeout(waiter.timer);
+        this.detachAbort(waiter);
+        this.cancelled += 1;
+        reject(new WooCommerceMerchantLockError('operation_cancelled'));
       };
       waiter.timer.unref?.();
       this.waiters.push(waiter);
       this.queuedByKey.set(key, queuedForKey + 1);
       this.peakQueued = Math.max(this.peakQueued, this.waiters.length);
+      signal?.addEventListener('abort', waiter.onAbort, { once: true });
+      if (signal?.aborted) waiter.onAbort();
     });
   }
 
@@ -117,6 +139,7 @@ export class WooCommerceAdmissionGate {
       rejectedMerchantLimit: this.rejectedMerchantLimit,
       rejectedInvalidIdentity: this.rejectedInvalidIdentity,
       timedOut: this.timedOut,
+      cancelled: this.cancelled,
       activeLimit: this.maxActive,
       queueLimit: this.maxQueue,
       merchantQueueLimit: this.maxQueuePerKey,
@@ -135,6 +158,12 @@ export class WooCommerceAdmissionGate {
     else this.queuedByKey.delete(key);
   }
 
+  private detachAbort(waiter: AdmissionWaiter): void {
+    if (waiter.signal && waiter.onAbort) {
+      waiter.signal.removeEventListener('abort', waiter.onAbort);
+    }
+  }
+
   private drain(): void {
     while (this.active < this.maxActive) {
       const index = this.waiters.findIndex(waiter => !this.activeKeys.has(waiter.key));
@@ -142,6 +171,7 @@ export class WooCommerceAdmissionGate {
       const [waiter] = this.waiters.splice(index, 1);
       this.decrementQueued(waiter.key);
       clearTimeout(waiter.timer);
+      this.detachAbort(waiter);
       this.active += 1;
       this.activeKeys.add(waiter.key);
       this.recordAdmission();
@@ -193,11 +223,12 @@ export async function finalizeWooCommerceMerchantLockConnection(
 export async function withWooCommerceMerchantLock<T>(
   merchantId: number,
   action: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<T> {
   if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
     throw new WooCommerceMerchantLockError('invalid_merchant');
   }
-  const releaseAdmission = await wooCommerceAdmissionGate.acquire(String(merchantId));
+  const releaseAdmission = await wooCommerceAdmissionGate.acquire(String(merchantId), signal);
   try {
     const pool = await getPool();
     if (!pool) throw new WooCommerceMerchantLockError('database_unavailable');
