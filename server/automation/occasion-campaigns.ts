@@ -19,7 +19,7 @@ import {
 import { sendTextMessage } from '../whatsapp';
 import {
   filterCampaignRecipients,
-  isOptedOut,
+  hasActiveCampaignConsent,
   normalizeCampaignPhone,
   trackCampaignSend,
   withCampaignOptOutNotice,
@@ -200,7 +200,7 @@ export async function sendOccasionCampaign(
 
   // Send message to each customer
   for (const phone of uniquePhones) {
-    if (await isOptedOut(merchantId, phone)) continue;
+    if (!(await hasActiveCampaignConsent(merchantId, phone))) continue;
     try {
       // Get customer name from conversation
       const conversation = conversations.find(c => normalizeCampaignPhone(c.customerPhone) === phone);

@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, mediumtext, timestamp, tinyint, decimal, date, index, uniqueIndex, check } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, check } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
@@ -3440,6 +3440,39 @@ export const campaignOptouts = mysqlTable("campaign_optouts", {
 }, table => [
 	uniqueIndex("uq_campaign_optout_merchant_phone").on(table.merchantId, table.customerPhone),
 	index("idx_campaign_optout_merchant").on(table.merchantId),
+]);
+
+export const campaignConsentReceipts = mysqlTable("campaign_consent_receipts", {
+	id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	decision: mysqlEnum(['granted', 'withdrawn']).notNull(),
+	source: varchar({ length: 32 }).notNull(),
+	provider: varchar({ length: 20 }).notNull(),
+	consentVersion: varchar("consent_version", { length: 40 }).notNull(),
+	evidenceDigest: char("evidence_digest", { length: 64 }).notNull(),
+	providerEventDigest: char("provider_event_digest", { length: 64 }).notNull(),
+	decidedAt: datetime("decided_at", { mode: 'string', fsp: 3 }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("campaign_consent_receipts_event_unique").on(table.merchantId, table.providerEventDigest),
+	index("campaign_consent_receipts_subject_idx").on(table.merchantId, table.customerPhone, table.decidedAt, table.id),
+]);
+
+export const campaignConsentState = mysqlTable("campaign_consent_state", {
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	status: mysqlEnum(['granted', 'withdrawn']).notNull(),
+	consentVersion: varchar("consent_version", { length: 40 }).notNull(),
+	source: varchar({ length: 32 }).notNull(),
+	evidenceDigest: char("evidence_digest", { length: 64 }).notNull(),
+	lastDecidedAt: datetime("last_decided_at", { mode: 'string', fsp: 3 }).notNull(),
+	lastReceiptId: bigint("last_receipt_id", { mode: 'number', unsigned: true }).references(() => campaignConsentReceipts.id, { onDelete: "set null" }),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	primaryKey({ columns: [table.merchantId, table.customerPhone] }),
+	index("campaign_consent_state_status_idx").on(table.merchantId, table.status),
 ]);
 
 export const merchantOnboardingAnswers = mysqlTable("merchant_onboarding_answers", {

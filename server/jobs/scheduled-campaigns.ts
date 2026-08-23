@@ -8,7 +8,7 @@ import { getCampaignById, updateCampaign, getConversationsByMerchantId, getPrima
 import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
 import {
   filterCampaignRecipients,
-  isOptedOut,
+  hasActiveCampaignConsent,
   trackCampaignSend,
   withCampaignOptOutNotice,
 } from '../automation/campaign-guard';
@@ -66,9 +66,6 @@ export async function checkScheduledCampaigns() {
           continue;
         }
         
-        // تحديث الحالة إلى "sending"
-        await updateCampaign(campaign.id, { status: "sending" });
-        
         // الحصول على WhatsApp instance للتاجر
         const instance = await getPrimaryWhatsAppInstance(campaign.merchantId);
         
@@ -119,6 +116,12 @@ export async function checkScheduledCampaigns() {
           continue;
         }
 
+        // Do not claim a campaign is sending until consent/suppression succeeds.
+        await updateCampaign(campaign.id, {
+          status: "sending",
+          totalRecipients: recipients.length,
+        });
+
         // إرسال الرسالة لجميع العملاء المؤهلين
         const results = await sendWhatsAppCampaign(
           recipients,
@@ -126,7 +129,7 @@ export async function checkScheduledCampaigns() {
           campaign.imageUrl || undefined,
           3, // minDelay
           6, // maxDelay
-          async phone => !(await isOptedOut(campaign.merchantId, phone)),
+          async phone => await hasActiveCampaignConsent(campaign.merchantId, phone),
         );
         
         // Track sent count for rate limiting

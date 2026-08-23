@@ -18,14 +18,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { privacyHashExact } from '../accounts/privacy-hash';
+import { createHash } from 'node:crypto';
 
 const CAMPAIGN_SUPPRESSION_QUERY_BATCH = 100;
-const OPT_OUT_REASONS = new Set([
-  'customer_request',
-  'customer_message',
-  'interactive_button',
-  'admin_request',
-]);
+export const CAMPAIGN_CONSENT_VERSION = 'campaign-marketing-v1';
+const CAMPAIGN_DECISION_SOURCES = new Set(['whatsapp_text', 'interactive_control']);
+const CAMPAIGN_DECISION_PROVIDERS = new Set(['green_api', 'meta_cloud']);
 
 export const CAMPAIGN_OPT_OUT_NOTICE_AR = 'لإيقاف الرسائل التسويقية أرسل «إلغاء الاشتراك».';
 
@@ -34,6 +33,12 @@ export class CampaignSuppressionUnavailableError extends Error {
     super('Campaign suppression list is unavailable');
     this.name = 'CampaignSuppressionUnavailableError';
   }
+}
+
+function mysqlErrorCode(error: unknown): string {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code?: unknown }).code || '')
+    : '';
 }
 
 export function normalizeCampaignPhone(phone: string): string | null {
@@ -62,7 +67,7 @@ function requireMerchantId(merchantId: number): void {
 
 async function suppressionPool() {
   try {
-    await ensureOptoutTable();
+    await ensureCampaignConsentTables();
     const { getPool } = await import('../db');
     const pool = await getPool();
     if (!pool) throw new CampaignSuppressionUnavailableError();
@@ -73,69 +78,194 @@ async function suppressionPool() {
   }
 }
 
-async function ensureOptoutTable(): Promise<void> {
-  await assertRuntimeSchema('campaign opt-outs', [{ table: 'campaign_optouts' }]);
+async function ensureCampaignConsentTables(): Promise<void> {
+  await assertRuntimeSchema('customer campaign consent', [
+    { table: 'campaign_optouts' },
+    { table: 'campaign_consent_receipts' },
+    { table: 'campaign_consent_state' },
+  ]);
 }
 
 /**
  * Check if a customer has opted out of campaigns.
  */
-export async function isOptedOut(merchantId: number, phone: string): Promise<boolean> {
+export async function hasActiveCampaignConsent(merchantId: number, phone: string): Promise<boolean> {
   const normalized = normalizeCampaignPhone(phone);
-  if (!normalized) return true;
-  const suppressed = await getSuppressedCampaignPhones(merchantId, [normalized]);
-  return suppressed.has(normalized);
+  if (!normalized) return false;
+  const states = await getCampaignConsentStates(merchantId, [normalized]);
+  return states.get(normalized) === 'granted';
 }
 
-/**
- * Add a customer to the opt-out list.
- */
-export async function addOptOut(merchantId: number, phone: string, reason: string = 'customer_request'): Promise<void> {
-  requireMerchantId(merchantId);
-  const normalized = normalizeCampaignPhone(phone);
-  if (!normalized) throw new CampaignSuppressionUnavailableError();
-  const safeReason = OPT_OUT_REASONS.has(reason) ? reason : 'customer_request';
+export async function recordCustomerMarketingDecision(input: {
+  merchantId: number;
+  phone: string;
+  decision: 'granted' | 'withdrawn';
+  source: 'whatsapp_text' | 'interactive_control';
+  provider: 'green_api' | 'meta_cloud';
+  providerEventId: string;
+  evidenceText: string;
+  occurredAt: Date;
+}): Promise<{
+  recorded: boolean;
+  decision: 'granted' | 'withdrawn';
+  confirmationIdempotencyKey: string;
+}> {
+  requireMerchantId(input.merchantId);
+  const phone = normalizeCampaignPhone(input.phone);
+  const providerEventId = String(input.providerEventId || '').trim();
+  const evidenceText = String(input.evidenceText || '').normalize('NFKC').trim();
+  const occurredAt = input.occurredAt instanceof Date ? input.occurredAt : new Date(Number.NaN);
+  if (
+    !phone
+    || (input.decision !== 'granted' && input.decision !== 'withdrawn')
+    || !CAMPAIGN_DECISION_SOURCES.has(input.source)
+    || !CAMPAIGN_DECISION_PROVIDERS.has(input.provider)
+    || !providerEventId
+    || providerEventId.length > 255
+    || !evidenceText
+    || evidenceText.length > 4096
+    || !Number.isFinite(occurredAt.getTime())
+    || occurredAt.getTime() > Date.now() + 5 * 60_000
+  ) {
+    throw new CampaignSuppressionUnavailableError();
+  }
+
+  const decidedAt = occurredAt.toISOString().replace('T', ' ').replace('Z', '');
+  // Provider IDs are high-entropy opaque identifiers. An unkeyed digest keeps
+  // replay identity stable across privacy-key rotation without storing the ID.
+  const providerEventDigest = createHash('sha256').update(JSON.stringify([
+    'campaign-consent-event-v1', input.merchantId, input.provider, providerEventId,
+  ]), 'utf8').digest('hex');
+  const confirmationIdempotencyKey = `consent:${providerEventDigest.slice(0, 48)}`;
+  const evidenceDigest = privacyHashExact(JSON.stringify([
+    'campaign-consent-evidence-v1', input.merchantId, phone, input.decision,
+    input.source, input.provider, CAMPAIGN_CONSENT_VERSION, evidenceText,
+  ]));
   const pool = await suppressionPool();
+  let connection;
   try {
-    await pool.execute(
-      `INSERT INTO campaign_optouts (merchant_id, customer_phone, reason)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE reason = VALUES(reason)`,
-      [merchantId, normalized, safeReason]
-    );
+    connection = await pool.getConnection();
   } catch {
     throw new CampaignSuppressionUnavailableError();
   }
+  if (!connection) throw new CampaignSuppressionUnavailableError();
+  try {
+    await connection.beginTransaction();
+    let receiptResult: { affectedRows?: number; insertId?: number };
+    try {
+      const [result] = await connection.execute(
+        `INSERT INTO campaign_consent_receipts
+          (merchant_id, customer_phone, decision, source, provider, consent_version,
+           evidence_digest, provider_event_digest, decided_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          input.merchantId, phone, input.decision, input.source, input.provider,
+          CAMPAIGN_CONSENT_VERSION, evidenceDigest, providerEventDigest, decidedAt,
+        ],
+      );
+      receiptResult = result as { affectedRows?: number; insertId?: number };
+    } catch (error) {
+      if (mysqlErrorCode(error) !== 'ER_DUP_ENTRY') throw error;
+      await connection.commit();
+      return { recorded: false, decision: input.decision, confirmationIdempotencyKey };
+    }
+    const recorded = Number(receiptResult.affectedRows || 0) === 1;
+    const receiptId = Number((receiptResult as { insertId?: number }).insertId || 0);
+    if (!recorded || !Number.isSafeInteger(receiptId) || receiptId <= 0) {
+      throw new Error('CAMPAIGN_CONSENT_RECEIPT_NOT_INSERTED');
+    }
+    if (recorded) {
+      await connection.execute(
+        `INSERT INTO campaign_consent_state
+          (merchant_id, customer_phone, status, consent_version, source,
+           evidence_digest, last_decided_at, last_receipt_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+          status = IF(
+            VALUES(last_decided_at) > last_decided_at
+              OR (VALUES(last_decided_at) = last_decided_at AND VALUES(status) = 'withdrawn'),
+            VALUES(status), status),
+          consent_version = IF(
+            VALUES(last_decided_at) > last_decided_at
+              OR (VALUES(last_decided_at) = last_decided_at AND VALUES(status) = 'withdrawn'),
+            VALUES(consent_version), consent_version),
+          source = IF(
+            VALUES(last_decided_at) > last_decided_at
+              OR (VALUES(last_decided_at) = last_decided_at AND VALUES(status) = 'withdrawn'),
+            VALUES(source), source),
+          evidence_digest = IF(
+            VALUES(last_decided_at) > last_decided_at
+              OR (VALUES(last_decided_at) = last_decided_at AND VALUES(status) = 'withdrawn'),
+            VALUES(evidence_digest), evidence_digest),
+          last_receipt_id = IF(
+            VALUES(last_decided_at) > last_decided_at
+              OR (VALUES(last_decided_at) = last_decided_at AND VALUES(status) = 'withdrawn'),
+            VALUES(last_receipt_id), last_receipt_id),
+          last_decided_at = GREATEST(VALUES(last_decided_at), last_decided_at)`,
+        [
+          input.merchantId, phone, input.decision, CAMPAIGN_CONSENT_VERSION,
+          input.source, evidenceDigest, decidedAt, receiptId,
+        ],
+      );
+      if (input.decision === 'withdrawn') {
+        await connection.execute(
+          `INSERT INTO campaign_optouts (merchant_id, customer_phone, opted_out_at, reason)
+           VALUES (?, ?, ?, 'customer_request')
+           ON DUPLICATE KEY UPDATE
+            opted_out_at = GREATEST(opted_out_at, VALUES(opted_out_at)),
+            reason = VALUES(reason)`,
+          [input.merchantId, phone, decidedAt],
+        );
+      }
+    }
+    await connection.commit();
+    return { recorded, decision: input.decision, confirmationIdempotencyKey };
+  } catch {
+    try {
+      await connection.rollback();
+    } catch {
+      // Preserve the generic fail-closed error even if rollback itself fails.
+    }
+    throw new CampaignSuppressionUnavailableError();
+  } finally {
+    try {
+      connection.release();
+    } catch {
+      // The decision is already committed or rolled back; never leak driver detail.
+    }
+  }
 }
 
-export async function getSuppressedCampaignPhones(
+export async function getCampaignConsentStates(
   merchantId: number,
   phones: string[],
-): Promise<Set<string>> {
+): Promise<Map<string, 'granted' | 'withdrawn'>> {
   requireMerchantId(merchantId);
   const normalized = Array.from(new Set(
     phones.map(normalizeCampaignPhone).filter((phone): phone is string => Boolean(phone)),
   ));
-  if (!normalized.length) return new Set();
+  if (!normalized.length) return new Map();
   const pool = await suppressionPool();
-  const suppressed = new Set<string>();
+  const states = new Map<string, 'granted' | 'withdrawn'>();
   try {
     for (let offset = 0; offset < normalized.length; offset += CAMPAIGN_SUPPRESSION_QUERY_BATCH) {
       const batch = normalized.slice(offset, offset + CAMPAIGN_SUPPRESSION_QUERY_BATCH);
       const lookupForms = Array.from(new Set(batch.flatMap(campaignPhoneLookupForms)));
       const placeholders = lookupForms.map(() => '?').join(',');
       const [rows] = await pool.execute(
-        `SELECT customer_phone AS customerPhone
-           FROM campaign_optouts
+        `SELECT customer_phone AS customerPhone, status
+           FROM campaign_consent_state
           WHERE merchant_id = ? AND customer_phone IN (${placeholders})`,
         [merchantId, ...lookupForms],
       );
-      for (const row of rows as Array<{ customerPhone?: string }>) {
+      for (const row of rows as Array<{ customerPhone?: string; status?: string }>) {
         const phone = normalizeCampaignPhone(String(row.customerPhone || ''));
-        if (phone) suppressed.add(phone);
+        if (phone && (row.status === 'granted' || row.status === 'withdrawn')) {
+          if (row.status === 'withdrawn' || !states.has(phone)) states.set(phone, row.status);
+        }
       }
     }
-    return suppressed;
+    return states;
   } catch {
     throw new CampaignSuppressionUnavailableError();
   }
@@ -144,8 +274,8 @@ export async function getSuppressedCampaignPhones(
 export async function filterSuppressedCampaignRecipients(
   merchantId: number,
   phones: string[],
-): Promise<{ allowed: string[]; blocked: { phone: string; reason: 'invalid_phone' | 'opted_out' }[] }> {
-  const blocked: { phone: string; reason: 'invalid_phone' | 'opted_out' }[] = [];
+): Promise<{ allowed: string[]; blocked: { phone: string; reason: 'invalid_phone' | 'missing_consent' | 'opted_out' }[] }> {
+  const blocked: { phone: string; reason: 'invalid_phone' | 'missing_consent' | 'opted_out' }[] = [];
   const normalized: string[] = [];
   const seen = new Set<string>();
   for (const original of phones) {
@@ -157,11 +287,12 @@ export async function filterSuppressedCampaignRecipients(
       normalized.push(phone);
     }
   }
-  const suppressed = await getSuppressedCampaignPhones(merchantId, normalized);
+  const states = await getCampaignConsentStates(merchantId, normalized);
   const allowed: string[] = [];
   for (const phone of normalized) {
-    if (suppressed.has(phone)) blocked.push({ phone, reason: 'opted_out' });
-    else allowed.push(phone);
+    const status = states.get(phone);
+    if (status === 'granted') allowed.push(phone);
+    else blocked.push({ phone, reason: status === 'withdrawn' ? 'opted_out' : 'missing_consent' });
   }
   return { allowed, blocked };
 }
@@ -337,10 +468,28 @@ const OPT_OUT_REQUESTS = [
   /^(?:stop|unsubscribe|opt out|optout|no more messages)(?: please)?$/i,
 ];
 
+const OPT_IN_REQUESTS = [
+  /^(?:أوافق على |اوافق على )?(?:الاشتراك|اشتراك)(?: في)?(?: العروض| الرسائل التسويقية| رسائل العروض)$/,
+  /^(?:اشترك|سجلني)(?: في)?(?: العروض| الرسائل التسويقية| رسائل العروض)$/,
+  /^(?:start|subscribe|opt in|optin)(?: please)?$/i,
+];
+
 /**
  * Check if a customer message is an opt-out request.
  */
 export function isOptOutRequest(message: string): boolean {
+  const normalized = normalizeCampaignDecisionText(message);
+  if (!normalized) return false;
+  return OPT_OUT_REQUESTS.some(pattern => pattern.test(normalized));
+}
+
+export function isOptInRequest(message: string): boolean {
+  const normalized = normalizeCampaignDecisionText(message);
+  if (!normalized) return false;
+  return OPT_IN_REQUESTS.some(pattern => pattern.test(normalized));
+}
+
+function normalizeCampaignDecisionText(message: string): string {
   const normalized = String(message || '')
     .normalize('NFKC')
     .toLowerCase()
@@ -348,8 +497,8 @@ export function isOptOutRequest(message: string): boolean {
     .replace(/[.!،,;؛؟?]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!normalized || normalized.length > 120) return false;
-  return OPT_OUT_REQUESTS.some(pattern => pattern.test(normalized));
+  if (!normalized || normalized.length > 120) return '';
+  return normalized;
 }
 
 // NQ-2: Register memory cleanup

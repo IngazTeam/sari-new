@@ -50,6 +50,8 @@ interface GreenAPIWebhookPayload {
   };
   timestamp: number;
   idMessage: string;
+  sourceProvider?: 'green_api' | 'meta_cloud';
+  sourceMessageType?: 'text' | 'interactive';
   senderData: {
     chatId: string;
     chatName?: string;
@@ -1179,10 +1181,54 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
     const customerText = extractMessageText(payload);
     if (!groupChatId && customerText) {
-      const { addOptOut, isOptOutRequest } = await import('../automation/campaign-guard');
-      if (isOptOutRequest(customerText)) {
-        await addOptOut(instance.merchantId, customerPhone, 'customer_message');
-        return { success: true, message: 'Customer marketing opt-out recorded' };
+      const {
+        isOptInRequest,
+        isOptOutRequest,
+        recordCustomerMarketingDecision,
+      } = await import('../automation/campaign-guard');
+      const decision = isOptOutRequest(customerText)
+        ? 'withdrawn'
+        : isOptInRequest(customerText) ? 'granted' : null;
+      if (decision) {
+        const interactiveTypes = new Set([
+          'buttonsResponseMessage',
+          'templateButtonsReplyMessage',
+          'listResponseMessage',
+          'interactiveButtonsResponse',
+        ]);
+        const decisionReceipt = await recordCustomerMarketingDecision({
+          merchantId: instance.merchantId,
+          phone: customerPhone,
+          decision,
+          source: payload.sourceMessageType === 'interactive' || interactiveTypes.has(payload.messageData.typeMessage)
+            ? 'interactive_control'
+            : 'whatsapp_text',
+          provider: payload.sourceProvider || 'green_api',
+          providerEventId: payload.idMessage,
+          evidenceText: customerText,
+          occurredAt: new Date(payload.timestamp * 1000),
+        });
+        const { sendMerchantWhatsApp } = await import('../channels/whatsapp/service');
+        const confirmation = await sendMerchantWhatsApp({
+          merchantId: instance.merchantId,
+          instanceRecordId: instance.id,
+          idempotencyKey: decisionReceipt.confirmationIdempotencyKey,
+          kind: 'text',
+          to: customerPhone,
+          text: decision === 'withdrawn'
+            ? 'تم إيقاف الرسائل التسويقية. لإعادة الاشتراك بإرادتك أرسل «اشترك في العروض».'
+            : 'تم تسجيل موافقتك على الرسائل التسويقية. يمكنك إيقافها في أي وقت بإرسال «إلغاء الاشتراك».',
+          retryFailed: true,
+        });
+        if (!confirmation.accepted) {
+          return { success: false, message: 'Marketing consent confirmation delivery is pending' };
+        }
+        return {
+          success: true,
+          message: decision === 'withdrawn'
+            ? 'Customer marketing opt-out recorded'
+            : 'Customer marketing consent recorded',
+        };
       }
     }
 

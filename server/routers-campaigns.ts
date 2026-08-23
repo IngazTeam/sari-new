@@ -35,6 +35,7 @@ import {
   CampaignSuppressionUnavailableError,
   filterCampaignRecipients,
   filterSuppressedCampaignRecipients,
+  hasActiveCampaignConsent,
   normalizeCampaignPhone,
   trackCampaignSend,
   withCampaignOptOutNotice,
@@ -272,7 +273,7 @@ export const campaignsRouter = router({
                 if (error instanceof CampaignSuppressionUnavailableError) {
                     throw new TRPCError({
                         code: 'SERVICE_UNAVAILABLE',
-                        message: 'تعذر التحقق من قائمة إلغاء الاشتراك؛ لم تُرسل الحملة',
+                        message: 'تعذر التحقق من الموافقة التسويقية أو قائمة الإلغاء؛ لم تُرسل الحملة',
                     });
                 }
                 throw error;
@@ -317,61 +318,54 @@ export const campaignsRouter = router({
                     ));
                     failCount += candidateBatch.length - batch.length;
 
-                    const results = await Promise.allSettled(
-                        batch.map(async (conv) => {
-                            try {
-                                if (campaign.imageUrl) {
-                                    await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
-                                        chatId: `${conv.customerPhone}@c.us`,
-                                        urlFile: campaign.imageUrl,
-                                        fileName: 'campaign.jpg',
-                                        caption: campaignMessage,
-                                    });
-                                } else {
-                                    await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
-                                        chatId: `${conv.customerPhone}@c.us`,
-                                        message: campaignMessage,
-                                    });
-                                }
-
-                                await createCampaignLog({
-                                    campaignId: input.id,
-                                    customerId: conv.id || null,
-                                    customerPhone: conv.customerPhone,
-                                    customerName: conv.customerName || null,
-                                    status: 'success',
-                                    errorMessage: null,
-                                    sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                    let batchSuccessCount = 0;
+                    for (const conv of batch) {
+                        // Failures here escape the provider catch and stop all later sends.
+                        // This keeps a consent-store outage fail-closed mid-campaign.
+                        if (!(await hasActiveCampaignConsent(merchant.id, conv.customerPhone))) {
+                            failCount++;
+                            continue;
+                        }
+                        try {
+                            if (campaign.imageUrl) {
+                                await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
+                                    chatId: `${conv.customerPhone}@c.us`,
+                                    urlFile: campaign.imageUrl,
+                                    fileName: 'campaign.jpg',
+                                    caption: campaignMessage,
                                 });
-
-                                return true;
-                            } catch (error: any) {
-                                await createCampaignLog({
-                                    campaignId: input.id,
-                                    customerId: conv.id || null,
-                                    customerPhone: conv.customerPhone,
-                                    customerName: conv.customerName || null,
-                                    status: 'failed',
-                                    errorMessage: error.message || 'Unknown error',
-                                    sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                            } else {
+                                await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
+                                    chatId: `${conv.customerPhone}@c.us`,
+                                    message: campaignMessage,
                                 });
-
-                                return false;
                             }
-                        })
-                    );
 
-                    // Count results from this batch
-                    for (const result of results) {
-                        if (result.status === 'fulfilled' && result.value) {
+                            await createCampaignLog({
+                                campaignId: input.id,
+                                customerId: conv.id || null,
+                                customerPhone: conv.customerPhone,
+                                customerName: conv.customerName || null,
+                                status: 'success',
+                                errorMessage: null,
+                                sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                            });
                             successCount++;
-                        } else {
+                            batchSuccessCount++;
+                        } catch (error: any) {
+                            await createCampaignLog({
+                                campaignId: input.id,
+                                customerId: conv.id || null,
+                                customerPhone: conv.customerPhone,
+                                customerName: conv.customerName || null,
+                                status: 'failed',
+                                errorMessage: error.message || 'Unknown error',
+                                sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                            });
                             failCount++;
                         }
                     }
-                    trackCampaignSend(merchant.id, results.filter(
-                        result => result.status === 'fulfilled' && result.value,
-                    ).length);
+                    trackCampaignSend(merchant.id, batchSuccessCount);
 
                     // Update progress for live tracking (#9)
                     await updateCampaign(input.id, {

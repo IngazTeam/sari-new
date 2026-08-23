@@ -169,6 +169,8 @@ export async function handleMetaCloudWebhook(req: RequestWithRawBody, res: Respo
           },
           timestamp: Number(message.timestamp || Math.floor(Date.now() / 1000)),
           idMessage: providerMessageId,
+          sourceProvider: 'meta_cloud',
+          sourceMessageType: message.type === 'button' || message.type === 'interactive' ? 'interactive' : 'text',
           senderData: {
             chatId: `${customerPhone}@c.us`,
             sender: `${customerPhone}@c.us`,
