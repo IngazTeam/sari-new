@@ -18,6 +18,7 @@ import {
   getWooCommerceSettings,
   getWooCommerceSyncLogs,
   getWooCommerceWebhookRegistrations,
+  reconcileWooCommerceSnapshotAndWebhookIncidents,
   saveVerifiedWooCommerceSettings,
   searchWooCommerceProducts,
   updateWooCommerceConnectionStatus,
@@ -253,6 +254,57 @@ async function runManualSync(merchantId: number, type: 'products' | 'orders') {
   });
 }
 
+async function runFullWooCommerceReconciliation(merchantId: number) {
+  return withWooCommerceLock(merchantId, async () => {
+    const settings = await getWooCommerceSettings(merchantId);
+    if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
+    }
+    const started = Date.now();
+    const startedAt = wooSyncTimestamp(new Date(started));
+    const logId = await createWooCommerceSyncLog({
+      merchantId,
+      syncType: 'manual',
+      direction: 'import',
+      status: 'running',
+      startedAt,
+    });
+    try {
+      const client = createWooCommerceClient(settings);
+      const [remoteProducts, remoteOrders] = await Promise.all([
+        fetchWooCommerceProducts(client),
+        fetchWooCommerceOrders(client),
+      ]);
+      const observedAt = wooSyncTimestamp();
+      const result = await reconcileWooCommerceSnapshotAndWebhookIncidents({
+        merchantId,
+        products: remoteProducts.map(product => normalizeWooCommerceProduct(merchantId, product, observedAt)),
+        orders: remoteOrders.map(order => normalizeWooCommerceOrder(merchantId, order, observedAt)),
+        observedAt,
+      });
+      const total = result.products + result.orders;
+      await updateWooCommerceSyncLog(logId, {
+        status: 'success',
+        itemsProcessed: total,
+        itemsSuccess: total,
+        itemsFailed: 0,
+        completedAt: wooSyncTimestamp(),
+        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
+        errorMessage: null,
+      });
+      return { success: true, ...result };
+    } catch (error) {
+      await updateWooCommerceSyncLog(logId, {
+        status: 'failed',
+        completedAt: wooSyncTimestamp(),
+        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
+        errorMessage: error instanceof WooCommerceApiError ? error.code : 'reconciliation_failed',
+      }).catch(() => undefined);
+      throw publicWooError(error);
+    }
+  });
+}
+
 export const woocommerceRouter = router({
   getSettings: merchantProcedure.query(async ({ ctx }) => {
     const settings = await getWooCommerceSettings(tenantId(ctx));
@@ -436,6 +488,10 @@ export const woocommerceRouter = router({
   syncOrders: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
     const result = await runManualSync(tenantId(ctx), 'orders');
     return { ...result, message: `تمت مزامنة ${result.count} طلب من WooCommerce` };
+  }),
+
+  reconcileWebhookIncidents: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    return runFullWooCommerceReconciliation(tenantId(ctx));
   }),
 
   getSyncLogs: merchantProcedure

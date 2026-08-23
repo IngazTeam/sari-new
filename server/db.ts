@@ -10338,6 +10338,85 @@ export async function upsertWooCommerceOrdersSnapshot(
   });
 }
 
+export async function reconcileWooCommerceSnapshotAndWebhookIncidents(input: {
+  merchantId: number;
+  products: NewWooCommerceProduct[];
+  orders: NewWooCommerceOrder[];
+  observedAt: string;
+}): Promise<{ products: number; orders: number; incidentsResolved: number }> {
+  if (
+    !Number.isSafeInteger(input.merchantId)
+    || input.merchantId <= 0
+    || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/.test(input.observedAt)
+    || input.products.some(row => row.merchantId !== input.merchantId || !row.providerUpdatedAt)
+    || input.orders.some(row => row.merchantId !== input.merchantId || !row.providerUpdatedAt)
+  ) throw new Error('WOOCOMMERCE_RECONCILIATION_INVALID');
+
+  return requireDb().transaction(async tx => {
+    for (const row of input.products) {
+      if (row.merchantId !== input.merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_RECONCILIATION_INVALID');
+      await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
+        set: { wooProductId: sql`${woocommerceProducts.wooProductId}` },
+      });
+      await tx.update(woocommerceProducts).set(row).where(and(
+        eq(woocommerceProducts.merchantId, input.merchantId),
+        eq(woocommerceProducts.wooProductId, row.wooProductId),
+        or(
+          isNull(woocommerceProducts.providerUpdatedAt),
+          lte(woocommerceProducts.providerUpdatedAt, row.providerUpdatedAt),
+        ),
+      ));
+    }
+    await tx.delete(woocommerceProducts).where(input.products.length > 0
+      ? and(
+          eq(woocommerceProducts.merchantId, input.merchantId),
+          notInArray(woocommerceProducts.wooProductId, input.products.map(row => row.wooProductId)),
+        )
+      : eq(woocommerceProducts.merchantId, input.merchantId));
+
+    for (const row of input.orders) {
+      if (row.merchantId !== input.merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_RECONCILIATION_INVALID');
+      await tx.insert(woocommerceOrders).values(row).onDuplicateKeyUpdate({
+        set: { wooOrderId: sql`${woocommerceOrders.wooOrderId}` },
+      });
+      await tx.update(woocommerceOrders).set(row).where(and(
+        eq(woocommerceOrders.merchantId, input.merchantId),
+        eq(woocommerceOrders.wooOrderId, row.wooOrderId),
+        or(
+          isNull(woocommerceOrders.providerUpdatedAt),
+          lte(woocommerceOrders.providerUpdatedAt, row.providerUpdatedAt),
+        ),
+      ));
+    }
+    await tx.delete(woocommerceOrders).where(input.orders.length > 0
+      ? and(
+          eq(woocommerceOrders.merchantId, input.merchantId),
+          notInArray(woocommerceOrders.wooOrderId, input.orders.map(row => row.wooOrderId)),
+        )
+      : eq(woocommerceOrders.merchantId, input.merchantId));
+
+    const incidentResult = await tx.update(woocommerceWebhookReceipts).set({
+      status: 'suppressed',
+      processedAt: input.observedAt,
+      processingToken: null,
+      lastError: 'manual_reconciliation_completed',
+    }).where(and(
+      eq(woocommerceWebhookReceipts.merchantId, input.merchantId),
+      eq(woocommerceWebhookReceipts.status, 'manual_review'),
+    ));
+    await tx.update(woocommerceSettings).set({ lastSyncAt: input.observedAt }).where(and(
+      eq(woocommerceSettings.merchantId, input.merchantId),
+      eq(woocommerceSettings.isActive, 1),
+      eq(woocommerceSettings.connectionStatus, 'connected'),
+    ));
+    return {
+      products: input.products.length,
+      orders: input.orders.length,
+      incidentsResolved: Number((incidentResult as any)[0]?.affectedRows || 0),
+    };
+  });
+}
+
 export async function updateWooCommerceOrder(id: number, data: Partial<NewWooCommerceOrder>) {
   await requireDb().update(woocommerceOrders).set(data).where(eq(woocommerceOrders.id, id));
 }

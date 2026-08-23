@@ -12,6 +12,7 @@ import { trpc } from "@/lib/trpc";
 export default function WooCommerceSettings() {
   const { t, i18n } = useTranslation();
   const arabic = i18n.language.startsWith("ar");
+  const utils = trpc.useUtils();
   const [storeUrl, setStoreUrl] = useState("");
   const [consumerKey, setConsumerKey] = useState("");
   const [consumerSecret, setConsumerSecret] = useState("");
@@ -42,12 +43,38 @@ export default function WooCommerceSettings() {
   });
 
   const syncProducts = trpc.woocommerce.syncProducts.useMutation({
-    onSuccess: data => toast.success(arabic ? `تمت مزامنة ${data.count} منتج` : `${data.count} products synchronized`),
+    onSuccess: async data => {
+      await Promise.all([
+        settingsQuery.refetch(),
+        utils.woocommerce.getProducts.invalidate(),
+      ]);
+      toast.success(arabic ? `تمت مزامنة ${data.count} منتج` : `${data.count} products synchronized`);
+    },
     onError: error => toast.error(error.message),
   });
 
   const syncOrders = trpc.woocommerce.syncOrders.useMutation({
-    onSuccess: data => toast.success(arabic ? `تمت مزامنة ${data.count} طلب` : `${data.count} orders synchronized`),
+    onSuccess: async data => {
+      await Promise.all([
+        settingsQuery.refetch(),
+        utils.woocommerce.getOrders.invalidate(),
+      ]);
+      toast.success(arabic ? `تمت مزامنة ${data.count} طلب` : `${data.count} orders synchronized`);
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const reconcileWebhookIncidents = trpc.woocommerce.reconcileWebhookIncidents.useMutation({
+    onSuccess: async data => {
+      await Promise.all([
+        settingsQuery.refetch(),
+        utils.woocommerce.getProducts.invalidate(),
+        utils.woocommerce.getOrders.invalidate(),
+      ]);
+      toast.success(arabic
+        ? `اكتملت المصالحة: ${data.products} منتج و${data.orders} طلب، وأُغلقت ${data.incidentsResolved} حالة مراجعة.`
+        : `Reconciliation completed: ${data.products} products, ${data.orders} orders, and ${data.incidentsResolved} review incidents closed.`);
+    },
     onError: error => toast.error(error.message),
   });
 
@@ -82,6 +109,13 @@ export default function WooCommerceSettings() {
       ? "سيتم حذف المنتجات والطلبات المنسوخة محليًا. هل تريد المتابعة؟"
       : "Locally synchronized products and orders will be deleted. Continue?";
     if (window.confirm(prompt)) disconnect.mutate();
+  };
+
+  const handleWebhookReconciliation = () => {
+    const prompt = arabic
+      ? "سيتم جلب لقطة كاملة للمنتجات والطلبات، وحذف النسخ المحلية غير الموجودة في WooCommerce، ثم إغلاق حالات المراجعة دون إعادة تشغيل الأحداث أو إرسال رسائل. هل تريد المتابعة؟"
+      : "This fetches complete product and order snapshots, removes local copies absent from WooCommerce, then closes review incidents without replaying events or sending messages. Continue?";
+    if (window.confirm(prompt)) reconcileWebhookIncidents.mutate();
   };
 
   if (settingsQuery.isLoading) {
@@ -200,6 +234,18 @@ export default function WooCommerceSettings() {
             {syncOrders.isPending ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <RefreshCw className="me-2 h-4 w-4" />}
             {t("wooCommerceSettingsPage.text31")}
           </Button>
+          {(settings?.webhook.health?.manualReview ?? 0) > 0 && (
+            <Button
+              variant="secondary"
+              onClick={handleWebhookReconciliation}
+              disabled={!connected || reconcileWebhookIncidents.isPending}
+            >
+              {reconcileWebhookIncidents.isPending
+                ? <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                : <RefreshCw className="me-2 h-4 w-4" />}
+              {arabic ? "مصالحة كاملة وإغلاق المراجعة" : "Full reconciliation and close review"}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
