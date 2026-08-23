@@ -67,7 +67,7 @@ export async function generateWeeklyReport(merchantId: number): Promise<number> 
     .map((k: any) => k.keyword);
 
   // توليد توصيات ذكية
-  const recommendations = await generateRecommendations({
+  const recommendations = await generateRecommendations(merchantId, {
     totalConversations: weekConversations.length,
     positiveCount: stats.positive,
     negativeCount: stats.negative,
@@ -96,7 +96,7 @@ export async function generateWeeklyReport(merchantId: number): Promise<number> 
 /**
  * توليد توصيات ذكية بناءً على بيانات الأسبوع
  */
-async function generateRecommendations(data: {
+async function generateRecommendations(merchantId: number, data: {
   totalConversations: number;
   positiveCount: number;
   negativeCount: number;
@@ -113,6 +113,7 @@ async function generateRecommendations(data: {
     const negativePercentage = Math.round((data.negativeCount / data.totalConversations) * 100);
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: "system",

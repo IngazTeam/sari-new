@@ -147,6 +147,7 @@ async function processConversation(pool: any, conv: any): Promise<void> {
 
   // ── Evaluate ──
   const analysis = await evaluateConversationForRecovery({
+    merchantId: conv.merchantId,
     messages,
     merchantBusinessName: merchant.businessName,
   });

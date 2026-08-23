@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.95 — محدّث بتشغيل وقوالب إشعارات الطلبات\
+**الإصدار:** 3.96 — محدّث ببوابة ZahyPi المعزولة وصدق إعدادات الذكاء\
 **التاريخ:** 23 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -143,6 +143,8 @@
 120. أُغلقت برمجيًا فجوة crash بين حفظ حالة الطلب وإشعار WhatsApp: صار انتقال الحالة وإدراج الإشعار في `order_notifications` معاملة واحدة، بهوية SHA-256 ثابتة لكل `(merchant,order,status)` بلا PII وقيد unique يمنع التكرار. توسع الجدول في `0045` إلى state machine دائمة؛ الصفوف التاريخية غير المرسلة تتحول إلى `suppressed` ولا يعاد تشغيلها. عامل primary يطالب الصف بـCAS، يطبق ثماني محاولات وbackoff محدودًا، ويصالح lease المتعطل من دفتر WhatsApp canonical؛ القبول المؤكد ينهي `sent`، والنتيجة الملتبسة أو فشل حفظ النتيجة بعد المزود لا يؤديان إلى إرسال أعمى بل إلى `manual_review` أو مصالحة لاحقة. لا ينفذ الراوتر provider I/O، وحُذف الراوتر الموازي غير المركب، وأضيفت أعمدة المخطط إلى readiness المغلقة. اجتاز نطاق الطلبات 17/17، وبوابة الإصدار 959 pass وskip واحد في 79 ملفًا، وTypeScript/Drizzle/build؛ الحزمة 570,830 raw / 170,938 gzip والخادم 4,096,802 bytes. يبقى backup وتطبيق `0045`، واختبار A/B وعمليتين وحقن crash على MySQL، وWhatsApp sandbox وقياس backlog/manual review قبل الإغلاق الإنتاجي.
 121. أُغلق برمجيًا تشغيل outbox وصدق قوالب حالات الطلب: كان تعطيل القالب يفشل مفتوحًا ويرسل default، وكانت الواجهة/التهيئة تستخدم `confirmed` الغائبة عن دورة الطلب وتفقد `paid/processing`، مع راوتر inline وآخر modular ووحدة إرسال مباشر قديمة. أصبحت الحالات الست canonical، ولا يجهز أي إشعار بلا صف مخزن ومفعّل صراحة. يعرض الخادم defaults افتراضية معطلة ويكتبها بـupsert status-based وtenant-derived بلا template/merchant ID من المتصفح، وبقيد unique تتحقق منه readiness. يحول `0046` `confirmed→paid` بلا حذف؛ preflight عددي يوقف الترحيل عند أي تعارض canonical أو حالة غير صالحة أو outbox orphan. أضيف health aggregate لسبعة أيام مع بقاء `manual_review` ظاهرة، وحوار إقرار لا يعيد إرسالًا ولا يحذف سجلًا ويحفظ المستخدم المراجع. الواجهة تستعلم كل 30 ثانية ولا ترى هاتفًا أو event key أو نص outbox. اجتاز بنتست المرحلة 11/11 ونطاق الطلبات 28/28، وبوابة الإصدار 970 pass وskip واحد في 80 ملفًا، وتدقيق العربية 99.6% وTypeScript/Drizzle/build؛ الحزمة 570,830 raw / 170,934 gzip والخادم 4,100,591 bytes. يبقى `0045` ثم preflight/`0046`، وإصلاح أي تعارض يدويًا، وMySQL A/B وsandbox وrunbook/retention قبل الإغلاق الإنتاجي.
 
+122. أُغلقت برمجيًا منافذ توليد النص المباشرة وربطت بممر ZahyPi واحد معزول لكل تاجر: `AsyncLocalStorage` يحمل tenant/task بلا global متسابق، وكل المسارات الخلفية والراوترات تمرر هوية التاجر أو تفشل مغلقة. عميل البوابة يقبل HTTPS origin allowlisted ومسار `/v1` فقط، يمنع redirect وتسريب Authorization، يحد الطلب إلى 2MB والاستجابة المتدفقة إلى 1MB والمهلة إلى 120 ثانية وثلاث محاولات، ويتحقق من headers والسياق والموديل وشكل الاستجابة ويستخدم idempotency/trace ثابتين وcircuit breaker محدود الذاكرة لكل تاجر. الإنتاج يرفض الإقلاع ما لم يكن `ZAHYPI_ENABLED=true`، بينما بقي OpenAI للصوت والتضمين فقط وصارت فحوص صحته غير توليدية عبر `/models`. صُححت واجهة الإدارة لتعرض المزود والنموذج الحقيقيين، تخفي اختيار OpenAI غير المؤثر، وتصف تكلفة ZahyPi بأنها غير متاحة بدل صفر كامل مضلل. اجتاز النطاق 48/48 وبوابة الإصدار 1,018 pass وskip واحد في 86 ملفًا وTypeScript/Drizzle/build؛ الحزمة 570,830 raw / 170,924 gzip والخادم 4,106,184 bytes. يبقى ضبط الاعتمادات من secret manager، عقد DPA/المنطقة والاحتفاظ، واختبار gateway حقيقي A/B وstructured/tool/429/timeout/circuit على staging؛ Runtime الفحص المحلي Node 24 بينما CI/الإنتاج مقيدان بـ22.17 ويجب إثبات البوابة عليهما.
+
 **قرار الخطة:**
 
 - الإطلاق العام الحالي: **No-Go**.
@@ -150,7 +152,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.95
+### حالة تنفيذ الجولة 3.96
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -169,6 +171,7 @@
 | عزل ودورة طلبات التاجر | مكتملة برمجيًا/MySQL staging معلق | tenant من الجلسة، read/write predicates مركبة، انتقال أمامي optimistic وretry idempotent، شاشة canonical وSQL pagination؛ 7/7 بنتست و949 pass + skip واحد إصدار |
 | ديمومة إشعارات حالات الطلبات | مكتملة برمجيًا/`0045` وMySQL وWhatsApp staging معلقة | state+outbox في معاملة واحدة، event key بلا PII، claim/backoff/lease reconciliation، دفتر WhatsApp canonical وmanual review بلا blind retry؛ نطاق الطلبات 17/17 و959 pass + skip واحد إصدار |
 | تشغيل وقوالب إشعارات الطلبات | مكتملة برمجيًا/`0046` وMySQL وWhatsApp staging معلقة | opt-in fail-closed، حالات canonical، راوتر واحد وupsert tenant-owned، health aggregate وإقرار actor-audited بلا resend، preflight بلا PII ولا حذف تلقائي؛ 11/11 بنتست و970 pass + skip واحد إصدار |
+| بوابة ZahyPi وعزل سياق التاجر | مكتملة برمجيًا/اعتماد وDPA وstaging gateway معلقة | ممر نصي واحد، tenant/task معزولان، HTTPS allowlist وno-redirect، request/stream bounds، schema validation وidempotency/circuit، إنتاج fail-closed وواجهة إدارة صادقة؛ 48/48 مركز و1,018 pass + skip واحد إصدار |
 | الوصول لمسارات البيع الأساسية | مكتمل محليًا لهذه الدفعة/المسح الشامل معلق | 11 ملفًا، 20+ زر أيقوني باسم contextual مترجم ونوع آمن، بطاقة تحليل keyboard/focus/pressed، وحارس AST؛ 7/7 بنتست جديد و25/25 فحصًا مركزًا و353/353 بوابة إصدار |
 | وصول القنوات والمعرفة | مكتمل محليًا لهذه الدفعة/20 أيقونة مساندة باقية | توسع الحارس إلى 17 ملفًا و43 زرًا، Webhook/WhatsApp/Test Sari/ذاكرة/محادثات، وصف وصورة keyboard-safe؛ 9/9 بنتست وصول و17/17 فحصًا مركزًا و355/355 بوابة إصدار |
 | جرد وصول صفحات التاجر الشامل | مكتمل برمجيًا محليًا/axe المنشور معلق | اكتشاف آلي لـ77 صفحة، إغلاق 25 زرًا متبقيًا و11 سطحًا mouse-only، Dialog focus-managed ومعايير keyboard/name/state/focus؛ 11/11 بنتست وصول و19/19 فحصًا مركزًا و357/357 بوابة إصدار |
@@ -1665,6 +1668,7 @@ WhatsAppChannel
 | TAP-001 | P0 | تشفير المفاتيح ورحلة sandbox كاملة | Backend/DevOps/QA | نجاح/فشل/إلغاء/webhook موثقة E2E |
 | ANL-001 | P0 | إزالة mock analytics وربط KPI بمصادرها | Backend/Data/Frontend | الحساب الجديد = صفر وdata lineage موثق |
 | AI-002 | P0 | اتساق الردود السريعة ومنع التأكيد الوهمي | AI/Backend/QA | النص والعداد والـtrace متطابقة وصفر نجاح دون orderId |
+| AI-004 | P0 | تشغيل بوابة ZahyPi المعزولة | AI/Backend/Security/DevOps/Legal | اعتماد من secret manager وDPA معتمدة، tenant A/B وstructured/tool/retry/circuit مثبتة على Node 22 staging، وcanary 24 ساعة ضمن SLO |
 | CH-003 | P0 | إرسال الصوت فعليًا عبر WhatsApp | Integrations/Backend/QA | provider ID وتسليم sandbox بلا تكرار |
 | CH-004 | P0 | تأمين تكامل وWebhook زد | Integrations/Backend/QA | Basic Auth لكل متجر، replay دائم، أسرار مشفرة، وعقد Zid/MySQL E2E ناجح |
 | CH-005 | P0 | تحصين OAuth زد وإدارة دورة الرموز | Integrations/Backend/QA | سر الخادم لا يصل للمتصفح، state أحادي الاستخدام، OAuth/sync/refresh E2E ناجحة |

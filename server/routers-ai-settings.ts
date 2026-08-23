@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { zahyPiEnabled } from "./ai/zahypi-client";
 
 function assertAdmin(role: string) {
   if (role !== "admin") {
@@ -16,24 +17,33 @@ function assertAdmin(role: string) {
 // AI-02 FIX: Whitelist allowed models
 const ALLOWED_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
 const ALLOWED_WHISPER_MODELS = ["whisper-1"] as const;
+const openAiApiKeySchema = z.string()
+  .max(512)
+  .regex(/^sk-[A-Za-z0-9_-]+$/, "صيغة المفتاح غير صالحة");
 
 export const aiSettingsRouter = router({
   // Get AI settings (masked API key)
   getSettings: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
-    const { getAiSettings } = await import("./db_ai_settings");
+    const { getAiSettings, getOpenAiApiKey } = await import("./db_ai_settings");
     const settings = await getAiSettings();
-    if (!settings) return null;
+    const effectiveOpenAiKey = await getOpenAiApiKey();
 
     // Mask API key — show only last 4 chars
-    const maskedKey = settings.openaiApiKey
-      ? `sk-****${settings.openaiApiKey.slice(-4)}`
+    const maskedKey = effectiveOpenAiKey
+      ? `sk-****${effectiveOpenAiKey.slice(-4)}`
       : null;
+    const usesZahyPi = zahyPiEnabled();
 
     return {
-      ...settings,
+      ...(settings ?? {}),
       openaiApiKey: maskedKey,
-      hasKey: !!settings.openaiApiKey,
+      hasKey: Boolean(effectiveOpenAiKey),
+      textGenerationProvider: usesZahyPi ? "zahypi" as const : "openai" as const,
+      textGenerationModel: usesZahyPi
+        ? process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local"
+        : settings?.model || "gpt-4o-mini",
+      textGenerationManagedByEnvironment: usesZahyPi,
     };
   }),
 
@@ -41,7 +51,7 @@ export const aiSettingsRouter = router({
   updateSettings: protectedProcedure
     .input(z.object({
       // AI-05 FIX: Validate API key format (must start with sk-)
-      openaiApiKey: z.string().regex(/^sk-/, "المفتاح يجب أن يبدأ بـ sk-").optional(),
+      openaiApiKey: openAiApiKeySchema.optional(),
       // AI-02 FIX: Whitelist models
       model: z.enum(ALLOWED_MODELS).optional(),
       whisperModel: z.enum(ALLOWED_WHISPER_MODELS).optional(),
@@ -75,7 +85,7 @@ export const aiSettingsRouter = router({
   // AI-01 FIX: Test connection using stored key OR new key
   testConnection: protectedProcedure
     .input(z.object({
-      apiKey: z.string().regex(/^sk-/).optional(), // Optional — if empty, test stored key
+      apiKey: openAiApiKeySchema.optional(), // Optional — if empty, test stored key
     }))
     .mutation(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
@@ -93,23 +103,12 @@ export const aiSettingsRouter = router({
       }
 
       try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${keyToTest}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: "ping" }],
-            max_tokens: 1,
-          }),
-        });
-
-        if (!response.ok) {
+        const { testOpenAIConnection } = await import("./ai/openai");
+        const connected = await testOpenAIConnection(keyToTest);
+        if (!connected) {
           return {
             success: false,
-            error: `فشل الاتصال (${response.status}): ${response.statusText}`,
+            error: "فشل الاتصال بـ OpenAI. تحقق من المفتاح.",
           };
         }
 

@@ -1,4 +1,9 @@
 import { ENV } from "./env";
+import {
+  getOptionalZahyPiRequestContext,
+  requestZahyPiCompletion,
+  zahyPiEnabled,
+} from "../ai/zahypi-client";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -85,7 +90,7 @@ export type InvokeResult = {
     index: number;
     message: {
       role: Role;
-      content: string | Array<TextContent | ImageContent | FileContent>;
+      content: string | Array<TextContent | ImageContent | FileContent> | null;
       tool_calls?: ToolCall[];
     };
     finish_reason: string | null;
@@ -292,9 +297,16 @@ const normalizeResponseFormat = ({
   };
 };
 
-export async function invokeLLM(params: InvokeParams & { merchantId?: number }): Promise<InvokeResult> {
-  await assertApiKey();
-  const { apiKey, model: activeModel } = await getApiKeyAndModel();
+export async function invokeLLM(
+  params: InvokeParams & { merchantId?: number; taskType?: string },
+): Promise<InvokeResult> {
+  const useZahyPi = zahyPiEnabled();
+  let apiKey = "";
+  let activeModel = process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local";
+  if (!useZahyPi) {
+    await assertApiKey();
+    ({ apiKey, model: activeModel } = await getApiKeyAndModel());
+  }
   const startTime = Date.now();
 
   const {
@@ -307,6 +319,7 @@ export async function invokeLLM(params: InvokeParams & { merchantId?: number }):
     responseFormat,
     response_format,
     merchantId,
+    taskType,
   } = params;
 
   const payload: Record<string, unknown> = {
@@ -339,53 +352,71 @@ export async function invokeLLM(params: InvokeParams & { merchantId?: number }):
     payload.response_format = normalizedResponseFormat;
   }
 
-  // PEN-RES-01 FIX: 30s timeout to prevent hanging forever
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-  let response: Response;
-  try {
-    response = await fetch(resolveApiUrl(), {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-  } catch (fetchErr: any) {
-    clearTimeout(timeoutId);
-    if (fetchErr.name === 'AbortError') {
-      throw new Error('LLM invoke timeout after 30s');
-    }
-    throw fetchErr;
-  }
-
-  clearTimeout(timeoutId);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+  let result: InvokeResult;
+  if (useZahyPi) {
+    result = await requestZahyPiCompletion(
+      payload,
+      merchantId === undefined
+        ? undefined
+        : { merchantId, taskType: taskType || "sari.invoke" },
+      30_000,
+      3,
     );
-  }
+  } else {
+    // PEN-RES-01 FIX: 30s timeout to prevent hanging forever
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-  const result = (await response.json()) as InvokeResult;
+    let response: Response;
+    try {
+      response = await fetch(resolveApiUrl(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('LLM invoke timeout after 30s');
+      }
+      throw fetchErr;
+    }
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      );
+    }
+
+    result = (await response.json()) as InvokeResult;
+  }
 
   // Log usage asynchronously (fire-and-forget)
   try {
     const usage = result.usage;
     if (usage) {
       const { logAiUsage, estimateCost } = await import("../db_ai_settings");
+      const inheritedMerchantId = getOptionalZahyPiRequestContext()?.merchantId;
+      const usageMerchantId = merchantId
+        ?? (typeof inheritedMerchantId === "number" ? inheritedMerchantId : null);
+      const usageModel = result.model || activeModel;
       logAiUsage({
-        merchantId: merchantId ?? null,
+        merchantId: usageMerchantId,
         requestType: "chat",
-        model: activeModel,
+        model: usageModel,
         promptTokens: usage.prompt_tokens,
         completionTokens: usage.completion_tokens,
         totalTokens: usage.total_tokens,
-        estimatedCost: String(estimateCost(activeModel, usage.prompt_tokens, usage.completion_tokens)),
+        estimatedCost: useZahyPi
+          ? "0"
+          : String(estimateCost(usageModel, usage.prompt_tokens, usage.completion_tokens)),
         durationMs: Date.now() - startTime,
       });
     }

@@ -215,7 +215,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
     updateProgress('scraping', 10);
     const { analyzeWebsite, cleanScrapedText: cleanText } = await import('./_core/websiteAnalyzer');
     updateProgress('scraping', 20);
-    const result = await analyzeWebsite(websiteUrl);
+    const result = await analyzeWebsite(websiteUrl, merchant.id);
     updateProgress('processing', 40);
 
     // Delete old analyses, create new
@@ -843,6 +843,7 @@ export const sariBrainRouter = router({
           .replace(/override\s+(system|all|your)/gi, '[filtered]');
 
         const aiResult = await invokeLLM({
+          merchantId: merchant.id,
           messages: [
             {
               role: 'system',

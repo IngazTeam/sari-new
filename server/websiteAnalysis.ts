@@ -99,10 +99,10 @@ Respond with ONLY ONE of these: salla, zid, shopify, woocommerce, custom, unknow
       ],
     });
 
-    const detectedPlatform = llmResponse.choices[0].message.content
-      // @ts-ignore
-      .trim()
-      .toLowerCase();
+    const detectedContent = llmResponse.choices[0]?.message.content;
+    const detectedPlatform = typeof detectedContent === "string"
+      ? detectedContent.trim().toLowerCase()
+      : "unknown";
     if (
       ["salla", "zid", "shopify", "woocommerce", "custom"].includes(
         detectedPlatform

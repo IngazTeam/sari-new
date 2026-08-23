@@ -703,7 +703,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                   role: 'user' as const,
                   content: `سؤال العميل: "${sanitizeForPrompt((originalQuestion || '').substring(0, 200))}"\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 300))}"\n\nحسّن الرد:`
                 }
-              ], { model: 'gpt-4o-mini', temperature: 0.5, maxTokens: 200, noRetry: true });
+              ], {
+                merchantId: instance.merchantId,
+                taskType: 'sari.webhook.merchant_reply_improvement',
+                model: 'gpt-4o-mini',
+                temperature: 0.5,
+                maxTokens: 200,
+                noRetry: true,
+              });
               
               if (improvementResult && improvementResult.trim().length > 10) {
                 merchantReplyText = improvementResult.trim();
@@ -861,7 +868,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                     role: 'user' as const,
                     content: `سؤال العميل: "${sanitizeForPrompt(customerQuestion)}"\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 500))}"`
                   }
-                ], { model: 'gpt-4o-mini', temperature: 0.7, maxTokens: 100, noRetry: true });
+                ], {
+                  merchantId: instance.merchantId,
+                  taskType: 'sari.webhook.merchant_reply_feedback',
+                  model: 'gpt-4o-mini',
+                  temperature: 0.7,
+                  maxTokens: 100,
+                  noRetry: true,
+                });
                 feedbackLine = ` | ${quickFeedback.trim()}`;
               }
             } catch { /* AI feedback is non-blocking */ }

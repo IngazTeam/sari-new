@@ -14,7 +14,7 @@ import { sendEmail } from '../_core/emailService';
 
 export async function checkOpenAiHealth(): Promise<{ ok: boolean; error?: string }> {
   try {
-    const { getAiSettings, upsertAiSettings } = await import('../db_ai_settings');
+    const { getAiSettings } = await import('../db_ai_settings');
     const settings = await getAiSettings();
 
     // Get the API key (DB → env fallback)
@@ -26,24 +26,23 @@ export async function checkOpenAiHealth(): Promise<{ ok: boolean; error?: string
       return result;
     }
 
-    // Test the connection using actual chat endpoint (not just /v1/models)
+    // Check the key without generating text. Text generation must go through ZahyPi.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: 'ping' }],
-        max_tokens: 1,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    let response: Response;
+    try {
+      response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        signal: controller.signal,
+        redirect: 'error',
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorText = response.status === 401

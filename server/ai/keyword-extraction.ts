@@ -54,7 +54,10 @@ export async function extractKeywordsFromMessage(
     const response = await callGPT4([
       { role: 'system', content: 'أنت محلل ذكي للكلمات المفتاحية في رسائل العملاء. أجب بـ JSON فقط بدون أي تنسيق markdown.' },
       { role: 'user', content: prompt }
-    ]);
+    ], {
+      merchantId,
+      taskType: 'sari.keyword.extraction',
+    });
 
     // Strip markdown code blocks (GPT sometimes wraps JSON in ```json...```)
     const cleanResponse = response

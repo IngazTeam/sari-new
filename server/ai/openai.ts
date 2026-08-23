@@ -7,6 +7,11 @@
  */
 
 import { ENV } from '../_core/env';
+import {
+  getOptionalZahyPiRequestContext,
+  requestZahyPiChat,
+  zahyPiEnabled,
+} from './zahypi-client';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -141,13 +146,58 @@ export async function callGPT4(
     temperature?: number;
     maxTokens?: number;
     noRetry?: boolean; // PEN-RES-03 FIX: Skip internal retry (used when caller already handles retry)
+    merchantId?: number;
+    userId?: number | string;
+    taskType?: string;
   }
 ): Promise<string> {
+  const startedAt = Date.now();
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
 
-  // Circuit Breaker check
+  if (zahyPiEnabled()) {
+    const inheritedContext = getOptionalZahyPiRequestContext();
+    const explicitContext = options?.merchantId === undefined ? undefined : {
+      merchantId: options.merchantId,
+      userId: options.userId,
+      taskType: options.taskType || 'sari.reply',
+    };
+    const result = await requestZahyPiChat(
+      messages,
+      {
+        maxTokens,
+        temperature,
+        timeoutMs: 25_000,
+        maxAttempts: options?.noRetry ? 1 : 3,
+      },
+      explicitContext ?? inheritedContext,
+    );
+    if (result.usage) {
+      const usage = result.usage;
+      const merchantId = (explicitContext ?? inheritedContext)?.merchantId;
+      import('../db_ai_settings').then(({ logAiUsage }) => logAiUsage({
+        merchantId: typeof merchantId === 'number' ? merchantId : null,
+        requestType: 'chat',
+        model: result.model,
+        promptTokens: usage.prompt_tokens,
+        completionTokens: usage.completion_tokens,
+        totalTokens: usage.total_tokens,
+        // ZahyPi pricing is not equivalent to OpenAI pricing; keep cost neutral
+        // until the gateway exposes an authoritative billed-cost field.
+        estimatedCost: '0',
+        durationMs: Date.now() - startedAt,
+      })).catch(() => {});
+      if (typeof merchantId === 'number' && usage.total_tokens > 0) {
+        import('./cost-ceiling').then(({ trackMerchantTokens }) => {
+          trackMerchantTokens(merchantId, usage.total_tokens);
+        }).catch(() => {});
+      }
+    }
+    return result.content;
+  }
+
+  // OpenAI and ZahyPi keep independent circuit-breaker state.
   if (!circuitBreaker.canAttempt()) {
     throw new Error('OpenAI circuit breaker is OPEN — too many recent failures. Cooling down.');
   }
@@ -273,9 +323,9 @@ async function fetchWithTimeout(
       // NQ-6: Track tokens for cost ceiling (non-blocking)
       if (data.usage.total_tokens > 0) {
         import('./cost-ceiling').then(({ trackMerchantTokens }) => {
-          // merchantId is tracked globally from the last chatWithSari call
-          const mid = (globalThis as any).__sariCurrentMerchantId;
-          if (mid) trackMerchantTokens(mid, data.usage.total_tokens);
+          // Async request context keeps accounting isolated per merchant.
+          const mid = getOptionalZahyPiRequestContext()?.merchantId;
+          if (typeof mid === 'number') trackMerchantTokens(mid, data.usage.total_tokens);
         }).catch(() => {});
       }
     }
@@ -367,15 +417,24 @@ export async function transcribeAudio(
 /**
  * Test OpenAI connection
  */
-export async function testOpenAIConnection(): Promise<boolean> {
+export async function testOpenAIConnection(apiKeyOverride?: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
   try {
-    const response = await callGPT4([
-      { role: 'user', content: 'Hello, respond with "OK" if you can read this.' }
-    ], { maxTokens: 10 });
-    
-    return response.toLowerCase().includes('ok');
+    const { getOpenAiApiKey } = await import('../db_ai_settings');
+    const apiKey = apiKeyOverride || await getOpenAiApiKey() || ENV.openaiApiKey;
+    if (!apiKey || apiKey.length > 512 || !/^sk-[A-Za-z0-9_-]+$/.test(apiKey)) return false;
+    const response = await fetch(`${OPENAI_API_URL}/models`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+      redirect: 'error',
+    });
+    return response.ok;
   } catch (error) {
     console.error('OpenAI connection test failed:', error);
     return false;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

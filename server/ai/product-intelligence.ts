@@ -59,7 +59,12 @@ export async function searchProducts(params: {
 
     // If no results, use AI to find similar products
     if (results.length === 0 && allProducts.length > 0) {
-      return await aiAssistedSearch(allProducts, query, params.limit || 10);
+      return await aiAssistedSearch(
+        allProducts,
+        query,
+        params.limit || 10,
+        params.merchantId,
+      );
     }
 
     return results;
@@ -75,7 +80,8 @@ export async function searchProducts(params: {
 async function aiAssistedSearch(
   products: Array<any>,
   query: string,
-  limit: number
+  limit: number,
+  merchantId: number,
 ): Promise<Array<any>> {
   try {
     const productList = products.map((p, i) => 
@@ -97,6 +103,8 @@ ${productList}
       { role: 'system', content: 'أنت خبير في مطابقة احتياجات العملاء مع المنتجات. أجب بصيغة JSON فقط.' },
       { role: 'user', content: prompt },
     ], {
+      merchantId,
+      taskType: 'sari.product.search',
       temperature: 0.3,
       maxTokens: 200,
     });
@@ -169,6 +177,8 @@ ${productList}
       { role: 'system', content: 'أنت خبير في اقتراح المنتجات المناسبة للعملاء. أجب بصيغة JSON فقط.' },
       { role: 'user', content: prompt },
     ], {
+      merchantId: params.merchantId,
+      taskType: 'sari.product.suggestions',
       temperature: 0.5,
       maxTokens: 300,
     });

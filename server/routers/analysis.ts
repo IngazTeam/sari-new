@@ -105,10 +105,10 @@ export const analysisRouter = router({
 
         if (siteType === 'ecommerce') {
           // E-commerce: use existing multi-strategy extraction (API → JSON-LD → HTML → AI)
-          products = await extractProducts(input.websiteUrl, html, homeText);
+          products = await extractProducts(input.websiteUrl, html, homeText, merchant.id);
           // If API/HTML found nothing, fall back to AI
           if (products.length === 0 && allText.length >= 100) {
-            const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
+            const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType, merchant.id);
             products = aiResult.products;
             faqs = aiResult.faqs;
             companyInfo = aiResult.companyInfo;
@@ -120,7 +120,7 @@ export const analysisRouter = router({
           }
         } else {
           // Non-ecommerce: always use AI extraction from all crawled content
-          const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
+          const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType, merchant.id);
           products = aiResult.products;
           faqs = aiResult.faqs;
           companyInfo = aiResult.companyInfo;
@@ -481,7 +481,8 @@ export const analysisRouter = router({
         const products = await extractProducts(
           input.websiteUrl,
           html,
-          text
+          text,
+          merchantId,
         );
 
         // Save products to database

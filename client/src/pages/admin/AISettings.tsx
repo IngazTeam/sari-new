@@ -35,16 +35,17 @@ export default function AISettings() {
   const { data: dailyUsage } = trpc.aiSettings.getDailyUsage.useQuery({ days: 30 });
   const { data: topMerchants } = trpc.aiSettings.getTopMerchants.useQuery();
   const { data: recentLogs } = trpc.aiSettings.getRecentLogs.useQuery({ limit: 20 });
+  const usesZahyPi = settings?.textGenerationProvider === "zahypi";
 
   // Sync from server settings
   useEffect(() => {
-    if (settings?.model) {
+    if (!usesZahyPi && settings?.model) {
       setSelectedModel(settings.model);
     }
     if (settings?.alertEmail) {
       setAlertEmail(settings.alertEmail);
     }
-  }, [settings?.model, settings?.alertEmail]);
+  }, [settings?.model, settings?.alertEmail, usesZahyPi]);
 
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
@@ -87,7 +88,8 @@ export default function AISettings() {
   });
 
   const handleSaveSettings = () => {
-    const data: Record<string, any> = { model: selectedModel };
+    const data: Record<string, any> = {};
+    if (!usesZahyPi) data.model = selectedModel;
     if (apiKey.trim()) data.openaiApiKey = apiKey.trim();
     if (alertEmail.trim()) {
       data.alertEmail = alertEmail.trim();
@@ -125,7 +127,11 @@ export default function AISettings() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">{t('aISettings.auto_0')}</h1>
-          <p className="text-sm text-muted-foreground">{t('aISettings.auto_1')}</p>
+          <p className="text-sm text-muted-foreground">
+            {usesZahyPi
+              ? "توليد النص عبر ZahyPi؛ OpenAI مخصص حاليًا للصوت والتضمين"
+              : t('aISettings.auto_1')}
+          </p>
         </div>
       </div>
 
@@ -165,6 +171,9 @@ export default function AISettings() {
               <span>{t('aISettings.auto_5')}</span>
             </div>
             <p className="text-2xl font-bold">{formatCost(monthStats?.totalCost || 0)}</p>
+            {usesZahyPi && (
+              <p className="mt-1 text-[11px] text-muted-foreground">تكلفة OpenAI فقط؛ تكلفة ZahyPi غير متاحة</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -174,9 +183,9 @@ export default function AISettings() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <HeartPulse className="h-5 w-5" />
-            مراقبة حالة OpenAI
+            مراقبة OpenAI للصوت والتضمين
           </CardTitle>
-          <CardDescription>فحص تلقائي كل 15 دقيقة مع تنبيه بالبريد عند الفشل</CardDescription>
+            <CardDescription>فحص غير توليدي لصلاحية خدمة OpenAI الداعمة كل 15 دقيقة</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -228,16 +237,32 @@ export default function AISettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />{t('aISettings.auto_6')}</CardTitle>
-            <CardDescription>{t('aISettings.auto_7')}</CardDescription>
+            <CardDescription>
+              {usesZahyPi
+                ? "مفتاح OpenAI للصوت والتضمين فقط؛ إعداد ZahyPi مُدار من بيئة الخادم"
+                : t('aISettings.auto_7')}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {usesZahyPi && (
+              <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium">توليد النص عبر ZahyPi</p>
+                  <p className="text-xs text-muted-foreground">
+                    النموذج: {settings?.textGenerationModel || "غير محدد"} — الاعتماد لا يُعرض أو يُعدّل من المتصفح
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Current Key Status */}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               {settings?.hasKey ? (
                 <>
                   <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium">{t('aISettings.auto_8')}</p>
+                    <p className="text-sm font-medium">مفتاح OpenAI الداعم مُفعّل</p>
                     <p className="text-xs text-muted-foreground font-mono">{settings.openaiApiKey}</p>
                   </div>
                 </>
@@ -245,8 +270,8 @@ export default function AISettings() {
                 <>
                   <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-amber-600">{t('aISettings.auto_9')}</p>
-                    <p className="text-xs text-muted-foreground">{t('aISettings.auto_10')}</p>
+                    <p className="text-sm font-medium text-amber-600">مفتاح OpenAI الداعم غير معدّ</p>
+                    <p className="text-xs text-muted-foreground">الصوت والتضمين لن يعملا حتى إعداد المفتاح</p>
                   </div>
                 </>
               )}
@@ -254,7 +279,7 @@ export default function AISettings() {
 
             {/* API Key Input */}
             <div className="space-y-2">
-              <Label htmlFor="api-key">{t('aISettings.auto_11')}</Label>
+              <Label htmlFor="api-key">مفتاح OpenAI جديد للصوت والتضمين</Label>
               <div className="relative">
                 <Input
                   id="api-key"
@@ -268,6 +293,8 @@ export default function AISettings() {
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
+                  aria-label={showKey ? "إخفاء مفتاح OpenAI" : "إظهار مفتاح OpenAI"}
+                  aria-pressed={showKey}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -276,19 +303,21 @@ export default function AISettings() {
             </div>
 
             {/* Model Selection */}
-            <div className="space-y-2">
-              <Label>{t('aISettings.auto_12')}</Label>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gpt-4o-mini">{t('aISettings.auto_13')}</SelectItem>
-                  <SelectItem value="gpt-4o">{t('aISettings.auto_14')}</SelectItem>
-                  <SelectItem value="gpt-4-turbo">{t('aISettings.auto_15')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {!usesZahyPi && (
+              <div className="space-y-2">
+                <Label>{t('aISettings.auto_12')}</Label>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o-mini">{t('aISettings.auto_13')}</SelectItem>
+                    <SelectItem value="gpt-4o">{t('aISettings.auto_14')}</SelectItem>
+                    <SelectItem value="gpt-4-turbo">{t('aISettings.auto_15')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* ═══════ Alert Email ═══════ */}
             <div className="space-y-2">
@@ -358,7 +387,7 @@ export default function AISettings() {
                 ) : (
                   <RefreshCw className="h-4 w-4 ml-2" />
                 )}
-                اختبار الاتصال
+                اختبار OpenAI الداعم
               </Button>
             </div>
           </CardContent>

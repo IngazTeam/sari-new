@@ -76,6 +76,7 @@ ${staff.map((s) => `- ${s.name} (${s.specialization})`).join("\n")}
 أرجع JSON فقط بدون أي نص إضافي.`;
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },

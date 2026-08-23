@@ -90,7 +90,7 @@ export async function generateMerchantInsights(merchantId: number): Promise<AiIn
     }
 
     // 2. Generate insights via GPT
-    const insights = await gptInterpret(signals);
+    const insights = await gptInterpret(signals, merchantId);
 
     // 3. Cache (with LRU eviction)
     if (insightsCache.size >= MAX_CACHE_SIZE) {
@@ -187,7 +187,7 @@ async function collectSignals(merchantId: number): Promise<MerchantSignals> {
 /**
  * GPT Layer — Interpret signals into actionable insights
  */
-async function gptInterpret(signals: MerchantSignals): Promise<AiInsight[]> {
+async function gptInterpret(signals: MerchantSignals, merchantId: number): Promise<AiInsight[]> {
   const messages: ChatMessage[] = [
     {
       role: 'system',
@@ -229,6 +229,8 @@ ${JSON.stringify({
   ];
 
   const response = await callGPT4(messages, {
+    merchantId,
+    taskType: 'sari.insights',
     model: 'gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 800,
