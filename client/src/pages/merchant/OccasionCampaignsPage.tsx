@@ -1,8 +1,4 @@
-// @ts-nocheck
-
-import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +19,7 @@ const OCCASION_EMOJIS: Record<string, string> = {
 };
 
 export default function OccasionCampaignsPage() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const { t, i18n } = useTranslation();
 
   // Occasion names - inside component where t() is available
   const OCCASION_NAMES: Record<string, string> = {
@@ -36,19 +31,10 @@ export default function OccasionCampaignsPage() {
     hijri_new_year: t('occasionCampaignsPagePage.text44'),
   };
 
-  // Get merchant
-  const { data: merchant } = trpc.merchants.getCurrent.useQuery();
-
-  const { data: campaigns = [], refetch: refetchCampaigns } = trpc.occasionCampaigns.list.useQuery(
-    { merchantId: merchant?.id || 0 },
-    { enabled: !!merchant }
-  );
+  const { data: campaigns = [], refetch: refetchCampaigns } = trpc.occasionCampaigns.list.useQuery();
 
   // Get statistics
-  const { data: stats } = trpc.occasionCampaigns.getStats.useQuery(
-    { merchantId: merchant?.id || 0 },
-    { enabled: !!merchant }
-  );
+  const { data: stats, refetch: refetchStats } = trpc.occasionCampaigns.getStats.useQuery();
 
   // Get upcoming occasions
   const { data: upcomingOccasions = [] } = trpc.occasionCampaigns.getUpcoming.useQuery();
@@ -59,18 +45,27 @@ export default function OccasionCampaignsPage() {
       toast.success(t('toast.common.msg1'));
       refetchCampaigns();
     },
-    onError: (error: any) => {
+    onError: error => {
       toast.error(error.message);
     },
+  });
+
+  const createMutation = trpc.occasionCampaigns.create.useMutation({
+    onSuccess: () => {
+      toast.success(t('occasionCampaignsPagePage.text52'));
+      void refetchCampaigns();
+      void refetchStats();
+    },
+    onError: error => toast.error(error.message),
   });
 
   const handleToggle = (campaignId: number, enabled: boolean) => {
     toggleMutation.mutate({ campaignId, enabled });
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: string | Date | null) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('ar-SA', {
+    return new Date(date).toLocaleDateString(i18n.resolvedLanguage || 'ar-SA', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -79,11 +74,18 @@ export default function OccasionCampaignsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'sent':
+      case 'completed':
         return (
           <Badge variant="default" className="bg-green-600">
             <CheckCircle2 className="h-3 w-3 ml-1" />
             {t('occasionCampaignsPagePage.text29')}
+          </Badge>
+        );
+      case 'sending':
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 ml-1" />
+            {t('occasionCampaignsPagePage.text51')}
           </Badge>
         );
       case 'pending':
@@ -131,7 +133,7 @@ export default function OccasionCampaignsPage() {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.sentCampaigns || 0}</div>
+            <div className="text-2xl font-bold">{stats?.completedCampaigns || 0}</div>
           </CardContent>
         </Card>
 
@@ -141,7 +143,7 @@ export default function OccasionCampaignsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalRecipients || 0}</div>
+            <div className="text-2xl font-bold">{stats?.acceptedRecipients || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -165,28 +167,56 @@ export default function OccasionCampaignsPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingOccasions.map((occasion) => (
-                <Card key={occasion.type} className="border-2">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="text-2xl">{OCCASION_EMOJIS[occasion.type]}</span>
-                      {occasion.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text5')}</span>
-                        <span className="font-medium">{formatDate(new Date(occasion.date))}</span>
+              {upcomingOccasions.map((occasion) => {
+                const existing = campaigns.find(campaign => (
+                  campaign.occasionType === occasion.type && campaign.year === occasion.year
+                ));
+                return (
+                  <Card key={`${occasion.type}-${occasion.year}`} className="border-2">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <span className="text-2xl">{OCCASION_EMOJIS[occasion.type]}</span>
+                        {OCCASION_NAMES[occasion.type]}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text5')}</span>
+                          <span className="font-medium">{formatDate(new Date(occasion.date))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text6')}</span>
+                          <Badge variant="outline">
+                            {t('occasionCampaignsPagePage.text7', { days: occasion.daysUntil })}
+                          </Badge>
+                        </div>
+                        <div className="pt-2">
+                          {existing ? (
+                            <Badge variant={existing.enabled === 1 ? 'default' : 'outline'}>
+                              {existing.enabled === 1
+                                ? t('occasionCampaignsPagePage.text53')
+                                : t('occasionCampaignsPagePage.text54')}
+                            </Badge>
+                          ) : (
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              disabled={createMutation.isPending}
+                              onClick={() => createMutation.mutate({
+                                occasionType: occasion.type,
+                                year: occasion.year,
+                              })}
+                            >
+                              {t('occasionCampaignsPagePage.text50')}
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text6')}</span>
-                        <Badge variant="outline">{occasion.daysUntil} يوم</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -244,15 +274,13 @@ export default function OccasionCampaignsPage() {
                       )}
                     </TableCell>
                     <TableCell>{campaign.recipientCount}</TableCell>
-                    // @ts-ignore
                     <TableCell className="text-sm">{formatDate(campaign.sentAt)}</TableCell>
                     <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                     <TableCell>
                       <Switch
-                        // @ts-ignore
-                        checked={campaign.enabled}
+                        checked={campaign.enabled === 1}
                         onCheckedChange={(checked) => handleToggle(campaign.id, checked)}
-                        disabled={campaign.status === 'sent' || toggleMutation.isPending}
+                        disabled={campaign.status !== 'pending' || toggleMutation.isPending}
                       />
                     </TableCell>
                   </TableRow>

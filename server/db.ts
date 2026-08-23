@@ -2879,7 +2879,8 @@ export async function updateOccasionCampaign(id: number, data: Partial<InsertOcc
 }
 
 /**
- * Mark occasion campaign as sent
+ * Legacy compatibility helper: mark occasion processing completed. The count
+ * represents provider acceptance, not delivery or reading.
  */
 export async function markOccasionCampaignSent(id: number, recipientCount: number): Promise<void> {
   const db = await getDb();
@@ -2888,7 +2889,7 @@ export async function markOccasionCampaignSent(id: number, recipientCount: numbe
   await db
     .update(occasionCampaigns)
     .set({
-      status: 'sent',
+      status: 'completed',
       sentAt: formatDateForDB(new Date()),
       recipientCount,
     })
@@ -2906,21 +2907,48 @@ export async function getEnabledOccasionCampaigns(): Promise<OccasionCampaign[]>
 }
 
 /**
+ * Return only campaigns the merchant explicitly enabled and which have not
+ * entered the canonical delivery state machine yet.
+ */
+export async function getDispatchableOccasionCampaigns(
+  occasionType: string,
+  year: number,
+  limit = 100,
+  afterId = 0,
+): Promise<OccasionCampaign[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+  return db
+    .select()
+    .from(occasionCampaigns)
+    .where(and(
+      eq(occasionCampaigns.occasionType, occasionType as OccasionCampaign['occasionType']),
+      eq(occasionCampaigns.year, year),
+      eq(occasionCampaigns.enabled, 1),
+      eq(occasionCampaigns.status, 'pending'),
+      gt(occasionCampaigns.id, Math.max(0, Math.trunc(afterId))),
+    ))
+    .orderBy(occasionCampaigns.id)
+    .limit(safeLimit);
+}
+
+/**
  * Get occasion campaigns statistics for a merchant
  */
 export async function getOccasionCampaignsStats(merchantId: number) {
   const db = await getDb();
-  if (!db) return { totalCampaigns: 0, sentCampaigns: 0, totalRecipients: 0 };
+  if (!db) return { totalCampaigns: 0, completedCampaigns: 0, acceptedRecipients: 0 };
 
   const campaigns = await getOccasionCampaignsByMerchantId(merchantId);
 
-  const sentCampaigns = campaigns.filter((c) => c.status === 'sent');
-  const totalRecipients = sentCampaigns.reduce((sum, c) => sum + c.recipientCount, 0);
+  const completedCampaigns = campaigns.filter((campaign) => campaign.status === 'completed');
+  const acceptedRecipients = campaigns.reduce((sum, campaign) => sum + campaign.recipientCount, 0);
 
   return {
     totalCampaigns: campaigns.length,
-    sentCampaigns: sentCampaigns.length,
-    totalRecipients,
+    completedCampaigns: completedCampaigns.length,
+    acceptedRecipients,
   };
 }
 

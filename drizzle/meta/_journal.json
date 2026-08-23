@@ -309,6 +309,13 @@
       "when": 1787713200000,
       "tag": "0043_campaign_delivery_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1787716800000,
+      "tag": "0044_occasion_campaign_outbox",
+      "breakpoints": true
     }
   ]
 }

@@ -56,6 +56,7 @@ import { sariBrainRouter } from "./routers-sari-brain";
 import { salesPipelineRouter } from "./routers-sales-pipeline";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
 import { campaignsRouter } from "./routers-campaigns";
+import { occasionCampaignsRouter } from "./routers-occasion-campaigns";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { aiDirectivesRouter } from "./routers-ai-directives";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
@@ -93,7 +94,6 @@ import {
   createGoogleIntegration,
   createMessage,
   createNotification,
-  createOccasionCampaign,
   createPlan,
   createPlanChangeLog,
   createProduct,
@@ -187,10 +187,6 @@ import {
   getNewKeywords,
   getNotificationTemplateById,
   getNotificationTemplatesByMerchantId,
-  getOccasionCampaignById,
-  getOccasionCampaignByTypeAndYear,
-  getOccasionCampaignsByMerchantId,
-  getOccasionCampaignsStats,
   getOrCreatePersonalitySettings,
   getOrderById,
   getOrderNotificationsByMerchantId,
@@ -272,7 +268,6 @@ import {
   updateKeywordStatus,
   updateMerchant,
   updateNotificationTemplate,
-  updateOccasionCampaign,
   updateOrderStatus,
   updatePlan,
   updateQuickResponse,
@@ -2916,100 +2911,8 @@ export const appRouter = router({
       }),
   }),
 
-  // Occasion Campaigns Management
-  occasionCampaigns: router({
-    // List occasion campaigns for merchant
-    list: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return await getOccasionCampaignsByMerchantId(input.merchantId);
-      }),
-
-    // Get statistics
-    getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return await getOccasionCampaignsStats(input.merchantId);
-      }),
-
-    // Get upcoming occasions
-    getUpcoming: protectedProcedure.query(async () => {
-      const { getUpcomingOccasions } = await import('./automation/occasion-campaigns');
-      return getUpcomingOccasions();
-    }),
-
-    // Toggle campaign enabled status
-    toggle: protectedProcedure
-      .input(z.object({ campaignId: z.number(), enabled: z.boolean() }))
-      .mutation(async ({ input, ctx }) => {
-        const campaign = await getOccasionCampaignById(input.campaignId);
-        if (!campaign) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
-        }
-
-        const merchant = await getMerchantById(campaign.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        await updateOccasionCampaign(input.campaignId, {
-          enabled: input.enabled ? 1 : 0,
-        });
-
-        return { success: true };
-      }),
-
-    // Create occasion campaign manually
-    create: protectedProcedure
-      .input(
-        z.object({
-          merchantId: z.number(),
-          occasionType: z.enum(['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'new_year', 'hijri_new_year']),
-          discountPercentage: z.number().min(5).max(50),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        const year = new Date().getFullYear();
-
-        // Check if campaign already exists
-        const existing = await getOccasionCampaignByTypeAndYear(
-          input.merchantId,
-          input.occasionType,
-          year
-        );
-
-        if (existing) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already exists for this occasion' });
-        }
-
-        // Create campaign
-        const campaign = await createOccasionCampaign({
-          merchantId: input.merchantId,
-          occasionType: input.occasionType,
-          year,
-          enabled: 1,
-          discountPercentage: input.discountPercentage,
-          status: 'pending',
-        });
-
-        return campaign;
-      }),
-  }),
+  // Canonical occasion router: tenant scope comes only from the session.
+  occasionCampaigns: occasionCampaignsRouter,
 
   // Advanced Analytics
   analytics: router({

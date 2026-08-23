@@ -1,15 +1,14 @@
 /**
  * Occasion Campaigns Cron Job
  * 
- * Runs daily at 9:00 AM to check for special occasions
- * and send promotional campaigns automatically.
+ * Runs daily at 9:00 AM to admit merchant-enabled occasion campaigns to the
+ * durable delivery outbox. It never opts a merchant into marketing.
  */
 
 import { checkAndSendOccasionCampaigns } from '../automation/occasion-campaigns';
 
 /**
- * Main cron job function
- * Should be scheduled to run daily at 9:00 AM
+ * Main cron admission function, scheduled daily at 9:00 AM.
  */
 export async function runOccasionCampaignsCron() {
   console.log('[Cron] Starting occasion campaigns check...');

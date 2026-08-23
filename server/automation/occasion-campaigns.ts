@@ -1,31 +1,31 @@
 /**
- * Occasion Campaigns Automation System
- * 
- * Automatically detects special occasions (Ramadan, Eid, National Day, etc.)
- * and sends promotional campaigns with discount codes to customers.
+ * Occasion campaigns are opt-in definitions. The daily job only admits an
+ * already-enabled definition to the canonical campaign outbox; it never
+ * creates or enables marketing on behalf of a merchant and never calls a
+ * provider directly.
  */
 
+import { randomBytes } from 'node:crypto';
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import {
-  createDiscountCode,
-  createOccasionCampaign,
-  getAllMerchants,
+  getActiveSubscriptionByMerchantId,
   getConversationsByMerchantId,
+  getDispatchableOccasionCampaigns,
   getMerchantById,
-  getOccasionCampaignByTypeAndYear,
-  getWhatsappConnectionByMerchantId,
-  markOccasionCampaignSent,
-  updateOccasionCampaign,
+  getPool,
+  getPrimaryWhatsAppInstance,
 } from '../db';
-import { sendTextMessage } from '../whatsapp';
+import { assertRuntimeSchema } from '../db/schema-readiness';
+import {
+  CampaignDispatchConflictError,
+  completeCampaignWithoutRecipients,
+  enqueueCampaignDeliveries,
+} from './campaign-delivery-outbox';
 import {
   filterCampaignRecipients,
-  hasActiveCampaignConsent,
   normalizeCampaignPhone,
-  trackCampaignSend,
-  withCampaignOptOutNotice,
 } from './campaign-guard';
 
-// Occasion types
 export type OccasionType =
   | 'ramadan'
   | 'eid_fitr'
@@ -34,120 +34,153 @@ export type OccasionType =
   | 'new_year'
   | 'hijri_new_year';
 
-// Occasion dates (Hijri dates are approximate and should be adjusted yearly)
-const OCCASION_DATES: Record<OccasionType, { start: string; end: string; discountPercent: number }> = {
-  ramadan: { start: '03-01', end: '03-29', discountPercent: 20 }, // Approximate Ramadan dates
-  eid_fitr: { start: '03-30', end: '04-03', discountPercent: 25 }, // Eid Al-Fitr (4 days)
-  eid_adha: { start: '06-15', end: '06-19', discountPercent: 25 }, // Eid Al-Adha (approximate)
-  national_day: { start: '09-23', end: '09-23', discountPercent: 23 }, // Saudi National Day
-  new_year: { start: '01-01', end: '01-01', discountPercent: 15 }, // Gregorian New Year
-  hijri_new_year: { start: '07-19', end: '07-19', discountPercent: 15 }, // Hijri New Year (approximate)
+type OccasionDefinition = {
+  name: string;
+  discountPercent: number;
 };
 
-// Occasion names in Arabic
-const OCCASION_NAMES: Record<OccasionType, string> = {
-  ramadan: 'رمضان المبارك',
-  eid_fitr: 'عيد الفطر المبارك',
-  eid_adha: 'عيد الأضحى المبارك',
-  national_day: 'اليوم الوطني السعودي',
-  new_year: 'رأس السنة الميلادية',
-  hijri_new_year: 'رأس السنة الهجرية',
+export type DetectedOccasion = OccasionDefinition & {
+  type: OccasionType;
+  year: number;
 };
 
-/**
- * Detect current occasion based on today's date
- */
-export function detectCurrentOccasion(): { type: OccasionType; name: string; discountPercent: number } | null {
-  const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${month}-${day}`;
+export type UpcomingOccasion = DetectedOccasion & {
+  date: string;
+  daysUntil: number;
+};
 
-  for (const [type, dates] of Object.entries(OCCASION_DATES)) {
-    if (isDateInRange(todayStr, dates.start, dates.end)) {
-      return {
-        type: type as OccasionType,
-        name: OCCASION_NAMES[type as OccasionType],
-        discountPercent: dates.discountPercent,
-      };
+const RIYADH_TIMEZONE = 'Asia/Riyadh';
+const DAY_MS = 24 * 60 * 60 * 1_000;
+const MAX_CALENDAR_SCAN_DAYS = 370;
+
+const OCCASIONS: Record<OccasionType, OccasionDefinition> = {
+  ramadan: { name: 'رمضان المبارك', discountPercent: 20 },
+  eid_fitr: { name: 'عيد الفطر المبارك', discountPercent: 25 },
+  eid_adha: { name: 'عيد الأضحى المبارك', discountPercent: 25 },
+  national_day: { name: 'اليوم الوطني السعودي', discountPercent: 23 },
+  new_year: { name: 'رأس السنة الميلادية', discountPercent: 15 },
+  hijri_new_year: { name: 'رأس السنة الهجرية', discountPercent: 15 },
+};
+
+const OCCASION_PREFIXES: Record<OccasionType, string> = {
+  ramadan: 'RAMADAN',
+  eid_fitr: 'EIDFITR',
+  eid_adha: 'EIDADHA',
+  national_day: 'NATIONAL',
+  new_year: 'NEWYEAR',
+  hijri_new_year: 'HIJRI',
+};
+
+const gregorianFormatter = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', {
+  timeZone: RIYADH_TIMEZONE,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+});
+
+const ummAlQuraFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', {
+  timeZone: RIYADH_TIMEZONE,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+});
+
+function calendarParts(formatter: Intl.DateTimeFormat, date: Date): { year: number; month: number; day: number } {
+  const values = Object.fromEntries(
+    formatter.formatToParts(date)
+      .filter(part => part.type === 'year' || part.type === 'month' || part.type === 'day')
+      .map(part => [part.type, Number(part.value)]),
+  );
+  if (![values.year, values.month, values.day].every(Number.isSafeInteger)) {
+    throw new Error('The runtime does not support the required Saudi calendar');
+  }
+  return { year: values.year, month: values.month, day: values.day };
+}
+
+function riyadhGregorianParts(date: Date) {
+  return calendarParts(gregorianFormatter, date);
+}
+
+function riyadhDateKey(date: Date): string {
+  const { year, month, day } = riyadhGregorianParts(date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function riyadhNoon(date: Date): Date {
+  const { year, month, day } = riyadhGregorianParts(date);
+  return new Date(Date.UTC(year, month - 1, day, 9, 0, 0));
+}
+
+export function getOccasionDiscountPercentage(type: OccasionType): number {
+  return OCCASIONS[type].discountPercent;
+}
+
+/** Detect every matching fixed/lunar occasion; two calendars may overlap. */
+export function detectCurrentOccasions(at: Date = new Date()): DetectedOccasion[] {
+  const gregorian = riyadhGregorianParts(at);
+  const types: OccasionType[] = [];
+  if (gregorian.month === 9 && gregorian.day === 23) types.push('national_day');
+  if (gregorian.month === 1 && gregorian.day === 1) types.push('new_year');
+
+  const hijri = calendarParts(ummAlQuraFormatter, at);
+  if (hijri.month === 9) types.push('ramadan');
+  else if (hijri.month === 10 && hijri.day >= 1 && hijri.day <= 4) types.push('eid_fitr');
+  else if (hijri.month === 12 && hijri.day >= 10 && hijri.day <= 13) types.push('eid_adha');
+  else if (hijri.month === 1 && hijri.day === 1) types.push('hijri_new_year');
+
+  return types.map(type => ({ type, year: gregorian.year, ...OCCASIONS[type] }));
+}
+
+/** Compatibility helper for callers that need only the primary match. */
+export function detectCurrentOccasion(at: Date = new Date()): DetectedOccasion | null {
+  return detectCurrentOccasions(at)[0] ?? null;
+}
+
+/** Return the next start of every supported occasion within the next year. */
+export function getUpcomingOccasions(at: Date = new Date()): UpcomingOccasion[] {
+  const start = riyadhNoon(at);
+  const upcoming = new Map<OccasionType, UpcomingOccasion>();
+
+  for (let offset = 0; offset <= MAX_CALENDAR_SCAN_DAYS && upcoming.size < 6; offset += 1) {
+    const cursor = new Date(start.getTime() + (offset * DAY_MS));
+    const previousTypes = new Set(
+      detectCurrentOccasions(new Date(cursor.getTime() - DAY_MS)).map(item => item.type),
+    );
+    for (const current of detectCurrentOccasions(cursor)) {
+      if (upcoming.has(current.type) || previousTypes.has(current.type)) continue;
+      upcoming.set(current.type, {
+        ...current,
+        date: riyadhDateKey(cursor),
+        daysUntil: offset,
+      });
     }
   }
 
-  return null;
+  return Array.from(upcoming.values()).sort((left, right) => left.daysUntil - right.daysUntil);
 }
 
-/**
- * Check if a date is within a range
- */
-function isDateInRange(date: string, start: string, end: string): boolean {
-  return date >= start && date <= end;
+function getOccasionEndDate(type: OccasionType, at: Date): Date {
+  let cursor = riyadhNoon(at);
+  for (let offset = 1; offset <= 40; offset += 1) {
+    const next = new Date(cursor.getTime() + DAY_MS);
+    if (!detectCurrentOccasions(next).some(occasion => occasion.type === type)) {
+      const { year, month, day } = riyadhGregorianParts(next);
+      // Riyadh has a fixed UTC+3 offset and no daylight-saving transition.
+      return new Date(Date.UTC(year, month - 1, day, -3, 0, 0) - 1);
+    }
+    cursor = next;
+  }
+  throw new Error('Unable to determine occasion end date');
 }
 
-/**
- * Generate a unique discount code for an occasion
- */
-export async function generateOccasionDiscount(
-  merchantId: number,
-  occasionType: OccasionType,
-  discountPercent: number
-): Promise<string> {
-  const prefix = getOccasionPrefix(occasionType);
-  const year = new Date().getFullYear();
-  const { randomInt } = await import('node:crypto');
-  const random = randomInt(10000).toString().padStart(4, '0');
-  const code = `${prefix}${year}${random}`;
-
-  // Create discount code in database
-  await createDiscountCode({
-    merchantId,
-    code,
-    type: 'percentage',
-    value: discountPercent,
-    maxUses: 100, // Limited to 100 uses per occasion
-    isActive: 1,
-    expiresAt: getOccasionEndDate(occasionType) as any,
-  });
-
-  return code;
-}
-
-/**
- * Get occasion prefix for discount code
- */
-function getOccasionPrefix(occasionType: OccasionType): string {
-  const prefixes: Record<OccasionType, string> = {
-    ramadan: 'RAMADAN',
-    eid_fitr: 'EIDFITR',
-    eid_adha: 'EIDADHA',
-    national_day: 'NATIONAL',
-    new_year: 'NEWYEAR',
-    hijri_new_year: 'HIJRI',
-  };
-  return prefixes[occasionType];
-}
-
-/**
- * Get occasion end date
- */
-function getOccasionEndDate(occasionType: OccasionType): Date {
-  const dates = OCCASION_DATES[occasionType];
-  const [month, day] = dates.end.split('-').map(Number);
-  const year = new Date().getFullYear();
-  return new Date(year, month - 1, day, 23, 59, 59);
-}
-
-/**
- * Generate occasion campaign message
- */
 export function generateOccasionMessage(
   occasionName: string,
   customerName: string | null,
   discountCode: string,
   discountPercent: number,
-  businessName: string
+  businessName: string,
 ): string {
   const greeting = customerName ? `مرحباً ${customerName}!` : 'مرحباً!';
-
   return `${greeting}
 
 🎉 *${occasionName}* 🎉
@@ -165,217 +198,192 @@ export function generateOccasionMessage(
 نتمنى لك ${occasionName} سعيداً! 🌙✨`;
 }
 
-/**
- * Send occasion campaign to all customers
- */
-export async function sendOccasionCampaign(
-  merchantId: number,
-  occasionType: OccasionType,
-  occasionName: string,
-  discountCode: string,
-  discountPercent: number
-): Promise<number> {
-  // Get merchant info
-  const merchant = await getMerchantById(merchantId);
-  if (!merchant) {
-    console.error(`Merchant ${merchantId} not found`);
-    return 0;
-  }
+type LockedOccasionRow = RowDataPacket & {
+  id: number;
+  merchantId: number;
+  campaignId: number | null;
+  occasionType: OccasionType;
+  year: number;
+  enabled: number;
+  discountPercentage: number;
+  status: string;
+  businessName: string;
+  merchantStatus: string;
+};
 
-  // Get WhatsApp connection
-  const connection = await getWhatsappConnectionByMerchantId(merchantId);
-  if (!connection || connection.status !== 'connected') {
-    console.error(`WhatsApp not connected for merchant ${merchantId}`);
-    return 0;
-  }
-
-  // Get all unique customer phones from conversations
-  const conversations = await getConversationsByMerchantId(merchantId);
-  const phoneSet = new Set<string>();
-  conversations.forEach(c => phoneSet.add(c.customerPhone));
-  const guard = await filterCampaignRecipients(merchantId, Array.from(phoneSet));
-  const uniquePhones = guard.allowed;
-
-  let successCount = 0;
-
-  // Send message to each customer
-  for (const phone of uniquePhones) {
-    if (!(await hasActiveCampaignConsent(merchantId, phone))) continue;
+async function createUniqueDiscountCode(
+  connection: PoolConnection,
+  row: LockedOccasionRow,
+  expiresAt: Date,
+): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const suffix = randomBytes(3).toString('hex').toUpperCase();
+    const code = `${OCCASION_PREFIXES[row.occasionType]}${row.year}${row.id.toString(36).toUpperCase()}${suffix}`;
     try {
-      // Get customer name from conversation
-      const conversation = conversations.find(c => normalizeCampaignPhone(c.customerPhone) === phone);
-      const customerName = conversation?.customerName || null;
-
-      // Generate message
-      const message = withCampaignOptOutNotice(generateOccasionMessage(
-        occasionName,
-        customerName,
-        discountCode,
-        discountPercent,
-        merchant.businessName
-      ));
-
-      // Send via WhatsApp
-      const result = await sendTextMessage(phone, message);
-
-      if (result.success) {
-        successCount++;
-        trackCampaignSend(merchantId, 1);
-      }
-
-      // Random delay between 3-6 seconds to avoid spam detection
-      const delay = Math.floor(Math.random() * 3000) + 3000;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await connection.execute(
+        `INSERT INTO discount_codes
+          (merchantId, code, type, value, minOrderAmount, maxUses, usedCount, expiresAt, isActive, is_auto_generated, createdAt, updatedAt)
+         VALUES (?, ?, 'percentage', ?, 0, 2000, 0, ?, 1, 1, NOW(), NOW())`,
+        [row.merchantId, code, row.discountPercentage, expiresAt],
+      );
+      return code;
     } catch (error) {
-      console.error('Failed to send an occasion campaign message:', error);
+      if ((error as { code?: string }).code !== 'ER_DUP_ENTRY') throw error;
     }
   }
+  throw new Error('Unable to allocate a unique occasion discount code');
+}
 
-  return successCount;
+async function ensureOccasionOutboxSchema(): Promise<void> {
+  await assertRuntimeSchema('occasion campaign outbox', [
+    { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'occasionType', 'year', 'enabled', 'status'] },
+    { table: 'campaign_delivery_outbox', columns: ['campaign_id', 'merchant_id', 'status', 'available_at'] },
+    { table: 'discount_codes', columns: ['merchantId', 'code', 'is_auto_generated'] },
+  ]);
 }
 
 /**
- * Check and send occasion campaigns for all merchants
- * This function should be called daily via Cron Job
+ * Create one canonical campaign envelope and discount under an occasion-row
+ * lock. Concurrent cron processes converge on the same campaign id.
  */
-export async function checkAndSendOccasionCampaigns(): Promise<void> {
-  console.log('[Occasion Campaigns] Checking for current occasion...');
+export async function prepareOccasionCampaignEnvelope(input: {
+  occasionCampaignId: number;
+  merchantId: number;
+  occasion: DetectedOccasion;
+  now?: Date;
+}): Promise<{ campaignId: number; created: boolean }> {
+  await ensureOccasionOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<LockedOccasionRow[]>(
+      `SELECT oc.id, oc.merchantId, oc.campaign_id AS campaignId, oc.occasionType,
+              oc.year, oc.enabled, oc.discountPercentage, oc.status,
+              m.businessName, m.status AS merchantStatus
+         FROM occasion_campaigns oc
+         INNER JOIN merchants m ON m.id = oc.merchantId
+        WHERE oc.id = ? AND oc.merchantId = ? LIMIT 1 FOR UPDATE`,
+      [input.occasionCampaignId, input.merchantId],
+    );
+    const row = rows[0];
+    if (!row
+      || Number(row.enabled) !== 1
+      || row.status !== 'pending'
+      || row.merchantStatus !== 'active'
+      || row.occasionType !== input.occasion.type
+      || Number(row.year) !== input.occasion.year
+      || Number(row.discountPercentage) < 5
+      || Number(row.discountPercentage) > 50) {
+      throw new CampaignDispatchConflictError();
+    }
 
-  // Detect current occasion
-  const occasion = detectCurrentOccasion();
-  if (!occasion) {
-    console.log('[Occasion Campaigns] No occasion detected for today');
+    if (row.campaignId) {
+      const [campaigns] = await connection.execute<RowDataPacket[]>(
+        `SELECT id FROM campaigns WHERE id = ? AND merchantId = ? LIMIT 1`,
+        [row.campaignId, row.merchantId],
+      );
+      if (!campaigns[0]) throw new CampaignDispatchConflictError();
+      await connection.commit();
+      return { campaignId: Number(row.campaignId), created: false };
+    }
+
+    const now = input.now ?? new Date();
+    const discountCode = await createUniqueDiscountCode(
+      connection,
+      row,
+      getOccasionEndDate(row.occasionType, now),
+    );
+    const message = generateOccasionMessage(
+      input.occasion.name,
+      null,
+      discountCode,
+      Number(row.discountPercentage),
+      row.businessName,
+    );
+    const [inserted] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO campaigns
+        (merchantId, name, message, imageUrl, targetAudience, status, scheduledAt, sentCount, totalRecipients, createdAt, updatedAt)
+       VALUES (?, ?, ?, NULL, '{}', 'draft', NULL, 0, 0, NOW(), NOW())`,
+      [row.merchantId, `مناسبة: ${input.occasion.name} ${row.year}`, message],
+    );
+    const campaignId = Number(inserted.insertId);
+    const [linked] = await connection.execute<ResultSetHeader>(
+      `UPDATE occasion_campaigns
+          SET campaign_id = ?, discountCode = ?, updatedAt = NOW()
+        WHERE id = ? AND merchantId = ? AND status = 'pending' AND campaign_id IS NULL`,
+      [campaignId, discountCode, row.id, row.merchantId],
+    );
+    if (linked.affectedRows !== 1) throw new CampaignDispatchConflictError();
+    await connection.commit();
+    return { campaignId, created: true };
+  } catch (error) {
+    try { await connection.rollback(); } catch { /* preserve original */ }
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+async function admitOccasionCampaign(
+  occasionCampaignId: number,
+  merchantId: number,
+  occasion: DetectedOccasion,
+  now: Date,
+): Promise<void> {
+  const merchant = await getMerchantById(merchantId);
+  if (!merchant || merchant.status !== 'active') return;
+  const instance = await getPrimaryWhatsAppInstance(merchantId);
+  if (!instance || instance.status !== 'active') return;
+  if (!await getActiveSubscriptionByMerchantId(merchantId)) return;
+
+  const { campaignId } = await prepareOccasionCampaignEnvelope({
+    occasionCampaignId,
+    merchantId,
+    occasion,
+    now,
+  });
+  const conversations = await getConversationsByMerchantId(merchantId);
+  const unique = new Map<string, { customerId: number; phone: string }>();
+  for (const conversation of conversations) {
+    const phone = normalizeCampaignPhone(conversation.customerPhone);
+    if (phone && !unique.has(phone)) unique.set(phone, { customerId: conversation.id, phone });
+  }
+  const guard = await filterCampaignRecipients(merchantId, Array.from(unique.keys()));
+  const recipients = guard.allowed.flatMap(phone => {
+    const recipient = unique.get(phone);
+    return recipient ? [recipient] : [];
+  });
+
+  if (recipients.length === 0) {
+    await completeCampaignWithoutRecipients(campaignId, merchantId);
     return;
   }
-
-  console.log(`[Occasion Campaigns] Detected: ${occasion.name} (${occasion.type})`);
-
-  // Get all active merchants
-  const merchants = await getAllMerchants();
-  const activeMerchants = merchants.filter(m => m.status === 'active');
-
-  console.log(`[Occasion Campaigns] Processing ${activeMerchants.length} active merchants`);
-
-  const year = new Date().getFullYear();
-
-  for (const merchant of activeMerchants) {
-    try {
-      // Check if campaign already sent this year
-      const existingCampaign = await getOccasionCampaignByTypeAndYear(
-        merchant.id,
-        occasion.type,
-        year
-      );
-
-      if (existingCampaign) {
-        if (existingCampaign.status === 'sent') {
-          console.log(`[Occasion Campaigns] Campaign already sent for merchant ${merchant.id}`);
-          continue;
-        }
-
-        if (!existingCampaign.enabled) {
-          console.log(`[Occasion Campaigns] Campaign disabled for merchant ${merchant.id}`);
-          continue;
-        }
-      }
-
-      // Create campaign record if doesn't exist
-      let campaignId: number;
-      if (!existingCampaign) {
-        const newCampaign = await createOccasionCampaign({
-          merchantId: merchant.id,
-          occasionType: occasion.type,
-          year,
-          enabled: 1,
-          discountPercentage: occasion.discountPercent,
-          status: 'pending',
-        });
-
-        if (!newCampaign) {
-          console.error(`Failed to create campaign for merchant ${merchant.id}`);
-          continue;
-        }
-
-        campaignId = newCampaign.id;
-      } else {
-        campaignId = existingCampaign.id;
-      }
-
-      // Generate discount code
-      const discountCode = await generateOccasionDiscount(
-        merchant.id,
-        occasion.type,
-        occasion.discountPercent
-      );
-
-      // Update campaign with discount code
-      await updateOccasionCampaign(campaignId, {
-        discountCode,
-      });
-
-      // Send campaign
-      console.log(`[Occasion Campaigns] Sending campaign for merchant ${merchant.id}...`);
-      const recipientCount = await sendOccasionCampaign(
-        merchant.id,
-        occasion.type,
-        occasion.name,
-        discountCode,
-        occasion.discountPercent
-      );
-
-      // Mark as sent
-      await markOccasionCampaignSent(campaignId, recipientCount);
-
-      console.log(`[Occasion Campaigns] Campaign sent to ${recipientCount} customers for merchant ${merchant.id}`);
-    } catch (error) {
-      console.error(`[Occasion Campaigns] Error processing merchant ${merchant.id}:`, error);
-
-      // Mark campaign as failed
-      const existingCampaign = await getOccasionCampaignByTypeAndYear(
-        merchant.id,
-        occasion.type,
-        year
-      );
-
-      if (existingCampaign) {
-        await updateOccasionCampaign(existingCampaign.id, {
-          status: 'failed',
-        });
-      }
-    }
-  }
-
-  console.log('[Occasion Campaigns] Finished processing all merchants');
+  await enqueueCampaignDeliveries({ campaignId, merchantId, recipients });
 }
 
-/**
- * Get upcoming occasions (next 30 days)
- */
-export function getUpcomingOccasions(): Array<{ type: OccasionType; name: string; date: string; daysUntil: number }> {
-  const today = new Date();
-  const upcoming: Array<{ type: OccasionType; name: string; date: string; daysUntil: number }> = [];
-
-  for (const [type, dates] of Object.entries(OCCASION_DATES)) {
-    const [month, day] = dates.start.split('-').map(Number);
-    const year = today.getFullYear();
-    const occasionDate = new Date(year, month - 1, day);
-
-    // If occasion has passed this year, check next year
-    if (occasionDate < today) {
-      occasionDate.setFullYear(year + 1);
-    }
-
-    const daysUntil = Math.ceil((occasionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysUntil <= 30 && daysUntil >= 0) {
-      upcoming.push({
-        type: type as OccasionType,
-        name: OCCASION_NAMES[type as OccasionType],
-        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        daysUntil,
-      });
+/** Daily admission job. It processes only explicit, enabled merchant choices. */
+export async function checkAndSendOccasionCampaigns(at: Date = new Date()): Promise<void> {
+  const occasions = detectCurrentOccasions(at);
+  if (occasions.length === 0) return;
+  await ensureOccasionOutboxSchema();
+  for (const occasion of occasions) {
+    let afterId = 0;
+    for (let page = 0; page < 100; page += 1) {
+      const campaigns = await getDispatchableOccasionCampaigns(occasion.type, occasion.year, 100, afterId);
+      if (campaigns.length === 0) break;
+      for (const campaign of campaigns) {
+        afterId = Math.max(afterId, campaign.id);
+        try {
+          await admitOccasionCampaign(campaign.id, campaign.merchantId, occasion, at);
+        } catch (error) {
+          if (!(error instanceof CampaignDispatchConflictError)) {
+            console.error('[Occasion Campaigns] Admission deferred after a safe failure');
+          }
+        }
+      }
+      if (campaigns.length < 100) break;
     }
   }
-
-  return upcoming.sort((a, b) => a.daysUntil - b.daysUntil);
 }

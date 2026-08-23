@@ -127,6 +127,7 @@ async function ensureCampaignOutboxSchema(): Promise<void> {
     },
     { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
     { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
+    { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'status', 'recipientCount', 'sentAt'] },
   ]);
 }
 
@@ -222,6 +223,12 @@ export async function enqueueCampaignDeliveries(input: {
     if (Number((claimed as { affectedRows?: number }).affectedRows || 0) !== 1) {
       throw new CampaignDispatchConflictError();
     }
+    await connection.execute(
+      `UPDATE occasion_campaigns
+          SET status = 'sending', updatedAt = NOW()
+        WHERE campaign_id = ? AND merchantId = ? AND status = 'pending'`,
+      [input.campaignId, input.merchantId],
+    );
     await connection.commit();
     return { queued: recipients.length };
   } catch (error) {
@@ -236,13 +243,32 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
   await ensureCampaignOutboxSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
-  const [result] = await pool.execute(
-    `UPDATE campaigns
-        SET status = 'completed', totalRecipients = 0, sentCount = 0, updatedAt = NOW()
-      WHERE id = ? AND merchantId = ? AND status IN ('draft', 'scheduled')`,
-    [campaignId, merchantId],
-  );
-  return Number((result as { affectedRows?: number }).affectedRows || 0) === 1;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.execute(
+      `UPDATE campaigns
+          SET status = 'completed', totalRecipients = 0, sentCount = 0, updatedAt = NOW()
+        WHERE id = ? AND merchantId = ? AND status IN ('draft', 'scheduled')`,
+      [campaignId, merchantId],
+    );
+    const completed = Number((result as { affectedRows?: number }).affectedRows || 0) === 1;
+    if (completed) {
+      await connection.execute(
+        `UPDATE occasion_campaigns
+            SET status = 'completed', recipientCount = 0, sentAt = NOW(), updatedAt = NOW()
+          WHERE campaign_id = ? AND merchantId = ? AND status = 'pending'`,
+        [campaignId, merchantId],
+      );
+    }
+    await connection.commit();
+    return completed;
+  } catch (error) {
+    try { await connection.rollback(); } catch { /* preserve original */ }
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 function deliveryIdempotencyKey(row: Pick<CampaignDeliveryRow, 'campaign_id' | 'id'>): string {
@@ -263,27 +289,47 @@ async function readDeliveryLedger(row: CampaignDeliveryRow): Promise<DeliveryLed
 async function reconcileCampaignState(campaignId: number): Promise<void> {
   const pool = await getPool();
   if (!pool) return;
-  const [rows] = await pool.execute<CampaignState[]>(
-    `SELECT COUNT(*) AS total,
-            SUM(status = 'sent') AS sent,
-            SUM(status IN ('pending','processing','failed')) AS active,
-            SUM(status = 'suppressed') AS suppressed,
-            SUM(status = 'manual_review') AS manualReview
-       FROM campaign_delivery_outbox WHERE campaign_id = ?`,
-    [campaignId],
-  );
-  const state = rows[0];
-  const total = Number(state?.total || 0);
-  if (total === 0) return;
-  const sent = Number(state?.sent || 0);
-  const active = Number(state?.active || 0);
-  const manualReview = Number(state?.manualReview || 0);
-  const status = active > 0 ? 'sending' : manualReview > 0 ? 'failed' : 'completed';
-  await pool.execute(
-    `UPDATE campaigns SET sentCount = ?, totalRecipients = ?, status = ?, updatedAt = NOW()
-      WHERE id = ? AND status IN ('sending', 'failed')`,
-    [sent, total, status, campaignId],
-  );
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<CampaignState[]>(
+      `SELECT COUNT(*) AS total,
+              SUM(status = 'sent') AS sent,
+              SUM(status IN ('pending','processing','failed')) AS active,
+              SUM(status = 'suppressed') AS suppressed,
+              SUM(status = 'manual_review') AS manualReview
+         FROM campaign_delivery_outbox WHERE campaign_id = ?`,
+      [campaignId],
+    );
+    const state = rows[0];
+    const total = Number(state?.total || 0);
+    if (total === 0) {
+      await connection.rollback();
+      return;
+    }
+    const sent = Number(state?.sent || 0);
+    const active = Number(state?.active || 0);
+    const manualReview = Number(state?.manualReview || 0);
+    const status = active > 0 ? 'sending' : manualReview > 0 ? 'failed' : 'completed';
+    await connection.execute(
+      `UPDATE campaigns SET sentCount = ?, totalRecipients = ?, status = ?, updatedAt = NOW()
+        WHERE id = ? AND status IN ('sending', 'failed')`,
+      [sent, total, status, campaignId],
+    );
+    await connection.execute(
+      `UPDATE occasion_campaigns
+          SET recipientCount = ?, status = ?,
+              sentAt = IF(? = 'sending', NULL, COALESCE(sentAt, NOW())), updatedAt = NOW()
+        WHERE campaign_id = ? AND status IN ('pending','sending','failed')`,
+      [sent, status, status, campaignId],
+    );
+    await connection.commit();
+  } catch (error) {
+    try { await connection.rollback(); } catch { /* preserve original */ }
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 async function reconcileActiveCampaigns(): Promise<void> {

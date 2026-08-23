@@ -394,6 +394,7 @@ export const notifications = mysqlTable("notifications", {
 export const occasionCampaigns = mysqlTable("occasion_campaigns", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	campaignId: int("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
 	occasionType: mysqlEnum(['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'new_year', 'hijri_new_year']).notNull(),
 	year: int().notNull(),
 	enabled: tinyint().default(1).notNull(),
@@ -402,10 +403,16 @@ export const occasionCampaigns = mysqlTable("occasion_campaigns", {
 	messageTemplate: text(),
 	sentAt: timestamp({ mode: 'string' }),
 	recipientCount: int().default(0).notNull(),
-	status: mysqlEnum(['pending', 'sent', 'failed']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'sending', 'completed', 'failed']).default('pending').notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+}, table => [
+	uniqueIndex("occasion_campaigns_merchant_type_year_unique").on(table.merchantId, table.occasionType, table.year),
+	uniqueIndex("occasion_campaigns_campaign_unique").on(table.campaignId),
+	index("occasion_campaigns_dispatch_idx").on(table.status, table.enabled, table.occasionType, table.year, table.id),
+	check("occasion_campaigns_enabled_check", sql`${table.enabled} IN (0, 1)`),
+	check("occasion_campaigns_discount_check", sql`${table.discountPercentage} >= 5 AND ${table.discountPercentage} <= 50`),
+]);
 
 export const orderNotifications = mysqlTable("order_notifications", {
 	id: int().autoincrement().primaryKey(),

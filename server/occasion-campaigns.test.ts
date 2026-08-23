@@ -6,8 +6,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import * as db from './db';
 import {
   detectCurrentOccasion,
-  generateOccasionDiscount,
   generateOccasionMessage,
+  getOccasionDiscountPercentage,
   getUpcomingOccasions,
 } from './automation/occasion-campaigns';
 
@@ -42,41 +42,11 @@ describe('Occasion Campaigns System', () => {
     });
   });
 
-  describe('generateOccasionDiscount', () => {
-    it('should create a discount code for Ramadan', async () => {
-      const code = await generateOccasionDiscount(testMerchantId, 'ramadan', 20);
-
-      expect(code).toBeDefined();
-      expect(code).toMatch(/^RAMADAN\d{8}$/);
-
-      // Verify discount code exists in database
-      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
-      expect(discount).toBeDefined();
-      expect(discount?.type).toBe('percentage');
-      expect(discount?.value).toBe(20);
-      expect(discount?.maxUses).toBe(100);
-    });
-
-    it('should create a discount code for National Day', async () => {
-      const code = await generateOccasionDiscount(testMerchantId, 'national_day', 23);
-
-      expect(code).toBeDefined();
-      expect(code).toMatch(/^NATIONAL\d{8}$/);
-
-      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
-      expect(discount).toBeDefined();
-      expect(discount?.value).toBe(23);
-    });
-
-    it('should create a discount code for Eid Fitr', async () => {
-      const code = await generateOccasionDiscount(testMerchantId, 'eid_fitr', 25);
-
-      expect(code).toBeDefined();
-      expect(code).toMatch(/^EIDFITR\d{8}$/);
-
-      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
-      expect(discount).toBeDefined();
-      expect(discount?.value).toBe(25);
+  describe('occasion discount policy', () => {
+    it('keeps recommended discounts server-owned', () => {
+      expect(getOccasionDiscountPercentage('ramadan')).toBe(20);
+      expect(getOccasionDiscountPercentage('national_day')).toBe(23);
+      expect(getOccasionDiscountPercentage('eid_fitr')).toBe(25);
     });
   });
 
@@ -115,7 +85,7 @@ describe('Occasion Campaigns System', () => {
   });
 
   describe('getUpcomingOccasions', () => {
-    it('should return upcoming occasions within 30 days', () => {
+    it('should return upcoming occasions within the bounded annual scan', () => {
       const upcoming = getUpcomingOccasions();
 
       expect(Array.isArray(upcoming)).toBe(true);
@@ -127,7 +97,8 @@ describe('Occasion Campaigns System', () => {
         expect(occasion).toHaveProperty('date');
         expect(occasion).toHaveProperty('daysUntil');
         expect(occasion.daysUntil).toBeGreaterThanOrEqual(0);
-        expect(occasion.daysUntil).toBeLessThanOrEqual(30);
+        expect(occasion.daysUntil).toBeLessThanOrEqual(370);
+        expect(occasion).toHaveProperty('year');
       });
 
       // Should be sorted by daysUntil
@@ -143,7 +114,7 @@ describe('Occasion Campaigns System', () => {
         merchantId: testMerchantId,
         occasionType: 'ramadan',
         year: 2024,
-        enabled: true,
+        enabled: 1,
         discountPercentage: 20,
         status: 'pending',
       });
@@ -181,18 +152,18 @@ describe('Occasion Campaigns System', () => {
         merchantId: testMerchantId,
         occasionType: 'eid_fitr',
         year: 2024,
-        enabled: true,
+        enabled: 1,
         discountPercentage: 25,
         status: 'pending',
       });
 
       await db.updateOccasionCampaign(campaign!.id, {
-        enabled: false,
+        enabled: 0,
         discountCode: 'EIDFITR20241234',
       });
 
       const updated = await db.getOccasionCampaignById(campaign!.id);
-      expect(updated?.enabled).toBe(false);
+      expect(updated?.enabled).toBe(0);
       expect(updated?.discountCode).toBe('EIDFITR20241234');
     });
 
@@ -201,7 +172,7 @@ describe('Occasion Campaigns System', () => {
         merchantId: testMerchantId,
         occasionType: 'national_day',
         year: 2024,
-        enabled: true,
+        enabled: 1,
         discountPercentage: 23,
         status: 'pending',
       });
@@ -209,7 +180,7 @@ describe('Occasion Campaigns System', () => {
       await db.markOccasionCampaignSent(campaign!.id, 150);
 
       const updated = await db.getOccasionCampaignById(campaign!.id);
-      expect(updated?.status).toBe('sent');
+      expect(updated?.status).toBe('completed');
       expect(updated?.recipientCount).toBe(150);
       expect(updated?.sentAt).toBeDefined();
     });
@@ -219,8 +190,8 @@ describe('Occasion Campaigns System', () => {
 
       expect(stats).toBeDefined();
       expect(stats).toHaveProperty('totalCampaigns');
-      expect(stats).toHaveProperty('sentCampaigns');
-      expect(stats).toHaveProperty('totalRecipients');
+      expect(stats).toHaveProperty('completedCampaigns');
+      expect(stats).toHaveProperty('acceptedRecipients');
       expect(stats.totalCampaigns).toBeGreaterThan(0);
     });
   });
