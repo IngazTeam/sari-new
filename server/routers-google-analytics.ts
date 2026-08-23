@@ -12,21 +12,60 @@ function assertAdmin(role: string) {
   }
 }
 
+const MAX_SERVICE_ACCOUNT_JSON_BYTES = 64 * 1024;
+const serviceAccountJsonSchema = z.string()
+  .trim()
+  .min(1, "ملف Service Account JSON مطلوب")
+  .max(MAX_SERVICE_ACCOUNT_JSON_BYTES, "ملف Service Account JSON أكبر من الحد المسموح")
+  .superRefine((value, ctx) => {
+    if (Buffer.byteLength(value, "utf8") > MAX_SERVICE_ACCOUNT_JSON_BYTES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        maximum: MAX_SERVICE_ACCOUNT_JSON_BYTES,
+        inclusive: true,
+        origin: "string",
+        message: "ملف Service Account JSON أكبر من الحد المسموح",
+      });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(value) as Record<string, unknown>;
+      const validEmail = typeof parsed.client_email === "string"
+        && /^[^\s@]+@[^\s@]+\.iam\.gserviceaccount\.com$/.test(parsed.client_email);
+      const validPrivateKey = typeof parsed.private_key === "string"
+        && parsed.private_key.startsWith("-----BEGIN PRIVATE KEY-----")
+        && parsed.private_key.includes("-----END PRIVATE KEY-----");
+
+      if (parsed.type !== "service_account" || !validEmail || !validPrivateKey) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "ملف Service Account JSON غير صالح",
+        });
+      }
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ملف Service Account JSON غير صالح",
+      });
+    }
+  });
+
 export const googleAnalyticsRouter = router({
   // Get GA config (masked service account)
   getConfig: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
-    const { getAiSettings } = await import("./db_ai_settings");
-    const settings = await getAiSettings();
+    const { getGoogleAnalyticsSettings } = await import("./db_ai_settings");
+    const settings = await getGoogleAnalyticsSettings();
 
     return {
-      propertyId: settings?.gaPropertyId || "",
-      hasCredentials: !!settings?.gaServiceAccountJson,
-      isEnabled: settings?.gaEnabled ?? false,
-      serviceAccountEmail: settings?.gaServiceAccountJson
+      propertyId: settings?.propertyId || "",
+      hasCredentials: !!settings?.serviceAccountJson,
+      isEnabled: settings?.isEnabled ?? false,
+      serviceAccountEmail: settings?.serviceAccountJson
         ? (() => {
             try {
-              return JSON.parse(settings.gaServiceAccountJson).client_email || "";
+              return JSON.parse(settings.serviceAccountJson).client_email || "";
             } catch { return ""; }
           })()
         : "",
@@ -36,8 +75,8 @@ export const googleAnalyticsRouter = router({
   // Update GA configuration
   updateConfig: protectedProcedure
     .input(z.object({
-      propertyId: z.string().regex(/^\d+$/, "Property ID يجب أن يكون رقماً").optional(),
-      serviceAccountJson: z.string().optional(),
+      propertyId: z.string().regex(/^\d{1,15}$/, "Property ID يجب أن يكون من 1 إلى 15 رقماً").optional(),
+      serviceAccountJson: serviceAccountJsonSchema.optional(),
       isEnabled: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -48,20 +87,8 @@ export const googleAnalyticsRouter = router({
       if (input.propertyId !== undefined) data.gaPropertyId = input.propertyId;
       if (input.isEnabled !== undefined) data.gaEnabled = input.isEnabled;
 
-      if (input.serviceAccountJson) {
-        // Validate JSON structure
-        try {
-          const parsed = JSON.parse(input.serviceAccountJson);
-          if (!parsed.client_email || !parsed.private_key) {
-            throw new Error("missing fields");
-          }
-          data.gaServiceAccountJson = input.serviceAccountJson;
-        } catch {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "ملف Service Account JSON غير صالح. تأكد من وجود client_email و private_key",
-          });
-        }
+      if (input.serviceAccountJson !== undefined) {
+        data.gaServiceAccountJson = input.serviceAccountJson;
       }
 
       await upsertAiSettings(data);
@@ -78,17 +105,17 @@ export const googleAnalyticsRouter = router({
   // Test GA connection
   testConnection: protectedProcedure.mutation(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
-    const { getAiSettings } = await import("./db_ai_settings");
-    const settings = await getAiSettings();
+    const { getGoogleAnalyticsSettings } = await import("./db_ai_settings");
+    const settings = await getGoogleAnalyticsSettings();
 
-    if (!settings?.gaPropertyId || !settings?.gaServiceAccountJson) {
+    if (!settings?.propertyId || !settings?.serviceAccountJson) {
       return { success: false, error: "أدخل Property ID و Service Account أولاً" };
     }
 
     const ga = await import("./services/google-analytics");
     return ga.testConnection({
-      propertyId: settings.gaPropertyId,
-      serviceAccountJson: settings.gaServiceAccountJson,
+      propertyId: settings.propertyId,
+      serviceAccountJson: settings.serviceAccountJson,
     });
   }),
 
@@ -167,14 +194,14 @@ export const googleAnalyticsRouter = router({
 
 /** Helper to get GA credentials from DB */
 async function getCredentials() {
-  const { getAiSettings } = await import("./db_ai_settings");
-  const settings = await getAiSettings();
-  if (!settings?.gaPropertyId || !settings?.gaServiceAccountJson || !settings?.gaEnabled) {
+  const { getGoogleAnalyticsSettings } = await import("./db_ai_settings");
+  const settings = await getGoogleAnalyticsSettings();
+  if (!settings?.propertyId || !settings?.serviceAccountJson || !settings?.isEnabled) {
     return null;
   }
   return {
-    propertyId: settings.gaPropertyId,
-    serviceAccountJson: settings.gaServiceAccountJson,
+    propertyId: settings.propertyId,
+    serviceAccountJson: settings.serviceAccountJson,
   };
 }
 

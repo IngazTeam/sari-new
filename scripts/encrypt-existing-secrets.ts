@@ -12,6 +12,7 @@ import {
   whatsappInstances,
   whatsappRequests,
 } from '../drizzle/schema';
+import { aiSettings } from '../drizzle/schema_ai_settings';
 import { closeDb, getDb } from '../server/db';
 import { encryptSecret, isEncryptedSecret } from '../server/security/secrets';
 
@@ -169,6 +170,25 @@ async function main() {
     }
     if (Object.keys(changes).length > 0) {
       await db.update(woocommerceSettings).set(changes).where(eq(woocommerceSettings.id, row.id));
+      updated++;
+    }
+  }
+
+  const aiSettingsRows = await db.select({
+    id: aiSettings.id,
+    openaiApiKey: aiSettings.openaiApiKey,
+    gaServiceAccountJson: aiSettings.gaServiceAccountJson,
+  }).from(aiSettings);
+  for (const row of aiSettingsRows) {
+    const changes: Record<string, string> = {};
+    if (row.openaiApiKey && !isEncryptedSecret(row.openaiApiKey)) {
+      changes.openaiApiKey = encryptSecret(row.openaiApiKey);
+    }
+    if (row.gaServiceAccountJson && !isEncryptedSecret(row.gaServiceAccountJson)) {
+      changes.gaServiceAccountJson = encryptSecret(row.gaServiceAccountJson);
+    }
+    if (Object.keys(changes).length > 0) {
+      await db.update(aiSettings).set(changes).where(eq(aiSettings.id, row.id));
       updated++;
     }
   }

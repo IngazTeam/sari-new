@@ -36,7 +36,16 @@ export const aiSettingsRouter = router({
     const usesZahyPi = zahyPiEnabled();
 
     return {
-      ...(settings ?? {}),
+      // Explicit response DTO: never spread the database record because it
+      // also contains the Google service-account private key.
+      model: settings?.model || "gpt-4o-mini",
+      whisperModel: settings?.whisperModel || "whisper-1",
+      isActive: settings?.isActive ?? true,
+      monthlyBudgetLimit: settings?.monthlyBudgetLimit ?? null,
+      alertEmail: settings?.alertEmail ?? null,
+      healthStatus: settings?.healthStatus || "ok",
+      lastHealthCheck: settings?.lastHealthCheck ?? null,
+      lastAlertSentAt: settings?.lastAlertSentAt ?? null,
       openaiApiKey: maskedKey,
       hasKey: Boolean(effectiveOpenAiKey),
       textGenerationProvider: usesZahyPi ? "zahypi" as const : "openai" as const,

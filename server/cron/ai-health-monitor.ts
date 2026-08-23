@@ -14,11 +14,11 @@ import { sendEmail } from '../_core/emailService';
 
 export async function checkOpenAiHealth(): Promise<{ ok: boolean; error?: string }> {
   try {
-    const { getAiSettings } = await import('../db_ai_settings');
+    const { getAiSettings, getOpenAiApiKey } = await import('../db_ai_settings');
     const settings = await getAiSettings();
 
     // Get the API key (DB → env fallback)
-    const apiKey = settings?.openaiApiKey || process.env.OPENAI_API_KEY || '';
+    const apiKey = await getOpenAiApiKey();
     if (!apiKey) {
       const result = { ok: false, error: 'لا يوجد مفتاح API' };
       await updateHealthStatus('failed', settings);

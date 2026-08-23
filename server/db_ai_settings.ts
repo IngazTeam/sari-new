@@ -3,6 +3,7 @@
  */
 import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { aiSettings, AiSettings, NewAiSettings, aiUsageLogs, NewAiUsageLog } from "../drizzle/schema_ai_settings";
+import { decryptSecret, encryptSecret } from "./security/secrets";
 
 // Re-use the singleton DB getter
 async function getDb() {
@@ -14,10 +15,26 @@ async function getDb() {
 // AI Settings CRUD
 // ============================================
 
-export async function getAiSettings(): Promise<AiSettings | undefined> {
+export type AiSettingsWithoutCredentials = Omit<AiSettings, "openaiApiKey" | "gaServiceAccountJson">;
+
+export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(aiSettings).limit(1);
+  const result = await db.select({
+    id: aiSettings.id,
+    model: aiSettings.model,
+    whisperModel: aiSettings.whisperModel,
+    isActive: aiSettings.isActive,
+    monthlyBudgetLimit: aiSettings.monthlyBudgetLimit,
+    gaPropertyId: aiSettings.gaPropertyId,
+    gaEnabled: aiSettings.gaEnabled,
+    alertEmail: aiSettings.alertEmail,
+    healthStatus: aiSettings.healthStatus,
+    lastHealthCheck: aiSettings.lastHealthCheck,
+    lastAlertSentAt: aiSettings.lastAlertSentAt,
+    createdAt: aiSettings.createdAt,
+    updatedAt: aiSettings.updatedAt,
+  }).from(aiSettings).limit(1);
   return result[0];
 }
 
@@ -25,11 +42,23 @@ export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<vo
   const db = await getDb();
   if (!db) return;
 
-  const existing = await getAiSettings();
-  if (existing) {
-    await db.update(aiSettings).set(data).where(eq(aiSettings.id, existing.id));
+  const protectedData: Partial<NewAiSettings> = {
+    ...data,
+    ...(data.openaiApiKey !== undefined
+      ? { openaiApiKey: encryptSecret(data.openaiApiKey) }
+      : {}),
+    ...(data.gaServiceAccountJson !== undefined
+      ? { gaServiceAccountJson: encryptSecret(data.gaServiceAccountJson) }
+      : {}),
+  };
+
+  // Only fetch the identifier here. A damaged legacy credential must not stop
+  // an administrator from replacing it with a valid encrypted value.
+  const existing = await db.select({ id: aiSettings.id }).from(aiSettings).limit(1);
+  if (existing[0]) {
+    await db.update(aiSettings).set(protectedData).where(eq(aiSettings.id, existing[0].id));
   } else {
-    await db.insert(aiSettings).values(data as NewAiSettings);
+    await db.insert(aiSettings).values(protectedData as NewAiSettings);
   }
 }
 
@@ -37,16 +66,52 @@ export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<vo
  * Get the OpenAI API key from DB, falling back to env var
  */
 export async function getOpenAiApiKey(): Promise<string> {
+  let record: { openaiApiKey: string | null; isActive: boolean } | undefined;
   try {
-    const settings = await getAiSettings();
-    if (settings?.openaiApiKey && settings.isActive) {
-      return settings.openaiApiKey;
+    const db = await getDb();
+    if (db) {
+      const result = await db.select({
+        openaiApiKey: aiSettings.openaiApiKey,
+        isActive: aiSettings.isActive,
+      }).from(aiSettings).limit(1);
+      record = result[0];
     }
   } catch (e) {
     console.warn("[AI Settings] Failed to fetch from DB, using env fallback:", e);
   }
+
+  // Keep authenticated-decryption outside the availability fallback. A DB
+  // outage may use the environment key, but tampered ciphertext must fail.
+  if (record?.openaiApiKey && record.isActive) {
+    return decryptSecret(record.openaiApiKey) || "";
+  }
+
   // Fallback to environment variable
   return process.env.OPENAI_API_KEY || "";
+}
+
+/**
+ * Read the Google credential only for the GA service boundary. General AI
+ * settings consumers never receive this private key, even encrypted.
+ */
+export async function getGoogleAnalyticsSettings(): Promise<{
+  propertyId: string | null;
+  serviceAccountJson: string | null;
+  isEnabled: boolean;
+} | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({
+    propertyId: aiSettings.gaPropertyId,
+    serviceAccountJson: aiSettings.gaServiceAccountJson,
+    isEnabled: aiSettings.gaEnabled,
+  }).from(aiSettings).limit(1);
+  const record = result[0];
+  if (!record) return undefined;
+  return {
+    ...record,
+    serviceAccountJson: decryptSecret(record.serviceAccountJson),
+  };
 }
 
 /**

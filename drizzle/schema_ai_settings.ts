@@ -7,14 +7,14 @@ import { merchants } from "./schema";
 // ============================================
 export const aiSettings = mysqlTable("ai_settings", {
   id: int("id").primaryKey().autoincrement(),
-  openaiApiKey: text("openai_api_key"), // Stored as-is; masked in frontend
+  openaiApiKey: text("openai_api_key"), // AES-GCM encrypted at the persistence boundary
   model: varchar("model", { length: 100 }).notNull().default("gpt-4o-mini"),
   whisperModel: varchar("whisper_model", { length: 100 }).notNull().default("whisper-1"),
   isActive: boolean("is_active").notNull().default(true),
   monthlyBudgetLimit: decimal("monthly_budget_limit", { precision: 10, scale: 2 }),
   // Google Analytics 4
   gaPropertyId: varchar("ga_property_id", { length: 50 }),
-  gaServiceAccountJson: text("ga_service_account_json"),
+  gaServiceAccountJson: text("ga_service_account_json"), // AES-GCM encrypted; contains a private key
   gaEnabled: boolean("ga_enabled").notNull().default(false),
   // Health Monitoring
   alertEmail: varchar("alert_email", { length: 320 }),
