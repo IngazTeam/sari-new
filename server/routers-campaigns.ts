@@ -163,8 +163,7 @@ export const campaignsRouter = router({
             imageUrl: z.string().url().optional(),
             targetAudience: z.string().optional(),
             scheduledAt: z.date().optional(),
-            status: z.enum(['draft', 'scheduled', 'sending', 'completed', 'failed']).optional(),
-        }))
+        }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -490,6 +489,42 @@ export const campaignsRouter = router({
                 logs,
                 stats,
             };
+        }),
+
+    // Timeline used by the merchant reports page. Delivery is intentionally
+    // equal to accepted sends until a provider delivery-receipt projection exists;
+    // read remains zero instead of presenting an invented engagement metric.
+    getTimelineData: protectedProcedure
+        .input(z.object({
+            days: z.number().int().min(1).max(365).default(30),
+        }).strict())
+        .query(async ({ input, ctx }) => {
+            const merchant = await getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const campaigns = await getCampaignsByMerchantId(merchant.id);
+            const dateMap = new Map<string, { sent: number; delivered: number; read: number }>();
+            const today = new Date();
+
+            for (let i = input.days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                dateMap.set(date.toISOString().split('T')[0], { sent: 0, delivered: 0, read: 0 });
+            }
+
+            for (const campaign of campaigns) {
+                if (campaign.status !== 'completed' || !campaign.createdAt) continue;
+                const date = new Date(campaign.createdAt).toISOString().split('T')[0];
+                const bucket = dateMap.get(date);
+                if (!bucket) continue;
+                const sent = Math.max(0, campaign.sentCount || 0);
+                bucket.sent += sent;
+                bucket.delivered += sent;
+            }
+
+            return Array.from(dateMap, ([date, values]) => ({ date, ...values }));
         }),
 
     // Filter customers for targeting (migrated from legacy router)
