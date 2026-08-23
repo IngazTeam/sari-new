@@ -113,8 +113,14 @@ export default function UploadProducts() {
     if (!file) return;
 
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
+    if (!['csv', 'xlsx'].includes(ext || '')) {
       toast.error(t('uploadProductsPage.invalidFileFormat'));
+      return;
+    }
+    const maxBytes = ext === 'csv' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error(t('errors.fileTooBig'));
+      event.target.value = '';
       return;
     }
     setSelectedFile(file);
@@ -145,6 +151,10 @@ export default function UploadProducts() {
   const handleSmartImport = async () => {
     if (!selectedFile) {
       toast.error(t('uploadProductsPage.selectFileFirst'));
+      return;
+    }
+    if (!selectedFile.name.toLowerCase().endsWith('.xlsx')) {
+      toast.error(t('uploadProductsPage.invalidFileFormat'));
       return;
     }
     const arrayBuffer = await selectedFile.arrayBuffer();
@@ -225,7 +235,7 @@ export default function UploadProducts() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,.xlsx"
                   onChange={handleFileSelect}
                   className="hidden"
                   id="file-upload"
@@ -260,7 +270,7 @@ export default function UploadProducts() {
                     <div className="flex gap-2 justify-center">
                       <Button
                         onClick={handleSmartImport}
-                        disabled={isUploading}
+                        disabled={isUploading || !selectedFile.name.toLowerCase().endsWith('.xlsx')}
                         className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 gap-2"
                       >
                         {smartImport.isPending ? (
@@ -309,7 +319,7 @@ export default function UploadProducts() {
               </div>
 
               {/* Auto-create Google Sheet checkbox */}
-              {selectedFile && !selectedFile.name.endsWith('.csv') && (
+              {selectedFile && !selectedFile.name.toLowerCase().endsWith('.csv') && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
                   <Checkbox
                     id="create-sheet"

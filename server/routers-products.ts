@@ -8,6 +8,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { reserveApiRateLimit } from './api/distributed-rate-limit';
+import {
+  UploadValidationError,
+  assertOfficeOpenXml,
+  decodeCanonicalBase64Upload,
+} from './security/upload-validation';
 import {
   createKnowledgeDoc,
   createProduct,
@@ -40,8 +46,40 @@ function sanitizeGptOutput(text: string): string {
         .trim();
 }
 
-// SEC-04: In-memory rate limit for smart import (per merchant)
-const smartImportRateLimit: Record<string, { count: number; resetAt: number }> = {};
+const MAX_SPREADSHEET_BYTES = 10 * 1024 * 1024;
+
+function decodeAndValidateSpreadsheet(fileBase64: string, fileName: string): Buffer {
+  if (!/\.xlsx$/i.test(fileName)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'يدعم هذا المسار ملفات XLSX فقط.' });
+  }
+  try {
+    const buffer = decodeCanonicalBase64Upload(fileBase64, MAX_SPREADSHEET_BYTES);
+    assertOfficeOpenXml(buffer, 'xlsx');
+    return buffer;
+  } catch (error) {
+    if (!(error instanceof UploadValidationError)) throw error;
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'ملف XLSX غير صالح أو يتجاوز حدود المعالجة الآمنة.' });
+  }
+}
+
+async function assertSpreadsheetImportRateLimit(
+  merchantId: number,
+  namespace: 'merchant_spreadsheet_import' | 'merchant_smart_import',
+  maxRequests: number,
+): Promise<void> {
+  const decision = await reserveApiRateLimit({
+    namespace,
+    identity: String(merchantId),
+    maxRequests,
+    windowMs: 60 * 60 * 1_000,
+  });
+  if (!decision.allowed) {
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'تم بلوغ حد استيراد الملفات مؤقتًا. حاول لاحقًا.',
+    });
+  }
+}
 
 // Header mapping: comprehensive support for Arabic/English column headers
 // Covers: products, courses, services, real-estate, food, general exports
@@ -717,6 +755,7 @@ export const productsRouter = router({
         .mutation(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_spreadsheet_import', 20);
 
             // FIX #7: Proper CSV parsing that handles quoted values with commas
             function parseCSVLine(line: string): string[] {
@@ -805,9 +844,11 @@ export const productsRouter = router({
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_spreadsheet_import', 20);
+            const buffer = decodeAndValidateSpreadsheet(input.fileBase64, input.fileName);
+
             const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
-            const buffer = Buffer.from(input.fileBase64, 'base64');
             // @ts-ignore
             await workbook.xlsx.load(buffer);
 
@@ -1084,23 +1125,12 @@ export const productsRouter = router({
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            // SEC-04: Rate limit — max 10 smart imports per hour per merchant
-            // (Using a simple in-memory counter; production should use Redis)
-            const now = Date.now();
-            const rateKey = `smartImport_${merchant.id}`;
-            if (!smartImportRateLimit[rateKey]) smartImportRateLimit[rateKey] = { count: 0, resetAt: now + 3600000 };
-            if (now > smartImportRateLimit[rateKey].resetAt) {
-                smartImportRateLimit[rateKey] = { count: 0, resetAt: now + 3600000 };
-            }
-            if (smartImportRateLimit[rateKey].count >= 10) {
-                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تجاوزت الحد الأقصى للاستيراد الذكي (10 مرات/ساعة). حاول لاحقاً.' });
-            }
-            smartImportRateLimit[rateKey].count++;
+            await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_smart_import', 10);
+            const buffer = decodeAndValidateSpreadsheet(input.fileBase64, input.fileName);
 
             // Step 1: Parse file content to raw text
             const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
-            const buffer = Buffer.from(input.fileBase64, 'base64');
             // @ts-ignore
             await workbook.xlsx.load(buffer);
 

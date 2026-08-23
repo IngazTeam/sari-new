@@ -16,6 +16,12 @@ import { router, protectedProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import crypto from 'node:crypto';
 import { getMerchantByUserId } from './db';
+import { reserveApiRateLimit } from './api/distributed-rate-limit';
+import {
+  UploadValidationError,
+  assertMediaSignature,
+  decodeCanonicalBase64Upload,
+} from './security/upload-validation';
 
 // ═══════════════════════════════════════════════════════════════
 // Constants
@@ -38,35 +44,9 @@ const MIME_TO_EXT: Record<string, string> = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// PEN-MEDIA-01 FIX: Magic bytes signatures for MIME validation
-// ═══════════════════════════════════════════════════════════════
-
-const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
-  'image/jpeg': [{ offset: 0, bytes: [0xFF, 0xD8, 0xFF] }],
-  'image/png':  [{ offset: 0, bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] }],
-  'image/webp': [{ offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] }], // RIFF header
-  'image/gif':  [
-    { offset: 0, bytes: [0x47, 0x49, 0x46, 0x38, 0x37, 0x61] }, // GIF87a
-    { offset: 0, bytes: [0x47, 0x49, 0x46, 0x38, 0x39, 0x61] }, // GIF89a
-  ],
-  'application/pdf': [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46] }], // %PDF
-};
-
-function validateMagicBytes(buffer: Buffer, declaredMime: string): boolean {
-  const signatures = MAGIC_BYTES[declaredMime];
-  if (!signatures) return false;
-
-  return signatures.some(sig => {
-    if (buffer.length < sig.offset + sig.bytes.length) return false;
-    return sig.bytes.every((byte, i) => buffer[sig.offset + i] === byte);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
 // PEN-MEDIA-03/04 FIX: Rate Limiting
 // ═══════════════════════════════════════════════════════════════
 
-const uploadRateLimit: Record<number, number> = {};
 const deleteRateLimit: Record<number, number> = {};
 
 function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number, label: string): void {
@@ -123,8 +103,18 @@ export const mediaRouter = router({
     .mutation(async ({ ctx, input }) => {
       const merchantId = await getMerchantId(ctx);
 
-      // PEN-MEDIA-03 FIX: Rate limit — max 1 upload per 3 seconds
-      checkRateLimit(uploadRateLimit, merchantId, 3_000, 'رفع ملف آخر');
+      const uploadLimit = await reserveApiRateLimit({
+        namespace: 'merchant_media_upload',
+        identity: String(merchantId),
+        maxRequests: 20,
+        windowMs: 60 * 60 * 1_000,
+      });
+      if (!uploadLimit.allowed) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: 'تم بلوغ حد رفع الوسائط مؤقتًا. حاول لاحقًا.',
+        });
+      }
 
       // SEC: MIME whitelist
       const normalizedMime = input.mimeType.toLowerCase().trim();
@@ -135,22 +125,16 @@ export const mediaRouter = router({
         });
       }
 
-      // Decode and validate size
-      const buffer = Buffer.from(input.fileBase64, 'base64');
-      if (buffer.length > MAX_FILE_SIZE_BYTES) {
-        const sizeMB = (buffer.length / (1024 * 1024)).toFixed(1);
+      let buffer: Buffer;
+      try {
+        buffer = decodeCanonicalBase64Upload(input.fileBase64, MAX_FILE_SIZE_BYTES);
+        assertMediaSignature(buffer, normalizedMime);
+      } catch (error) {
+        if (!(error instanceof UploadValidationError)) throw error;
+        console.warn(`[Media] Upload content rejected. merchant=${merchantId} reason=${error.reason}`);
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `حجم الملف كبير جداً (${sizeMB}MB). الحد الأقصى 5MB`,
-        });
-      }
-
-      // PEN-MEDIA-01 FIX: Validate magic bytes to prevent MIME spoofing
-      if (!validateMagicBytes(buffer, normalizedMime)) {
-        console.warn(`[Media] PEN-MEDIA-01: MIME spoofing attempt blocked. Declared: ${normalizedMime}, merchant: ${merchantId}`);
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'محتوى الملف لا يتطابق مع نوعه المعلن. يُرجى التأكد من صحة الملف.',
+          message: 'الملف غير صالح أو لا يتطابق مع نوعه المعلن.',
         });
       }
 

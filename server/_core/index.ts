@@ -33,6 +33,11 @@ import { startFollowUpJob } from "../jobs/followup-reminders";
 import { startSupervisorRecoveryJob } from "../jobs/supervisor-cron";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
+import { reserveApiRateLimit } from "../api/distributed-rate-limit";
+import {
+  UploadValidationError,
+  assertKnowledgeDocumentSignature,
+} from "../security/upload-validation";
 import { validateEnv } from "./validateEnv";
 import { applySecurityMiddleware, securityLogger } from "./security";
 import { logError } from "./logger";
@@ -240,14 +245,19 @@ async function startServer() {
   const multer = (await import('multer')).default;
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+      files: 1,
+      fields: 4,
+      parts: 5,
+      fieldSize: 8 * 1024,
+      headerPairs: 50,
+    },
     fileFilter: (_req: any, file: any, cb: any) => {
       const allowedMimes = [
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
       ];
       if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
@@ -257,7 +267,34 @@ async function startServer() {
     },
   });
 
-  app.post('/api/knowledge-docs/upload', apiLimiter, (req: any, res: any, next: any) => {
+  app.post('/api/knowledge-docs/upload', apiLimiter, async (req: any, res: any, next: any) => {
+    try {
+      // Authenticate and reserve the tenant budget before multer allocates any
+      // attacker-controlled file buffer.
+      const { resolveUser } = await import('./auth');
+      const user = await resolveUser(req);
+      if (!user) return res.status(401).json({ error: 'غير مصرح' });
+
+      const { getMerchantByUserId } = await import('../db');
+      const merchant = await getMerchantByUserId(user.id);
+      if (!merchant) return res.status(404).json({ error: 'التاجر غير موجود' });
+
+      const decision = await reserveApiRateLimit({
+        namespace: 'merchant_knowledge_upload',
+        identity: String(merchant.id),
+        maxRequests: 5,
+        windowMs: 60 * 60 * 1_000,
+      });
+      if (!decision.allowed) {
+        res.setHeader('Retry-After', String(Math.max(1, Math.ceil(decision.retryAfterMs / 1_000))));
+        return res.status(429).json({ error: 'تم بلوغ حد رفع مستندات المعرفة مؤقتًا. حاول لاحقًا.' });
+      }
+      req.uploadMerchant = merchant;
+      next();
+    } catch {
+      return res.status(503).json({ error: 'تعذر التحقق من جاهزية الرفع حاليًا.' });
+    }
+  }, (req: any, res: any, next: any) => {
     // SEC-04 FIX: Wrap multer to catch file size / type errors and return JSON
     upload.single('file')(req, res, (err: any) => {
       if (err) {
@@ -270,18 +307,10 @@ async function startServer() {
     });
   }, async (req: any, res: any) => {
     try {
-      // Auth check — extract user from session cookie
-      const { resolveUser } = await import('./auth');
-      const user = await resolveUser(req);
-      if (!user) {
-        return res.status(401).json({ error: 'غير مصرح' });
-      }
+      const merchant = req.uploadMerchant;
+      if (!merchant) return res.status(503).json({ error: 'تعذر التحقق من جاهزية الرفع حاليًا.' });
 
-      const { getMerchantByUserId, createKnowledgeDoc, updateKnowledgeDoc, getKnowledgeDocByMerchantId, deleteKnowledgeDocsByMerchantId } = await import('../db');
-      const merchant = await getMerchantByUserId(user.id);
-      if (!merchant) {
-        return res.status(404).json({ error: 'التاجر غير موجود' });
-      }
+      const { createKnowledgeDoc, updateKnowledgeDoc, getKnowledgeDocByMerchantId, deleteKnowledgeDocsByMerchantId } = await import('../db');
 
       if (!req.file) {
         return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
@@ -292,6 +321,13 @@ async function startServer() {
       const fileType = getFileTypeFromMime(file.mimetype);
       if (!fileType) {
         return res.status(400).json({ error: 'نوع الملف غير مدعوم' });
+      }
+      try {
+        assertKnowledgeDocumentSignature(file.buffer, fileType);
+      } catch (error) {
+        if (!(error instanceof UploadValidationError)) throw error;
+        console.warn(`[KnowledgeDocs] Upload content rejected. merchant=${merchant.id} reason=${error.reason}`);
+        return res.status(400).json({ error: 'الملف غير صالح أو لا يتطابق مع نوعه المعلن.' });
       }
 
       console.log(`[KnowledgeDocs] Upload started: merchant=${merchant.id}, size=${file.size}`);

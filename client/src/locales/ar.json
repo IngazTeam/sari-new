@@ -6777,7 +6777,7 @@
     "uploadCsvExcel": "رفع ملف CSV أو Excel",
     "uploadCsvExcelDesc": "اختر ملف CSV أو Excel يحتوي على بيانات منتجاتك",
     "selectExcelCsv": "اختر ملف Excel أو CSV",
-    "supportedFormats": "الصيغ المدعومة: .csv, .xlsx, .xls",
+    "supportedFormats": "الصيغ المدعومة: .csv (حتى 5MB)، .xlsx (حتى 10MB)",
     "chooseFile": "اختر ملف",
     "fileSize": "حجم الملف: {{size}} كيلوبايت",
     "importing": "جاري الاستيراد...",

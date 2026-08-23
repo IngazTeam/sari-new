@@ -158,16 +158,10 @@ function cleanAndTruncateText(raw: string): string {
  */
 export function getFileTypeFromMime(mimeType: string): 'pdf' | 'docx' | 'xlsx' | null {
   if (mimeType === 'application/pdf') return 'pdf';
-  if (
-    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    mimeType === 'application/msword'
-  ) {
+  if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     return 'docx';
   }
-  if (
-    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-    mimeType === 'application/vnd.ms-excel'
-  ) {
+  if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
     return 'xlsx';
   }
   return null;
