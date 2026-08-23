@@ -5,6 +5,8 @@ import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { aiSettings, AiSettings, NewAiSettings, aiUsageLogs, NewAiUsageLog } from "../drizzle/schema_ai_settings";
 import { decryptSecret, encryptSecret } from "./security/secrets";
 
+export const AI_SETTINGS_SINGLETON_ID = 1;
+
 // Re-use the singleton DB getter
 async function getDb() {
   const { getDb: getDbMain } = await import("./db");
@@ -34,7 +36,7 @@ export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | un
     lastAlertSentAt: aiSettings.lastAlertSentAt,
     createdAt: aiSettings.createdAt,
     updatedAt: aiSettings.updatedAt,
-  }).from(aiSettings).limit(1);
+  }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
   return result[0];
 }
 
@@ -52,14 +54,10 @@ export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<vo
       : {}),
   };
 
-  // Only fetch the identifier here. A damaged legacy credential must not stop
-  // an administrator from replacing it with a valid encrypted value.
-  const existing = await db.select({ id: aiSettings.id }).from(aiSettings).limit(1);
-  if (existing[0]) {
-    await db.update(aiSettings).set(protectedData).where(eq(aiSettings.id, existing[0].id));
-  } else {
-    await db.insert(aiSettings).values(protectedData as NewAiSettings);
-  }
+  if (Object.keys(protectedData).length === 0) return;
+  await db.insert(aiSettings)
+    .values({ ...protectedData, id: AI_SETTINGS_SINGLETON_ID } as NewAiSettings)
+    .onDuplicateKeyUpdate({ set: protectedData });
 }
 
 /**
@@ -73,7 +71,7 @@ export async function getOpenAiApiKey(): Promise<string> {
       const result = await db.select({
         openaiApiKey: aiSettings.openaiApiKey,
         isActive: aiSettings.isActive,
-      }).from(aiSettings).limit(1);
+      }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
       record = result[0];
     }
   } catch (e) {
@@ -105,7 +103,7 @@ export async function getGoogleAnalyticsSettings(): Promise<{
     propertyId: aiSettings.gaPropertyId,
     serviceAccountJson: aiSettings.gaServiceAccountJson,
     isEnabled: aiSettings.gaEnabled,
-  }).from(aiSettings).limit(1);
+  }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
   const record = result[0];
   if (!record) return undefined;
   return {

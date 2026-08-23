@@ -1,5 +1,5 @@
-import { mysqlTable, varchar, int, text, timestamp, boolean, decimal, mysqlEnum, index } from "drizzle-orm/mysql-core";
-import { InferSelectModel, InferInsertModel } from "drizzle-orm";
+import { mysqlTable, varchar, int, text, timestamp, boolean, decimal, mysqlEnum, index, check } from "drizzle-orm/mysql-core";
+import { InferSelectModel, InferInsertModel, sql } from "drizzle-orm";
 import { merchants } from "./schema";
 
 // ============================================
@@ -23,7 +23,9 @@ export const aiSettings = mysqlTable("ai_settings", {
   lastAlertSentAt: timestamp("last_alert_sent_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
+}, (table) => [
+  check("ai_settings_singleton_id_check", sql`${table.id} = 1`),
+]);
 
 export type AiSettings = InferSelectModel<typeof aiSettings>;
 export type NewAiSettings = InferInsertModel<typeof aiSettings>;
