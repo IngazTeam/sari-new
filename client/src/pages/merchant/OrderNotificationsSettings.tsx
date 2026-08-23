@@ -5,55 +5,80 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Bell, Check, X, Clock } from 'lucide-react';
+import { AlertTriangle, Bell, Check, Clock, Loader2, X } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+
+type OrderNotificationStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
 export default function OrderNotificationsSettings() {
   const { t } = useTranslation();
 
   const { data: templates, isLoading, refetch } = trpc.orderNotifications.getTemplates.useQuery();
+  const { data: health, refetch: refetchHealth } = trpc.orderNotifications.getHealth.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
   const updateTemplate = trpc.orderNotifications.updateTemplate.useMutation();
+  const acknowledgeIncidents = trpc.orderNotifications.acknowledgeIncidents.useMutation({
+    onSuccess: async ({ acknowledged }) => {
+      setReviewOpen(false);
+      await refetchHealth();
+      toast.success(t('orderNotificationsSettingsPage.healthReviewSuccess', { count: acknowledged }));
+    },
+    onError: () => toast.error(t('orderNotificationsSettingsPage.healthReviewFailure')),
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingTemplate, setEditingTemplate] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
 
-  const statusLabels: Record<string, string> = {
+  const statusLabels: Record<OrderNotificationStatus, string> = {
     pending: t('orderNotificationsSettingsPage.text21'),
-    confirmed: t('orderNotificationsSettingsPage.text22'),
+    paid: t('orderNotificationsSettingsPage.text22'),
     processing: t('orderNotificationsSettingsPage.text23'),
     shipped: t('orderNotificationsSettingsPage.text24'),
     delivered: t('orderNotificationsSettingsPage.text25'),
     cancelled: t('orderNotificationsSettingsPage.text26'),
   };
 
-  const statusDescriptions: Record<string, string> = {
+  const statusDescriptions: Record<OrderNotificationStatus, string> = {
     pending: t('orderNotificationsSettingsPage.text27'),
-    confirmed: t('orderNotificationsSettingsPage.text28'),
+    paid: t('orderNotificationsSettingsPage.text28'),
     processing: t('orderNotificationsSettingsPage.text29'),
     shipped: t('orderNotificationsSettingsPage.text30'),
     delivered: t('orderNotificationsSettingsPage.text31'),
     cancelled: t('orderNotificationsSettingsPage.text32'),
   };
 
-  const handleToggle = async (id: number, enabled: boolean) => {
+  const handleToggle = async (status: OrderNotificationStatus, template: string, enabled: boolean) => {
     try {
-      await updateTemplate.mutateAsync({ id, enabled });
+      await updateTemplate.mutateAsync({ status, template, enabled });
       toast.success(enabled ? t('orderNotificationsSettingsPage.text11') : t('orderNotificationsSettingsPage.text12'));
-      refetch();
+      await refetch();
     } catch (error) {
       toast.error(t('toast.notifications.msg3'));
     }
   };
 
-  const handleEdit = (id: number, template: string) => {
-    setEditingId(id);
+  const handleEdit = (index: number, template: string) => {
+    setEditingId(index);
     setEditingTemplate(template);
   };
 
-  const handleSave = async (id: number) => {
+  const handleSave = async (status: OrderNotificationStatus, enabled: boolean) => {
     try {
-      await updateTemplate.mutateAsync({ id, template: editingTemplate });
+      await updateTemplate.mutateAsync({ status, template: editingTemplate, enabled });
       toast.success(t('toast.notifications.msg4'));
       setEditingId(null);
       refetch();
@@ -66,6 +91,11 @@ export default function OrderNotificationsSettings() {
     setEditingId(null);
     setEditingTemplate('');
   };
+
+  const updatedTimes = templates
+    ?.map(template => template.updatedAt ? new Date(template.updatedAt).getTime() : 0)
+    .filter(timestamp => Number.isFinite(timestamp) && timestamp > 0) || [];
+  const latestTemplateUpdate = updatedTimes.length > 0 ? Math.max(...updatedTimes) : null;
 
   if (isLoading) {
     return (
@@ -85,6 +115,25 @@ export default function OrderNotificationsSettings() {
           {t('orderNotificationsSettingsPage.text15')}
         </p>
       </div>
+
+      {health && health.manualReview > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" aria-hidden="true" />
+              <div>
+                <p className="font-medium">{t('orderNotificationsSettingsPage.healthReviewTitle')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('orderNotificationsSettingsPage.healthReviewDescription', { count: health.manualReview })}
+                </p>
+              </div>
+            </div>
+            <Button type="button" variant="outline" onClick={() => setReviewOpen(true)}>
+              {t('orderNotificationsSettingsPage.healthReviewButton')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -125,8 +174,8 @@ export default function OrderNotificationsSettings() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {templates && templates.length > 0
-                ? new Date(Math.max(...templates.map(t => t.updatedAt ? new Date(t.updatedAt).getTime() : 0))).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')
+              {latestTemplateUpdate
+                ? new Date(latestTemplateUpdate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')
                 : '-'}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -138,8 +187,8 @@ export default function OrderNotificationsSettings() {
 
       {/* Templates */}
       <div className="space-y-4">
-        {templates?.map((template) => (
-          <Card key={template.id}>
+        {templates?.map((template, index) => (
+          <Card key={template.status}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -149,11 +198,12 @@ export default function OrderNotificationsSettings() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Switch
-                      // @ts-ignore
+                      id={`order-notification-${template.status}`}
                       checked={template.enabled || false}
-                      onCheckedChange={(checked) => handleToggle(template.id, checked)}
+                      onCheckedChange={(checked) => handleToggle(template.status, template.template, checked)}
+                      aria-label={`${statusLabels[template.status]}: ${template.enabled ? t('orderNotificationsSettingsPage.text13') : t('orderNotificationsSettingsPage.text14')}`}
                     />
-                    <Label className="text-sm">
+                    <Label htmlFor={`order-notification-${template.status}`} className="text-sm">
                       {template.enabled ? t('orderNotificationsSettingsPage.text13') : t('orderNotificationsSettingsPage.text14')}
                     </Label>
                   </div>
@@ -161,13 +211,14 @@ export default function OrderNotificationsSettings() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {editingId === template.id ? (
+              {editingId === index ? (
                 <>
                   <div>
                     <Label>{t('orderNotificationsSettingsPage.text5')}</Label>
                     <Textarea
                       value={editingTemplate}
                       onChange={(e) => setEditingTemplate(e.target.value)}
+                      maxLength={3500}
                       rows={6}
                       className="mt-2 font-arabic"
                       dir="rtl"
@@ -177,12 +228,12 @@ export default function OrderNotificationsSettings() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={() => handleSave(template.id)} size="sm">
-                      <Check className="h-4 w-4 ml-2" />
+                    <Button type="button" onClick={() => handleSave(template.status, template.enabled)} size="sm" disabled={updateTemplate.isPending}>
+                      <Check className="h-4 w-4 ml-2" aria-hidden="true" />
                       {t('orderNotificationsSettingsPage.text18')}
                     </Button>
-                    <Button onClick={handleCancel} variant="outline" size="sm">
-                      <X className="h-4 w-4 ml-2" />
+                    <Button type="button" onClick={handleCancel} variant="outline" size="sm">
+                      <X className="h-4 w-4 ml-2" aria-hidden="true" />
                       {t('orderNotificationsSettingsPage.text19')}
                     </Button>
                   </div>
@@ -195,7 +246,8 @@ export default function OrderNotificationsSettings() {
                     </pre>
                   </div>
                   <Button
-                    onClick={() => handleEdit(template.id, template.template)}
+                    type="button"
+                    onClick={() => handleEdit(index, template.template)}
                     variant="outline"
                     size="sm"
                   >
@@ -220,6 +272,32 @@ export default function OrderNotificationsSettings() {
           <p>{t('orderNotificationsSettingsPage.text10')}</p>
         </CardContent>
       </Card>
+
+      <AlertDialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('orderNotificationsSettingsPage.healthReviewDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('orderNotificationsSettingsPage.healthReviewDialogDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={acknowledgeIncidents.isPending}>
+              {t('orderNotificationsSettingsPage.healthReviewCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!health?.manualReview || acknowledgeIncidents.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                acknowledgeIncidents.mutate();
+              }}
+            >
+              {acknowledgeIncidents.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" aria-hidden="true" />}
+              {t('orderNotificationsSettingsPage.healthReviewConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

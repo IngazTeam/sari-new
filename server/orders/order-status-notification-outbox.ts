@@ -39,7 +39,13 @@ async function ensureOutboxSchema(): Promise<void> {
   await assertRuntimeSchema('Order status notification outbox', [
     {
       table: 'order_notifications',
-      columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at'],
+      columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at', 'reviewed_at', 'reviewed_by_user_id'],
+      uniqueIndexes: [{ name: 'uq_order_notification_event', columns: ['merchant_id', 'event_key'] }],
+    },
+    {
+      table: 'notification_templates',
+      columns: ['merchant_id', 'status', 'template', 'enabled'],
+      uniqueIndexes: [{ name: 'uq_notification_template_merchant_status', columns: ['merchant_id', 'status'] }],
     },
     { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'status', 'error_code'] },
   ]);
@@ -202,6 +208,66 @@ async function scheduleRetry(row: OutboxRow, error: unknown): Promise<void> {
       WHERE id = ? AND delivery_status = 'processing'`,
     [exhausted ? 'manual_review' : 'failed', delaySeconds, exhausted ? 'retry_exhausted' : code.slice(0, 100), row.id],
   );
+}
+
+export async function getOrderStatusNotificationHealth(merchantId: number): Promise<{
+  pending: number;
+  processing: number;
+  failed: number;
+  sent: number;
+  suppressed: number;
+  manualReview: number;
+  oldestOpenAt: string | null;
+}> {
+  if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
+  await ensureOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `SELECT
+       SUM(CASE WHEN delivery_status = 'pending' THEN 1 ELSE 0 END) AS pending,
+       SUM(CASE WHEN delivery_status = 'processing' THEN 1 ELSE 0 END) AS processing,
+       SUM(CASE WHEN delivery_status = 'failed' THEN 1 ELSE 0 END) AS failed,
+       SUM(CASE WHEN delivery_status = 'sent' THEN 1 ELSE 0 END) AS sent,
+       SUM(CASE WHEN delivery_status = 'suppressed' THEN 1 ELSE 0 END) AS suppressed,
+       SUM(CASE WHEN delivery_status = 'manual_review' THEN 1 ELSE 0 END) AS manual_review,
+       MIN(CASE WHEN delivery_status IN ('pending','processing','failed','manual_review') THEN created_at END) AS oldest_open_at
+     FROM order_notifications
+     WHERE merchant_id = ? AND event_key IS NOT NULL
+       AND (created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY)
+            OR delivery_status IN ('pending','processing','failed','manual_review'))`,
+    [merchantId],
+  );
+  const health = rows[0] || {};
+  return {
+    pending: Number(health.pending || 0),
+    processing: Number(health.processing || 0),
+    failed: Number(health.failed || 0),
+    sent: Number(health.sent || 0),
+    suppressed: Number(health.suppressed || 0),
+    manualReview: Number(health.manual_review || 0),
+    oldestOpenAt: health.oldest_open_at ? String(health.oldest_open_at) : null,
+  };
+}
+
+export async function acknowledgeOrderStatusNotificationIncidents(
+  merchantId: number,
+  actorUserId: number,
+): Promise<{ acknowledged: number }> {
+  if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
+  if (!Number.isInteger(actorUserId) || actorUserId <= 0) throw new Error('Invalid actor');
+  await ensureOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const [result] = await pool.execute(
+    `UPDATE order_notifications
+        SET delivery_status = 'suppressed', error = 'merchant_acknowledged',
+            reviewed_at = NOW(3), reviewed_by_user_id = ?
+      WHERE merchant_id = ? AND event_key IS NOT NULL
+        AND delivery_status = 'manual_review'`,
+    [actorUserId, merchantId],
+  );
+  return { acknowledged: Number((result as { affectedRows?: number }).affectedRows || 0) };
 }
 
 export async function runOrderStatusNotificationBatch(limit = 10): Promise<number> {

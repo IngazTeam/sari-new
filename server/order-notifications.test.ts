@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as db from './db';
-import { sendOrderNotification, initializeDefaultTemplates } from './notifications/order-notifications';
+import {
+  defaultTemplates,
+  ORDER_NOTIFICATION_STATUSES,
+  prepareOrderStatusNotification,
+  saveOrderNotificationTemplate,
+} from './notifications/order-notifications';
 
 describe('Order Notifications System', () => {
   let testMerchantId: number;
@@ -18,21 +23,28 @@ describe('Order Notifications System', () => {
 
   describe('Notification Templates', () => {
     it('should initialize default templates', async () => {
-      await initializeDefaultTemplates(testMerchantId);
+      for (const status of ORDER_NOTIFICATION_STATUSES) {
+        await saveOrderNotificationTemplate({
+          merchantId: testMerchantId,
+          status,
+          template: defaultTemplates[status],
+          enabled: false,
+        });
+      }
       
       const templates = await db.getNotificationTemplatesByMerchantId(testMerchantId);
       
-      expect(templates.length).toBeGreaterThanOrEqual(5);
+      expect(templates.length).toBeGreaterThanOrEqual(6);
     });
 
     it('should get template by status', async () => {
-      const template = await db.getNotificationTemplateByStatus(testMerchantId, 'confirmed');
+      const template = await db.getNotificationTemplateByStatus(testMerchantId, 'paid');
       
       expect(template).toBeDefined();
       expect(template?.merchantId).toBe(testMerchantId);
-      expect(template?.status).toBe('confirmed');
-      expect(template?.enabled).toBe(true);
-      expect(template?.template).toContain('{customerName}');
+      expect(template?.status).toBe('paid');
+      expect(Boolean(template?.enabled)).toBe(false);
+      expect(template?.template).toContain('{{customerName}}');
     });
 
     it('should get all templates for merchant', async () => {
@@ -77,14 +89,14 @@ describe('Order Notifications System', () => {
         orderId: testOrderId,
         merchantId: testMerchantId,
         customerPhone: '+966501234567',
-        status: 'confirmed',
+        status: 'paid',
         message: 'Test message',
         sent: false,
       });
       
       expect(notification).toBeDefined();
       expect(notification?.orderId).toBe(testOrderId);
-      expect(notification?.status).toBe('confirmed');
+      expect(notification?.status).toBe('paid');
       expect(notification?.sent).toBe(false);
     });
 
@@ -130,9 +142,7 @@ describe('Order Notifications System', () => {
         await db.updateNotificationTemplate(template.id, { enabled: false });
       }
       
-      // Try to send notification (will fail because template is disabled)
-      const result = await sendOrderNotification(
-        999, // Non-existent order
+      const result = await prepareOrderStatusNotification(
         testMerchantId,
         '+966501234567',
         'cancelled',
@@ -144,7 +154,7 @@ describe('Order Notifications System', () => {
         }
       );
       
-      expect(result).toBe(false);
+      expect(result).toBeNull();
     });
   });
 });

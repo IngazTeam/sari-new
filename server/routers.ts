@@ -68,6 +68,7 @@ import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
 import { teamRouter } from "./routers-team";
 import { byaanRouter } from "./routers-byaan";
+import { orderNotificationsRouter } from "./routers-order-notifications";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -184,12 +185,8 @@ import {
   getMessageStats,
   getMessagesByConversationId,
   getNewKeywords,
-  getNotificationTemplateById,
-  getNotificationTemplatesByMerchantId,
   getOrCreatePersonalitySettings,
   getOrderById,
-  getOrderNotificationsByMerchantId,
-  getOrderNotificationsByOrderId,
   getOrderStats,
   getOrdersByMerchantId,
   getOrdersWithFilters,
@@ -266,7 +263,6 @@ import {
   updateGoogleIntegration,
   updateKeywordStatus,
   updateMerchant,
-  updateNotificationTemplate,
   updatePlan,
   updateQuickResponse,
   updateSallaConnection,
@@ -4212,74 +4208,7 @@ export const appRouter = router({
       }),
   }),
 
-  // Order Notifications Router
-  orderNotifications: router({
-    // Get notification templates (merchant)
-    getTemplates: protectedProcedure
-      .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return getNotificationTemplatesByMerchantId(merchant.id);
-      }),
-
-    // Update notification template (merchant)
-    updateTemplate: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        template: z.string().optional(),
-        enabled: z.boolean().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Verify template belongs to merchant
-        const template = await getNotificationTemplateById(input.id);
-        if (!template || template.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return updateNotificationTemplate(input.id, {
-          template: input.template,
-          enabled: input.enabled !== undefined ? (input.enabled ? 1 : 0) : undefined,
-        });
-      }),
-
-    // Get notification history (merchant)
-    getHistory: protectedProcedure
-      .input(z.object({ limit: z.number().optional() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return getOrderNotificationsByMerchantId(merchant.id, input.limit);
-      }),
-
-    // Get notifications for specific order (merchant)
-    getByOrderId: protectedProcedure
-      .input(z.object({ orderId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Verify order belongs to merchant
-        const order = await getOrderById(input.orderId);
-        if (!order || order.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return getOrderNotificationsByOrderId(input.orderId);
-      }),
-  }),
+  orderNotifications: orderNotificationsRouter,
 
   // Voice router
   voice: router({

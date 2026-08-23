@@ -1,13 +1,32 @@
 import {
-  createNotificationTemplate,
-  createOrderNotification,
+  getDb,
   getNotificationTemplateByStatus,
-  updateOrderNotification,
+  getNotificationTemplatesByMerchantId,
 } from '../db';
-import { sendTextMessage } from '../whatsapp';
+import { notificationTemplates } from '../../drizzle/schema';
+import { assertRuntimeSchema } from '../db/schema-readiness';
+
+export const ORDER_NOTIFICATION_STATUSES = [
+  'pending',
+  'paid',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const;
+
+export type OrderNotificationStatus = typeof ORDER_NOTIFICATION_STATUSES[number];
+
+async function ensureTemplateSchema(): Promise<void> {
+  await assertRuntimeSchema('Order notification templates', [{
+    table: 'notification_templates',
+    columns: ['merchant_id', 'status', 'template', 'enabled'],
+    uniqueIndexes: [{ name: 'uq_notification_template_merchant_status', columns: ['merchant_id', 'status'] }],
+  }]);
+}
 
 // Default notification templates in Arabic
-export const defaultTemplates = {
+export const defaultTemplates: Record<OrderNotificationStatus, string> = {
   pending: `مرحباً {{customerName}}! 🎉
 
 شكراً لطلبك من {{storeName}}
@@ -20,15 +39,24 @@ export const defaultTemplates = {
 
 شكراً لثقتك بنا! 💙`,
 
-  confirmed: `مرحباً {{customerName}}! ✅
+  paid: `مرحباً {{customerName}}! ✅
 
-تم تأكيد طلبك من {{storeName}}
+تم تأكيد دفع طلبك من {{storeName}}
 
 📦 *تفاصيل الطلب:*
 رقم الطلب: #{{orderNumber}}
 الإجمالي: {{total}} ريال
 
-سنبدأ بتجهيز طلبك الآن!
+سيبدأ تجهيز طلبك وفق حالة المتجر.
+
+شكراً لثقتك بنا! 💙`,
+
+  processing: `مرحباً {{customerName}}! 📦
+
+بدأ تجهيز طلبك من {{storeName}}
+
+رقم الطلب: #{{orderNumber}}
+الإجمالي: {{total}} ريال
 
 شكراً لثقتك بنا! 💙`,
 
@@ -40,7 +68,7 @@ export const defaultTemplates = {
 رقم الطلب: #{{orderNumber}}
 رقم التتبع: {{trackingNumber}}
 
-سيصلك الطلب خلال 2-3 أيام عمل.
+يمكنك متابعة الشحنة باستخدام رقم التتبع المتاح.
 
 شكراً لثقتك بنا! 💙`,
 
@@ -84,14 +112,58 @@ export function fillTemplate(template: string, data: {
 
 // Get notification template for a specific status
 export async function getNotificationTemplate(merchantId: number, status: string): Promise<string | null> {
+  await ensureTemplateSchema();
   const template = await getNotificationTemplateByStatus(merchantId, status);
-  
-  if (template && template.enabled) {
-    return template.template;
-  }
-  
-  // Return default template if no custom template found
-  return defaultTemplates[status as keyof typeof defaultTemplates] || null;
+  return template?.enabled ? template.template : null;
+}
+
+export async function getOrderNotificationTemplateSettings(merchantId: number) {
+  await ensureTemplateSchema();
+  const stored = await getNotificationTemplatesByMerchantId(merchantId);
+  const byStatus = new Map(stored.map(template => [template.status, template]));
+  return ORDER_NOTIFICATION_STATUSES.map(status => {
+    const template = byStatus.get(status);
+    return {
+      status,
+      template: template?.template || defaultTemplates[status],
+      enabled: template?.enabled === 1,
+      updatedAt: template?.updatedAt || null,
+    };
+  });
+}
+
+export async function saveOrderNotificationTemplate(input: {
+  merchantId: number;
+  status: OrderNotificationStatus;
+  template: string;
+  enabled: boolean;
+}) {
+  await ensureTemplateSchema();
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  const updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  await db
+    .insert(notificationTemplates)
+    .values({
+      merchantId: input.merchantId,
+      status: input.status,
+      template: input.template,
+      enabled: input.enabled ? 1 : 0,
+      updatedAt,
+    })
+    .onDuplicateKeyUpdate({
+      set: {
+        template: input.template,
+        enabled: input.enabled ? 1 : 0,
+        updatedAt,
+      },
+    });
+  return {
+    status: input.status,
+    template: input.template,
+    enabled: input.enabled,
+    updatedAt,
+  };
 }
 
 export async function prepareOrderStatusNotification(
@@ -116,83 +188,4 @@ export async function prepareOrderStatusNotification(
     customerPhone,
     message,
   };
-}
-
-// Send order notification via WhatsApp
-export async function sendOrderNotification(
-  orderId: number,
-  merchantId: number,
-  customerPhone: string,
-  status: string,
-  orderData: {
-    customerName: string;
-    storeName: string;
-    orderNumber: string;
-    total: number;
-    trackingNumber?: string;
-  }
-): Promise<boolean> {
-  try {
-    const prepared = await prepareOrderStatusNotification(merchantId, customerPhone, status, orderData);
-    if (!prepared) {
-      console.log(`[Order Notification] No template found for status: ${status}`);
-      return false;
-    }
-    const { message } = prepared;
-    
-    // Create notification record
-    const notification = await createOrderNotification({
-      orderId,
-      merchantId,
-      customerPhone,
-      status,
-      message,
-      sent: 0,
-    });
-    
-    if (!notification) {
-      console.error('[Order Notification] Failed to create notification record');
-      return false;
-    }
-    
-    // Send WhatsApp message
-    const result = await sendTextMessage(customerPhone, message);
-    const sent = result.success;
-    
-    // Update notification status
-    await updateOrderNotification(notification.id, {
-      sent: sent ? 1 : 0,
-      sentAt: sent ? new Date().toISOString().slice(0, 19).replace("T", " ") : undefined,
-      error: sent ? undefined : result.error || 'Failed to send WhatsApp message',
-      deliveryStatus: sent ? 'sent' : 'failed',
-      attempts: 1,
-    });
-    
-    console.log(`[Order Notification] Sent ${status} notification for order #${orderData.orderNumber}: ${sent}`);
-    
-    return sent;
-  } catch (error) {
-    console.error('[Order Notification] Error:', error);
-    return false;
-  }
-}
-
-// Initialize default templates for a merchant
-export async function initializeDefaultTemplates(merchantId: number): Promise<void> {
-  const statuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-  
-  for (const status of statuses) {
-    const existing = await getNotificationTemplateByStatus(merchantId, status);
-    
-    if (!existing) {
-      await createNotificationTemplate({
-        merchantId,
-        status,
-        template: defaultTemplates[status as keyof typeof defaultTemplates],
-        enabled: 1,
-      });
-    }
-  }
-  
-  console.log(`[Order Notification] Initialized default templates for merchant ${merchantId}`);
 }

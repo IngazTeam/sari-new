@@ -378,7 +378,9 @@ export const notificationTemplates = mysqlTable("notification_templates", {
 	enabled: tinyint().default(1),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-});
+}, table => [
+	uniqueIndex("uq_notification_template_merchant_status").on(table.merchantId, table.status),
+]);
 
 export const notifications = mysqlTable("notifications", {
 	id: int().autoincrement().primaryKey(),
@@ -429,11 +431,14 @@ export const orderNotifications = mysqlTable("order_notifications", {
 	attempts: int().default(0).notNull(),
 	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	reviewedAt: timestamp("reviewed_at", { mode: 'string', fsp: 3 }),
+	reviewedByUserId: int("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
 }, table => [
 	uniqueIndex("uq_order_notification_event").on(table.merchantId, table.eventKey),
 	index("idx_order_notification_dispatch").on(table.deliveryStatus, table.availableAt, table.id),
+	index("idx_order_notification_merchant_health").on(table.merchantId, table.deliveryStatus, table.createdAt, table.id),
 ]);
 
 export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
