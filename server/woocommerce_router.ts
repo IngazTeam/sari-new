@@ -45,9 +45,12 @@ import {
 } from './integrations/woocommerce-webhook-registration';
 import { getWooCommerceWebhookHealth } from './integrations/woocommerce-webhook-receipts';
 import { withWooCommerceMerchantLock, WooCommerceMerchantLockError } from './integrations/woocommerce-lock';
+import {
+  withWooCommerceRequestAbortSignal,
+  type WooCommerceRequestAbortContext,
+} from './integrations/woocommerce-request-lifecycle';
 import { validateNewPlatformConnection } from './integrations/platform-checker';
 import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
-import type { TrpcContext } from './_core/context';
 
 const pageInput = z.object({
   page: z.number().int().min(1).max(10_000).default(1),
@@ -99,67 +102,15 @@ async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<
   }
 }
 
-type WooCommerceRequestContext = Pick<TrpcContext, 'req' | 'res'>;
-
-type WooCommerceRequestLifecycle = {
-  controller: AbortController;
-  refs: number;
-  req: WooCommerceRequestContext['req'];
-  res: WooCommerceRequestContext['res'];
-  abort: () => void;
-  close: () => void;
-};
-
-const wooCommerceRequestLifecycles = new WeakMap<object, WooCommerceRequestLifecycle>();
-
-function retainWooCommerceRequestLifecycle(ctx: WooCommerceRequestContext): WooCommerceRequestLifecycle {
-  const existing = wooCommerceRequestLifecycles.get(ctx.req);
-  if (existing) {
-    existing.refs += 1;
-    return existing;
-  }
-
-  const controller = new AbortController();
-  const abort = () => controller.abort();
-  const close = () => {
-    if (!ctx.res.writableEnded) controller.abort();
-  };
-  const lifecycle: WooCommerceRequestLifecycle = {
-    controller,
-    refs: 1,
-    req: ctx.req,
-    res: ctx.res,
-    abort,
-    close,
-  };
-  wooCommerceRequestLifecycles.set(ctx.req, lifecycle);
-  ctx.req.once('aborted', abort);
-  ctx.res.once('close', close);
-  if (ctx.req.aborted || ctx.req.destroyed) controller.abort();
-  return lifecycle;
-}
-
-function releaseWooCommerceRequestLifecycle(lifecycle: WooCommerceRequestLifecycle): void {
-  lifecycle.refs -= 1;
-  if (lifecycle.refs > 0) return;
-  lifecycle.req.off('aborted', lifecycle.abort);
-  lifecycle.res.off('close', lifecycle.close);
-  if (wooCommerceRequestLifecycles.get(lifecycle.req) === lifecycle) {
-    wooCommerceRequestLifecycles.delete(lifecycle.req);
-  }
-}
-
 async function withWooCommerceRequestLock<T>(
-  ctx: WooCommerceRequestContext,
+  ctx: WooCommerceRequestAbortContext,
   merchantId: number,
   action: () => Promise<T>,
 ): Promise<T> {
-  const lifecycle = retainWooCommerceRequestLifecycle(ctx);
-  try {
-    return await withWooCommerceLock(merchantId, action, lifecycle.controller.signal);
-  } finally {
-    releaseWooCommerceRequestLifecycle(lifecycle);
-  }
+  return withWooCommerceRequestAbortSignal(
+    ctx,
+    signal => withWooCommerceLock(merchantId, action, signal),
+  );
 }
 
 async function cleanupRemoteWebhookRegistrations(
@@ -269,7 +220,7 @@ function filterOrdersByDate<T extends { orderDate: string }>(orders: T[], range:
   });
 }
 
-async function runManualSync(ctx: WooCommerceRequestContext, merchantId: number, type: 'products' | 'orders') {
+async function runManualSync(ctx: WooCommerceRequestAbortContext, merchantId: number, type: 'products' | 'orders') {
   return withWooCommerceRequestLock(ctx, merchantId, async () => {
     const settings = await getWooCommerceSettings(merchantId);
     if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
@@ -321,7 +272,7 @@ async function runManualSync(ctx: WooCommerceRequestContext, merchantId: number,
   });
 }
 
-async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestContext, merchantId: number) {
+async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortContext, merchantId: number) {
   return withWooCommerceRequestLock(ctx, merchantId, async () => {
     const settings = await getWooCommerceSettings(merchantId);
     if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
