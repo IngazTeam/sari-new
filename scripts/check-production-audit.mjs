@@ -1,14 +1,18 @@
 import { spawnSync } from 'node:child_process';
 
 const pnpmExecPath = process.env.npm_execpath;
-const command = pnpmExecPath ? process.execPath : (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm');
+const command = pnpmExecPath ? process.execPath : 'pnpm';
 const args = pnpmExecPath
   ? [pnpmExecPath, 'audit', '--prod', '--json']
   : ['audit', '--prod', '--json'];
 const audit = spawnSync(command, args, {
   encoding: 'utf8',
   maxBuffer: 20 * 1024 * 1024,
-  shell: false,
+  // Windows cannot CreateProcess a .cmd shim directly. The fallback command
+  // and every argument are fixed here, so a shell is used only for shim
+  // resolution when the script was not launched through pnpm itself.
+  shell: !pnpmExecPath && process.platform === 'win32',
+  windowsHide: true,
 });
 
 if (audit.error) throw audit.error;

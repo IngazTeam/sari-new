@@ -5,10 +5,11 @@
  * translates all Arabic values to the target language.
  * For en.json, preserves already-translated English values.
  */
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const localesDir = __dirname;
+const localesDir = path.dirname(fileURLToPath(import.meta.url));
 
 // Load source files
 const ar = JSON.parse(fs.readFileSync(path.join(localesDir, 'ar.json'), 'utf8'));
@@ -53,8 +54,13 @@ function getSectionStats(obj) {
     return stats;
 }
 
-// Report for each file
+// Only locales that satisfy a production-quality catalogue contract may be
+// exposed by client/src/lib/i18n.ts. Candidate files are audited for evidence
+// but are not advertised merely because they parse.
+const advertisedLocales = ['ar'];
 const files = ['ar', 'en', 'fr', 'es', 'de', 'it', 'tr', 'zh'];
+let failed = false;
+
 for (const f of files) {
     const data = JSON.parse(fs.readFileSync(path.join(localesDir, f + '.json'), 'utf8'));
     const counts = countLeaves(data);
@@ -62,6 +68,11 @@ for (const f of files) {
     console.log(`Total strings: ${counts.total}`);
     console.log(`Arabic values: ${counts.arabic} (${(counts.arabic / counts.total * 100).toFixed(1)}%)`);
     console.log(`Non-Arabic values: ${counts.nonArabic} (${(counts.nonArabic / counts.total * 100).toFixed(1)}%)`);
+
+    if (advertisedLocales.includes(f) && f === 'ar' && counts.arabic / counts.total < 0.99) {
+        console.error(`FAIL: advertised Arabic catalogue is below 99% Arabic coverage`);
+        failed = true;
+    }
 }
 
 // Show en.json section breakdown
@@ -72,3 +83,5 @@ for (const s of enSections) {
         console.log(`  ${s.section}: ${s.arabic}/${s.total} Arabic (${(s.arabic / s.total * 100).toFixed(0)}%)`);
     }
 }
+
+if (failed) process.exitCode = 1;

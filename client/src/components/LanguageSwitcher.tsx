@@ -9,26 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Globe, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { changeAppLanguage } from '@/lib/i18n';
+import { APP_LANGUAGE_OPTIONS, changeAppLanguage } from '@/lib/i18n';
 
-interface Language {
-  code: string;
-  name: string;
-  nativeName: string;
-  flag: string;
-  dir: 'ltr' | 'rtl';
-}
-
-const languages: Language[] = [
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', dir: 'rtl' },
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', dir: 'ltr' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', dir: 'ltr' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪', dir: 'ltr' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', dir: 'ltr' },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳', dir: 'ltr' },
-  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', dir: 'ltr' },
-  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', dir: 'ltr' },
-];
+const languages = APP_LANGUAGE_OPTIONS;
 
 interface LanguageSwitcherProps {
   variant?: 'default' | 'compact' | 'full';
@@ -44,19 +27,31 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
 
   const handleLanguageChange = async (langCode: string) => {
     const selectedLang = languages.find(lang => lang.code === langCode);
-    if (selectedLang) {
-      // تغيير اللغة - i18n.ts يتولى تحديث dir و lang تلقائياً عبر حدث languageChanged
-      await changeAppLanguage(langCode);
+    try {
+      if (selectedLang) {
+        await changeAppLanguage(selectedLang.code);
+      }
+    } finally {
+      setIsOpen(false);
     }
-    setIsOpen(false);
   };
+
+  // Do not present a switcher with one choice. Candidate locales are enabled
+  // only after their complete catalogue passes the production locale gate.
+  if (languages.length <= 1) return null;
 
   if (variant === 'compact') {
     return (
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className={className}>
-            <Globe className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className={className}
+            aria-label={t('publicUx.navigation.switchLanguage')}
+            title={t('publicUx.navigation.switchLanguage')}
+          >
+            <Globe className="h-4 w-4" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -83,7 +78,9 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
   if (variant === 'full') {
     return (
       <div className={cn("space-y-2", className)}>
-        <label className="text-sm font-medium">{t('compLanguageSwitcherPage.text0')}</label>
+        <div className="text-sm font-medium" id="app-language-label">
+          {t('publicUx.navigation.languageLabel')}
+        </div>
         <div className="flex gap-2">
           {languages.map((lang) => (
             <Button
@@ -91,6 +88,8 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
               variant={currentLanguage.code === lang.code ? 'default' : 'outline'}
               className="flex-1 gap-2"
               onClick={() => handleLanguageChange(lang.code)}
+              aria-describedby="app-language-label"
+              aria-pressed={currentLanguage.code === lang.code}
             >
               <span>{lang.flag}</span>
               <span>{lang.nativeName}</span>
@@ -105,8 +104,12 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className={cn("gap-2", className)}>
-          <Globe className="h-4 w-4" />
+        <Button
+          variant="outline"
+          className={cn("gap-2", className)}
+          aria-label={`${t('publicUx.navigation.switchLanguage')}: ${currentLanguage.nativeName}`}
+        >
+          <Globe className="h-4 w-4" aria-hidden="true" />
           <span>{currentLanguage.flag}</span>
           <span className="hidden sm:inline">{currentLanguage.nativeName}</span>
         </Button>

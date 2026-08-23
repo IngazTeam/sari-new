@@ -6,16 +6,19 @@ import type { PublicUxCopy } from '../locales/public-ux.schema';
 
 export const SUPPORTED_LANGUAGE_CODES = [
   'ar',
-  'en',
-  'fr',
-  'tr',
-  'es',
-  'it',
-  'de',
-  'zh',
 ] as const;
 
 export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
+
+export const APP_LANGUAGE_OPTIONS = [
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', dir: 'rtl' },
+] as const satisfies ReadonlyArray<{
+  code: SupportedLanguageCode;
+  name: string;
+  nativeName: string;
+  flag: string;
+  dir: 'ltr' | 'rtl';
+}>;
 
 type TranslationModule = { default: Record<string, unknown> };
 type MerchantUxModule = { default: MerchantUxCopy };
@@ -26,53 +29,21 @@ type PublicUxModule = { default: PublicUxCopy };
 // independently cacheable chunk per language and fetches only the selected one.
 const translationLoaders: Record<SupportedLanguageCode, () => Promise<TranslationModule>> = {
   ar: () => import('../locales/ar.json'),
-  en: () => import('../locales/en.json'),
-  fr: () => import('../locales/fr.json'),
-  tr: () => import('../locales/tr.json'),
-  es: () => import('../locales/es.json'),
-  it: () => import('../locales/it.json'),
-  de: () => import('../locales/de.json'),
-  zh: () => import('../locales/zh.json'),
 };
 
-// The recovered merchant flows use a typed semantic catalogue. Arabic and
-// English have first-party copy; other locales get explicit English copy until
-// their reviewed translation exists, rather than falling through mismatched
-// legacy text0/text1 maps.
+// Only reviewed, first-party catalogues may be advertised by the application.
+// Candidate locale files remain outside this loader until their semantic and
+// legacy copy pass the same contract as Arabic and English.
 const merchantUxLoaders: Record<SupportedLanguageCode, () => Promise<MerchantUxModule>> = {
   ar: () => import('../locales/merchant-ux.ar'),
-  en: () => import('../locales/merchant-ux.en'),
-  fr: () => import('../locales/merchant-ux.en'),
-  tr: () => import('../locales/merchant-ux.en'),
-  es: () => import('../locales/merchant-ux.en'),
-  it: () => import('../locales/merchant-ux.en'),
-  de: () => import('../locales/merchant-ux.en'),
-  zh: () => import('../locales/merchant-ux.en'),
 };
 
-// Authentication is part of the conversion funnel and cannot mix Arabic copy
-// into an English form. Unreviewed locales intentionally receive the complete
-// English catalogue until first-party translations are available.
 const authUxLoaders: Record<SupportedLanguageCode, () => Promise<AuthUxModule>> = {
   ar: () => import('../locales/auth-ux.ar'),
-  en: () => import('../locales/auth-ux.en'),
-  fr: () => import('../locales/auth-ux.en'),
-  tr: () => import('../locales/auth-ux.en'),
-  es: () => import('../locales/auth-ux.en'),
-  it: () => import('../locales/auth-ux.en'),
-  de: () => import('../locales/auth-ux.en'),
-  zh: () => import('../locales/auth-ux.en'),
 };
 
 const publicUxLoaders: Record<SupportedLanguageCode, () => Promise<PublicUxModule>> = {
   ar: () => import('../locales/public-ux.ar'),
-  en: () => import('../locales/public-ux.en'),
-  fr: () => import('../locales/public-ux.en'),
-  tr: () => import('../locales/public-ux.en'),
-  es: () => import('../locales/public-ux.en'),
-  it: () => import('../locales/public-ux.en'),
-  de: () => import('../locales/public-ux.en'),
-  zh: () => import('../locales/public-ux.en'),
 };
 
 async function loadTranslations(language: SupportedLanguageCode): Promise<TranslationModule> {

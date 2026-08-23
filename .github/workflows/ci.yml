@@ -36,6 +36,8 @@ jobs:
         run: pnpm audit:production
       - name: Type-check
         run: pnpm check
+      - name: Audit advertised locale catalogues
+        run: pnpm audit:locales
       - name: Release security and regression gates
         run: pnpm test:release
       - name: Validate the database schema history
