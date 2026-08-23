@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from './_core/trpc';
 import { eq, desc, and, gte, sql, count } from 'drizzle-orm';
+import { getWooCommerceAdmissionSnapshot } from './integrations/woocommerce-lock';
 
 // Admin-only procedure — SEC-FIX: accepts both admin and superadmin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -66,6 +67,9 @@ export async function logDelivery(data: {
 }
 
 export const monitorRouter = router({
+  // Process-local and aggregate only: never expose merchant keys or queue entries.
+  getWooCommerceAdmission: adminProcedure.query(() => getWooCommerceAdmissionSnapshot()),
+
   // ── Overview: summary stats for last 24h ──
   getOverview: adminProcedure
     .input(z.object({ hours: z.number().min(1).max(168).default(24) }).optional())

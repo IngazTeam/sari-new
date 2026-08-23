@@ -20,11 +20,34 @@ type AdmissionWaiter = {
   timer: ReturnType<typeof setTimeout>;
 };
 
+export type WooCommerceAdmissionSnapshot = Readonly<{
+  active: number;
+  queued: number;
+  peakActive: number;
+  peakQueued: number;
+  admittedTotal: number;
+  rejectedGlobalLimit: number;
+  rejectedMerchantLimit: number;
+  rejectedInvalidIdentity: number;
+  timedOut: number;
+  activeLimit: number;
+  queueLimit: number;
+  merchantQueueLimit: number;
+  waitMs: number;
+}>;
+
 export class WooCommerceAdmissionGate {
   private active = 0;
   private readonly activeKeys = new Set<string>();
   private readonly waiters: AdmissionWaiter[] = [];
   private readonly queuedByKey = new Map<string, number>();
+  private peakActive = 0;
+  private peakQueued = 0;
+  private admittedTotal = 0;
+  private rejectedGlobalLimit = 0;
+  private rejectedMerchantLimit = 0;
+  private rejectedInvalidIdentity = 0;
+  private timedOut = 0;
 
   constructor(
     readonly maxActive: number,
@@ -42,15 +65,22 @@ export class WooCommerceAdmissionGate {
 
   acquire(key: string): Promise<() => void> {
     if (typeof key !== 'string' || key.length === 0 || key.length > 128) {
+      this.rejectedInvalidIdentity += 1;
       return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
     }
     if (this.active < this.maxActive && !this.activeKeys.has(key)) {
       this.active += 1;
       this.activeKeys.add(key);
+      this.recordAdmission();
       return Promise.resolve(this.createRelease(key));
     }
     const queuedForKey = this.queuedByKey.get(key) ?? 0;
-    if (this.waiters.length >= this.maxQueue || queuedForKey >= this.maxQueuePerKey) {
+    if (this.waiters.length >= this.maxQueue) {
+      this.rejectedGlobalLimit += 1;
+      return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
+    }
+    if (queuedForKey >= this.maxQueuePerKey) {
+      this.rejectedMerchantLimit += 1;
       return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
     }
 
@@ -64,6 +94,7 @@ export class WooCommerceAdmissionGate {
           if (index >= 0) {
             this.waiters.splice(index, 1);
             this.decrementQueued(key);
+            this.timedOut += 1;
           }
           reject(new WooCommerceMerchantLockError('operation_capacity'));
         }, this.waitMs),
@@ -71,7 +102,31 @@ export class WooCommerceAdmissionGate {
       waiter.timer.unref?.();
       this.waiters.push(waiter);
       this.queuedByKey.set(key, queuedForKey + 1);
+      this.peakQueued = Math.max(this.peakQueued, this.waiters.length);
     });
+  }
+
+  snapshot(): WooCommerceAdmissionSnapshot {
+    return {
+      active: this.active,
+      queued: this.waiters.length,
+      peakActive: this.peakActive,
+      peakQueued: this.peakQueued,
+      admittedTotal: this.admittedTotal,
+      rejectedGlobalLimit: this.rejectedGlobalLimit,
+      rejectedMerchantLimit: this.rejectedMerchantLimit,
+      rejectedInvalidIdentity: this.rejectedInvalidIdentity,
+      timedOut: this.timedOut,
+      activeLimit: this.maxActive,
+      queueLimit: this.maxQueue,
+      merchantQueueLimit: this.maxQueuePerKey,
+      waitMs: this.waitMs,
+    };
+  }
+
+  private recordAdmission(): void {
+    this.admittedTotal += 1;
+    this.peakActive = Math.max(this.peakActive, this.active);
   }
 
   private decrementQueued(key: string): void {
@@ -89,6 +144,7 @@ export class WooCommerceAdmissionGate {
       clearTimeout(waiter.timer);
       this.active += 1;
       this.activeKeys.add(waiter.key);
+      this.recordAdmission();
       waiter.resolve(this.createRelease(waiter.key));
     }
   }
@@ -111,6 +167,10 @@ const wooCommerceAdmissionGate = new WooCommerceAdmissionGate(
   WOOCOMMERCE_ADMISSION_WAIT_MS,
   WOOCOMMERCE_MAX_QUEUED_LOCKS_PER_MERCHANT,
 );
+
+export function getWooCommerceAdmissionSnapshot(): WooCommerceAdmissionSnapshot {
+  return wooCommerceAdmissionGate.snapshot();
+}
 
 export async function finalizeWooCommerceMerchantLockConnection(
   connection: PoolConnection,
