@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { withWooCommerceRequestAbortSignal } from './integrations/woocommerce-request-lifecycle';
 
 const servers = new Set<Server>();
+const agents = new Set<http.Agent>();
 
 async function listen(server: Server): Promise<number> {
   await new Promise<void>((resolve, reject) => {
@@ -22,6 +23,20 @@ async function close(server: Server): Promise<void> {
   });
 }
 
+async function getConnectionCount(server: Server): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    server.getConnections((error, count) => error ? reject(error) : resolve(count));
+  });
+}
+
+async function waitForNoConnections(server: Server): Promise<void> {
+  await within((async () => {
+    while (await getConnectionCount(server) !== 0) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+  })(), 5_000);
+}
+
 async function within<T>(promise: Promise<T>, timeoutMs = 2_000): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -37,6 +52,8 @@ async function within<T>(promise: Promise<T>, timeoutMs = 2_000): Promise<T> {
 }
 
 afterEach(async () => {
+  for (const agent of agents) agent.destroy();
+  agents.clear();
   await Promise.all([...servers].map(close));
   servers.clear();
 });
@@ -167,5 +184,89 @@ describe('WooCommerce request lifecycle over a real HTTP socket', () => {
       during: [1, 1],
       after: [0, 0],
     });
+  });
+
+  it('cleans up a 100-connection slow-client churn without listener or socket residue', async () => {
+    const connectionTotal = 100;
+    let enteredCount = 0;
+    let resolveEntered!: () => void;
+    const allEntered = new Promise<void>(resolve => { resolveEntered = resolve; });
+    const observations: Array<{
+      signalsShared: boolean;
+      values: boolean[];
+      during: [number, number];
+      after: [number, number];
+    }> = [];
+    let resolveCompleted!: () => void;
+    let rejectCompleted!: (error: unknown) => void;
+    const allCompleted = new Promise<void>((resolve, reject) => {
+      resolveCompleted = resolve;
+      rejectCompleted = reject;
+    });
+
+    const server = http.createServer((req, res) => {
+      const initial: [number, number] = [req.listenerCount('aborted'), res.listenerCount('close')];
+      const signals: AbortSignal[] = [];
+      const waitForAbort = async (signal: AbortSignal): Promise<boolean> => {
+        signals.push(signal);
+        if (!signal.aborted) {
+          await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }));
+        }
+        return signal.aborted;
+      };
+      const first = withWooCommerceRequestAbortSignal({ req, res }, waitForAbort);
+      const second = withWooCommerceRequestAbortSignal({ req, res }, waitForAbort);
+      const during: [number, number] = [
+        req.listenerCount('aborted') - initial[0],
+        res.listenerCount('close') - initial[1],
+      ];
+      enteredCount += 1;
+      if (enteredCount === connectionTotal) resolveEntered();
+      Promise.all([first, second]).then(values => {
+        observations.push({
+          signalsShared: signals[0] === signals[1],
+          values,
+          during,
+          after: [
+            req.listenerCount('aborted') - initial[0],
+            res.listenerCount('close') - initial[1],
+          ],
+        });
+        if (observations.length === connectionTotal) resolveCompleted();
+      }, rejectCompleted);
+    });
+    servers.add(server);
+    const port = await listen(server);
+    const agent = new http.Agent({ keepAlive: false, maxSockets: connectionTotal });
+    agents.add(agent);
+    const requests = Array.from({ length: connectionTotal }, () => {
+      const request = http.request({
+        agent,
+        host: '127.0.0.1',
+        port,
+        path: '/',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/octet-stream',
+          'content-length': '1048576',
+        },
+      });
+      request.on('error', () => undefined);
+      request.flushHeaders();
+      return request;
+    });
+
+    await within(allEntered, 5_000);
+    expect(await getConnectionCount(server)).toBe(connectionTotal);
+    for (const request of requests) request.destroy();
+    await within(allCompleted, 5_000);
+    await waitForNoConnections(server);
+
+    expect(observations).toHaveLength(connectionTotal);
+    expect(observations.every(item => item.signalsShared)).toBe(true);
+    expect(observations.every(item => item.values[0] && item.values[1])).toBe(true);
+    expect(observations.every(item => item.during[0] === 1 && item.during[1] === 1)).toBe(true);
+    expect(observations.every(item => item.after[0] === 0 && item.after[1] === 0)).toBe(true);
+    expect(await getConnectionCount(server)).toBe(0);
   });
 });
