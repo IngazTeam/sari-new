@@ -3935,6 +3935,8 @@ export async function getOrdersWithFilters(
     startDate?: Date;
     endDate?: Date;
     searchQuery?: string;
+    limit?: number;
+    offset?: number;
   }
 ): Promise<Order[]> {
   const db = await getDb();
@@ -3954,21 +3956,24 @@ export async function getOrdersWithFilters(
     conditions.push(lte(orders.createdAt, formatDateForDB(filters.endDate)));
   }
 
-  let results = await db
+  if (filters?.searchQuery) {
+    const query = `%${filters.searchQuery}%`;
+    conditions.push(or(
+      like(orders.customerName, query),
+      like(orders.customerPhone, query),
+      like(orders.orderNumber, query),
+    )!);
+  }
+
+  const limit = Math.min(Math.max(filters?.limit || 25, 1), 100);
+  const offset = Math.max(filters?.offset || 0, 0);
+  const results = await db
     .select()
     .from(orders)
     .where(and(...conditions))
-    .orderBy(desc(orders.createdAt));
-
-  // Search in customer name, phone, order number
-  if (filters?.searchQuery) {
-    const query = filters.searchQuery.toLowerCase();
-    results = results.filter(order =>
-      order.customerName?.toLowerCase().includes(query) ||
-      order.customerPhone?.toLowerCase().includes(query) ||
-      order.orderNumber?.toLowerCase().includes(query)
-    );
-  }
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(limit)
+    .offset(offset);
 
   return results;
 }

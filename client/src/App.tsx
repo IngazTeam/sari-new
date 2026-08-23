@@ -91,7 +91,6 @@ const Conversations = lazyLoad(() => import("./pages/merchant/Conversations"));
 const WhatsApp = lazyLoad(() => import("./pages/merchant/WhatsApp"));
 const SallaIntegration = lazyLoad(() => import("./pages/SallaIntegration"));
 const ByaanIntegration = lazyLoad(() => import("./pages/merchant/ByaanIntegration"));
-const ChatOrders = lazyLoad(() => import("./pages/ChatOrders"));
 const DiscountCodes = lazyLoad(() => import("./pages/DiscountCodes"));
 const Referrals = lazyLoad(() => import("./pages/merchant/Referrals"));
 const MerchantSettings = lazyLoad(() => import("./pages/merchant/Settings"));
@@ -108,7 +107,7 @@ const PromotionsPage = lazyLoad(() => import("./pages/merchant/Promotions"));
 const AnalyticsDashboard = lazyLoad(() => import("./pages/merchant/AnalyticsDashboard"));
 const Analytics = lazyLoad(() => import("./pages/merchant/Analytics"));
 const OverviewAnalytics = lazyLoad(() => import("./pages/merchant/OverviewAnalytics"));
-const Orders = lazyLoad(() => import("./pages/Orders"));
+const Orders = lazyLoad(() => import("./pages/merchant/Orders"));
 const WhatsAppInstancesPage = lazyLoad(() => import("./pages/merchant/WhatsAppInstancesPage"));
 const WhatsAppSetupWizard = lazyLoad(() => import("./pages/merchant/WhatsAppSetupWizard"));
 const OrderNotificationsSettings = lazyLoad(() => import("./pages/merchant/OrderNotificationsSettings"));
@@ -452,9 +451,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/chat-orders">
-        <DashboardLayout>
-          <ChatOrders />
-        </DashboardLayout>
+        <Redirect to="/merchant/orders" />
       </Route>
 
       <Route path="/merchant/discounts">

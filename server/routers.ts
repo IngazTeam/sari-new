@@ -80,7 +80,6 @@ import {
   approveWhatsAppConnectionRequest,
   approveWhatsAppRequest,
   cancelAppointment,
-  cancelOrder,
   checkAppointmentConflict,
   checkBookingConflict,
   claimReward,
@@ -268,7 +267,6 @@ import {
   updateKeywordStatus,
   updateMerchant,
   updateNotificationTemplate,
-  updateOrderStatus,
   updatePlan,
   updateQuickResponse,
   updateSallaConnection,
@@ -314,6 +312,12 @@ import { createSessionToken } from './_core/auth';
 import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
 import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
+import {
+  getMerchantOrder,
+  InvalidMerchantOrderTransitionError,
+  MerchantOrderWriteConflictError,
+  transitionMerchantOrderStatus,
+} from './orders/merchant-order-lifecycle';
 
 const passwordResetEmailSchema = z.string()
   .trim()
@@ -2322,22 +2326,18 @@ export const appRouter = router({
     // Create order from chat
     createFromChat: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
-        customerPhone: z.string(),
-        customerName: z.string(),
-        message: z.string(), // Customer's message
-      }))
+        customerPhone: z.string().trim().min(7).max(50),
+        customerName: z.string().trim().min(1).max(255),
+        message: z.string().trim().min(1).max(10_000), // Customer's message
+      }).strict())
       .mutation(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { parseOrderMessage, createOrderFromChat, generateOrderConfirmationMessage, generateGiftOrderConfirmationMessage } = await import('./automation/order-from-chat');
 
         // Parse order from message
-        const parsedOrder = await parseOrderMessage(input.message, input.merchantId);
+        const parsedOrder = await parseOrderMessage(input.message, merchant.id);
         if (!parsedOrder || parsedOrder.products.length === 0) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -2347,7 +2347,7 @@ export const appRouter = router({
 
         // Create order
         const result = await createOrderFromChat(
-          input.merchantId,
+          merchant.id,
           input.customerPhone,
           input.customerName,
           parsedOrder
@@ -2361,7 +2361,7 @@ export const appRouter = router({
         }
 
         // Get order details for confirmation message
-        const order = await getOrderById(result.orderId);
+        const order = await getMerchantOrder(merchant.id, result.orderId);
         if (!order) {
           throw new TRPCError({ code: 'NOT_FOUND' });
         }
@@ -2397,7 +2397,7 @@ export const appRouter = router({
         // إرسال إشعار بالطلب الجديد
         try {
           const { notifyNewOrder } = await import('./_core/notificationService');
-          await notifyNewOrder(input.merchantId, result.orderId, order.totalAmount);
+          await notifyNewOrder(merchant.id, result.orderId, order.totalAmount);
           console.log(`[Notification] New order notification sent for order ${result.orderId}`);
         } catch (error) {
           console.error('[Notification] Failed to send new order notification:', error);
@@ -2415,17 +2415,14 @@ export const appRouter = router({
 
     // Get order by ID
     getById: protectedProcedure
-      .input(z.object({ orderId: z.number() }))
+      .input(z.object({ orderId: z.number().int().positive() }).strict())
       .query(async ({ input, ctx }) => {
-        const order = await getOrderById(input.orderId);
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+        const order = await getMerchantOrder(merchant.id, input.orderId);
         if (!order) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-        }
-
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(order.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
         return order;
@@ -2433,7 +2430,6 @@ export const appRouter = router({
 
     // List orders for merchant
     listByMerchant: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
       .query(async ({ ctx }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
@@ -2447,11 +2443,13 @@ export const appRouter = router({
     getWithFilters: protectedProcedure
       .input(z.object({
         status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        searchQuery: z.string().optional(),
-        search: z.string().optional(),
-      }))
+        startDate: z.string().datetime({ offset: true }).optional(),
+        endDate: z.string().datetime({ offset: true }).optional(),
+        searchQuery: z.string().trim().max(100).optional(),
+        search: z.string().trim().max(100).optional(),
+        page: z.number().int().min(1).max(10_000).default(1),
+        limit: z.number().int().min(1).max(100).default(25),
+      }).strict())
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
@@ -2464,6 +2462,8 @@ export const appRouter = router({
         if (input.endDate) filters.endDate = new Date(input.endDate);
         if (input.searchQuery) filters.searchQuery = input.searchQuery;
         if (input.search) filters.searchQuery = input.search;
+        filters.limit = input.limit;
+        filters.offset = (input.page - 1) * input.limit;
 
         return await getOrdersWithFilters(merchant.id, filters);
       }),
@@ -2482,52 +2482,97 @@ export const appRouter = router({
     // Cancel order
     cancel: protectedProcedure
       .input(z.object({
-        orderId: z.number(),
-        reason: z.string().optional(),
-      }))
+        orderId: z.number().int().positive(),
+        reason: z.string().trim().min(1).max(500).optional(),
+      }).strict())
       .mutation(async ({ input, ctx }) => {
-        const order = await getOrderById(input.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND' });
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const order = await getMerchantOrder(merchant.id, input.orderId);
+        if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
+
+        try {
+          const changed = await transitionMerchantOrderStatus({
+            merchantId: merchant.id,
+            orderId: order.id,
+            expectedStatus: order.status,
+            status: 'cancelled',
+            cancellationReason: input.reason,
+          });
+          if (!changed) {
+            return { success: true, changed: false, notificationSent: false, message: 'الطلب ملغي مسبقًا' };
+          }
+        } catch (error) {
+          if (error instanceof InvalidMerchantOrderTransitionError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إلغاء طلب مكتمل أو ملغي' });
+          }
+          if (error instanceof MerchantOrderWriteConflictError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
+          }
+          throw error;
         }
 
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(order.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+        const { sendOrderNotification } = await import('./notifications/order-notifications');
+        const notificationSent = await sendOrderNotification(
+          order.id,
+          merchant.id,
+          order.customerPhone,
+          'cancelled',
+          {
+            customerName: order.customerName || 'عزيزي العميل',
+            storeName: merchant.businessName,
+            orderNumber: order.orderNumber || `ORD-${order.id}`,
+            total: order.totalAmount,
+          },
+        );
 
-        await cancelOrder(input.orderId, input.reason);
-
-        return { success: true, message: 'تم إلغاء الطلب' };
+        return {
+          success: true,
+          changed: true,
+          notificationSent,
+          message: notificationSent ? 'تم إلغاء الطلب وإشعار العميل' : 'تم إلغاء الطلب، وتعذر إرسال إشعار العميل',
+        };
       }),
 
     // Update order status
     updateStatus: protectedProcedure
       .input(z.object({
-        orderId: z.number(),
+        orderId: z.number().int().positive(),
         status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']),
-        trackingNumber: z.string().optional(),
-      }))
+        trackingNumber: z.string().trim().min(1).max(100).optional(),
+      }).strict())
       .mutation(async ({ input, ctx }) => {
-        const order = await getOrderById(input.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND' });
-        }
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const order = await getMerchantOrder(merchant.id, input.orderId);
+        if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
 
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(order.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        try {
+          const changed = await transitionMerchantOrderStatus({
+            merchantId: merchant.id,
+            orderId: order.id,
+            expectedStatus: order.status,
+            status: input.status,
+            trackingNumber: input.trackingNumber,
+          });
+          if (!changed) {
+            return { success: true, changed: false, notificationSent: false, message: 'حالة الطلب محدثة مسبقًا' };
+          }
+        } catch (error) {
+          if (error instanceof InvalidMerchantOrderTransitionError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إعادة الطلب إلى حالة سابقة أو تغيير حالة نهائية' });
+          }
+          if (error instanceof MerchantOrderWriteConflictError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
+          }
+          throw error;
         }
-
-        await updateOrderStatus(input.orderId, input.status, input.trackingNumber);
 
         // Send notification to customer
         const { sendOrderNotification } = await import('./notifications/order-notifications');
-        await sendOrderNotification(
+        const notificationSent = await sendOrderNotification(
           input.orderId,
-          order.merchantId,
+          merchant.id,
           order.customerPhone,
           input.status,
           {
@@ -2539,7 +2584,12 @@ export const appRouter = router({
           }
         );
 
-        return { success: true, message: 'تم تحديث حالة الطلب وإرسال الإشعار' };
+        return {
+          success: true,
+          changed: true,
+          notificationSent,
+          message: notificationSent ? 'تم تحديث حالة الطلب وإشعار العميل' : 'تم تحديث حالة الطلب، وتعذر إرسال إشعار العميل',
+        };
       }),
   }),
 

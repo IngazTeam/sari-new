@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
@@ -41,6 +41,10 @@ export default function Orders() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   // Get merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
     undefined,
@@ -53,7 +57,9 @@ export default function Orders() {
     {
       status: statusFilter !== 'all' ? statusFilter as any : undefined,
       searchQuery: searchQuery || undefined,
-    } as any,
+      page: currentPage,
+      limit: pageSize,
+    },
     { enabled: !!merchant }
   );
 
@@ -65,8 +71,8 @@ export default function Orders() {
 
   // Update status mutation
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
-    onSuccess: () => {
-      toast.success(t('toast.orders.msg2'));
+    onSuccess: (result) => {
+      result.notificationSent || !result.changed ? toast.success(result.message) : toast.warning(result.message);
       setIsUpdateStatusOpen(false);
       refetch();
     },
@@ -77,8 +83,8 @@ export default function Orders() {
 
   // Cancel order mutation
   const cancelOrderMutation = trpc.orders.cancel.useMutation({
-    onSuccess: () => {
-      toast.success(t('toast.orders.msg5'));
+    onSuccess: (result) => {
+      result.notificationSent || !result.changed ? toast.success(result.message) : toast.warning(result.message);
       setIsDetailsOpen(false);
       refetch();
     },
@@ -461,11 +467,16 @@ export default function Orders() {
                   <SelectValue placeholder={t('ordersPage.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">{t('ordersPage.statusPending')}</SelectItem>
-                  <SelectItem value="paid">{t('ordersPage.statusPaid')}</SelectItem>
-                  <SelectItem value="processing">{t('ordersPage.statusProcessing')}</SelectItem>
-                  <SelectItem value="shipped">{t('ordersPage.statusShipped')}</SelectItem>
-                  <SelectItem value="delivered">{t('ordersPage.statusDelivered')}</SelectItem>
+                  {(['pending', 'paid', 'processing', 'shipped', 'delivered'] as const)
+                    .filter(status => {
+                      const rank = { pending: 0, paid: 1, processing: 2, shipped: 3, delivered: 4 };
+                      return !selectedOrder || rank[status] >= rank[selectedOrder.status as keyof typeof rank];
+                    })
+                    .map(status => (
+                      <SelectItem key={status} value={status}>
+                        {t(`ordersPage.status${status[0].toUpperCase()}${status.slice(1)}`)}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -483,7 +494,7 @@ export default function Orders() {
 
             <Button
               onClick={handleUpdateStatus}
-              disabled={!newStatus || updateStatusMutation.isPending}
+              disabled={!newStatus || newStatus === selectedOrder?.status || updateStatusMutation.isPending}
               className="w-full"
             >
               {updateStatusMutation.isPending ? t('ordersPage.updating') : t('ordersPage.update')}
