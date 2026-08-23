@@ -10,9 +10,11 @@ export class WooCommerceMerchantLockError extends Error {
 
 export const WOOCOMMERCE_MAX_CONCURRENT_LOCKS = 8;
 export const WOOCOMMERCE_MAX_QUEUED_LOCKS = 64;
+export const WOOCOMMERCE_MAX_QUEUED_LOCKS_PER_MERCHANT = 2;
 export const WOOCOMMERCE_ADMISSION_WAIT_MS = 5_000;
 
 type AdmissionWaiter = {
+  key: string;
   resolve: (release: () => void) => void;
   reject: (error: WooCommerceMerchantLockError) => void;
   timer: ReturnType<typeof setTimeout>;
@@ -20,54 +22,85 @@ type AdmissionWaiter = {
 
 export class WooCommerceAdmissionGate {
   private active = 0;
+  private readonly activeKeys = new Set<string>();
   private readonly waiters: AdmissionWaiter[] = [];
+  private readonly queuedByKey = new Map<string, number>();
 
   constructor(
     readonly maxActive: number,
     readonly maxQueue: number,
     readonly waitMs: number,
+    readonly maxQueuePerKey = maxQueue,
   ) {
     if (!Number.isSafeInteger(maxActive) || maxActive <= 0) throw new TypeError('invalid_max_active');
     if (!Number.isSafeInteger(maxQueue) || maxQueue < 0) throw new TypeError('invalid_max_queue');
     if (!Number.isSafeInteger(waitMs) || waitMs <= 0) throw new TypeError('invalid_wait_ms');
+    if (!Number.isSafeInteger(maxQueuePerKey) || maxQueuePerKey < 0 || maxQueuePerKey > maxQueue) {
+      throw new TypeError('invalid_max_queue_per_key');
+    }
   }
 
-  acquire(): Promise<() => void> {
-    if (this.active < this.maxActive) {
-      this.active += 1;
-      return Promise.resolve(this.createRelease());
+  acquire(key: string): Promise<() => void> {
+    if (typeof key !== 'string' || key.length === 0 || key.length > 128) {
+      return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
     }
-    if (this.waiters.length >= this.maxQueue) {
+    if (this.active < this.maxActive && !this.activeKeys.has(key)) {
+      this.active += 1;
+      this.activeKeys.add(key);
+      return Promise.resolve(this.createRelease(key));
+    }
+    const queuedForKey = this.queuedByKey.get(key) ?? 0;
+    if (this.waiters.length >= this.maxQueue || queuedForKey >= this.maxQueuePerKey) {
       return Promise.reject(new WooCommerceMerchantLockError('operation_capacity'));
     }
 
     return new Promise((resolve, reject) => {
       const waiter: AdmissionWaiter = {
+        key,
         resolve,
         reject,
         timer: setTimeout(() => {
           const index = this.waiters.indexOf(waiter);
-          if (index >= 0) this.waiters.splice(index, 1);
+          if (index >= 0) {
+            this.waiters.splice(index, 1);
+            this.decrementQueued(key);
+          }
           reject(new WooCommerceMerchantLockError('operation_capacity'));
         }, this.waitMs),
       };
       waiter.timer.unref?.();
       this.waiters.push(waiter);
+      this.queuedByKey.set(key, queuedForKey + 1);
     });
   }
 
-  private createRelease(): () => void {
+  private decrementQueued(key: string): void {
+    const remaining = (this.queuedByKey.get(key) ?? 1) - 1;
+    if (remaining > 0) this.queuedByKey.set(key, remaining);
+    else this.queuedByKey.delete(key);
+  }
+
+  private drain(): void {
+    while (this.active < this.maxActive) {
+      const index = this.waiters.findIndex(waiter => !this.activeKeys.has(waiter.key));
+      if (index < 0) return;
+      const [waiter] = this.waiters.splice(index, 1);
+      this.decrementQueued(waiter.key);
+      clearTimeout(waiter.timer);
+      this.active += 1;
+      this.activeKeys.add(waiter.key);
+      waiter.resolve(this.createRelease(waiter.key));
+    }
+  }
+
+  private createRelease(key: string): () => void {
     let released = false;
     return () => {
       if (released) return;
       released = true;
-      const waiter = this.waiters.shift();
-      if (waiter) {
-        clearTimeout(waiter.timer);
-        waiter.resolve(this.createRelease());
-      } else {
-        this.active -= 1;
-      }
+      this.active -= 1;
+      this.activeKeys.delete(key);
+      this.drain();
     };
   }
 }
@@ -76,6 +109,7 @@ const wooCommerceAdmissionGate = new WooCommerceAdmissionGate(
   WOOCOMMERCE_MAX_CONCURRENT_LOCKS,
   WOOCOMMERCE_MAX_QUEUED_LOCKS,
   WOOCOMMERCE_ADMISSION_WAIT_MS,
+  WOOCOMMERCE_MAX_QUEUED_LOCKS_PER_MERCHANT,
 );
 
 export async function finalizeWooCommerceMerchantLockConnection(
@@ -103,7 +137,7 @@ export async function withWooCommerceMerchantLock<T>(
   if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
     throw new WooCommerceMerchantLockError('invalid_merchant');
   }
-  const releaseAdmission = await wooCommerceAdmissionGate.acquire();
+  const releaseAdmission = await wooCommerceAdmissionGate.acquire(String(merchantId));
   try {
     const pool = await getPool();
     if (!pool) throw new WooCommerceMerchantLockError('database_unavailable');
