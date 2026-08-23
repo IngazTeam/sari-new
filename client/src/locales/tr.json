@@ -1512,7 +1512,7 @@
     "allCampaignsDesc": "Tüm pazarlama kampanyalarınızın listesi",
     "campaignName": "Kampanya Adı",
     "status": "Durum",
-    "sent": "Gönderilen",
+    "sent": "Sağlayıcı tarafından kabul edildi",
     "total": "Toplam",
     "date": "Tarih",
     "actions": "İşlemler",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "Planlandı",
     "statusSending": "Gönderiliyor",
     "statusCompleted": "Tamamlandı",
-    "statusFailed": "Başarısız"
+    "statusFailed": "Başarısız",
+    "manualReviewTitle": "Gönderim sonuçları inceleme gerektiriyor",
+    "manualReviewDescription": "{{name}} kampanyasındaki {{count}} mesajın sonucu belirsiz. İncelemeden önce yeniden göndermeyin.",
+    "reviewIncidents": "Sonuçları incele",
+    "manualReviewDialogTitle": "Belirsiz sonuçlar onaylansın mı?",
+    "manualReviewDialogDescription": "Bu işlem kayıtları silmeden veya mesajları yeniden göndermeden uyarıyı kapatır. Sağlayıcı sonucu belirsiz olduğu için ayrılan kota sayılmaya devam eder.",
+    "manualReviewCancel": "İptal",
+    "manualReviewConfirm": "Yeniden göndermeden onayla",
+    "manualReviewSuccess": "{{count}} sonuç yeniden gönderilmeden onaylandı",
+    "manualReviewFailure": "Kampanya sonuçları onaylanamadı"
   },
   "conversationsPage": {
     "title": "Konuşmalar",

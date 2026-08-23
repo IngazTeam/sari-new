@@ -669,7 +669,7 @@
     "type": "Typ",
     "status": "Status",
     "recipients": "Empfänger",
-    "sent": "Gesendet",
+    "sent": "Vom Anbieter angenommen",
     "delivered": "Zugestellt",
     "opened": "المفتوح",
     "clicked": "Geklickt",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "Geplant",
     "statusSending": "Wird gesendet",
     "statusCompleted": "Abgeschlossen",
-    "statusFailed": "Fehlgeschlagen"
+    "statusFailed": "Fehlgeschlagen",
+    "manualReviewTitle": "Versandergebnisse müssen geprüft werden",
+    "manualReviewDescription": "Das Ergebnis von {{count}} Nachricht(en) in {{name}} ist unklar. Senden Sie sie vor der Prüfung nicht erneut.",
+    "reviewIncidents": "Ergebnisse prüfen",
+    "manualReviewDialogTitle": "Unklare Ergebnisse bestätigen?",
+    "manualReviewDialogDescription": "Der Hinweis wird geschlossen, ohne Datensätze zu löschen oder Nachrichten erneut zu senden. Das reservierte Kontingent bleibt gezählt, da das Anbieteregebnis unklar ist.",
+    "manualReviewCancel": "Abbrechen",
+    "manualReviewConfirm": "Ohne erneuten Versand bestätigen",
+    "manualReviewSuccess": "{{count}} Ergebnis(se) ohne erneuten Versand bestätigt",
+    "manualReviewFailure": "Kampagnenergebnisse konnten nicht bestätigt werden"
   },
   "conversationsPage": {
     "title": "Gespräche",

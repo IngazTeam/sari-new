@@ -79,6 +79,12 @@ type CampaignAcceptanceTimelineRow = RowDataPacket & {
   accepted: number | string;
 };
 
+type CampaignManualReviewSummaryRow = RowDataPacket & {
+  campaignId: number;
+  campaignName: string;
+  needsReview: number | string;
+};
+
 export class CampaignDispatchConflictError extends Error {
   constructor() {
     super('Campaign is already claimed or cannot be sent from its current state');
@@ -671,6 +677,72 @@ export async function getCampaignDeliveryProgress(campaignId: number, merchantId
     suppressed: Number(row?.suppressed || 0),
     needsReview: Number(row?.manualReview || 0),
   };
+}
+
+export async function acknowledgeCampaignManualReviews(
+  campaignId: number,
+  merchantId: number,
+): Promise<{ acknowledged: number }> {
+  if (!Number.isSafeInteger(campaignId) || campaignId <= 0 || !Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    throw new Error('Invalid campaign scope');
+  }
+  await ensureCampaignOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  let acknowledged = 0;
+  try {
+    await connection.beginTransaction();
+    await connection.execute(
+      `UPDATE campaignLogs l
+        INNER JOIN campaign_delivery_outbox o ON o.id = l.campaign_outbox_id
+          SET l.errorMessage = 'merchant_acknowledged'
+        WHERE o.campaign_id = ? AND o.merchant_id = ? AND o.status = 'manual_review'`,
+      [campaignId, merchantId],
+    );
+    const [result] = await connection.execute(
+      `UPDATE campaign_delivery_outbox
+          SET status = 'suppressed', last_error = 'merchant_acknowledged', updated_at = NOW(3)
+        WHERE campaign_id = ? AND merchant_id = ? AND status = 'manual_review'`,
+      [campaignId, merchantId],
+    );
+    acknowledged = Number((result as { affectedRows?: number }).affectedRows || 0);
+    await connection.commit();
+  } catch (error) {
+    try { await connection.rollback(); } catch { /* preserve original */ }
+    throw error;
+  } finally {
+    connection.release();
+  }
+  await reconcileCampaignState(campaignId);
+  return { acknowledged };
+}
+
+export async function getCampaignManualReviewSummary(merchantId: number): Promise<{
+  campaignId: number;
+  campaignName: string;
+  needsReview: number;
+} | null> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant scope');
+  await ensureCampaignOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const [rows] = await pool.execute<CampaignManualReviewSummaryRow[]>(
+    `SELECT o.campaign_id AS campaignId, c.name AS campaignName, COUNT(*) AS needsReview
+       FROM campaign_delivery_outbox o
+       INNER JOIN campaigns c ON c.id = o.campaign_id AND c.merchantId = o.merchant_id
+      WHERE o.merchant_id = ? AND o.status = 'manual_review'
+      GROUP BY o.campaign_id, c.name
+      ORDER BY MIN(o.created_at) ASC, o.campaign_id ASC
+      LIMIT 1`,
+    [merchantId],
+  );
+  const row = rows[0];
+  return row ? {
+    campaignId: Number(row.campaignId),
+    campaignName: String(row.campaignName),
+    needsReview: Math.max(0, Number(row.needsReview || 0)),
+  } : null;
 }
 
 export async function getCampaignAcceptanceTimeline(

@@ -1512,7 +1512,7 @@
     "allCampaignsDesc": "Elenco di tutte le tue campagne marketing",
     "campaignName": "Nome campagna",
     "status": "Stato",
-    "sent": "Inviati",
+    "sent": "Accettati dal provider",
     "total": "Totale",
     "date": "Data",
     "actions": "Azioni",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "Programmata",
     "statusSending": "In invio",
     "statusCompleted": "Completata",
-    "statusFailed": "Fallita"
+    "statusFailed": "Fallita",
+    "manualReviewTitle": "Alcuni esiti di invio richiedono verifica",
+    "manualReviewDescription": "L'esito di {{count}} messaggio/i in {{name}} è incerto. Non reinviarli prima della verifica.",
+    "reviewIncidents": "Verifica esiti",
+    "manualReviewDialogTitle": "Confermare gli esiti incerti?",
+    "manualReviewDialogDescription": "L'avviso verrà chiuso senza eliminare record o reinviare messaggi. La quota riservata resta conteggiata perché l'esito del provider è incerto.",
+    "manualReviewCancel": "Annulla",
+    "manualReviewConfirm": "Conferma senza reinvio",
+    "manualReviewSuccess": "Confermati {{count}} esiti senza reinvio",
+    "manualReviewFailure": "Impossibile confermare gli esiti della campagna"
   },
   "conversationsPage": {
     "title": "Conversazioni",

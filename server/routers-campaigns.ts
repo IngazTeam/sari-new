@@ -36,12 +36,14 @@ import {
   normalizeCampaignPhone,
 } from './automation/campaign-guard';
 import {
+  acknowledgeCampaignManualReviews,
   CampaignDispatchConflictError,
   CampaignTargetingError,
   enqueueCampaignDeliveries,
   filterCampaignAudience,
   getCampaignAcceptanceTimeline,
   getCampaignDeliveryProgress,
+  getCampaignManualReviewSummary,
   isValidCampaignTargetAudience,
 } from './automation/campaign-delivery-outbox';
 
@@ -325,6 +327,29 @@ export const campaignsRouter = router({
                 needsReview: delivery.needsReview,
             };
         }),
+
+    // Acknowledgement closes uncertain outcomes without deleting or resending.
+    acknowledgeManualReview: protectedProcedure
+        .input(z.object({ id: z.number().int().positive() }).strict())
+        .mutation(async ({ input, ctx }) => {
+            const campaign = await getCampaignById(input.id);
+            if (!campaign) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
+            }
+            const merchant = await getMerchantByUserId(ctx.user.id);
+            if (!merchant || campaign.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN' });
+            }
+            return acknowledgeCampaignManualReviews(campaign.id, merchant.id);
+        }),
+
+    getManualReviewSummary: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        return getCampaignManualReviewSummary(merchant.id);
+    }),
 
     // Campaign statistics. `sentCount` records provider acceptance, not a
     // delivery receipt or a customer read receipt.

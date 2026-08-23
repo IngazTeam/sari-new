@@ -1512,7 +1512,7 @@
     "allCampaignsDesc": "Liste de toutes vos campagnes marketing",
     "campaignName": "Nom de la campagne",
     "status": "Statut",
-    "sent": "Envoyés",
+    "sent": "Acceptés par le fournisseur",
     "total": "Total",
     "date": "Date",
     "actions": "Actions",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "Planifié",
     "statusSending": "En cours d'envoi",
     "statusCompleted": "Terminé",
-    "statusFailed": "Échoué"
+    "statusFailed": "Échoué",
+    "manualReviewTitle": "Des résultats d'envoi doivent être vérifiés",
+    "manualReviewDescription": "Le résultat de {{count}} message(s) dans {{name}} est incertain. Ne les renvoyez pas avant vérification.",
+    "reviewIncidents": "Vérifier les résultats",
+    "manualReviewDialogTitle": "Confirmer les résultats incertains ?",
+    "manualReviewDialogDescription": "Cette action ferme l'alerte sans supprimer de données ni renvoyer de messages. Le quota réservé reste comptabilisé car le résultat du fournisseur est incertain.",
+    "manualReviewCancel": "Annuler",
+    "manualReviewConfirm": "Confirmer sans renvoi",
+    "manualReviewSuccess": "{{count}} résultat(s) confirmé(s) sans renvoi",
+    "manualReviewFailure": "Impossible de confirmer les résultats de la campagne"
   },
   "conversationsPage": {
     "title": "Conversations",

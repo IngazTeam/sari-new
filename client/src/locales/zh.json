@@ -669,7 +669,7 @@
     "type": "类型",
     "status": "状态",
     "recipients": "接收者",
-    "sent": "已发送",
+    "sent": "服务商已接受",
     "delivered": "已送达",
     "opened": "المفتوح",
     "clicked": "已点击",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "已计划",
     "statusSending": "发送中",
     "statusCompleted": "已完成",
-    "statusFailed": "失败"
+    "statusFailed": "失败",
+    "manualReviewTitle": "部分发送结果需要审核",
+    "manualReviewDescription": "{{name}} 中有 {{count}} 条消息的结果不确定。审核前请勿重新发送。",
+    "reviewIncidents": "审核结果",
+    "manualReviewDialogTitle": "确认不确定的结果？",
+    "manualReviewDialogDescription": "此操作只关闭提醒，不删除记录或重发消息。由于服务商结果不确定，已预留的额度仍会计入。",
+    "manualReviewCancel": "取消",
+    "manualReviewConfirm": "确认且不重发",
+    "manualReviewSuccess": "已确认 {{count}} 个结果，未重发",
+    "manualReviewFailure": "无法确认活动结果"
   },
   "conversationsPage": {
     "title": "对话",

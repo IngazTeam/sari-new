@@ -1512,7 +1512,7 @@
     "allCampaignsDesc": "Lista de todas tus campañas de marketing",
     "campaignName": "Nombre de campaña",
     "status": "Estado",
-    "sent": "Enviados",
+    "sent": "Aceptados por el proveedor",
     "total": "Total",
     "date": "Fecha",
     "actions": "Acciones",
@@ -1529,7 +1529,16 @@
     "statusScheduled": "Programada",
     "statusSending": "Enviando",
     "statusCompleted": "Completada",
-    "statusFailed": "Fallida"
+    "statusFailed": "Fallida",
+    "manualReviewTitle": "Hay resultados de envío que requieren revisión",
+    "manualReviewDescription": "El resultado de {{count}} mensaje(s) de {{name}} es incierto. No los reenvíes antes de revisarlos.",
+    "reviewIncidents": "Revisar resultados",
+    "manualReviewDialogTitle": "¿Confirmar resultados inciertos?",
+    "manualReviewDialogDescription": "Esto cierra la alerta sin borrar registros ni reenviar mensajes. La cuota reservada sigue contabilizada porque el resultado del proveedor es incierto.",
+    "manualReviewCancel": "Cancelar",
+    "manualReviewConfirm": "Confirmar sin reenviar",
+    "manualReviewSuccess": "Se confirmaron {{count}} resultado(s) sin reenviar",
+    "manualReviewFailure": "No se pudieron confirmar los resultados de la campaña"
   },
   "conversationsPage": {
     "title": "Conversaciones",

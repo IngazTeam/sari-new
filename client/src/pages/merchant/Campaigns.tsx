@@ -11,7 +11,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Pencil, Trash2, Send, FileText, Loader2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Send, FileText, Loader2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
@@ -19,6 +29,7 @@ import { useState, useEffect } from 'react';
 export default function Campaigns() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const [manualReviewOpen, setManualReviewOpen] = useState(false);
   const { data: campaigns, isLoading, refetch } = trpc.campaigns.list.useQuery();
   const deleteMutation = trpc.campaigns.delete.useMutation({
     onSuccess: () => {
@@ -55,14 +66,26 @@ export default function Campaigns() {
   };
 
   // FIX #9: Poll progress for sending campaigns
-  const sendingCampaign = campaigns?.find(c => c.status === 'sending');
+  const progressCampaign = campaigns?.find(c => c.status === 'sending');
   const { data: sendProgress } = trpc.campaigns.getSendProgress.useQuery(
-    { id: sendingCampaign?.id || 0 },
+    { id: progressCampaign?.id || 0 },
     {
-      enabled: !!sendingCampaign,
-      refetchInterval: sendingCampaign ? 3000 : false, // Poll every 3 seconds
+      enabled: !!progressCampaign,
+      refetchInterval: progressCampaign?.status === 'sending' ? 3000 : false,
     }
   );
+  const { data: manualReviewSummary, refetch: refetchManualReviewSummary } = trpc.campaigns.getManualReviewSummary.useQuery();
+
+  const acknowledgeManualReviewMutation = trpc.campaigns.acknowledgeManualReview.useMutation({
+    onSuccess: async ({ acknowledged }) => {
+      setManualReviewOpen(false);
+      await Promise.all([refetch(), refetchManualReviewSummary()]);
+      toast.success(t('campaignsPage.manualReviewSuccess', { count: acknowledged }));
+    },
+    onError: () => {
+      toast.error(t('campaignsPage.manualReviewFailure'));
+    },
+  });
 
   // Auto-refetch when campaign completes
   useEffect(() => {
@@ -107,6 +130,28 @@ export default function Campaigns() {
           {t('campaignsPage.newCampaign')}
         </Button>
       </div>
+
+      {manualReviewSummary && manualReviewSummary.needsReview > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              <div>
+                <p className="font-medium">{t('campaignsPage.manualReviewTitle')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('campaignsPage.manualReviewDescription', {
+                    count: manualReviewSummary.needsReview,
+                    name: manualReviewSummary.campaignName,
+                  })}
+                </p>
+              </div>
+            </div>
+            <Button type="button" variant="outline" onClick={() => setManualReviewOpen(true)}>
+              {t('campaignsPage.reviewIncidents')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -190,7 +235,7 @@ export default function Campaigns() {
                     <TableCell>{campaign.sentCount}</TableCell>
                     <TableCell>{campaign.totalRecipients}</TableCell>
                     <TableCell>
-                      {campaign.status === 'sending' && sendProgress && sendProgress.progress !== undefined ? (
+                      {campaign.status === 'sending' && campaign.id === progressCampaign?.id && sendProgress && sendProgress.progress !== undefined ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="w-3 h-3 animate-spin text-primary" />
                           <div className="flex-1">
@@ -290,6 +335,32 @@ export default function Campaigns() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={manualReviewOpen} onOpenChange={setManualReviewOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('campaignsPage.manualReviewDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('campaignsPage.manualReviewDialogDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={acknowledgeManualReviewMutation.isPending}>
+              {t('campaignsPage.manualReviewCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!manualReviewSummary || acknowledgeManualReviewMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (manualReviewSummary) acknowledgeManualReviewMutation.mutate({ id: manualReviewSummary.campaignId });
+              }}
+            >
+              {acknowledgeManualReviewMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+              {t('campaignsPage.manualReviewConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

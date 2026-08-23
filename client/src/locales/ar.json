@@ -1313,7 +1313,7 @@
     "allCampaignsDesc": "قائمة بجميع الحملات التسويقية الخاصة بك",
     "campaignName": "اسم الحملة",
     "status": "الحالة",
-    "sent": "المرسل",
+    "sent": "قبله مزود الإرسال",
     "total": "الإجمالي",
     "date": "التاريخ",
     "actions": "الإجراءات",
@@ -1330,7 +1330,16 @@
     "statusScheduled": "مجدول",
     "statusSending": "جاري الإرسال",
     "statusCompleted": "مكتمل",
-    "statusFailed": "فشل"
+    "statusFailed": "فشل",
+    "manualReviewTitle": "نتائج إرسال تحتاج مراجعة",
+    "manualReviewDescription": "تعذر تأكيد نتيجة {{count}} رسالة في حملة {{name}}. لا تعد إرسالها قبل المراجعة.",
+    "reviewIncidents": "مراجعة النتائج",
+    "manualReviewDialogTitle": "إقرار مراجعة النتائج غير المؤكدة؟",
+    "manualReviewDialogDescription": "سيُغلق التنبيه دون حذف السجل أو إعادة إرسال أي رسالة، وستبقى الحصة المحجوزة محسوبة لأن نتيجة المزود غير مؤكدة.",
+    "manualReviewCancel": "إلغاء",
+    "manualReviewConfirm": "إقرار دون إعادة إرسال",
+    "manualReviewSuccess": "تم إقرار {{count}} نتيجة دون إعادة إرسال",
+    "manualReviewFailure": "تعذر إقرار نتائج الحملة"
   },
   "conversationsPage": {
     "title": "المحادثات",

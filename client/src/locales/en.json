@@ -1313,7 +1313,7 @@
     "allCampaignsDesc": "List of all your marketing campaigns",
     "campaignName": "Campaign Name",
     "status": "Status",
-    "sent": "Sent",
+    "sent": "Accepted by Provider",
     "total": "Total",
     "date": "Date",
     "actions": "Actions",
@@ -1330,7 +1330,16 @@
     "statusScheduled": "Scheduled",
     "statusSending": "Sending",
     "statusCompleted": "Completed",
-    "statusFailed": "Failed"
+    "statusFailed": "Failed",
+    "manualReviewTitle": "Dispatch outcomes need review",
+    "manualReviewDescription": "The outcome of {{count}} message(s) in {{name}} is uncertain. Do not resend them before review.",
+    "reviewIncidents": "Review outcomes",
+    "manualReviewDialogTitle": "Acknowledge uncertain outcomes?",
+    "manualReviewDialogDescription": "This closes the alert without deleting records or resending messages. Reserved quota remains counted because the provider outcome is uncertain.",
+    "manualReviewCancel": "Cancel",
+    "manualReviewConfirm": "Acknowledge without resending",
+    "manualReviewSuccess": "Acknowledged {{count}} outcome(s) without resending",
+    "manualReviewFailure": "Could not acknowledge campaign outcomes"
   },
   "conversationsPage": {
     "title": "Conversations",
