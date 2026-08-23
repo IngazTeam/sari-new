@@ -86,6 +86,9 @@ async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<
       if (error.code === 'merchant_lock_timeout') {
         throw new TRPCError({ code: 'CONFLICT', message: 'توجد عملية WooCommerce أخرى قيد التنفيذ' });
       }
+      if (error.code === 'operation_capacity') {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'خدمة WooCommerce مشغولة؛ حاول بعد قليل' });
+      }
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
     }
     throw error;
