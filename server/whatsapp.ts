@@ -508,11 +508,16 @@ export async function sendCampaign(
   message: string,
   imageUrl?: string,
   minDelay: number = 3,
-  maxDelay: number = 6
+  maxDelay: number = 6,
+  beforeEach?: (phone: string) => Promise<boolean>,
 ): Promise<Array<{ phone: string; success: boolean; error?: string }>> {
   const results: Array<{ phone: string; success: boolean; error?: string }> = [];
 
   for (const phone of recipients) {
+    if (beforeEach && !(await beforeEach(phone))) {
+      results.push({ phone, success: false, error: 'suppressed' });
+      continue;
+    }
     try {
       // Send message (with image if provided)
       if (imageUrl) {

@@ -17,6 +17,13 @@ import {
   updateOccasionCampaign,
 } from '../db';
 import { sendTextMessage } from '../whatsapp';
+import {
+  filterCampaignRecipients,
+  isOptedOut,
+  normalizeCampaignPhone,
+  trackCampaignSend,
+  withCampaignOptOutNotice,
+} from './campaign-guard';
 
 // Occasion types
 export type OccasionType =
@@ -186,38 +193,41 @@ export async function sendOccasionCampaign(
   const conversations = await getConversationsByMerchantId(merchantId);
   const phoneSet = new Set<string>();
   conversations.forEach(c => phoneSet.add(c.customerPhone));
-  const uniquePhones = Array.from(phoneSet);
+  const guard = await filterCampaignRecipients(merchantId, Array.from(phoneSet));
+  const uniquePhones = guard.allowed;
 
   let successCount = 0;
 
   // Send message to each customer
   for (const phone of uniquePhones) {
+    if (await isOptedOut(merchantId, phone)) continue;
     try {
       // Get customer name from conversation
-      const conversation = conversations.find(c => c.customerPhone === phone);
+      const conversation = conversations.find(c => normalizeCampaignPhone(c.customerPhone) === phone);
       const customerName = conversation?.customerName || null;
 
       // Generate message
-      const message = generateOccasionMessage(
+      const message = withCampaignOptOutNotice(generateOccasionMessage(
         occasionName,
         customerName,
         discountCode,
         discountPercent,
         merchant.businessName
-      );
+      ));
 
       // Send via WhatsApp
       const result = await sendTextMessage(phone, message);
 
       if (result.success) {
         successCount++;
+        trackCampaignSend(merchantId, 1);
       }
 
       // Random delay between 3-6 seconds to avoid spam detection
       const delay = Math.floor(Math.random() * 3000) + 3000;
       await new Promise(resolve => setTimeout(resolve, delay));
     } catch (error) {
-      console.error(`Failed to send occasion message to ${phone}:`, error);
+      console.error('Failed to send an occasion campaign message:', error);
     }
   }
 

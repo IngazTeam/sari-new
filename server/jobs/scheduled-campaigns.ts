@@ -6,6 +6,12 @@
 
 import { getCampaignById, updateCampaign, getConversationsByMerchantId, getPrimaryWhatsAppInstance, getDb, getActiveSubscriptionByMerchantId } from "../db.js";
 import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
+import {
+  filterCampaignRecipients,
+  isOptedOut,
+  trackCampaignSend,
+  withCampaignOptOutNotice,
+} from '../automation/campaign-guard';
 
 /**
  * فحص وإرسال الحملات المجدولة
@@ -93,49 +99,39 @@ export async function checkScheduledCampaigns() {
         
         // P2: Campaign Guard — filter recipients through opt-out + rate limits + quiet hours
         let recipients = conversations.map(c => c.customerPhone);
-        try {
-          const { filterCampaignRecipients, trackCampaignSend } = await import('../automation/campaign-guard');
-          const guardResult = await filterCampaignRecipients(campaign.merchantId, recipients);
-          
-          if (guardResult.warnings.length > 0) {
-            console.warn(`[Scheduled Campaigns] Guard warnings:`, guardResult.warnings);
-          }
-          if (guardResult.blocked.length > 0) {
-            console.log(`[Scheduled Campaigns] Blocked ${guardResult.blocked.length} recipients (opt-out/rate-limit/quiet-hours)`);
-          }
-          recipients = guardResult.allowed;
-          
-          if (recipients.length === 0) {
-            console.log(`[Scheduled Campaigns] All recipients blocked by campaign guard`);
-            await updateCampaign(campaign.id, { 
-              status: "completed",
-              totalRecipients: conversations.length,
-              sentCount: 0
-            });
-            sent++;
-            continue;
-          }
-        } catch (guardErr) {
-          console.warn('[Scheduled Campaigns] Campaign guard failed (proceeding):', guardErr);
+        const guardResult = await filterCampaignRecipients(campaign.merchantId, recipients);
+        if (guardResult.warnings.length > 0) {
+          console.warn(`[Scheduled Campaigns] Guard warnings:`, guardResult.warnings);
+        }
+        if (guardResult.blocked.length > 0) {
+          console.log(`[Scheduled Campaigns] Blocked ${guardResult.blocked.length} recipients (opt-out/rate-limit/quiet-hours)`);
+        }
+        recipients = guardResult.allowed;
+
+        if (recipients.length === 0) {
+          console.log(`[Scheduled Campaigns] All recipients blocked by campaign guard`);
+          await updateCampaign(campaign.id, {
+            status: "completed",
+            totalRecipients: conversations.length,
+            sentCount: 0
+          });
+          sent++;
+          continue;
         }
 
         // إرسال الرسالة لجميع العملاء المؤهلين
         const results = await sendWhatsAppCampaign(
           recipients,
-          campaign.message,
+          withCampaignOptOutNotice(campaign.message),
           campaign.imageUrl || undefined,
           3, // minDelay
-          6  // maxDelay
+          6, // maxDelay
+          async phone => !(await isOptedOut(campaign.merchantId, phone)),
         );
         
         // Track sent count for rate limiting
-        try {
-          const { trackCampaignSend } = await import('../automation/campaign-guard');
-          const successCount = results.filter(r => r.success).length;
-          trackCampaignSend(campaign.merchantId, successCount);
-        } catch { /* silent */ }
-        
         const successCount = results.filter(r => r.success).length;
+        trackCampaignSend(campaign.merchantId, successCount);
         
         // تحديث الحملة بعد الإرسال
         await updateCampaign(campaign.id, {

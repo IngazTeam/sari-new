@@ -31,6 +31,14 @@ import {
   getUserById,
   updateCampaign,
 } from './db';
+import {
+  CampaignSuppressionUnavailableError,
+  filterCampaignRecipients,
+  filterSuppressedCampaignRecipients,
+  normalizeCampaignPhone,
+  trackCampaignSend,
+  withCampaignOptOutNotice,
+} from './automation/campaign-guard';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -243,10 +251,44 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'No customers match the targeting criteria' });
             }
 
+            let eligibleRecipients: typeof uniqueRecipients;
+            let blockedRecipients = 0;
+            let guardWarnings: string[] = [];
+            try {
+                const guard = await filterCampaignRecipients(
+                    merchant.id,
+                    uniqueRecipients.map(recipient => recipient.customerPhone),
+                );
+                const allowed = new Set(guard.allowed);
+                eligibleRecipients = uniqueRecipients.filter(recipient => {
+                    const phone = normalizeCampaignPhone(recipient.customerPhone);
+                    if (!phone || !allowed.has(phone)) return false;
+                    allowed.delete(phone);
+                    return true;
+                });
+                blockedRecipients = guard.blocked.length;
+                guardWarnings = guard.warnings;
+            } catch (error) {
+                if (error instanceof CampaignSuppressionUnavailableError) {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: 'تعذر التحقق من قائمة إلغاء الاشتراك؛ لم تُرسل الحملة',
+                    });
+                }
+                throw error;
+            }
+
+            if (eligibleRecipients.length === 0) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'لا يوجد مستلم مؤهل بعد تطبيق الموافقة وإلغاء الاشتراك وحدود الإرسال',
+                });
+            }
+
             // Update status to sending
             await updateCampaign(input.id, {
                 status: 'sending',
-                totalRecipients: uniqueRecipients.length,
+                totalRecipients: eligibleRecipients.length,
             });
 
             // FIX #2: Send in background with rate-limited sequential batching
@@ -261,9 +303,19 @@ export const campaignsRouter = router({
             (async () => {
                 let successCount = 0;
                 let failCount = 0;
+                const campaignMessage = withCampaignOptOutNotice(campaign.message);
 
-                for (let i = 0; i < uniqueRecipients.length; i += BATCH_SIZE) {
-                    const batch = uniqueRecipients.slice(i, i + BATCH_SIZE);
+                for (let i = 0; i < eligibleRecipients.length; i += BATCH_SIZE) {
+                    const candidateBatch = eligibleRecipients.slice(i, i + BATCH_SIZE);
+                    const justInTime = await filterSuppressedCampaignRecipients(
+                        merchant.id,
+                        candidateBatch.map(recipient => recipient.customerPhone),
+                    );
+                    const allowed = new Set(justInTime.allowed);
+                    const batch = candidateBatch.filter(recipient => allowed.has(
+                        normalizeCampaignPhone(recipient.customerPhone) || '',
+                    ));
+                    failCount += candidateBatch.length - batch.length;
 
                     const results = await Promise.allSettled(
                         batch.map(async (conv) => {
@@ -273,12 +325,12 @@ export const campaignsRouter = router({
                                         chatId: `${conv.customerPhone}@c.us`,
                                         urlFile: campaign.imageUrl,
                                         fileName: 'campaign.jpg',
-                                        caption: campaign.message,
+                                        caption: campaignMessage,
                                     });
                                 } else {
                                     await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
                                         chatId: `${conv.customerPhone}@c.us`,
-                                        message: campaign.message,
+                                        message: campaignMessage,
                                     });
                                 }
 
@@ -317,6 +369,9 @@ export const campaignsRouter = router({
                             failCount++;
                         }
                     }
+                    trackCampaignSend(merchant.id, results.filter(
+                        result => result.status === 'fulfilled' && result.value,
+                    ).length);
 
                     // Update progress for live tracking (#9)
                     await updateCampaign(input.id, {
@@ -324,7 +379,7 @@ export const campaignsRouter = router({
                     });
 
                     // Rate limit: wait between batches (skip on last batch)
-                    if (i + BATCH_SIZE < uniqueRecipients.length) {
+                    if (i + BATCH_SIZE < eligibleRecipients.length) {
                         await sleep(BATCH_DELAY_MS);
                     }
                 }
@@ -335,7 +390,7 @@ export const campaignsRouter = router({
                     sentCount: successCount,
                 });
 
-                console.log(`Campaign ${input.id} completed: ${successCount}/${uniqueRecipients.length} sent, ${failCount} failed`);
+                console.log(`Campaign ${input.id} completed: ${successCount}/${eligibleRecipients.length} sent, ${failCount} failed or suppressed`);
 
                 // Notify admin about campaign completion
                 try {
@@ -346,7 +401,7 @@ export const campaignsRouter = router({
                         businessName: merchant.businessName,
                         campaignName: campaign.name,
                         targetAudience: campaign.targetAudience || 'All Customers',
-                        recipientsCount: uniqueRecipients.length,
+                        recipientsCount: eligibleRecipients.length,
                         // @ts-ignore
                         sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                         status: 'sent',
@@ -362,7 +417,9 @@ export const campaignsRouter = router({
             return {
                 success: true,
                 message: 'Campaign is being sent',
-                totalRecipients: uniqueRecipients.length,
+                totalRecipients: eligibleRecipients.length,
+                blockedRecipients,
+                warnings: guardWarnings,
             };
         }),
 

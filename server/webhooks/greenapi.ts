@@ -57,7 +57,7 @@ interface GreenAPIWebhookPayload {
     senderName?: string;
   };
   messageData: {
-    typeMessage: 'textMessage' | 'imageMessage' | 'videoMessage' | 'documentMessage' | 'audioMessage' | 'voiceMessage' | 'contactMessage' | 'locationMessage' | 'quotedMessage' | 'extendedTextMessage';
+    typeMessage: 'textMessage' | 'imageMessage' | 'videoMessage' | 'documentMessage' | 'audioMessage' | 'voiceMessage' | 'contactMessage' | 'locationMessage' | 'quotedMessage' | 'extendedTextMessage' | 'buttonsResponseMessage' | 'templateButtonsReplyMessage' | 'listResponseMessage' | 'interactiveButtonsResponse';
     textMessageData?: {
       textMessage: string;
     };
@@ -70,6 +70,22 @@ interface GreenAPIWebhookPayload {
       stanzaId: string;
       participant: string;
       typeMessage: string;
+    };
+    buttonsResponseMessage?: {
+      selectedButtonId?: string;
+      selectedButtonText?: string;
+    };
+    templateButtonReplyMessage?: {
+      selectedId?: string;
+      selectedDisplayText?: string;
+    };
+    listResponseMessage?: {
+      title?: string;
+      singleSelectReply?: string;
+    };
+    interactiveButtonsResponse?: {
+      selectedId?: string;
+      selectedDisplayText?: string;
     };
     // Green API puts file URLs in fileMessageData for voice/audio/image/video/document
     fileMessageData?: {
@@ -175,6 +191,16 @@ function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
   if (messageData.textMessageData?.textMessage) {
     return messageData.textMessageData.textMessage;
   }
+
+  const interactiveText = messageData.buttonsResponseMessage?.selectedButtonText
+    || messageData.templateButtonReplyMessage?.selectedDisplayText
+    || messageData.listResponseMessage?.title
+    || messageData.interactiveButtonsResponse?.selectedDisplayText
+    || messageData.buttonsResponseMessage?.selectedButtonId
+    || messageData.templateButtonReplyMessage?.selectedId
+    || messageData.listResponseMessage?.singleSelectReply
+    || messageData.interactiveButtonsResponse?.selectedId;
+  if (interactiveText) return String(interactiveText).slice(0, 4096);
   
   // Image/Video with caption
   if (messageData.caption) {
@@ -1149,6 +1175,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       // If merchant detection fails, we risk treating the merchant as a customer.
       console.error('[Webhook] 🔴 CRITICAL: Merchant mode check failed — blocking message to prevent misclassification:', escErr);
       return { success: false, message: 'Merchant classification failed — message blocked to prevent misrouting' };
+    }
+
+    const customerText = extractMessageText(payload);
+    if (!groupChatId && customerText) {
+      const { addOptOut, isOptOutRequest } = await import('../automation/campaign-guard');
+      if (isOptOutRequest(customerText)) {
+        await addOptOut(instance.merchantId, customerPhone, 'customer_message');
+        return { success: true, message: 'Customer marketing opt-out recorded' };
+      }
     }
 
     // SEC-FIX: Verify merchant has active subscription before processing
