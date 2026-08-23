@@ -5,7 +5,7 @@
  * Fixes applied:
  * #1 - Targeting filters now wire to send endpoint
  * #2 - Rate-limited sequential batching (10/sec) instead of Promise.all
- * #3 - Removed fake readRate, using real data from logs
+ * #3 - Removed fabricated delivery/read metrics; expose provider acceptance only
  * #4 - Delete now does real DELETE instead of status='failed'
  * #7 - Frontend confirms before send (frontend-side fix)
  * #8 - Unsubscribe support (campaignOptOut field)
@@ -16,11 +16,11 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, router } from "./_core/trpc";
 import {
   createCampaign,
-  createCampaignLog,
   deleteCampaign,
+  getActiveSubscriptionByMerchantId,
   getAllCampaignsWithMerchants,
   getCampaignById,
   getCampaignLogsWithStats,
@@ -28,18 +28,31 @@ import {
   getConversationsByMerchantId,
   getMerchantByUserId,
   getPrimaryWhatsAppInstance,
-  getUserById,
   updateCampaign,
 } from './db';
 import {
   CampaignSuppressionUnavailableError,
   filterCampaignRecipients,
-  filterSuppressedCampaignRecipients,
-  hasActiveCampaignConsent,
   normalizeCampaignPhone,
-  trackCampaignSend,
-  withCampaignOptOutNotice,
 } from './automation/campaign-guard';
+import {
+  CampaignDispatchConflictError,
+  CampaignTargetingError,
+  enqueueCampaignDeliveries,
+  filterCampaignAudience,
+  getCampaignAcceptanceTimeline,
+  getCampaignDeliveryProgress,
+  isValidCampaignTargetAudience,
+} from './automation/campaign-delivery-outbox';
+
+const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !url.username && !url.password;
+    } catch {
+        return false;
+    }
+}, { message: 'Campaign images must use a public HTTPS URL' });
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -48,45 +61,6 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
     }
     return next({ ctx });
 });
-
-// Helper: sleep for sequential batching
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper: apply targeting filters to conversations
-function applyTargetingFilters(
-    conversations: Awaited<ReturnType<typeof getConversationsByMerchantId>>,
-    targetAudience: string | null
-) {
-    if (!targetAudience) return conversations;
-
-    try {
-        const filters = JSON.parse(targetAudience);
-
-        let filtered = conversations;
-
-        // Filter by last activity
-        if (filters.lastActivityDays) {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - filters.lastActivityDays);
-            filtered = filtered.filter(c =>
-                c.lastActivityAt && new Date(c.lastActivityAt) >= cutoffDate
-            );
-        }
-
-        // Filter by purchase count
-        if (filters.purchaseCountMin !== undefined) {
-            filtered = filtered.filter(c => c.purchaseCount >= filters.purchaseCountMin);
-        }
-        if (filters.purchaseCountMax !== undefined) {
-            filtered = filtered.filter(c => c.purchaseCount <= filters.purchaseCountMax);
-        }
-
-        return filtered;
-    } catch {
-        // If targetAudience is not valid JSON, return all (backward compat)
-        return conversations;
-    }
-}
 
 export const campaignsRouter = router({
     // Get all campaigns for current merchant
@@ -123,12 +97,12 @@ export const campaignsRouter = router({
     // Create new campaign — targetAudience is now stored as JSON
     create: protectedProcedure
         .input(z.object({
-            name: z.string().min(1),
-            message: z.string().min(1),
-            imageUrl: z.string().url().optional(),
-            targetAudience: z.string().optional(), // JSON string of filters
+            name: z.string().trim().min(1).max(255),
+            message: z.string().trim().min(1).max(3800),
+            imageUrl: campaignImageUrlSchema.optional(),
+            targetAudience: z.string().max(1000).refine(isValidCampaignTargetAudience).optional(),
             scheduledAt: z.date().optional(),
-        }))
+        }).strict())
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
@@ -158,10 +132,10 @@ export const campaignsRouter = router({
     update: protectedProcedure
         .input(z.object({
             id: z.number(),
-            name: z.string().optional(),
-            message: z.string().optional(),
-            imageUrl: z.string().url().optional(),
-            targetAudience: z.string().optional(),
+            name: z.string().trim().min(1).max(255).optional(),
+            message: z.string().trim().min(1).max(3800).optional(),
+            imageUrl: campaignImageUrlSchema.optional(),
+            targetAudience: z.string().max(1000).refine(isValidCampaignTargetAudience).optional(),
             scheduledAt: z.date().optional(),
         }).strict())
         .mutation(async ({ input, ctx }) => {
@@ -210,7 +184,8 @@ export const campaignsRouter = router({
             return { success: true };
         }),
 
-    // FIX #1, #2, #8, #11: Send campaign with targeting, batching, dedup
+    // Durable send: consent-gated recipients are committed to an outbox in the
+    // same transaction that claims the campaign. Provider I/O never runs here.
     send: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
@@ -224,7 +199,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
-            if (campaign.status === 'completed' || campaign.status === 'sending') {
+            if (!['draft', 'scheduled'].includes(campaign.status)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already sent or in progress' });
             }
 
@@ -233,16 +208,28 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active WhatsApp instance found' });
             }
 
-            // FIX #1: Apply targeting filters
-            const conversations = await getConversationsByMerchantId(merchant.id);
-            const targeted = applyTargetingFilters(conversations, campaign.targetAudience);
+            const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
+            if (!subscription) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'An active subscription is required' });
+            }
 
-            // FIX #11: Deduplicate phone numbers
+            const conversations = await getConversationsByMerchantId(merchant.id);
+            let targeted: typeof conversations;
+            try {
+                targeted = filterCampaignAudience(conversations, campaign.targetAudience);
+            } catch (error) {
+                if (error instanceof CampaignTargetingError) {
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign targeting must be reviewed before sending' });
+                }
+                throw error;
+            }
+
             const phoneSet = new Set<string>();
             const uniqueRecipients: typeof targeted = [];
             for (const conv of targeted) {
-                if (conv.customerPhone && !phoneSet.has(conv.customerPhone)) {
-                    phoneSet.add(conv.customerPhone);
+                const phone = normalizeCampaignPhone(conv.customerPhone);
+                if (phone && !phoneSet.has(phone)) {
+                    phoneSet.add(phone);
                     uniqueRecipients.push(conv);
                 }
             }
@@ -251,7 +238,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'No customers match the targeting criteria' });
             }
 
-            let eligibleRecipients: typeof uniqueRecipients;
+            let eligibleRecipients: Array<(typeof uniqueRecipients)[number] & { canonicalPhone: string }>;
             let blockedRecipients = 0;
             let guardWarnings: string[] = [];
             try {
@@ -260,11 +247,11 @@ export const campaignsRouter = router({
                     uniqueRecipients.map(recipient => recipient.customerPhone),
                 );
                 const allowed = new Set(guard.allowed);
-                eligibleRecipients = uniqueRecipients.filter(recipient => {
+                eligibleRecipients = uniqueRecipients.flatMap(recipient => {
                     const phone = normalizeCampaignPhone(recipient.customerPhone);
-                    if (!phone || !allowed.has(phone)) return false;
+                    if (!phone || !allowed.has(phone)) return [];
                     allowed.delete(phone);
-                    return true;
+                    return [{ ...recipient, canonicalPhone: phone }];
                 });
                 blockedRecipients = guard.blocked.length;
                 guardWarnings = guard.warnings;
@@ -285,131 +272,25 @@ export const campaignsRouter = router({
                 });
             }
 
-            // Update status to sending
-            await updateCampaign(input.id, {
-                status: 'sending',
-                totalRecipients: eligibleRecipients.length,
-            });
-
-            // FIX #2: Send in background with rate-limited sequential batching
-            const axios = await import('axios');
-            const instancePrefix = instance.instanceId.substring(0, 4);
-            const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${instance.instanceId}`;
-
-            // Batch send — 10 messages per second to avoid API rate limits
-            const BATCH_SIZE = 10;
-            const BATCH_DELAY_MS = 1200; // slight buffer over 1 second
-
-            (async () => {
-                let successCount = 0;
-                let failCount = 0;
-                const campaignMessage = withCampaignOptOutNotice(campaign.message);
-
-                for (let i = 0; i < eligibleRecipients.length; i += BATCH_SIZE) {
-                    const candidateBatch = eligibleRecipients.slice(i, i + BATCH_SIZE);
-                    const justInTime = await filterSuppressedCampaignRecipients(
-                        merchant.id,
-                        candidateBatch.map(recipient => recipient.customerPhone),
-                    );
-                    const allowed = new Set(justInTime.allowed);
-                    const batch = candidateBatch.filter(recipient => allowed.has(
-                        normalizeCampaignPhone(recipient.customerPhone) || '',
-                    ));
-                    failCount += candidateBatch.length - batch.length;
-
-                    let batchSuccessCount = 0;
-                    for (const conv of batch) {
-                        // Failures here escape the provider catch and stop all later sends.
-                        // This keeps a consent-store outage fail-closed mid-campaign.
-                        if (!(await hasActiveCampaignConsent(merchant.id, conv.customerPhone))) {
-                            failCount++;
-                            continue;
-                        }
-                        try {
-                            if (campaign.imageUrl) {
-                                await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
-                                    chatId: `${conv.customerPhone}@c.us`,
-                                    urlFile: campaign.imageUrl,
-                                    fileName: 'campaign.jpg',
-                                    caption: campaignMessage,
-                                });
-                            } else {
-                                await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
-                                    chatId: `${conv.customerPhone}@c.us`,
-                                    message: campaignMessage,
-                                });
-                            }
-
-                            await createCampaignLog({
-                                campaignId: input.id,
-                                customerId: conv.id || null,
-                                customerPhone: conv.customerPhone,
-                                customerName: conv.customerName || null,
-                                status: 'success',
-                                errorMessage: null,
-                                sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-                            });
-                            successCount++;
-                            batchSuccessCount++;
-                        } catch (error: any) {
-                            await createCampaignLog({
-                                campaignId: input.id,
-                                customerId: conv.id || null,
-                                customerPhone: conv.customerPhone,
-                                customerName: conv.customerName || null,
-                                status: 'failed',
-                                errorMessage: error.message || 'Unknown error',
-                                sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-                            });
-                            failCount++;
-                        }
-                    }
-                    trackCampaignSend(merchant.id, batchSuccessCount);
-
-                    // Update progress for live tracking (#9)
-                    await updateCampaign(input.id, {
-                        sentCount: successCount,
-                    });
-
-                    // Rate limit: wait between batches (skip on last batch)
-                    if (i + BATCH_SIZE < eligibleRecipients.length) {
-                        await sleep(BATCH_DELAY_MS);
-                    }
-                }
-
-                // Mark campaign as completed
-                await updateCampaign(input.id, {
-                    status: 'completed',
-                    sentCount: successCount,
+            try {
+                await enqueueCampaignDeliveries({
+                    campaignId: input.id,
+                    merchantId: merchant.id,
+                    recipients: eligibleRecipients.map(recipient => ({
+                        customerId: recipient.id,
+                        phone: recipient.canonicalPhone,
+                    })),
                 });
-
-                console.log(`Campaign ${input.id} completed: ${successCount}/${eligibleRecipients.length} sent, ${failCount} failed or suppressed`);
-
-                // Notify admin about campaign completion
-                try {
-                    const { notifyMarketingCampaign } = await import('./_core/emailNotifications');
-                    const user = await getUserById(merchant.userId);
-                    await notifyMarketingCampaign({
-                        merchantName: user?.name || merchant.businessName,
-                        businessName: merchant.businessName,
-                        campaignName: campaign.name,
-                        targetAudience: campaign.targetAudience || 'All Customers',
-                        recipientsCount: eligibleRecipients.length,
-                        // @ts-ignore
-                        sentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-                        status: 'sent',
-                    });
-                } catch (error) {
-                    console.error('Failed to send campaign notification:', error);
+            } catch (error) {
+                if (error instanceof CampaignDispatchConflictError) {
+                    throw new TRPCError({ code: 'CONFLICT', message: 'Campaign was already claimed for delivery' });
                 }
-            })().catch(async (error) => {
-                console.error('Error sending campaign:', error);
-                await updateCampaign(input.id, { status: 'failed' });
-            });
+                throw error;
+            }
 
             return {
                 success: true,
-                message: 'Campaign is being sent',
+                message: 'Campaign was queued for durable delivery',
                 totalRecipients: eligibleRecipients.length,
                 blockedRecipients,
                 warnings: guardWarnings,
@@ -430,6 +311,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
+            const delivery = await getCampaignDeliveryProgress(input.id, campaign.merchantId);
             return {
                 status: campaign.status,
                 sentCount: campaign.sentCount,
@@ -437,10 +319,15 @@ export const campaignsRouter = router({
                 progress: campaign.totalRecipients > 0
                     ? Math.round((campaign.sentCount / campaign.totalRecipients) * 100)
                     : 0,
+                awaiting: delivery.awaiting,
+                acceptedByProvider: delivery.sent,
+                suppressed: delivery.suppressed,
+                needsReview: delivery.needsReview,
             };
         }),
 
-    // FIX #3, #12: Campaign statistics — real data from logs, no fake readRate
+    // Campaign statistics. `sentCount` records provider acceptance, not a
+    // delivery receipt or a customer read receipt.
     getStats: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
@@ -453,18 +340,17 @@ export const campaignsRouter = router({
         const totalSent = completedCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
         const totalRecipients = completedCampaigns.reduce((sum, c) => sum + (c.totalRecipients || 0), 0);
 
-        // FIX #3: Real delivery rate from actual sent/total (no fake readRate)
-        const deliveryRate = totalRecipients > 0 ? (totalSent / totalRecipients) * 100 : 0;
-        const failedCount = totalRecipients - totalSent;
+        const providerAcceptanceRate = totalRecipients > 0 ? (totalSent / totalRecipients) * 100 : 0;
+        const unconfirmedCount = Math.max(0, totalRecipients - totalSent);
 
         return {
             totalCampaigns,
             completedCampaigns: completedCampaigns.length,
             activeCampaigns: campaigns.filter(c => c.status === 'sending' || c.status === 'scheduled').length,
             draftCampaigns: campaigns.filter(c => c.status === 'draft').length,
-            totalSent,
-            totalFailed: failedCount > 0 ? failedCount : 0,
-            deliveryRate: Math.round(deliveryRate * 10) / 10,
+            totalAcceptedByProvider: totalSent,
+            totalUnconfirmed: unconfirmedCount,
+            providerAcceptanceRate: Math.round(providerAcceptanceRate * 10) / 10,
         };
     }),
 
@@ -491,9 +377,8 @@ export const campaignsRouter = router({
             };
         }),
 
-    // Timeline used by the merchant reports page. Delivery is intentionally
-    // equal to accepted sends until a provider delivery-receipt projection exists;
-    // read remains zero instead of presenting an invented engagement metric.
+    // Timeline used by the merchant reports page. The only currently provable
+    // event is provider acceptance; delivery/read require receipt projection.
     getTimelineData: protectedProcedure
         .input(z.object({
             days: z.number().int().min(1).max(365).default(30),
@@ -504,27 +389,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const campaigns = await getCampaignsByMerchantId(merchant.id);
-            const dateMap = new Map<string, { sent: number; delivered: number; read: number }>();
-            const today = new Date();
-
-            for (let i = input.days - 1; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                dateMap.set(date.toISOString().split('T')[0], { sent: 0, delivered: 0, read: 0 });
-            }
-
-            for (const campaign of campaigns) {
-                if (campaign.status !== 'completed' || !campaign.createdAt) continue;
-                const date = new Date(campaign.createdAt).toISOString().split('T')[0];
-                const bucket = dateMap.get(date);
-                if (!bucket) continue;
-                const sent = Math.max(0, campaign.sentCount || 0);
-                bucket.sent += sent;
-                bucket.delivered += sent;
-            }
-
-            return Array.from(dateMap, ([date, values]) => ({ date, ...values }));
+            return getCampaignAcceptanceTimeline(merchant.id, input.days);
         }),
 
     // Filter customers for targeting (migrated from legacy router)

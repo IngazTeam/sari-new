@@ -2,7 +2,7 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, TrendingUp, MessageSquare, CheckCircle2 } from "lucide-react";
+import { BarChart3, AlertTriangle, MessageSquare, CheckCircle2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useMemo, useState } from "react";
 import { useTranslation } from 'react-i18next';
@@ -69,7 +69,7 @@ export default function Reports() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalSent || 0}</div>
+            <div className="text-2xl font-bold">{stats?.totalAcceptedByProvider || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('reportsPage.text18')}
             </p>
@@ -82,7 +82,7 @@ export default function Reports() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.deliveryRate || 0}%</div>
+            <div className="text-2xl font-bold">{stats?.providerAcceptanceRate || 0}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('reportsPage.text19')}
             </p>
@@ -92,10 +92,10 @@ export default function Reports() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('reportsPage.text4')}</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.readRate || 0}%</div>
+            <div className="text-2xl font-bold">{stats?.totalUnconfirmed || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('reportsPage.text20')}
             </p>
@@ -143,23 +143,9 @@ export default function Reports() {
                 <Legend />
                 <Line 
                   type="monotone" 
-                  dataKey="sent" 
+                  dataKey="acceptedByProvider"
                   stroke="hsl(var(--primary))" 
                   name={t('reportsPage.text26')}
-                  strokeWidth={2}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="delivered" 
-                  stroke="hsl(142 76% 36%)" 
-                  name={t('reportsPage.text27')}
-                  strokeWidth={2}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="read" 
-                  stroke="hsl(221 83% 53%)" 
-                  name={t('reportsPage.text28')}
                   strokeWidth={2}
                 />
               </LineChart>
@@ -213,12 +199,12 @@ export default function Reports() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">{t('reportsPage.text15')}</span>
-                <span className="text-sm text-muted-foreground">{stats?.deliveryRate || 0}%</span>
+                <span className="text-sm text-muted-foreground">{stats?.providerAcceptanceRate || 0}%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-green-500 transition-all" 
-                  style={{ width: `${stats?.deliveryRate || 0}%` }}
+                  style={{ width: `${stats?.providerAcceptanceRate || 0}%` }}
                 />
               </div>
             </div>
@@ -226,20 +212,8 @@ export default function Reports() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">{t('reportsPage.text16')}</span>
-                <span className="text-sm text-muted-foreground">{stats?.readRate || 0}%</span>
+                <span className="text-sm text-muted-foreground">{stats?.totalUnconfirmed || 0}</span>
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary/100 transition-all" 
-                  style={{ width: `${stats?.readRate || 0}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                {t('reportsPage.text25', { var0: Math.round((stats?.deliveryRate || 0) / 10) })}
-              </p>
             </div>
           </CardContent>
         </Card>

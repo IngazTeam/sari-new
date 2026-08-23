@@ -13,22 +13,19 @@ describe('Reports API', () => {
       expect(stats).toBeDefined();
       expect(stats.totalCampaigns).toBeGreaterThanOrEqual(0);
       expect(stats.completedCampaigns).toBeGreaterThanOrEqual(0);
-      expect(stats.totalSent).toBeGreaterThanOrEqual(0);
-      expect(stats.deliveryRate).toBeGreaterThanOrEqual(0);
-      expect(stats.deliveryRate).toBeLessThanOrEqual(100);
-      expect(stats.readRate).toBeGreaterThanOrEqual(0);
-      expect(stats.readRate).toBeLessThanOrEqual(100);
+      expect(stats.totalAcceptedByProvider).toBeGreaterThanOrEqual(0);
+      expect(stats.totalUnconfirmed).toBeGreaterThanOrEqual(0);
+      expect(stats.providerAcceptanceRate).toBeGreaterThanOrEqual(0);
+      expect(stats.providerAcceptanceRate).toBeLessThanOrEqual(100);
+      expect(stats).not.toHaveProperty('deliveryRate');
+      expect(stats).not.toHaveProperty('readRate');
     });
 
-    it('should calculate delivery rate correctly', async () => {
+    it('should bound the provider acceptance rate correctly', async () => {
       const stats = await merchantCaller.campaigns.getStats();
 
-      // Delivery rate should be between 0 and 100
-      expect(stats.deliveryRate).toBeGreaterThanOrEqual(0);
-      expect(stats.deliveryRate).toBeLessThanOrEqual(100);
-
-      // Read rate should be less than or equal to delivery rate
-      expect(stats.readRate).toBeLessThanOrEqual(stats.deliveryRate);
+      expect(stats.providerAcceptanceRate).toBeGreaterThanOrEqual(0);
+      expect(stats.providerAcceptanceRate).toBeLessThanOrEqual(100);
     });
   });
 
@@ -42,12 +39,10 @@ describe('Reports API', () => {
       // Check data structure
       timeline.forEach(item => {
         expect(item).toHaveProperty('date');
-        expect(item).toHaveProperty('sent');
-        expect(item).toHaveProperty('delivered');
-        expect(item).toHaveProperty('read');
-        expect(item.sent).toBeGreaterThanOrEqual(0);
-        expect(item.delivered).toBeGreaterThanOrEqual(0);
-        expect(item.read).toBeGreaterThanOrEqual(0);
+        expect(item).toHaveProperty('acceptedByProvider');
+        expect(item).not.toHaveProperty('delivered');
+        expect(item).not.toHaveProperty('read');
+        expect(item.acceptedByProvider).toBeGreaterThanOrEqual(0);
       });
     });
 
@@ -65,12 +60,12 @@ describe('Reports API', () => {
       expect(timeline.length).toBe(90);
     });
 
-    it('should ensure read count is less than or equal to delivered count', async () => {
+    it('should never fabricate delivery or read receipt counts', async () => {
       const timeline = await merchantCaller.campaigns.getTimelineData({ days: 30 });
 
       timeline.forEach(item => {
-        expect(item.read).toBeLessThanOrEqual(item.delivered);
-        expect(item.delivered).toBeLessThanOrEqual(item.sent);
+        expect(item).not.toHaveProperty('delivered');
+        expect(item).not.toHaveProperty('read');
       });
     });
 

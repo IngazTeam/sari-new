@@ -98,6 +98,7 @@ export const botSettings = mysqlTable("bot_settings", {
 export const campaignLogs = mysqlTable("campaignLogs", {
 	id: int().autoincrement().primaryKey(),
 	campaignId: int().notNull(),
+	campaignOutboxId: int("campaign_outbox_id").references(() => campaignDeliveryOutbox.id, { onDelete: "set null" }),
 	customerId: int(),
 	customerPhone: varchar({ length: 50 }).notNull(),
 	customerName: varchar({ length: 255 }),
@@ -105,7 +106,9 @@ export const campaignLogs = mysqlTable("campaignLogs", {
 	errorMessage: text(),
 	sentAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
+}, table => [
+	uniqueIndex("campaign_logs_outbox_unique").on(table.campaignOutboxId),
+]);
 
 export const campaigns = mysqlTable("campaigns", {
 	id: int().autoincrement().primaryKey(),
@@ -121,6 +124,46 @@ export const campaigns = mysqlTable("campaigns", {
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
+
+// Durable recipient-level campaign dispatch. Message content and customer names
+// remain on their canonical records; the outbox stores only the routing identity
+// required for recovery and idempotent delivery.
+export const campaignDeliveryOutbox = mysqlTable("campaign_delivery_outbox", {
+	id: int().autoincrement().primaryKey(),
+	campaignId: int("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerId: int("customer_id").references(() => conversations.id, { onDelete: "set null" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	status: mysqlEnum(['pending', 'processing', 'sent', 'failed', 'suppressed', 'manual_review']).default('pending').notNull(),
+	attempts: int().default(0).notNull(),
+	processingToken: varchar("processing_token", { length: 64 }),
+	quotaSubscriptionId: int("quota_subscription_id"),
+	quotaReserved: tinyint("quota_reserved").default(0).notNull(),
+	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	sentAt: timestamp("sent_at", { mode: 'string', fsp: 3 }),
+	lastError: varchar("last_error", { length: 100 }),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("campaign_delivery_outbox_campaign_phone_unique").on(table.campaignId, table.customerPhone),
+	index("campaign_delivery_outbox_dispatch_idx").on(table.status, table.availableAt, table.id),
+	index("campaign_delivery_outbox_campaign_status_idx").on(table.campaignId, table.status),
+	index("campaign_delivery_outbox_merchant_created_idx").on(table.merchantId, table.createdAt),
+	check("campaign_delivery_outbox_attempts_check", sql`${table.attempts} >= 0 AND ${table.attempts} <= 8`),
+	check("campaign_delivery_outbox_quota_check", sql`${table.quotaReserved} IN (0, 1) AND (${table.quotaReserved} = 0 OR ${table.quotaSubscriptionId} IS NOT NULL)`),
+	check("campaign_delivery_outbox_processing_check", sql`(${table.status} = 'processing' AND ${table.processingToken} IS NOT NULL AND ${table.claimedAt} IS NOT NULL) OR (${table.status} <> 'processing' AND ${table.processingToken} IS NULL)`),
+]);
+
+// Database-coordinated provider admission across processes and server replicas.
+export const campaignDispatchRateLimits = mysqlTable("campaign_dispatch_rate_limits", {
+	merchantId: int("merchant_id").primaryKey().references(() => merchants.id, { onDelete: "cascade" }),
+	windowStartedAt: timestamp("window_started_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	reservedCount: int("reserved_count").default(0).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	check("campaign_dispatch_rate_limits_count_check", sql`${table.reservedCount} >= 0 AND ${table.reservedCount} <= 10`),
+]);
 
 export const conversations = mysqlTable("conversations", {
 	id: int().autoincrement().primaryKey(),

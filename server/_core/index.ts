@@ -42,6 +42,7 @@ import { startZidOrderNotificationWorker } from "../integrations/zid-order-notif
 import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-receipts";
 import { startCalendlyWebhookReceiptWorker } from "../integrations/calendly-webhook-receipts";
 import { startWooCommerceWebhookReceiptWorker } from "../integrations/woocommerce-webhook-receipts";
+import { startCampaignDeliveryWorker } from "../automation/campaign-delivery-outbox";
 import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -608,6 +609,9 @@ async function startServer() {
 
       // Initialize Scheduled Campaigns cron job (runs every minute)
       startScheduledCampaignsJob();
+
+      // Durable recipient-level campaign delivery with distributed admission.
+      startCampaignDeliveryWorker();
 
       // Initialize Scheduled Messages cron job (runs every minute)
       startScheduledMessagesJob();

@@ -59,6 +59,8 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'campaign_optouts' },
   { table: 'campaign_consent_receipts', columns: ['merchant_id', 'customer_phone', 'decision', 'provider_event_digest', 'decided_at'] },
   { table: 'campaign_consent_state', columns: ['merchant_id', 'customer_phone', 'status', 'last_decided_at', 'last_receipt_id'] },
+  { table: 'campaign_delivery_outbox', columns: ['campaign_id', 'merchant_id', 'customer_phone', 'status', 'processing_token', 'quota_subscription_id', 'quota_reserved', 'available_at', 'claimed_at'] },
+  { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
   { table: 'merchant_onboarding_answers' },
   { table: 'session_contexts' }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
   { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' }, { table: 'sari_escalation_queue' },

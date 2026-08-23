@@ -70,16 +70,6 @@ export default function CampaignDetails() {
     );
   }
 
-  // Parse recipients
-  let recipients: string[] = [];
-  try {
-    if (campaign.targetAudience) {
-      recipients = JSON.parse(campaign.targetAudience);
-    }
-  } catch (error) {
-    console.error('Failed to parse recipients:', error);
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -130,7 +120,7 @@ export default function CampaignDetails() {
           <CardContent>
             <div className="text-2xl font-bold flex items-center">
               <Users className="w-5 h-5 ml-2 text-muted-foreground" />
-              {campaign.totalRecipients || recipients.length}
+              {campaign.totalRecipients || 0}
             </div>
           </CardContent>
         </Card>
@@ -203,31 +193,18 @@ export default function CampaignDetails() {
         )}
       </div>
 
-      {/* Recipients List */}
+      {/* Audience summary. targetAudience contains filter rules, never phone numbers. */}
       <Card>
         <CardHeader>
           <CardTitle>{t('campaignDetailsPage.text3')}</CardTitle>
           <CardDescription>
-            {t('campaignDetailsPage.text22', { var0: recipients.length })}
+            {t('campaignDetailsPage.text22', { var0: campaign.totalRecipients || 0 })}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {recipients.length > 0 ? (
-            <div className="grid gap-2 md:grid-cols-3">
-              {recipients.map((phone, index) => (
-                <div
-                  key={index}
-                  className="bg-muted p-3 rounded-lg text-center font-mono"
-                >
-                  {phone}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              {t('campaignDetailsPage.text15')}
-            </div>
-          )}
+          <div className="text-center py-8 text-muted-foreground">
+            {t('campaignDetailsPage.text15')}
+          </div>
         </CardContent>
       </Card>
     </div>

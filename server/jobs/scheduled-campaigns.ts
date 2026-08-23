@@ -1,185 +1,125 @@
 /**
- * Scheduled Campaigns Cron Job
- * 
- * يفحص الحملات المجدولة كل دقيقة ويرسلها تلقائياً عند حلول موعدها
+ * Scheduled campaign admission.
+ *
+ * This job never performs provider I/O. It expands due campaigns into the same
+ * durable recipient outbox used by the merchant send endpoint. Atomic campaign
+ * claiming makes concurrent cron replicas harmless.
  */
 
-import { getCampaignById, updateCampaign, getConversationsByMerchantId, getPrimaryWhatsAppInstance, getDb, getActiveSubscriptionByMerchantId } from "../db.js";
-import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
 import {
+  getActiveSubscriptionByMerchantId,
+  getConversationsByMerchantId,
+  getDb,
+  getPrimaryWhatsAppInstance,
+} from '../db.js';
+import {
+  CampaignDispatchConflictError,
+  CampaignTargetingError,
+  completeCampaignWithoutRecipients,
+  enqueueCampaignDeliveries,
+  filterCampaignAudience,
+} from '../automation/campaign-delivery-outbox';
+import {
+  CampaignSuppressionUnavailableError,
   filterCampaignRecipients,
-  hasActiveCampaignConsent,
-  trackCampaignSend,
-  withCampaignOptOutNotice,
+  normalizeCampaignPhone,
 } from '../automation/campaign-guard';
 
-/**
- * فحص وإرسال الحملات المجدولة
- */
-export async function checkScheduledCampaigns() {
-  console.log("[Scheduled Campaigns] Checking for campaigns to send...");
-  
-  try {
-    // استعلام SQL مباشر للحصول على الحملات المجدولة التي حان وقتها
-    const db = await getDb();
-    if (!db) {
-      console.error("[Scheduled Campaigns] Database not available");
-      return { checked: 0, sent: 0, failed: 0 };
-    }
-    const { campaigns } = await import("../../drizzle/schema.js");
-    const { and, eq, lte } = await import("drizzle-orm");
-    
-    const now = new Date();
-    
-    // الحصول على الحملات المجدولة التي حان وقتها (scheduledAt <= now AND status = 'scheduled')
-    const scheduledCampaigns = await db
-      .select()
-      .from(campaigns)
-      .where(
-        and(
-          eq(campaigns.status, "scheduled"),
-          // @ts-ignore
-          lte(campaigns.scheduledAt, now)
-        )
-      );
-    
-    console.log(`[Scheduled Campaigns] Found ${scheduledCampaigns.length} campaigns to send`);
-    
-    if (scheduledCampaigns.length === 0) {
-      return { checked: 0, sent: 0, failed: 0 };
-    }
-    
-    let sent = 0;
-    let failed = 0;
-    
-    // معالجة كل حملة
-    for (const campaign of scheduledCampaigns) {
-      try {
-        console.log(`[Scheduled Campaigns] Processing campaign ${campaign.id}: ${campaign.name}`);
-        
-        // SEC-FIX: Verify merchant has active subscription before sending
-        const subscription = await getActiveSubscriptionByMerchantId(campaign.merchantId);
-        if (!subscription) {
-          console.warn(`[Scheduled Campaigns] Merchant ${campaign.merchantId} has no active subscription — skipping campaign ${campaign.id}`);
-          await updateCampaign(campaign.id, { status: "failed" });
-          failed++;
-          continue;
-        }
-        
-        // الحصول على WhatsApp instance للتاجر
-        const instance = await getPrimaryWhatsAppInstance(campaign.merchantId);
-        
-        if (!instance) {
-          console.error(`[Scheduled Campaigns] No WhatsApp instance found for merchant ${campaign.merchantId}`);
-          await updateCampaign(campaign.id, { 
-            status: "failed"
-          });
-          failed++;
-          continue;
-        }
-        
-        // الحصول على قائمة العملاء
-        const conversations = await getConversationsByMerchantId(campaign.merchantId);
-        
-        if (conversations.length === 0) {
-          console.log(`[Scheduled Campaigns] No customers found for merchant ${campaign.merchantId}`);
-          await updateCampaign(campaign.id, { 
-            status: "completed",
-            totalRecipients: 0,
-            sentCount: 0
-          });
-          sent++;
-          continue;
-        }
-        
-        console.log(`[Scheduled Campaigns] Sending to ${conversations.length} customers`);
-        
-        // P2: Campaign Guard — filter recipients through opt-out + rate limits + quiet hours
-        let recipients = conversations.map(c => c.customerPhone);
-        const guardResult = await filterCampaignRecipients(campaign.merchantId, recipients);
-        if (guardResult.warnings.length > 0) {
-          console.warn(`[Scheduled Campaigns] Guard warnings:`, guardResult.warnings);
-        }
-        if (guardResult.blocked.length > 0) {
-          console.log(`[Scheduled Campaigns] Blocked ${guardResult.blocked.length} recipients (opt-out/rate-limit/quiet-hours)`);
-        }
-        recipients = guardResult.allowed;
+export async function checkScheduledCampaigns(): Promise<{
+  checked: number;
+  queued: number;
+  deferred: number;
+  failed: number;
+}> {
+  const db = await getDb();
+  if (!db) return { checked: 0, queued: 0, deferred: 0, failed: 0 };
+  const { campaigns } = await import('../../drizzle/schema.js');
+  const { and, asc, eq, lte } = await import('drizzle-orm');
+  const due = await db
+    .select()
+    .from(campaigns)
+    .where(and(eq(campaigns.status, 'scheduled'), lte(campaigns.scheduledAt, new Date() as never)))
+    .orderBy(asc(campaigns.scheduledAt), asc(campaigns.id))
+    .limit(25);
 
-        if (recipients.length === 0) {
-          console.log(`[Scheduled Campaigns] All recipients blocked by campaign guard`);
-          await updateCampaign(campaign.id, {
-            status: "completed",
-            totalRecipients: conversations.length,
-            sentCount: 0
-          });
-          sent++;
-          continue;
-        }
+  let queued = 0;
+  let deferred = 0;
+  let failed = 0;
 
-        // Do not claim a campaign is sending until consent/suppression succeeds.
-        await updateCampaign(campaign.id, {
-          status: "sending",
-          totalRecipients: recipients.length,
-        });
-
-        // إرسال الرسالة لجميع العملاء المؤهلين
-        const results = await sendWhatsAppCampaign(
-          recipients,
-          withCampaignOptOutNotice(campaign.message),
-          campaign.imageUrl || undefined,
-          3, // minDelay
-          6, // maxDelay
-          async phone => await hasActiveCampaignConsent(campaign.merchantId, phone),
-        );
-        
-        // Track sent count for rate limiting
-        const successCount = results.filter(r => r.success).length;
-        trackCampaignSend(campaign.merchantId, successCount);
-        
-        // تحديث الحملة بعد الإرسال
-        await updateCampaign(campaign.id, {
-          status: "completed",
-          sentCount: successCount,
-          totalRecipients: conversations.length
-        });
-        
-        console.log(`[Scheduled Campaigns] Campaign ${campaign.id} completed: ${successCount}/${conversations.length} sent`);
-        sent++;
-        
-      } catch (error) {
-        console.error(`[Scheduled Campaigns] Error processing campaign ${campaign.id}:`, error);
-        await updateCampaign(campaign.id, { status: "failed" });
-        failed++;
+  for (const campaign of due) {
+    try {
+      const [subscription, instance, conversations] = await Promise.all([
+        getActiveSubscriptionByMerchantId(campaign.merchantId),
+        getPrimaryWhatsAppInstance(campaign.merchantId),
+        getConversationsByMerchantId(campaign.merchantId),
+      ]);
+      if (!subscription || !instance || instance.status !== 'active') {
+        deferred++;
+        continue;
       }
+
+      let targeted;
+      try {
+        targeted = filterCampaignAudience(conversations, campaign.targetAudience);
+      } catch (error) {
+        if (error instanceof CampaignTargetingError) {
+          failed++;
+          continue;
+        }
+        throw error;
+      }
+
+      const candidates = new Map<string, (typeof targeted)[number]>();
+      for (const conversation of targeted) {
+        const phone = normalizeCampaignPhone(conversation.customerPhone);
+        if (phone && !candidates.has(phone)) candidates.set(phone, conversation);
+      }
+      if (candidates.size === 0) {
+        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId)) queued++;
+        continue;
+      }
+
+      const guard = await filterCampaignRecipients(campaign.merchantId, Array.from(candidates.keys()));
+      if (guard.allowed.length === 0) {
+        if (guard.blocked.some(blocked => blocked.reason === 'quiet_hours')) {
+          deferred++;
+          continue;
+        }
+        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId)) queued++;
+        continue;
+      }
+
+      await enqueueCampaignDeliveries({
+        campaignId: campaign.id,
+        merchantId: campaign.merchantId,
+        recipients: guard.allowed.flatMap(phone => {
+          const conversation = candidates.get(phone);
+          return conversation ? [{ customerId: conversation.id, phone }] : [];
+        }),
+      });
+      queued++;
+    } catch (error) {
+      if (error instanceof CampaignDispatchConflictError) continue;
+      if (error instanceof CampaignSuppressionUnavailableError) {
+        deferred++;
+        continue;
+      }
+      failed++;
+      console.error('[Scheduled Campaigns] campaign admission failed');
     }
-    
-    const result = {
-      checked: scheduledCampaigns.length,
-      sent,
-      failed
-    };
-    
-    console.log(`[Scheduled Campaigns] Job completed:`, result);
-    return result;
-    
-  } catch (error) {
-    console.error("[Scheduled Campaigns] Job error:", error);
-    return { checked: 0, sent: 0, failed: 0, error: String(error) };
   }
+
+  return { checked: due.length, queued, deferred, failed };
 }
 
-/**
- * Cron Job: يعمل كل دقيقة
- */
-export function startScheduledCampaignsJob() {
-  console.log("[Scheduled Campaigns Job] Starting cron job (runs every minute)...");
-  
-  // تشغيل فوري عند البدء
-  checkScheduledCampaigns();
-  
-  // تشغيل كل دقيقة (60000 ms)
-  setInterval(async () => {
-    const result = await checkScheduledCampaigns();
-    console.log(`[Scheduled Campaigns Job] Completed:`, result);
-  }, 60000);
+let scheduledCampaignTimer: NodeJS.Timeout | null = null;
+
+export function startScheduledCampaignsJob(): void {
+  if (scheduledCampaignTimer) return;
+  const tick = () => checkScheduledCampaigns().catch(() => {
+    console.error('[Scheduled Campaigns] admission batch unavailable');
+  });
+  void tick();
+  scheduledCampaignTimer = setInterval(tick, 60_000);
+  scheduledCampaignTimer.unref?.();
 }
