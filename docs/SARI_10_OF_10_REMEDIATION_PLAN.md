@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.89 — محدّث بإعادة فحص Tap وحملات المناسبات على الإنتاج\
+**الإصدار:** 3.90 — محدّث ببوابة نشر production قابلة للتراجع\
 **التاريخ:** 23 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -136,6 +136,7 @@
 113. أُغلقت محليًا دورة `manual_review` للحملات بلا إعادة إرسال: projection خادمي tenant-scoped يختار أقدم حملة غامضة مباشرة من outbox بدل الاعتماد على ترتيب قائمة failed في المتصفح. تظهر واجهة التاجر العدد واسم الحملة وتحذيرًا صريحًا، ويتطلب الإقرار حوارًا يوضح أن السجلات لا تحذف، والرسائل لا تعاد، والحصة المحجوزة تبقى محسوبة. mutation لا تقبل merchant/outbox/recipient IDs؛ تتحقق من ملكية الحملة ثم تحدث logs وrows ذريًا إلى `suppressed/merchant_acknowledged` وتعيد مصالحة الحملة. الفشل يعمل rollback ولا يخفي الحادث. صححت تسمية عمود «المرسل» إلى «قبله مزود الإرسال» في اللغات الثماني. اجتاز 48/48 بنتست حملة و910/910 بوابة الإصدار في 73 ملفًا وTypeScript/build؛ الحزمة 572,594 raw / 171,292 gzip والخادم 4,066,549 bytes. يبقى إثبات A/B وconcurrency على MySQL المنشور، وتبقى حملات المناسبات المرحلة التالية.
 114. أُغلق محليًا مسار حملات المناسبات الذي كان ينشئ ويفعّل حملة لكل متجر تلقائيًا، يعتمد تواريخ ميلادية تقريبية لرمضان والعيد، ويرسل مباشرة مع sleeps وعداد process-local خارج outbox. أصبحت الحملة اختيارًا صريحًا من التاجر بعقد strict مشتق من الجلسة بلا `merchantId` أو نسبة خصم من المتصفح؛ والـcron لا ينشئ ولا يفعّل شيئًا، بل يقرأ تعريفات `pending+enabled` فقط بصفحات keyset حتى لا يتوقف عند أول 100 متجر ولا يحجب متجر غير جاهز من بعده. يستخدم تقويم أم القرى في توقيت الرياض مع دعم تزامن مناسبتين، وينشئ كود الخصم وcampaign canonical ويربطهما تحت `FOR UPDATE` ومعاملة واحدة، ثم يمرر المستلمين الموافقين إلى outbox نفسه؛ تتزامن `pending/sending/completed/failed` وعدد قبول المزود إلى سجل المناسبة بلا ادعاء تسليم أو قراءة. أضافت `0044` قيود uniqueness/FK/check/index وpreflight قبل/بعد وحارس readiness، ورُكب الراوتر المستقل بدل النسخة inline. صححت الواجهة والنصوص الثمانية إلى opt-in صريح ومؤشرات قبول مزود. اجتاز 59/59 بنتست حملات، و921/921 بوابة الإصدار في 74 ملفًا، وTypeScript/Drizzle/build؛ الحزمة 572,594 raw / 171,328 gzip والخادم 4,071,910 bytes. يبقى تطبيق `0042` ثم `0043` ثم `0044` واختبار MySQL متعدد العمليات وMeta/Green sandbox وcanary قبل الإغلاق الإنتاجي.
 115. أعيد فحص الإنتاج بحساب تاجر مسجل في 23 أغسطس 2026، وثبت أن الإصلاحات لم تُنشر بعد: `/merchant/payment-settings` ما زالت تعرض Public Key الخام `pk_test_AUDIT_DISABLED` داخل textbox، و`/merchant/occasion-campaigns` ما زالت تعد بإنشاء الخصومات والحملات وإرسالها تلقائيًا لجميع العملاء دون ظهور زر opt-in الجديد، و`/health` ما زالت تكشف uptime والذاكرة وحالة AI وعدد الجلسات/المتاجر. `/ready` أعادت 200 وقاعدة متصلة، لكنها لا تثبت تطبيق `0042`–`0044`. بعد تأكيد المالك نُفذ `Test Connection` مرة واحدة؛ فشل برسالة عامة بلا كشف secret أو إنشاء charge، ما يثبت أن اعتماد Tap المنشور غير صالح/غير مكتمل. النتيجة Fail-old-version وقرار الإطلاق يبقى No-Go؛ الإغلاق يتطلب نشر السلسلة حتى `4d1f8e0` بعد `0042 → 0043 → 0044` واستبدال اعتماد الاختبار من secret manager ثم Tap test وA/B وrace/crash وMeta/Green canary.
+116. أُغلق برمجيًا مسار النشر القديم الذي كان يبني داخل النسخة العاملة ويستخدم install متغيرًا و`db:push` بلا preflight أو test/readiness، بينما السكربت المتقدم يسمح بـ`reset --hard` ولا يطبق migrations ويفحص `/` ويقبل 304. أصبح المدخل canonical يبني Git worktree مطابقًا حرفيًا لـ`origin/main` تحت `flock`، ويتطلب تأكيدين مرتبطين بالـSHA وbackup مثبتًا خلال 60 دقيقة وملف أسرار محميًا، ثم frozen install/audit/TypeScript/release/Drizzle/build قبل DB، وpreflights قبل migrations وبعدها. ملف build منفصل ومقصور على `VITE_*` العامة، وتُحذف `DATABASE_URL/RUN_MYSQL_INTEGRATION` من بيئة الاختبار والبناء؛ ملف runtime السري لا يرتبط إلا بعد نجاحها. PM2 صار bounded 2 افتراضيًا/4 أقصى و`wait_ready=true`؛ وكل worker يثبت DB والمخطط قبل تشغيل writers ويرسل ready بعد graceful handlers. عند فشل التفعيل يعاد التطبيق السابق ولا تُعكس migrations أو تحذف بيانات؛ current symlink يتحرك بعد readiness الصارمة فقط. أصلح loader إلى `SARI_ENV_FILE` بلا طباعة مسار. اجتاز 18/18 فحصًا مركزًا و3/3 Bash syntax و931/931 بوابة إصدار في 75 ملفًا وTypeScript/Drizzle/build؛ الحزمة 572,594 raw / 171,328 gzip والخادم 4,071,855 bytes. يبقى push/CI remote وbackup restore وstaging ثم النشر/canary موانع تشغيلية.
 
 **قرار الخطة:**
 
@@ -144,7 +145,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.89
+### حالة تنفيذ الجولة 3.90
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -185,6 +186,7 @@
 | اتصال ومزامنة WooCommerce | مكتمل برمجيًا محليًا/`0040`+`0041` وtest store معلّقة؛ الإنتاج قديم | HTTPS عام pinned وأسرار مشفرة، snapshot يدوية ذرية، وستة webhooks رسمية موقعة بreceipts بلا PII وعامل canonical؛ قفل fail-closed مع admission 8/64/5s وعملية واحدة+انتظارين لكل متجر، قياس admin بلا tenant keys وإلغاء waiter عند disconnect مع lifecycle واحدة للbatch ودون إلغاء action المقبولة، 71/71 نطاق Woo و859/859 بوابة إصدار، والإنتاج ما زال قديمًا |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
 | Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
+| بوابة نشر production | مكتملة برمجيًا/push وbackup/staging والنشر معلقة | SHA/worktree معزول، فصل build/runtime، frozen quality gates، pre/post migrations، PM2 readiness بلا writers على مخطط قديم، rollback تطبيق وRunbook؛ 18/18 مركز و931/931 إصدار |
 | نموذج العملاء والمتدربين | مكتمل محليًا/DB وByaan staging معلقان | مصدر واحد يختار `customer_profiles` للمتاجر و`byaan_trainees` النشط لبيان، بلا SQL على `customers` غير المملوك وبعزل `merchant_id`؛ 7/7 بنتست و425/425 بوابة إصدار |
 | لوحة بيان وقراءات المزامنة | مكتمل محليًا/tenant E2E معلق | course count عبر Drizzle، active+verified gate، projections محددة، بحث DB محدود، raw sync errors محجوبة، وحالات retry صادقة؛ 7/7 بنتست و432/432 بوابة إصدار |
 | صفحات متدربي بيان | مكتمل محليًا/migration وقياس staging معلقان | keyset cursor موجب، limit+1، لا OFFSET، فهرس tenant/status/id في `0025`، وتنقل سابق/تالٍ يعيد الحالة مع البحث؛ 6/6 بنتست و438/438 بوابة إصدار |
@@ -1644,6 +1646,7 @@ WhatsAppChannel
 | PROD-WOOCOMMERCE-QUEUE-CANCEL-001 | P0 | تحرير انتظار الطلب التفاعلي المنقطع دون قطع عمل بدأ | Backend/Security/QA/SRE | request abort/close يزيل waiter وlistener/timer فورًا، lifecycle واحدة للbatch، لا اتصال قبل القبول، action المقبولة تكمل، worker بلا request signal، واختبار socket/slow-client على staging |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
+| REL-003 | P0 | بوابة نشر production قابلة للتراجع | DevOps/Backend/QA | SHA وbackup وpre/postflight وreadiness مثبتة على staging ثم canary ناجح |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |
 | CH-001 | P0 | طبقة مزودي واتساب | Backend | Meta وMock يعملان عبر interface واحدة |
 | CH-002 | P0 | Meta Cloud API | Integrations | رحلة واتساب الرسمية ناجحة |

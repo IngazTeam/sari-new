@@ -64,6 +64,17 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+async function assertApplicationReady(): Promise<void> {
+  const { getPool } = await import('../db');
+  const pool = await getPool();
+  if (!pool) throw new Error('DB not connected');
+  await pool.query('SELECT 1');
+
+  const { validateDatabaseSchema } = await import('../cron/schema-validator');
+  const schema = await validateDatabaseSchema({ log: false });
+  if (!schema.allCritical) throw new Error('DB schema is outdated');
+}
+
 async function startServer() {
   installProductionConsoleRedaction();
 
@@ -129,16 +140,9 @@ async function startServer() {
     res.json({ status: 'healthy' });
   });
 
-  app.get('/ready', async (req, res) => {
+  app.get('/ready', async (_req, res) => {
     try {
-      // Check database connectivity
-      const { getPool } = await import('../db');
-      const pool = await getPool();
-      if (!pool) throw new Error('DB not connected');
-      await pool.query('SELECT 1');
-      const { validateDatabaseSchema } = await import('../cron/schema-validator');
-      const schema = await validateDatabaseSchema({ log: false });
-      if (!schema.allCritical) throw new Error('DB schema is outdated');
+      await assertApplicationReady();
       res.json({
         status: 'ready',
         checks: {
@@ -579,8 +583,19 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
+
+    // PM2 keeps the previous release serving until every new worker proves DB
+    // connectivity and the complete critical schema contract. No background
+    // writer is started on an outdated schema.
+    try {
+      await assertApplicationReady();
+    } catch (error) {
+      logError('[Startup] Readiness gate failed', error);
+      server.close(() => process.exit(1));
+      return;
+    }
 
     // ─── Cluster-Safe Background Jobs ──────────────────────────
     // In PM2 cluster mode, only the primary worker (instance 0) runs cron jobs.
@@ -589,11 +604,6 @@ async function startServer() {
 
     if (isPrimaryWorker) {
       console.log('[Cluster] This is the PRIMARY worker — initializing cron jobs and polling');
-
-      // Validate schema at startup for ops visibility; /ready remains the fail-closed gate.
-      import('../cron/schema-validator').then(({ validateDatabaseSchema }) => {
-        validateDatabaseSchema().catch(e => console.warn('[Startup] Schema validation failed:', e));
-      }).catch(() => {});
 
       // Initialize Salla cron jobs
       initializeSallaCronJobs();
@@ -783,6 +793,10 @@ async function startServer() {
 
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    if (typeof process.send === 'function') {
+      process.send('ready');
+    }
   });
 }
 
