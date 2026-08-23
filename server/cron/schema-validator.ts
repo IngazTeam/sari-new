@@ -50,6 +50,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'whatsapp_connection_requests', columns: ['apiToken'] },
   ...WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS,
   { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
+  { table: 'order_notifications', columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at'] },
   { table: 'subscription_plans', columns: ['conversation_limit', 'message_limit', 'voice_message_limit'] },
   { table: 'merchant_subscriptions', columns: ['conversations_used', 'messages_used', 'voice_messages_used', 'last_reset_at'] },
   { table: 'payment_transactions', columns: ['tap_charge_id', 'metadata'] },

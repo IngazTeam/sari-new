@@ -94,6 +94,30 @@ export async function getNotificationTemplate(merchantId: number, status: string
   return defaultTemplates[status as keyof typeof defaultTemplates] || null;
 }
 
+export async function prepareOrderStatusNotification(
+  merchantId: number,
+  customerPhone: string,
+  status: string,
+  orderData: {
+    customerName: string;
+    storeName: string;
+    orderNumber: string;
+    total: number;
+    trackingNumber?: string;
+  },
+): Promise<{ customerPhone: string; message: string } | null> {
+  const template = await getNotificationTemplate(merchantId, status);
+  if (!template) return null;
+  const message = fillTemplate(template, orderData);
+  if (!message.trim() || message.length > 4096) {
+    throw new Error('Order notification template exceeds the WhatsApp text limit');
+  }
+  return {
+    customerPhone,
+    message,
+  };
+}
+
 // Send order notification via WhatsApp
 export async function sendOrderNotification(
   orderId: number,
@@ -109,16 +133,12 @@ export async function sendOrderNotification(
   }
 ): Promise<boolean> {
   try {
-    // Get template
-    const template = await getNotificationTemplate(merchantId, status);
-    
-    if (!template) {
+    const prepared = await prepareOrderStatusNotification(merchantId, customerPhone, status, orderData);
+    if (!prepared) {
       console.log(`[Order Notification] No template found for status: ${status}`);
       return false;
     }
-    
-    // Fill template with data
-    const message = fillTemplate(template, orderData);
+    const { message } = prepared;
     
     // Create notification record
     const notification = await createOrderNotification({
@@ -144,6 +164,8 @@ export async function sendOrderNotification(
       sent: sent ? 1 : 0,
       sentAt: sent ? new Date().toISOString().slice(0, 19).replace("T", " ") : undefined,
       error: sent ? undefined : result.error || 'Failed to send WhatsApp message',
+      deliveryStatus: sent ? 'sent' : 'failed',
+      attempts: 1,
     });
     
     console.log(`[Order Notification] Sent ${status} notification for order #${orderData.orderNumber}: ${sent}`);

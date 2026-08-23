@@ -1,5 +1,6 @@
+import crypto from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
-import { orders, type Order } from '../../drizzle/schema';
+import { orderNotifications, orders, type Order } from '../../drizzle/schema';
 import { getDb } from '../db';
 
 export type MerchantOrderStatus = Order['status'];
@@ -24,6 +25,17 @@ export class MerchantOrderWriteConflictError extends Error {
     super('Merchant order changed before the requested update was committed');
     this.name = 'MerchantOrderWriteConflictError';
   }
+}
+
+export function createOrderStatusNotificationEventKey(input: {
+  merchantId: number;
+  orderId: number;
+  status: MerchantOrderStatus;
+}): string {
+  return crypto
+    .createHash('sha256')
+    .update(`order-status:v1\0${input.merchantId}\0${input.orderId}\0${input.status}`, 'utf8')
+    .digest('hex');
 }
 
 export function assertMerchantOrderTransition(
@@ -62,6 +74,10 @@ export async function transitionMerchantOrderStatus(input: {
   status: MerchantOrderStatus;
   trackingNumber?: string;
   cancellationReason?: string;
+  notification?: {
+    customerPhone: string;
+    message: string;
+  };
 }): Promise<boolean> {
   assertMerchantOrderTransition(input.expectedStatus, input.status);
   if (input.expectedStatus === input.status) return false;
@@ -78,16 +94,31 @@ export async function transitionMerchantOrderStatus(input: {
     updateData.notes = input.cancellationReason || 'تم إلغاء الطلب';
   }
 
-  const result = await db
-    .update(orders)
-    .set(updateData)
-    .where(and(
-      eq(orders.id, input.orderId),
-      eq(orders.merchantId, input.merchantId),
-      eq(orders.status, input.expectedStatus),
-    ));
+  await db.transaction(async tx => {
+    const result = await tx
+      .update(orders)
+      .set(updateData)
+      .where(and(
+        eq(orders.id, input.orderId),
+        eq(orders.merchantId, input.merchantId),
+        eq(orders.status, input.expectedStatus),
+      ));
 
-  const affectedRows = Number((result[0] as { affectedRows?: number }).affectedRows || 0);
-  if (affectedRows !== 1) throw new MerchantOrderWriteConflictError();
+    const affectedRows = Number((result[0] as { affectedRows?: number }).affectedRows || 0);
+    if (affectedRows !== 1) throw new MerchantOrderWriteConflictError();
+
+    if (input.notification) {
+      await tx.insert(orderNotifications).values({
+        orderId: input.orderId,
+        merchantId: input.merchantId,
+        eventKey: createOrderStatusNotificationEventKey(input),
+        customerPhone: input.notification.customerPhone,
+        status: input.status,
+        message: input.notification.message,
+        sent: 0,
+        deliveryStatus: 'pending',
+      });
+    }
+  });
   return true;
 }

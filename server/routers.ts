@@ -2490,31 +2490,8 @@ export const appRouter = router({
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const order = await getMerchantOrder(merchant.id, input.orderId);
         if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-
-        try {
-          const changed = await transitionMerchantOrderStatus({
-            merchantId: merchant.id,
-            orderId: order.id,
-            expectedStatus: order.status,
-            status: 'cancelled',
-            cancellationReason: input.reason,
-          });
-          if (!changed) {
-            return { success: true, changed: false, notificationSent: false, message: 'الطلب ملغي مسبقًا' };
-          }
-        } catch (error) {
-          if (error instanceof InvalidMerchantOrderTransitionError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إلغاء طلب مكتمل أو ملغي' });
-          }
-          if (error instanceof MerchantOrderWriteConflictError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
-          }
-          throw error;
-        }
-
-        const { sendOrderNotification } = await import('./notifications/order-notifications');
-        const notificationSent = await sendOrderNotification(
-          order.id,
+        const { prepareOrderStatusNotification } = await import('./notifications/order-notifications');
+        const notification = await prepareOrderStatusNotification(
           merchant.id,
           order.customerPhone,
           'cancelled',
@@ -2526,11 +2503,33 @@ export const appRouter = router({
           },
         );
 
+        try {
+          const changed = await transitionMerchantOrderStatus({
+            merchantId: merchant.id,
+            orderId: order.id,
+            expectedStatus: order.status,
+            status: 'cancelled',
+            cancellationReason: input.reason,
+            notification: notification || undefined,
+          });
+          if (!changed) {
+            return { success: true, changed: false, notificationQueued: false, message: 'الطلب ملغي مسبقًا' };
+          }
+        } catch (error) {
+          if (error instanceof InvalidMerchantOrderTransitionError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إلغاء طلب مكتمل أو ملغي' });
+          }
+          if (error instanceof MerchantOrderWriteConflictError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
+          }
+          throw error;
+        }
+
         return {
           success: true,
           changed: true,
-          notificationSent,
-          message: notificationSent ? 'تم إلغاء الطلب وإشعار العميل' : 'تم إلغاء الطلب، وتعذر إرسال إشعار العميل',
+          notificationQueued: Boolean(notification),
+          message: notification ? 'تم إلغاء الطلب وجدولة إشعار العميل' : 'تم إلغاء الطلب ولا يوجد قالب إشعار مفعّل',
         };
       }),
 
@@ -2546,6 +2545,19 @@ export const appRouter = router({
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const order = await getMerchantOrder(merchant.id, input.orderId);
         if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
+        const { prepareOrderStatusNotification } = await import('./notifications/order-notifications');
+        const notification = await prepareOrderStatusNotification(
+          merchant.id,
+          order.customerPhone,
+          input.status,
+          {
+            customerName: order.customerName || 'عزيزي العميل',
+            storeName: merchant.businessName,
+            orderNumber: order.orderNumber || `ORD-${order.id}`,
+            total: order.totalAmount,
+            trackingNumber: input.trackingNumber,
+          },
+        );
 
         try {
           const changed = await transitionMerchantOrderStatus({
@@ -2554,9 +2566,10 @@ export const appRouter = router({
             expectedStatus: order.status,
             status: input.status,
             trackingNumber: input.trackingNumber,
+            notification: notification || undefined,
           });
           if (!changed) {
-            return { success: true, changed: false, notificationSent: false, message: 'حالة الطلب محدثة مسبقًا' };
+            return { success: true, changed: false, notificationQueued: false, message: 'حالة الطلب محدثة مسبقًا' };
           }
         } catch (error) {
           if (error instanceof InvalidMerchantOrderTransitionError) {
@@ -2568,27 +2581,11 @@ export const appRouter = router({
           throw error;
         }
 
-        // Send notification to customer
-        const { sendOrderNotification } = await import('./notifications/order-notifications');
-        const notificationSent = await sendOrderNotification(
-          input.orderId,
-          merchant.id,
-          order.customerPhone,
-          input.status,
-          {
-            customerName: order.customerName || 'عزيزي العميل',
-            storeName: merchant.businessName,
-            orderNumber: order.orderNumber || `ORD-${order.id}`,
-            total: order.totalAmount,
-            trackingNumber: input.trackingNumber,
-          }
-        );
-
         return {
           success: true,
           changed: true,
-          notificationSent,
-          message: notificationSent ? 'تم تحديث حالة الطلب وإشعار العميل' : 'تم تحديث حالة الطلب، وتعذر إرسال إشعار العميل',
+          notificationQueued: Boolean(notification),
+          message: notification ? 'تم تحديث حالة الطلب وجدولة إشعار العميل' : 'تم تحديث حالة الطلب ولا يوجد قالب إشعار مفعّل',
         };
       }),
   }),

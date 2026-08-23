@@ -48,6 +48,7 @@ import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-re
 import { startCalendlyWebhookReceiptWorker } from "../integrations/calendly-webhook-receipts";
 import { startWooCommerceWebhookReceiptWorker } from "../integrations/woocommerce-webhook-receipts";
 import { startCampaignDeliveryWorker } from "../automation/campaign-delivery-outbox";
+import { startOrderStatusNotificationWorker } from "../orders/order-status-notification-outbox";
 import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -658,6 +659,9 @@ async function startServer() {
 
       // Durable recipient-level campaign delivery with distributed admission.
       startCampaignDeliveryWorker();
+
+      // Durable order status notifications coupled transactionally to the status change.
+      startOrderStatusNotificationWorker();
 
       // Initialize Scheduled Messages cron job (runs every minute)
       startScheduledMessagesJob();

@@ -418,14 +418,23 @@ export const orderNotifications = mysqlTable("order_notifications", {
 	id: int().autoincrement().primaryKey(),
 	orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	eventKey: varchar("event_key", { length: 64 }),
 	customerPhone: varchar("customer_phone", { length: 50 }).notNull(),
 	status: varchar({ length: 50 }).notNull(),
 	message: text().notNull(),
 	sent: tinyint().default(0),
 	sentAt: timestamp("sent_at", { mode: 'string' }),
 	error: text(),
+	deliveryStatus: mysqlEnum("delivery_status", ['pending', 'processing', 'sent', 'failed', 'manual_review', 'suppressed']).default('pending').notNull(),
+	attempts: int().default(0).notNull(),
+	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-});
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("uq_order_notification_event").on(table.merchantId, table.eventKey),
+	index("idx_order_notification_dispatch").on(table.deliveryStatus, table.availableAt, table.id),
+]);
 
 export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
 	id: int().autoincrement().primaryKey(),

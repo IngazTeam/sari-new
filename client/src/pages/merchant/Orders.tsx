@@ -72,7 +72,7 @@ export default function Orders() {
   // Update status mutation
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
     onSuccess: (result) => {
-      result.notificationSent || !result.changed ? toast.success(result.message) : toast.warning(result.message);
+      toast.success(result.message);
       setIsUpdateStatusOpen(false);
       refetch();
     },
@@ -84,7 +84,7 @@ export default function Orders() {
   // Cancel order mutation
   const cancelOrderMutation = trpc.orders.cancel.useMutation({
     onSuccess: (result) => {
-      result.notificationSent || !result.changed ? toast.success(result.message) : toast.warning(result.message);
+      toast.success(result.message);
       setIsDetailsOpen(false);
       refetch();
     },
