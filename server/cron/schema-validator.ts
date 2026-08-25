@@ -51,6 +51,21 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   ...WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS,
   { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
   {
+    table: 'whatsapp_disconnect_incidents',
+    columns: ['merchant_id', 'instance_id', 'detected_at', 'alerts_sent', 'next_alert_at', 'resolved_at', 'open_instance_id'],
+    generatedColumns: [{
+      name: 'open_instance_id',
+      expression: 'CASE WHEN resolved_at IS NULL THEN instance_id ELSE NULL END',
+      storage: 'stored',
+    }],
+    uniqueIndexes: [{ name: 'uq_whatsapp_disconnect_open_instance', columns: ['open_instance_id'] }],
+    checkConstraints: [{
+      name: 'whatsapp_disconnect_alert_count_check',
+      expression: 'alerts_sent >= 0 AND alerts_sent <= 2',
+      enforced: true,
+    }],
+  },
+  {
     table: 'order_notifications',
     columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at', 'reviewed_at', 'reviewed_by_user_id'],
     uniqueIndexes: [{ name: 'uq_order_notification_event', columns: ['merchant_id', 'event_key'] }],

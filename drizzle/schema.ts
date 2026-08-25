@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, check } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, foreignKey, check } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
@@ -1161,6 +1161,41 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 		sql`\`is_primary\` IN (0, 1) AND (\`is_primary\` = 0 OR \`status\` = 'active')`,
 	),
 	index("idx_whatsapp_provider_phone_id").on(table.provider, table.phoneNumberId),
+]);
+
+/**
+ * A durable disconnect episode for one WhatsApp instance. The generated open
+ * identity permits any number of resolved episodes while enforcing exactly one
+ * open episode per instance across deploy overlaps and clustered workers.
+ */
+export const whatsappDisconnectIncidents = mysqlTable("whatsapp_disconnect_incidents", {
+	id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	instanceId: int("instance_id").notNull(),
+	detectedAt: timestamp("detected_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	alertsSent: tinyint("alerts_sent", { unsigned: true }).default(0).notNull(),
+	nextAlertAt: timestamp("next_alert_at", { mode: 'string', fsp: 3 }).defaultNow(),
+	lastAlertAt: timestamp("last_alert_at", { mode: 'string', fsp: 3 }),
+	resolvedAt: timestamp("resolved_at", { mode: 'string', fsp: 3 }),
+	openInstanceId: int("open_instance_id").generatedAlwaysAs(
+		sql`CASE WHEN \`resolved_at\` IS NULL THEN \`instance_id\` ELSE NULL END`,
+		{ mode: 'stored' },
+	),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	foreignKey({
+		columns: [table.instanceId],
+		foreignColumns: [whatsappInstances.id],
+		name: "whatsapp_disconnect_instance_fk",
+	}).onDelete("cascade"),
+	uniqueIndex("uq_whatsapp_disconnect_open_instance").on(table.openInstanceId),
+	index("idx_whatsapp_disconnect_due").on(table.resolvedAt, table.nextAlertAt, table.id),
+	index("idx_whatsapp_disconnect_merchant").on(table.merchantId, table.detectedAt, table.id),
+	check(
+		"whatsapp_disconnect_alert_count_check",
+		sql`${table.alertsSent} >= 0 AND ${table.alertsSent} <= 2`,
+	),
 ]);
 
 export const whatsappRequests = mysqlTable("whatsapp_requests", {

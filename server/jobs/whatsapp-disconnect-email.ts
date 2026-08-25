@@ -8,6 +8,27 @@
 
 import { sendEmail } from '../_core/emailService';
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function reconnectUrl(): string {
+  try {
+    const configured = new URL(process.env.VITE_APP_URL || 'https://sary.live');
+    if (configured.protocol !== 'https:' || configured.username || configured.password) {
+      throw new Error('Unsafe application URL');
+    }
+    return new URL('/merchant/whatsapp-instances', configured.origin).toString();
+  } catch {
+    return 'https://sary.live/merchant/whatsapp-instances';
+  }
+}
+
 function getEmailTemplate(content: string): string {
   return `
     <!DOCTYPE html>
@@ -43,9 +64,21 @@ export async function sendWhatsAppDisconnectEmail(
   businessName: string,
   phoneNumber: string,
   state: string,
+  options: { sequence?: 1 | 2; detectedAt?: Date | string } = {},
 ): Promise<boolean> {
-  const subject = `🔴 تنبيه عاجل: واتساب غير متصل — ${businessName}`;
-  const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
+  const sequence = options.sequence === 2 ? 2 : 1;
+  const escapedBusinessName = escapeHtml(businessName);
+  const escapedPhoneNumber = escapeHtml(phoneNumber);
+  const escapedState = escapeHtml(state);
+  const subjectBusinessName = businessName.replace(/[\r\n]+/g, ' ').trim().slice(0, 120);
+  const subject = sequence === 1
+    ? `🔴 تنبيه: واتساب غير متصل — ${subjectBusinessName}`
+    : `🔴 التذكير الأخير: واتساب ما زال غير متصل — ${subjectBusinessName}`;
+  const appUrl = reconnectUrl();
+  const noticeLabel = sequence === 1 ? 'التنبيه الأول' : 'التذكير الأخير';
+  const nextStep = sequence === 1
+    ? 'سنرسل تذكيرًا أخيرًا بعد 24 ساعة فقط إذا استمر الانقطاع.'
+    : 'هذا آخر تذكير. تتوقف تنبيهات هذه الحادثة تلقائيًا بعد نافذة 48 ساعة.';
 
   const content = `
     <tr>
@@ -58,7 +91,7 @@ export async function sendWhatsAppDisconnectEmail(
       <td style="padding: 40px;">
         <div style="background: #fee2e2; border-right: 4px solid #ef4444; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
           <p style="margin: 0; color: #991b1b; font-weight: bold; font-size: 16px;">
-            تم اكتشاف انقطاع في اتصال واتساب الخاص بمتجرك
+            ${noticeLabel}: تم اكتشاف انقطاع في اتصال واتساب الخاص بمتجرك
           </p>
           <p style="margin: 10px 0 0 0; color: #7f1d1d;">
             رسائل العملاء لن تصل إلى النظام حتى يتم إعادة الربط.
@@ -70,19 +103,19 @@ export async function sendWhatsAppDisconnectEmail(
             <tr>
               <td style="padding: 8px 0;">
                 <span style="color: #6b7280;">المتجر:</span>
-                <strong style="color: #111827; margin-right: 10px;">${businessName}</strong>
+                <strong style="color: #111827; margin-right: 10px;">${escapedBusinessName}</strong>
               </td>
             </tr>
             <tr>
               <td style="padding: 8px 0;">
                 <span style="color: #6b7280;">الرقم:</span>
-                <strong style="color: #111827; margin-right: 10px;" dir="ltr">${phoneNumber}</strong>
+                <strong style="color: #111827; margin-right: 10px;" dir="ltr">${escapedPhoneNumber}</strong>
               </td>
             </tr>
             <tr>
               <td style="padding: 8px 0;">
                 <span style="color: #6b7280;">الحالة:</span>
-                <strong style="color: #ef4444; margin-right: 10px;">${state}</strong>
+                <strong style="color: #ef4444; margin-right: 10px;">${escapedState}</strong>
               </td>
             </tr>
           </table>
@@ -105,7 +138,7 @@ export async function sendWhatsAppDisconnectEmail(
 
         <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 25px;">
           <p style="margin: 0; color: #92400e; font-size: 14px;">
-            💡 <strong>ملاحظة:</strong> يتم فحص الاتصال تلقائياً كل 5 دقائق. لن نرسل لك إشعاراً آخر خلال الـ 4 ساعات القادمة.
+            💡 <strong>سياسة التنبيه:</strong> ${nextStep}
           </p>
         </div>
       </td>

@@ -142,6 +142,7 @@ run_pre_migration_checks() {
   corepack pnpm preflight:occasion-campaigns:before
   corepack pnpm preflight:order-notification-ops:before
   corepack pnpm preflight:ai-settings-singleton:before
+  corepack pnpm preflight:whatsapp-disconnect-alerts:before
 }
 
 run_post_migration_checks() {
@@ -159,6 +160,7 @@ run_post_migration_checks() {
   corepack pnpm preflight:occasion-campaigns:after
   corepack pnpm preflight:order-notification-ops:after
   corepack pnpm preflight:ai-settings-singleton:after
+  corepack pnpm preflight:whatsapp-disconnect-alerts:after
 }
 
 log "running count-only preflights against backup $SARI_BACKUP_ID"
