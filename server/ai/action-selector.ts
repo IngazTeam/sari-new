@@ -21,8 +21,8 @@ import {
   getMerchantPaymentSettings,
   getOrdersByCustomerPhone,
   getProductsByMerchantId,
-  getTopProducts,
 } from '../db';
+import { filterProductsAvailableForSale } from './product-availability';
 
 // Rate-limit map: prevent sending discount codes too frequently to the same customer
 const _discountRateLimit = new Map<string, number>();
@@ -285,7 +285,7 @@ export async function executeAction(params: {
     switch (action.type) {
       case 'send_product_link': {
         // Find matching product and send details
-        const products = await getTopProducts(merchantId, 50);
+        const products = filterProductsAvailableForSale(await getProductsByMerchantId(merchantId));
         const match = products.find((p: any) =>
           (p.name || '').includes(action.productName) ||
           action.productName.includes(p.name || '')
@@ -302,7 +302,9 @@ export async function executeAction(params: {
 
       case 'send_catalog': {
         // Send top 5 products from merchant's catalog
-        const products = await getTopProducts(merchantId, 5);
+        const products = filterProductsAvailableForSale(
+          await getProductsByMerchantId(merchantId),
+        ).slice(0, 5);
         if (products.length > 0) {
           const lines = products.map((p: any, i: number) => {
             const price = p.price ? ` — ${p.price} ر.س` : '';
@@ -447,7 +449,9 @@ export async function executeAction(params: {
 
         try {
           // 1. Match requested items to real products (with variant support)
-          const allProducts = await getProductsByMerchantId(merchantId);
+          const allProducts = filterProductsAvailableForSale(
+            await getProductsByMerchantId(merchantId),
+          );
           const { getVariantsByProductId } = await import('../db/products');
           const matchedItems: Array<{ productId: number; variantId?: number; name: string; price: number; quantity: number }> = [];
           let subtotal = 0;

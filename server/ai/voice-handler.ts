@@ -24,6 +24,7 @@ export async function processVoiceMessage(params: {
   customerName?: string;
   audioUrl: string;
   externalId?: string; // FIX-2: Green API idMessage for dedup
+  existingIncomingMessageId?: number;
 }): Promise<{
   transcription: string;
   response: string;
@@ -32,16 +33,18 @@ export async function processVoiceMessage(params: {
   // FIX-VOICE-EARLY: Save placeholder BEFORE download/transcribe.
   // If download or Whisper fails, the row exists with externalId → dedup protected,
   // and the catch in greenapi.ts can UPDATE it to isProcessed=1.
-  const placeholderMsg = await createMessage({
-    conversationId: params.conversationId,
-    direction: 'incoming',
-    messageType: 'voice',
-    content: '[رسالة صوتية — جاري المعالجة]',
-    voiceUrl: params.audioUrl,
-    isProcessed: 0,
-    externalId: params.externalId || null,
-    aiResponse: null,
-  });
+  const placeholderMsg = params.existingIncomingMessageId
+    ? { id: params.existingIncomingMessageId }
+    : await createMessage({
+        conversationId: params.conversationId,
+        direction: 'incoming',
+        messageType: 'voice',
+        content: '[رسالة صوتية — جاري المعالجة]',
+        voiceUrl: params.audioUrl,
+        isProcessed: 0,
+        externalId: params.externalId || null,
+        aiResponse: null,
+      });
 
   try {
     console.log('[Voice Handler] Processing voice message:', params.audioUrl);

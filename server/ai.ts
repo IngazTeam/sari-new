@@ -22,6 +22,7 @@ import {
   incrementPromotionViewCount,
   incrementPromotionClickCount,
 } from './db';
+import { filterProductsAvailableForSale } from './ai/product-availability';
 
 /**
  * شخصية ساري - مساعد المبيعات الذكي
@@ -175,13 +176,13 @@ function formatOrdersInfo(orders: OrderInfo[]): string {
  */
 async function searchProducts(merchantId: number, query: string): Promise<ProductInfo[]> {
   // البحث في منتجات ساري العادية
-  const sariProducts = await getProductsByMerchantId(merchantId);
+  const sariProducts = filterProductsAvailableForSale(await getProductsByMerchantId(merchantId));
   
   // البحث في منتجات Zid المستوردة
   const zidProducts = await getZidProducts(merchantId);
   
   // دمج المنتجات من المصدرين
-  const allProducts = [
+  const allProducts = filterProductsAvailableForSale([
     ...(sariProducts || []),
     ...zidProducts.map((zp: any) => ({
       id: zp.id,
@@ -193,8 +194,13 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
       imageUrl: zp.mainImage,
       source: 'zid',
       zidProductId: zp.zidProductId,
+      isActive: zp.isActive,
+      isPublished: zp.isPublished,
+      isInStock: zp.isInStock,
+      trackInventory: 1,
+      productType: 'physical',
     }))
-  ];
+  ]);
   
   if (!allProducts || allProducts.length === 0) {
     return [];
@@ -563,7 +569,7 @@ export async function parseAICommands(rawText: string, merchantId: number): Prom
     const productId = parseInt(imgMatch[1]);
     try {
       if (!cachedProducts) {
-        cachedProducts = await getProductsByMerchantId(merchantId);
+        cachedProducts = filterProductsAvailableForSale(await getProductsByMerchantId(merchantId));
       }
       const product = (cachedProducts || []).find((p: any) => p.id === productId);
       if (product?.imageUrl) {

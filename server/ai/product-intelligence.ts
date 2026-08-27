@@ -5,6 +5,7 @@
 
 import { callGPT4 } from './openai';
 import { getProductsByMerchantId } from '../db';
+import { filterProductsAvailableForSale } from './product-availability';
 
 /**
  * Search products using AI-powered semantic search
@@ -16,7 +17,9 @@ export async function searchProducts(params: {
 }): Promise<Array<any>> {
   try {
     // Get all products
-    const allProducts = await getProductsByMerchantId(params.merchantId);
+    const allProducts = filterProductsAvailableForSale(
+      await getProductsByMerchantId(params.merchantId),
+    );
     
     if (allProducts.length === 0) {
       return [];
@@ -136,7 +139,9 @@ export async function suggestProducts(params: {
   reasoning: string;
 }> {
   try {
-    const allProducts = await getProductsByMerchantId(params.merchantId);
+    const allProducts = filterProductsAvailableForSale(
+      await getProductsByMerchantId(params.merchantId),
+    );
     
     if (allProducts.length === 0) {
       return {
@@ -201,7 +206,9 @@ ${productList}
     
     // Fallback: return random products
     const limit = params.limit || 3;
-    const allProducts = await getProductsByMerchantId(params.merchantId);
+    const allProducts = filterProductsAvailableForSale(
+      await getProductsByMerchantId(params.merchantId),
+    );
     const randomProducts = allProducts
       .sort(() => Math.random() - 0.5)
       .slice(0, limit);

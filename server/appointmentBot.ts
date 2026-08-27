@@ -5,7 +5,6 @@
  */
 
 import {
-  createAppointment,
   getActiveStaff,
   getAvailableTimeSlots,
   getGoogleIntegrationStatus,
@@ -14,6 +13,12 @@ import {
   getStaffById,
 } from './db';
 import { invokeLLM } from "./_core/llm";
+import {
+  AppointmentConflictError,
+  AppointmentOwnershipError,
+  createConfirmedAppointment,
+  formatServicePrice,
+} from './appointment-booking';
 
 /**
  * اكتشاف ما إذا كانت الرسالة تتعلق بحجز موعد
@@ -62,7 +67,7 @@ export async function extractAppointmentDetails(
     const systemPrompt = `أنت مساعد ذكي لاستخراج تفاصيل حجز المواعيد من رسائل العملاء.
 
 الخدمات المتاحة:
-${services.map((s) => `- ${s.name} (${s.duration} دقيقة، ${s.price} ريال)`).join("\n")}
+${services.map((s) => `- ${s.name} (${s.durationMinutes} دقيقة، ${formatServicePrice(s.basePrice)})`).join("\n")}
 
 الموظفين المتاحين:
 ${staff.map((s) => `- ${s.name} (${s.specialization})`).join("\n")}
@@ -135,15 +140,18 @@ export async function getAvailableSlots(
   staffId?: number
 ): Promise<string[]> {
   try {
-    const slots = await getAvailableTimeSlots(
-      merchantId,
-      serviceId,
-      date,
-      // @ts-ignore
-      staffId
-    );
-    // @ts-ignore
-    return slots;
+    const service = await getServiceById(serviceId);
+    if (!service || service.merchantId !== merchantId || service.isActive !== 1) return [];
+
+    if (staffId !== undefined) {
+      const staff = await getStaffById(staffId);
+      if (!staff || staff.merchantId !== merchantId || staff.isActive !== 1) return [];
+    }
+
+    const slots = await getAvailableTimeSlots(serviceId, date, staffId);
+    return slots
+      .map((slot: any) => String(slot.startTime || ''))
+      .filter((startTime: string) => /^\d{2}:\d{2}$/.test(startTime));
   } catch (error) {
     console.error("[AppointmentBot] Error getting available slots:", error);
     return [];
@@ -202,7 +210,7 @@ export async function handleAppointmentRequest(
       const servicesList = services
         .map(
           (s, i) =>
-            `${i + 1}. ${s.name} - ${s.duration} دقيقة (${s.price} ريال)`
+            `${i + 1}. ${s.name} - ${s.durationMinutes} دقيقة (${formatServicePrice(s.basePrice)})`
         )
         .join("\n");
 
@@ -283,28 +291,18 @@ export async function confirmAppointment(
   staffId?: number
 ): Promise<{ success: boolean; message: string; appointmentId?: number }> {
   try {
-    // حجز الموعد
-    const appointment = await (createAppointment as any)({
+    const appointment = await createConfirmedAppointment({
       merchantId,
       customerName,
       customerPhone,
       serviceId,
-      staffId: staffId || null,
-      appointmentDate: date,
+      staffId,
+      date,
       startTime: time,
-      status: "confirmed",
-      notes: "تم الحجز عبر WhatsApp Bot",
     });
 
-    if (!appointment) {
-      return {
-        success: false,
-        message: "عذراً، فشل حجز الموعد. يرجى المحاولة مرة أخرى.",
-      };
-    }
-
-    const service = await getServiceById(serviceId);
-    const staff = staffId ? await getStaffById(staffId) : null;
+    const service = appointment.service;
+    const staff = appointment.staff;
 
     const appointmentDate = new Date(`${date}T${time}`);
     const dateStr = formatDateArabic(appointmentDate);
@@ -321,10 +319,8 @@ export async function confirmAppointment(
 • التاريخ: ${dateStr}
 • الوقت: ${timeStr}
 ${staff ? `• الموظف: ${staff.name}` : ""}
-// @ts-ignore
-• المدة: ${service?.duration} دقيقة
-// @ts-ignore
-• السعر: ${service?.price} ريال
+• المدة: ${service.durationMinutes} دقيقة
+• السعر: ${formatServicePrice(service.basePrice)}
 
 سيتم إرسال تذكير لك قبل الموعد بـ 24 ساعة وساعة واحدة.
 
@@ -335,7 +331,7 @@ ${staff ? `• الموظف: ${staff.name}` : ""}
       const { notifyNewAppointment } = await import('./_core/notificationService');
       await notifyNewAppointment(
         merchantId, 
-        appointment.id, 
+        appointment.appointmentId,
         customerName, 
         service?.name || 'خدمة', 
         appointmentDate
@@ -347,10 +343,22 @@ ${staff ? `• الموظف: ${staff.name}` : ""}
     return {
       success: true,
       message,
-      appointmentId: appointment.id,
+      appointmentId: appointment.appointmentId,
     };
   } catch (error) {
     console.error("[AppointmentBot] Error confirming appointment:", error);
+    if (error instanceof AppointmentConflictError) {
+      return {
+        success: false,
+        message: "عذراً، هذا الوقت تم حجزه للتو. اختر وقتاً آخر من الأوقات المتاحة.",
+      };
+    }
+    if (error instanceof AppointmentOwnershipError) {
+      return {
+        success: false,
+        message: "عذراً، الخدمة أو الموظف غير متاح للحجز حالياً.",
+      };
+    }
     return {
       success: false,
       message: "خلني أتأكد من تأكيد موعدك وأرجع لك 🔍 جرب مرة ثانية أو تواصل معنا مباشرة 🙏",

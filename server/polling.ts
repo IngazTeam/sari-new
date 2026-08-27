@@ -9,15 +9,22 @@ import * as whatsapp from './whatsapp';
 import {
   createConversation,
   createMessage,
+  DuplicateMessageError,
   getAllWhatsAppConnectionRequests,
   getConversationByMerchantAndPhone,
   getConversationsByMerchantId,
   getWhatsAppConnectionRequestByMerchantId,
   getMessagesByConversationId,
   updateConversation,
+  updateMessage,
 } from './db';
 import { processIncomingMessage, type AIResponse } from './ai';
 import { processVoiceMessage } from './ai/voice-handler';
+import {
+  isOptInRequest,
+  isOptOutRequest,
+  recordCustomerMarketingDecision,
+} from './automation/campaign-guard';
 
 // Store active polling intervals
 const activePollers: Map<number, NodeJS.Timeout> = new Map();
@@ -25,13 +32,11 @@ const activePollers: Map<number, NodeJS.Timeout> = new Map();
 // Polling interval in milliseconds (2 seconds for faster response)
 const POLLING_INTERVAL = 2000;
 
-// Track processed messages to prevent duplicate responses
-const processedMessages: Set<string> = new Set();
+// Prevent overlapping receiveNotification calls for the same merchant.
+const pollingMerchantsInFlight = new Set<number>();
 
-// Clean up old processed messages every 5 minutes
+// Clean up AI rate limit counters every 5 minutes.
 setInterval(() => {
-  processedMessages.clear();
-  // LIM-02: Also clean AI rate limit counters
   aiRateLimiter.clear();
 }, 5 * 60 * 1000);
 
@@ -52,6 +57,43 @@ function checkAIRateLimit(merchantId: number): boolean {
   }
   entry.count++;
   return true;
+}
+
+class PollingDeliveryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PollingDeliveryError';
+  }
+}
+
+async function claimPollingMessage(
+  externalId: string | undefined,
+  message: Parameters<typeof createMessage>[0],
+): Promise<{ messageId: number; alreadyProcessed: boolean; savedResponse?: string }> {
+  if (!externalId) throw new Error('Polling message is missing idMessage');
+
+  try {
+    const created = await createMessage({ ...message, externalId });
+    if (!created?.id) throw new Error('Polling incoming message was not persisted');
+    return { messageId: created.id, alreadyProcessed: false };
+  } catch (error) {
+    if (!(error instanceof DuplicateMessageError) || !error.existingMessage) throw error;
+    if (error.existingMessage.conversationId !== message.conversationId) {
+      throw new Error('Polling externalId belongs to another conversation');
+    }
+    return {
+      messageId: error.existingMessage.id,
+      alreadyProcessed: error.existingMessage.isProcessed === 1,
+      savedResponse: error.existingMessage.aiResponse || undefined,
+    };
+  }
+}
+
+async function markPollingMessageProcessed(messageId: number, aiResponse?: string): Promise<void> {
+  await updateMessage(messageId, {
+    isProcessed: 1,
+    ...(aiResponse ? { aiResponse } : {}),
+  });
 }
 
 /**
@@ -142,6 +184,9 @@ async function pollMessages(
   apiToken: string,
   apiUrl: string
 ): Promise<void> {
+  if (pollingMerchantsInFlight.has(merchantId)) return;
+  pollingMerchantsInFlight.add(merchantId);
+
   try {
     // Receive notification from Green API
     const { notification, receiptId, error } = await whatsapp.receiveNotification(instanceId, apiToken, apiUrl);
@@ -165,10 +210,15 @@ async function pollMessages(
     await processNotification(merchantId, instanceId, apiToken, apiUrl, notification);
 
     // Delete the notification from queue
-    await whatsapp.deleteNotification(instanceId, apiToken, receiptId, apiUrl);
+    const deleteResult = await whatsapp.deleteNotification(instanceId, apiToken, receiptId, apiUrl);
+    if (!deleteResult.success) {
+      console.warn(`[Polling] Notification ${receiptId} was processed but not acknowledged: ${deleteResult.error || 'unknown error'}`);
+    }
 
   } catch (error) {
     console.error(`[Polling] Error polling messages for merchant ${merchantId}:`, error);
+  } finally {
+    pollingMerchantsInFlight.delete(merchantId);
   }
 }
 
@@ -195,6 +245,7 @@ async function processNotification(
     }
   } catch (error) {
     console.error(`[Polling] Error processing notification:`, error);
+    throw error;
   }
 }
 
@@ -307,17 +358,7 @@ async function handleIncomingMessage(
 
     console.log(`[Polling] Incoming message from ${customerPhone}: ${messageText}`);
 
-    // Check if message was already processed (prevent duplicate responses)
-    const messageId = notification.idMessage;
-    if (messageId && processedMessages.has(messageId)) {
-      console.log(`[Polling] Message ${messageId} already processed, skipping`);
-      return;
-    }
-    
-    // Mark message as processed
-    if (messageId) {
-      processedMessages.add(messageId);
-    }
+    const messageId = notification.idMessage ? String(notification.idMessage) : undefined;
 
     // Get or create conversation
     let conversation = await getConversationByMerchantAndPhone(merchantId, customerPhone);
@@ -336,6 +377,60 @@ async function handleIncomingMessage(
 
     if (!conversation) {
       console.error('[Polling] Failed to create/get conversation');
+      throw new Error('Polling conversation could not be created');
+    }
+
+    const isFirstConversationMessage = (await getMessagesByConversationId(conversation.id)).length === 0;
+    const safeImageUrl = (messageData as any)?._safeImageUrl || null;
+    const safeDocUrl = (messageData as any)?._safeDocUrl || null;
+    const msgType = safeDocUrl ? 'document' : safeImageUrl ? 'image' : (messageType === 'imageMessage' ? 'image' : 'text');
+    const claim = await claimPollingMessage(messageId, {
+      conversationId: conversation.id,
+      direction: 'incoming',
+      content: messageText,
+      messageType: msgType as any,
+      imageUrl: safeImageUrl,
+      mediaUrl: safeDocUrl || safeImageUrl,
+      isProcessed: 0,
+      aiResponse: null,
+    });
+    if (claim.alreadyProcessed) {
+      console.log(`[Polling] Message ${messageId} is already processed; acknowledging retry`);
+      return;
+    }
+    const incomingMessageId = claim.messageId;
+
+    // Marketing consent must be handled before takeover, subscription or AI logic.
+    const marketingDecision = isOptOutRequest(messageText)
+      ? 'withdrawn'
+      : isOptInRequest(messageText) ? 'granted' : null;
+    if (marketingDecision) {
+      await recordCustomerMarketingDecision({
+        merchantId,
+        phone: customerPhone,
+        decision: marketingDecision,
+        source: 'whatsapp_text',
+        provider: 'green_api',
+        providerEventId: messageId!,
+        evidenceText: messageText,
+        occurredAt: Number.isFinite(Number(notification.timestamp))
+          ? new Date(Number(notification.timestamp) * 1000)
+          : new Date(),
+      });
+      const confirmation = marketingDecision === 'withdrawn'
+        ? 'تم إيقاف الرسائل التسويقية. لإعادة الاشتراك بإرادتك أرسل «اشترك في العروض».'
+        : 'تم تسجيل موافقتك على الرسائل التسويقية. يمكنك إيقافها في أي وقت بإرسال «إلغاء الاشتراك».';
+      const confirmationResult = await whatsapp.sendMessageWithCredentials(
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        confirmation,
+      );
+      if (!confirmationResult.success) {
+        throw new PollingDeliveryError(`Polling marketing consent confirmation failed: ${confirmationResult.error || 'unknown error'}`);
+      }
+      await markPollingMessageProcessed(incomingMessageId, confirmation);
       return;
     }
 
@@ -352,15 +447,8 @@ async function handleIncomingMessage(
         await updateConversation(conversation.id, { humanTakeover: 0, humanExpiresAt: null } as any);
         console.log(`[Polling] ⚠️ Force-expired stuck takeover on conv ${conversation.id}`);
       } else if (!expiresAt || new Date(expiresAt) > new Date()) {
-        // Human is still active — save message but don't respond
+        // Human is still active — the durable incoming row is already saved.
         console.log(`[Polling] Sari silent — human takeover active on conv ${conversation.id}`);
-        await createMessage({
-          conversationId: conversation.id,
-          direction: 'incoming',
-          content: messageText,
-          messageType: 'text',
-          isProcessed: 0,
-        });
 
         // ── Notify merchant about new customer message during takeover ──
         try {
@@ -393,6 +481,7 @@ async function handleIncomingMessage(
           );
         } catch { /* non-blocking */ }
 
+        await markPollingMessageProcessed(incomingMessageId);
         return;
       } else {
         // Takeover expired + customer sent new message → resume with context
@@ -431,35 +520,27 @@ async function handleIncomingMessage(
       const botSettings = await getBotSettings(merchantId);
       if (!botSettings.autoReplyEnabled) {
         console.log(`[Polling] Auto-reply disabled for merchant ${merchantId}`);
-        await createMessage({
-          conversationId: conversation.id,
-          direction: 'incoming',
-          content: messageText,
-          messageType: 'text',
-          isProcessed: 0,
-        });
+        await markPollingMessageProcessed(incomingMessageId);
         return;
       }
       const { shouldRespond: canRespond, reason: respondReason } = await shouldBotRespond(merchantId);
       if (!canRespond) {
         console.log(`[Polling] Outside working hours for merchant ${merchantId} — reason: ${respondReason}`);
-        await createMessage({
-          conversationId: conversation.id,
-          direction: 'incoming',
-          content: messageText,
-          messageType: 'text',
-          isProcessed: 0,
-        });
         // Send out-of-hours message if configured
         if (botSettings.outOfHoursMessage) {
-          await whatsapp.sendMessageWithCredentials(
+          const outOfHoursResult = await whatsapp.sendMessageWithCredentials(
             instanceId, apiToken, apiUrl, customerPhone,
             botSettings.outOfHoursMessage as string
           );
+          if (!outOfHoursResult.success) {
+            throw new PollingDeliveryError(`Polling out-of-hours send failed: ${outOfHoursResult.error || 'unknown error'}`);
+          }
         }
+        await markPollingMessageProcessed(incomingMessageId, botSettings.outOfHoursMessage || undefined);
         return;
       }
     } catch (settingsErr) {
+      if (settingsErr instanceof PollingDeliveryError) throw settingsErr;
       console.warn('[Polling] Bot settings check failed, continuing:', settingsErr);
     }
 
@@ -467,31 +548,14 @@ async function handleIncomingMessage(
     try {
       const { getBotSettings: getBSWelcome } = await import('./db');
       const bsWelcome = await getBSWelcome(merchantId);
-      if (bsWelcome.welcomeMessage) {
-        const existingMsgs = await getMessagesByConversationId(conversation.id);
-        if (existingMsgs.length === 0) {
-          console.log(`[Polling] 🎉 First-time customer ${customerPhone} — sending welcome`);
-          await whatsapp.sendMessageWithCredentials(
-            instanceId, apiToken, apiUrl, customerPhone,
-            bsWelcome.welcomeMessage as string
-          );
-        }
+      if (bsWelcome.welcomeMessage && isFirstConversationMessage) {
+        console.log(`[Polling] 🎉 First-time customer ${customerPhone} — sending welcome`);
+        await whatsapp.sendMessageWithCredentials(
+          instanceId, apiToken, apiUrl, customerPhone,
+          bsWelcome.welcomeMessage as string
+        );
       }
     } catch { /* non-blocking */ }
-
-    // Save incoming message
-    const safeImageUrl = (messageData as any)?._safeImageUrl || null;
-    const safeDocUrl = (messageData as any)?._safeDocUrl || null;
-    const msgType = safeDocUrl ? 'document' : safeImageUrl ? 'image' : (messageType === 'imageMessage' ? 'image' : 'text');
-    await createMessage({
-      conversationId: conversation.id,
-      direction: 'incoming',
-      content: messageText,
-      messageType: msgType as any,
-      imageUrl: safeImageUrl || null,
-      mediaUrl: safeDocUrl || safeImageUrl || null,
-      isProcessed: 0,
-    });
 
     // Update conversation
     await updateConversation(conversation.id, {
@@ -501,16 +565,24 @@ async function handleIncomingMessage(
     // LIM-02: Check AI rate limit before processing
     if (!checkAIRateLimit(merchantId)) {
       console.log(`[Polling] Skipping AI response due to rate limit for merchant ${merchantId}`);
+      await markPollingMessageProcessed(incomingMessageId);
       return;
     }
 
     // Process with AI and send response
-    const aiResponse = await processIncomingMessage(
-      merchantId,
-      conversation.id,
-      customerPhone,
-      messageText
-    );
+    const aiResponse = claim.savedResponse
+      ? { text: claim.savedResponse, media: [] }
+      : await processIncomingMessage(
+          merchantId,
+          conversation.id,
+          customerPhone,
+          messageText,
+        );
+
+    if (!aiResponse) {
+      throw new Error('Polling AI processing returned no response');
+    }
+    await updateMessage(incomingMessageId, { aiResponse: aiResponse.text });
 
     if (aiResponse) {
       // Apply responseDelay from botSettings (parity with webhook)
@@ -532,8 +604,10 @@ async function handleIncomingMessage(
 
       if (sendResult.success) {
         console.log(`[Polling] ✅ Sent AI text response to ${customerPhone}`);
+        await markPollingMessageProcessed(incomingMessageId, aiResponse.text);
       } else {
         console.error(`[Polling] ❌ Failed to send AI response:`, sendResult.error);
+        throw new PollingDeliveryError(`Polling AI response send failed: ${sendResult.error || 'unknown error'}`);
       }
 
       // Phase 2: Send media attachments (product images, documents)
@@ -668,6 +742,7 @@ async function handleIncomingMessage(
 
   } catch (error) {
     console.error('[Polling] Error handling incoming message:', error);
+    throw error;
   }
 }
 
@@ -684,18 +759,9 @@ async function handleVoiceMessage(
   audioUrl: string,
   messageId?: string
 ): Promise<void> {
-  try {
-    // Check if message was already processed
-    if (messageId && processedMessages.has(messageId)) {
-      console.log(`[Polling] Voice message ${messageId} already processed, skipping`);
-      return;
-    }
-    
-    // Mark message as processed
-    if (messageId) {
-      processedMessages.add(messageId);
-    }
+  let incomingMessageId: number | undefined;
 
+  try {
     console.log(`[Polling] Processing voice message from ${customerPhone}`);
 
     // Get or create conversation
@@ -714,22 +780,40 @@ async function handleVoiceMessage(
 
     if (!conversation) {
       console.error('[Polling] Failed to create/get conversation for voice message');
-      return;
+      throw new Error('Polling voice conversation could not be created');
     }
 
-    // Process voice message using voice handler
-    const result = await processVoiceMessage({
+    const claim = await claimPollingMessage(messageId, {
+      conversationId: conversation.id,
+      direction: 'incoming',
+      messageType: 'voice',
+      content: '[رسالة صوتية — جاري المعالجة]',
+      voiceUrl: audioUrl,
+      isProcessed: 0,
+      aiResponse: null,
+    });
+    if (claim.alreadyProcessed) {
+      console.log(`[Polling] Voice message ${messageId} is already processed; acknowledging retry`);
+      return;
+    }
+    incomingMessageId = claim.messageId;
+
+    // Process voice once. A provider retry reuses the persisted response.
+    const rawVoiceResponse = claim.savedResponse || (await processVoiceMessage({
       merchantId,
       conversationId: conversation.id,
       customerPhone,
       customerName,
       audioUrl,
-    });
+      externalId: messageId,
+      existingIncomingMessageId: incomingMessageId,
+    })).response;
 
     // UX-03: Parse voice AI response through rich media pipeline
     // This ensures [SEND_IMAGE:id] and [SEND_DISCOUNT:CODE] commands work for voice messages too
     const { parseAICommands: parseVoiceCommands } = await import('./ai');
-    const voiceAiResponse = await parseVoiceCommands(result.response, merchantId);
+    const voiceAiResponse = await parseVoiceCommands(rawVoiceResponse, merchantId);
+    await updateMessage(incomingMessageId, { aiResponse: voiceAiResponse.text });
 
     // Send text response
     const sendResult = await whatsapp.sendMessageWithCredentials(
@@ -742,8 +826,10 @@ async function handleVoiceMessage(
 
     if (sendResult.success) {
       console.log(`[Polling] Sent voice response to ${customerPhone}`);
+      await markPollingMessageProcessed(incomingMessageId, voiceAiResponse.text);
     } else {
       console.error(`[Polling] Failed to send voice response:`, sendResult.error);
+      throw new PollingDeliveryError(`Polling voice response send failed: ${sendResult.error || 'unknown error'}`);
     }
 
     // Send media attachments from voice response
@@ -764,20 +850,22 @@ async function handleVoiceMessage(
     }
 
   } catch (error: any) {
+    if (error instanceof PollingDeliveryError) throw error;
     console.error('[Polling] Error handling voice message:', error);
-    
-    // Send error message to customer
-    try {
-      await whatsapp.sendMessageWithCredentials(
-        instanceId,
-        apiToken,
-        apiUrl,
-        customerPhone,
-        'عذراً، لم أتمكن من فهم الرسالة الصوتية. يرجى إرسال رسالة نصية أو إعادة المحاولة. 🙏'
-      );
-    } catch (sendError) {
-      console.error('[Polling] Failed to send error message:', sendError);
+    if (!incomingMessageId) throw error;
+
+    const fallback = 'عذراً، لم أتمكن من فهم الرسالة الصوتية. يرجى إرسال رسالة نصية أو إعادة المحاولة. 🙏';
+    const fallbackResult = await whatsapp.sendMessageWithCredentials(
+      instanceId,
+      apiToken,
+      apiUrl,
+      customerPhone,
+      fallback,
+    );
+    if (!fallbackResult.success) {
+      throw new PollingDeliveryError(`Polling voice fallback send failed: ${fallbackResult.error || 'unknown error'}`);
     }
+    await markPollingMessageProcessed(incomingMessageId, fallback);
   }
 }
 

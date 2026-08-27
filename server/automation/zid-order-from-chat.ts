@@ -12,6 +12,7 @@ import { ZidClient, ZidCreateOrderResponse } from '../integrations/zid/zidClient
 import { getZidProducts, saveZidOrder } from '../db';
 import dbZid from '../db_zid';
 import { invokeLLM } from '../_core/llm';
+import { filterProductsAvailableForSale } from '../ai/product-availability';
 
 interface ParsedZidOrder {
   products: Array<{
@@ -51,7 +52,9 @@ export async function parseZidOrderMessage(
 ): Promise<ParsedZidOrder | null> {
   try {
     // جلب منتجات Zid للتاجر
-    const zidProducts = await getZidProducts(merchantId);
+    const zidProducts = filterProductsAvailableForSale(
+      await getZidProducts(merchantId),
+    );
     const productList = zidProducts.map(p => 
       `- ${p.nameAr || p.nameEn || 'منتج'} (SKU: ${p.zidSku || p.zidProductId}, السعر: ${p.price} ريال)`
     ).join('\n');
@@ -240,7 +243,9 @@ export async function createZidOrderFromChat(
     }
 
     // حساب المبلغ الإجمالي
-    const zidProducts = await getZidProducts(merchantId);
+    const zidProducts = filterProductsAvailableForSale(
+      await getZidProducts(merchantId),
+    );
     let totalAmount = 0;
     const orderProducts: Array<{ sku: string; quantity: number }> = [];
 

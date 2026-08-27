@@ -31,6 +31,10 @@ import {
   extractReferralCodeFromMessage,
   trackReferral 
 } from './referral-system';
+import {
+  filterProductsAvailableForSale,
+  isProductAvailableForSale,
+} from '../ai/product-availability';
 
 interface ParsedOrder {
   products: Array<{
@@ -62,7 +66,9 @@ interface DiscountInfo {
 export async function parseOrderMessage(message: string, merchantId: number): Promise<ParsedOrder | null> {
   try {
     // Get merchant's products for context
-    const products = await getProductsByMerchantId(merchantId);
+    const products = filterProductsAvailableForSale(
+      await getProductsByMerchantId(merchantId),
+    );
     const productList = products.map(p => `- ${p.name} (${p.price} ريال)`).join('\n');
 
     const response = await invokeLLM({
@@ -173,6 +179,11 @@ export async function createOrderFromChat(
 
       const dbProduct = await getProductById(product.productId);
       if (!dbProduct) continue;
+
+      if (!isProductAvailableForSale(dbProduct)) {
+        outOfStockItems.push(dbProduct.name);
+        continue;
+      }
 
       // P3: Zero Stock Guard
       const stock = (dbProduct as any).stock ?? (dbProduct as any).quantity ?? null;

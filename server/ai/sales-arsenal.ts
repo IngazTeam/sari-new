@@ -14,6 +14,7 @@ import {
   getProductsByMerchantId,
   getServicesByMerchant,
 } from '../db';
+import { filterProductsAvailableForSale } from './product-availability';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { CustomerIntent, ConversationSession } from './session-context';
 import { assertRuntimeSchema } from '../db/schema-readiness';
@@ -118,7 +119,7 @@ export async function loadArsenal(
 
   try {
     // 2. Products (for upsell + best sellers context)
-    const products = await getProductsByMerchantId(merchantId);
+    const products = filterProductsAvailableForSale(await getProductsByMerchantId(merchantId));
     arsenal.totalProducts = products.length;
     arsenal.bestSellers = products
       .slice(0, 5)

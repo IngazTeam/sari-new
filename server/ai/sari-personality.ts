@@ -65,6 +65,7 @@ import { loadLightweightArsenal } from './lightweight-arsenal';
 import { detectSentimentFast, detectSentimentWithSignals } from './fast-sentiment';
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
+import { filterProductsAvailableForSale } from './product-availability';
 import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
 import { validateResponse, recordValidation } from './response-validator';
 import { critiqueResponse, fixResponse, recordCritique } from './response-critic';
@@ -903,7 +904,8 @@ async function searchRelevantProducts(
   allProducts: any[],
   limit: number = 20
 ): Promise<any[]> {
-  if (allProducts.length === 0) return [];
+  const availableProducts = filterProductsAvailableForSale(allProducts);
+  if (availableProducts.length === 0) return [];
 
   // FIX: Strip punctuation from message before keyword extraction
   const cleanMessage = message.replace(/[؟?!.,،;:()[\]{}""''\"]/g, ' ').trim();
@@ -923,7 +925,7 @@ async function searchRelevantProducts(
   const isPriceQuery = priceCatalogKeywords.some(k => msgLower.includes(k));
   if (isPriceQuery) {
     // Return ALL products — customer wants the full catalog
-    return allProducts;
+    return availableProducts;
   }
 
   // Arabic stem normalization: strip common prefixes/suffixes for better matching
@@ -940,7 +942,7 @@ async function searchRelevantProducts(
 
   const keywords = msgLower.split(/\s+/).filter(w => w.length > 1);
 
-  const scoredProducts = allProducts.map(product => {
+  const scoredProducts = availableProducts.map(product => {
     let score = 0;
     const searchText = `${product.name} ${product.description || ''} ${product.category || ''} ${(product as any).tags || ''} ${(product as any).sku || ''} ${(product as any).shortDescription || ''}`.toLowerCase();
 
@@ -1123,6 +1125,7 @@ export async function buildEnhancedContextPrompt(context: {
   customerMessage?: string;  // RAG: used for semantic search
 }): Promise<string> {
   let contextPrompt = '\n\n## السياق الحالي:\n';
+  const availableProducts = filterProductsAvailableForSale(context.availableProducts || []);
 
   if (context.merchantName) {
     contextPrompt += `أنت تعمل في "${context.merchantName}".\n`;
@@ -1302,8 +1305,8 @@ export async function buildEnhancedContextPrompt(context: {
     }
   }
 
-  if (context.availableProducts && context.availableProducts.length > 0) {
-    const productCount = context.availableProducts.length;
+  if (availableProducts.length > 0) {
+    const productCount = availableProducts.length;
 
     // ═══════════════════════════════════════════════════════════════
     // 🔴🔴🔴 تنبيه إلزامي — قراءة المنتجات قبل الرد
@@ -1327,8 +1330,8 @@ export async function buildEnhancedContextPrompt(context: {
     // Description truncation: shorter for very large catalogs, but ALWAYS included
     const descLimit = productCount > 30 ? 100 : productCount > 15 ? 150 : 300;
 
-    for (let index = 0; index < context.availableProducts.length; index++) {
-      const product = context.availableProducts[index];
+    for (let index = 0; index < availableProducts.length; index++) {
+      const product = availableProducts[index];
       contextPrompt += `\n${index + 1}. **${product.name}**`;
       if (product.price) {
         contextPrompt += ` — ${formatCurrency(product.price, currency, 'ar-SA')}`;
@@ -2573,7 +2576,9 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
       // v6: Build cross-sell suggestions from purchase history
       if (customerProfile?.purchaseHistory) {
-        const allProducts = await (getProductsByMerchantId as any)(params.merchantId);
+        const allProducts = filterProductsAvailableForSale(
+          await (getProductsByMerchantId as any)(params.merchantId),
+        );
         arsenal.crossSellSuggestions = buildCrossSellSuggestions(
           customerProfile.purchaseHistory,
           allProducts
@@ -3108,7 +3113,9 @@ export async function generateWelcomeMessage(params: {
     }
 
     // Get top 3 products to mention
-    const products = await (getProductsByMerchantId as any)(params.merchantId);
+    const products = filterProductsAvailableForSale(
+      await (getProductsByMerchantId as any)(params.merchantId),
+    );
     const topProducts = products.slice(0, 3);
 
     let contextPrompt = `\n## معلومات المتجر:\nأنت تعمل لدى متجر "${merchant.businessName}".\n\n`;
@@ -3228,7 +3235,7 @@ export async function recommendProducts(params: {
     if (allProducts.length === 0) return [];
 
     // Filter by budget if provided
-    let filteredProducts = allProducts;
+    let filteredProducts = filterProductsAvailableForSale(allProducts);
     if (params.budget) {
       // @ts-ignore
       filteredProducts = filteredProducts.filter(p =>
