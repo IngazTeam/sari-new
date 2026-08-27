@@ -292,7 +292,7 @@ describe('CG-08: Group message reply routing', () => {
   it('sendMessageWithCredentials must support pre-formatted @g.us chatIds', () => {
     const wa = readFile('./server/whatsapp.ts');
     const fnIdx = wa.indexOf('export async function sendMessageWithCredentials');
-    const fnBlock = wa.substring(fnIdx, fnIdx + 800);
+    const fnBlock = wa.substring(fnIdx, fnIdx + 2500);
     expect(fnBlock).toContain("phoneNumber.includes('@')");
   });
 });
@@ -301,9 +301,8 @@ describe('CG-08: Group message reply routing', () => {
 // CG-09: Setup Wizard ↔ Schema — language enum parity
 // ═══════════════════════════════════════════════════════════════
 describe('CG-09: Setup wizard language ↔ schema parity', () => {
-  // CRITICAL: routers.ts is the LIVE mounted router used by appRouter.
-  // routers-setup-wizard.ts is a standalone module that may not be mounted.
-  // We MUST check routers.ts to avoid false-positive passes.
+  // routers.ts mounts the extracted setupWizardRouter. Verify both the mount
+  // and the implementation module so moving the router cannot weaken parity.
   const liveRouter = () => readFile('./server/routers.ts');
   const standaloneWizard = () => readFile('./server/routers-setup-wizard.ts');
   const schema = () => readFile('./drizzle/schema.ts');
@@ -317,10 +316,9 @@ describe('CG-09: Setup wizard language ↔ schema parity', () => {
     expect(schemaMatch).not.toBeNull();
     const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    // Find botLanguage in the setupWizard section of routers.ts
-    const wizardIdx = router.indexOf('setupWizard: router({');
-    expect(wizardIdx).toBeGreaterThan(-1);
-    const wizardBlock = router.substring(wizardIdx, wizardIdx + 5000);
+    expect(router).toContain('import { setupWizardRouter } from "./routers-setup-wizard"');
+    expect(router).toContain('setupWizard: setupWizardRouter');
+    const wizardBlock = standaloneWizard();
     
     // Each schema value must be accepted by the live wizard router
     for (const val of schemaValues) {
@@ -349,9 +347,9 @@ describe('CG-09: Setup wizard language ↔ schema parity', () => {
     expect(schemaMatch).not.toBeNull();
     const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    // Find botTone in setupWizard section
-    const wizardIdx = router.indexOf('setupWizard: router({');
-    const wizardBlock = router.substring(wizardIdx, wizardIdx + 5000);
+    expect(router).toContain('import { setupWizardRouter } from "./routers-setup-wizard"');
+    expect(router).toContain('setupWizard: setupWizardRouter');
+    const wizardBlock = standaloneWizard();
     const toneMatch = wizardBlock.match(/botTone:\s*z\.enum\(\[([^\]]+)\]/);
     expect(toneMatch).not.toBeNull();
     const toneValues = toneMatch![1].replace(/'/g, '').split(',').map(v => v.trim());

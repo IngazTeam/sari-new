@@ -1,6 +1,6 @@
 const DEFAULT_PUBLIC_APP_URL = 'https://sary.live';
 
-type PublicUrlEnvironment = Partial<Record<
+type PublicUrlEnvironment = NodeJS.ProcessEnv | Partial<Record<
   'PUBLIC_APP_URL' | 'APP_URL' | 'VITE_APP_URL' | 'FRONTEND_URL' | 'VITE_FRONTEND_FORGE_API_URL',
   string | undefined
 >>;
