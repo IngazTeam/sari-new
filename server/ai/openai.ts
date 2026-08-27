@@ -10,7 +10,7 @@ import { ENV } from '../_core/env';
 import {
   getOptionalZahyPiRequestContext,
   requestZahyPiChat,
-  zahyPiEnabled,
+  zahyPiTextGenerationEnabled,
 } from './zahypi-client';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
@@ -156,7 +156,7 @@ export async function callGPT4(
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
 
-  if (zahyPiEnabled()) {
+  if (await zahyPiTextGenerationEnabled()) {
     const inheritedContext = getOptionalZahyPiRequestContext();
     const explicitContext = options?.merchantId === undefined ? undefined : {
       merchantId: options.merchantId,

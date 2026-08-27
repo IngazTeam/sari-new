@@ -6,7 +6,7 @@ const { requestZahyPiChat, getOpenAiApiKey } = vi.hoisted(() => ({
 }));
 
 vi.mock("./zahypi-client", () => ({
-  zahyPiEnabled: () => true,
+  zahyPiTextGenerationEnabled: () => Promise.resolve(true),
   requestZahyPiChat,
   getOptionalZahyPiRequestContext: () => undefined,
 }));

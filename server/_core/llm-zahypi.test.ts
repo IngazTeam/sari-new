@@ -1,11 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { requestZahyPiCompletion } = vi.hoisted(() => ({
+const { requestZahyPiCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(() => ({
   requestZahyPiCompletion: vi.fn(),
+  resolveZahyPiRuntimeConfig: vi.fn().mockResolvedValue({
+    provider: "zahypi",
+    apiKey: "gateway-key",
+    baseUrl: "https://api.zahypi.test/v1",
+    projectId: "sari",
+    model: "qwen-local",
+    source: "override",
+  }),
 }));
 
 vi.mock("../ai/zahypi-client", () => ({
-  zahyPiEnabled: () => true,
+  resolveZahyPiRuntimeConfig,
   requestZahyPiCompletion,
 }));
 

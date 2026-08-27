@@ -6,7 +6,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import { zahyPiEnabled } from "./ai/zahypi-client";
+import {
+  clearZahyPiRuntimeConfigCache,
+  requestZahyPiCompletion,
+  resolveZahyPiRuntimeConfig,
+  validateZahyPiBaseUrl,
+} from "./ai/zahypi-client";
 
 function assertAdmin(role: string) {
   if (role !== "admin") {
@@ -20,6 +25,25 @@ const ALLOWED_WHISPER_MODELS = ["whisper-1"] as const;
 const openAiApiKeySchema = z.string()
   .max(512)
   .regex(/^sk-[A-Za-z0-9_-]+$/, "صيغة المفتاح غير صالحة");
+const zahyPiApiKeySchema = z.string()
+  .min(1, "مفتاح ZahyPi مطلوب")
+  .max(512)
+  .regex(/^[\x21-\x7e]+$/, "صيغة مفتاح ZahyPi غير صالحة");
+const zahyPiBaseUrlSchema = z.string().max(500).superRefine((value, ctx) => {
+  try {
+    validateZahyPiBaseUrl(value);
+  } catch (error) {
+    ctx.addIssue({ code: "custom", message: (error as Error).message });
+  }
+});
+const zahyPiIdentifierSchema = z.string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "القيمة تحتوي على محارف غير صالحة");
+const zahyPiModelSchema = z.string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/, "اسم النموذج غير صالح");
 
 export const aiSettingsRouter = router({
   // Get AI settings (masked API key)
@@ -28,12 +52,16 @@ export const aiSettingsRouter = router({
     const { getAiSettings, getOpenAiApiKey } = await import("./db_ai_settings");
     const settings = await getAiSettings();
     const effectiveOpenAiKey = await getOpenAiApiKey();
+    const zahyPiConfig = await resolveZahyPiRuntimeConfig();
 
     // Mask API key — show only last 4 chars
     const maskedKey = effectiveOpenAiKey
       ? `sk-****${effectiveOpenAiKey.slice(-4)}`
       : null;
-    const usesZahyPi = zahyPiEnabled();
+    const maskedZahyPiKey = zahyPiConfig.apiKey
+      ? `****${zahyPiConfig.apiKey.slice(-4)}`
+      : null;
+    const usesZahyPi = zahyPiConfig.provider === "zahypi";
 
     return {
       // Explicit response DTO: never spread the database record because it
@@ -48,11 +76,16 @@ export const aiSettingsRouter = router({
       lastAlertSentAt: settings?.lastAlertSentAt ?? null,
       openaiApiKey: maskedKey,
       hasKey: Boolean(effectiveOpenAiKey),
-      textGenerationProvider: usesZahyPi ? "zahypi" as const : "openai" as const,
+      textGenerationProvider: zahyPiConfig.provider,
       textGenerationModel: usesZahyPi
-        ? process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local"
+        ? zahyPiConfig.model
         : settings?.model || "gpt-4o-mini",
-      textGenerationManagedByEnvironment: usesZahyPi,
+      textGenerationManagedByEnvironment: zahyPiConfig.source === "environment",
+      zahyPiApiKey: maskedZahyPiKey,
+      hasZahyPiKey: Boolean(zahyPiConfig.apiKey),
+      zahyPiBaseUrl: zahyPiConfig.baseUrl,
+      zahyPiProjectId: zahyPiConfig.projectId,
+      zahyPiModel: zahyPiConfig.model,
     };
   }),
 
@@ -61,6 +94,11 @@ export const aiSettingsRouter = router({
     .input(z.object({
       // AI-05 FIX: Validate API key format (must start with sk-)
       openaiApiKey: openAiApiKeySchema.optional(),
+      textGenerationProvider: z.enum(["openai", "zahypi"]).optional(),
+      zahyPiApiKey: zahyPiApiKeySchema.optional(),
+      zahyPiBaseUrl: zahyPiBaseUrlSchema.optional(),
+      zahyPiProjectId: zahyPiIdentifierSchema.optional(),
+      zahyPiModel: zahyPiModelSchema.optional(),
       // AI-02 FIX: Whitelist models
       model: z.enum(ALLOWED_MODELS).optional(),
       whisperModel: z.enum(ALLOWED_WHISPER_MODELS).optional(),
@@ -74,11 +112,26 @@ export const aiSettingsRouter = router({
 
       const data: Record<string, any> = {};
       if (input.openaiApiKey !== undefined) data.openaiApiKey = input.openaiApiKey;
+      if (input.textGenerationProvider !== undefined) data.textGenerationProvider = input.textGenerationProvider;
+      if (input.zahyPiApiKey !== undefined) data.zahyPiApiKey = input.zahyPiApiKey;
+      if (input.zahyPiBaseUrl !== undefined) data.zahyPiBaseUrl = input.zahyPiBaseUrl;
+      if (input.zahyPiProjectId !== undefined) data.zahyPiProjectId = input.zahyPiProjectId;
+      if (input.zahyPiModel !== undefined) data.zahyPiModel = input.zahyPiModel;
       if (input.model !== undefined) data.model = input.model;
       if (input.whisperModel !== undefined) data.whisperModel = input.whisperModel;
       if (input.isActive !== undefined) data.isActive = input.isActive;
       if (input.monthlyBudgetLimit !== undefined) data.monthlyBudgetLimit = input.monthlyBudgetLimit;
       if (input.alertEmail !== undefined) data.alertEmail = input.alertEmail;
+
+      if (input.textGenerationProvider === "zahypi" && input.zahyPiApiKey === undefined) {
+        const existing = await resolveZahyPiRuntimeConfig();
+        if (!existing.apiKey) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "أضف مفتاح ZahyPi قبل تفعيل مزوّد توليد النص",
+          });
+        }
+      }
 
       await upsertAiSettings(data);
 
@@ -87,8 +140,55 @@ export const aiSettingsRouter = router({
         const llm = await import("./_core/llm");
         if ('_clearCache' in llm) (llm as any)._clearCache();
       } catch { /* ignore */ }
+      clearZahyPiRuntimeConfigCache();
 
       return { success: true };
+    }),
+
+  testZahyPiConnection: protectedProcedure
+    .input(z.object({
+      apiKey: zahyPiApiKeySchema.optional(),
+      baseUrl: zahyPiBaseUrlSchema.optional(),
+      projectId: zahyPiIdentifierSchema.optional(),
+      model: zahyPiModelSchema.optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      assertAdmin(ctx.user.role);
+      const stored = await resolveZahyPiRuntimeConfig();
+      const runtimeConfig = {
+        provider: "zahypi" as const,
+        apiKey: input.apiKey || stored.apiKey,
+        baseUrl: input.baseUrl || stored.baseUrl,
+        projectId: input.projectId || stored.projectId,
+        model: input.model || stored.model,
+      };
+      if (!runtimeConfig.apiKey) {
+        return { success: false, error: "لا يوجد مفتاح ZahyPi مُعرّف" };
+      }
+
+      try {
+        const response = await requestZahyPiCompletion({
+          messages: [{ role: "user", content: "Reply with OK only." }],
+          max_tokens: 8,
+          temperature: 0,
+        }, {
+          merchantId: "platform-health",
+          userId: ctx.user.id,
+          taskType: "admin.health",
+        }, 15_000, 1, runtimeConfig);
+        return {
+          success: true,
+          message: "تم الاتصال بـ ZahyPi بنجاح ✓",
+          model: response.model,
+        };
+      } catch (error) {
+        console.error("[AI Settings] ZahyPi connection test failed:",
+          error instanceof Error ? error.name : "UnknownError");
+        return {
+          success: false,
+          error: "فشل الاتصال بـ ZahyPi. تحقق من الرابط والمفتاح والنموذج.",
+        };
+      }
     }),
 
   // AI-01 FIX: Test connection using stored key OR new key

@@ -344,6 +344,13 @@
       "when": 1787731200000,
       "tag": "0048_whatsapp_disconnect_alert_window",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "5",
+      "when": 1787734800000,
+      "tag": "0049_zahypi_admin_settings",
+      "breakpoints": true
     }
   ]
 }

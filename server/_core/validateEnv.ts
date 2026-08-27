@@ -92,10 +92,6 @@ export function validateEnv(): ValidationResult {
     }
 
     const zahyPiEnabled = process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === 'true';
-    if (process.env.NODE_ENV === 'production' && !zahyPiEnabled) {
-        result.valid = false;
-        result.errors.push('❌ ZAHYPI_ENABLED must be true in production - direct text-generation egress is forbidden');
-    }
     if (zahyPiEnabled) {
         const gatewayRequirements = [
             ['ZAHYPI_BASE_URL', 'HTTPS URL for the ZahyPi gateway'],

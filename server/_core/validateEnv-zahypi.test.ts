@@ -47,7 +47,7 @@ describe("validateEnv with ZahyPi", () => {
     ]));
   });
 
-  it("forbids direct text-generation egress when ZahyPi is disabled in production", () => {
+  it("keeps OpenAI as a valid production provider when ZahyPi is disabled", () => {
     process.env.NODE_ENV = "production";
     process.env.DATABASE_URL = "mysql://local/test";
     process.env.JWT_SECRET = "x".repeat(32);
@@ -60,10 +60,10 @@ describe("validateEnv with ZahyPi", () => {
 
     const result = validateEnv();
 
-    expect(result.valid).toBe(false);
-    expect(result.errors).toEqual(expect.arrayContaining([
-      expect.stringContaining("ZAHYPI_ENABLED must be true in production"),
+    expect(result.valid).toBe(true);
+    expect(result.errors).not.toEqual(expect.arrayContaining([
+      expect.stringContaining("ZAHYPI_ENABLED"),
     ]));
-    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(process.exit).not.toHaveBeenCalled();
   });
 });

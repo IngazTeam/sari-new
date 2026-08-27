@@ -26,6 +26,12 @@ export default function AISettings() {
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [selectedProvider, setSelectedProvider] = useState<"openai" | "zahypi">("openai");
+  const [zahyPiApiKey, setZahyPiApiKey] = useState("");
+  const [showZahyPiKey, setShowZahyPiKey] = useState(false);
+  const [zahyPiBaseUrl, setZahyPiBaseUrl] = useState("https://api.zahypi.com/v1");
+  const [zahyPiProjectId, setZahyPiProjectId] = useState("sari");
+  const [zahyPiModel, setZahyPiModel] = useState("qwen-local");
   const [alertEmail, setAlertEmail] = useState("");
 
   // Queries
@@ -35,17 +41,30 @@ export default function AISettings() {
   const { data: dailyUsage } = trpc.aiSettings.getDailyUsage.useQuery({ days: 30 });
   const { data: topMerchants } = trpc.aiSettings.getTopMerchants.useQuery();
   const { data: recentLogs } = trpc.aiSettings.getRecentLogs.useQuery({ limit: 20 });
-  const usesZahyPi = settings?.textGenerationProvider === "zahypi";
+  const usesZahyPi = selectedProvider === "zahypi";
 
   // Sync from server settings
   useEffect(() => {
-    if (!usesZahyPi && settings?.model) {
+    if (settings?.model) {
       setSelectedModel(settings.model);
     }
+    if (settings?.textGenerationProvider) {
+      setSelectedProvider(settings.textGenerationProvider);
+    }
+    if (settings?.zahyPiBaseUrl) setZahyPiBaseUrl(settings.zahyPiBaseUrl);
+    if (settings?.zahyPiProjectId) setZahyPiProjectId(settings.zahyPiProjectId);
+    if (settings?.zahyPiModel) setZahyPiModel(settings.zahyPiModel);
     if (settings?.alertEmail) {
       setAlertEmail(settings.alertEmail);
     }
-  }, [settings?.model, settings?.alertEmail, usesZahyPi]);
+  }, [
+    settings?.model,
+    settings?.textGenerationProvider,
+    settings?.zahyPiBaseUrl,
+    settings?.zahyPiProjectId,
+    settings?.zahyPiModel,
+    settings?.alertEmail,
+  ]);
 
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
@@ -53,6 +72,7 @@ export default function AISettings() {
       toast.success("تم حفظ الإعدادات بنجاح ✓");
       refetchSettings();
       setApiKey("");
+      setZahyPiApiKey("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -63,6 +83,17 @@ export default function AISettings() {
         toast.success(data.message || "تم الاتصال بنجاح!");
       } else {
         toast.error(data.error || "فشل الاتصال");
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const testZahyPiMutation = trpc.aiSettings.testZahyPiConnection.useMutation({
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast.success(data.message || "تم الاتصال بـ ZahyPi بنجاح!");
+      } else {
+        toast.error(data.error || "فشل الاتصال بـ ZahyPi");
       }
     },
     onError: (err) => toast.error(err.message),
@@ -89,8 +120,13 @@ export default function AISettings() {
 
   const handleSaveSettings = () => {
     const data: Record<string, any> = {};
-    if (!usesZahyPi) data.model = selectedModel;
+    data.textGenerationProvider = selectedProvider;
+    data.model = selectedModel;
     if (apiKey.trim()) data.openaiApiKey = apiKey.trim();
+    if (zahyPiApiKey.trim()) data.zahyPiApiKey = zahyPiApiKey.trim();
+    data.zahyPiBaseUrl = zahyPiBaseUrl.trim();
+    data.zahyPiProjectId = zahyPiProjectId.trim();
+    data.zahyPiModel = zahyPiModel.trim();
     if (alertEmail.trim()) {
       data.alertEmail = alertEmail.trim();
     } else {
@@ -238,23 +274,48 @@ export default function AISettings() {
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />{t('aISettings.auto_6')}</CardTitle>
             <CardDescription>
-              {usesZahyPi
-                ? "مفتاح OpenAI للصوت والتضمين فقط؛ إعداد ZahyPi مُدار من بيئة الخادم"
-                : t('aISettings.auto_7')}
+              اختر مزوّد توليد النص مع إبقاء OpenAI مفعّلًا للصوت والتضمين وخيار الرجوع
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {usesZahyPi && (
-              <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-                <div>
-                  <p className="text-sm font-medium">توليد النص عبر ZahyPi</p>
-                  <p className="text-xs text-muted-foreground">
-                    النموذج: {settings?.textGenerationModel || "غير محدد"} — الاعتماد لا يُعرض أو يُعدّل من المتصفح
-                  </p>
-                </div>
+            <div className="space-y-2">
+              <Label>مزوّد توليد النص</Label>
+              <Select
+                value={selectedProvider}
+                onValueChange={(value) => setSelectedProvider(value as "openai" | "zahypi")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="zahypi">ZahyPi</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {usesZahyPi
+                  ? "ZahyPi سيولّد الردود النصية، وOpenAI سيبقى فعالًا للصوت والتضمين."
+                  : "OpenAI سيولّد الردود النصية ويستمر في تشغيل الصوت والتضمين."}
+              </p>
+            </div>
+
+            <div className={`flex items-start gap-3 rounded-lg border p-3 ${
+              usesZahyPi
+                ? "border-emerald-500/30 bg-emerald-500/10"
+                : "border-blue-500/30 bg-blue-500/10"
+            }`}>
+              <ShieldCheck className={`mt-0.5 h-5 w-5 shrink-0 ${
+                usesZahyPi ? "text-emerald-500" : "text-blue-500"
+              }`} />
+              <div>
+                <p className="text-sm font-medium">
+                  المزوّد الحالي: {usesZahyPi ? "ZahyPi" : "OpenAI"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  النموذج: {usesZahyPi ? zahyPiModel : selectedModel}
+                </p>
               </div>
-            )}
+            </div>
 
             {/* Current Key Status */}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -279,7 +340,7 @@ export default function AISettings() {
 
             {/* API Key Input */}
             <div className="space-y-2">
-              <Label htmlFor="api-key">مفتاح OpenAI جديد للصوت والتضمين</Label>
+              <Label htmlFor="api-key">مفتاح OpenAI</Label>
               <div className="relative">
                 <Input
                   id="api-key"
@@ -300,24 +361,117 @@ export default function AISettings() {
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                يبقى فعالًا دائمًا للصوت والتضمين، ولا يُحذف عند اختيار ZahyPi.
+              </p>
             </div>
 
             {/* Model Selection */}
-            {!usesZahyPi && (
-              <div className="space-y-2">
-                <Label>{t('aISettings.auto_12')}</Label>
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-4o-mini">{t('aISettings.auto_13')}</SelectItem>
-                    <SelectItem value="gpt-4o">{t('aISettings.auto_14')}</SelectItem>
-                    <SelectItem value="gpt-4-turbo">{t('aISettings.auto_15')}</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-2">
+              <Label>{t('aISettings.auto_12')}</Label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-4o-mini">{t('aISettings.auto_13')}</SelectItem>
+                  <SelectItem value="gpt-4o">{t('aISettings.auto_14')}</SelectItem>
+                  <SelectItem value="gpt-4-turbo">{t('aISettings.auto_15')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4 rounded-lg border border-emerald-500/20 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">إعدادات ZahyPi</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {settings?.hasZahyPiKey
+                      ? `المفتاح محفوظ ومشفّر (${settings.zahyPiApiKey})`
+                      : "لم يُحفظ مفتاح ZahyPi بعد"}
+                  </p>
+                </div>
+                <Badge variant={settings?.hasZahyPiKey ? "default" : "secondary"}>
+                  {settings?.hasZahyPiKey ? "مُعدّ" : "غير مُعدّ"}
+                </Badge>
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="zahypi-api-key">مفتاح ZahyPi</Label>
+                <div className="relative">
+                  <Input
+                    id="zahypi-api-key"
+                    type={showZahyPiKey ? "text" : "password"}
+                    value={zahyPiApiKey}
+                    onChange={(e) => setZahyPiApiKey(e.target.value)}
+                    placeholder="أدخل مفتاح ZahyPi"
+                    className="pr-10 font-mono text-sm"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowZahyPiKey(!showZahyPiKey)}
+                    aria-label={showZahyPiKey ? "إخفاء مفتاح ZahyPi" : "إظهار مفتاح ZahyPi"}
+                    aria-pressed={showZahyPiKey}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showZahyPiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zahypi-base-url">رابط ZahyPi API</Label>
+                <Input
+                  id="zahypi-base-url"
+                  value={zahyPiBaseUrl}
+                  onChange={(e) => setZahyPiBaseUrl(e.target.value)}
+                  placeholder="https://api.zahypi.com/v1"
+                  className="font-mono text-sm"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="zahypi-project">معرّف المشروع</Label>
+                  <Input
+                    id="zahypi-project"
+                    value={zahyPiProjectId}
+                    onChange={(e) => setZahyPiProjectId(e.target.value)}
+                    className="font-mono text-sm"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zahypi-model">نموذج ZahyPi</Label>
+                  <Input
+                    id="zahypi-model"
+                    value={zahyPiModel}
+                    onChange={(e) => setZahyPiModel(e.target.value)}
+                    className="font-mono text-sm"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => testZahyPiMutation.mutate({
+                  ...(zahyPiApiKey.trim() ? { apiKey: zahyPiApiKey.trim() } : {}),
+                  baseUrl: zahyPiBaseUrl.trim(),
+                  projectId: zahyPiProjectId.trim(),
+                  model: zahyPiModel.trim(),
+                })}
+                disabled={testZahyPiMutation.isPending}
+                className="w-full"
+              >
+                {testZahyPiMutation.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  : <RefreshCw className="h-4 w-4 ml-2" />}
+                اختبار اتصال ZahyPi
+              </Button>
+            </div>
 
             {/* ═══════ Alert Email ═══════ */}
             <div className="space-y-2">

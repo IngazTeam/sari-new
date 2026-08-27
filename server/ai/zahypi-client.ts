@@ -25,6 +25,15 @@ type ChatOptions = {
   maxAttempts?: number;
 };
 
+export type ZahyPiRuntimeConfig = {
+  provider: "openai" | "zahypi";
+  apiKey: string;
+  baseUrl: string;
+  projectId: string;
+  model: string;
+  source: "database" | "environment" | "override";
+};
+
 export type ZahyPiRequestContext = {
   merchantId: number | string;
   userId?: number | string;
@@ -78,6 +87,8 @@ const MAX_CIRCUIT_STATES = 10_000;
 const MAX_REQUEST_BYTES = 2 * 1024 * 1024;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const MAX_TIMEOUT_MS = 120_000;
+const RUNTIME_CONFIG_CACHE_TTL_MS = 60_000;
+let runtimeConfigCache: { value: ZahyPiRuntimeConfig; expiresAt: number } | null = null;
 
 function canAttemptCircuit(key: string): boolean {
   const state = circuitStates.get(key);
@@ -104,6 +115,48 @@ function recordCircuitFailure(key: string): void {
 
 export function zahyPiEnabled(): boolean {
   return process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === "true";
+}
+
+function environmentRuntimeConfig(): ZahyPiRuntimeConfig {
+  return {
+    provider: zahyPiEnabled() ? "zahypi" : "openai",
+    apiKey: process.env.ZAHYPI_API_KEY?.trim() || "",
+    baseUrl: process.env.ZAHYPI_BASE_URL?.trim() || "https://api.zahypi.com/v1",
+    projectId: process.env.ZAHYPI_PROJECT_ID?.trim() || "sari",
+    model: process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local",
+    source: "environment",
+  };
+}
+
+export async function resolveZahyPiRuntimeConfig(
+  override?: Omit<ZahyPiRuntimeConfig, "source">,
+): Promise<ZahyPiRuntimeConfig> {
+  if (override) return { ...override, source: "override" };
+  if (runtimeConfigCache && runtimeConfigCache.expiresAt > Date.now()) {
+    return runtimeConfigCache.value;
+  }
+
+  let value: ZahyPiRuntimeConfig;
+  try {
+    const { getZahyPiRuntimeConfig } = await import("../db_ai_settings");
+    value = await getZahyPiRuntimeConfig();
+  } catch (error) {
+    console.warn("[ZahyPi] Failed to resolve stored settings, using env fallback:", error);
+    value = environmentRuntimeConfig();
+  }
+  runtimeConfigCache = {
+    value,
+    expiresAt: Date.now() + RUNTIME_CONFIG_CACHE_TTL_MS,
+  };
+  return value;
+}
+
+export async function zahyPiTextGenerationEnabled(): Promise<boolean> {
+  return (await resolveZahyPiRuntimeConfig()).provider === "zahypi";
+}
+
+export function clearZahyPiRuntimeConfigCache(): void {
+  runtimeConfigCache = null;
 }
 
 export function runWithZahyPiContext<T>(
@@ -387,12 +440,13 @@ export async function requestZahyPiChat(
   messages: ZahyPiMessage[],
   options: ChatOptions,
   context?: ZahyPiRequestContext,
+  runtimeConfig?: Omit<ZahyPiRuntimeConfig, "source">,
 ): Promise<ZahyPiChatResult> {
   const body = await requestZahyPiCompletion({
     messages,
     temperature: options.temperature ?? 0.7,
     max_tokens: options.maxTokens ?? 1_000,
-  }, context, options.timeoutMs, options.maxAttempts);
+  }, context, options.timeoutMs, options.maxAttempts, runtimeConfig);
   const content = body.choices[0]?.message.content;
   if (typeof content !== "string" || !content.trim()) {
     throw new Error("ZahyPi returned an empty response");
@@ -410,16 +464,18 @@ export async function requestZahyPiCompletion(
   context?: ZahyPiRequestContext,
   requestedTimeoutMs = 30_000,
   requestedMaxAttempts = 3,
+  runtimeConfigOverride?: Omit<ZahyPiRuntimeConfig, "source">,
 ): Promise<ZahyPiCompletionResponse> {
   const resolvedContext = context ?? getZahyPiRequestContext();
   assertValidContext(resolvedContext);
-  const baseUrl = validateZahyPiBaseUrl(process.env.ZAHYPI_BASE_URL);
-  const apiKey = process.env.ZAHYPI_API_KEY?.trim();
+  const runtimeConfig = await resolveZahyPiRuntimeConfig(runtimeConfigOverride);
+  const baseUrl = validateZahyPiBaseUrl(runtimeConfig.baseUrl);
+  const apiKey = runtimeConfig.apiKey.trim();
   const projectId = normalizeHeaderIdentifier(
-    process.env.ZAHYPI_PROJECT_ID?.trim() || "sari",
+    runtimeConfig.projectId,
     "ZAHYPI_PROJECT_ID",
   );
-  const model = normalizeModel(process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local");
+  const model = normalizeModel(runtimeConfig.model);
   if (!apiKey) {
     throw new Error("ZAHYPI_API_KEY is required when ZahyPi is enabled");
   }

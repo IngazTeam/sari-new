@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  clearZahyPiRuntimeConfigCache,
   getZahyPiRequestContext,
   requestZahyPiChat,
   requestZahyPiCompletion,
@@ -10,6 +11,7 @@ import {
 const ORIGINAL_ENV = { ...process.env };
 
 afterEach(() => {
+  clearZahyPiRuntimeConfigCache();
   process.env = { ...ORIGINAL_ENV };
   vi.unstubAllGlobals();
 });
@@ -310,6 +312,7 @@ describe("requestZahyPiChat", () => {
       { merchantId: 506, taskType: "sari.reply" },
     )).rejects.toThrow("ZAHYPI_API_KEY contains invalid characters");
 
+    clearZahyPiRuntimeConfigCache();
     process.env.ZAHYPI_API_KEY = "zahypi-test-key";
     process.env.ZAHYPI_DEFAULT_MODEL = "qwen-local\r\nX-Injected:true";
     await expect(requestZahyPiCompletion(

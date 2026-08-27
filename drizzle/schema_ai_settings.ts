@@ -10,6 +10,11 @@ export const aiSettings = mysqlTable("ai_settings", {
   openaiApiKey: text("openai_api_key"), // AES-GCM encrypted at the persistence boundary
   model: varchar("model", { length: 100 }).notNull().default("gpt-4o-mini"),
   whisperModel: varchar("whisper_model", { length: 100 }).notNull().default("whisper-1"),
+  textGenerationProvider: mysqlEnum("text_generation_provider", ["openai", "zahypi"]),
+  zahyPiApiKey: text("zahypi_api_key"), // AES-GCM encrypted at the persistence boundary
+  zahyPiBaseUrl: varchar("zahypi_base_url", { length: 500 }),
+  zahyPiProjectId: varchar("zahypi_project_id", { length: 128 }),
+  zahyPiModel: varchar("zahypi_model", { length: 128 }),
   isActive: boolean("is_active").notNull().default(true),
   monthlyBudgetLimit: decimal("monthly_budget_limit", { precision: 10, scale: 2 }),
   // Google Analytics 4

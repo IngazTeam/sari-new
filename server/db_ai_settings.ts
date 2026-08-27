@@ -17,7 +17,21 @@ async function getDb() {
 // AI Settings CRUD
 // ============================================
 
-export type AiSettingsWithoutCredentials = Omit<AiSettings, "openaiApiKey" | "gaServiceAccountJson">;
+export type TextGenerationProvider = "openai" | "zahypi";
+
+export type AiSettingsWithoutCredentials = Omit<
+  AiSettings,
+  "openaiApiKey" | "zahyPiApiKey" | "gaServiceAccountJson"
+>;
+
+export type ZahyPiRuntimeConfig = {
+  provider: TextGenerationProvider;
+  apiKey: string;
+  baseUrl: string;
+  projectId: string;
+  model: string;
+  source: "database" | "environment";
+};
 
 export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | undefined> {
   const db = await getDb();
@@ -26,6 +40,10 @@ export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | un
     id: aiSettings.id,
     model: aiSettings.model,
     whisperModel: aiSettings.whisperModel,
+    textGenerationProvider: aiSettings.textGenerationProvider,
+    zahyPiBaseUrl: aiSettings.zahyPiBaseUrl,
+    zahyPiProjectId: aiSettings.zahyPiProjectId,
+    zahyPiModel: aiSettings.zahyPiModel,
     isActive: aiSettings.isActive,
     monthlyBudgetLimit: aiSettings.monthlyBudgetLimit,
     gaPropertyId: aiSettings.gaPropertyId,
@@ -48,6 +66,9 @@ export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<vo
     ...data,
     ...(data.openaiApiKey !== undefined
       ? { openaiApiKey: encryptSecret(data.openaiApiKey) }
+      : {}),
+    ...(data.zahyPiApiKey !== undefined
+      ? { zahyPiApiKey: encryptSecret(data.zahyPiApiKey) }
       : {}),
     ...(data.gaServiceAccountJson !== undefined
       ? { gaServiceAccountJson: encryptSecret(data.gaServiceAccountJson) }
@@ -86,6 +107,62 @@ export async function getOpenAiApiKey(): Promise<string> {
 
   // Fallback to environment variable
   return process.env.OPENAI_API_KEY || "";
+}
+
+/**
+ * Resolve the text-generation provider and ZahyPi credentials. Stored values
+ * take precedence, while environment variables remain a deployment fallback.
+ */
+export async function getZahyPiRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
+  let record: {
+    textGenerationProvider: TextGenerationProvider | null;
+    zahyPiApiKey: string | null;
+    zahyPiBaseUrl: string | null;
+    zahyPiProjectId: string | null;
+    zahyPiModel: string | null;
+  } | undefined;
+  try {
+    const db = await getDb();
+    if (db) {
+      const result = await db.select({
+        textGenerationProvider: aiSettings.textGenerationProvider,
+        zahyPiApiKey: aiSettings.zahyPiApiKey,
+        zahyPiBaseUrl: aiSettings.zahyPiBaseUrl,
+        zahyPiProjectId: aiSettings.zahyPiProjectId,
+        zahyPiModel: aiSettings.zahyPiModel,
+      }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
+      record = result[0];
+    }
+  } catch (error) {
+    console.warn("[AI Settings] Failed to fetch ZahyPi settings, using env fallback:", error);
+  }
+
+  const provider = record?.textGenerationProvider
+    || (process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === "true" ? "zahypi" : "openai");
+  const apiKey = record?.zahyPiApiKey
+    ? decryptSecret(record.zahyPiApiKey) || ""
+    : process.env.ZAHYPI_API_KEY?.trim() || "";
+
+  return {
+    provider,
+    apiKey,
+    baseUrl: record?.zahyPiBaseUrl?.trim()
+      || process.env.ZAHYPI_BASE_URL?.trim()
+      || "https://api.zahypi.com/v1",
+    projectId: record?.zahyPiProjectId?.trim()
+      || process.env.ZAHYPI_PROJECT_ID?.trim()
+      || "sari",
+    model: record?.zahyPiModel?.trim()
+      || process.env.ZAHYPI_DEFAULT_MODEL?.trim()
+      || "qwen-local",
+    source: record?.textGenerationProvider
+      || record?.zahyPiApiKey
+      || record?.zahyPiBaseUrl
+      || record?.zahyPiProjectId
+      || record?.zahyPiModel
+      ? "database"
+      : "environment",
+  };
 }
 
 /**

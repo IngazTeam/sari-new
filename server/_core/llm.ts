@@ -2,7 +2,7 @@ import { ENV } from "./env";
 import {
   getOptionalZahyPiRequestContext,
   requestZahyPiCompletion,
-  zahyPiEnabled,
+  resolveZahyPiRuntimeConfig,
 } from "../ai/zahypi-client";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
@@ -300,9 +300,10 @@ const normalizeResponseFormat = ({
 export async function invokeLLM(
   params: InvokeParams & { merchantId?: number; taskType?: string },
 ): Promise<InvokeResult> {
-  const useZahyPi = zahyPiEnabled();
+  const zahyPiConfig = await resolveZahyPiRuntimeConfig();
+  const useZahyPi = zahyPiConfig.provider === "zahypi";
   let apiKey = "";
-  let activeModel = process.env.ZAHYPI_DEFAULT_MODEL?.trim() || "qwen-local";
+  let activeModel = zahyPiConfig.model;
   if (!useZahyPi) {
     await assertApiKey();
     ({ apiKey, model: activeModel } = await getApiKeyAndModel());

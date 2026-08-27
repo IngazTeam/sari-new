@@ -150,14 +150,17 @@ describe("ZahyPi tenant propagation", () => {
 
   it("keeps the admin AI settings truthful about the active text provider", () => {
     const router = readFileSync(new URL("../routers-ai-settings.ts", import.meta.url), "utf8");
-    expect(router).toContain('textGenerationProvider: usesZahyPi ? "zahypi"');
-    expect(router).toContain("textGenerationManagedByEnvironment: usesZahyPi");
+    expect(router).toContain("textGenerationProvider: zahyPiConfig.provider");
+    expect(router).toContain('textGenerationManagedByEnvironment: zahyPiConfig.source === "environment"');
+    expect(router).toContain("hasZahyPiKey: Boolean(zahyPiConfig.apiKey)");
+    expect(router).toContain("zahyPiApiKey: maskedZahyPiKey");
     expect(router).toContain("getOpenAiApiKey");
 
     const page = readFileSync(new URL("../../client/src/pages/admin/AISettings.tsx", import.meta.url), "utf8");
-    expect(page).toContain('settings?.textGenerationProvider === "zahypi"');
-    expect(page).toContain("توليد النص عبر ZahyPi");
+    expect(page).toContain('<SelectItem value="openai">OpenAI</SelectItem>');
+    expect(page).toContain('<SelectItem value="zahypi">ZahyPi</SelectItem>');
+    expect(page).toContain("testZahyPiConnection");
     expect(page).toContain("تكلفة OpenAI فقط؛ تكلفة ZahyPi غير متاحة");
-    expect(page).toContain("{!usesZahyPi && (");
+    expect(page).toContain("يبقى فعالًا دائمًا للصوت والتضمين، ولا يُحذف عند اختيار ZahyPi.");
   });
 });
