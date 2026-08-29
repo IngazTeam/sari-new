@@ -75,9 +75,9 @@ JOIN (
   GROUP BY `merchant_id`, `customer_phone`
 ) latest ON latest.`id` = r.`id`
 ON DUPLICATE KEY UPDATE
-  `status` = IF(VALUES(`last_decided_at`) >= `last_decided_at`, VALUES(`status`), `status`),
-  `consent_version` = IF(VALUES(`last_decided_at`) >= `last_decided_at`, VALUES(`consent_version`), `consent_version`),
-  `source` = IF(VALUES(`last_decided_at`) >= `last_decided_at`, VALUES(`source`), `source`),
-  `evidence_digest` = IF(VALUES(`last_decided_at`) >= `last_decided_at`, VALUES(`evidence_digest`), `evidence_digest`),
-  `last_receipt_id` = IF(VALUES(`last_decided_at`) >= `last_decided_at`, VALUES(`last_receipt_id`), `last_receipt_id`),
-  `last_decided_at` = GREATEST(VALUES(`last_decided_at`), `last_decided_at`);--> statement-breakpoint
+  `status` = IF(VALUES(`last_decided_at`) >= `campaign_consent_state`.`last_decided_at`, VALUES(`status`), `campaign_consent_state`.`status`),
+  `consent_version` = IF(VALUES(`last_decided_at`) >= `campaign_consent_state`.`last_decided_at`, VALUES(`consent_version`), `campaign_consent_state`.`consent_version`),
+  `source` = IF(VALUES(`last_decided_at`) >= `campaign_consent_state`.`last_decided_at`, VALUES(`source`), `campaign_consent_state`.`source`),
+  `evidence_digest` = IF(VALUES(`last_decided_at`) >= `campaign_consent_state`.`last_decided_at`, VALUES(`evidence_digest`), `campaign_consent_state`.`evidence_digest`),
+  `last_receipt_id` = IF(VALUES(`last_decided_at`) >= `campaign_consent_state`.`last_decided_at`, VALUES(`last_receipt_id`), `campaign_consent_state`.`last_receipt_id`),
+  `last_decided_at` = GREATEST(VALUES(`last_decided_at`), `campaign_consent_state`.`last_decided_at`);--> statement-breakpoint
