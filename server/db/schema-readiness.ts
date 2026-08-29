@@ -66,6 +66,7 @@ function requirementName(
 function tokenizeSchemaExpression(expression: string): string[] | null {
   const source = expression
     .replace(/`((?:``|[^`])+)`/g, (_, identifier: string) => identifier.replace(/``/g, '`'))
+    .replace(/\\'/g, "'")
     .replace(/_[a-z0-9]+\s*(?=')/gi, '')
     .trim();
   const tokens: string[] = [];
