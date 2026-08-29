@@ -23,16 +23,28 @@ try {
       ) AS duplicateTemplateGroups
     FROM notification_templates
   `);
-  const [outboxRows] = await pool.query(`
-    SELECT
-      COALESCE(SUM(n.event_key IS NOT NULL AND (o.id IS NULL OR o.merchantId <> n.merchant_id)), 0) AS orphanOutboxRows,
-      COALESCE(SUM(n.delivery_status = 'processing' AND n.claimed_at < DATE_SUB(NOW(3), INTERVAL 10 MINUTE)), 0) AS staleProcessingRows,
-      COALESCE(SUM(n.delivery_status = 'manual_review'), 0) AS manualReviewRows
-    FROM order_notifications n
-    LEFT JOIN orders o ON o.id = n.order_id
+  const [outboxSchemaRows] = await pool.query(`
+    SELECT COUNT(DISTINCT column_name) AS requiredColumns
+      FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = 'order_notifications'
+       AND column_name IN ('event_key','delivery_status','claimed_at')
   `);
+  const outboxSchemaReady = Number(outboxSchemaRows[0]?.requiredColumns || 0) === 3;
+  let outboxRows = [{ orphanOutboxRows: 0, staleProcessingRows: 0, manualReviewRows: 0 }];
+  if (outboxSchemaReady) {
+    [outboxRows] = await pool.query(`
+      SELECT
+        COALESCE(SUM(n.event_key IS NOT NULL AND (o.id IS NULL OR o.merchantId <> n.merchant_id)), 0) AS orphanOutboxRows,
+        COALESCE(SUM(n.delivery_status = 'processing' AND n.claimed_at < DATE_SUB(NOW(3), INTERVAL 10 MINUTE)), 0) AS staleProcessingRows,
+        COALESCE(SUM(n.delivery_status = 'manual_review'), 0) AS manualReviewRows
+      FROM order_notifications n
+      LEFT JOIN orders o ON o.id = n.order_id
+    `);
+  }
 
   const result = {
+    outboxSchemaReady,
     legacyConfirmedTemplates: Number(templateRows[0]?.legacyConfirmedTemplates || 0),
     invalidTemplateStatuses: Number(templateRows[0]?.invalidTemplateStatuses || 0),
     duplicateTemplateGroups: Number(templateRows[0]?.duplicateTemplateGroups || 0),
@@ -68,7 +80,8 @@ try {
     || result.duplicateTemplateGroups > 0
     || result.orphanOutboxRows > 0;
   const afterFailure = !beforeMigration && (
-    result.legacyConfirmedTemplates > 0
+    !result.outboxSchemaReady
+    || result.legacyConfirmedTemplates > 0
     || result.reviewColumns !== 2
     || result.templateUniqueIndex !== 1
     || result.healthIndex !== 1
