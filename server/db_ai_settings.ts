@@ -33,6 +33,7 @@ export type ZahyPiRuntimeConfig = {
   model: string;
   source: "connector" | "database" | "environment";
   generation?: number;
+  taskTypes?: readonly string[];
   taskTypesHash?: string;
 };
 
@@ -128,6 +129,7 @@ export async function getZahyPiRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
         model: connectorCredential.model,
         source: "connector",
         generation: connectorCredential.generation,
+        taskTypes: connectorCredential.taskTypes,
         taskTypesHash: connectorCredential.taskTypesHash,
       };
     }

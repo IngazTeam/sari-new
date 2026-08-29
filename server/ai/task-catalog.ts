@@ -14,6 +14,8 @@ export type SariTaskContract = {
   humanReviewRequired: boolean;
   timeoutMs: number;
   fallback: string;
+  inputKind: "message" | "conversation" | "catalog" | "analysis" | "outcome";
+  outputKind: "text" | "classification" | "recommendation" | "analysis" | "receipt";
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   sampleInput: Record<string, unknown>;
@@ -52,6 +54,22 @@ const stringList = (maxItems: number, maxLength: number) => ({
   items: boundedString(maxLength),
 });
 
+const promptMessages = {
+  type: "array",
+  minItems: 1,
+  maxItems: 100,
+  items: {
+    type: "object",
+    additionalProperties: false,
+    maxProperties: 2,
+    properties: {
+      role: { type: "string", enum: ["system", "user", "assistant"], maxLength: 16 },
+      content: boundedString(16_000),
+    },
+    required: ["role", "content"],
+  },
+};
+
 function closedSchema(
   properties: Record<string, unknown>,
   required: readonly string[],
@@ -66,6 +84,16 @@ function closedSchema(
   };
 }
 
+function closedInputSchema(
+  properties: Record<string, unknown>,
+  required: readonly string[],
+): Record<string, unknown> {
+  return closedSchema(
+    { ...properties, promptMessages },
+    [...required, "promptMessages"],
+  );
+}
+
 function inputContract(kind: TaskDefinition["inputKind"]): {
   schema: Record<string, unknown>;
   sample: Record<string, unknown>;
@@ -75,7 +103,7 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
   switch (kind) {
     case "message":
       return {
-        schema: closedSchema({
+        schema: closedInputSchema({
           operationId: identifier,
           conversationId: identifier,
           message: boundedString(8_000),
@@ -90,11 +118,15 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
           conversationSummary: "محادثة تجريبية بلا بيانات عميل حقيقية.",
           language: "ar",
           referenceIds: ["reference_demo_001"],
+          promptMessages: [
+            { role: "system", content: "نفّذ المهمة وفق سياسة Sari." },
+            { role: "user", content: "أرغب في معرفة العرض الأنسب لاحتياج تجريبي." },
+          ],
         },
       };
     case "conversation":
       return {
-        schema: closedSchema({
+        schema: closedInputSchema({
           operationId: identifier,
           conversationId: identifier,
           messages: stringList(100, 8_000),
@@ -110,11 +142,15 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
             "تم توضيح خصائص الباقة التجريبية.",
           ],
           objective: "تحليل المحادثة دون تنفيذ أي أثر جانبي.",
+          promptMessages: [
+            { role: "system", content: "حلل المحادثة وأعد النتيجة المطلوبة فقط." },
+            { role: "user", content: "حلل المحادثة التجريبية." },
+          ],
         },
       };
     case "catalog":
       return {
-        schema: closedSchema({
+        schema: closedInputSchema({
           operationId: identifier,
           query: boundedString(4_000),
           productIds: stringList(100, 128),
@@ -127,11 +163,15 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
           productIds: ["product_demo_001", "product_demo_002"],
           constraints: ["لا تنشئ سعرًا غير موجود"],
           language: "ar",
+          promptMessages: [
+            { role: "system", content: "استخدم عناصر الكتالوج المرسلة فقط." },
+            { role: "user", content: "ابحث عن خيار مناسب." },
+          ],
         },
       };
     case "outcome":
       return {
-        schema: closedSchema({
+        schema: closedInputSchema({
           operationId: identifier,
           actionId: identifier,
           conversationId: identifier,
@@ -148,11 +188,15 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
           conversationId: "conversation_demo_001",
           outcome: "completed",
           notes: "نتيجة تجريبية بلا بيانات عميل.",
+          promptMessages: [
+            { role: "system", content: "سجل النتيجة من دون أثر إضافي." },
+            { role: "user", content: "سجل اكتمال الإجراء التجريبي." },
+          ],
         },
       };
     case "analysis":
       return {
-        schema: closedSchema({
+        schema: closedInputSchema({
           operationId: identifier,
           subjectId: identifier,
           facts: stringList(100, 4_000),
@@ -165,6 +209,10 @@ function inputContract(kind: TaskDefinition["inputKind"]): {
           facts: ["حقيقة تجريبية أولى", "حقيقة تجريبية ثانية"],
           objective: "إنتاج تحليل مقيد بالحقائق المتاحة.",
           allowedLabels: ["positive", "neutral", "negative"],
+          promptMessages: [
+            { role: "system", content: "حلل الحقائق المرسلة فقط." },
+            { role: "user", content: "أنتج تحليلاً مقيداً بالحقائق." },
+          ],
         },
       };
   }
@@ -176,13 +224,21 @@ function outputContract(kind: TaskDefinition["outputKind"]): {
 } {
   const common = {
     traceId: identifier,
+    applicationResponse: boundedString(16_000),
   };
 
   switch (kind) {
     case "text":
       return {
-        schema: closedSchema({ ...common, text: boundedString(12_000) }, ["traceId", "text"]),
-        sample: { traceId: "trace_demo_001", text: "نص تجريبي جاهز للمراجعة." },
+        schema: closedSchema(
+          { ...common, text: boundedString(12_000) },
+          ["traceId", "applicationResponse", "text"],
+        ),
+        sample: {
+          traceId: "trace_demo_001",
+          applicationResponse: "نص تجريبي جاهز للمراجعة.",
+          text: "نص تجريبي جاهز للمراجعة.",
+        },
       };
     case "classification":
       return {
@@ -191,9 +247,10 @@ function outputContract(kind: TaskDefinition["outputKind"]): {
           label: boundedString(128),
           confidence: { type: "number", minimum: 0, maximum: 1 },
           rationale: boundedString(2_000),
-        }, ["traceId", "label", "confidence", "rationale"]),
+        }, ["traceId", "applicationResponse", "label", "confidence", "rationale"]),
         sample: {
           traceId: "trace_demo_001",
+          applicationResponse: JSON.stringify({ label: "neutral", confidence: 0.8 }),
           label: "neutral",
           confidence: 0.8,
           rationale: "تصنيف تجريبي مبني على الحقائق المرسلة فقط.",
@@ -207,9 +264,20 @@ function outputContract(kind: TaskDefinition["outputKind"]): {
           rationale: boundedString(2_000),
           confidence: { type: "number", minimum: 0, maximum: 1 },
           requiresHumanReview: { type: "boolean" },
-        }, ["traceId", "action", "rationale", "confidence", "requiresHumanReview"]),
+        }, [
+          "traceId",
+          "applicationResponse",
+          "action",
+          "rationale",
+          "confidence",
+          "requiresHumanReview",
+        ]),
         sample: {
           traceId: "trace_demo_001",
+          applicationResponse: JSON.stringify({
+            action: "request_more_information",
+            rationale: "المعلومات التجريبية لا تكفي.",
+          }),
           action: "request_more_information",
           rationale: "المعلومات التجريبية لا تكفي لإجراء عالي المخاطر.",
           confidence: 0.74,
@@ -223,9 +291,10 @@ function outputContract(kind: TaskDefinition["outputKind"]): {
           summary: boundedString(8_000),
           findings: stringList(50, 2_000),
           labels: stringList(50, 128),
-        }, ["traceId", "summary", "findings", "labels"]),
+        }, ["traceId", "applicationResponse", "summary", "findings", "labels"]),
         sample: {
           traceId: "trace_demo_001",
+          applicationResponse: JSON.stringify({ summary: "ملخص تحليلي تجريبي." }),
           summary: "ملخص تحليلي تجريبي.",
           findings: ["نتيجة تجريبية قابلة للمراجعة"],
           labels: ["neutral"],
@@ -237,8 +306,13 @@ function outputContract(kind: TaskDefinition["outputKind"]): {
           ...common,
           accepted: { type: "boolean" },
           status: { type: "string", enum: ["recorded", "rejected"], maxLength: 16 },
-        }, ["traceId", "accepted", "status"]),
-        sample: { traceId: "trace_demo_001", accepted: true, status: "recorded" },
+        }, ["traceId", "applicationResponse", "accepted", "status"]),
+        sample: {
+          traceId: "trace_demo_001",
+          applicationResponse: JSON.stringify({ accepted: true, status: "recorded" }),
+          accepted: true,
+          status: "recorded",
+        },
       };
   }
 }

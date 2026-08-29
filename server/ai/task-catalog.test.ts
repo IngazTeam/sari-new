@@ -72,6 +72,26 @@ describe("SARI_TASK_CATALOG", () => {
     }
   });
 
+  it("carries the trusted application prompt and a compatibility response envelope", () => {
+    for (const contract of SARI_TASK_CATALOG) {
+      const input = contract.inputSchema as {
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
+      const output = contract.outputSchema as {
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
+
+      expect(input.properties).toHaveProperty("promptMessages");
+      expect(input.required).toContain("promptMessages");
+      expect(contract.sampleInput.promptMessages).toEqual(expect.any(Array));
+      expect(output.properties).toHaveProperty("applicationResponse");
+      expect(output.required).toContain("applicationResponse");
+      expect(contract.sampleOutput.applicationResponse).toEqual(expect.any(String));
+    }
+  });
+
   it("ships reviewable examples and rejection cases for every task", () => {
     for (const contract of SARI_TASK_CATALOG) {
       expect(contract.goldenCases.length).toBeGreaterThanOrEqual(5);

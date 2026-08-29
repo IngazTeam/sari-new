@@ -5,6 +5,7 @@ import {
   getZahyPiRequestContext,
   requestZahyPiChat,
   requestZahyPiCompletion,
+  requestZahyPiJobCompletion,
   runWithZahyPiContext,
 } from "./zahypi-client";
 
@@ -17,6 +18,120 @@ afterEach(() => {
 });
 
 describe("requestZahyPiChat", () => {
+  it("uses a governed job, canonicalizes aliases and polls for a manifest-backed result", async () => {
+    process.env.ZAHYPI_ENABLED = "true";
+    process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
+    process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+    process.env.ZAHYPI_API_KEY = "zahypi-test-key";
+    process.env.ZAHYPI_PROJECT_ID = "sari";
+
+    const jobId = "11111111-1111-4111-8111-111111111111";
+    const manifestId = "22222222-2222-4222-8222-222222222222";
+    let traceId = "";
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(async (_url, request: RequestInit) => {
+        traceId = String((request.headers as Record<string, string>)["X-Trace-Id"]);
+        return new Response(JSON.stringify({
+          job_id: jobId,
+          status: "queued",
+          project_id: "sari",
+          tenant_id: "merchant:42",
+          task_type: "sari.sales.next-best-action",
+          trace_id: traceId,
+        }), { status: 202 });
+      })
+      .mockImplementationOnce(async () => new Response(JSON.stringify({
+        job_id: jobId,
+        status: "completed",
+        project_id: "sari",
+        tenant_id: "merchant:42",
+        task_type: "sari.sales.next-best-action",
+        trace_id: traceId,
+        run_manifest_id: manifestId,
+        route: "qwen-core",
+        usage: { prompt_tokens: 5, completion_tokens: 2, total_tokens: 7 },
+        result: {
+          structured_output: {
+            traceId,
+            action: "request_more_information",
+            rationale: "Need one more fact.",
+            confidence: 0.8,
+            requiresHumanReview: true,
+            applicationResponse: '{"action":"none","reason":"Need one more fact."}',
+          },
+        },
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await requestZahyPiJobCompletion({
+      messages: [
+        { role: "system", content: "Return the requested JSON." },
+        { role: "user", content: "Choose the next action." },
+      ],
+      max_tokens: 120,
+      temperature: 0.2,
+    }, { merchantId: 42, taskType: "sari.action.selection" }, 2_000, 1);
+
+    expect(result.choices[0]?.message.content).toBe(
+      '{"action":"none","reason":"Need one more fact."}',
+    );
+    expect(result.usage).toEqual({ prompt_tokens: 5, completion_tokens: 2, total_tokens: 7 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const [createUrl, createRequest] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(createUrl).toBe("https://api.zahypi.test/v1/jobs");
+    expect(createRequest.headers).toMatchObject({
+      "X-Task-Type": "sari.sales.next-best-action",
+      "X-Data-Classification": "red",
+      "X-External-Processing": "deny",
+    });
+    expect(JSON.parse(String(createRequest.body))).toMatchObject({
+      task_type: "sari.sales.next-best-action",
+      business_input: {
+        promptMessages: [
+          { role: "system", content: "Return the requested JSON." },
+          { role: "user", content: "Choose the next action." },
+        ],
+      },
+    });
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(`${createUrl}/${jobId}`);
+  });
+
+  it("rejects a completed governed job that has no frozen run manifest", async () => {
+    process.env.ZAHYPI_ENABLED = "true";
+    process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
+    process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+    process.env.ZAHYPI_API_KEY = "zahypi-test-key";
+
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (_url, request: RequestInit) => {
+      const traceId = String((request.headers as Record<string, string>)["X-Trace-Id"]);
+      return new Response(JSON.stringify({
+        job_id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+        project_id: "sari",
+        tenant_id: "merchant:42",
+        task_type: "sari.reply",
+        trace_id: traceId,
+        route: "qwen-core",
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        result: {
+          structured_output: {
+            traceId,
+            text: "unsafe generic result",
+            applicationResponse: "unsafe generic result",
+          },
+        },
+      }), { status: 202 });
+    }));
+
+    await expect(requestZahyPiJobCompletion(
+      { messages: [{ role: "user", content: "hello" }] },
+      { merchantId: 42, taskType: "sari.reply" },
+      1_000,
+      1,
+    )).rejects.toThrow(/run manifest/i);
+  });
+
   it("sends merchant-scoped red data through the ZahyPi gateway", async () => {
     process.env.ZAHYPI_ENABLED = "true";
     process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
@@ -24,17 +139,25 @@ describe("requestZahyPiChat", () => {
     process.env.ZAHYPI_API_KEY = "zahypi-test-key";
     process.env.ZAHYPI_PROJECT_ID = "sari";
 
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      id: "chat-1",
-      created: 1,
-      model: "qwen-local",
-      choices: [{
-        index: 0,
-        message: { role: "assistant", content: "ready" },
-        finish_reason: "stop",
-      }],
-      usage: { prompt_tokens: 3, completion_tokens: 1, total_tokens: 4 },
-    }), { status: 200, headers: { "content-type": "application/json" } }));
+    const fetchMock = vi.fn().mockImplementation(async (_url, request: RequestInit) => {
+      const traceId = String((request.headers as Record<string, string>)["X-Trace-Id"]);
+      return new Response(JSON.stringify({
+        job_id: "33333333-3333-4333-8333-333333333333",
+        status: "completed",
+        project_id: "sari",
+        tenant_id: "merchant:42",
+        task_type: "sari.reply",
+        trace_id: traceId,
+        run_manifest_id: "44444444-4444-4444-8444-444444444444",
+        route: "qwen-core",
+        usage: { prompt_tokens: 3, completion_tokens: 1, total_tokens: 4 },
+        structured_output: {
+          traceId,
+          text: "ready",
+          applicationResponse: "ready",
+        },
+      }), { status: 202, headers: { "content-type": "application/json" } });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await requestZahyPiChat(
@@ -47,7 +170,7 @@ describe("requestZahyPiChat", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.zahypi.test/v1/chat/completions");
+    expect(url).toBe("https://api.zahypi.test/v1/jobs");
     expect(request.redirect).toBe("error");
     expect(request.headers).toMatchObject({
       Authorization: "Bearer zahypi-test-key",
@@ -58,9 +181,9 @@ describe("requestZahyPiChat", () => {
       "X-External-Processing": "deny",
     });
     expect(JSON.parse(String(request.body))).toMatchObject({
-      model: "qwen-local",
-      max_tokens: 50,
-      temperature: 0.2,
+      task_type: "sari.reply",
+      input: { max_tokens: 50, temperature: 0.2 },
+      business_input: { message: "hello" },
     });
   });
 

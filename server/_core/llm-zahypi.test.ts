@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { requestZahyPiCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(() => ({
-  requestZahyPiCompletion: vi.fn(),
+const { requestZahyPiJobCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(() => ({
+  requestZahyPiJobCompletion: vi.fn(),
   resolveZahyPiRuntimeConfig: vi.fn().mockResolvedValue({
     provider: "zahypi",
     apiKey: "gateway-key",
@@ -14,18 +14,18 @@ const { requestZahyPiCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(() =>
 
 vi.mock("../ai/zahypi-client", () => ({
   resolveZahyPiRuntimeConfig,
-  requestZahyPiCompletion,
+  requestZahyPiJobCompletion,
 }));
 
 import { invokeLLM } from "./llm";
 
 afterEach(() => {
-  requestZahyPiCompletion.mockReset();
+  requestZahyPiJobCompletion.mockReset();
 });
 
 describe("invokeLLM ZahyPi routing", () => {
   it("preserves structured requests and uses the merchant as tenant context", async () => {
-    requestZahyPiCompletion.mockResolvedValue({
+    requestZahyPiJobCompletion.mockResolvedValue({
       id: "chat-1",
       object: "chat.completion",
       created: 1,
@@ -45,25 +45,25 @@ describe("invokeLLM ZahyPi routing", () => {
     });
 
     expect(result.model).toBe("qwen-local");
-    expect(requestZahyPiCompletion).toHaveBeenCalledWith(
+    expect(requestZahyPiJobCompletion).toHaveBeenCalledWith(
       expect.objectContaining({
         messages: [{ role: "user", name: undefined, content: "choose" }],
         response_format: { type: "json_object" },
       }),
-      { merchantId: 91, taskType: "sari.invoke" },
+      { merchantId: 91, taskType: "sari.reply" },
       30_000,
       3,
     );
   });
 
   it("does not collapse requests without tenant context into a system tenant", async () => {
-    requestZahyPiCompletion.mockRejectedValue(new Error("ZahyPi tenant context is required"));
+    requestZahyPiJobCompletion.mockRejectedValue(new Error("ZahyPi tenant context is required"));
 
     await expect(invokeLLM({
       messages: [{ role: "user", content: "private merchant data" }],
     })).rejects.toThrow("tenant context");
 
-    expect(requestZahyPiCompletion).toHaveBeenCalledWith(
+    expect(requestZahyPiJobCompletion).toHaveBeenCalledWith(
       expect.any(Object),
       undefined,
       30_000,

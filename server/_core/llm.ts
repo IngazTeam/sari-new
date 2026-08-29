@@ -1,7 +1,7 @@
 import { ENV } from "./env";
 import {
   getOptionalZahyPiRequestContext,
-  requestZahyPiCompletion,
+  requestZahyPiJobCompletion,
   resolveZahyPiRuntimeConfig,
 } from "../ai/zahypi-client";
 
@@ -355,11 +355,11 @@ export async function invokeLLM(
 
   let result: InvokeResult;
   if (useZahyPi) {
-    result = await requestZahyPiCompletion(
+    result = await requestZahyPiJobCompletion(
       payload,
       merchantId === undefined
         ? undefined
-        : { merchantId, taskType: taskType || "sari.invoke" },
+        : { merchantId, taskType: taskType || "sari.reply" },
       30_000,
       3,
     );
