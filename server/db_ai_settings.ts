@@ -3,6 +3,7 @@
  */
 import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { aiSettings, AiSettings, NewAiSettings, aiUsageLogs, NewAiUsageLog } from "../drizzle/schema_ai_settings";
+import { getActiveConnectorCredential } from "./integrations/zahypi-connector/repository";
 import { decryptSecret, encryptSecret } from "./security/secrets";
 
 export const AI_SETTINGS_SINGLETON_ID = 1;
@@ -30,7 +31,9 @@ export type ZahyPiRuntimeConfig = {
   baseUrl: string;
   projectId: string;
   model: string;
-  source: "database" | "environment";
+  source: "connector" | "database" | "environment";
+  generation?: number;
+  taskTypesHash?: string;
 };
 
 export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | undefined> {
@@ -114,6 +117,26 @@ export async function getOpenAiApiKey(): Promise<string> {
  * take precedence, while environment variables remain a deployment fallback.
  */
 export async function getZahyPiRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
+  try {
+    const connectorCredential = await getActiveConnectorCredential("sari");
+    if (connectorCredential) {
+      return {
+        provider: "zahypi",
+        apiKey: connectorCredential.apiKey,
+        baseUrl: connectorCredential.baseUrl,
+        projectId: connectorCredential.projectId,
+        model: connectorCredential.model,
+        source: "connector",
+        generation: connectorCredential.generation,
+        taskTypesHash: connectorCredential.taskTypesHash,
+      };
+    }
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "Database is required for ZahyPi connector state") {
+      throw error;
+    }
+  }
+
   let record: {
     textGenerationProvider: TextGenerationProvider | null;
     zahyPiApiKey: string | null;

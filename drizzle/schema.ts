@@ -3049,6 +3049,7 @@ export * from "./schema_notifications";
 export * from "./schema_subscriptions";
 export * from "./schema_coupons";
 export * from "./schema_monitor";
+export * from "./schema_zahypi_connector";
 
 // ============================================
 // Tables that were previously created at runtime.
