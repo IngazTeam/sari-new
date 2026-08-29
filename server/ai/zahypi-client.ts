@@ -31,7 +31,7 @@ export type ZahyPiRuntimeConfig = {
   baseUrl: string;
   projectId: string;
   model: string;
-  source: "database" | "environment" | "override";
+  source: "connector" | "database" | "environment" | "override";
 };
 
 export type ZahyPiRequestContext = {

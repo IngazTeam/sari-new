@@ -128,6 +128,20 @@ function topLevelFiles({ catalog, sourceSha, releaseDate }) {
     `| \`${contract.taskType}\` | \`${source}\` |`,
   ));
   const planned = catalog.filter((contract) => contract.status === "planned");
+  const foundryCatalog = catalog.map((contract) => ({
+    task_type: contract.taskType,
+    business_name_ar: contract.businessNameAr,
+    status: contract.status,
+    priority: contract.priority,
+    data_classification: contract.dataClassification,
+    human_review: contract.humanReviewRequired,
+    execution_mode: contract.execution,
+    owner: contract.owner,
+    aliases: contract.aliases,
+    external_processing: contract.externalProcessing,
+    fallback: contract.fallback,
+    timeout_ms: contract.timeoutMs,
+  }));
 
   return new Map([
     ["README.md", `# Sari ZahyPi Requirements Pack\n\nحزمة عقود آمنة مولدة حتميًا من كتالوج Sari عند SHA \`${sourceSha}\` بتاريخ ${releaseDate}.\n`],
@@ -136,7 +150,7 @@ function topLevelFiles({ catalog, sourceSha, releaseDate }) {
     ["02_SARI_TASK_CATALOG.json", stableJson({
       source_sha: sourceSha,
       task_count: catalog.length,
-      tasks: catalog,
+      tasks: foundryCatalog,
     })],
     ["03_DATA_SECURITY_MATRIX.md", `# مصفوفة أمن البيانات\n\n| Task Type | التصنيف | معالجة خارجية | مراجعة بشرية | الفشل الآمن |\n|---|---|---|---|---|\n${securityRows.join("\n")}\n`],
     ["04_UI_ACTION_MAP.md", `# خريطة التشغيل\n\nكل مهمة existing مرتبطة بمصدر إنتاج فعلي مذكور في خريطة الكود. المهام planned لا تفعّل حتى يضاف لها trigger داخل Sari وتجتاز المراجعة.\n`],
@@ -144,6 +158,14 @@ function topLevelFiles({ catalog, sourceSha, releaseDate }) {
     ["06_TEST_EVIDENCE.md", `# أدلة الاختبار المطلوبة\n\n- تحقق schema لكل input/output.\n- خمس Golden Cases وخمس Rejection Cases لكل مهمة.\n- عزل tenant A عن tenant B.\n- 401 و403 و429 وtimeout وcircuit-open.\n- تحقق trace_id وrun_manifest_id قبل قبول النجاح.\n`],
     ["07_OWNER_DECISIONS_REQUIRED.md", `# قرارات المالك\n\n${planned.length === 0 ? "لا توجد مهام planned." : planned.map((contract) => `- اعتماد trigger الإنتاجي للمهمة \`${contract.taskType}\`.`).join("\n")}\n`],
     ["DELIVERY_CHECKLIST.md", `# Delivery Checklist\n\n- [x] جرد المهام الحالية والمخططة\n- [x] Schemas مغلقة ومحدودة\n- [x] Golden/Rejection cases مصطنعة\n- [x] لا أسرار ولا بيانات عملاء\n- [x] أسماء aliases موثقة\n- [ ] Preview داخل ZahyPi\n- [ ] Validate وSimulation\n- [ ] Owner review ثم activation\n`],
+    ["ZAHYPI_CONNECTOR.json", stableJson({
+      connector_type: "http-bootstrap-v1",
+      project_slug: "sari",
+      base_url: "https://sary.live",
+      bootstrap_path: "/zahypi/bootstrap",
+      verify_path: "/zahypi/verify",
+      secret_env_ref: "SARI_BOOTSTRAP_SECRET",
+    })],
     ["current-ai-contracts/README.md", `# العقود الحالية\n\nالمصدر القانوني للعقود هو \`server/ai/task-catalog.ts\`. لا تعدل نسخة الحزمة يدويًا.\n`],
   ]);
 }
@@ -155,8 +177,22 @@ function taskFiles(contract) {
     ["output.schema.json", stableJson(contract.outputSchema)],
     ["sample.input.json", stableJson(contract.sampleInput)],
     ["sample.output.json", stableJson(contract.sampleOutput)],
-    ["rejection.cases.json", stableJson(contract.rejectionCases)],
-    ["golden.cases.json", stableJson(contract.goldenCases)],
+    ["rejection.cases.json", stableJson({
+      cases: contract.rejectionCases.map((testCase) => ({
+        id: testCase.name,
+        input: testCase.input,
+        reason: testCase.reason,
+      })),
+    })],
+    ["golden.cases.json", stableJson({
+      cases: contract.goldenCases.map((testCase) => ({
+        id: testCase.name,
+        schema_valid: true,
+        comparison_mode: "schema",
+        input: testCase.input,
+        expected_output: testCase.expected,
+      })),
+    })],
     ["integration.md", taskIntegration(contract)],
   ]);
 }
@@ -225,10 +261,10 @@ export async function buildZahyPiRequirementsPack({
     files: payloadEntries,
   });
   normalizedFiles.set("MANIFEST.json", manifestContent);
-  normalizedFiles.set("MANIFEST.sha256", [
-    ...payloadEntries,
-    { path: "MANIFEST.json", sha256: sha256(manifestContent) },
-  ].map((entry) => `${entry.sha256}  ${entry.path}`).join("\n") + "\n");
+  normalizedFiles.set(
+    "MANIFEST.sha256",
+    payloadEntries.map((entry) => `${entry.sha256}  ${entry.path}`).join("\n") + "\n",
+  );
 
   try {
     await mkdir(rootPath, { recursive: true });

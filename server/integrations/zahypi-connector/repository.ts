@@ -112,7 +112,9 @@ function hash(value: string): string {
 }
 
 function canonicalTaskTypes(taskTypes: readonly string[]): string[] {
-  const canonical = [...new Set(taskTypes.map((taskType) => taskType.trim()))].sort();
+  const canonical = Array.from(
+    new Set(taskTypes.map((taskType) => taskType.trim())),
+  ).sort();
   if (canonical.length === 0 || canonical.some((taskType) => !/^sari\.[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(taskType))) {
     throw new Error("Connector task types must contain valid sari.* names");
   }
