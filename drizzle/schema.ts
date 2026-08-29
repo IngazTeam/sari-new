@@ -1144,7 +1144,7 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	// from creating two active primaries for one merchant.
 	activePrimaryMerchantId: int("active_primary_merchant_id").generatedAlwaysAs(
 		sql`CASE WHEN \`status\` = 'active' AND \`is_primary\` = 1 THEN \`merchant_id\` ELSE NULL END`,
-		{ mode: 'stored' },
+		{ mode: 'virtual' },
 	),
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	connectedAt: timestamp("connected_at", { mode: 'string' }),

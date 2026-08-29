@@ -21,7 +21,7 @@ export const WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS = [{
   generatedColumns: [{
     name: 'active_primary_merchant_id',
     expression: "CASE WHEN status = 'active' AND is_primary = 1 THEN merchant_id ELSE NULL END",
-    storage: 'stored',
+    storage: 'virtual',
   }],
   uniqueIndexes: [{
     name: 'whatsapp_instances_active_primary_merchant_unique',
