@@ -22,6 +22,7 @@ SARI_RELEASE_ROOT=<dedicated-release-directory>
 SARI_ENV_FILE=<absolute-shared-env-file>
 SARI_BUILD_ENV_FILE=<absolute-public-vite-only-env-file>
 SARI_PUBLIC_ORIGIN=https://sary.live
+SARI_READY_ORIGIN=<https://sary.live-or-http://127.0.0.1:production-port>
 SARI_BACKUP_ID=<verified-backup-reference>
 SARI_BACKUP_VERIFIED_AT=<ISO-8601-within-60-minutes>
 SARI_DEPLOY_CONFIRM=deploy-sary-production:<same-sha>
@@ -30,6 +31,10 @@ DATABASE_URL=<from-secret-manager>
 ```
 
 ثم شغّل `bash scripts/deploy-production.sh` كمستخدم النشر غير root.
+
+`SARI_READY_ORIGIN` لا يغير النطاق العام. هو عنوان probe للإصدار الذي بدأه PM2، ويقبل فقط
+النطاق العام نفسه أو loopback صريحًا. يُستخدم loopback عند الانتقال من مشغل قديم إلى مستخدم نشر
+مقيد، ثم يُحوّل Nginx إلى المنفذ الذي اجتاز readiness الصارمة.
 
 ## ما تنفذه البوابة
 

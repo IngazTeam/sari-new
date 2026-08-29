@@ -26,6 +26,7 @@ require_value SARI_BACKUP_ID
 require_value SARI_BACKUP_VERIFIED_AT
 require_value SARI_DEPLOY_CONFIRM
 require_value SARI_SCHEMA_CONFIRM
+require_value SARI_READY_ORIGIN
 require_value DATABASE_URL
 
 case "$SARI_RELEASE_SHA" in
@@ -38,6 +39,20 @@ esac
   || die 'SARI_SCHEMA_CONFIRM does not match the requested release'
 [ "${SARI_PUBLIC_ORIGIN:-}" = 'https://sary.live' ] \
   || die 'SARI_PUBLIC_ORIGIN must be exactly https://sary.live'
+ready_origin="$(node - "$SARI_READY_ORIGIN" <<'NODE'
+const url = new URL(process.argv[2]);
+const port = Number(url.port);
+const isOriginOnly = url.pathname === '/' && !url.search && !url.hash && !url.username && !url.password;
+const isPublic = url.origin === 'https://sary.live';
+const isLoopback = url.protocol === 'http:'
+  && url.hostname === '127.0.0.1'
+  && Number.isInteger(port)
+  && port >= 1024
+  && port <= 65535;
+if (!isOriginOnly || (!isPublic && !isLoopback)) process.exit(1);
+process.stdout.write(url.origin);
+NODE
+)" || die 'SARI_READY_ORIGIN must be https://sary.live or an explicit loopback HTTP origin'
 [ "$(id -u)" -ne 0 ] || die 'production deployment must not run as root'
 case "$SARI_BACKUP_ID" in
   *[!A-Za-z0-9._:-]*|'') die 'SARI_BACKUP_ID contains unsupported characters' ;;
@@ -204,7 +219,7 @@ log 'activating the prepared release through PM2 readiness'
 activation_attempted=1
 SARI_ENV_FILE="$env_file" pm2 startOrReload "$release_dir/ecosystem.config.cjs" --only sari --update-env
 
-ready_json="$(curl --fail --silent --show-error --max-time 10 "$SARI_PUBLIC_ORIGIN/ready")"
+ready_json="$(curl --fail --silent --show-error --max-time 10 "$ready_origin/ready")"
 node -e '
   const body = JSON.parse(process.argv[1]);
   if (body?.status !== "ready" || body?.checks?.database !== "connected" || body?.checks?.schema !== "current") process.exit(1);
