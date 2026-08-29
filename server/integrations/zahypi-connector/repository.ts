@@ -121,8 +121,8 @@ function canonicalTaskTypes(taskTypes: readonly string[]): string[] {
 
 function validateActivation(input: ConnectorActivationInput): void {
   if (input.projectId !== "sari") throw new Error("Connector project must be sari");
-  if (!Number.isSafeInteger(input.generation) || input.generation < 1) {
-    throw new Error("Connector generation must be a positive integer");
+  if (!Number.isSafeInteger(input.generation) || input.generation < 0 || input.generation > 1_000) {
+    throw new Error("Connector generation must be an integer between 0 and 1000");
   }
   if (input.apiKey.length < 16 || input.apiKey.length > 512) {
     throw new Error("Connector API key length is invalid");

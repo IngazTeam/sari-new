@@ -50,6 +50,7 @@ import { startWooCommerceWebhookReceiptWorker } from "../integrations/woocommerc
 import { startCampaignDeliveryWorker } from "../automation/campaign-delivery-outbox";
 import { startOrderStatusNotificationWorker } from "../orders/order-status-notification-outbox";
 import publicSupportRouter from "../public-support";
+import zahyPiConnectorRouter from "../integrations/zahypi-connector/routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -96,6 +97,11 @@ async function startServer() {
 
   // Apply security middleware (Helmet, CORS, request ID)
   applySecurityMiddleware(app);
+
+  // The connector signature covers the exact request bytes. Mount these raw
+  // parsers before every generic JSON parser and expose the protocol alias.
+  app.use('/zahypi', zahyPiConnectorRouter);
+  app.use('/api/zahypi', zahyPiConnectorRouter);
 
   // Voice transcription accepts up to 24 MB of base64 data. Keep a small margin
   // for the JSON envelope, while preventing the former 50 MB allocation on every route.

@@ -20,10 +20,11 @@ CREATE TABLE IF NOT EXISTS `zahypi_connector_credentials` (
   UNIQUE KEY `zahypi_connector_project_generation_unique` (`project_id`, `generation`),
   UNIQUE KEY `zahypi_connector_one_active_unique` (`project_id`, `active_slot`),
   KEY `zahypi_connector_status_idx` (`project_id`, `status`, `generation`),
-  CONSTRAINT `zahypi_connector_generation_check` CHECK (`generation` > 0),
+  CONSTRAINT `zahypi_connector_generation_check` CHECK (`generation` >= 0),
   CONSTRAINT `zahypi_connector_api_key_hash_check` CHECK (`api_key_hash` REGEXP '^[0-9a-f]{64}$'),
   CONSTRAINT `zahypi_connector_task_types_hash_check` CHECK (`task_types_hash` REGEXP '^[0-9a-f]{64}$')
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `zahypi_connector_receipts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

@@ -19,6 +19,7 @@ const ENV_CONFIGS: EnvConfig[] = [
     { name: 'DATABASE_URL', required: true, description: 'MySQL database connection string' },
     { name: 'JWT_SECRET', required: true, description: 'Secret key for JWT token signing (min 32 chars)' },
     { name: 'FIELD_ENCRYPTION_KEY', required: process.env.NODE_ENV === 'production', description: 'Encryption key for stored integration credentials (min 32 chars)' },
+    { name: 'SARI_BOOTSTRAP_SECRET', required: process.env.NODE_ENV === 'production', description: 'HMAC secret for ZahyPi one-click activation (min 32 chars)' },
 
     // Important - Core features won't work without an approved AI transport.
     { name: 'GREEN_API_INSTANCE_ID', required: false, description: 'Green API instance ID for WhatsApp' },
@@ -83,6 +84,11 @@ export function validateEnv(): ValidationResult {
             if (config.name === 'FIELD_ENCRYPTION_KEY' && value.length < 32) {
                 result.valid = false;
                 result.errors.push(`❌ FIELD_ENCRYPTION_KEY must be at least 32 characters long (current: ${value.length})`);
+            }
+
+            if (config.name === 'SARI_BOOTSTRAP_SECRET' && Buffer.byteLength(value, 'utf8') < 32) {
+                result.valid = false;
+                result.errors.push(`❌ SARI_BOOTSTRAP_SECRET must be at least 32 bytes long`);
             }
 
             if (config.name === 'DATABASE_URL' && !value.startsWith('mysql://')) {

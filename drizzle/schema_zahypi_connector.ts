@@ -31,7 +31,7 @@ export const zahyPiConnectorCredentials = mysqlTable("zahypi_connector_credentia
 }, (table) => [
   uniqueIndex("zahypi_connector_project_generation_unique").on(table.projectId, table.generation),
   index("zahypi_connector_status_idx").on(table.projectId, table.status, table.generation),
-  check("zahypi_connector_generation_check", sql`${table.generation} > 0`),
+  check("zahypi_connector_generation_check", sql`${table.generation} >= 0`),
 ]);
 
 export const zahyPiConnectorReceipts = mysqlTable("zahypi_connector_receipts", {
