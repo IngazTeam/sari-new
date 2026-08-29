@@ -10,7 +10,7 @@ CREATE TABLE `zid_order_notification_outbox` (
 	`delivered_at` timestamp(3),
 	`last_error` varchar(100),
 	`created_at` timestamp(3) NOT NULL DEFAULT (now()),
-	`updated_at` timestamp(3) NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 	CONSTRAINT `zid_order_notification_outbox_id` PRIMARY KEY(`id`),
 	CONSTRAINT `zid_order_notification_event_unique` UNIQUE(`event_key`)
 );
