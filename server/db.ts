@@ -5599,6 +5599,8 @@ export async function getResetAttempts(
   email: string,
   minutesAgo: number = 10
 ): Promise<PasswordResetAttempt[]> {
+  if (minutesAgo <= 0) return [];
+
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
 

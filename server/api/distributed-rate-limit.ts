@@ -172,8 +172,8 @@ export async function pruneExpiredApiRateLimitWindows(
       `DELETE FROM api_rate_limit_windows
         WHERE expires_at < TIMESTAMPADD(MICROSECOND, ?, NOW(3))
         ORDER BY expires_at
-        LIMIT ?`,
-      [-retentionMicros, batchSize],
+        LIMIT ${batchSize}`,
+      [-retentionMicros],
     );
     deleted += result.affectedRows;
     if (result.affectedRows < batchSize) break;

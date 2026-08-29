@@ -5,9 +5,19 @@ describe('Analytics Functions', () => {
   let testMerchantId: number;
 
   beforeAll(async () => {
+    const user = await db.createUser({
+      openId: `analytics_test_${Date.now()}`,
+      name: 'Analytics Test User',
+      email: `analytics_test_${Date.now()}@test.com`,
+      password: 'test-password',
+      loginMethod: 'email',
+      role: 'user',
+    });
+    if (!user) throw new Error('Failed to create analytics test user');
+
     // Create test merchant
     const merchant = await db.createMerchant({
-      userId: 999,
+      userId: user.id,
       businessName: 'Test Analytics Store',
       phoneNumber: '+966501234567',
       status: 'active',

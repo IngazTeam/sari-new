@@ -58,7 +58,7 @@ describe.skipIf(!process.env.DATABASE_URL)('distributed REST rate limiting (MySQ
     if (!database) throw new Error('Database not initialized');
     const rows = await database.select().from(apiRateLimitWindows);
     expect(rows).toHaveLength(3);
-    expect(new Set(rows.map(row => row.bucketHash))).toHaveSize(3);
+    expect(new Set(rows.map(row => row.bucketHash)).size).toBe(3);
     expect(rows.every(row => /^[a-f0-9]{64}$/.test(row.bucketHash))).toBe(true);
     expect(JSON.stringify(rows)).not.toMatch(/key:alpha|key:beta/);
   });

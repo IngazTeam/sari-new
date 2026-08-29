@@ -1126,12 +1126,12 @@ async function processDeletionRequest(requestId: number): Promise<void> {
 export async function processDueAccountDeletions(limit = 10): Promise<{ processed: number; review: number }> {
   const pool = await getPool();
   if (!pool) return { processed: 0, review: 0 };
+  const boundedLimit = Math.min(100, Math.max(1, limit));
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id FROM data_subject_requests
       WHERE request_type = 'deletion' AND status = 'pending'
         AND processing_scheduled_at IS NOT NULL AND processing_scheduled_at <= NOW()
-      ORDER BY processing_scheduled_at LIMIT ?`,
-    [Math.min(100, Math.max(1, limit))],
+      ORDER BY processing_scheduled_at LIMIT ${boundedLimit}`,
   );
   let processed = 0;
   let review = 0;

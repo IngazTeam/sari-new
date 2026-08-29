@@ -73,6 +73,16 @@ async function within<T>(promise: Promise<T>, milliseconds: number): Promise<T> 
   }
 }
 
+function mysqlErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const direct = error as { code?: unknown; cause?: unknown };
+  if (direct.code) return String(direct.code);
+  if (typeof direct.cause === 'object' && direct.cause !== null && 'code' in direct.cause) {
+    return String((direct.cause as { code?: unknown }).code);
+  }
+  return undefined;
+}
+
 describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL integration)', () => {
   beforeEach(cleanup);
   afterAll(cleanup);
@@ -179,7 +189,7 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
         '00966504445566',
         activeWhatsAppPhoneIdentityHash(phoneNumber),
       ],
-    )).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+    )).rejects.toSatisfy(error => mysqlErrorCode(error) === 'ER_DUP_ENTRY');
   });
 
   it('releases merchant and phone locks after a transaction failure so retry succeeds', async () => {
@@ -208,7 +218,7 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
       phoneNumber: retryPhone,
       status: 'active',
       isPrimary: 0,
-    })).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+    })).rejects.toSatisfy(error => mysqlErrorCode(error) === 'ER_DUP_ENTRY');
 
     await expect(createWhatsAppInstance({
       merchantId: merchantB,
@@ -334,15 +344,15 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
     await expect(pool.execute(
       'UPDATE whatsapp_instances SET is_primary = 1 WHERE id = ?',
       [second.id],
-    )).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+    )).rejects.toSatisfy(error => mysqlErrorCode(error) === 'ER_DUP_ENTRY');
     await expect(pool.execute(
       "UPDATE whatsapp_instances SET status = 'inactive' WHERE id = ?",
       [first.id],
-    )).rejects.toMatchObject({ code: 'ER_CHECK_CONSTRAINT_VIOLATED' });
+    )).rejects.toSatisfy(error => mysqlErrorCode(error) === 'ER_CHECK_CONSTRAINT_VIOLATED');
     await expect(pool.execute(
       'UPDATE whatsapp_instances SET is_primary = 2 WHERE id = ?',
       [second.id],
-    )).rejects.toMatchObject({ code: 'ER_CHECK_CONSTRAINT_VIOLATED' });
+    )).rejects.toSatisfy(error => mysqlErrorCode(error) === 'ER_CHECK_CONSTRAINT_VIOLATED');
 
     const [rows] = await pool.execute<any[]>(
       `SELECT id, status, is_primary AS isPrimary

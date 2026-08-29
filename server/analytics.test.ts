@@ -22,11 +22,21 @@ describe('Advanced Analytics System', () => {
   let testDiscountCode: string;
 
   beforeAll(async () => {
+    const user = await db.createUser({
+      openId: `advanced_analytics_test_${Date.now()}`,
+      name: 'Advanced Analytics Test User',
+      email: `advanced_analytics_test_${Date.now()}@test.com`,
+      password: 'test-password',
+      loginMethod: 'email',
+      role: 'user',
+    });
+    if (!user) throw new Error('Failed to create advanced analytics test user');
+
     // Create test merchant
     const merchant = await db.createMerchant({
-      userId: 999999,
+      userId: user.id,
       businessName: 'Analytics Test Store',
-      businessType: 'retail',
+      businessType: 'store',
       phoneNumber: '+966500000099',
       whatsappConnected: true,
       whatsappInstanceId: 'test-analytics-instance',

@@ -95,7 +95,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Password Reset System (database inte
     await db.markPasswordResetTokenAsUsed(token!.id);
 
     const updatedToken = await db.getPasswordResetTokenByToken(resetToken);
-    expect(updatedToken?.used).toBe(true);
+    expect(Boolean(updatedToken?.used)).toBe(true);
     expect(updatedToken?.usedAt).toBeDefined();
   });
 
