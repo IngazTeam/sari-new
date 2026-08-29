@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS `ai_settings` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+  `id` INT NOT NULL,
   `openai_api_key` TEXT NULL,
   `model` VARCHAR(100) NOT NULL DEFAULT 'gpt-4o-mini',
   `whisper_model` VARCHAR(100) NOT NULL DEFAULT 'whisper-1',
@@ -36,6 +36,9 @@ VALUES (1, 'gpt-4o-mini', 'whisper-1', TRUE);--> statement-breakpoint
 UPDATE `ai_settings`
    SET `id` = 1
  WHERE `id` <> 1;--> statement-breakpoint
+
+ALTER TABLE `ai_settings`
+  MODIFY COLUMN `id` INT NOT NULL;--> statement-breakpoint
 
 ALTER TABLE `ai_settings`
   ADD CONSTRAINT `ai_settings_singleton_id_check` CHECK (`id` = 1);

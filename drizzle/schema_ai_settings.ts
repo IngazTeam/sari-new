@@ -6,7 +6,7 @@ import { merchants } from "./schema";
 // AI Platform Settings (single global record)
 // ============================================
 export const aiSettings = mysqlTable("ai_settings", {
-  id: int("id").primaryKey().autoincrement(),
+  id: int("id").primaryKey(),
   openaiApiKey: text("openai_api_key"), // AES-GCM encrypted at the persistence boundary
   model: varchar("model", { length: 100 }).notNull().default("gpt-4o-mini"),
   whisperModel: varchar("whisper_model", { length: 100 }).notNull().default("whisper-1"),
