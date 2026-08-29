@@ -1,8 +1,25 @@
 // Sitemap Generator - static pages only, no DB dependency
 
-// ─── Dynamic Domain ─────────────────────────────
-// Uses VITE_APP_URL or falls back to sary.live
-const BASE_URL = (process.env.VITE_APP_URL || process.env.APP_URL || 'https://sary.live').replace(/\/$/, '');
+// ─── Canonical Public Domain ────────────────────
+// Sitemaps are public SEO artifacts; never emit localhost from developer/test env.
+function resolveSitemapBaseUrl(): string {
+  const candidate = process.env.PUBLIC_APP_URL || process.env.APP_URL || process.env.VITE_APP_URL;
+  if (!candidate) return 'https://sary.live';
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+      return 'https://sary.live';
+    }
+    parsed.pathname = '';
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.origin.replace(/\/$/, '');
+  } catch {
+    return 'https://sary.live';
+  }
+}
+
+const BASE_URL = resolveSitemapBaseUrl();
 
 interface SitemapUrl {
   loc: string;
