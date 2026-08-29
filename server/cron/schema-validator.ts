@@ -30,7 +30,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   ] },
   { table: 'calendly_appointments', columns: ['merchant_id', 'invitee_uri', 'provider_updated_at'] },
   { table: 'calendly_webhook_receipts', columns: ['event_key', 'status', 'available_at', 'claimed_at'] },
-  { table: 'woocommerce_settings', columns: ['consumer_key', 'consumer_secret', 'connection_status', 'webhook_endpoint_id', 'webhook_signing_secret'] },
+  { table: 'woocommerce_settings', columns: ['consumer_key', 'consumer_secret', 'connectionStatus', 'webhook_endpoint_id', 'webhook_signing_secret'] },
   { table: 'woocommerce_products', columns: ['merchant_id', 'woo_product_id', 'provider_updated_at'] },
   { table: 'woocommerce_orders', columns: ['merchant_id', 'woo_order_id', 'provider_updated_at'] },
   { table: 'woocommerce_sync_logs', columns: ['merchant_id', 'sync_type', 'status'] },

@@ -50,7 +50,7 @@ async function ensureWooCommerceWebhookSchema(): Promise<void> {
   await assertRuntimeSchema('WooCommerce webhook ingress', [
     {
       table: 'woocommerce_settings',
-      columns: ['merchant_id', 'webhook_endpoint_id', 'webhook_signing_secret', 'connection_status'],
+      columns: ['merchant_id', 'webhook_endpoint_id', 'webhook_signing_secret', 'connectionStatus'],
       uniqueIndexes: [{ name: 'woocommerce_settings_webhook_endpoint_unique', columns: ['webhook_endpoint_id'] }],
     },
     {
