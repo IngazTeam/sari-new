@@ -15,6 +15,23 @@ SET @ddl = IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'salla_connections'
       AND INDEX_NAME = 'salla_connections_merchantId_unique' AND NON_UNIQUE = 1) > 0,
+  IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'salla_connections'
+        AND INDEX_NAME = 'salla_connections_merchantId_unique_tmp') = 0,
+    'ALTER TABLE `salla_connections` ADD UNIQUE INDEX `salla_connections_merchantId_unique_tmp` (`merchantId`)',
+    'SELECT 1'
+  ),
+  'SELECT 1'
+);--> statement-breakpoint
+PREPARE sari_migration_stmt FROM @ddl;--> statement-breakpoint
+EXECUTE sari_migration_stmt;--> statement-breakpoint
+DEALLOCATE PREPARE sari_migration_stmt;--> statement-breakpoint
+
+SET @ddl = IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'salla_connections'
+      AND INDEX_NAME = 'salla_connections_merchantId_unique' AND NON_UNIQUE = 1) > 0,
   'ALTER TABLE `salla_connections` DROP INDEX `salla_connections_merchantId_unique`',
   'SELECT 1'
 );--> statement-breakpoint
@@ -27,6 +44,17 @@ SET @ddl = IF(
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'salla_connections'
       AND INDEX_NAME = 'salla_connections_merchantId_unique' AND NON_UNIQUE = 0) = 0,
   'ALTER TABLE `salla_connections` ADD UNIQUE INDEX `salla_connections_merchantId_unique` (`merchantId`)',
+  'SELECT 1'
+);--> statement-breakpoint
+PREPARE sari_migration_stmt FROM @ddl;--> statement-breakpoint
+EXECUTE sari_migration_stmt;--> statement-breakpoint
+DEALLOCATE PREPARE sari_migration_stmt;--> statement-breakpoint
+
+SET @ddl = IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'salla_connections'
+      AND INDEX_NAME = 'salla_connections_merchantId_unique_tmp') > 0,
+  'ALTER TABLE `salla_connections` DROP INDEX `salla_connections_merchantId_unique_tmp`',
   'SELECT 1'
 );--> statement-breakpoint
 PREPARE sari_migration_stmt FROM @ddl;--> statement-breakpoint
