@@ -33,6 +33,9 @@ try {
 
     console.log(`Applying migration ${migration.folderMillis}`);
     for (const statement of migration.sql) {
+      if (!statement.trim()) {
+        continue;
+      }
       await connection.query(statement);
     }
     await connection.query(
