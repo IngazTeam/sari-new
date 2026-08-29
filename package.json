@@ -26,6 +26,7 @@
     "db:check": "drizzle-kit check",
     "db:push": "node scripts/mysql-drizzle-migrate.mjs",
     "security:encrypt-secrets": "tsx scripts/encrypt-existing-secrets.ts",
+    "zahypi:pack": "tsx scripts/build-zahypi-requirements-pack.mjs",
     "preflight:zid-product-identity": "node scripts/preflight-zid-product-identity.mjs",
     "preflight:zid-order-identity": "node scripts/preflight-zid-order-identity.mjs",
     "preflight:whatsapp-active-phone": "node scripts/preflight-whatsapp-active-phone-identity.mjs",
