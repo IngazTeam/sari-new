@@ -64,7 +64,7 @@ try {
   if (schemaReady) {
     const [settingsRows] = await pool.query(`
       SELECT
-        SUM(is_active = 1 AND connection_status = 'connected' AND (
+        SUM(is_active = 1 AND connectionStatus = 'connected' AND (
           webhook_endpoint_id IS NULL OR webhook_endpoint_id = '' OR
           webhook_signing_secret IS NULL OR webhook_signing_secret = ''
         )) AS activeConnectionsMissingIdentity,
@@ -80,7 +80,7 @@ try {
           SELECT s.merchant_id
             FROM woocommerce_settings s
             LEFT JOIN woocommerce_webhook_registrations r ON r.merchant_id = s.merchant_id
-           WHERE s.is_active = 1 AND s.connection_status = 'connected'
+           WHERE s.is_active = 1 AND s.connectionStatus = 'connected'
            GROUP BY s.merchant_id
           HAVING COUNT(r.id) <> 6 OR COUNT(DISTINCT r.topic) <> 6 OR COUNT(DISTINCT r.webhook_id) <> 6
         ) missing
