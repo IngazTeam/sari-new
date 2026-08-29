@@ -88,6 +88,7 @@ ${conversationContext}
       try {
         const response = await invokeLLM({
           merchantId: merchant.id,
+          taskType: "sari.reply.suggestions",
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -187,6 +188,7 @@ ${conversationContext}
       try {
         const response = await invokeLLM({
           merchantId: merchant.id,
+          taskType: "sari.reply.custom",
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -240,6 +242,7 @@ ${conversationContext}
       try {
         const response = await invokeLLM({
           merchantId: merchant.id,
+          taskType: "sari.reply.improve",
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },

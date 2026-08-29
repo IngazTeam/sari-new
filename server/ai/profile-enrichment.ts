@@ -154,6 +154,8 @@ ${transcript}
     ];
 
     const response = await callGPT4(gptMessages, {
+      merchantId,
+      taskType: 'sari.customer.profile-enrichment',
       model: ENRICHMENT_MODEL,
       temperature: 0.2,
       maxTokens: 500,

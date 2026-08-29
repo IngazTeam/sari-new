@@ -562,7 +562,13 @@ ${recentHistory ? `آخر الرسائل في المحادثة:\n${recentHistory
 
   const result = await callGPT4(
     [{ role: 'user', content: prompt }],
-    { model: 'gpt-4o-mini', temperature: 0.1, maxTokens: 10, noRetry: true }
+    {
+      model: 'gpt-4o-mini',
+      temperature: 0.1,
+      maxTokens: 10,
+      noRetry: true,
+      taskType: 'sari.conversation.topic-change',
+    }
   );
   const answer = result.trim().toLowerCase();
   const isNew = answer.includes('جديد');
@@ -1607,7 +1613,13 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
         },
         { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 300)) },
       ];
-      response = await callGPT4(lightMessages, { model: 'gpt-4o-mini', temperature: 0.7, maxTokens: 300, noRetry: true });
+      response = await callGPT4(lightMessages, {
+        model: 'gpt-4o-mini',
+        temperature: 0.7,
+        maxTokens: 300,
+        noRetry: true,
+        taskType: 'sari.reply',
+      });
     } catch {
       response = await _chatWithSariCore(params); // If lightweight fails, try full pipeline
     }
@@ -2313,7 +2325,11 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       const maxTokens = isCatalogQuery
         ? Math.min(personalitySettings.maxResponseLength * 4, 1500)
         : Math.min(personalitySettings.maxResponseLength * 2, 600);
-      let response = await callGPT4(messages, { temperature: 0.7, maxTokens });
+      let response = await callGPT4(messages, {
+        temperature: 0.7,
+        maxTokens,
+        taskType: 'sari.reply',
+      });
 
       // ═══ Response Critic — FAST PATH (Layer 1: Quality Check) ═══
       try {
@@ -2828,6 +2844,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     let response = await callGPT4(messages, {
       temperature: 0.7, // Balanced between creativity and consistency
       maxTokens,
+      taskType: 'sari.reply',
     });
 
     // ═══ Response Critic — FULL PATH (Layer 1: Quality Check) ═══
@@ -3029,6 +3046,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         temperature: 0.7,
         maxTokens: 300,
         noRetry: true, // PEN-RES-03 FIX: Already in retry — don't trigger 3 more internal attempts
+        taskType: 'sari.reply',
       });
 
       if (retryResponse && retryResponse.trim().length > 10) {
@@ -3182,6 +3200,7 @@ export async function analyzeCustomerIntent(message: string): Promise<{
     ], {
       temperature: 0.2, // Low temperature for consistent analysis
       maxTokens: 150,
+      taskType: 'sari.customer.intent',
     });
 
     // Clean and parse JSON response

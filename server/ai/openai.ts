@@ -158,11 +158,15 @@ export async function callGPT4(
 
   if (await zahyPiTextGenerationEnabled()) {
     const inheritedContext = getOptionalZahyPiRequestContext();
-    const explicitContext = options?.merchantId === undefined ? undefined : {
-      merchantId: options.merchantId,
-      userId: options.userId,
-      taskType: options.taskType || 'sari.reply',
-    };
+    const explicitContext = options?.merchantId !== undefined
+      ? {
+          merchantId: options.merchantId,
+          userId: options.userId,
+          taskType: options.taskType || 'sari.reply',
+        }
+      : options?.taskType && inheritedContext
+        ? { ...inheritedContext, taskType: options.taskType }
+        : undefined;
     const result = await requestZahyPiChat(
       messages,
       {

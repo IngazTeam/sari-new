@@ -73,6 +73,7 @@ export async function parseOrderMessage(message: string, merchantId: number): Pr
 
     const response = await invokeLLM({
       merchantId,
+      taskType: "sari.order.extract",
       messages: [
         {
           role: 'system',

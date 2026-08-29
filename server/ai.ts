@@ -466,6 +466,7 @@ export async function generateAIResponse(
     const response = await invokeLLM({
       messages,
       merchantId,
+      taskType: 'sari.reply',
     });
 
     const content = response.choices[0]?.message?.content;
@@ -695,6 +696,7 @@ ${conversationHistory.map(m => `${m.role === 'user' ? 'العميل' : 'ساري
 
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.booking.extract',
       messages: [
         { role: 'system', content: 'أنت مساعد ذكي لاستخراج تفاصيل الحجز. أرجع JSON فقط.' },
         { role: 'user', content: prompt }
@@ -762,6 +764,7 @@ ${servicesList}
 
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.booking.service-match',
       messages: [
         { role: 'system', content: 'أنت مساعد لمطابقة طلبات العملاء مع الخدمات المتاحة.' },
         { role: 'user', content: prompt }

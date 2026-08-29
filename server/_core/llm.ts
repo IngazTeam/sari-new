@@ -355,11 +355,15 @@ export async function invokeLLM(
 
   let result: InvokeResult;
   if (useZahyPi) {
+    const inheritedContext = getOptionalZahyPiRequestContext();
+    const jobContext = merchantId !== undefined
+      ? { merchantId, taskType: taskType || "sari.reply" }
+      : taskType && inheritedContext
+        ? { ...inheritedContext, taskType }
+        : undefined;
     result = await requestZahyPiJobCompletion(
       payload,
-      merchantId === undefined
-        ? undefined
-        : { merchantId, taskType: taskType || "sari.reply" },
+      jobContext,
       30_000,
       3,
     );

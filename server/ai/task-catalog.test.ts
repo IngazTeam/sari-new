@@ -28,9 +28,25 @@ describe("SARI_TASK_CATALOG", () => {
   it("defines unique canonical task types using the sari namespace", () => {
     const taskTypes = SARI_TASK_CATALOG.map((contract) => contract.taskType);
 
-    expect(taskTypes.length).toBeGreaterThanOrEqual(20);
+    expect(taskTypes.length).toBeGreaterThanOrEqual(40);
     expect(new Set(taskTypes).size).toBe(taskTypes.length);
     expect(taskTypes.every((taskType) => TASK_TYPE_PATTERN.test(taskType))).toBe(true);
+  });
+
+  it("registers the active commerce, quality, website, and operations paths", () => {
+    expect(activeSariTaskTypes()).toEqual(expect.arrayContaining([
+      "sari.appointment.extract",
+      "sari.booking.extract",
+      "sari.booking.service-match",
+      "sari.catalog.file-extraction",
+      "sari.customer.profile-enrichment",
+      "sari.knowledge.content-analysis",
+      "sari.order.extract",
+      "sari.product.selection",
+      "sari.reply.improve",
+      "sari.response.validate",
+      "sari.website.full-extraction",
+    ]));
   });
 
   it("keeps aliases globally unique and separate from canonical names", () => {

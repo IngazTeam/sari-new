@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { requestZahyPiJobCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(() => ({
+const {
+  requestZahyPiJobCompletion,
+  resolveZahyPiRuntimeConfig,
+  getOptionalZahyPiRequestContext,
+} = vi.hoisted(() => ({
   requestZahyPiJobCompletion: vi.fn(),
+  getOptionalZahyPiRequestContext: vi.fn(),
   resolveZahyPiRuntimeConfig: vi.fn().mockResolvedValue({
     provider: "zahypi",
     apiKey: "gateway-key",
@@ -15,12 +20,14 @@ const { requestZahyPiJobCompletion, resolveZahyPiRuntimeConfig } = vi.hoisted(()
 vi.mock("../ai/zahypi-client", () => ({
   resolveZahyPiRuntimeConfig,
   requestZahyPiJobCompletion,
+  getOptionalZahyPiRequestContext,
 }));
 
 import { invokeLLM } from "./llm";
 
 afterEach(() => {
   requestZahyPiJobCompletion.mockReset();
+  getOptionalZahyPiRequestContext.mockReset();
 });
 
 describe("invokeLLM ZahyPi routing", () => {
@@ -66,6 +73,36 @@ describe("invokeLLM ZahyPi routing", () => {
     expect(requestZahyPiJobCompletion).toHaveBeenCalledWith(
       expect.any(Object),
       undefined,
+      30_000,
+      3,
+    );
+  });
+
+  it("inherits the merchant while allowing a nested task type override", async () => {
+    getOptionalZahyPiRequestContext.mockReturnValue({
+      merchantId: 91,
+      userId: 8,
+      taskType: "sari.reply",
+    });
+    requestZahyPiJobCompletion.mockResolvedValue({
+      id: "job-2",
+      created: 1,
+      model: "qwen-local",
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: "{}" },
+        finish_reason: "stop",
+      }],
+    });
+
+    await invokeLLM({
+      taskType: "sari.response.validate",
+      messages: [{ role: "user", content: "validate" }],
+    });
+
+    expect(requestZahyPiJobCompletion).toHaveBeenCalledWith(
+      expect.any(Object),
+      { merchantId: 91, userId: 8, taskType: "sari.response.validate" },
       30_000,
       3,
     );

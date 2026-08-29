@@ -1,14 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { requestZahyPiChat, getOpenAiApiKey } = vi.hoisted(() => ({
+const { requestZahyPiChat, getOpenAiApiKey, getOptionalZahyPiRequestContext } = vi.hoisted(() => ({
   requestZahyPiChat: vi.fn(),
   getOpenAiApiKey: vi.fn(),
+  getOptionalZahyPiRequestContext: vi.fn(),
 }));
 
 vi.mock("./zahypi-client", () => ({
   zahyPiTextGenerationEnabled: () => Promise.resolve(true),
   requestZahyPiChat,
-  getOptionalZahyPiRequestContext: () => undefined,
+  getOptionalZahyPiRequestContext,
 }));
 
 vi.mock("../db_ai_settings", () => ({
@@ -20,6 +21,7 @@ import { callGPT4, testOpenAIConnection } from "./openai";
 afterEach(() => {
   requestZahyPiChat.mockReset();
   getOpenAiApiKey.mockReset();
+  getOptionalZahyPiRequestContext.mockReset();
   vi.unstubAllGlobals();
 });
 
@@ -43,6 +45,29 @@ describe("callGPT4 ZahyPi routing", () => {
       messages,
       expect.objectContaining({ maxTokens: 80, temperature: 0.3 }),
       { merchantId: 77, taskType: "sari.reply" },
+    );
+  });
+
+  it("inherits the merchant while allowing an internal task type override", async () => {
+    getOptionalZahyPiRequestContext.mockReturnValue({
+      merchantId: 77,
+      userId: 14,
+      taskType: "sari.reply",
+    });
+    requestZahyPiChat.mockResolvedValue({
+      content: "validated response",
+      model: "qwen-local",
+    });
+
+    await callGPT4([{ role: "user", content: "validate" }], {
+      taskType: "sari.response.validate",
+      noRetry: true,
+    });
+
+    expect(requestZahyPiChat).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Object),
+      { merchantId: 77, userId: 14, taskType: "sari.response.validate" },
     );
   });
 

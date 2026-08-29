@@ -970,6 +970,7 @@ export const productsRouter = router({
                 const { invokeLLM } = await import('./_core/llm');
                 const aiResult = await invokeLLM({
                     merchantId: merchant.id,
+                    taskType: 'sari.catalog.file-sales-analysis',
                     messages: [
                         {
                             role: 'system',
@@ -1178,6 +1179,7 @@ export const productsRouter = router({
 
             const aiResult = await invokeLLM({
                 merchantId: merchant.id,
+                taskType: 'sari.catalog.file-extraction',
                 messages: [
                     {
                         role: 'system',

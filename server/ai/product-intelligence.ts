@@ -287,6 +287,7 @@ ${productList}
       { role: 'system', content: 'أنت محلل ذكي لاختيارات العملاء. أجب بصيغة JSON فقط.' },
       { role: 'user', content: prompt },
     ], {
+      taskType: 'sari.product.selection',
       temperature: 0.2,
       maxTokens: 100,
     });

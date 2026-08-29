@@ -61,6 +61,7 @@ export async function parseZidOrderMessage(
 
     const response = await invokeLLM({
       merchantId,
+      taskType: "sari.order.zid-extract",
       messages: [
         {
           role: 'system',

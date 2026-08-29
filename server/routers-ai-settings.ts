@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import {
   clearZahyPiRuntimeConfigCache,
-  requestZahyPiCompletion,
+  requestZahyPiJobCompletion,
   resolveZahyPiRuntimeConfig,
   validateZahyPiBaseUrl,
 } from "./ai/zahypi-client";
@@ -167,14 +167,14 @@ export const aiSettingsRouter = router({
       }
 
       try {
-        const response = await requestZahyPiCompletion({
+        const response = await requestZahyPiJobCompletion({
           messages: [{ role: "user", content: "Reply with OK only." }],
           max_tokens: 8,
           temperature: 0,
         }, {
           merchantId: "platform-health",
           userId: ctx.user.id,
-          taskType: "admin.health",
+          taskType: "sari.platform.health",
         }, 15_000, 1, runtimeConfig);
         return {
           success: true,

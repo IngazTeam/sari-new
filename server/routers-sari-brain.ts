@@ -844,6 +844,7 @@ export const sariBrainRouter = router({
 
         const aiResult = await invokeLLM({
           merchantId: merchant.id,
+          taskType: 'sari.knowledge.content-analysis',
           messages: [
             {
               role: 'system',
@@ -1496,6 +1497,7 @@ ${sanitizedContent}`
           const fencedContent = `<scraped_content>\n${cleanText.substring(0, 12000)}\n</scraped_content>`;
           const gptResult = await invokeLLM({
             merchantId: merchant.id,
+            taskType: 'sari.website.content-classification',
             messages: [
               {
                 role: 'system',

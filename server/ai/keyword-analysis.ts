@@ -15,6 +15,7 @@ export async function extractKeywords(text: string): Promise<{
 }> {
   try {
     const response = await invokeLLM({
+      taskType: "sari.keyword.extraction",
       messages: [
         {
           role: "system",
@@ -101,6 +102,7 @@ export async function analyzeFrequentQuestions(messages: Array<{
     const messagesText = messages.map((m, i) => `${i + 1}. ${m.text}`).join('\n');
 
     const response = await invokeLLM({
+      taskType: "sari.keyword.frequent-questions",
       messages: [
         {
           role: "system",

@@ -1555,6 +1555,7 @@ async function extractWithAI(text: string, url: string, merchantId: number): Pro
   try {
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.website.catalog-extraction',
       messages: [
         {
           role: 'system',
@@ -2438,6 +2439,7 @@ export async function generateInsights(analysis: WebsiteAnalysisResult, merchant
 
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.website.insights',
       messages: [
         {
           role: 'system',
@@ -2542,6 +2544,7 @@ async function detectIndustry(title: string, description: string, text: string, 
   try {
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.website.industry',
       messages: [
         {
           role: 'system',
@@ -2592,6 +2595,7 @@ export async function compareWithCompetitors(
 
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.website.competitor-analysis',
       messages: [
         {
           role: 'system',
@@ -2764,6 +2768,7 @@ export async function extractAllWithAI(allText: string, url: string, siteType: S
 
     const response = await invokeLLM({
       merchantId,
+      taskType: 'sari.website.full-extraction',
       messages: [
         {
           role: 'system',

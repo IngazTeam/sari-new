@@ -394,6 +394,7 @@ async function startServer() {
           const { invokeLLM } = await import('./llm');
           const aiResult = await invokeLLM({
             merchantId: merchant.id,
+            taskType: 'sari.knowledge.profile-analysis',
             messages: [
               {
                 role: 'system',

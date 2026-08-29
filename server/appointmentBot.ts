@@ -82,6 +82,7 @@ ${staff.map((s) => `- ${s.name} (${s.specialization})`).join("\n")}
 
     const response = await invokeLLM({
       merchantId,
+      taskType: "sari.appointment.extract",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },

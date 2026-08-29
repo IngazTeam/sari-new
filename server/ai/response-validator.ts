@@ -415,6 +415,7 @@ ${productList}
   ];
 
   const result = await callGPT4(messages, {
+    taskType: 'sari.response.validate',
     model: VALIDATOR_MODEL,
     temperature: 0.1,  // Low creativity — we want precise analysis
     maxTokens: 200,
@@ -507,6 +508,7 @@ ${violationList}
   ];
 
   const corrected = await callGPT4(messages, {
+    taskType: 'sari.response.correct',
     model: VALIDATOR_MODEL,
     temperature: 0.5,
     maxTokens: 300,

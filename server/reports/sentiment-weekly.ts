@@ -114,6 +114,7 @@ async function generateRecommendations(merchantId: number, data: {
 
     const response = await invokeLLM({
       merchantId,
+      taskType: "sari.sentiment.weekly",
       messages: [
         {
           role: "system",

@@ -57,8 +57,8 @@ export async function analyzeSentiment(
     ], {
       ...(context ? {
         merchantId: context.merchantId,
-        taskType: context.taskType || 'sari.sentiment',
       } : {}),
+      taskType: context?.taskType || 'sari.sentiment',
       temperature: 0.3,
       maxTokens: 300,
     });

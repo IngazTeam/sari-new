@@ -148,6 +148,8 @@ ${response}
 
   try {
     const raw = await callGPT4(messages, {
+      merchantId,
+      taskType: 'sari.response.critique',
       temperature: 0.1,
       maxTokens: 300,
       model: 'gpt-4o-mini',
@@ -183,8 +185,9 @@ export async function fixResponse(params: {
   customerMessage: string;
   conversationHistory: ChatMessage[];
   productNames?: string[];
+  merchantId?: number;
 }): Promise<string> {
-  const { originalResponse, critique, customerMessage, conversationHistory, productNames } = params;
+  const { originalResponse, critique, customerMessage, conversationHistory, productNames, merchantId } = params;
 
   const recentHistory = conversationHistory.slice(-4)
     .map(m => `${m.role === 'user' ? 'عميل' : 'بوت'}: ${typeof m.content === 'string' ? m.content.substring(0, 100) : ''}`)
@@ -227,6 +230,8 @@ ${critique.suggestions}
 
   try {
     const fixed = await callGPT4(messages, {
+      merchantId,
+      taskType: 'sari.response.rewrite',
       temperature: 0.5,
       maxTokens: 400,
     });
