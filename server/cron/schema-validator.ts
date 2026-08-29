@@ -56,7 +56,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
     generatedColumns: [{
       name: 'open_instance_id',
       expression: 'CASE WHEN resolved_at IS NULL THEN instance_id ELSE NULL END',
-      storage: 'stored',
+      storage: 'virtual',
     }],
     uniqueIndexes: [{ name: 'uq_whatsapp_disconnect_open_instance', columns: ['open_instance_id'] }],
     checkConstraints: [{

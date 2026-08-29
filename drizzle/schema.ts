@@ -1179,7 +1179,7 @@ export const whatsappDisconnectIncidents = mysqlTable("whatsapp_disconnect_incid
 	resolvedAt: timestamp("resolved_at", { mode: 'string', fsp: 3 }),
 	openInstanceId: int("open_instance_id").generatedAlwaysAs(
 		sql`CASE WHEN \`resolved_at\` IS NULL THEN \`instance_id\` ELSE NULL END`,
-		{ mode: 'stored' },
+		{ mode: 'virtual' },
 	),
 	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),

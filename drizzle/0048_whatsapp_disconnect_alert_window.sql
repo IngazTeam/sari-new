@@ -9,7 +9,7 @@ CREATE TABLE `whatsapp_disconnect_incidents` (
   `resolved_at` timestamp(3) NULL,
   `open_instance_id` int GENERATED ALWAYS AS (
     CASE WHEN `resolved_at` IS NULL THEN `instance_id` ELSE NULL END
-  ) STORED,
+  ) VIRTUAL,
   `created_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   CONSTRAINT `whatsapp_disconnect_incidents_id` PRIMARY KEY (`id`),
