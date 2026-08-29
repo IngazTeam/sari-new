@@ -26,7 +26,7 @@ try {
           'last_alert_at','resolved_at','open_instance_id'
         ) THEN column_name END) AS incidentColumns,
         COALESCE(MAX(CASE WHEN column_name = 'open_instance_id'
-          AND extra LIKE '%STORED GENERATED%' THEN 1 ELSE 0 END), 0) AS generatedOpenIdentity
+          AND extra LIKE '%VIRTUAL GENERATED%' THEN 1 ELSE 0 END), 0) AS generatedOpenIdentity
       FROM information_schema.columns
       WHERE table_schema = DATABASE()
         AND table_name = 'whatsapp_disconnect_incidents'
