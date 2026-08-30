@@ -75,6 +75,16 @@ async function signedPost(baseUrl: string, path: string, body: string, operation
   });
 }
 
+async function signedResponseBody(response: Response): Promise<Record<string, unknown>> {
+  const timestamp = response.headers.get("x-zahypi-connector-timestamp");
+  const signature = response.headers.get("x-zahypi-connector-signature");
+  const raw = Buffer.from(await response.arrayBuffer());
+
+  expect(timestamp).toBe(String(nowSeconds));
+  expect(signature).toBe(connectorSignature(signingSecret, timestamp!, raw));
+  return JSON.parse(raw.toString("utf8")) as Record<string, unknown>;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   repository.reserveConnectorReceipt.mockResolvedValue({ kind: "reserved", receiptId: 9 });
@@ -116,7 +126,7 @@ describe("ZahyPi connector HTTP routes", () => {
         JSON.stringify(bootstrapPayload()),
         "bootstrap",
       );
-      const body = await response.json();
+      const body = await signedResponseBody(response);
 
       expect(response.status).toBe(200);
       expect(body).toMatchObject({
@@ -191,7 +201,7 @@ describe("ZahyPi connector HTTP routes", () => {
         activation_evidence_hash: evidenceHash,
       };
       const response = await signedPost(baseUrl, "/zahypi/verify", JSON.stringify(payload), "verify");
-      const body = await response.json();
+      const body = await signedResponseBody(response);
 
       expect(response.status).toBe(200);
       expect(body).toMatchObject({
@@ -223,7 +233,7 @@ describe("ZahyPi connector HTTP routes", () => {
         "bootstrap",
       );
       expect(replay.status).toBe(200);
-      expect(await replay.json()).toEqual({ status: "configured", receipt_id: "receipt-replay" });
+      expect(await signedResponseBody(replay)).toEqual({ status: "configured", receipt_id: "receipt-replay" });
 
       repository.reserveConnectorReceipt.mockRejectedValueOnce(new Error("conflict"));
       const conflict = await signedPost(

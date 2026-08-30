@@ -53,6 +53,12 @@ if (!isOriginOnly || (!isPublic && !isLoopback)) process.exit(1);
 process.stdout.write(url.origin);
 NODE
 )" || die 'SARI_READY_ORIGIN must be https://sary.live or an explicit loopback HTTP origin'
+case "$ready_origin" in
+  http://127.0.0.1:*) export PORT="${ready_origin##*:}" ;;
+  https://sary.live) require_value PORT ;;
+esac
+case "$PORT" in *[!0-9]*|'') die 'PORT must be an integer' ;; esac
+[ "$PORT" -ge 1024 ] && [ "$PORT" -le 65535 ] || die 'PORT must be between 1024 and 65535'
 [ "$(id -u)" -ne 0 ] || die 'production deployment must not run as root'
 case "$SARI_BACKUP_ID" in
   *[!A-Za-z0-9._:-]*|'') die 'SARI_BACKUP_ID contains unsupported characters' ;;
@@ -203,13 +209,49 @@ prepared_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 chmod 640 "$release_dir/.sari-release"
 
+pm2_release_matches() {
+  local expected_release="$1"
+  pm2 jlist | node -e '
+    const expectedRelease = process.argv[1];
+    const expectedExecutable = `${expectedRelease}/dist/index.js`;
+    let source = "";
+    process.stdin.on("data", (chunk) => { source += chunk; });
+    process.stdin.on("end", () => {
+      const processes = JSON.parse(source).filter((entry) => entry.name === "sari");
+      if (processes.length === 0 || processes.some(({ pm2_env: environment }) => (
+        environment?.status !== "online"
+        || environment?.pm_cwd !== expectedRelease
+        || environment?.pm_exec_path !== expectedExecutable
+      ))) process.exit(1);
+    });
+  ' "$expected_release"
+}
+
+activate_pm2_release() {
+  local target_release="$1"
+  mkdir -p "$target_release/logs"
+  chmod 750 "$target_release/logs"
+  SARI_ENV_FILE="$env_file" PORT="$PORT" \
+    pm2 startOrReload "$target_release/ecosystem.config.cjs" --only sari --update-env
+  if pm2_release_matches "$target_release"; then
+    return 0
+  fi
+
+  log 'PM2 retained prior release metadata; recreating the managed application'
+  pm2 delete sari
+  SARI_ENV_FILE="$env_file" PORT="$PORT" \
+    pm2 start "$target_release/ecosystem.config.cjs" --only sari --update-env
+  pm2_release_matches "$target_release"
+}
+
 activation_attempted=0
 rollback_activation() {
   status=$?
   if [ "$activation_attempted" -eq 1 ] && [ -n "$previous_release" ] \
     && [ -f "$previous_release/ecosystem.config.cjs" ]; then
     log 'activation failed; reloading the previous application release'
-    SARI_ENV_FILE="$env_file" pm2 startOrReload "$previous_release/ecosystem.config.cjs" --only sari --update-env || true
+    activate_pm2_release "$previous_release" || true
+    pm2 save || true
   fi
   exit "$status"
 }
@@ -217,7 +259,7 @@ trap rollback_activation ERR
 
 log 'activating the prepared release through PM2 readiness'
 activation_attempted=1
-SARI_ENV_FILE="$env_file" pm2 startOrReload "$release_dir/ecosystem.config.cjs" --only sari --update-env
+activate_pm2_release "$release_dir"
 
 ready_json="$(curl --fail --silent --show-error --max-time 10 "$ready_origin/ready")"
 node -e '
@@ -225,6 +267,7 @@ node -e '
   if (body?.status !== "ready" || body?.checks?.database !== "connected" || body?.checks?.schema !== "current") process.exit(1);
 ' "$ready_json"
 
+pm2 save
 mv -Tf "$next_link" "$current_link"
 trap - ERR
 activation_attempted=0

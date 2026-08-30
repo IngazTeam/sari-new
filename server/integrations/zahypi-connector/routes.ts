@@ -13,7 +13,11 @@ import {
   getActiveConnectorCredential,
   reserveConnectorReceipt,
 } from "./repository";
-import { authenticateConnectorRequest, ConnectorProtocolError } from "./protocol";
+import {
+  authenticateConnectorRequest,
+  connectorSignature,
+  ConnectorProtocolError,
+} from "./protocol";
 
 const hashSchema = z.string().regex(/^[a-f0-9]{64}$/);
 const receiptText = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/);
@@ -53,6 +57,22 @@ function canonicalHash(value: unknown): string {
 
 function receiptId(bodyHash: string, operation: "bootstrap" | "verify"): string {
   return `${operation}-${bodyHash.slice(0, 24)}`;
+}
+
+function signedJsonResponse(
+  response: Response,
+  status: number,
+  body: Record<string, unknown>,
+  secret: string,
+  timestamp: string,
+): void {
+  const raw = Buffer.from(JSON.stringify(body));
+  response
+    .status(status)
+    .type("application/json")
+    .set("X-ZahyPi-Connector-Timestamp", timestamp)
+    .set("X-ZahyPi-Connector-Signature", connectorSignature(secret, timestamp, raw))
+    .send(raw);
 }
 
 function errorResponse(response: Response, error: unknown): void {
@@ -143,7 +163,13 @@ export function createZahyPiConnectorRouter({
         bodyHash: authenticated.bodyHash,
       });
       if (reservation.kind === "replay") {
-        response.status(reservation.responseStatus).json(reservation.response);
+        signedJsonResponse(
+          response,
+          reservation.responseStatus,
+          reservation.response,
+          signingSecret(),
+          String(nowSeconds()),
+        );
         return;
       }
       if (reservation.kind === "in_progress") {
@@ -175,7 +201,7 @@ export function createZahyPiConnectorRouter({
         responseStatus: 200,
         response: result,
       });
-      response.status(200).json(result);
+      signedJsonResponse(response, 200, result, signingSecret(), String(nowSeconds()));
     } catch (error) {
       errorResponse(response, error);
     }
@@ -198,7 +224,13 @@ export function createZahyPiConnectorRouter({
         bodyHash: authenticated.bodyHash,
       });
       if (reservation.kind === "replay") {
-        response.status(reservation.responseStatus).json(reservation.response);
+        signedJsonResponse(
+          response,
+          reservation.responseStatus,
+          reservation.response,
+          signingSecret(),
+          String(nowSeconds()),
+        );
         return;
       }
       if (reservation.kind === "in_progress") {
@@ -230,7 +262,7 @@ export function createZahyPiConnectorRouter({
         responseStatus: 200,
         response: result,
       });
-      response.status(200).json(result);
+      signedJsonResponse(response, 200, result, signingSecret(), String(nowSeconds()));
     } catch (error) {
       errorResponse(response, error);
     }
