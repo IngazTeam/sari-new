@@ -190,4 +190,57 @@ describe("ZahyPi connector repository", () => {
       bodyHash: "b".repeat(64),
     })).rejects.toThrow(ConnectorConflictError);
   });
+
+  it("persists non-secret credential generation metadata in connector receipts", async () => {
+    const { repository } = repositoryFixture();
+    const reservation = await repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "bootstrap",
+      idempotencyKey: "bootstrap-generation-metadata-1",
+      bodyHash: "c".repeat(64),
+    });
+    if (reservation.kind !== "reserved") throw new Error("expected reservation");
+
+    await repository.completeConnectorReceipt({
+      receiptId: reservation.receiptId,
+      responseStatus: 200,
+      response: {
+        credential_generation: 1,
+        operation: "bootstrap",
+        status: "configured",
+      },
+    });
+
+    await expect(repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "bootstrap",
+      idempotencyKey: "bootstrap-generation-metadata-1",
+      bodyHash: "c".repeat(64),
+    })).resolves.toEqual({
+      kind: "replay",
+      responseStatus: 200,
+      response: {
+        credential_generation: 1,
+        operation: "bootstrap",
+        status: "configured",
+      },
+    });
+  });
+
+  it("rejects secret credential fields from connector receipts", async () => {
+    const { repository } = repositoryFixture();
+    const reservation = await repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "bootstrap",
+      idempotencyKey: "bootstrap-secret-rejection-1",
+      bodyHash: "d".repeat(64),
+    });
+    if (reservation.kind !== "reserved") throw new Error("expected reservation");
+
+    await expect(repository.completeConnectorReceipt({
+      receiptId: reservation.receiptId,
+      responseStatus: 200,
+      response: { api_key: "must-not-be-persisted" },
+    })).rejects.toThrow("Connector receipt cannot store credential fields");
+  });
 });

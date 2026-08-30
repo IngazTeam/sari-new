@@ -159,6 +159,7 @@ function summaryFromRow(row: ConnectorCredentialRow, replayed: boolean): Connect
 
 function stableResponseJson(response: Record<string, unknown>): string {
   const sensitiveKey = /(?:api.?key|authorization|credential|secret|token)/i;
+  const safeCredentialMetadata = new Set(["credential_generation"]);
 
   function normalize(value: unknown): unknown {
     if (Array.isArray(value)) return value.map(normalize);
@@ -166,7 +167,9 @@ function stableResponseJson(response: Record<string, unknown>): string {
     return Object.fromEntries(Object.entries(value as Record<string, unknown>)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, child]) => {
-        if (sensitiveKey.test(key)) throw new Error("Connector receipt cannot store credential fields");
+        if (!safeCredentialMetadata.has(key) && sensitiveKey.test(key)) {
+          throw new Error("Connector receipt cannot store credential fields");
+        }
         return [key, normalize(child)];
       }));
   }
