@@ -219,6 +219,37 @@ describe("ZahyPi connector HTTP routes", () => {
     });
   });
 
+  it("closes a reserved verification receipt when the real-job verifier fails", async () => {
+    activationVerifier.verify.mockRejectedValueOnce(new Error("gateway request failed"));
+
+    await withConnectorServer(async (baseUrl) => {
+      const payload = {
+        protocol: "zahypi.project-verify.v1",
+        operation: "verify",
+        credential_generation: 1,
+        activation_id: activationId,
+        project_slug: "sari",
+        task_types_hash: taskTypesHash,
+        activation_evidence_hash: evidenceHash,
+      };
+      const response = await signedPost(baseUrl, "/zahypi/verify", JSON.stringify(payload), "verify");
+
+      expect(response.status).toBe(503);
+      await expect(response.json()).resolves.toEqual({
+        status: "error",
+        code: "CONNECTOR_UNAVAILABLE",
+      });
+      expect(repository.completeConnectorReceipt).toHaveBeenCalledWith({
+        receiptId: 9,
+        responseStatus: 503,
+        response: {
+          status: "error",
+          code: "CONNECTOR_UNAVAILABLE",
+        },
+      });
+    });
+  });
+
   it("returns a stored exact replay and rejects a conflicting idempotency key", async () => {
     await withConnectorServer(async (baseUrl) => {
       repository.reserveConnectorReceipt.mockResolvedValueOnce({

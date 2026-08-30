@@ -38,7 +38,7 @@ describe("ZahyPi activation verifier", () => {
     const verifier = createActivationVerifier({ fetchImpl: fetchMock, timeoutMs: 1_000 });
 
     await expect(verifier.verify({
-      credential,
+      credential: { ...credential, baseUrl: "https://api.zahypi.test" },
       activationId: "11111111-1111-4111-8111-111111111111",
       generation: 1,
     })).resolves.toEqual({

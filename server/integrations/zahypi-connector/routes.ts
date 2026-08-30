@@ -75,20 +75,38 @@ function signedJsonResponse(
     .send(raw);
 }
 
-function errorResponse(response: Response, error: unknown): void {
+function errorDetails(error: unknown): { status: number; body: { status: "error"; code: string } } {
   if (error instanceof ConnectorProtocolError) {
-    response.status(error.status).json({ status: "error", code: error.code });
-    return;
+    return { status: error.status, body: { status: "error", code: error.code } };
   }
   if (error instanceof ConnectorConflictError || (error instanceof Error && /conflict/i.test(error.message))) {
-    response.status(409).json({ status: "error", code: "CONNECTOR_CONFLICT" });
-    return;
+    return { status: 409, body: { status: "error", code: "CONNECTOR_CONFLICT" } };
   }
   if (error instanceof z.ZodError || (error instanceof Error && /task type|task hash|generation|scope|base url|prefix/i.test(error.message))) {
-    response.status(422).json({ status: "error", code: "CONNECTOR_REQUEST_INVALID" });
-    return;
+    return { status: 422, body: { status: "error", code: "CONNECTOR_REQUEST_INVALID" } };
   }
-  response.status(503).json({ status: "error", code: "CONNECTOR_UNAVAILABLE" });
+  return { status: 503, body: { status: "error", code: "CONNECTOR_UNAVAILABLE" } };
+}
+
+async function errorResponse(
+  response: Response,
+  error: unknown,
+  repository: ConnectorRepositoryBoundary,
+  reservedReceiptId: number | null,
+): Promise<void> {
+  const details = errorDetails(error);
+  if (reservedReceiptId !== null) {
+    try {
+      await repository.completeConnectorReceipt({
+        receiptId: reservedReceiptId,
+        responseStatus: details.status,
+        response: details.body,
+      });
+    } catch {
+      // The original protocol failure remains the safest response if persistence is unavailable.
+    }
+  }
+  response.status(details.status).json(details.body);
 }
 
 type ConnectorRepositoryBoundary = {
@@ -138,6 +156,7 @@ export function createZahyPiConnectorRouter({
   }
 
   router.post("/bootstrap", async (request, response) => {
+    let reservedReceiptId: number | null = null;
     try {
       const authenticated = await authenticate(request);
       const body = bootstrapSchema.parse(authenticated.body);
@@ -176,6 +195,7 @@ export function createZahyPiConnectorRouter({
         response.status(409).json({ status: "error", code: "CONNECTOR_IN_PROGRESS" });
         return;
       }
+      reservedReceiptId = reservation.receiptId;
 
       await repository.activateConnectorCredential({
         projectId: body.project_slug,
@@ -201,13 +221,15 @@ export function createZahyPiConnectorRouter({
         responseStatus: 200,
         response: result,
       });
+      reservedReceiptId = null;
       signedJsonResponse(response, 200, result, signingSecret(), String(nowSeconds()));
     } catch (error) {
-      errorResponse(response, error);
+      await errorResponse(response, error, repository, reservedReceiptId);
     }
   });
 
   router.post("/verify", async (request, response) => {
+    let reservedReceiptId: number | null = null;
     try {
       const authenticated = await authenticate(request);
       const body = verifySchema.parse(authenticated.body);
@@ -237,6 +259,7 @@ export function createZahyPiConnectorRouter({
         response.status(409).json({ status: "error", code: "CONNECTOR_IN_PROGRESS" });
         return;
       }
+      reservedReceiptId = reservation.receiptId;
 
       const evidence = await activationVerifier.verify({
         credential,
@@ -262,9 +285,10 @@ export function createZahyPiConnectorRouter({
         responseStatus: 200,
         response: result,
       });
+      reservedReceiptId = null;
       signedJsonResponse(response, 200, result, signingSecret(), String(nowSeconds()));
     } catch (error) {
-      errorResponse(response, error);
+      await errorResponse(response, error, repository, reservedReceiptId);
     }
   });
 

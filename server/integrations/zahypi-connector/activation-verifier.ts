@@ -20,6 +20,20 @@ type FetchLike = typeof fetch;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RECEIPT_TEXT = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
 
+function gatewayApiBaseUrl(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+    throw new Error("ZahyPi activation gateway URL is invalid");
+  }
+  const path = url.pathname.replace(/\/+$/, "");
+  if (path === "" || path === "/") {
+    url.pathname = "/v1";
+  } else if (path !== "/v1") {
+    throw new Error("ZahyPi activation gateway URL path is invalid");
+  }
+  return url.toString().replace(/\/$/, "");
+}
+
 async function boundedJson(response: Response): Promise<Record<string, unknown>> {
   if (!response.headers.get("content-type")?.toLowerCase().includes("application/json")) {
     throw new Error("ZahyPi activation response is not JSON");
@@ -104,6 +118,7 @@ export function createActivationVerifier({
     const traceId = `activation-trace-g${generation}`;
     const idempotencyKey = `${activationId}:verify:g${generation}`;
     const deadline = Date.now() + timeoutMs;
+    const apiBaseUrl = gatewayApiBaseUrl(credential.baseUrl);
     const headers = {
       Authorization: `Bearer ${credential.apiKey}`,
       "Content-Type": "application/json",
@@ -138,7 +153,7 @@ export function createActivationVerifier({
       }
     }
 
-    let job = await request(`${credential.baseUrl.replace(/\/$/, "")}/jobs`, {
+    let job = await request(`${apiBaseUrl}/jobs`, {
       method: "POST",
       headers,
       body: JSON.stringify({ task_type: contract.taskType, input }),
@@ -149,7 +164,7 @@ export function createActivationVerifier({
     while (job.status === "queued" || job.status === "running") {
       if (Date.now() + 100 >= deadline) throw new Error("ZahyPi activation verification timed out");
       await delay(100);
-      job = await request(`${credential.baseUrl.replace(/\/$/, "")}/jobs/${jobId}`, {
+      job = await request(`${apiBaseUrl}/jobs/${jobId}`, {
         method: "GET",
         headers,
       });
