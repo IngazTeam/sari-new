@@ -19,6 +19,47 @@ afterEach(() => {
 });
 
 describe("requestZahyPiChat", () => {
+  it("normalizes a connector gateway origin to the governed /v1 API", async () => {
+    process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+
+    const fetchMock = vi.fn().mockImplementation(async (_url, request: RequestInit) => {
+      const traceId = String((request.headers as Record<string, string>)["X-Trace-Id"]);
+      return new Response(JSON.stringify({
+        job_id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+        project_id: "sari",
+        tenant_id: "merchant:9001",
+        task_type: "sari.reply",
+        trace_id: traceId,
+        run_manifest_id: "22222222-2222-4222-8222-222222222222",
+        route: "qwen-core",
+        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
+        structured_output: {
+          traceId,
+          applicationResponse: "synthetic governed result",
+        },
+      }), { status: 202, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(requestZahyPiJobCompletion({
+      messages: [{ role: "user", content: "Synthetic connector check." }],
+    }, {
+      merchantId: 9001,
+      taskType: "sari.reply",
+    }, 2_000, 1, {
+      enabled: true,
+      provider: "zahypi",
+      apiKey: "zahypi-test-key",
+      baseUrl: "https://api.zahypi.test",
+      projectId: "sari",
+      model: "qwen-local",
+      taskTypes: ["sari.reply"],
+    })).resolves.toMatchObject({ model: "qwen-core" });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.zahypi.test/v1/jobs");
+  });
+
   it.each(SARI_TASK_CATALOG.filter((contract) => contract.status === "existing"))(
     "submits governed contract $taskType with the declared tenant policy",
     async (contract) => {

@@ -216,7 +216,7 @@ export function validateZahyPiBaseUrl(rawValue?: string): string {
   }
 
   const normalizedPath = url.pathname.replace(/\/+$/, "");
-  if (normalizedPath !== "/v1") {
+  if (normalizedPath !== "" && normalizedPath !== "/v1") {
     throw new Error("ZAHYPI_BASE_URL must end with /v1");
   }
   return `${url.origin}/v1`;
