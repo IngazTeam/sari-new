@@ -94,7 +94,7 @@ function evidenceFromJob(job: Record<string, unknown>): ActivationEvidence {
 
 export function createActivationVerifier({
   fetchImpl = fetch,
-  timeoutMs = 10_000,
+  timeoutMs = 60_000,
 }: {
   fetchImpl?: FetchLike;
   timeoutMs?: number;

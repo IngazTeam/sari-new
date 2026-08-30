@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createActivationVerifier } from "./activation-verifier";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -88,6 +89,31 @@ describe("ZahyPi activation verifier", () => {
     await expect(pending).resolves.toMatchObject({ job_id: evidence.job_id });
     expect(fetchMock.mock.calls[1][0]).toBe(`https://api.zahypi.test/v1/jobs/${evidence.job_id}`);
     vi.useRealTimers();
+  });
+
+  it("allows governed jobs to complete beyond the former ten-second window", async () => {
+    vi.useFakeTimers();
+    const startedAt = new Date("2026-08-30T04:00:00.000Z");
+    vi.setSystemTime(startedAt);
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(
+      Date.now() - startedAt.getTime() < 12_000
+        ? { job_id: evidence.job_id, status: "running" }
+        : evidence,
+    ), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+    const verifier = createActivationVerifier({ fetchImpl: fetchMock });
+
+    const pending = verifier.verify({
+      credential,
+      activationId: "11111111-1111-4111-8111-111111111111",
+      generation: 1,
+    });
+    await vi.advanceTimersByTimeAsync(12_500);
+
+    await expect(pending).resolves.toMatchObject({ job_id: evidence.job_id });
+    expect(fetchMock).toHaveBeenCalled();
   });
 
   it("rejects a response without an immutable run manifest", async () => {
