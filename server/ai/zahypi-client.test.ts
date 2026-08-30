@@ -8,6 +8,7 @@ import {
   requestZahyPiJobCompletion,
   runWithZahyPiContext,
 } from "./zahypi-client";
+import { SARI_TASK_CATALOG } from "./task-catalog";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -18,6 +19,64 @@ afterEach(() => {
 });
 
 describe("requestZahyPiChat", () => {
+  it.each(SARI_TASK_CATALOG.filter((contract) => contract.status === "existing"))(
+    "submits governed contract $taskType with the declared tenant policy",
+    async (contract) => {
+      process.env.ZAHYPI_ENABLED = "true";
+      process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
+      process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+      process.env.ZAHYPI_API_KEY = "zahypi-test-key";
+      process.env.ZAHYPI_PROJECT_ID = "sari";
+
+      const fetchMock = vi.fn().mockImplementation(async (_url, request: RequestInit) => {
+        const traceId = String((request.headers as Record<string, string>)["X-Trace-Id"]);
+        return new Response(JSON.stringify({
+          job_id: "11111111-1111-4111-8111-111111111111",
+          status: "completed",
+          project_id: "sari",
+          tenant_id: "merchant:9001",
+          task_type: contract.taskType,
+          trace_id: traceId,
+          run_manifest_id: "22222222-2222-4222-8222-222222222222",
+          route: "qwen-core",
+          usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
+          structured_output: {
+            ...contract.sampleOutput,
+            traceId,
+            applicationResponse: "synthetic governed result",
+          },
+        }), { status: 202, headers: { "content-type": "application/json" } });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(requestZahyPiJobCompletion({
+        messages: contract.sampleInput.promptMessages,
+        max_tokens: 32,
+        temperature: 0,
+      }, {
+        merchantId: 9001,
+        userId: "contract-matrix",
+        taskType: contract.taskType,
+      }, contract.timeoutMs, 1)).resolves.toMatchObject({
+        model: "qwen-core",
+      });
+
+      const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(request.headers).toMatchObject({
+        "X-ZahyPi-Project": "sari",
+        "X-ZahyPi-Tenant": "merchant:9001",
+        "X-ZahyPi-User": "contract-matrix",
+        "X-Task-Type": contract.taskType,
+        "X-Data-Classification": contract.dataClassification,
+        "X-External-Processing": contract.externalProcessing,
+      });
+      expect(JSON.parse(String(request.body))).toMatchObject({
+        task_type: contract.taskType,
+        business_input: { promptMessages: contract.sampleInput.promptMessages },
+      });
+    },
+  );
+
   it("uses a governed job, canonicalizes aliases and polls for a manifest-backed result", async () => {
     process.env.ZAHYPI_ENABLED = "true";
     process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";

@@ -152,7 +152,7 @@ describe("ZahyPi tenant propagation", () => {
     const router = readFileSync(new URL("../routers-ai-settings.ts", import.meta.url), "utf8");
     expect(router).toContain("textGenerationProvider: zahyPiConfig.provider");
     expect(router).toContain('textGenerationManagedByEnvironment: zahyPiConfig.source === "environment"');
-    expect(router).toContain("hasZahyPiKey: Boolean(zahyPiConfig.apiKey)");
+    expect(router).toContain("hasZahyPiKey: Boolean(availableZahyPiConfig.apiKey)");
     expect(router).toContain("zahyPiApiKey: maskedZahyPiKey");
     expect(router).toContain("getOpenAiApiKey");
 
@@ -160,7 +160,9 @@ describe("ZahyPi tenant propagation", () => {
     expect(page).toContain('<SelectItem value="openai">OpenAI</SelectItem>');
     expect(page).toContain('<SelectItem value="zahypi">ZahyPi</SelectItem>');
     expect(page).toContain("testZahyPiConnection");
+    expect(page).toContain("data.isActive = aiEnabled");
+    expect(page).toContain("تشغيل خدمات الذكاء الاصطناعي في ساري");
     expect(page).toContain("تكلفة OpenAI فقط؛ تكلفة ZahyPi غير متاحة");
-    expect(page).toContain("يبقى فعالًا دائمًا للصوت والتضمين، ولا يُحذف عند اختيار ZahyPi.");
+    expect(page).toContain("يُستخدم للصوت والتضمين عند تشغيل الخدمة، ولا يُحذف عند اختيار ZahyPi.");
   });
 });

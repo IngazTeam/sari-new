@@ -1,13 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { requestZahyPiChat, getOpenAiApiKey, getOptionalZahyPiRequestContext } = vi.hoisted(() => ({
+const {
+  requestZahyPiChat,
+  getOpenAiApiKey,
+  getOptionalZahyPiRequestContext,
+  resolveZahyPiRuntimeConfig,
+  zahyPiTextGenerationEnabled,
+} = vi.hoisted(() => ({
   requestZahyPiChat: vi.fn(),
   getOpenAiApiKey: vi.fn(),
   getOptionalZahyPiRequestContext: vi.fn(),
+  resolveZahyPiRuntimeConfig: vi.fn(),
+  zahyPiTextGenerationEnabled: vi.fn(),
 }));
 
 vi.mock("./zahypi-client", () => ({
-  zahyPiTextGenerationEnabled: () => Promise.resolve(true),
+  zahyPiTextGenerationEnabled,
+  resolveZahyPiRuntimeConfig,
   requestZahyPiChat,
   getOptionalZahyPiRequestContext,
 }));
@@ -22,10 +31,42 @@ afterEach(() => {
   requestZahyPiChat.mockReset();
   getOpenAiApiKey.mockReset();
   getOptionalZahyPiRequestContext.mockReset();
+  resolveZahyPiRuntimeConfig.mockReset();
+  resolveZahyPiRuntimeConfig.mockResolvedValue({
+    enabled: true,
+    provider: "zahypi",
+    apiKey: "gateway-key",
+    baseUrl: "https://api.zahypi.test/v1",
+    projectId: "sari",
+    model: "qwen-local",
+    source: "connector",
+  });
+  zahyPiTextGenerationEnabled.mockReset();
+  zahyPiTextGenerationEnabled.mockResolvedValue(true);
   vi.unstubAllGlobals();
 });
 
 describe("callGPT4 ZahyPi routing", () => {
+  it("fails closed before calling either provider when AI is disabled", async () => {
+    resolveZahyPiRuntimeConfig.mockResolvedValue({
+      enabled: false,
+      provider: "zahypi",
+      apiKey: "gateway-key",
+      baseUrl: "https://api.zahypi.test/v1",
+      projectId: "sari",
+      model: "qwen-local",
+      source: "database",
+    });
+    zahyPiTextGenerationEnabled.mockResolvedValue(false);
+    getOpenAiApiKey.mockResolvedValue("");
+
+    await expect(callGPT4([{ role: "user", content: "do not run" }], {
+      merchantId: 77,
+      noRetry: true,
+    })).rejects.toThrow("AI services are disabled by an administrator");
+    expect(requestZahyPiChat).not.toHaveBeenCalled();
+  });
+
   it("uses ZahyPi for text generation without reading an OpenAI key", async () => {
     requestZahyPiChat.mockResolvedValue({
       content: "gateway response",

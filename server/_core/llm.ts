@@ -301,6 +301,9 @@ export async function invokeLLM(
   params: InvokeParams & { merchantId?: number; taskType?: string },
 ): Promise<InvokeResult> {
   const zahyPiConfig = await resolveZahyPiRuntimeConfig();
+  if (!zahyPiConfig.enabled) {
+    throw new Error("AI services are disabled by an administrator");
+  }
   const useZahyPi = zahyPiConfig.provider === "zahypi";
   let apiKey = "";
   let activeModel = zahyPiConfig.model;

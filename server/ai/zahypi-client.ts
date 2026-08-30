@@ -28,6 +28,7 @@ type ChatOptions = {
 };
 
 export type ZahyPiRuntimeConfig = {
+  enabled: boolean;
   provider: "openai" | "zahypi";
   apiKey: string;
   baseUrl: string;
@@ -132,6 +133,7 @@ export function zahyPiEnabled(): boolean {
 
 function environmentRuntimeConfig(): ZahyPiRuntimeConfig {
   return {
+    enabled: true,
     provider: zahyPiEnabled() ? "zahypi" : "openai",
     apiKey: process.env.ZAHYPI_API_KEY?.trim() || "",
     baseUrl: process.env.ZAHYPI_BASE_URL?.trim() || "https://api.zahypi.com/v1",
@@ -159,7 +161,8 @@ export async function resolveZahyPiRuntimeConfig(
 }
 
 export async function zahyPiTextGenerationEnabled(): Promise<boolean> {
-  return (await resolveZahyPiRuntimeConfig()).provider === "zahypi";
+  const config = await resolveZahyPiRuntimeConfig();
+  return config.enabled && config.provider === "zahypi";
 }
 
 export function clearZahyPiRuntimeConfigCache(): void {
@@ -646,6 +649,9 @@ export async function requestZahyPiJobCompletion(
     throw new Error(`ZahyPi task is not active: ${contract.taskType}`);
   }
   const runtimeConfig = await resolveZahyPiRuntimeConfig(runtimeConfigOverride);
+  if (!runtimeConfig.enabled) {
+    throw new Error("AI services are disabled by an administrator");
+  }
   const baseUrl = validateZahyPiBaseUrl(runtimeConfig.baseUrl);
   const apiKey = runtimeConfig.apiKey.trim();
   const projectId = normalizeHeaderIdentifier(runtimeConfig.projectId, "ZAHYPI_PROJECT_ID");

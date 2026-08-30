@@ -26,6 +26,7 @@ export type AiSettingsWithoutCredentials = Omit<
 >;
 
 export type ZahyPiRuntimeConfig = {
+  enabled: boolean;
   provider: TextGenerationProvider;
   apiKey: string;
   baseUrl: string;
@@ -88,7 +89,9 @@ export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<vo
 /**
  * Get the OpenAI API key from DB, falling back to env var
  */
-export async function getOpenAiApiKey(): Promise<string> {
+export async function getOpenAiApiKey(
+  options: { allowInactive?: boolean } = {},
+): Promise<string> {
   let record: { openaiApiKey: string | null; isActive: boolean } | undefined;
   try {
     const db = await getDb();
@@ -105,9 +108,11 @@ export async function getOpenAiApiKey(): Promise<string> {
 
   // Keep authenticated-decryption outside the availability fallback. A DB
   // outage may use the environment key, but tampered ciphertext must fail.
-  if (record?.openaiApiKey && record.isActive) {
+  if (record?.openaiApiKey && (record.isActive || options.allowInactive)) {
     return decryptSecret(record.openaiApiKey) || "";
   }
+
+  if (record && !record.isActive && !options.allowInactive) return "";
 
   // Fallback to environment variable
   return process.env.OPENAI_API_KEY || "";
@@ -117,11 +122,65 @@ export async function getOpenAiApiKey(): Promise<string> {
  * Resolve the text-generation provider and ZahyPi credentials. Stored values
  * take precedence, while environment variables remain a deployment fallback.
  */
-export async function getZahyPiRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
+export async function getZahyPiRuntimeConfig(
+  desired: { enabled?: boolean; provider?: TextGenerationProvider } = {},
+): Promise<ZahyPiRuntimeConfig> {
+  let record: {
+    textGenerationProvider: TextGenerationProvider | null;
+    isActive: boolean;
+    zahyPiApiKey: string | null;
+    zahyPiBaseUrl: string | null;
+    zahyPiProjectId: string | null;
+    zahyPiModel: string | null;
+  } | undefined;
+  try {
+    const db = await getDb();
+    if (db) {
+      const result = await db.select({
+        textGenerationProvider: aiSettings.textGenerationProvider,
+        isActive: aiSettings.isActive,
+        zahyPiApiKey: aiSettings.zahyPiApiKey,
+        zahyPiBaseUrl: aiSettings.zahyPiBaseUrl,
+        zahyPiProjectId: aiSettings.zahyPiProjectId,
+        zahyPiModel: aiSettings.zahyPiModel,
+      }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
+      record = result[0];
+    }
+  } catch (error) {
+    console.warn("[AI Settings] Failed to fetch ZahyPi settings, using env fallback:", error);
+  }
+
+  const provider = desired.provider || record?.textGenerationProvider
+    || (process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === "true" ? "zahypi" : "openai");
+  const enabled = desired.enabled ?? record?.isActive ?? true;
+  const source = record ? "database" as const : "environment" as const;
+  const fallbackConfig = {
+    enabled,
+    provider,
+    apiKey: record?.zahyPiApiKey
+      ? decryptSecret(record.zahyPiApiKey) || ""
+      : process.env.ZAHYPI_API_KEY?.trim() || "",
+    baseUrl: record?.zahyPiBaseUrl?.trim()
+      || process.env.ZAHYPI_BASE_URL?.trim()
+      || "https://api.zahypi.com/v1",
+    projectId: record?.zahyPiProjectId?.trim()
+      || process.env.ZAHYPI_PROJECT_ID?.trim()
+      || "sari",
+    model: record?.zahyPiModel?.trim()
+      || process.env.ZAHYPI_DEFAULT_MODEL?.trim()
+      || "qwen-local",
+    source,
+  } satisfies ZahyPiRuntimeConfig;
+
+  if (!enabled || (!desired.provider && record?.textGenerationProvider === "openai")) {
+    return fallbackConfig;
+  }
+
   try {
     const connectorCredential = await getActiveConnectorCredential("sari");
     if (connectorCredential) {
       return {
+        enabled: true,
         provider: "zahypi",
         apiKey: connectorCredential.apiKey,
         baseUrl: connectorCredential.baseUrl,
@@ -138,56 +197,7 @@ export async function getZahyPiRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
       throw error;
     }
   }
-
-  let record: {
-    textGenerationProvider: TextGenerationProvider | null;
-    zahyPiApiKey: string | null;
-    zahyPiBaseUrl: string | null;
-    zahyPiProjectId: string | null;
-    zahyPiModel: string | null;
-  } | undefined;
-  try {
-    const db = await getDb();
-    if (db) {
-      const result = await db.select({
-        textGenerationProvider: aiSettings.textGenerationProvider,
-        zahyPiApiKey: aiSettings.zahyPiApiKey,
-        zahyPiBaseUrl: aiSettings.zahyPiBaseUrl,
-        zahyPiProjectId: aiSettings.zahyPiProjectId,
-        zahyPiModel: aiSettings.zahyPiModel,
-      }).from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
-      record = result[0];
-    }
-  } catch (error) {
-    console.warn("[AI Settings] Failed to fetch ZahyPi settings, using env fallback:", error);
-  }
-
-  const provider = record?.textGenerationProvider
-    || (process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === "true" ? "zahypi" : "openai");
-  const apiKey = record?.zahyPiApiKey
-    ? decryptSecret(record.zahyPiApiKey) || ""
-    : process.env.ZAHYPI_API_KEY?.trim() || "";
-
-  return {
-    provider,
-    apiKey,
-    baseUrl: record?.zahyPiBaseUrl?.trim()
-      || process.env.ZAHYPI_BASE_URL?.trim()
-      || "https://api.zahypi.com/v1",
-    projectId: record?.zahyPiProjectId?.trim()
-      || process.env.ZAHYPI_PROJECT_ID?.trim()
-      || "sari",
-    model: record?.zahyPiModel?.trim()
-      || process.env.ZAHYPI_DEFAULT_MODEL?.trim()
-      || "qwen-local",
-    source: record?.textGenerationProvider
-      || record?.zahyPiApiKey
-      || record?.zahyPiBaseUrl
-      || record?.zahyPiProjectId
-      || record?.zahyPiModel
-      ? "database"
-      : "environment",
-  };
+  return fallbackConfig;
 }
 
 /**

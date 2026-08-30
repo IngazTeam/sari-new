@@ -8,6 +8,7 @@ const {
   requestZahyPiJobCompletion: vi.fn(),
   getOptionalZahyPiRequestContext: vi.fn(),
   resolveZahyPiRuntimeConfig: vi.fn().mockResolvedValue({
+    enabled: true,
     provider: "zahypi",
     apiKey: "gateway-key",
     baseUrl: "https://api.zahypi.test/v1",
@@ -28,9 +29,46 @@ import { invokeLLM } from "./llm";
 afterEach(() => {
   requestZahyPiJobCompletion.mockReset();
   getOptionalZahyPiRequestContext.mockReset();
+  resolveZahyPiRuntimeConfig.mockResolvedValue({
+    enabled: true,
+    provider: "zahypi",
+    apiKey: "gateway-key",
+    baseUrl: "https://api.zahypi.test/v1",
+    projectId: "sari",
+    model: "qwen-local",
+    source: "override",
+  });
 });
 
 describe("invokeLLM ZahyPi routing", () => {
+  it("fails closed before calling any provider when AI is disabled", async () => {
+    resolveZahyPiRuntimeConfig.mockResolvedValue({
+      enabled: false,
+      provider: "zahypi",
+      apiKey: "gateway-key",
+      baseUrl: "https://api.zahypi.test/v1",
+      projectId: "sari",
+      model: "qwen-local",
+      source: "database",
+    });
+    requestZahyPiJobCompletion.mockResolvedValue({
+      id: "must-not-run",
+      created: 1,
+      model: "qwen-local",
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: "unexpected" },
+        finish_reason: "stop",
+      }],
+    });
+
+    await expect(invokeLLM({
+      merchantId: 91,
+      messages: [{ role: "user", content: "do not run" }],
+    })).rejects.toThrow("AI services are disabled by an administrator");
+    expect(requestZahyPiJobCompletion).not.toHaveBeenCalled();
+  });
+
   it("preserves structured requests and uses the merchant as tenant context", async () => {
     requestZahyPiJobCompletion.mockResolvedValue({
       id: "chat-1",

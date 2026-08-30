@@ -49,17 +49,25 @@ export const aiSettingsRouter = router({
   // Get AI settings (masked API key)
   getSettings: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
-    const { getAiSettings, getOpenAiApiKey } = await import("./db_ai_settings");
+    const {
+      getAiSettings,
+      getOpenAiApiKey,
+      getZahyPiRuntimeConfig,
+    } = await import("./db_ai_settings");
     const settings = await getAiSettings();
-    const effectiveOpenAiKey = await getOpenAiApiKey();
+    const effectiveOpenAiKey = await getOpenAiApiKey({ allowInactive: true });
     const zahyPiConfig = await resolveZahyPiRuntimeConfig();
+    const availableZahyPiConfig = await getZahyPiRuntimeConfig({
+      enabled: true,
+      provider: "zahypi",
+    });
 
     // Mask API key — show only last 4 chars
     const maskedKey = effectiveOpenAiKey
       ? `sk-****${effectiveOpenAiKey.slice(-4)}`
       : null;
-    const maskedZahyPiKey = zahyPiConfig.apiKey
-      ? `****${zahyPiConfig.apiKey.slice(-4)}`
+    const maskedZahyPiKey = availableZahyPiConfig.apiKey
+      ? `****${availableZahyPiConfig.apiKey.slice(-4)}`
       : null;
     const usesZahyPi = zahyPiConfig.provider === "zahypi";
 
@@ -82,10 +90,10 @@ export const aiSettingsRouter = router({
         : settings?.model || "gpt-4o-mini",
       textGenerationManagedByEnvironment: zahyPiConfig.source === "environment",
       zahyPiApiKey: maskedZahyPiKey,
-      hasZahyPiKey: Boolean(zahyPiConfig.apiKey),
-      zahyPiBaseUrl: zahyPiConfig.baseUrl,
-      zahyPiProjectId: zahyPiConfig.projectId,
-      zahyPiModel: zahyPiConfig.model,
+      hasZahyPiKey: Boolean(availableZahyPiConfig.apiKey),
+      zahyPiBaseUrl: availableZahyPiConfig.baseUrl,
+      zahyPiProjectId: availableZahyPiConfig.projectId,
+      zahyPiModel: availableZahyPiConfig.model,
     };
   }),
 
@@ -108,7 +116,7 @@ export const aiSettingsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
-      const { upsertAiSettings } = await import("./db_ai_settings");
+      const { getZahyPiRuntimeConfig, upsertAiSettings } = await import("./db_ai_settings");
 
       const data: Record<string, any> = {};
       if (input.openaiApiKey !== undefined) data.openaiApiKey = input.openaiApiKey;
@@ -123,8 +131,15 @@ export const aiSettingsRouter = router({
       if (input.monthlyBudgetLimit !== undefined) data.monthlyBudgetLimit = input.monthlyBudgetLimit;
       if (input.alertEmail !== undefined) data.alertEmail = input.alertEmail;
 
-      if (input.textGenerationProvider === "zahypi" && input.zahyPiApiKey === undefined) {
-        const existing = await resolveZahyPiRuntimeConfig();
+      if (
+        input.textGenerationProvider === "zahypi"
+        && input.zahyPiApiKey === undefined
+        && input.isActive !== false
+      ) {
+        const existing = await getZahyPiRuntimeConfig({
+          enabled: input.isActive ?? true,
+          provider: "zahypi",
+        });
         if (!existing.apiKey) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -156,6 +171,7 @@ export const aiSettingsRouter = router({
       assertAdmin(ctx.user.role);
       const stored = await resolveZahyPiRuntimeConfig();
       const runtimeConfig = {
+        enabled: true,
         provider: "zahypi" as const,
         apiKey: input.apiKey || stored.apiKey,
         baseUrl: input.baseUrl || stored.baseUrl,
@@ -204,7 +220,7 @@ export const aiSettingsRouter = router({
       if (!keyToTest) {
         // Use stored key from DB
         const { getOpenAiApiKey } = await import("./db_ai_settings");
-        keyToTest = await getOpenAiApiKey();
+        keyToTest = await getOpenAiApiKey({ allowInactive: true });
       }
 
       if (!keyToTest) {

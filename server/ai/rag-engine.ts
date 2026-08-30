@@ -10,7 +10,6 @@
  * Cost: ~$0.02 per million tokens (embeddings are extremely cheap)
  */
 
-import { ENV } from '../_core/env';
 import {
   getBotSections,
   getBotSectionsWithEmbedding,
@@ -42,7 +41,7 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
 export async function generateEmbedding(text: string): Promise<Float32Array | null> {
   try {
     const { getOpenAiApiKey } = await import('../db_ai_settings');
-    const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+    const apiKey = await getOpenAiApiKey();
 
     if (!apiKey) {
       console.warn('[RAG] No OpenAI API key configured');

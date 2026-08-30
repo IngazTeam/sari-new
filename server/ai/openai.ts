@@ -6,11 +6,10 @@
  * Layer 3: Circuit Breaker (5 failures → 60s cooldown)
  */
 
-import { ENV } from '../_core/env';
 import {
   getOptionalZahyPiRequestContext,
   requestZahyPiChat,
-  zahyPiTextGenerationEnabled,
+  resolveZahyPiRuntimeConfig,
 } from './zahypi-client';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
@@ -155,8 +154,13 @@ export async function callGPT4(
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
+  const runtimeConfig = await resolveZahyPiRuntimeConfig();
 
-  if (await zahyPiTextGenerationEnabled()) {
+  if (!runtimeConfig.enabled) {
+    throw new Error('AI services are disabled by an administrator');
+  }
+
+  if (runtimeConfig.provider === 'zahypi') {
     const inheritedContext = getOptionalZahyPiRequestContext();
     const explicitContext = options?.merchantId !== undefined
       ? {
@@ -208,7 +212,7 @@ export async function callGPT4(
 
   // Get API key
   const { getOpenAiApiKey } = await import('../db_ai_settings');
-  const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+  const apiKey = await getOpenAiApiKey();
   if (!apiKey) {
     throw new Error('OpenAI API key not configured. Set it in Admin > AI Settings.');
   }
@@ -369,7 +373,7 @@ export async function transcribeAudio(
   try {
     // Get API key from DB (admin panel) first, then fallback to .env
     const { getOpenAiApiKey } = await import('../db_ai_settings');
-    const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+    const apiKey = await getOpenAiApiKey();
 
     const formData = new FormData();
     
@@ -426,7 +430,7 @@ export async function testOpenAIConnection(apiKeyOverride?: string): Promise<boo
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
   try {
     const { getOpenAiApiKey } = await import('../db_ai_settings');
-    const apiKey = apiKeyOverride || await getOpenAiApiKey() || ENV.openaiApiKey;
+    const apiKey = apiKeyOverride || await getOpenAiApiKey();
     if (!apiKey || apiKey.length > 512 || !/^sk-[A-Za-z0-9_-]+$/.test(apiKey)) return false;
     const response = await fetch(`${OPENAI_API_URL}/models`, {
       method: 'GET',

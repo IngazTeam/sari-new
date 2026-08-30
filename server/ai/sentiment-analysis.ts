@@ -20,7 +20,7 @@ export interface SentimentResult {
  */
 export async function analyzeSentiment(
   message: string,
-  context?: { merchantId: number; taskType?: string },
+  context?: { merchantId: number; taskType: 'sari.sentiment.weekly' },
 ): Promise<SentimentResult> {
   try {
     const prompt = `حلل المشاعر في هذه الرسالة من العميل:
@@ -51,17 +51,22 @@ export async function analyzeSentiment(
 "عندك جوالات؟" → neutral
 "هذا ثالث مرة أشتكي وما في فايدة!" → negative, frustrated, angry`;
 
-    const response = await callGPT4([
+    const messages = [
       { role: 'system', content: 'أنت خبير في تحليل المشاعر والعواطف في النصوص العربية. أجب بصيغة JSON فقط.' },
       { role: 'user', content: prompt },
-    ], {
-      ...(context ? {
-        merchantId: context.merchantId,
-      } : {}),
-      taskType: context?.taskType || 'sari.sentiment',
-      temperature: 0.3,
-      maxTokens: 300,
-    });
+    ] as const;
+    const response = context
+      ? await callGPT4([...messages], {
+          merchantId: context.merchantId,
+          taskType: 'sari.sentiment.weekly',
+          temperature: 0.3,
+          maxTokens: 300,
+        })
+      : await callGPT4([...messages], {
+          taskType: 'sari.sentiment',
+          temperature: 0.3,
+          maxTokens: 300,
+        });
 
     const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
     const result = JSON.parse(cleaned);

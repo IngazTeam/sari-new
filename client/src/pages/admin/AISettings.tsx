@@ -20,6 +20,7 @@ import {
   Mail, Shield, ShieldCheck, ShieldAlert, HeartPulse,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export default function AISettings() {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ export default function AISettings() {
   const [zahyPiProjectId, setZahyPiProjectId] = useState("sari");
   const [zahyPiModel, setZahyPiModel] = useState("qwen-local");
   const [alertEmail, setAlertEmail] = useState("");
+  const [aiEnabled, setAiEnabled] = useState(true);
 
   // Queries
   const { data: settings, refetch: refetchSettings } = trpc.aiSettings.getSettings.useQuery();
@@ -48,6 +50,7 @@ export default function AISettings() {
     if (settings?.model) {
       setSelectedModel(settings.model);
     }
+    if (settings?.isActive !== undefined) setAiEnabled(settings.isActive);
     if (settings?.textGenerationProvider) {
       setSelectedProvider(settings.textGenerationProvider);
     }
@@ -59,6 +62,7 @@ export default function AISettings() {
     }
   }, [
     settings?.model,
+    settings?.isActive,
     settings?.textGenerationProvider,
     settings?.zahyPiBaseUrl,
     settings?.zahyPiProjectId,
@@ -120,6 +124,7 @@ export default function AISettings() {
 
   const handleSaveSettings = () => {
     const data: Record<string, any> = {};
+    data.isActive = aiEnabled;
     data.textGenerationProvider = selectedProvider;
     data.model = selectedModel;
     if (apiKey.trim()) data.openaiApiKey = apiKey.trim();
@@ -274,10 +279,25 @@ export default function AISettings() {
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />{t('aISettings.auto_6')}</CardTitle>
             <CardDescription>
-              اختر مزوّد توليد النص مع إبقاء OpenAI مفعّلًا للصوت والتضمين وخيار الرجوع
+              اختر مزوّد توليد النص. يستخدم OpenAI للصوت والتضمين عند تشغيل الخدمة.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="space-y-1">
+                <Label htmlFor="ai-enabled">تشغيل خدمات الذكاء الاصطناعي في ساري</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  عند الإيقاف لن تُرسل طلبات نص أو صوت أو تضمين إلى أي مزوّد.
+                </p>
+              </div>
+              <Switch
+                id="ai-enabled"
+                checked={aiEnabled}
+                onCheckedChange={setAiEnabled}
+                aria-label="تشغيل خدمات الذكاء الاصطناعي في ساري"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>مزوّد توليد النص</Label>
               <Select
@@ -294,8 +314,8 @@ export default function AISettings() {
               </Select>
               <p className="text-[11px] text-muted-foreground">
                 {usesZahyPi
-                  ? "ZahyPi سيولّد الردود النصية، وOpenAI سيبقى فعالًا للصوت والتضمين."
-                  : "OpenAI سيولّد الردود النصية ويستمر في تشغيل الصوت والتضمين."}
+                  ? "عند التشغيل: ZahyPi للنص، وOpenAI للصوت والتضمين."
+                  : "عند التشغيل: OpenAI للنص والصوت والتضمين."}
               </p>
             </div>
 
@@ -309,7 +329,7 @@ export default function AISettings() {
               }`} />
               <div>
                 <p className="text-sm font-medium">
-                  المزوّد الحالي: {usesZahyPi ? "ZahyPi" : "OpenAI"}
+                  الحالة: {!aiEnabled ? "متوقف إداريًا" : usesZahyPi ? "ZahyPi" : "OpenAI"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   النموذج: {usesZahyPi ? zahyPiModel : selectedModel}
@@ -362,7 +382,7 @@ export default function AISettings() {
                 </button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                يبقى فعالًا دائمًا للصوت والتضمين، ولا يُحذف عند اختيار ZahyPi.
+                يُستخدم للصوت والتضمين عند تشغيل الخدمة، ولا يُحذف عند اختيار ZahyPi.
               </p>
             </div>
 
