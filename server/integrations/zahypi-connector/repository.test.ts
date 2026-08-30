@@ -227,6 +227,42 @@ describe("ZahyPi connector repository", () => {
     });
   });
 
+  it("persists bounded token usage counters in verification receipts", async () => {
+    const { repository } = repositoryFixture();
+    const reservation = await repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "verify",
+      idempotencyKey: "verify-usage-evidence-1",
+      bodyHash: "e".repeat(64),
+    });
+    if (reservation.kind !== "reserved") throw new Error("expected reservation");
+
+    const response = {
+      status: "verified",
+      usage: {
+        prompt_tokens: 469,
+        completion_tokens: 179,
+        total_tokens: 648,
+      },
+    };
+    await repository.completeConnectorReceipt({
+      receiptId: reservation.receiptId,
+      responseStatus: 200,
+      response,
+    });
+
+    await expect(repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "verify",
+      idempotencyKey: "verify-usage-evidence-1",
+      bodyHash: "e".repeat(64),
+    })).resolves.toEqual({
+      kind: "replay",
+      responseStatus: 200,
+      response,
+    });
+  });
+
   it("rejects secret credential fields from connector receipts", async () => {
     const { repository } = repositoryFixture();
     const reservation = await repository.reserveConnectorReceipt({
@@ -241,6 +277,23 @@ describe("ZahyPi connector repository", () => {
       receiptId: reservation.receiptId,
       responseStatus: 200,
       response: { api_key: "must-not-be-persisted" },
+    })).rejects.toThrow("Connector receipt cannot store credential fields");
+  });
+
+  it("rejects token-named fields outside numeric usage evidence", async () => {
+    const { repository } = repositoryFixture();
+    const reservation = await repository.reserveConnectorReceipt({
+      projectId: "sari",
+      action: "verify",
+      idempotencyKey: "verify-token-rejection-1",
+      bodyHash: "f".repeat(64),
+    });
+    if (reservation.kind !== "reserved") throw new Error("expected reservation");
+
+    await expect(repository.completeConnectorReceipt({
+      receiptId: reservation.receiptId,
+      responseStatus: 200,
+      response: { prompt_tokens: "must-not-be-persisted" },
     })).rejects.toThrow("Connector receipt cannot store credential fields");
   });
 });

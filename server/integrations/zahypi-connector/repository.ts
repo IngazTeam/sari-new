@@ -159,18 +159,27 @@ function summaryFromRow(row: ConnectorCredentialRow, replayed: boolean): Connect
 
 function stableResponseJson(response: Record<string, unknown>): string {
   const sensitiveKey = /(?:api.?key|authorization|credential|secret|token)/i;
-  const safeCredentialMetadata = new Set(["credential_generation"]);
+  const usageCounters = new Set(["prompt_tokens", "completion_tokens", "total_tokens"]);
 
-  function normalize(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(normalize);
+  function normalize(value: unknown, path: string[] = []): unknown {
+    if (Array.isArray(value)) return value.map((item) => normalize(item, path));
     if (!value || typeof value !== "object") return value;
     return Object.fromEntries(Object.entries(value as Record<string, unknown>)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, child]) => {
-        if (!safeCredentialMetadata.has(key) && sensitiveKey.test(key)) {
+        const safeCredentialGeneration = path.length === 0
+          && key === "credential_generation"
+          && Number.isSafeInteger(child)
+          && Number(child) >= 0;
+        const safeUsageCounter = path.length === 1
+          && path[0] === "usage"
+          && usageCounters.has(key)
+          && Number.isSafeInteger(child)
+          && Number(child) >= 0;
+        if (!safeCredentialGeneration && !safeUsageCounter && sensitiveKey.test(key)) {
           throw new Error("Connector receipt cannot store credential fields");
         }
-        return [key, normalize(child)];
+        return [key, normalize(child, [...path, key])];
       }));
   }
 
