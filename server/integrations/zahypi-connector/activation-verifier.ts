@@ -1,6 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 
 import { resolveSariTaskType } from "../../ai/task-catalog";
+import { assertSariTaskPayload } from "../../ai/task-validation";
 import type { ActiveConnectorCredential } from "./repository";
 
 export type ActivationEvidence = {
@@ -114,6 +115,7 @@ export function createActivationVerifier({
       : credential.taskTypes[0];
     if (!taskType) throw new Error("ZahyPi activation has no task types");
     const contract = resolveSariTaskType(taskType);
+    if (contract.status !== "existing") throw new Error("ZahyPi activation task is not active");
     const tenant = `activation-${activationId}`;
     const traceId = `activation-trace-g${generation}`;
     const idempotencyKey = `${activationId}:verify:g${generation}`;
@@ -131,7 +133,8 @@ export function createActivationVerifier({
       "X-External-Processing": contract.externalProcessing,
       "Idempotency-Key": idempotencyKey,
     };
-    const input = { ...contract.sampleInput, operationId: tenant };
+    const input: Record<string, unknown> = { ...contract.sampleInput, operationId: tenant };
+    assertSariTaskPayload(contract, "input", input);
 
     async function request(url: string, init?: RequestInit): Promise<Record<string, unknown>> {
       const remaining = deadline - Date.now();
@@ -156,7 +159,11 @@ export function createActivationVerifier({
     let job = await request(`${apiBaseUrl}/jobs`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ task_type: contract.taskType, input }),
+      body: JSON.stringify({
+        task_type: contract.taskType,
+        input: { messages: input.promptMessages, max_tokens: 32, temperature: 0 },
+        business_input: input,
+      }),
     });
     const jobId = job.job_id;
     if (typeof jobId !== "string" || !UUID.test(jobId)) throw new Error("ZahyPi activation job ID is invalid");
@@ -171,7 +178,19 @@ export function createActivationVerifier({
       if (job.job_id !== jobId) throw new Error("ZahyPi activation job identity changed");
     }
 
-    return evidenceFromJob(job);
+    if (job.project_id !== credential.projectId || job.tenant_id !== tenant
+      || job.task_type !== contract.taskType || job.trace_id !== traceId) {
+      throw new Error("ZahyPi activation job identity changed");
+    }
+    const evidence = evidenceFromJob(job);
+    const result = job.result && typeof job.result === "object" && !Array.isArray(job.result)
+      ? job.result as Record<string, unknown> : undefined;
+    const output = job.structured_output ?? result?.structured_output;
+    assertSariTaskPayload(contract, "output", output);
+    if ((output as Record<string, unknown>).traceId !== traceId) {
+      throw new Error("ZahyPi activation output trace changed");
+    }
+    return evidence;
   }
 
   return { verify };

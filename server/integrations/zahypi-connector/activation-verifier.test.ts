@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createActivationVerifier } from "./activation-verifier";
+import { resolveSariTaskType } from "../../ai/task-catalog";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -23,11 +24,18 @@ const credential = {
 const evidence = {
   job_id: "22222222-2222-4222-8222-222222222222",
   status: "completed",
-  trace_id: "activation-trace-1",
+  project_id: "sari",
+  tenant_id: "activation-11111111-1111-4111-8111-111111111111",
+  task_type: "sari.reply",
+  trace_id: "activation-trace-g1",
   run_manifest_id: "33333333-3333-4333-8333-333333333333",
   route: "qwen-core",
   duration_ms: 120,
   usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 },
+  structured_output: {
+    ...resolveSariTaskType("sari.reply").sampleOutput,
+    traceId: "activation-trace-g1",
+  },
 };
 
 describe("ZahyPi activation verifier", () => {
@@ -63,7 +71,8 @@ describe("ZahyPi activation verifier", () => {
     });
     expect(JSON.parse(String(request.body))).toMatchObject({
       task_type: "sari.reply",
-      input: { operationId: "activation-11111111-1111-4111-8111-111111111111" },
+      input: { messages: resolveSariTaskType("sari.reply").sampleInput.promptMessages, max_tokens: 32, temperature: 0 },
+      business_input: { operationId: "activation-11111111-1111-4111-8111-111111111111" },
     });
   });
 
@@ -128,5 +137,32 @@ describe("ZahyPi activation verifier", () => {
       activationId: "11111111-1111-4111-8111-111111111111",
       generation: 1,
     })).rejects.toThrow(/run manifest/i);
+  });
+
+  it.each(["project_id", "tenant_id", "task_type", "trace_id"] as const)(
+    "rejects foreign activation evidence bound to another %s", async (field) => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+        ...evidence, [field]: "another-scope",
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+      const verifier = createActivationVerifier({ fetchImpl: fetchMock });
+      await expect(verifier.verify({
+        credential, activationId: "11111111-1111-4111-8111-111111111111", generation: 1,
+      })).rejects.toThrow("ZahyPi activation job identity changed");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each([
+    { applicationResponse: "synthetic" },
+    { ...evidence.structured_output, unexpected: true },
+    { ...evidence.structured_output, traceId: "another-trace" },
+  ])("does not activate from an invalid structured result %#", async (structured_output) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ...evidence, structured_output,
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    const verifier = createActivationVerifier({ fetchImpl: fetchMock });
+    await expect(verifier.verify({
+      credential, activationId: "11111111-1111-4111-8111-111111111111", generation: 1,
+    })).rejects.toThrow(/schema|trace changed/);
   });
 });

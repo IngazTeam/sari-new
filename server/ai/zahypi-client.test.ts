@@ -36,6 +36,7 @@ describe("requestZahyPiChat", () => {
         usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
         structured_output: {
           traceId,
+          text: "synthetic governed result",
           applicationResponse: "synthetic governed result",
         },
       }), { status: 202, headers: { "content-type": "application/json" } });
@@ -231,6 +232,37 @@ describe("requestZahyPiChat", () => {
       1,
     )).rejects.toThrow(/run manifest/i);
   });
+
+  it.each(["missing_result", "extra_property", "oversized_result", "foreign_trace"])(
+    "rejects invalid task output without retrying or returning provider content: %s", async (failure) => {
+      process.env.ZAHYPI_ENABLED = "true";
+      process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
+      process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+      process.env.ZAHYPI_API_KEY = "zahypi-test-key";
+      const fetchMock = vi.fn().mockImplementation(async (_url, request: RequestInit) => {
+        const traceId = (request.headers as Record<string, string>)["X-Trace-Id"];
+        const output: Record<string, unknown> = {
+          traceId, text: "synthetic", applicationResponse: "private-provider-content",
+        };
+        if (failure === "missing_result") delete output.text;
+        if (failure === "extra_property") output.untrusted = true;
+        if (failure === "oversized_result") output.text = "x".repeat(12_001);
+        if (failure === "foreign_trace") output.traceId = "another-trace";
+        return new Response(JSON.stringify({
+          job_id: "11111111-1111-4111-8111-111111111111", status: "completed",
+          project_id: "sari", tenant_id: "merchant:42", task_type: "sari.reply", trace_id: traceId,
+          run_manifest_id: "22222222-2222-4222-8222-222222222222", route: "qwen-core",
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 }, structured_output: output,
+        }), { status: 200 });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(requestZahyPiJobCompletion(
+        { messages: [{ role: "user", content: "synthetic" }] },
+        { merchantId: 42, taskType: "sari.reply" }, 1_000, 3,
+      )).rejects.toThrow(/schema|trace changed/);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("sends merchant-scoped red data through the ZahyPi gateway", async () => {
     process.env.ZAHYPI_ENABLED = "true";

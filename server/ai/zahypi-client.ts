@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
 import { resolveSariTaskType, type SariTaskContract } from "./task-catalog";
+import { assertSariTaskPayload } from "./task-validation";
 
 export type ZahyPiMessage = {
   role: "system" | "user" | "assistant";
@@ -611,6 +612,10 @@ function completionFromGovernedJob(
     throw new ZahyPiResponseValidationError("ZahyPi governed job usage is invalid");
   }
   const structuredOutput = governedStructuredOutput(job);
+  assertSariTaskPayload(resolveSariTaskType(expected.taskType), "output", structuredOutput);
+  if (structuredOutput.traceId !== expected.traceId) {
+    throw new ZahyPiResponseValidationError("ZahyPi governed output trace changed");
+  }
   const applicationResponse = structuredOutput.applicationResponse;
   if (
     typeof applicationResponse !== "string"
@@ -679,6 +684,7 @@ export async function requestZahyPiJobCompletion(
     resolvedContext,
     traceId,
   );
+  assertSariTaskPayload(contract, "input", businessInput);
   const maxTokens = payload.max_tokens ?? 1_000;
   const temperature = payload.temperature ?? 0.7;
   const requestPayload = {
