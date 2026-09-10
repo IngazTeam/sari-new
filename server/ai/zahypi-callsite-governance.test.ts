@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix, win32 } from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -17,10 +17,12 @@ const DIRECT_PROVIDER_FILES = new Set([
   "server/voice-transcription.ts",
 ]);
 
-function productionTypeScriptFiles(directory = SERVER_ROOT): string[] {
+function productionTypeScriptFiles(directory = SERVER_ROOT, joinPath = join): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) return productionTypeScriptFiles(path);
+    // Policy identifiers are repository-relative POSIX paths on every host.
+    // Normalize before both recursion and exact allowlist comparisons.
+    const path = joinPath(directory, entry.name).replaceAll("\\", "/");
+    if (entry.isDirectory()) return productionTypeScriptFiles(path, joinPath);
     if (
       !entry.isFile()
       || !entry.name.endsWith(".ts")
@@ -104,6 +106,23 @@ describe("ZahyPi production callsite governance", () => {
   const activeFiles = productionFiles.filter((file) => !DEPRECATED_TEXT_FILES.has(file));
   const callsites = activeFiles.flatMap(governedCallsites);
   const activeTaskTypes = new Set<string>(activeSariTaskTypes());
+
+  it.each([
+    ["Windows", win32.join],
+    ["POSIX", posix.join],
+  ] as const)("uses identical exact policy paths with %s path joining", (_name, joinPath) => {
+    const files = productionTypeScriptFiles(SERVER_ROOT, joinPath);
+    expect(files).toEqual(productionFiles);
+    expect(files.every((file) => file.startsWith("server/") && !file.includes("\\"))).toBe(true);
+    expect(files.filter((file) => DEPRECATED_TEXT_FILES.has(file))).toEqual([
+      "server/websiteAnalysis.ts",
+    ]);
+    expect(new Set(files.filter((file) => DIRECT_PROVIDER_FILES.has(file)))).toEqual(
+      DIRECT_PROVIDER_FILES,
+    );
+    expect(DEPRECATED_TEXT_FILES.has("server/nested/websiteAnalysis.ts")).toBe(false);
+    expect(DIRECT_PROVIDER_FILES.has("server/unreviewed/openai.ts")).toBe(false);
+  });
 
   it("assigns an explicit active task type to every text-generation callsite", () => {
     expect(callsites.length).toBeGreaterThanOrEqual(50);

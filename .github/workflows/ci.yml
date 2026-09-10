@@ -38,6 +38,8 @@ jobs:
         run: pnpm check
       - name: Audit advertised locale catalogues
         run: pnpm audit:locales
+      - name: Governed ZahyPi contracts, connector security, and portable requirements pack
+        run: pnpm test:zahypi
       - name: Release security and regression gates
         run: pnpm test:release
       - name: Validate the database schema history

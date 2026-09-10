@@ -140,6 +140,8 @@ env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NOD
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
   corepack pnpm check
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
+  corepack pnpm test:zahypi
+env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
   corepack pnpm test:release
 env -u RUN_MYSQL_INTEGRATION DATABASE_URL='mysql://schema_check:schema_check@127.0.0.1:3306/schema_check' \
   SARI_ENV_FILE="$build_env_file" NODE_ENV=test corepack pnpm db:check

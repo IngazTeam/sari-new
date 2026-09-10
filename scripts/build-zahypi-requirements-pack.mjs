@@ -1,24 +1,14 @@
 import { createHash } from "node:crypto";
-import { execFile, execFileSync } from "node:child_process";
-import {
-  chmod,
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  stat,
-  utimes,
-  writeFile,
-} from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { promisify } from "node:util";
+import { execFileSync } from "node:child_process";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import JSZip from "jszip";
 
 import { SARI_TASK_CATALOG } from "../server/ai/task-catalog.ts";
 
-const execFileAsync = promisify(execFile);
 const MAX_ARCHIVE_BYTES = 1_500_000;
+const MAX_PAYLOAD_BYTES = 8_000_000;
 const FIXED_ARCHIVE_TIME = new Date("2000-01-01T00:00:00.000Z");
 const REQUIRED_TASK_FILES = [
   "requirements.md",
@@ -57,11 +47,12 @@ function stableJson(value) {
 }
 
 function assertSafeRelativePath(path) {
-  if (!path || path.startsWith("/") || path.includes("\\") || path.split("/").includes("..")) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(path)
+    || path.split("/").some((part) => !part || part === "." || part === "..")) {
     throw new Error(`Unsafe package path: ${path}`);
   }
-  if (path.endsWith(".zip") || path.endsWith(".tar") || path.endsWith(".gz")) {
-    throw new Error(`Nested archive is not allowed: ${path}`);
+  if (!/\.(?:md|json|sha256|txt)$/.test(path)) {
+    throw new Error(`Unsupported package file type: ${path}`);
   }
 }
 
@@ -197,27 +188,6 @@ function taskFiles(contract) {
   ]);
 }
 
-async function setDeterministicMetadata(rootPath, relativePaths) {
-  const directories = new Set([rootPath]);
-
-  for (const path of relativePaths) {
-    const absolutePath = join(rootPath, ...path.split("/"));
-    let current = dirname(absolutePath);
-    while (current.startsWith(rootPath)) {
-      directories.add(current);
-      if (current === rootPath) break;
-      current = dirname(current);
-    }
-    await chmod(absolutePath, 0o644);
-    await utimes(absolutePath, FIXED_ARCHIVE_TIME, FIXED_ARCHIVE_TIME);
-  }
-
-  for (const directory of [...directories].sort((a, b) => b.length - a.length)) {
-    await chmod(directory, 0o755);
-    await utimes(directory, FIXED_ARCHIVE_TIME, FIXED_ARCHIVE_TIME);
-  }
-}
-
 export async function buildZahyPiRequirementsPack({
   outputPath,
   sourceSha,
@@ -225,12 +195,23 @@ export async function buildZahyPiRequirementsPack({
   catalog = SARI_TASK_CATALOG,
 }) {
   if (!/^[a-f0-9]{40}$/i.test(sourceSha)) throw new Error("sourceSha must be a 40-character Git SHA");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) throw new Error("releaseDate must use YYYY-MM-DD");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)
+    || !Number.isFinite(Date.parse(releaseDate))
+    || new Date(releaseDate).toISOString().slice(0, 10) !== releaseDate) {
+    throw new Error("releaseDate must be a valid YYYY-MM-DD date");
+  }
   if (!Array.isArray(catalog) || catalog.length === 0) throw new Error("catalog must not be empty");
+  const names = new Set();
+  for (const contract of catalog) {
+    for (const name of [contract.taskType, ...contract.aliases]) {
+      if (!/^sari\.[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(name) || names.has(name)) {
+        throw new Error("Task types and aliases must be safe and globally unique");
+      }
+      names.add(name);
+    }
+  }
 
-  const workspace = await mkdtemp(join(tmpdir(), "sari-zahypi-build-"));
   const rootName = `SARI_ZAHYPI_REQUIREMENTS_PACK_${releaseDate}`;
-  const rootPath = join(workspace, rootName);
   const files = topLevelFiles({ catalog, sourceSha, releaseDate });
 
   for (const contract of catalog) {
@@ -252,12 +233,18 @@ export async function buildZahyPiRequirementsPack({
     sha256: sha256(content),
     bytes: Buffer.byteLength(content),
   }));
+  if (payloadEntries.reduce((total, entry) => total + entry.bytes, 0) > MAX_PAYLOAD_BYTES) {
+    throw new Error(`Package payload exceeds ${MAX_PAYLOAD_BYTES} bytes`);
+  }
   const manifestContent = stableJson({
     format: "sari-zahypi-requirements-pack/v1",
+    package: rootName,
+    project_slug: "sari",
     source_sha: sourceSha,
     release_date: releaseDate,
     task_count: catalog.length,
     required_task_files: REQUIRED_TASK_FILES,
+    files_excluding_manifest_and_checksums: payloadEntries.length,
     files: payloadEntries,
   });
   normalizedFiles.set("MANIFEST.json", manifestContent);
@@ -266,41 +253,44 @@ export async function buildZahyPiRequirementsPack({
     payloadEntries.map((entry) => `${entry.sha256}  ${entry.path}`).join("\n") + "\n",
   );
 
-  try {
-    await mkdir(rootPath, { recursive: true });
-    for (const [path, content] of normalizedFiles) {
-      const absolutePath = join(rootPath, ...path.split("/"));
-      const relativePath = relative(rootPath, absolutePath);
-      if (relativePath.startsWith("..") || relativePath.split(sep).includes("..")) {
-        throw new Error(`Package path escaped root: ${path}`);
-      }
-      await mkdir(dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, content, { encoding: "utf8", mode: 0o644 });
-    }
-
-    await setDeterministicMetadata(rootPath, [...normalizedFiles.keys()]);
-    await mkdir(dirname(resolve(outputPath)), { recursive: true });
-    await rm(resolve(outputPath), { force: true });
-    await execFileAsync("zip", ["-X", "-q", "-9", "-r", resolve(outputPath), rootName], {
-      cwd: workspace,
-      env: { ...process.env, TZ: "UTC" },
+  const zip = new JSZip();
+  for (const [path, content] of normalizedFiles) {
+    zip.file(`${rootName}/${path}`, content, {
+      date: FIXED_ARCHIVE_TIME,
+      unixPermissions: 0o100644,
+      createFolders: false,
     });
-
-    const archiveStats = await stat(resolve(outputPath));
-    if (archiveStats.size > MAX_ARCHIVE_BYTES) {
-      await rm(resolve(outputPath), { force: true });
-      throw new Error(`Package exceeds ${MAX_ARCHIVE_BYTES} bytes`);
-    }
-
-    return {
-      outputPath: resolve(outputPath),
-      byteLength: archiveStats.size,
-      sha256: sha256(await readFile(resolve(outputPath))),
-      taskCount: catalog.length,
-    };
-  } finally {
-    await rm(workspace, { force: true, recursive: true });
   }
+  const archive = await zip.generateAsync({
+    type: "nodebuffer",
+    compression: "DEFLATE",
+    compressionOptions: { level: 9 },
+    platform: "UNIX",
+  });
+  if (archive.length > MAX_ARCHIVE_BYTES) throw new Error(`Package exceeds ${MAX_ARCHIVE_BYTES} bytes`);
+
+  // Never delete an existing delivery before validation or replace a different one.
+  // Repeating the exact same build is safe and leaves the file untouched.
+  const target = resolve(outputPath);
+  await mkdir(dirname(target), { recursive: true });
+  try {
+    await writeFile(target, archive, { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    const existing = await lstat(target);
+    if (!existing.isFile() || existing.isSymbolicLink()
+      || !(await readFile(target)).equals(archive)) {
+      throw new Error("Output already exists with different content; choose a new output path");
+    }
+  }
+  return {
+    outputPath: target,
+    byteLength: archive.length,
+    sha256: sha256(archive),
+    taskCount: catalog.length,
+    fileCount: normalizedFiles.size,
+    sourceSha,
+  };
 }
 
 function argumentValue(name) {
