@@ -20,6 +20,7 @@ export type ActivationEvidence = {
 type FetchLike = typeof fetch;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RECEIPT_TEXT = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+const MAX_RESPONSE_BYTES = 64_000;
 
 function gatewayApiBaseUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
@@ -36,25 +37,42 @@ function gatewayApiBaseUrl(baseUrl: string): string {
 }
 
 async function boundedJson(response: Response): Promise<Record<string, unknown>> {
-  if (!response.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+  const mediaType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
+    void response.body?.cancel().catch(() => undefined);
     throw new Error("ZahyPi activation response is not JSON");
+  }
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+    void response.body?.cancel().catch(() => undefined);
+    throw new Error("ZahyPi activation response is too large");
   }
   const reader = response.body?.getReader();
   if (!reader) throw new Error("ZahyPi activation response is empty");
   const chunks: Uint8Array[] = [];
   let byteLength = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    byteLength += value.byteLength;
-    if (byteLength > 64_000) {
-      await reader.cancel();
-      throw new Error("ZahyPi activation response is too large");
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > MAX_RESPONSE_BYTES) {
+        void reader.cancel().catch(() => undefined);
+        throw new Error("ZahyPi activation response is too large");
+      }
+      chunks.push(value);
     }
-    chunks.push(value);
+  } finally {
+    reader.releaseLock();
   }
   const raw = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
-  const parsed = JSON.parse(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // SyntaxError messages can quote provider output, including personal data or tokens.
+    throw new Error("ZahyPi activation response is invalid");
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("ZahyPi activation response is invalid");
   }
@@ -148,9 +166,11 @@ export function createActivationVerifier({
           headers: init?.headers ?? headers,
           signal: controller.signal,
         });
-        const body = await boundedJson(response);
-        if (!response.ok) throw new Error(`ZahyPi activation request failed with HTTP ${response.status}`);
-        return body;
+        if (!response.ok) {
+          void response.body?.cancel().catch(() => undefined);
+          throw new Error(`ZahyPi activation request failed with HTTP ${response.status}`);
+        }
+        return await boundedJson(response);
       } finally {
         clearTimeout(timer);
       }
@@ -168,7 +188,7 @@ export function createActivationVerifier({
     const jobId = job.job_id;
     if (typeof jobId !== "string" || !UUID.test(jobId)) throw new Error("ZahyPi activation job ID is invalid");
 
-    while (job.status === "queued" || job.status === "running") {
+    while (job.status === "queued" || job.status === "running" || job.status === "retry_wait") {
       if (Date.now() + 100 >= deadline) throw new Error("ZahyPi activation verification timed out");
       await delay(100);
       job = await request(`${apiBaseUrl}/jobs/${jobId}`, {

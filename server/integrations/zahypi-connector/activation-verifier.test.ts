@@ -39,6 +39,118 @@ const evidence = {
 };
 
 describe("ZahyPi activation verifier", () => {
+  const activation = {
+    credential, activationId: "11111111-1111-4111-8111-111111111111", generation: 1,
+  };
+
+  it("polls retry_wait through running without creating another activation job", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ job_id: evidence.job_id, status: "retry_wait" }, { status: 202 }))
+      .mockResolvedValueOnce(Response.json({ job_id: evidence.job_id, status: "running" }))
+      .mockResolvedValueOnce(Response.json({ job_id: evidence.job_id, status: "retry_wait" }))
+      .mockResolvedValueOnce(Response.json(evidence));
+    await expect(createActivationVerifier({ fetchImpl: fetchMock, timeoutMs: 2_000 }).verify(activation))
+      .resolves.toMatchObject({ job_id: evidence.job_id });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    const createRequest = fetchMock.mock.calls[0][1];
+    expect(createRequest.method).toBe("POST");
+    for (const [url, request] of fetchMock.mock.calls.slice(1)) {
+      expect(url).toBe(`${credential.baseUrl}/jobs/${evidence.job_id}`);
+      expect(request).toMatchObject({ method: "GET", headers: createRequest.headers });
+      expect(request.body).toBeUndefined();
+    }
+  });
+
+  it("bounds a job that stays in retry_wait by the original activation deadline", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ job_id: evidence.job_id, status: "retry_wait" }));
+    await expect(createActivationVerifier({ fetchImpl: fetchMock, timeoutMs: 250 }).verify(activation))
+      .rejects.toThrow("ZahyPi activation verification timed out");
+    expect(fetchMock.mock.calls.filter(([, request]) => request.method === "POST")).toHaveLength(1);
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it("rejects a replacement job while polling retry_wait", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ job_id: evidence.job_id, status: "retry_wait" }))
+      .mockResolvedValueOnce(Response.json({ ...evidence, job_id: evidence.run_manifest_id }));
+    await expect(createActivationVerifier({ fetchImpl: fetchMock }).verify(activation))
+      .rejects.toThrow("ZahyPi activation job identity changed");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([401, 429, 503])("preserves HTTP %i without parsing or retaining its body", async (status) => {
+    const response = new Response("private-provider-content", { status });
+    const cancel = vi.spyOn(response.body!, "cancel");
+    const fetchMock = vi.fn().mockResolvedValue(response);
+    await expect(createActivationVerifier({ fetchImpl: fetchMock }).verify(activation))
+      .rejects.toThrow(`ZahyPi activation request failed with HTTP ${status}`);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not expose malformed JSON in an activation error", async () => {
+    const response = new Response('private-customer-phone-and-token', { headers: { "content-type": "application/json" } });
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .rejects.toThrow(/^ZahyPi activation response is invalid$/);
+    expect(response.body!.locked).toBe(false);
+  });
+
+  it.each(["text/html", "application/jsonp", "text/plain; application/json"])("rejects a misleading content type %s and cancels its body", async (contentType) => {
+    const response = new Response(JSON.stringify(evidence), { headers: { "content-type": contentType } });
+    const cancel = vi.spyOn(response.body!, "cancel");
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .rejects.toThrow("ZahyPi activation response is not JSON");
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an oversized declared response before acquiring a reader", async () => {
+    const response = Response.json(evidence, { headers: { "content-length": "64001" } });
+    const read = vi.spyOn(response.body!, "getReader");
+    const cancel = vi.spyOn(response.body!, "cancel");
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .rejects.toThrow("ZahyPi activation response is too large");
+    expect(read).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds streamed data even if the content length lies and cancellation fails", async () => {
+    const cancel = vi.fn().mockRejectedValue(new Error("private-cancellation-content"));
+    const response = new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new TextEncoder().encode("x".repeat(64_001))); },
+      cancel,
+    }), { headers: { "content-type": "application/json", "content-length": "1" } });
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .rejects.toThrow("ZahyPi activation response is too large");
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(response.body!.locked).toBe(false);
+  });
+
+  it("releases the reader after a valid parameterized JSON response", async () => {
+    const response = new Response(JSON.stringify(evidence), { headers: { "content-type": "Application/JSON; charset=utf-8" } });
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .resolves.toMatchObject({ job_id: evidence.job_id });
+    expect(response.body!.locked).toBe(false);
+  });
+
+  it("does not wait for cancellation of an oversized stream", async () => {
+    const cancel = vi.fn().mockImplementation(() => new Promise<void>(() => {}));
+    const response = new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new Uint8Array(64_001)); },
+      cancel,
+    }), { headers: { "content-type": "application/json" } });
+    await expect(createActivationVerifier({ fetchImpl: vi.fn().mockResolvedValue(response) }).verify(activation))
+      .rejects.toThrow("ZahyPi activation response is too large");
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(response.body!.locked).toBe(false);
+  });
+
+  it.each(["failed", "cancelled", "unknown"])("fails closed on terminal or unsupported job status %s", async (status) => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ...evidence, status, error: "private-provider-content" }));
+    await expect(createActivationVerifier({ fetchImpl: fetchMock }).verify(activation))
+      .rejects.toThrow(/^ZahyPi activation job did not complete$/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("submits a real tenant-scoped governed task and returns content-free evidence", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(evidence), {
       status: 202,

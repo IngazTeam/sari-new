@@ -520,6 +520,7 @@ function parseCompletionResponse(value: unknown): ZahyPiCompletionResponse {
 async function readBoundedJsonResponse(response: Response): Promise<unknown> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+    void response.body?.cancel().catch(() => undefined);
     throw new ZahyPiResponseValidationError("ZahyPi response exceeds the size limit");
   }
   if (!response.body) {
@@ -529,15 +530,19 @@ async function readBoundedJsonResponse(response: Response): Promise<unknown> {
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    totalBytes += value.byteLength;
-    if (totalBytes > MAX_RESPONSE_BYTES) {
-      void reader.cancel().catch(() => undefined);
-      throw new ZahyPiResponseValidationError("ZahyPi response exceeds the size limit");
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_RESPONSE_BYTES) {
+        void reader.cancel().catch(() => undefined);
+        throw new ZahyPiResponseValidationError("ZahyPi response exceeds the size limit");
+      }
+      chunks.push(value);
     }
-    chunks.push(value);
+  } finally {
+    reader.releaseLock();
   }
 
   const bytes = new Uint8Array(totalBytes);
@@ -732,9 +737,13 @@ export async function requestZahyPiJobCompletion(
           signal: controller.signal,
           redirect: "error",
         });
-        const parsed = recordValue(await readBoundedJsonResponse(response));
-        if (!parsed) throw new ZahyPiResponseValidationError("ZahyPi returned an invalid response");
-        if (response.ok) return parsed;
+        if (response.ok) {
+          const parsed = recordValue(await readBoundedJsonResponse(response));
+          if (!parsed) throw new ZahyPiResponseValidationError("ZahyPi returned an invalid response");
+          return parsed;
+        }
+        // Gateway/proxy errors need not be JSON. Never consume or expose their bodies.
+        void response.body?.cancel().catch(() => undefined);
         finalError = new ZahyPiHttpError(response.status);
         if (!isTransientStatus(response.status)) break;
       } catch (error) {
@@ -895,6 +904,7 @@ export async function requestZahyPiCompletion(
         return parsed;
       }
 
+      void response.body?.cancel().catch(() => undefined);
       finalError = new Error(`ZahyPi request failed with status ${response.status}`);
       circuitFailure = isTransientStatus(response.status);
       if (!circuitFailure) break;

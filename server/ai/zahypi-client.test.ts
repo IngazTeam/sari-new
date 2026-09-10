@@ -13,9 +13,148 @@ import { SARI_TASK_CATALOG } from "./task-catalog";
 const ORIGINAL_ENV = { ...process.env };
 
 afterEach(() => {
+  vi.useRealTimers();
   clearZahyPiRuntimeConfigCache();
   process.env = { ...ORIGINAL_ENV };
   vi.unstubAllGlobals();
+});
+
+describe("governed job HTTP boundaries", () => {
+  const runtime = {
+    enabled: true, provider: "zahypi" as const, apiKey: "zahypi-test-key",
+    baseUrl: "https://api.zahypi.test/v1", projectId: "sari", model: "qwen-local",
+    taskTypes: ["sari.reply"],
+  };
+  const jobId = "11111111-1111-4111-8111-111111111111";
+  const payload = { messages: [{ role: "user", content: "Synthetic HTTP boundary check." }] };
+  function invoke(merchantId: number, timeoutMs = 2_000, maxAttempts = 3) {
+    process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
+    return requestZahyPiJobCompletion(payload, { merchantId, taskType: "sari.reply" },
+      timeoutMs, maxAttempts, runtime);
+  }
+  function completed(request: RequestInit) {
+    const headers = request.headers as Record<string, string>;
+    const traceId = headers["X-Trace-Id"];
+    return Response.json({
+      job_id: jobId, status: "completed", project_id: "sari",
+      tenant_id: headers["X-ZahyPi-Tenant"], task_type: "sari.reply", trace_id: traceId,
+      run_manifest_id: "22222222-2222-4222-8222-222222222222", route: "qwen-core",
+      usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
+      structured_output: { traceId, text: "synthetic", applicationResponse: "synthetic" },
+    });
+  }
+
+  it.each([408, 429, 500, 502, 503, 504])("retries HTML HTTP %i without changing the create identity", async (status) => {
+    const failed = new Response("<html>private-provider-content</html>", { status });
+    const cancel = vi.spyOn(failed.body!, "cancel");
+    const fetchMock = vi.fn().mockResolvedValueOnce(failed)
+      .mockImplementation(async (_url, request: RequestInit) => completed(request));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(invoke(91_000 + status)).resolves.toMatchObject({ model: "qwen-core" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    const [firstUrl, first] = fetchMock.mock.calls[0];
+    const [secondUrl, second] = fetchMock.mock.calls[1];
+    expect(secondUrl).toBe(firstUrl);
+    expect(second).toMatchObject({ method: "POST", headers: first.headers, body: first.body, redirect: "error" });
+  });
+
+  it("retries only GET after a polling failure, preserving the original job and trace", async () => {
+    const failed = new Response("upstream private-provider-content", { status: 503 });
+    const cancel = vi.spyOn(failed.body!, "cancel");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ job_id: jobId, status: "retry_wait" }, { status: 202 }))
+      .mockResolvedValueOnce(failed)
+      .mockImplementation(async (_url, request: RequestInit) => completed(request));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(invoke(92_001)).resolves.toMatchObject({ model: "qwen-core" });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    const createRequest = fetchMock.mock.calls[0][1];
+    for (const [url, request] of fetchMock.mock.calls.slice(1)) {
+      expect(url).toBe(`${runtime.baseUrl}/jobs/${jobId}`);
+      expect(request).toMatchObject({ method: "GET", headers: createRequest.headers });
+      expect(request.body).toBeUndefined();
+    }
+  });
+
+  it.each([400, 401, 403, 404, 409, 422])("does not retry or parse the private HTTP %i error body", async (status) => {
+    const response = new Response("private-provider-content", { status });
+    const cancel = vi.spyOn(response.body!, "cancel");
+    const fetchMock = vi.fn().mockResolvedValue(response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(invoke(93_000 + status)).rejects.toThrow(`ZahyPi request failed with status ${status}`);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not surface a failing error-body cancellation", async () => {
+    const response = new Response("private-provider-content", { status: 401 });
+    vi.spyOn(response.body!, "cancel").mockRejectedValue(new Error("private-cancellation-content"));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    await expect(invoke(94_001)).rejects.toThrow("ZahyPi request failed with status 401");
+  });
+
+  it("does not wait for a hanging error-body cancellation", async () => {
+    const response = new Response("private-provider-content", { status: 401 });
+    vi.spyOn(response.body!, "cancel").mockImplementation(() => new Promise(() => {}));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    await expect(invoke(94_005)).rejects.toThrow("ZahyPi request failed with status 401");
+  });
+
+  it("caps transient retries at three and retains the safe HTTP status", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockImplementation(async () => new Response("private-provider-content", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = invoke(94_006, 2_000, 99).then(() => "unexpected success", (error: Error) => error.message);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(await result).toBe("ZahyPi request failed with status 503");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const [, request] of fetchMock.mock.calls) {
+      expect(request.headers).toEqual(fetchMock.mock.calls[0][1].headers);
+      expect(request.body).toBe(fetchMock.mock.calls[0][1].body);
+    }
+  });
+
+  it("does not open the tenant circuit after permanent HTTP errors", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response("private-provider-content", { status: 400 }));
+    vi.stubGlobal("fetch", fetchMock);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await expect(invoke(94_007)).rejects.toThrow("ZahyPi request failed with status 400");
+    }
+    fetchMock.mockImplementation(async (_url, request: RequestInit) => completed(request));
+    await expect(invoke(94_007)).resolves.toMatchObject({ model: "qwen-core" });
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+
+  it("honors the no-retry budget even for a non-JSON 503", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response("private-provider-content", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(invoke(94_002, 2_000, 1)).rejects.toThrow("ZahyPi request failed with status 503");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps one deadline across transient HTTP failures", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockImplementation(async () => new Response("private-provider-content", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = invoke(94_003, 100).then(() => "unexpected success", (error: Error) => error.message);
+    await vi.advanceTimersByTimeAsync(101);
+    expect(await result).toBe("ZahyPi timeout after 0.1s");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still rejects malformed successful JSON once with a content-free error", async () => {
+    const response = new Response("private-provider-content", { status: 200 });
+    const fetchMock = vi.fn().mockResolvedValue(response);
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(invoke(94_004)).rejects.toThrow("ZahyPi returned an invalid response");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.body!.locked).toBe(false);
+  });
 });
 
 describe("requestZahyPiChat", () => {
@@ -507,10 +646,13 @@ describe("requestZahyPiChat", () => {
     process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
     process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
     process.env.ZAHYPI_API_KEY = "zahypi-test-key";
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", {
+    const response = new Response("{}", {
       status: 200,
       headers: { "content-length": String(1024 * 1024 + 1) },
-    }));
+    });
+    const cancel = vi.spyOn(response.body!, "cancel");
+    const read = vi.spyOn(response.body!, "getReader");
+    const fetchMock = vi.fn().mockResolvedValue(response);
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(requestZahyPiCompletion(
@@ -520,16 +662,19 @@ describe("requestZahyPiChat", () => {
       3,
     )).rejects.toThrow("response exceeds the size limit");
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
   });
 
   it("caps chunked gateway responses even without a content-length header", async () => {
     process.env.ZAHYPI_BASE_URL = "https://api.zahypi.test/v1";
     process.env.ZAHYPI_ALLOWED_ORIGINS = "https://api.zahypi.test";
     process.env.ZAHYPI_API_KEY = "zahypi-test-key";
-    const fetchMock = vi.fn().mockResolvedValue(new Response(
+    const response = new Response(
       "x".repeat(1024 * 1024 + 1),
       { status: 200 },
-    ));
+    );
+    const fetchMock = vi.fn().mockResolvedValue(response);
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(requestZahyPiCompletion(
@@ -539,6 +684,7 @@ describe("requestZahyPiChat", () => {
       3,
     )).rejects.toThrow("response exceeds the size limit");
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(response.body!.locked).toBe(false);
   });
 
   it("rejects unsafe context header values before network access", async () => {
