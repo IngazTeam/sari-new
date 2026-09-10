@@ -8,6 +8,8 @@ import JSZip from "jszip";
 
 import { buildZahyPiRequirementsPack } from "../../scripts/build-zahypi-requirements-pack.mjs";
 import { SARI_TASK_CATALOG } from "./task-catalog";
+import { assertSariTaskPayload } from "./task-validation";
+import { assertSourceClaim } from "../../scripts/zahypi-pack-verification.mjs";
 
 const temporaryDirectories: string[] = [];
 
@@ -112,13 +114,37 @@ describe("buildZahyPiRequirementsPack", () => {
 
     const firstTask = SARI_TASK_CATALOG[0].taskType;
     const golden = await readJson(`tasks/${firstTask}/golden.cases.json`);
-    expect(golden.cases).toHaveLength(5);
+    expect(golden.cases).toHaveLength(7);
     expect(golden.cases[0]).toMatchObject({
       schema_valid: true,
       input: SARI_TASK_CATALOG[0].goldenCases[0].input,
       expected_output: SARI_TASK_CATALOG[0].goldenCases[0].expected,
     });
     expect((await readJson(`tasks/${firstTask}/rejection.cases.json`)).cases).toHaveLength(5);
+    for (const contract of SARI_TASK_CATALOG) {
+      const cases = (await readJson(`tasks/${contract.taskType}/golden.cases.json`)).cases;
+      expect(cases).toHaveLength(7);
+      const businessInputs = cases.map((example: { input: Record<string, unknown> }) => {
+        const { operationId, ...businessInput } = example.input;
+        return JSON.stringify(businessInput);
+      });
+      expect(new Set(businessInputs).size).toBe(cases.length);
+      for (const example of cases) {
+        expect(() => assertSariTaskPayload(contract, "input", example.input)).not.toThrow();
+        expect(() => assertSariTaskPayload(contract, "output", example.expected_output)).not.toThrow();
+      }
+    }
+    expect(await readJson("test-evidence/local-gates.json")).toMatchObject({
+      source_sha: options.sourceSha, status: "NOT_RUN",
+    });
+    const provenance = await readJson("current-ai-contracts/SOURCE_PROVENANCE.json");
+    expect(provenance.source_sha).toBe(options.sourceSha);
+    expect(provenance.files).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: "server/ai/task-validation.ts", sha256_lf: expect.stringMatching(/^[0-9a-f]{64}$/) }),
+    ]));
+    expect(catalog.tasks.every((task: { source_files: unknown; current_endpoint: string | null }) =>
+      Array.isArray(task.source_files) && [null, "/v1/jobs"].includes(task.current_endpoint),
+    )).toBe(true);
 
     const checksumManifest = await zip.file(`${root}/MANIFEST.sha256`)!.async("text");
     expect(checksumManifest).not.toContain("MANIFEST.json");
@@ -194,5 +220,17 @@ describe("buildZahyPiRequirementsPack", () => {
       ...SARI_TASK_CATALOG[0], businessNameAr: "ض".repeat(8_000_001),
     }] })).rejects.toThrow(/payload exceeds/);
     expect(await readFile(outputPath)).toEqual(original);
+  });
+
+  it("rejects stale SHAs, dirty code and evidence from another source revision", async () => {
+    expect(() => assertSourceClaim("a".repeat(40), "b".repeat(40), [])).toThrow(/current checkout/);
+    expect(() => assertSourceClaim("a".repeat(40), "a".repeat(40), ["server/ai/task-catalog.ts"]))
+      .toThrow(/Commit runtime/);
+    expect(() => assertSourceClaim("a".repeat(40), "a".repeat(40), [])).not.toThrow();
+    const directory = await temporaryDirectory();
+    await expect(buildZahyPiRequirementsPack({
+      outputPath: join(directory, "wrong-evidence.zip"), sourceSha: "a".repeat(40), releaseDate: "2026-09-10",
+      testEvidence: { source_sha: "b".repeat(40), status: "PASS" },
+    })).rejects.toThrow(/evidence SHA/);
   });
 });

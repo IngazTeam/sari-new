@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
 
 import { SARI_TASK_CATALOG } from "../server/ai/task-catalog.ts";
+import { buildPackDocumentation, candidateGoldenCases } from "./zahypi-pack-documentation.mjs";
+import { assertCurrentPackSource, collectSafeLocalTestEvidence } from "./zahypi-pack-verification.mjs";
 
 const MAX_ARCHIVE_BYTES = 1_500_000;
 const MAX_PAYLOAD_BYTES = 8_000_000;
@@ -98,7 +100,8 @@ function taskIntegration(contract) {
   const specializedEndpoint = specializedEndpoints[contract.taskType];
 
   return `# Integration: ${contract.taskType}\n\n` +
-    `- **المسار المحكوم:** ${specializedEndpoint || "/v1/jobs"}\n` +
+    `- **المسار الحالي:** ${contract.status === "existing" ? "/v1/jobs" : "planned — غير منفذ"}\n` +
+    `- **المسار المتخصص المقترح:** ${specializedEndpoint || "/v1/jobs"}\n` +
     `- **المشروع:** sari\n` +
     `- **Tenant header:** X-ZahyPi-Tenant = merchant:<trusted-id>\n` +
     `- **Task header:** X-Task-Type = ${contract.taskType}\n` +
@@ -176,13 +179,7 @@ function taskFiles(contract) {
       })),
     })],
     ["golden.cases.json", stableJson({
-      cases: contract.goldenCases.map((testCase) => ({
-        id: testCase.name,
-        schema_valid: true,
-        comparison_mode: "schema",
-        input: testCase.input,
-        expected_output: testCase.expected,
-      })),
+      cases: candidateGoldenCases(contract),
     })],
     ["integration.md", taskIntegration(contract)],
   ]);
@@ -193,6 +190,7 @@ export async function buildZahyPiRequirementsPack({
   sourceSha,
   releaseDate,
   catalog = SARI_TASK_CATALOG,
+  testEvidence,
 }) {
   if (!/^[a-f0-9]{40}$/i.test(sourceSha)) throw new Error("sourceSha must be a 40-character Git SHA");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)
@@ -212,7 +210,10 @@ export async function buildZahyPiRequirementsPack({
   }
 
   const rootName = `SARI_ZAHYPI_REQUIREMENTS_PACK_${releaseDate}`;
-  const files = topLevelFiles({ catalog, sourceSha, releaseDate });
+  const files = new Map([
+    ...topLevelFiles({ catalog, sourceSha, releaseDate }),
+    ...buildPackDocumentation({ catalog, sourceSha, testEvidence }),
+  ]);
 
   for (const contract of catalog) {
     for (const [fileName, content] of taskFiles(contract)) {
@@ -303,9 +304,12 @@ async function runCli() {
   const sourceSha = argumentValue("sha") || execFileSync("git", ["rev-parse", "HEAD"], {
     encoding: "utf8",
   }).trim();
+  assertCurrentPackSource(sourceSha);
+  const testEvidence = process.argv.includes("--verify")
+    ? await collectSafeLocalTestEvidence(sourceSha) : undefined;
   const defaultName = `SARI_ZAHYPI_REQUIREMENTS_PACK_${releaseDate}.zip`;
   const outputPath = argumentValue("output") || join(process.cwd(), "artifacts", defaultName);
-  const result = await buildZahyPiRequirementsPack({ outputPath, sourceSha, releaseDate });
+  const result = await buildZahyPiRequirementsPack({ outputPath, sourceSha, releaseDate, testEvidence });
   process.stdout.write(`${stableJson(result)}`);
 }
 
