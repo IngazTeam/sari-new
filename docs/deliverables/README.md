@@ -1,17 +1,19 @@
 # حزم متطلبات Sari → ZahyPi
 
-## التسليم الحالي — 10 سبتمبر 2026
+## التسليم الحالي — 10 سبتمبر 2026، المراجعة r2
 
-[SARI_ZAHYPI_REQUIREMENTS_PACK_2026-09-10.zip](SARI_ZAHYPI_REQUIREMENTS_PACK_2026-09-10.zip)
+[SARI_ZAHYPI_REQUIREMENTS_PACK_2026-09-10-r2.zip](SARI_ZAHYPI_REQUIREMENTS_PACK_2026-09-10-r2.zip)
 
-- مصدر الكود: `3ddfb4d37aa249b10b592c8ca7c435c509264a96`.
-- الحجم: 336,013 bytes؛ 50 مهمة و417 ملفًا.
-- SHA-256: `a5d7ecb2e0ec22548e017cf864cd78b8264521d9ab1c32363a1f5420715669a0`.
-- أدلة آلية داخل ZIP: 1230 passed / 0 failed / 1 skipped في 99 ملفًا، على Windows وNode 24.19.0.
+- مصدر الكود: `77b76c4d665b630ff733b4aab43e7f69d9914248`؛ يشمل إصلاح تعافي HTTP وretry_wait وحدود استجابات التفعيل.
+- الحجم: 336,017 bytes؛ 50 مهمة و417 ملفًا.
+- SHA-256: `2d8b70b700afd6e76a8716ac732a6b5775a76b469534ee9774cce144e6418579`.
+- أدلة آلية داخل ZIP: 1267 passed / 0 failed / 1 skipped في 99 ملفًا، على Windows وNode 24.19.0. انتهت في `2026-09-10T14:10:52.419Z`.
 - حالة التسليم: مراجعة/استقبال فقط، وليس اعتماد إنتاج أو نجاح نموذج حي.
 - [تقرير الإصلاح والقيود](../SARI_REMEDIATION_VERIFICATION_2026-09-10.md).
 
 ## الأرشيف
+
+[حزمة 10 سبتمبر الأولى](SARI_ZAHYPI_REQUIREMENTS_PACK_2026-09-10.zip) محفوظة دون تغيير، وتمثل المصدر `3ddfb4d37aa249b10b592c8ca7c435c509264a96` قبل إصلاحات المرحلة الرابعة. حجمها 336,013 bytes وبصمتها `a5d7ecb2e0ec22548e017cf864cd78b8264521d9ab1c32363a1f5420715669a0`؛ أدلتها 1230 passed / 0 failed / 1 skipped، ولا تشمل الإصلاح الأحدث.
 
 حزمة ومجلد 26 أغسطس (36 مهمة) محفوظان كما هما. لا يمثلان المصدر الحالي.
 السكربتان `build-sari-zahypi-requirements-pack.mjs` و`validate-sari-zahypi-requirements-pack.mjs`
