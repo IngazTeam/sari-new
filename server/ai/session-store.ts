@@ -1,219 +1,129 @@
-/**
- * Session Store — DB-backed Session Persistence
- * 
- * Solves: Server restart = all active conversations lose context.
- * 
- * Design:
- * - Memory-first for speed (0ms reads)
- * - Async DB write-through on create/update (non-blocking)
- * - DB fallback on read when memory misses (post-restart recovery)
- * - Toggle: SESSION_STORE=memory (default) | db
- * - Does NOT modify session-context.ts — wraps it transparently
- * 
- * Schema: Uses existing conversations table's metadata
- * or a dedicated session_contexts table (lazy-created).
- */
-
-import { getSession, createSession, updateSession, type ConversationSession, type CustomerIntent } from './session-context';
+import type { RowDataPacket } from 'mysql2/promise';
+import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import {
+  getSession, createSession, updateSession, restoreSession, destroySession, destroyMerchantSessions,
+  type ConversationSession,
+} from './session-context';
+import { currentInboundExecution } from '../messaging/inbound-context';
+import { assertInboundOwned } from '../messaging/inbound-jobs';
 
-// ═══════════════════════════════════════════════════════════════
-// Configuration
-// ═══════════════════════════════════════════════════════════════
-
-const DB_ENABLED = process.env.SESSION_STORE === 'db';
-const SESSION_TABLE = 'session_contexts';
-
-// ═══════════════════════════════════════════════════════════════
-// Lazy Table Creation
-// ═══════════════════════════════════════════════════════════════
-
-async function ensureTable(): Promise<void> {
-  if (!DB_ENABLED) return;
-  await assertRuntimeSchema('database session store', [{ table: SESSION_TABLE }]);
+const TTL = 60 * 60 * 1000;
+export class SessionConflictError extends Error {
+  constructor() { super('Session changed during processing'); this.name = 'SessionConflictError'; }
 }
-
-// ═══════════════════════════════════════════════════════════════
-// DB Operations (all non-blocking / fire-and-forget)
-// ═══════════════════════════════════════════════════════════════
-
-function sessionKey(merchantId: number, conversationId: number): string {
-  return `${merchantId}:${conversationId}`;
-}
-
-async function writeSessionToDb(session: ConversationSession): Promise<void> {
-  if (!DB_ENABLED) return;
-  try {
-    await ensureTable();
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return;
-
-    const key = sessionKey(session.merchantId, session.conversationId);
-    const json = JSON.stringify({
-      ragFacts: session.ragFacts,
-      ragBehaviors: session.ragBehaviors,
-      relevantProducts: session.relevantProducts,
-      contextPrompt: session.contextPrompt,
-      customerIntent: session.customerIntent,
-      sentimentTrajectory: session.sentimentTrajectory,
-      topicsDiscussed: session.topicsDiscussed,
-      persuasionUsed: session.persuasionUsed,
-      messageCount: session.messageCount,
-      dealStage: session.dealStage,
-      createdAt: session.createdAt,
-      lastActivityAt: session.lastActivityAt,
-    });
-
-    // TTL: 60 minutes from last activity
-    const expiresAt = new Date(session.lastActivityAt + 60 * 60 * 1000);
-
-    await pool.execute(`
-      INSERT INTO ${SESSION_TABLE} (merchant_id, conversation_id, session_key, context_json, expires_at)
-      VALUES (?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE context_json = VALUES(context_json), expires_at = VALUES(expires_at)
-    `, [session.merchantId, session.conversationId, key, json, expiresAt]);
-  } catch (e) {
-    // Never let DB failure affect the chat pipeline
-    console.warn('[SessionStore] DB write failed (non-fatal):', (e as Error).message);
+function usesDatabase() {
+  if (process.env.SESSION_STORE === 'memory') {
+    if (process.env.NODE_ENV === 'production') throw new Error('Production sessions require durable storage');
+    return false;
   }
+  return Boolean(process.env.DATABASE_URL);
+}
+async function poolForSessions() {
+  await assertRuntimeSchema('durable conversation context', [{ table: 'session_contexts', columns: ['version'] }]);
+  const pool = await getPool();
+  if (!pool) throw new Error('Session database unavailable');
+  return pool;
+}
+function decode(row: RowDataPacket, merchantId: number, conversationId: number): ConversationSession | null {
+  if (!row || !row.active) return null;
+  const data = typeof row.context_json === 'string' ? JSON.parse(row.context_json) : row.context_json;
+  if (!data || data.merchantId !== merchantId || data.conversationId !== conversationId) return null;
+  return { ...data, merchantId, conversationId, version: row.version };
 }
 
-async function readSessionFromDb(merchantId: number, conversationId: number): Promise<ConversationSession | null> {
-  if (!DB_ENABLED) return null;
-  try {
-    await ensureTable();
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return null;
-
-    const key = sessionKey(merchantId, conversationId);
-    const [rows] = await pool.execute(
-      `SELECT context_json FROM ${SESSION_TABLE} WHERE session_key = ? AND expires_at > NOW() LIMIT 1`,
-      [key]
-    );
-
-    const row = (rows as any[])?.[0];
-    if (!row?.context_json) return null;
-
-    const data = JSON.parse(row.context_json);
-    return {
-      merchantId,
-      conversationId,
-      ragFacts: data.ragFacts || '',
-      ragBehaviors: data.ragBehaviors || '',
-      relevantProducts: data.relevantProducts || [],
-      contextPrompt: data.contextPrompt || '',
-      customerIntent: data.customerIntent || 'unknown',
-      sentimentTrajectory: data.sentimentTrajectory || [],
-      topicsDiscussed: data.topicsDiscussed || [],
-      persuasionUsed: data.persuasionUsed || [],
-      messageCount: data.messageCount || 0,
-      dealStage: data.dealStage,
-      createdAt: data.createdAt || Date.now(),
-      lastActivityAt: data.lastActivityAt || Date.now(),
-    } as ConversationSession;
-  } catch (e) {
-    console.warn('[SessionStore] DB read failed (non-fatal):', (e as Error).message);
-    return null;
-  }
-}
-
-async function deleteSessionFromDb(merchantId: number, conversationId: number): Promise<void> {
-  if (!DB_ENABLED) return;
-  try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return;
-
-    const key = sessionKey(merchantId, conversationId);
-    await pool.execute(`DELETE FROM ${SESSION_TABLE} WHERE session_key = ?`, [key]);
-  } catch { /* silent */ }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Public API — Same interface as session-context.ts
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Get session with DB fallback.
- * Memory hit → instant return.
- * Memory miss → DB lookup → restore to memory.
- */
-export async function getSessionWithFallback(
-  merchantId: number,
-  conversationId: number
-): Promise<ConversationSession | null> {
-  // 1. Memory first (0ms)
-  const memSession = getSession(merchantId, conversationId);
-  if (memSession) return memSession;
-
-  // 2. DB fallback (post-restart recovery)
-  const dbSession = await readSessionFromDb(merchantId, conversationId);
-  if (dbSession) {
-    // Restore to memory for future reads
-    createSession({
-      merchantId: dbSession.merchantId,
-      conversationId: dbSession.conversationId,
-      ragFacts: dbSession.ragFacts,
-      ragBehaviors: dbSession.ragBehaviors,
-      relevantProducts: dbSession.relevantProducts,
-      contextPrompt: dbSession.contextPrompt,
-      initialSentiment: dbSession.sentimentTrajectory[0] || 'neutral',
-      initialIntent: dbSession.customerIntent,
-    });
-    console.log(`[SessionStore] 🔄 Recovered session from DB: ${merchantId}:${conversationId}`);
-    return dbSession;
-  }
-
-  return null;
-}
-
-/**
- * Create session + async DB write.
- */
-export function createSessionWithPersist(data: Parameters<typeof createSession>[0]): ConversationSession {
-  const session = createSession(data);
-  // Fire-and-forget DB write
-  writeSessionToDb(session).catch(() => {});
+/** Database is authoritative on every new message; memory is only a local view. */
+export async function getSessionWithFallback(merchantId: number, conversationId: number): Promise<ConversationSession | null> {
+  if (!usesDatabase()) return getSession(merchantId, conversationId);
+  const pool = await poolForSessions();
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `SELECT s.context_json, s.version, s.expires_at > UTC_TIMESTAMP() AS active
+     FROM session_contexts s JOIN conversations c ON c.id = s.conversation_id AND c.merchantId = s.merchant_id
+     WHERE s.merchant_id = ? AND s.conversation_id = ?`, [merchantId, conversationId],
+  );
+  const session = decode(rows[0], merchantId, conversationId);
+  if (session) restoreSession(session);
+  else destroySession(merchantId, conversationId);
   return session;
 }
 
-/**
- * Update session + async DB write.
- */
-export function updateSessionWithPersist(
-  merchantId: number,
-  conversationId: number,
-  updates: Parameters<typeof updateSession>[2]
-): ConversationSession | null {
-  const session = updateSession(merchantId, conversationId, updates);
-  if (session) {
-    // Fire-and-forget DB write
-    writeSessionToDb(session).catch(() => {});
-  }
-  return session;
-}
-
-/**
- * Cleanup expired DB sessions (called by cron).
- */
-export async function cleanupExpiredSessions(): Promise<number> {
-  if (!DB_ENABLED) return 0;
+async function mutateSession(merchantId: number, conversationId: number,
+  mutate: (current: ConversationSession | null) => ConversationSession | null,
+  expectedVersion?: number): Promise<ConversationSession | null> {
+  const pool = await poolForSessions();
+  const connection = await pool.getConnection();
   try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return 0;
-
-    const [result] = await pool.execute(
-      `DELETE FROM ${SESSION_TABLE} WHERE expires_at < NOW()`
-    );
-    const deleted = (result as any)?.affectedRows || 0;
-    if (deleted > 0) {
-      console.log(`[SessionStore] Cleaned up ${deleted} expired DB sessions`);
+    await connection.beginTransaction();
+    const execution = currentInboundExecution();
+    if (execution) {
+      if (execution.merchantId !== merchantId) throw new Error('Session tenant mismatch');
+      await assertInboundOwned({ id: execution.id, lease_token: execution.token }, connection);
     }
-    return deleted;
-  } catch {
-    return 0;
+    // Lock the conversation even before a context row exists (concurrent first messages).
+    const [conversations] = await connection.execute<RowDataPacket[]>(
+      'SELECT id FROM conversations WHERE id = ? AND merchantId = ? FOR UPDATE', [conversationId, merchantId],
+    );
+    if (!conversations.length) throw new Error('Session conversation tenant mismatch');
+    const [rows] = await connection.execute<RowDataPacket[]>(
+      `SELECT context_json, version, expires_at > UTC_TIMESTAMP() AS active FROM session_contexts
+       WHERE merchant_id = ? AND conversation_id = ? FOR UPDATE`, [merchantId, conversationId],
+    );
+    const row = rows[0];
+    if (expectedVersion !== undefined && Number(row?.version || 0) !== expectedVersion) throw new SessionConflictError();
+    const current = decode(row, merchantId, conversationId);
+    const next = mutate(current);
+    if (!next) { await connection.commit(); destroySession(merchantId, conversationId); return null; }
+    next.version = Number(row?.version || 0) + 1;
+    if (Buffer.byteLength(JSON.stringify(next)) > 1024 * 1024) throw new Error('Session exceeds storage limit');
+    await connection.execute(
+      `INSERT INTO session_contexts (merchant_id, conversation_id, session_key, context_json, expires_at, version)
+       VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE context_json = VALUES(context_json),
+       expires_at = VALUES(expires_at), version = VALUES(version)`,
+      [merchantId, conversationId, `${merchantId}:${conversationId}`, JSON.stringify(next), new Date(next.lastActivityAt + TTL), next.version],
+    );
+    await connection.commit();
+    return restoreSession(next);
+  } catch (error) {
+    await connection.rollback();
+    destroySession(merchantId, conversationId);
+    throw error;
+  } finally { connection.release(); }
+}
+
+export async function createSessionWithPersist(data: Parameters<typeof createSession>[0], expectedVersion?: number): Promise<ConversationSession> {
+  if (!usesDatabase()) return createSession(data);
+  return (await mutateSession(data.merchantId, data.conversationId, current => {
+    // A racing initial build cannot overwrite an already active context.
+    if (current && expectedVersion === undefined) return current;
+    return createSession(data);
+  }, expectedVersion))!;
+}
+
+export async function updateSessionWithPersist(merchantId: number, conversationId: number,
+  updates: Parameters<typeof updateSession>[2]): Promise<ConversationSession | null> {
+  if (!usesDatabase()) return updateSession(merchantId, conversationId, updates);
+  return mutateSession(merchantId, conversationId, current => {
+    if (!current) return null;
+    restoreSession(current);
+    return updateSession(merchantId, conversationId, updates);
+  });
+}
+
+export async function invalidateMerchantSessions(merchantId: number): Promise<void> {
+  if (usesDatabase()) {
+    const pool = await poolForSessions();
+    // Tombstones retain the version so a stale topic rebuild fails its CAS check.
+    await pool.execute(`UPDATE session_contexts SET context_json = 'null', expires_at = UTC_TIMESTAMP(),
+      version = version + 1 WHERE merchant_id = ?`, [merchantId]);
   }
+  destroyMerchantSessions(merchantId);
+}
+
+export async function cleanupExpiredSessions(): Promise<number> {
+  if (!usesDatabase()) return 0;
+  const pool = await poolForSessions();
+  const [result] = await pool.execute<any>(
+    `DELETE FROM session_contexts WHERE expires_at < TIMESTAMPADD(DAY, -1, UTC_TIMESTAMP()) LIMIT 1000`,
+  );
+  return result.affectedRows;
 }

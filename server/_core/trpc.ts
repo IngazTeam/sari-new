@@ -5,6 +5,7 @@ import type { TrpcContext } from "./context";
 import type { Permission, MerchantRole } from "./permissions";
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from "./permissions";
+import { parseMerchantSelection, withMerchantRequest } from '../accounts/merchant-context';
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -29,7 +30,15 @@ const requireUser = t.middleware(async opts => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser);
+const selectedMerchantScope = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.user) return next();
+  let selectedMerchantId: number | undefined;
+  try { selectedMerchantId = parseMerchantSelection(ctx.req?.headers?.['x-merchant-id']); }
+  catch { throw new TRPCError({ code: 'BAD_REQUEST', message: 'اختيار المتجر غير صالح' }); }
+  return withMerchantRequest({ userId: ctx.user.id, selectedMerchantId }, () => next());
+});
+
+export const protectedProcedure = t.procedure.use(requireUser).use(selectedMerchantScope);
 
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
@@ -63,7 +72,8 @@ const requireMerchantMember = t.middleware(async opts => {
   if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED', message: UNAUTHED_ERR_MSG });
   let membership;
   try {
-    membership = await resolveMerchantAccess(ctx.user.id);
+    const selected = parseMerchantSelection(ctx.req?.headers?.['x-merchant-id']);
+    membership = await resolveMerchantAccess(ctx.user.id, selected);
   } catch {
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.' });
   }
@@ -75,7 +85,7 @@ const requireMerchantMember = t.middleware(async opts => {
  * merchantProcedure — For any logged-in merchant member (any role).
  * Injects merchantId + merchantRole into context.
  */
-export const merchantProcedure = t.procedure.use(requireMerchantMember);
+export const merchantProcedure = t.procedure.use(selectedMerchantScope).use(requireMerchantMember);
 
 /**
  * Create a procedure that requires a specific permission.

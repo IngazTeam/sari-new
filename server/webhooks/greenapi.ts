@@ -19,6 +19,7 @@ import {
 } from '../db';
 import type { CustomerProfile } from '../db/customer-intelligence';
 import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
+import { currentInboundExecution } from '../messaging/inbound-context';
 import { whatsAppEffectKey, whatsAppEventEffectKey } from '../channels/whatsapp/effect-key';
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
@@ -1490,20 +1491,13 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // ── Welcome Message: Send to first-time customers ──
+    let plannedWelcome: string | undefined;
     if (botSettings.welcomeMessage) {
       try {
         const existingMessages = await getMessagesByConversationId(conversationId);
         if (existingMessages.length === 0) {
           console.log(`[Webhook] 🎉 First-time customer ${customerPhone} — sending welcome message`);
-          await sendResponseWithDelay({
-            idempotencyKey: whatsAppEventEffectKey(instance.merchantId, instance.instanceId, payload.idMessage, 'welcome'),
-            customerPhone: groupChatId || customerPhone,
-            message: botSettings.welcomeMessage,
-            delayMs: 500,
-            instanceId: instance.instanceId,
-            token: instance.token,
-            apiUrl: instance.apiUrl || undefined,
-          });
+          plannedWelcome = botSettings.welcomeMessage;
         }
       } catch (welcomeErr) {
         console.warn('[Webhook] Welcome message send failed:', welcomeErr);
@@ -1728,16 +1722,17 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     // ── FIX-1: Send to WhatsApp FIRST, then save outgoing + mark processed ──
     // GAP-4 FIX: Reply to group chatId when triggered from mention/keyword group modes
-    await sendResponseWithDelay({
-      idempotencyKey: whatsAppEffectKey(instance.merchantId, instance.instanceId, incomingMsgId!,
-        ['voiceMessage', 'audioMessage'].includes(payload.messageData.typeMessage) ? 'voice_reply' : 'reply'),
-      customerPhone: groupChatId || customerPhone,
-      message: response,
-      delayMs: (botSettings.responseDelay ?? 2) * 1000,
-      instanceId: instance.instanceId,
-      token: instance.token,
-      apiUrl: instance.apiUrl || undefined,
+    const { parseAICommands } = await import('../ai');
+    const { buildReplyPlan, dispatchReplyPlan } = await import('../messaging/reply-plan');
+    const richReply = await parseAICommands(response, instance.merchantId);
+    response = richReply.text;
+    const replyPlan = buildReplyPlan({
+      merchantId: instance.merchantId, instanceId: instance.id, providerAccount: instance.instanceId,
+      eventId: payload.idMessage, conversationId, incomingMessageId: incomingMsgId,
+      to: groupChatId || customerPhone, text: response, welcome: plannedWelcome, media: richReply.media,
     });
+    const delivery = await dispatchReplyPlan(replyPlan, (botSettings.responseDelay ?? 2) * 1000);
+    if (delivery === 'human_takeover') return { success: true, message: 'Human takeover suppressed pending reply' };
     
     // ── FIX-1: Save outgoing message + mark incoming as processed AFTER successful send ──
     try {
@@ -1763,6 +1758,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         }
       }
     } catch (postSendErr) {
+      const execution = currentInboundExecution();
+      if (execution) execution.uncertainEffect = true;
       console.error('[Webhook] Post-send bookkeeping error (message WAS delivered):', postSendErr);
     }
     
@@ -1805,7 +1802,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         actionProfile?.preferences?.buyingStage,
       );
       
-      selectAction({
+      await selectAction({
         merchantId: instance.merchantId,
         customerMessage: messageText,
         botResponse: response,
@@ -1834,8 +1831,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             },
           });
         }
-      }).catch(() => {}); // Non-blocking
-    } catch { /* action selector is supplementary */ }
+      }).catch(() => {
+        const execution = currentInboundExecution();
+        if (execution) execution.uncertainEffect = true;
+      });
+    } catch {
+      const execution = currentInboundExecution();
+      if (execution) execution.uncertainEffect = true;
+    }
     
     return {
       success: true,
@@ -1844,6 +1847,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
   } catch (error: any) {
     // FIX-RACE: Duplicate webhook — another concurrent request already processed this message
     if (error instanceof DuplicateMessageError) {
+      if (error.existingMessage?.isProcessed !== 1) {
+        return { success: false, message: 'Unfinished incoming message requires review' };
+      }
       console.log(`[Webhook] Duplicate webhook ignored — ${error.message}`);
       return { success: true, message: 'Duplicate webhook — already processed' };
     }

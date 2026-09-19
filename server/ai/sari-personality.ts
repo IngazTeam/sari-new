@@ -48,7 +48,8 @@ import { recordMetric } from '../db/quality-metrics';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
-import { getSession, createSession, updateSession, detectIntent, detectTopicChange, type CustomerIntent } from './session-context';
+import { createSessionWithPersist, updateSessionWithPersist, getSessionWithFallback } from './session-store';
+import { getSession, detectIntent, detectTopicChange, type CustomerIntent } from './session-context';
 import { buildMissionBlock, missionToPrompt, hasCriticalSignal, type SalesPersona, type MissionBlock } from './strategist';
 import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
 import { loadArsenal, selectPersuasion, recordStrategyUse, markStrategySuccess, buildCrossSellSuggestions } from './sales-arsenal';
@@ -1953,14 +1954,7 @@ ${result.orderUrl}
     }
 
     // --- Session Cache: skip RAG on messages 2+ ---
-    // DB-backed pre-warm: if memory is empty, recover from DB (post-restart)
-    if (convId && !getSession(params.merchantId, convId)) {
-      try {
-        const { getSessionWithFallback } = await import('./session-store');
-        await getSessionWithFallback(params.merchantId, convId);
-      } catch { /* non-blocking — falls through to normal flow */ }
-    }
-    let existingSession = convId ? getSession(params.merchantId, convId) : null;
+    let existingSession = convId ? await getSessionWithFallback(params.merchantId, convId) : null;
     const needsTopicRebuild = existingSession && detectTopicChange(existingSession, params.message);
 
     // ENH-FIX: Detect intent ONCE before path split — shared by FAST + FULL paths
@@ -2000,10 +1994,11 @@ ${result.orderUrl}
       const intent = earlyIntent; // reuse pre-computed intent
       const fastSentiment = detectSentimentFast(params.message);
       const sentimentSignals = detectSentimentWithSignals(params.message);
-      updateSession(params.merchantId, convId, {
+      existingSession = await updateSessionWithPersist(params.merchantId, convId, {
         intent,
         sentiment: fastSentiment, // Keyword-based — zero cost, tracks mid-conversation shifts
       });
+      if (!existingSession) throw new Error("Conversation session invalidated during reply");
       // FAST PATH: Load lightweight arsenal FIRST (needed by Closing Engine for abandonedCart)
       const trajectory = existingSession.sentimentTrajectory || [];
       let fastArsenal;
@@ -2074,7 +2069,7 @@ ${result.orderUrl}
       );
 
       if (persuasion.strategy !== 'none') {
-        updateSession(params.merchantId, convId, { persuasionTactic: persuasion.strategy });
+        existingSession = (await updateSessionWithPersist(params.merchantId, convId, { persuasionTactic: persuasion.strategy, countMessage: false }))!;
         // v6: Record strategy use for metrics
         recordStrategyUse({
           merchantId: params.merchantId,
@@ -2112,8 +2107,7 @@ ${result.orderUrl}
             if (reInjected) {
               systemPrompt += reInjected;
               // PEN-FAST-01 FIX: Update session so subsequent messages don't re-inject
-              updateSession(params.merchantId, convId, {});
-              existingSession.contextPrompt += reInjected;
+              existingSession = (await updateSessionWithPersist(params.merchantId, convId, { contextAppend: reInjected, countMessage: false }))!;
             }
             console.log(`[chatWithSari] ⚡ FAST PATH: Re-injected ${ragContext.sectionsUsed} knowledge sections (cached context was too short)`);
           }
@@ -2593,7 +2587,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
       // Create session for future messages
       if (convId) {
-        createSession({
+        await createSessionWithPersist({
           merchantId: params.merchantId,
           conversationId: convId,
           ragFacts: '', // Stored in contextPrompt
@@ -2602,16 +2596,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           contextPrompt: contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + (customerProfile ? buildProfileContext(customerProfile) : ''),
           initialSentiment: sentiment?.sentiment || 'neutral',
           initialIntent: intent,
-        });
-        // DB write-through (async, non-blocking)
-        try {
-          const session = getSession(params.merchantId, convId);
-          if (session) {
-            import('./session-store').then(({ updateSessionWithPersist }) => {
-              updateSessionWithPersist(params.merchantId, convId, {});
-            }).catch(() => { });
-          }
-        } catch { /* silent */ }
+        }, existingSession?.version);
         // v8: dealStage update handled by updateDealStage() helper before path split
       }
     } catch (arsenalErr) {

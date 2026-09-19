@@ -1,5 +1,6 @@
 import axios from 'axios';
 import crypto from 'node:crypto';
+import { inboundEffectKey, currentInboundExecution } from './messaging/inbound-context';
 import { deriveGreenWebhookToken } from './channels/whatsapp/green-webhook-token';
 
 /**
@@ -44,7 +45,7 @@ async function sendTrackedStoredWhatsApp(
 ): Promise<{ success: boolean; messageId?: string; error?: string } | null> {
   const { getWhatsAppInstanceByInstanceId } = await import('./db');
   const instance = await getWhatsAppInstanceByInstanceId(providerInstanceId);
-  if (!instance) return effect ? { success: false, error: 'instance_unavailable' } : null;
+  if (!instance) return effect || currentInboundExecution() ? { success: false, error: 'instance_unavailable' } : null;
   const expectedProvider = isMetaCloudApiUrl(apiUrl) ? 'meta_cloud' : 'green_api';
   if (instance.status !== 'active' || (instance.provider || 'green_api') !== expectedProvider || instance.token !== accessToken) {
     return { success: false, error: 'WhatsApp connection is unavailable or credentials changed' };
@@ -53,7 +54,7 @@ async function sendTrackedStoredWhatsApp(
   const result = await sendMerchantWhatsApp({
     merchantId: instance.merchantId,
     instanceRecordId: instance.id,
-    idempotencyKey: effect?.idempotencyKey ?? `legacy:${crypto.randomUUID()}`,
+    idempotencyKey: effect?.idempotencyKey ?? inboundEffectKey() ?? `legacy:${crypto.randomUUID()}`,
     ...request,
   });
   return result.accepted && result.providerMessageId

@@ -646,7 +646,12 @@ async function startServer() {
     // This prevents duplicate campaign sends, duplicate WhatsApp messages, etc.
     const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
 
+    let stopInbound: (() => Promise<void>) | undefined;
     if (isPrimaryWorker) {
+      if (process.env.SARI_INBOUND_WORKER !== 'external') {
+        const { startInboundWorker } = await import('../messaging/inbound-worker');
+        stopInbound = await startInboundWorker();
+      }
       console.log('[Cluster] This is the PRIMARY worker — initializing cron jobs and polling');
 
       // Initialize Salla cron jobs
@@ -816,6 +821,11 @@ async function startServer() {
     const gracefulShutdown = async (signal: string) => {
       console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
 
+      const shutdownDeadline = setTimeout(() => process.exit(1), 30_000);
+      shutdownDeadline.unref();
+      const { stopAllPolling } = await import('../polling');
+      stopAllPolling();
+      await stopInbound?.();
       server.close(async () => {
         console.log('[Server] HTTP server closed');
 

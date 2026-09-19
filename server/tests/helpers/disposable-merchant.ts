@@ -13,7 +13,7 @@ export async function createDisposableMerchant(label: string) {
   assertDisposableDatabase();
   const pool = await getPool();
   if (!pool) throw new Error('Test database unavailable');
-  const nonce = `remediation-${label}-${randomUUID()}`;
+  const nonce = `remediation-${label.slice(0, 14)}-${randomUUID()}`;
   const [user] = await pool.execute<any>(
     "INSERT INTO users (openId, name, email, loginMethod, role, account_status) VALUES (?, ?, ?, 'local', 'user', 'active')",
     [nonce, 'Test account', `${nonce}@example.test`],

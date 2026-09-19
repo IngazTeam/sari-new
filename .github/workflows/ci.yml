@@ -111,6 +111,9 @@ jobs:
           server/team-access.mysql.test.ts
           server/auth-http.mysql.test.ts
           server/whatsappDeliverySafety.mysql.test.ts
+          server/messaging/inbound.mysql.test.ts
+          server/messaging/inbound-process.mysql.test.ts
+          server/ai/session-store.mysql.test.ts
           server/aiBudgetLedger.mysql.test.ts
           server/auth.adminDeletion.test.ts
           server/auth.zidWebhook.test.ts

@@ -18,8 +18,8 @@ module.exports = {
       cwd: __dirname,
 
       // ─── Cluster Mode ──────────────────────────────────
-      // Uses all available CPU cores for maximum throughput
-      // Each instance gets its own event loop + DB pool (25 conn each)
+      // Bounded web workers, with ten DB connections per process by default.
+      // The dedicated inbound process has its own ten-connection pool.
       // PM2 handles load balancing via round-robin
       exec_mode: 'cluster',
       // Keep aggregate DB pool usage bounded. Scale only after measuring the
@@ -40,6 +40,8 @@ module.exports = {
       // ─── Environment ──────────────────────────────────
       env: {
         NODE_ENV: 'production',
+        SARI_INBOUND_WORKER: 'external',
+        SARI_DB_POOL_SIZE: '10',
         PORT: configuredPort,
         SARI_ENV_FILE: process.env.SARI_ENV_FILE || path.join(__dirname, '.env'),
       },
@@ -50,6 +52,30 @@ module.exports = {
       log_file: './logs/combined.log',
       time: true,
       merge_logs: true,         // Merge logs from all cluster instances
+    },
+    {
+      name: 'sari-inbound',
+      script: 'dist/worker.js',
+      cwd: __dirname,
+      exec_mode: 'fork',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '768M',
+      kill_timeout: 35000,
+      listen_timeout: 60000,
+      wait_ready: true,
+      min_uptime: '30s',
+      max_restarts: 10,
+      exp_backoff_restart_delay: 1000,
+      env: {
+        NODE_ENV: 'production',
+        SARI_DB_POOL_SIZE: '10',
+        SARI_ENV_FILE: process.env.SARI_ENV_FILE || path.join(__dirname, '.env'),
+      },
+      error_file: './logs/inbound-err.log',
+      out_file: './logs/inbound-out.log',
+      time: true,
     }
   ]
 };

@@ -22,6 +22,8 @@ export async function getDb(): Promise<SariDb | null> {
   catch { throw new Error('Invalid database URL'); }
   if (!['mysql:', 'mysql2:'].includes(url.protocol)) throw new Error('Invalid database protocol');
   const ssl = url.searchParams.get('ssl');
+  const connectionLimit = Number(process.env.SARI_DB_POOL_SIZE || 25);
+  if (!Number.isInteger(connectionLimit) || connectionLimit < 2 || connectionLimit > 25) throw new Error('SARI_DB_POOL_SIZE must be between 2 and 25');
   let candidate: mysql.Pool;
   try { candidate = mysql.createPool({
     host: url.hostname,
@@ -30,8 +32,8 @@ export async function getDb(): Promise<SariDb | null> {
     password: decodeURIComponent(url.password),
     database: decodeURIComponent(url.pathname.slice(1)),
     timezone: 'Z',
-    connectionLimit: 25,
-    maxIdle: 10,
+    connectionLimit,
+    maxIdle: Math.min(10, connectionLimit),
     idleTimeout: 60_000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 30_000,

@@ -717,6 +717,16 @@ export async function getMerchantById(id: number): Promise<(Merchant & { email?:
 }
 
 export async function getMerchantByUserId(userId: number): Promise<Merchant | undefined> {
+  const { currentMerchantRequest } = await import('./accounts/merchant-context');
+  const request = currentMerchantRequest();
+  if (request?.userId === userId && request.selectedMerchantId !== undefined) {
+    const { resolveMerchantAccess } = await import('./accounts/merchant-access');
+    const access = await resolveMerchantAccess(userId, request.selectedMerchantId);
+    // Unmigrated procedures retain their owner-only contract in the selected
+    // store. They must never silently fall back to a different owned store.
+    if (!access || access.role !== 'owner') return undefined;
+    return getMerchantById(access.merchantId);
+  }
   const db = await getDb();
   if (!db) return undefined;
 

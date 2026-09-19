@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { MerchantSelector } from './MerchantSelector';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -450,6 +451,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 overflow-y-auto">
+            {!isAdmin && !isCollapsed && <MerchantSelector />}
             {/* Sidebar Search */}
             {!isCollapsed && (
               <div className="px-3 py-2">

@@ -8,6 +8,7 @@ import App from "./App";
 import "./index.css";
 import { initializeI18n } from "./lib/i18n";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
+import { selectedMerchantId } from './lib/merchant-selection';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,10 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        const merchantId = selectedMerchantId();
+        return merchantId ? { 'X-Merchant-Id': merchantId } : {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),

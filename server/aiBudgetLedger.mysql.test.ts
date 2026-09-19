@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fork, type ChildProcess } from 'node:child_process';
+import { resolve } from 'node:path';
 import { getPool, closeDb } from './db/connection';
 import { assertDisposableDatabase, createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
 import { reserveAiBudget, settleAiBudget, markAiBudgetUnknown, withAiBudget, getAiBudgetStatus, pricedMicroUsd } from './ai/budget-ledger';
@@ -9,6 +11,23 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic AI budget on disposable MySQL
   const users: number[] = [];
   const scopes: string[] = [];
   const model = `test-${randomUUID()}`;
+  const children: ChildProcess[] = [];
+  afterEach(async () => {
+    for (const child of children.splice(0)) if (child.exitCode === null && child.signalCode === null) {
+      const ended = new Promise<void>(resolve => child.once('exit', () => resolve())); child.kill('SIGKILL'); await ended;
+    }
+  });
+  async function reserveInProcess(input: ReturnType<typeof request>, hold = false) {
+    const child = fork(resolve('server/tests/helpers/budget-process-child.ts'), [JSON.stringify(input), hold ? 'hold' : 'exit'],
+      { execArgv: ['--import', 'tsx'], stdio: ['ignore', 'ignore', 'ignore', 'ipc'], windowsHide: true });
+    children.push(child);
+    const result = await new Promise<any>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Budget child did not finish')), 20_000);
+      child.once('message', message => { clearTimeout(timer); resolve(message); });
+      child.once('error', error => { clearTimeout(timer); reject(error); });
+    });
+    return { child, result };
+  }
   const request = (merchantId: number | string, requestId = randomUUID()) => ({
     merchantId, provider: 'fixture', model, taskType: 'test.budget', requestId,
     inputTokens: 1, maxOutputTokens: 1,
@@ -51,6 +70,23 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic AI budget on disposable MySQL
     for (const result of results) if (result.status === 'rejected') expect(result.reason.code).toBe('budget_exceeded');
     expect(await getAiBudgetStatus(ids[0])).toMatchObject({ globalUsed: 100, globalLimit: 100, exceeded: true });
   });
+  it('enforces one global ceiling across six independent processes', async () => {
+    const ids = Array.from({ length: 6 }, platform);
+    const outcomes = await Promise.all(ids.map(id => reserveInProcess(request(id))));
+    expect(outcomes.filter(item => item.result.accepted)).toHaveLength(5);
+    expect(outcomes.filter(item => !item.result.accepted).map(item => item.result.code)).toEqual(['budget_exceeded']);
+    expect(await getAiBudgetStatus(ids[0])).toMatchObject({ globalUsed: 100, globalLimit: 100 });
+  }, 30_000);
+  it('keeps a reservation charged after killing its owning process and blocks provider replay', async () => {
+    const input = request(platform());
+    const { child, result } = await reserveInProcess(input, true);
+    expect(result.accepted).toBe(true);
+    const ended = new Promise<void>(resolve => child.once('exit', () => resolve())); child.kill('SIGKILL'); await ended;
+    const operation = vi.fn();
+    await expect(withAiBudget(input, operation, () => undefined)).rejects.toMatchObject({ code: 'duplicate_request' });
+    expect(operation).not.toHaveBeenCalled();
+    expect(await getAiBudgetStatus(input.merchantId)).toMatchObject({ globalUsed: 20 });
+  }, 25_000);
   it('does not charge duplicate admission or settlement, and uses the original price version', async () => {
     const input = request(platform());
     const reservation = await reserveAiBudget(input);

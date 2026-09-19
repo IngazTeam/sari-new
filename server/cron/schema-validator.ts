@@ -53,7 +53,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'whatsappConnections', columns: ['apiToken'] },
   { table: 'whatsapp_connection_requests', columns: ['apiToken'] },
   ...WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS,
-  { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
+  { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status', 'request_json'] },
   {
     table: 'whatsapp_disconnect_incidents',
     columns: ['merchant_id', 'instance_id', 'detected_at', 'alerts_sent', 'next_alert_at', 'resolved_at', 'open_instance_id'],
@@ -92,7 +92,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
   { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'occasionType', 'year', 'enabled', 'status'] },
   { table: 'merchant_onboarding_answers' },
-  { table: 'session_contexts' }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
+  { table: 'session_contexts', columns: ['version'] }, { table: 'whatsapp_inbound_jobs', columns: ['lease_token', 'reply_plan_json', 'partition_key'] }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
   { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' }, { table: 'sari_escalation_queue' },
   { table: 'knowledge_sections' }, { table: 'knowledge_changelog' }, { table: 'sari_response_cache' },
   { table: 'sales_quotations' }, { table: 'sales_targets' }, { table: 'quotation_templates' },

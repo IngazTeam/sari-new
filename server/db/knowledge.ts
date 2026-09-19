@@ -567,10 +567,8 @@ export async function invalidateCache(merchantId: number): Promise<void> {
   );
 
   // 2. GAP-4 FIX: Evict in-memory session contexts so stale knowledge is purged
-  try {
-    const { destroyMerchantSessions } = await import('../ai/session-context');
-    destroyMerchantSessions(merchantId);
-  } catch { /* session-context module may not be loaded yet */ }
+  const { invalidateMerchantSessions } = await import('../ai/session-store');
+  await invalidateMerchantSessions(merchantId);
 }
 
 // ═══════════════════════════════════════════════════════════════

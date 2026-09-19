@@ -63,6 +63,8 @@ import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
 import { merchantsRouter } from "./routers-merchants";
 import { monitorRouter } from "./routers-monitor";
+import { inboundOperationsRouter } from './routers-inbound-operations';
+import { merchantSelectionRouter } from './routers-merchant-selection';
 import { botSettingsRouter } from "./routers-bot-settings";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
@@ -8511,6 +8513,8 @@ export const appRouter = router({
 
   // Message Delivery Monitor — modularized to routers-monitor.ts
   monitor: monitorRouter,
+  inboundOperations: inboundOperationsRouter,
+  merchantSelection: merchantSelectionRouter,
 
   // Admin AI Analytics — modularized to routers-admin-ai-analytics.ts
   adminAiAnalytics: adminAiAnalyticsRouter,

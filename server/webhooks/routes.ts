@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { handleGreenAPIWebhook } from './greenapi';
+import { acceptWhatsAppEvent } from '../messaging/ingress';
 import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cloud';
 import { verifyGreenWebhookAuthorization } from './greenapi-auth';
 import { updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
@@ -149,6 +150,7 @@ router.post('/greenapi', async (req: Request, res: Response) => {
       if (!providerMessageId || !status) return res.status(400).json({ error: 'Invalid outgoing status payload' });
       const result = await updateWhatsAppDeliveryStatus({
         provider: 'green_api',
+        providerAccount: instanceId,
         providerMessageId,
         status,
         errorCode: status === 'failed' ? rawStatus : undefined,
@@ -159,7 +161,7 @@ router.post('/greenapi', async (req: Request, res: Response) => {
     console.log('[Green API Webhook] Received webhook event');
 
     // Process webhook
-    const result = await handleGreenAPIWebhook(req.body);
+    const result = await acceptWhatsAppEvent(req.body, 'webhook');
 
     if (result.success) {
       return res.status(200).json({ message: result.message });

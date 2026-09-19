@@ -13,6 +13,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 export interface ConversationSession {
+  version?: number;
   merchantId: number;
   conversationId: number;
   // === Built once on first message ===
@@ -102,6 +103,13 @@ const MAX_SESSIONS = 500;               // Memory cap
 
 const sessions = new Map<string, ConversationSession>();
 
+/** Restore the complete persisted value, including its evolving history. */
+export function restoreSession(session: ConversationSession): ConversationSession {
+  if (sessions.size >= MAX_SESSIONS) evictOldestSessions(50);
+  sessions.set(sessionKey(session.merchantId, session.conversationId), session);
+  return session;
+}
+
 function sessionKey(merchantId: number, conversationId: number): string {
   return `${merchantId}:${conversationId}`;
 }
@@ -186,6 +194,8 @@ export function updateSession(
     intent?: CustomerIntent;
     topic?: string;
     persuasionTactic?: string;
+    countMessage?: boolean;
+    contextAppend?: string;
   }
 ): ConversationSession | null {
   const key = sessionKey(merchantId, conversationId);
@@ -193,7 +203,8 @@ export function updateSession(
   if (!session) return null;
   
   session.lastActivityAt = Date.now();
-  session.messageCount++;
+  if (updates.countMessage !== false) session.messageCount++;
+  if (updates.contextAppend) session.contextPrompt += updates.contextAppend;
   
   if (updates.sentiment) {
     session.sentimentTrajectory.push(updates.sentiment);

@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, foreignKey, check } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, foreignKey, check, json } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const aiBudgetPolicies = mysqlTable('ai_budget_policies', {
@@ -3562,6 +3562,7 @@ export const sariPlatformKeys = mysqlTable("sari_platform_keys", {
 });
 
 export const whatsappMessageDeliveries = mysqlTable("whatsapp_message_deliveries", {
+	requestJson: json("request_json"),
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	messageId: int("message_id").references(() => messages.id, { onDelete: "set null" }),
@@ -3578,7 +3579,7 @@ export const whatsappMessageDeliveries = mysqlTable("whatsapp_message_deliveries
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, (table) => [
 	uniqueIndex("uq_whatsapp_delivery_idempotency").on(table.idempotencyKey),
-	uniqueIndex("uq_whatsapp_provider_message").on(table.provider, table.providerMessageId),
+	uniqueIndex("uq_whatsapp_provider_message").on(table.merchantId, table.instanceId, table.provider, table.direction, table.providerMessageId),
 	index("idx_whatsapp_delivery_merchant_status").on(table.merchantId, table.status, table.createdAt),
 ]);
 
@@ -3640,7 +3641,34 @@ export const merchantOnboardingAnswers = mysqlTable("merchant_onboarding_answers
 	index("idx_onboarding_answer_merchant").on(table.merchantId),
 ]);
 
+export const whatsappInboundJobs = mysqlTable('whatsapp_inbound_jobs', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  instanceId: int('instance_id').notNull().references(() => whatsappInstances.id, { onDelete: 'cascade' }),
+  eventKey: char('event_key', { length: 64 }).notNull(),
+  partitionKey: char('partition_key', { length: 64 }).notNull(),
+  source: varchar({ length: 20 }).notNull(),
+  payloadJson: json('payload_json').notNull(),
+  status: mysqlEnum(['pending', 'running', 'completed', 'review', 'dismissed']).default('pending').notNull(),
+  leaseToken: char('lease_token', { length: 36 }),
+  leaseUntil: datetime('lease_until', { mode: 'string', fsp: 3 }),
+  attempts: int().default(0).notNull(),
+  startedAt: datetime('started_at', { mode: 'string', fsp: 3 }),
+  replyPlanJson: json('reply_plan_json'),
+  errorCode: varchar('error_code', { length: 100 }),
+  resolutionNote: varchar('resolution_note', { length: 1000 }),
+  resolvedBy: int('resolved_by'),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+  updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [
+  uniqueIndex('uq_inbound_event').on(table.eventKey),
+  index('idx_inbound_dispatch').on(table.status, table.id),
+  index('idx_inbound_partition').on(table.partitionKey, table.status, table.id),
+  index('idx_inbound_merchant').on(table.merchantId, table.id),
+]);
+
 export const sessionContexts = mysqlTable("session_contexts", {
+	version: int("version").default(1).notNull(),
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),

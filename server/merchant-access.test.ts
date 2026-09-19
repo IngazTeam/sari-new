@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), getPool: vi.fn() }));
 vi.mock('./db/connection', () => ({ getPool: mocks.getPool }));
 import { resolveMerchantAccess } from './accounts/merchant-access';
+import { parseMerchantSelection, withMerchantRequest, currentMerchantRequest } from './accounts/merchant-context';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
 
 const accessRouter = router({
@@ -16,6 +17,15 @@ beforeEach(() => {
 });
 
 describe('merchant access identity boundary', () => {
+  it.each(['0', '-1', '1 OR 1=1', '1.2', '2147483648', ['1', '2']])('rejects malformed merchant selection %s', value => {
+    expect(() => parseMerchantSelection(value)).toThrow('Invalid merchant selection');
+  });
+  it('keeps overlapping request selectors isolated', async () => {
+    const values = await Promise.all([20, 30].map(selectedMerchantId => withMerchantRequest({ userId: 10, selectedMerchantId }, async () => {
+      await new Promise(resolve => setTimeout(resolve, 2)); return currentMerchantRequest()?.selectedMerchantId;
+    })));
+    expect(values).toEqual([20, 30]); expect(currentMerchantRequest()).toBeUndefined();
+  });
   it('uses authenticated membership and ignores a prepopulated/forged tenant', async () => {
     mocks.execute.mockResolvedValue([[{ merchantId: 20, memberId: 1, role: 'manager' }]]);
     await expect(accessRouter.createCaller(context()).write()).resolves.toEqual({ merchantId: 20 });

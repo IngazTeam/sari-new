@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { getPool, getWhatsAppInstanceById } from '../db';
-import { handleGreenAPIWebhook } from './greenapi';
+import { acceptWhatsAppEvent } from '../messaging/ingress';
 import { recordInboundWhatsAppReceipt, updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { constantTimeWebhookValueEqual, verifyMetaWebhookSignature } from './meta-webhook-security';
 import { storagePut } from '../storage';
@@ -124,6 +124,7 @@ export async function handleMetaCloudWebhook(req: RequestWithRawBody, res: Respo
         if (normalized && status?.id) {
           await updateWhatsAppDeliveryStatus({
             provider: 'meta_cloud',
+            providerAccount: phoneNumberId,
             providerMessageId: String(status.id),
             status: normalized,
             errorCode: status?.errors?.[0]?.code ? String(status.errors[0].code) : undefined,
@@ -160,7 +161,7 @@ export async function handleMetaCloudWebhook(req: RequestWithRawBody, res: Respo
           continue;
         }
         const senderName = String(value?.contacts?.find((item: any) => item?.wa_id === message.from)?.profile?.name || '').slice(0, 255);
-        const result = await handleGreenAPIWebhook({
+        const result = await acceptWhatsAppEvent({
           typeWebhook: 'incomingMessageReceived',
           instanceData: {
             idInstance: phoneNumberId,
@@ -178,7 +179,7 @@ export async function handleMetaCloudWebhook(req: RequestWithRawBody, res: Respo
             chatName: senderName,
           },
           messageData,
-        });
+        }, 'meta', Number(instance.merchantId));
         if (!result.success) return res.status(503).json({ error: 'Message processing failed' });
         await recordInboundWhatsAppReceipt({
           merchantId: Number(instance.merchantId),

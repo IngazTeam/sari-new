@@ -145,7 +145,9 @@ describe('CG-03: Webhook ↔ Polling — config source parity', () => {
 
   it('polling must check botSettings.autoReplyEnabled', () => {
     const p = polling();
-    expect(p).toContain('autoReplyEnabled');
+    expect(p).toContain('await acceptWhatsAppEvent(');
+    expect(webhook()).toContain('await shouldBotRespond(instance.merchantId)');
+    expect(readFile('./server/db.ts')).toContain('if (!settings.autoReplyEnabled)');
   });
 
   it('AI layer processIncomingMessage must NOT check merchants.autoReplyEnabled', () => {
@@ -161,12 +163,14 @@ describe('CG-03: Webhook ↔ Polling — config source parity', () => {
 
   it('webhook and polling must both check humanTakeover', () => {
     expect(webhook()).toContain('humanTakeover');
-    expect(polling()).toContain('humanTakeover');
+    expect(polling()).toContain('await acceptWhatsAppEvent(');
+    expect(readFile('./server/messaging/inbound-worker.ts')).toContain('executeInbound(job, handleGreenAPIWebhook)');
   });
 
   it('webhook and polling must both support responseDelay', () => {
     expect(webhook()).toContain('responseDelay');
-    expect(polling()).toContain('responseDelay');
+    expect(polling()).toContain('await acceptWhatsAppEvent(');
+    expect(readFile('./server/messaging/inbound-worker.ts')).toContain('executeInbound(job, handleGreenAPIWebhook)');
   });
 });
 
@@ -364,13 +368,13 @@ describe('CG-09: Setup wizard language ↔ schema parity', () => {
 describe('CG-10: Complete group routing coverage', () => {
   const webhook = () => readFile('./server/webhooks/greenapi.ts');
 
-  // Count occurrences of `groupChatId || customerPhone` — must be >= 5:
-  // 1. out-of-hours, 2. resume, 3. welcome, 4. main AI response, 5. actions
-  it('must route at least 5 send paths through groupChatId', () => {
+  it('routes the complete welcome/reply/media plan through the selected group destination', () => {
     const wh = webhook();
-    const matches = wh.match(/groupChatId \|\| customerPhone/g);
-    expect(matches).not.toBeNull();
-    expect(matches!.length).toBeGreaterThanOrEqual(5);
+    const plan = wh.slice(wh.indexOf('const replyPlan = buildReplyPlan'), wh.indexOf('const delivery = await dispatchReplyPlan'));
+    expect(plan).toContain('to: groupChatId || customerPhone');
+    expect(plan).toContain('welcome: plannedWelcome');
+    expect(plan).toContain('media: richReply.media');
+    expect(readFile('./server/messaging/reply-plan.ts')).toContain('to: input.to');
   });
 
   it('out-of-hours message must use groupChatId', () => {

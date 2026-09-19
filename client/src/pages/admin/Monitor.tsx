@@ -9,6 +9,7 @@ import {
   TrendingUp, Phone, RefreshCw, ChevronDown 
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { InboundQueueCard } from '@/components/admin/InboundQueueCard';
 
 const FAILURE_LABELS: Record<string, string> = {
   instance_not_found: 'الرقم غير مسجل',
@@ -92,6 +93,7 @@ export default function Monitor() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <InboundQueueCard />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

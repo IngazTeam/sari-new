@@ -3,6 +3,8 @@ import { getPool, closeDb } from './db/connection';
 import { resolveMerchantAccess } from './accounts/merchant-access';
 import { productsRouter } from './routers-products';
 import { getMerchantByUserId } from './db';
+import { listMerchantAccess } from './accounts/merchant-access';
+import { withMerchantRequest } from './accounts/merchant-context';
 import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
 
 describe.skipIf(!process.env.DATABASE_URL)('merchant identity and products (MySQL)', () => {
@@ -41,5 +43,32 @@ describe.skipIf(!process.env.DATABASE_URL)('merchant identity and products (MySQ
     await expect(caller.update({ productId: inserted.insertId, name: 'Stolen' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     const [unchanged] = await pool.execute('SELECT name FROM products WHERE id = ? AND merchantId = ?', [inserted.insertId, foreign.merchantId]);
     expect(unchanged).toEqual([{ name: 'Foreign product' }]);
+  });
+  it('selects only an active authorized store and never falls back to another owned store', async () => {
+    const a = await fixture('selection-a'); const b = await fixture('selection-b'); const foreign = await fixture('selection-foreign');
+    const pool = (await getPool())!;
+    await pool.execute("INSERT INTO merchant_members (merchant_id, user_id, role, is_active) VALUES (?, ?, 'owner', 1), (?, ?, 'viewer', 1)",
+      [a.merchantId, a.userId, b.merchantId, a.userId]);
+    expect((await listMerchantAccess(a.userId)).map(row => row.merchantId)).toEqual([a.merchantId, b.merchantId]);
+    await expect(resolveMerchantAccess(a.userId)).rejects.toThrow('selection required');
+    expect(await resolveMerchantAccess(a.userId, b.merchantId)).toMatchObject({ merchantId: b.merchantId, role: 'viewer' });
+    expect(await resolveMerchantAccess(a.userId, foreign.merchantId)).toBeNull();
+    expect(await withMerchantRequest({ userId: a.userId, selectedMerchantId: b.merchantId }, () => getMerchantByUserId(a.userId))).toBeUndefined();
+    expect(await withMerchantRequest({ userId: a.userId, selectedMerchantId: a.merchantId }, () => getMerchantByUserId(a.userId))).toMatchObject({ id: a.merchantId });
+    await pool.execute('UPDATE merchant_members SET is_active = 0 WHERE merchant_id = ? AND user_id = ?', [b.merchantId, a.userId]);
+    expect(await resolveMerchantAccess(a.userId, b.merchantId)).toBeNull();
+    expect(await withMerchantRequest({ userId: a.userId, selectedMerchantId: b.merchantId }, () => getMerchantByUserId(a.userId))).toBeUndefined();
+  });
+  it('applies the selected store role at the actual product procedure boundary', async () => {
+    const a = await fixture('selector-router-a'); const b = await fixture('selector-router-b');
+    const pool = (await getPool())!;
+    await pool.execute("INSERT INTO merchant_members (merchant_id, user_id, role, is_active) VALUES (?, ?, 'owner', 1), (?, ?, 'viewer', 1)",
+      [a.merchantId, a.userId, b.merchantId, a.userId]);
+    await pool.execute("INSERT INTO products (merchantId, name, price) VALUES (?, 'Selected product', 10)", [b.merchantId]);
+    const caller = productsRouter.createCaller({ user: { id: a.userId }, req: { headers: { 'x-merchant-id': String(b.merchantId) } }, res: {} } as any);
+    const result = await caller.list(); expect(result.items.map(item => item.name)).toEqual(['Selected product']);
+    await expect(caller.delete({ productId: result.items[0].id })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await pool.execute('UPDATE merchant_members SET is_active = 0 WHERE merchant_id = ? AND user_id = ?', [b.merchantId, a.userId]);
+    await expect(caller.list()).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 });

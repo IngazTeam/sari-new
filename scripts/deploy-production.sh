@@ -223,16 +223,21 @@ pm2_release_matches() {
   local expected_release="$1"
   pm2 jlist | node -e '
     const expectedRelease = process.argv[1];
-    const expectedExecutable = `${expectedRelease}/dist/index.js`;
+    const hasWorker = require("fs").existsSync(`${expectedRelease}/dist/worker.js`);
     let source = "";
     process.stdin.on("data", (chunk) => { source += chunk; });
     process.stdin.on("end", () => {
-      const processes = JSON.parse(source).filter((entry) => entry.name === "sari");
-      if (processes.length === 0 || processes.some(({ pm2_env: environment }) => (
+      const processes = JSON.parse(source).filter((entry) => entry.name === "sari" || entry.name === "sari-inbound");
+      if (!processes.some(entry => entry.name === "sari")
+        || (hasWorker && !processes.some(entry => entry.name === "sari-inbound"))
+        || (!hasWorker && processes.some(entry => entry.name === "sari-inbound"))
+        || processes.some(({ name, pm2_env: environment }) => {
+          const expectedExecutable = `${expectedRelease}/dist/${name === "sari" ? "index" : "worker"}.js`;
+          return (
         environment?.status !== "online"
         || environment?.pm_cwd !== expectedRelease
         || environment?.pm_exec_path !== expectedExecutable
-      ))) process.exit(1);
+      ); })) process.exit(1);
     });
   ' "$expected_release"
 }
@@ -241,16 +246,26 @@ activate_pm2_release() {
   local target_release="$1"
   mkdir -p "$target_release/logs"
   chmod 750 "$target_release/logs"
+  local managed_apps="sari"
+  if [ -f "$target_release/dist/worker.js" ]; then
+    managed_apps="sari,sari-inbound"
+  else
+    # Raw-ID releases cannot safely resume after durable ingress has been used.
+    # Check before touching processes; preserve the queue on any uncertainty.
+    node "$release_dir/scripts/check-inbound-rollback.mjs" || return 1
+    pm2 delete sari-inbound >/dev/null 2>&1 || true
+  fi
   SARI_ENV_FILE="$env_file" PORT="$PORT" \
-    pm2 startOrReload "$target_release/ecosystem.config.cjs" --only sari --update-env
+    pm2 startOrReload "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env
   if pm2_release_matches "$target_release"; then
     return 0
   fi
 
   log 'PM2 retained prior release metadata; recreating the managed application'
   pm2 delete sari
+  pm2 delete sari-inbound >/dev/null 2>&1 || true
   SARI_ENV_FILE="$env_file" PORT="$PORT" \
-    pm2 start "$target_release/ecosystem.config.cjs" --only sari --update-env
+    pm2 start "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env
   pm2_release_matches "$target_release"
 }
 
@@ -260,8 +275,11 @@ rollback_activation() {
   if [ "$activation_attempted" -eq 1 ] && [ -n "$previous_release" ] \
     && [ -f "$previous_release/ecosystem.config.cjs" ]; then
     log 'activation failed; reloading the previous application release'
-    activate_pm2_release "$previous_release" || true
-    pm2 save || true
+    if activate_pm2_release "$previous_release"; then
+      pm2 save || true
+    else
+      log 'previous release could not be activated safely; retain durable jobs and roll forward with a compatible release'
+    fi
   fi
   exit "$status"
 }

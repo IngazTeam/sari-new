@@ -1,6 +1,8 @@
 import { getPool, getPrimaryWhatsAppInstance, getWhatsAppInstanceById } from '../../db';
 import { assertRuntimeSchema } from '../../db/schema-readiness';
 import { getWhatsAppProvider } from './providers';
+import { currentInboundExecution } from '../../messaging/inbound-context';
+import { whatsAppEventEffectKey } from './effect-key';
 import type {
   SendMerchantWhatsAppInput,
   WhatsAppDeliveryStatus,
@@ -30,7 +32,8 @@ export class WhatsAppDeliveryStateError extends Error {
 async function ensureChannelSchema() {
   await assertRuntimeSchema('WhatsApp channel', [
     { table: 'whatsapp_instances', columns: ['provider', 'phone_number_id', 'provider_account_id'] },
-    { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
+    { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status', 'request_json'],
+      uniqueIndexes: [{ name: 'uq_whatsapp_provider_message', columns: ['merchant_id', 'instance_id', 'provider', 'direction', 'provider_message_id'] }] },
   ]);
 }
 
@@ -60,6 +63,20 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
   providerMessageId?: string;
   errorCode?: string;
 }> {
+  const execution = currentInboundExecution();
+  try {
+    const result = await dispatchMerchantWhatsApp(input);
+    if (execution && !result.accepted) execution.uncertainEffect = true;
+    return result;
+  } catch (error) {
+    if (execution) execution.uncertainEffect = true;
+    throw error;
+  }
+}
+
+async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promise<{
+  accepted: boolean; duplicate: boolean; status: WhatsAppDeliveryStatus; providerMessageId?: string; errorCode?: string;
+}> {
   validateSendInput(input);
   await ensureChannelSchema();
   const pool = await getPool();
@@ -71,14 +88,21 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
     return { accepted: false, duplicate: false, status: 'failed', errorCode: 'instance_unavailable' };
   }
   const config = toProviderConfig(instance);
+  const execution = currentInboundExecution();
+  if (execution) {
+    if (execution.merchantId !== input.merchantId) throw new Error('Inbound effect tenant mismatch');
+    await execution.assertOwned();
+  }
 
   let reserved = false;
   try {
     await pool.execute(
       `INSERT INTO whatsapp_message_deliveries
-        (merchant_id, message_id, instance_id, provider, idempotency_key, direction, status)
-       VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued')`,
-      [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey]
+        (merchant_id, message_id, instance_id, provider, idempotency_key, direction, status, request_json)
+       VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued', ?)`,
+      [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
+        JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
+          fileName: input.fileName, template: input.template, inboundJobId: execution?.id })]
     );
     reserved = true;
   } catch (error: any) {
@@ -102,6 +126,7 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
       reserved = Number((retry as any)?.affectedRows || 0) === 1;
     }
     if (!reserved) {
+      if (execution && !['sent', 'delivered', 'read'].includes(existing.status)) execution.uncertainEffect = true;
       return {
         accepted: ['sent', 'delivered', 'read'].includes(existing.status),
         duplicate: true,
@@ -113,6 +138,7 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
   }
 
   const provider = getWhatsAppProvider(config.provider);
+  if (execution) await execution.assertOwned();
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,
@@ -142,9 +168,11 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
     );
     if (Number((persisted as any)?.affectedRows || 0) !== 1) throw new WhatsAppDeliveryStateError();
   } catch (error) {
+    if (execution) execution.uncertainEffect = true;
     if (error instanceof WhatsAppDeliveryStateError) throw error;
     throw new WhatsAppDeliveryStateError();
   }
+  if (execution && !accepted) execution.uncertainEffect = true;
   return {
     accepted,
     duplicate: false,
@@ -156,17 +184,23 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
 
 export async function updateWhatsAppDeliveryStatus(input: {
   provider: WhatsAppProviderKind;
+  providerAccount: string;
   providerMessageId: string;
   status: Extract<WhatsAppDeliveryStatus, 'sent' | 'delivered' | 'read' | 'failed'>;
   errorCode?: string;
 }): Promise<'updated' | 'ignored' | 'not_found'> {
+  if (!input.providerAccount || input.providerAccount.length > 100) throw new Error('Missing delivery account');
   await ensureChannelSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const [rows] = await pool.execute(
-    `SELECT id, status FROM whatsapp_message_deliveries WHERE provider = ? AND provider_message_id = ? LIMIT 1`,
-    [input.provider, input.providerMessageId]
+    `SELECT d.id, d.status FROM whatsapp_message_deliveries d
+     JOIN whatsapp_instances i ON i.id = d.instance_id AND i.merchant_id = d.merchant_id
+     WHERE d.provider = ? AND d.provider_message_id = ? AND d.direction = 'outgoing'
+       AND i.provider = d.provider AND i.instance_id = ? LIMIT 2`,
+    [input.provider, input.providerMessageId, input.providerAccount]
   );
+  if ((rows as any[]).length !== 1) return 'not_found';
   const existing = (rows as any[])?.[0];
   if (!existing) return 'not_found';
   const currentStatus = existing.status as WhatsAppDeliveryStatus;
@@ -198,7 +232,8 @@ export async function recordInboundWhatsAppReceipt(input: {
       `INSERT INTO whatsapp_message_deliveries
         (merchant_id, instance_id, provider, provider_message_id, idempotency_key, direction, status)
        VALUES (?, ?, ?, ?, ?, 'incoming', 'received')`,
-      [input.merchantId, input.instanceRecordId, input.provider, input.providerMessageId, `inbound:${input.provider}:${input.providerMessageId}`.slice(0, 100)]
+      [input.merchantId, input.instanceRecordId, input.provider, input.providerMessageId,
+        whatsAppEventEffectKey(input.merchantId, String(input.instanceRecordId), input.providerMessageId, `inbound:${input.provider}`)]
     );
     return 'recorded';
   } catch (error: any) {

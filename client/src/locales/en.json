@@ -722,8 +722,7 @@
       "settings": "Store Settings",
       "languageSettings": "Language Settings",
       "notificationSettings": "Notification Settings",
-      "virtualTeam": "Virtual Team",
-      "paymentLinks": "Payment Links"
+      "virtualTeam": "Virtual Team"
     },
     "admin": {
       "dashboard": "Dashboard",
@@ -8546,5 +8545,28 @@
     "addKeyword": "Add",
     "redirectMessage": "Private Redirect Message",
     "redirectPlaceholder": "Hi! I saw your message in the group. I can help you better here 😊"
+  },
+  "inboundQueue": {
+    "title": "Incoming message processing",
+    "description": "Later messages in a conversation wait until uncertain processing is reviewed.",
+    "saved": "Review recorded",
+    "loadError": "Could not load processing status. Try refreshing.",
+    "pending": "Pending",
+    "running": "Processing",
+    "review": "Needs review",
+    "empty": "No messages need review",
+    "job": "Message {{id}} · Store {{merchant}}",
+    "reviewAction": "Review outcome",
+    "outcome": "Verified outcome",
+    "completed": "Completed and verified",
+    "dismissed": "Close without replay",
+    "note": "Verification evidence and reason (at least 20 characters)",
+    "confirm": "I checked related messages and operations. Closing allows later messages to proceed and does not resend this message.",
+    "save": "Save review"
+  },
+  "merchantSelector": {
+    "label": "Current store",
+    "choose": "Choose a store to continue",
+    "loadError": "Could not load available stores"
   }
 }
