@@ -30,8 +30,12 @@ jobs:
           node-version-file: .node-version
       - name: Enable the repository-pinned pnpm
         run: corepack enable
+      - name: Verify exact runtime and package manager
+        run: pnpm check:runtime
       - name: Install from the immutable lockfile
         run: pnpm install --frozen-lockfile
+      - name: Verify release tooling fails closed
+        run: pnpm test:tooling
       - name: Block dependency advisory regressions
         run: pnpm audit:production
       - name: Type-check
@@ -42,6 +46,10 @@ jobs:
         run: pnpm test:zahypi
       - name: Release security and regression gates
         run: pnpm test:release
+      - name: Remediation behavior contracts
+        run: pnpm test:remediation
+      - name: Security regression contracts
+        run: pnpm test:pentest
       - name: Validate the database schema history
         run: pnpm db:check
         env:
@@ -80,6 +88,8 @@ jobs:
           node-version-file: .node-version
       - name: Enable the repository-pinned pnpm
         run: corepack enable
+      - name: Verify exact runtime and package manager
+        run: pnpm check:runtime
       - name: Install from the immutable lockfile
         run: pnpm install --frozen-lockfile
       - name: Apply migrations to a disposable database
@@ -97,6 +107,11 @@ jobs:
           server/auth.emailVerification.test.ts
           server/auth.platformProvision.test.ts
           server/auth.teamInvitations.test.ts
+          server/auth.merchantAccess.test.ts
+          server/team-access.mysql.test.ts
+          server/auth-http.mysql.test.ts
+          server/whatsappDeliverySafety.mysql.test.ts
+          server/aiBudgetLedger.mysql.test.ts
           server/auth.adminDeletion.test.ts
           server/auth.zidWebhook.test.ts
           server/auth.zidOAuth.test.ts

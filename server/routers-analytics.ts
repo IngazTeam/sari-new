@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
   getCampaignById,
@@ -14,15 +14,15 @@ import { TRPCError } from "@trpc/server";
 
 export const analyticsRouter = router({
   // Get analytics summary
-  getSummary: protectedProcedure
+  getSummary: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
+      merchantId: z.number().int().positive(),
       startDate: z.string(),
       endDate: z.string(),
     }))
     .query(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -56,14 +56,14 @@ export const analyticsRouter = router({
     }),
 
   // Get daily analytics data
-  getDailyData: protectedProcedure
+  getDailyData: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
-      days: z.number().default(30),
+      merchantId: z.number().int().positive(),
+      days: z.number().int().min(1).max(90).default(30),
     }))
     .query(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -72,14 +72,14 @@ export const analyticsRouter = router({
     }),
 
   // Get campaign performance
-  getCampaignPerformance: protectedProcedure
+  getCampaignPerformance: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
+      merchantId: z.number().int().positive(),
       campaignId: z.number().optional(),
     }))
     .query(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -125,16 +125,16 @@ export const analyticsRouter = router({
     }),
 
   // Export analytics as PDF
-  exportPDF: protectedProcedure
+  exportPDF: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
+      merchantId: z.number().int().positive(),
       reportType: z.enum(['daily', 'weekly', 'monthly']),
       startDate: z.string(),
       endDate: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -210,13 +210,13 @@ export const analyticsRouter = router({
     }),
 
   // Get customer acquisition sources
-  getAcquisitionSources: protectedProcedure
+  getAcquisitionSources: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
+      merchantId: z.number().int().positive(),
     }))
     .query(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -264,14 +264,14 @@ export const analyticsRouter = router({
     }),
 
   // Supervisor Recovery statistics
-  supervisorStats: protectedProcedure
+  supervisorStats: permissionProcedure('analytics.read')
     .input(z.object({
-      merchantId: z.number(),
+      merchantId: z.number().int().positive(),
       days: z.number().int().min(1).max(90).default(30),
     }))
     .query(async ({ input, ctx }) => {
       const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.userId !== ctx.user.id) {
+      if (!merchant || merchant.id !== ctx.merchantId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 

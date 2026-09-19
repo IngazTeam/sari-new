@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { aiPriceCardInput, readAiBudgetAdmin, saveAiPriceCard, aiReconciliationInput, reconcileAiReservation } from './ai/budget-admin';
 import {
   clearZahyPiRuntimeConfigCache,
   requestZahyPiJobCompletion,
@@ -46,6 +47,18 @@ const zahyPiModelSchema = z.string()
   .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/, "اسم النموذج غير صالح");
 
 export const aiSettingsRouter = router({
+  getBudget: protectedProcedure.query(async ({ ctx }) => {
+    assertAdmin(ctx.user.role);
+    return readAiBudgetAdmin();
+  }),
+  savePriceCard: protectedProcedure.input(aiPriceCardInput).mutation(async ({ ctx, input }) => {
+    assertAdmin(ctx.user.role);
+    return saveAiPriceCard(input);
+  }),
+  reconcileBudget: protectedProcedure.input(aiReconciliationInput).mutation(async ({ ctx, input }) => {
+    assertAdmin(ctx.user.role);
+    return reconcileAiReservation(input, ctx.user.id);
+  }),
   // Get AI settings (masked API key)
   getSettings: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);

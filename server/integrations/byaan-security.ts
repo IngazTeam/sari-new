@@ -76,6 +76,14 @@ export function isPrivateOrSpecialAddress(address: string): boolean {
     );
   }
   if (family === 6) {
+    // Permit global unicast only. Reject mapped/compatible IPv4 in every spelling,
+    // Teredo, 6to4 and special/documentation ranges before any socket is opened.
+    const canonical = new URL(`https://[${normalized}]/`).hostname.slice(1, -1);
+    const first = Number.parseInt(canonical.split(':')[0], 16);
+    const second = Number.parseInt(canonical.split(':')[1] || '0', 16);
+    if (first < 0x2000 || first > 0x3fff || canonical.startsWith('::')
+      || first === 0x2002 || first === 0x3ffe || first === 0x3fff
+      || (first === 0x2001 && (second < 0x200 || second === 0xdb8))) return true;
     const mappedDottedIpv4 = normalized.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)?.[1];
     if (mappedDottedIpv4 && isPrivateOrSpecialAddress(mappedDottedIpv4)) return true;
     return (

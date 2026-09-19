@@ -1,4 +1,5 @@
 import { Link } from 'wouter';
+import { PUBLIC_EVIDENCE } from '@shared/public-evidence';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, CheckCircle2, FlaskConical, ShieldCheck, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -12,9 +13,9 @@ export default function SuccessStories() {
   const isAr = (i18n.language || 'ar').startsWith('ar');
 
   const evidence = [
-    { value: '3', labelAr: 'عملاء تجريبيون', labelEn: 'Pilot clients' },
-    { value: '≈100', labelAr: 'عميل نهائي شهرياً لكل تجربة', labelEn: 'Monthly end customers per pilot' },
-    { value: '≈300', labelAr: 'عميل نهائي شهرياً عبر التجارب', labelEn: 'Monthly end customers across pilots' },
+    { value: String(PUBLIC_EVIDENCE.payingActiveClients), labelAr: 'عميل مدفوع ونشط', labelEn: 'Paying active clients' },
+    { value: String(PUBLIC_EVIDENCE.operatingMonths), labelAr: 'أشهر منذ بدء الاستخدام التجاري', labelEn: 'Months since commercial use began' },
+    { value: String(PUBLIC_EVIDENCE.sectors.length), labelAr: 'قطاعات: تدريب، استقدام، متاجر', labelEn: 'Sectors: training, recruitment, commerce' },
   ];
 
   const metrics = [
@@ -55,8 +56,8 @@ export default function SuccessStories() {
                   <h2 className="font-bold text-lg mb-2">{isAr ? 'حالة الدليل' : 'Evidence status'}</h2>
                   <p className="text-muted-foreground">
                     {isAr
-                      ? 'الأرقام أدناه بحسب إفادة مالك المنتج عن تجارب أغسطس 2026. لم تُنشر بعد دراسة حالة مستقلة أو تصدير تحليلات يثبت أثر المبيعات أو الرضا.'
-                      : 'The figures below are based on the product owner\'s report for August 2026 pilots. No independent case study or analytics export has yet verified sales or satisfaction impact.'}
+                      ? `الأرقام بحسب إفادة مالك المنتج بتاريخ ${PUBLIC_EVIDENCE.asOf}. مدة الأربعة أشهر تخص بداية الاستخدام التجاري، ولا تعني أن كل عميل اشترك طوال هذه المدة. أثر المبيعات والرضا ما زال قيد التوثيق.`
+                      : `Owner-reported figures as of ${PUBLIC_EVIDENCE.asOf}. Four months refers to the start of commercial use, not every client's tenure. Sales and satisfaction impact still require documented measurement.`}
                   </p>
                 </div>
               </CardContent>
@@ -86,8 +87,8 @@ export default function SuccessStories() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-muted-foreground">
-                  <p>{isAr ? 'ثلاثة عملاء استخدموا المنتج بنجاح تشغيلياً.' : 'Three clients used the product successfully in operation.'}</p>
-                  <p>{isAr ? 'الحجم المبلغ عنه نحو 100 عميل نهائي شهرياً لكل تجربة.' : 'Reported volume is about 100 end customers monthly per pilot.'}</p>
+                  <p>{isAr ? 'عملاء مدفوعون ونشطون في التدريب والاستقدام والمتاجر.' : 'Paying active clients in training, recruitment and commerce.'}</p>
+                  <p>{isAr ? 'حجم العملاء النهائيين والإيراد والاحتفاظ يحتاج قياساً منفصلاً.' : 'End-customer volume, revenue and retention require separate measurement.'}</p>
                   <p>{isAr ? 'هذا يثبت قابلية الاستخدام الأولية، لا مضاعفة الإيراد أو رضا بنسبة محددة.' : 'This supports initial usability, not a specific revenue uplift or satisfaction rate.'}</p>
                 </CardContent>
               </Card>

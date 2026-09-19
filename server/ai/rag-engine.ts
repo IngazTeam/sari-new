@@ -20,6 +20,8 @@ import {
   type KnowledgeSection,
   type CachedResponse,
 } from '../db/knowledge';
+import { withAiBudget } from './budget-ledger';
+import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from './zahypi-client';
 
 // ═══════════════════════════════════════════════════════════════
 // Constants
@@ -38,8 +40,9 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
  * Generate embedding vector for a text string.
  * Uses text-embedding-3-small ($0.02/M tokens — extremely cheap).
  */
-export async function generateEmbedding(text: string): Promise<Float32Array | null> {
+export async function generateEmbedding(text: string, merchantId?: number): Promise<Float32Array | null> {
   try {
+    if (!(await resolveZahyPiRuntimeConfig()).enabled) return null;
     const { getOpenAiApiKey } = await import('../db_ai_settings');
     const apiKey = await getOpenAiApiKey();
 
@@ -51,26 +54,32 @@ export async function generateEmbedding(text: string): Promise<Float32Array | nu
     // Truncate to avoid token limits (8191 tokens max for this model)
     const truncatedText = text.substring(0, 30000);
 
+    const data = await withAiBudget({ merchantId: merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
+      provider: 'openai', model: EMBEDDING_MODEL, taskType: 'knowledge.embedding',
+      inputTokens: Buffer.byteLength(truncatedText, 'utf8'), maxOutputTokens: 0,
+    }, async attempt => {
     const response = await fetch(`${OPENAI_API_URL}/embeddings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'X-Client-Request-Id': attempt.requestId,
       },
       body: JSON.stringify({
         model: EMBEDDING_MODEL,
         input: truncatedText,
         dimensions: EMBEDDING_DIMENSIONS,
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[RAG] Embedding API error:', error.error?.message);
-      return null;
+      void response.body?.cancel().catch(() => undefined);
+      throw new Error(`Embedding provider status ${response.status}`);
     }
 
-    const data = await response.json();
+    return response.json();
+    }, result => result.usage ? { prompt_tokens: result.usage.prompt_tokens, completion_tokens: 0 } : undefined);
     const vector = data.data?.[0]?.embedding;
     
     if (!vector || vector.length !== EMBEDDING_DIMENSIONS) {
@@ -117,7 +126,7 @@ export async function embedSection(section: KnowledgeSection, merchantId: number
   
   const textForEmbedding = `${title}\n${title}\n${summary}\n${content}`;
   
-  const embedding = await generateEmbedding(textForEmbedding);
+  const embedding = await generateEmbedding(textForEmbedding, merchantId);
   if (!embedding) return false;
 
   await updateSection(section.id, merchantId, {
@@ -165,7 +174,7 @@ export async function searchRelevantSections(
   limit: number = 5
 ): Promise<{ section: KnowledgeSection; similarity: number }[]> {
   // Step 1: Embed the question
-  const questionEmbedding = await generateEmbedding(question);
+  const questionEmbedding = await generateEmbedding(question, merchantId);
   if (!questionEmbedding) {
     // Fallback: return all bot sections with high similarity so they pass the 0.3 threshold
     console.log(`[RAG] Embedding failed for question — injecting all ${(await getBotSections(merchantId)).length} sections as fallback`);
@@ -206,7 +215,7 @@ export async function findCachedResponse(
   merchantId: number,
   question: string
 ): Promise<{ response: string; cacheId: number; similarity: number } | null> {
-  const questionEmbedding = await generateEmbedding(question);
+  const questionEmbedding = await generateEmbedding(question, merchantId);
   if (!questionEmbedding) return null;
 
   const cachedResponses = await getValidCachedResponses(merchantId);
@@ -298,7 +307,7 @@ export async function cacheSuccessfulResponse(
       );
     }
 
-    const questionEmbedding = await generateEmbedding(question);
+    const questionEmbedding = await generateEmbedding(question, merchantId);
     const embeddingBuffer = questionEmbedding ? embeddingToBuffer(questionEmbedding) : undefined;
     
     await dbCacheResponse(merchantId, question, response, embeddingBuffer);

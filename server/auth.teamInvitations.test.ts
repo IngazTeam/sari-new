@@ -8,6 +8,7 @@ import {
   TeamInvitationError,
 } from './accounts/team-invitations';
 import { getPool } from './db';
+import { changeTeamMember } from './accounts/team-members';
 
 describe.skipIf(!process.env.DATABASE_URL)('team invitation security (database integration)', () => {
   const createdUserIds: number[] = [];
@@ -144,5 +145,49 @@ describe.skipIf(!process.env.DATABASE_URL)('team invitation security (database i
       [owner.merchantId],
     );
     expect(pending as any[]).toHaveLength(1);
+  });
+
+  it('reactivates a revoked member only through a new invitation and uses its role', async () => {
+    const owner = await createAccount('reinvite-owner'), recipient = await createAccount('reinvite-recipient');
+    await verifyUser(recipient.user.id);
+    const initial = await issueTeamInvitation({ merchantId: owner.merchantId, email: recipient.email, role: 'manager', invitedBy: owner.user.id });
+    await acceptTeamInvitation({ token: initial.token, userId: recipient.user.id });
+    const pool = (await getPool())!;
+    const [rows] = await pool.execute<any[]>('SELECT id FROM merchant_members WHERE merchant_id=? AND user_id=?', [owner.merchantId, recipient.user.id]);
+    await changeTeamMember({ merchantId: owner.merchantId, actorId: owner.user.id, memberId: rows[0].id, change: { kind: 'remove' } });
+    await acceptTeamInvitation({ token: initial.token, userId: recipient.user.id });
+    const [revoked] = await pool.execute<any[]>('SELECT is_active FROM merchant_members WHERE id=?', [rows[0].id]);
+    expect(revoked[0].is_active).toBe(0);
+    const fresh = await issueTeamInvitation({ merchantId: owner.merchantId, email: recipient.email, role: 'viewer', invitedBy: owner.user.id });
+    await acceptTeamInvitation({ token: fresh.token, userId: recipient.user.id });
+    const [active] = await pool.execute<any[]>('SELECT role,is_active FROM merchant_members WHERE id=?', [rows[0].id]);
+    expect(active).toEqual([{ role: 'viewer', is_active: 1 }]);
+  });
+
+  it('invalidates pending invitations when their issuer loses team authority', async () => {
+    const owner = await createAccount('issuer-owner'), manager = await createAccount('issuer-manager'), recipient = await createAccount('issuer-recipient');
+    await verifyUser(manager.user.id); await verifyUser(recipient.user.id);
+    const managerInvite = await issueTeamInvitation({ merchantId: owner.merchantId, email: manager.email, role: 'manager', invitedBy: owner.user.id });
+    await acceptTeamInvitation({ token: managerInvite.token, userId: manager.user.id });
+    const pending = await issueTeamInvitation({ merchantId: owner.merchantId, email: recipient.email, role: 'manager', invitedBy: manager.user.id });
+    const pool = (await getPool())!;
+    const [rows] = await pool.execute<any[]>('SELECT id FROM merchant_members WHERE merchant_id=? AND user_id=?', [owner.merchantId, manager.user.id]);
+    await changeTeamMember({ merchantId: owner.merchantId, actorId: owner.user.id, memberId: rows[0].id, change: { kind: 'role', role: 'viewer' } });
+    await expect(acceptTeamInvitation({ token: pending.token, userId: recipient.user.id })).rejects.toBeDefined();
+    await expect(issueTeamInvitation({ merchantId: owner.merchantId, email: recipient.email, role: 'manager', invitedBy: manager.user.id })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    const [members] = await pool.execute<any[]>('SELECT id FROM merchant_members WHERE merchant_id=? AND user_id=?', [owner.merchantId, recipient.user.id]);
+    expect(members).toHaveLength(0);
+  });
+
+  it('preserves legacy ownership when accepting an earlier invitation for a lesser role', async () => {
+    const owner = await createAccount('legacy-invite-owner');
+    await verifyUser(owner.user.id);
+    const pool = (await getPool())!;
+    // Reproduce a pre-membership account in this isolated fixture.
+    await pool.execute('DELETE FROM merchant_members WHERE merchant_id=? AND user_id=?', [owner.merchantId, owner.user.id]);
+    const invite = await issueTeamInvitation({ merchantId: owner.merchantId, email: owner.email, role: 'viewer', invitedBy: owner.user.id });
+    await acceptTeamInvitation({ token: invite.token, userId: owner.user.id });
+    const [members] = await pool.execute<any[]>('SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=?', [owner.merchantId, owner.user.id]);
+    expect(members).toEqual([{ role: 'owner', is_active: 1 }]);
   });
 });

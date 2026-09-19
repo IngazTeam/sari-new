@@ -27,6 +27,8 @@ function isMetaCloudApiUrl(url: string): boolean {
   }
 }
 
+export type WhatsAppEffectOptions = { idempotencyKey: string };
+
 async function sendTrackedStoredWhatsApp(
   providerInstanceId: string,
   accessToken: string,
@@ -37,11 +39,12 @@ async function sendTrackedStoredWhatsApp(
     text?: string;
     mediaUrl?: string;
     fileName?: string;
-  }
+  },
+  effect?: WhatsAppEffectOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string } | null> {
   const { getWhatsAppInstanceByInstanceId } = await import('./db');
   const instance = await getWhatsAppInstanceByInstanceId(providerInstanceId);
-  if (!instance) return null;
+  if (!instance) return effect ? { success: false, error: 'instance_unavailable' } : null;
   const expectedProvider = isMetaCloudApiUrl(apiUrl) ? 'meta_cloud' : 'green_api';
   if (instance.status !== 'active' || (instance.provider || 'green_api') !== expectedProvider || instance.token !== accessToken) {
     return { success: false, error: 'WhatsApp connection is unavailable or credentials changed' };
@@ -50,7 +53,7 @@ async function sendTrackedStoredWhatsApp(
   const result = await sendMerchantWhatsApp({
     merchantId: instance.merchantId,
     instanceRecordId: instance.id,
-    idempotencyKey: `legacy:${crypto.randomUUID()}`,
+    idempotencyKey: effect?.idempotencyKey ?? `legacy:${crypto.randomUUID()}`,
     ...request,
   });
   return result.accepted && result.providerMessageId
@@ -709,7 +712,8 @@ export async function sendMessageWithCredentials(
   apiToken: string,
   apiUrl: string,
   phoneNumber: string,
-  message: string
+  message: string,
+  effect?: WhatsAppEffectOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     if (isMetaCloudApiUrl(apiUrl)) {
@@ -719,14 +723,14 @@ export async function sendMessageWithCredentials(
         to,
         kind: 'text',
         text: message.slice(0, 4096),
-      });
+      }, effect);
       return tracked || { success: false, error: 'Meta connection is not registered' };
     }
     const tracked = await sendTrackedStoredWhatsApp(instanceId, apiToken, apiUrl, {
       to: phoneNumber,
       kind: 'text',
       text: message.slice(0, 4096),
-    });
+    }, effect);
     if (tracked) return tracked;
     const greenApiUrl = assertGreenApiUrl(apiUrl);
     const baseURL = `${greenApiUrl}/waInstance${instanceId}`;
@@ -781,7 +785,8 @@ export async function sendFileWithCredentials(
   phoneNumber: string,
   fileUrl: string,
   fileName: string,
-  caption?: string
+  caption?: string,
+  effect?: WhatsAppEffectOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     if (isMetaCloudApiUrl(apiUrl)) {
@@ -798,7 +803,7 @@ export async function sendFileWithCredentials(
         mediaUrl: fileUrl,
         text: caption && type !== 'audio' ? caption.slice(0, 1024) : undefined,
         fileName: type === 'document' ? fileName.slice(0, 240) : undefined,
-      });
+      }, effect);
       return tracked || { success: false, error: 'Meta connection is not registered' };
     }
     const lowerName = fileName.toLowerCase();
@@ -811,7 +816,7 @@ export async function sendFileWithCredentials(
       mediaUrl: fileUrl,
       text: caption,
       fileName,
-    });
+    }, effect);
     if (tracked) return tracked;
     const greenApiUrl = assertGreenApiUrl(apiUrl);
     assertSafeMediaUrl(fileUrl); // PEN-MEDIA-01: Block SSRF via file URLs
@@ -867,7 +872,8 @@ export async function sendImageWithCredentials(
   apiUrl: string,
   phoneNumber: string,
   imageUrl: string,
-  caption?: string
+  caption?: string,
+  effect?: WhatsAppEffectOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   let fileName = 'product.jpg';
   try {
@@ -876,7 +882,7 @@ export async function sendImageWithCredentials(
   } catch {
     // sendFileWithCredentials performs the authoritative URL validation.
   }
-  return sendFileWithCredentials(instanceId, apiToken, apiUrl, phoneNumber, imageUrl, fileName, caption);
+  return sendFileWithCredentials(instanceId, apiToken, apiUrl, phoneNumber, imageUrl, fileName, caption, effect);
 }
 
 

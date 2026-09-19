@@ -12,8 +12,8 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { eq, and, sql } from "drizzle-orm";
+import { protectedProcedure, publicProcedure, permissionProcedure, router } from "./_core/trpc";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "./db";
 import { merchantMembers, merchantInvitations, users } from "../drizzle/schema";
 import { getRoleInfo, type MerchantRole } from "./_core/permissions";
@@ -25,6 +25,7 @@ import {
   TeamInvitationError,
 } from './accounts/team-invitations';
 import { buildPublicUrl } from './utils/public-url';
+import { changeTeamMember } from './accounts/team-members';
 
 const TEAM_INVITATION_TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -42,18 +43,12 @@ export const teamRouter = router({
   /**
    * List all team members for the current merchant.
    */
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const { getMerchantByUserId } = await import('./db');
-    const merchant = await getMerchantByUserId(ctx.user!.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'المتجر غير موجود' });
-
+  list: permissionProcedure('team.manage').query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return { members: [], invitations: [] };
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
     // Get members
-    let members: any[] = [];
-    try {
-      const result = await db.select({
+    const result = await db.select({
         id: merchantMembers.id,
         userId: merchantMembers.userId,
         role: merchantMembers.role,
@@ -65,31 +60,15 @@ export const teamRouter = router({
       })
       .from(merchantMembers)
       .innerJoin(users, eq(merchantMembers.userId, users.id))
-      .where(eq(merchantMembers.merchantId, merchant.id));
+      .where(and(eq(merchantMembers.merchantId, ctx.merchantId), eq(merchantMembers.isActive, 1)));
 
-      members = result.map(m => ({
+    const members = result.map(m => ({
         ...m,
         roleInfo: getRoleInfo(m.role as MerchantRole),
       }));
-    } catch {
-      // Table doesn't exist yet — return owner only
-      members = [{
-        id: 0,
-        userId: ctx.user!.id,
-        role: 'owner',
-        invitedAt: merchant.createdAt,
-        acceptedAt: merchant.createdAt,
-        isActive: 1,
-        userName: ctx.user!.name,
-        userEmail: ctx.user!.email,
-        roleInfo: getRoleInfo('owner'),
-      }];
-    }
 
     // Get pending invitations
-    let invitations: any[] = [];
-    try {
-      invitations = await db.select({
+    const invitations = await db.select({
         id: merchantInvitations.id,
         email: merchantInvitations.email,
         role: merchantInvitations.role,
@@ -99,10 +78,9 @@ export const teamRouter = router({
       })
       .from(merchantInvitations)
       .where(and(
-        eq(merchantInvitations.merchantId, merchant.id),
+        eq(merchantInvitations.merchantId, ctx.merchantId),
         eq(merchantInvitations.status, 'pending'),
       ));
-    } catch { /* table doesn't exist yet */ }
 
     return { members, invitations };
   }),
@@ -111,38 +89,15 @@ export const teamRouter = router({
    * Invite a new member to the merchant team.
    * Generates a secure token and stores the invitation.
    */
-  invite: protectedProcedure
+  invite: permissionProcedure('team.manage')
     .input(z.object({
       email: z.string().trim().email("بريد إلكتروني غير صالح").max(320).transform(value => value.toLowerCase()),
       role: z.enum(['manager', 'sales_supervisor', 'viewer']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { getMerchantByUserId } = await import('./db');
-      const merchant = await getMerchantByUserId(ctx.user!.id);
+      const { getMerchantById } = await import('./db');
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'المتجر غير موجود' });
-
-      // Verify caller has team.manage permission
-      // For now, only the merchant owner can invite (legacy check)
-      if (merchant.userId !== ctx.user!.id) {
-        // Check merchant_members for permission
-        const db = await getDb();
-        if (db) {
-          try {
-            const membership = await db.select().from(merchantMembers)
-              .where(and(
-                eq(merchantMembers.merchantId, merchant.id),
-                eq(merchantMembers.userId, ctx.user!.id),
-                eq(merchantMembers.isActive, 1),
-              )).limit(1);
-            
-            if (!membership.length || !['owner', 'manager'].includes(membership[0].role)) {
-              throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية دعوة أعضاء' });
-            }
-          } catch (e) {
-            if (e instanceof TRPCError) throw e;
-          }
-        }
-      }
 
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'خطأ في قاعدة البيانات' });
@@ -156,6 +111,7 @@ export const teamRouter = router({
           .where(and(
             eq(merchantMembers.merchantId, merchant.id),
             eq(merchantMembers.userId, existingUser[0].id),
+            eq(merchantMembers.isActive, 1),
           )).limit(1);
 
         if (existingMember.length > 0) {
@@ -256,96 +212,22 @@ export const teamRouter = router({
   /**
    * Update a member's role.
    */
-  updateRole: protectedProcedure
-    .input(z.object({
-      memberId: z.number(),
-      role: z.enum(['owner', 'manager', 'sales_supervisor', 'viewer']),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { getMerchantByUserId } = await import('./db');
-      const merchant = await getMerchantByUserId(ctx.user!.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND' });
+  updateRole: permissionProcedure('team.manage')
+    .input(z.object({ memberId: z.number().int().positive(), role: z.enum(['owner', 'manager', 'sales_supervisor', 'viewer']) }))
+    .mutation(({ ctx, input }) => changeTeamMember({ merchantId: ctx.merchantId, actorId: ctx.user.id,
+      memberId: input.memberId, change: { kind: 'role', role: input.role } })),
 
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-
-      // Cannot change owner to another role if they're the last owner
-      const member = await db.select().from(merchantMembers)
-        .where(eq(merchantMembers.id, input.memberId)).limit(1);
-
-      if (!member.length || member[0].merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'العضو غير موجود' });
-      }
-
-      if (member[0].role === 'owner' && input.role !== 'owner') {
-        const ownerCount = await db.select({ count: sql<number>`COUNT(*)` }).from(merchantMembers)
-          .where(and(
-            eq(merchantMembers.merchantId, merchant.id),
-            eq(merchantMembers.role, 'owner'),
-            eq(merchantMembers.isActive, 1),
-          ));
-        if ((ownerCount[0]?.count || 0) <= 1) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن تغيير صلاحية آخر مالك — أضف مالكاً آخر أولاً' });
-        }
-      }
-
-      await db.update(merchantMembers).set({ role: input.role }).where(eq(merchantMembers.id, input.memberId));
-
-      return { success: true };
-    }),
-
-  /**
-   * Remove a member from the team.
-   */
-  remove: protectedProcedure
-    .input(z.object({ memberId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const { getMerchantByUserId } = await import('./db');
-      const merchant = await getMerchantByUserId(ctx.user!.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND' });
-
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-
-      const member = await db.select().from(merchantMembers)
-        .where(eq(merchantMembers.id, input.memberId)).limit(1);
-
-      if (!member.length || member[0].merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'العضو غير موجود' });
-      }
-
-      // Cannot remove last owner
-      if (member[0].role === 'owner') {
-        const ownerCount = await db.select({ count: sql<number>`COUNT(*)` }).from(merchantMembers)
-          .where(and(
-            eq(merchantMembers.merchantId, merchant.id),
-            eq(merchantMembers.role, 'owner'),
-            eq(merchantMembers.isActive, 1),
-          ));
-        if ((ownerCount[0]?.count || 0) <= 1) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن حذف آخر مالك للمتجر' });
-        }
-      }
-
-      // Cannot remove yourself
-      if (member[0].userId === ctx.user!.id) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك حذف نفسك — اطلب من مالك آخر' });
-      }
-
-      await db.delete(merchantMembers).where(eq(merchantMembers.id, input.memberId));
-
-      return { success: true };
-    }),
+  remove: permissionProcedure('team.manage')
+    .input(z.object({ memberId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => changeTeamMember({ merchantId: ctx.merchantId, actorId: ctx.user.id,
+      memberId: input.memberId, change: { kind: 'remove' } })),
 
   /**
    * Revoke a pending invitation.
    */
-  revokeInvite: protectedProcedure
-    .input(z.object({ invitationId: z.number() }))
+  revokeInvite: permissionProcedure('team.manage')
+    .input(z.object({ invitationId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      const { getMerchantByUserId } = await import('./db');
-      const merchant = await getMerchantByUserId(ctx.user!.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
@@ -353,7 +235,7 @@ export const teamRouter = router({
       const revoked = await db.update(merchantInvitations).set({ status: 'revoked', recipientHash: null })
         .where(and(
           eq(merchantInvitations.id, input.invitationId),
-          eq(merchantInvitations.merchantId, merchant.id),
+          eq(merchantInvitations.merchantId, ctx.merchantId),
           eq(merchantInvitations.status, 'pending'),
         ));
 
@@ -366,31 +248,10 @@ export const teamRouter = router({
    * Get current user's role info (for sidebar gating).
    */
   myRole: protectedProcedure.query(async ({ ctx }) => {
-    const { getMerchantByUserId, getMerchantMemberByUserId } = await import('./db');
-
-    // Try merchant_members first
-    try {
-      const membership = await getMerchantMemberByUserId(ctx.user!.id);
-      if (membership) {
-        return {
-          role: membership.role as MerchantRole,
-          roleInfo: getRoleInfo(membership.role as MerchantRole),
-          merchantId: membership.merchantId,
-        };
-      }
-    } catch { /* table doesn't exist */ }
-
-    // Legacy fallback
-    const merchant = await getMerchantByUserId(ctx.user!.id);
-    if (merchant) {
-      return {
-        role: 'owner' as MerchantRole,
-        roleInfo: getRoleInfo('owner'),
-        merchantId: merchant.id,
-      };
-    }
-
-    return null;
+    const { resolveMerchantAccess } = await import('./accounts/merchant-access');
+    const membership = await resolveMerchantAccess(ctx.user.id);
+    if (!membership) return null;
+    return { role: membership.role, roleInfo: getRoleInfo(membership.role), merchantId: membership.merchantId };
   }),
 });
 

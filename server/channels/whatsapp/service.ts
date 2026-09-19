@@ -90,7 +90,9 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
     );
     const existing = (rows as any[])?.[0];
     if (!existing) throw error;
-    if (existing.status === 'failed' && input.retryFailed) {
+    if (existing.status === 'failed' && input.retryFailed
+        && existing.error_code !== 'provider_unreachable'
+        && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(
         `UPDATE whatsapp_message_deliveries
          SET status = 'queued', error_code = NULL, error_details = NULL, status_updated_at = NOW()
@@ -113,12 +115,17 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
   const provider = getWhatsAppProvider(config.provider);
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
+    outcome: 'unknown' as const,
     status: 'failed' as const,
     providerMessageId: undefined,
     errorCode: 'provider_unreachable',
-    errorMessage: String(error?.message || 'Provider call failed').slice(0, 300),
+    errorMessage: 'Provider outcome is unknown; reconcile before retrying',
   }));
-  const status: WhatsAppDeliveryStatus = result.accepted ? 'sent' : 'failed';
+  const unknown = result.outcome === 'unknown' || (result.accepted && !result.providerMessageId)
+    || (!result.accepted && result.errorCode === 'provider_unreachable');
+  const accepted = result.accepted && !unknown;
+  const errorCode = unknown ? 'provider_unreachable' : result.errorCode;
+  const status: WhatsAppDeliveryStatus = accepted ? 'sent' : unknown ? 'queued' : 'failed';
   try {
     const [persisted] = await pool.execute(
       `UPDATE whatsapp_message_deliveries
@@ -127,7 +134,7 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
       [
         result.providerMessageId || null,
         status,
-        result.errorCode || null,
+        errorCode || null,
         result.errorMessage?.replace(/[\r\n]/g, ' ').slice(0, 500) || null,
         input.idempotencyKey,
         input.merchantId,
@@ -139,11 +146,11 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
     throw new WhatsAppDeliveryStateError();
   }
   return {
-    accepted: result.accepted,
+    accepted,
     duplicate: false,
     status,
     providerMessageId: result.providerMessageId,
-    errorCode: result.errorCode,
+    errorCode,
   };
 }
 

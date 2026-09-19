@@ -114,11 +114,12 @@ describe('Intent Detection', () => {
 
   it('should detect post_purchase intent', () => {
     expect(detectIntent('وين وصل طلبي')).toBe('post_purchase');
-    expect(detectIntent('ابغى استرجاع')).toBe('post_purchase');
+    expect(detectIntent('ابغى استرجاع طلبي')).toBe('post_purchase');
     expect(detectIntent('tracking my order')).toBe('post_purchase');
   });
 
   it('should detect inquiring intent', () => {
+    expect(detectIntent('ابغى استرجاع')).toBe('inquiring');
     expect(detectIntent('كم سعر الجوال')).toBe('inquiring');
     expect(detectIntent('عندكم لابتوب')).toBe('inquiring');
     expect(detectIntent('how much is this')).toBe('inquiring');

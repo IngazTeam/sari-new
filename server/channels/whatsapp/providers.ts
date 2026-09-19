@@ -37,6 +37,13 @@ function requireGreenApiUrl(value: string | null | undefined): string {
   return parsed.origin;
 }
 
+function rejectedOrUnknown(status: number): WhatsAppProviderResult {
+  const rejected = status >= 400 && status < 500 && status !== 408;
+  return { accepted: false, status: 'failed', outcome: rejected ? 'rejected' : 'unknown',
+    errorCode: rejected ? 'http_' + status : 'provider_unreachable',
+    errorMessage: rejected ? 'Provider rejected the message' : 'Provider outcome requires reconciliation' };
+}
+
 export class GreenApiWhatsAppProvider implements WhatsAppProvider {
   readonly kind = 'green_api' as const;
 
@@ -47,6 +54,7 @@ export class GreenApiWhatsAppProvider implements WhatsAppProvider {
     if (request.kind === 'template') {
       return { accepted: false, status: 'failed', errorCode: 'unsupported_template' };
     }
+    let attempted = false;
     try {
       const apiUrl = requireGreenApiUrl(config.apiUrl);
       const destination = normalizedGreenDestination(request.to);
@@ -59,6 +67,7 @@ export class GreenApiWhatsAppProvider implements WhatsAppProvider {
             fileName: (request.fileName || (request.kind === 'audio' ? 'audio.ogg' : request.kind === 'image' ? 'image.jpg' : 'document')).slice(0, 240),
             caption: (request.text || '').slice(0, 1024),
           };
+      attempted = true;
       const response = await axios.post(
         `${apiUrl}/waInstance${config.instanceId}/${endpoint}/${config.token}`,
         body,
@@ -67,9 +76,9 @@ export class GreenApiWhatsAppProvider implements WhatsAppProvider {
       const providerMessageId = response.data?.idMessage;
       return response.status >= 200 && response.status < 300 && providerMessageId
         ? { accepted: true, status: 'sent', providerMessageId: String(providerMessageId) }
-        : { accepted: false, status: 'failed', errorCode: `http_${response.status}` };
+        : rejectedOrUnknown(response.status);
     } catch (error: any) {
-      return { accepted: false, status: 'failed', errorCode: 'provider_unreachable', errorMessage: String(error?.message || '').slice(0, 300) };
+      return { accepted: false, status: 'failed', outcome: attempted ? 'unknown' : 'rejected', errorCode: attempted ? 'provider_unreachable' : 'invalid_request', errorMessage: attempted ? 'Provider outcome requires reconciliation' : 'Invalid message or provider configuration' };
     }
   }
 
@@ -102,6 +111,7 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
     if (!phoneNumberId || !/^\d{5,30}$/.test(phoneNumberId) || !config.token) {
       return { accepted: false, status: 'failed', errorCode: 'configuration_missing' };
     }
+    let attempted = false;
     try {
       const to = normalizedPersonalNumber(request.to);
       const payload: Record<string, any> = { messaging_product: 'whatsapp', recipient_type: 'individual', to };
@@ -125,6 +135,7 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
           ...(type === 'document' && request.fileName ? { filename: request.fileName.slice(0, 240) } : {}),
         };
       }
+      attempted = true;
       const response = await axios.post(
         `https://graph.facebook.com/${this.graphVersion()}/${phoneNumberId}/messages`,
         payload,
@@ -139,14 +150,9 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
       if (response.status >= 200 && response.status < 300 && providerMessageId) {
         return { accepted: true, status: 'sent', providerMessageId: String(providerMessageId) };
       }
-      return {
-        accepted: false,
-        status: 'failed',
-        errorCode: String(response.data?.error?.code || `http_${response.status}`).slice(0, 100),
-        errorMessage: String(response.data?.error?.message || 'Meta rejected the message').slice(0, 300),
-      };
+      return rejectedOrUnknown(response.status);
     } catch (error: any) {
-      return { accepted: false, status: 'failed', errorCode: 'provider_unreachable', errorMessage: String(error?.message || '').slice(0, 300) };
+      return { accepted: false, status: 'failed', outcome: attempted ? 'unknown' : 'rejected', errorCode: attempted ? 'provider_unreachable' : 'invalid_request', errorMessage: attempted ? 'Provider outcome requires reconciliation' : 'Invalid message or provider configuration' };
     }
   }
 

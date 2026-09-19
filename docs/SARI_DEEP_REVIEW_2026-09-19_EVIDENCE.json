@@ -1,0 +1,247 @@
+{
+  "date": "2026-09-19",
+  "sourceSha": "a4538c62e0157102bc3113edffebc3e240354350",
+  "scope": "review only; no deployment or production mutations",
+  "metrics": {
+    "sourceFiles": 999,
+    "sourceLines": 270589,
+    "productionFiles": 750,
+    "productionLines": 222880,
+    "testFiles": 249,
+    "releaseTestFiles": 99,
+    "pages": 214,
+    "migrations": 51,
+    "largest": [
+      {
+        "path": "server/db.ts",
+        "lines": 12521
+      },
+      {
+        "path": "server/routers.ts",
+        "lines": 8524
+      },
+      {
+        "path": "drizzle/schema.ts",
+        "lines": 3756
+      },
+      {
+        "path": "server/ai/sari-personality.ts",
+        "lines": 3331
+      },
+      {
+        "path": "server/_core/websiteAnalyzer.ts",
+        "lines": 2895
+      },
+      {
+        "path": "server/routers-sari-brain.ts",
+        "lines": 2650
+      },
+      {
+        "path": "server/api/rest.ts",
+        "lines": 2404
+      },
+      {
+        "path": "client/src/pages/merchant/SariBrain.tsx",
+        "lines": 2115
+      },
+      {
+        "path": "server/webhooks/greenapi.ts",
+        "lines": 1902
+      },
+      {
+        "path": "server/routers-products.ts",
+        "lines": 1536
+      },
+      {
+        "path": "client/src/pages/ComponentShowcase.tsx",
+        "lines": 1438
+      },
+      {
+        "path": "server/ai/merchant-mode.ts",
+        "lines": 1257
+      },
+      {
+        "path": "client/src/App.tsx",
+        "lines": 1189
+      },
+      {
+        "path": "server/accounts/lifecycle.ts",
+        "lines": 1165
+      },
+      {
+        "path": "server/integrations/byaan.ts",
+        "lines": 1134
+      },
+      {
+        "path": "server/ai/task-catalog.ts",
+        "lines": 1047
+      },
+      {
+        "path": "server/polling.ts",
+        "lines": 1003
+      },
+      {
+        "path": "server/ai.ts",
+        "lines": 961
+      }
+    ]
+  },
+  "tests": {
+    "files": 99,
+    "total": 1268,
+    "passed": 1263,
+    "failed": 4,
+    "skipped": 1,
+    "environment": "Windows / Node 25.2.1 / Vitest 4.1.7",
+    "failures": [
+      {
+        "file": "server/api-instance-lifecycle-pentest.test.ts",
+        "name": "REST WhatsApp instance lifecycle penetration gates keeps primary changes tenant-scoped and hands off a disabled primary"
+      },
+      {
+        "file": "server/byaan-faq-knowledge-pentest.test.ts",
+        "name": "Byaan FAQ management and knowledge boundaries publishes the exact current Byaan snapshot before disabling stale bot facts"
+      },
+      {
+        "file": "server/password-reset-hardening-pentest.test.ts",
+        "name": "password-reset abuse and token-reuse penetration gates serializes durable per-email and per-IP reservations and fails closed without a database"
+      },
+      {
+        "file": "server/woocommerce-webhook-reconciliation-pentest.test.ts",
+        "name": "WooCommerce lock admission control reserves pool headroom before checking out a named-lock connection"
+      }
+    ],
+    "diagnosis": "The four failed source-text expectations were found after CRLF normalization in a separate diagnostic; tests were not modified or rerun as passing."
+  },
+  "dependencies": {
+    "info": 0,
+    "low": 7,
+    "moderate": 19,
+    "high": 12,
+    "critical": 0,
+    "highAdvisories": [
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-w2rr-34g9-rvrj",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.14"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-4w3w-2rp5-g8jm",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.14"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-c7q8-3ch8-vqpv",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-27p8-2357-5qqv",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-8344-3jmq-59r6",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-x4fp-j954-r2f4",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-965w-775f-mr7g",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "@xmldom/xmldom",
+        "url": "https://github.com/advisories/GHSA-93r5-fhx6-vmg9",
+        "installed": [
+          "0.8.13"
+        ],
+        "patched": ">=0.8.15"
+      },
+      {
+        "module": "nodemailer",
+        "url": "https://github.com/advisories/GHSA-2x7j-588g-ccc2",
+        "installed": [
+          "9.0.5"
+        ],
+        "patched": ">=9.1.0"
+      },
+      {
+        "module": "multer",
+        "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm",
+        "installed": [
+          "2.2.0"
+        ],
+        "patched": ">=2.3.0"
+      },
+      {
+        "module": "multer",
+        "url": "https://github.com/advisories/GHSA-qfvm-cv95-jqjf",
+        "installed": [
+          "2.2.0"
+        ],
+        "patched": ">=2.3.0"
+      },
+      {
+        "module": "multer",
+        "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4",
+        "installed": [
+          "2.2.0"
+        ],
+        "patched": ">=2.3.0"
+      }
+    ]
+  },
+  "ci": {
+    "url": "https://github.com/IngazTeam/sari-new/actions/runs/35457475570",
+    "quality": "failed at dependency audit; subsequent checks skipped",
+    "databaseIntegration": "success",
+    "logDownload": "403"
+  },
+  "checks": {
+    "typescript": "passed, Node 24.19.0",
+    "frontendBuild": "passed, Node 25.2.1",
+    "entryBytes": 566492,
+    "entryGzipBytes": 169579,
+    "backendCompile": "passed, Node 24.19.0; compile only, no environment banner or execution",
+    "fullBuild": "blocked by engine mismatch",
+    "schemaHistory": "passed; no database connection or migration",
+    "auditFailureFixture": "provider returned JSON error / exit 1; original audit gate returned exit 0"
+  },
+  "ownerReport": {
+    "activePaidCustomers": 12,
+    "sectors": [
+      "training",
+      "recruitment",
+      "stores"
+    ],
+    "reportedExperience": "four months",
+    "mrrVerified": false
+  }
+}

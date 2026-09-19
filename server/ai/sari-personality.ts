@@ -1588,44 +1588,16 @@ export function chatWithSari(params: ChatWithSariParams): Promise<string> {
 }
 
 async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
-  // NQ-6: Cost ceiling check — degrade to lightweight mode when daily limit exceeded
-  let costCeilingExceeded = false;
+  // The durable shared budget fails closed; exhaustion never starts a cheaper or full paid retry.
   try {
-    const { getMerchantCeiling } = await import('./cost-ceiling');
-    const ceiling = getMerchantCeiling(params.merchantId);
-    if (ceiling.exceeded) {
-      costCeilingExceeded = true;
-      console.warn(`[CostCeiling] Merchant ${params.merchantId} exceeded daily limit (${ceiling.used}/${ceiling.limit} tokens). Using lightweight mode.`);
+    const { getAiBudgetStatus } = await import('./budget-ledger');
+    if ((await getAiBudgetStatus(params.merchantId)).exceeded) {
+      return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
     }
-  } catch { /* non-blocking — if module fails, proceed normally */ }
-
-  let response: string;
-  if (costCeilingExceeded) {
-    // Stripped-context fallback — same pattern as error handler (L2500+)
-    // Uses gpt-4o-mini with minimal context: no RAG, no full pipeline
-    try {
-      const merchant = await getMerchantById(params.merchantId).catch(() => null);
-      const businessName = merchant?.businessName || 'نشاطنا التجاري';
-      const lightMessages: ChatMessage[] = [
-        {
-          role: 'system',
-          content: `أنت مساعد مبيعات ذكي تعمل في "${sanitizeForPrompt(businessName)}". رد بإيجاز ولطف على رسالة العميل. إذا لم تعرف الإجابة، قل "خلني أتأكد من المعلومة وأرد عليك". لا ترسل أرقام هواتف أو إيميلات أبداً. كن طبيعياً.`,
-        },
-        { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 300)) },
-      ];
-      response = await callGPT4(lightMessages, {
-        model: 'gpt-4o-mini',
-        temperature: 0.7,
-        maxTokens: 300,
-        noRetry: true,
-        taskType: 'sari.reply',
-      });
-    } catch {
-      response = await _chatWithSariCore(params); // If lightweight fails, try full pipeline
-    }
-  } else {
-    response = await _chatWithSariCore(params);
+  } catch {
+    return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
   }
+  const response = await _chatWithSariCore(params);
 
   // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer
   try {

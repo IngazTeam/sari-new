@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 import { privacyHash } from './privacy-hash';
+import { isFutureDatabaseTime } from '../db/time';
+import { lockTeamManagement } from './team-members';
 
 export type TeamInvitationRole = 'manager' | 'sales_supervisor' | 'viewer';
 
@@ -79,6 +81,7 @@ export async function issueTeamInvitation(input: {
     if (!acquired) throw new Error('TEAM_INVITATION_LOCK_UNAVAILABLE');
 
     await connection.beginTransaction();
+    await lockTeamManagement(connection, input.merchantId, input.invitedBy);
     await connection.execute(
       `UPDATE merchant_invitations
           SET status = 'expired', recipient_hash = NULL
@@ -133,7 +136,7 @@ export async function inspectTeamInvitation(token: string): Promise<{
     [tokenDigest(token)],
   );
   const invitation = rows[0];
-  if (!invitation || invitation.status !== 'pending' || new Date(invitation.expiresAt).getTime() <= Date.now()) {
+  if (!invitation || invitation.status !== 'pending' || !isFutureDatabaseTime(invitation.expiresAt)) {
     throw new TeamInvitationError('unavailable');
   }
   return { merchantName: invitation.merchantName || '', role: invitation.role };
@@ -148,6 +151,12 @@ export async function acceptTeamInvitation(input: {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
+    // Discover the store, then acquire locks in the same order as issuance and
+    // revocation. Re-read the invitation under its lock before claiming it.
+    const [identity] = await connection.execute<InvitationRow[]>(
+      'SELECT merchant_id AS merchantId, invited_by AS invitedBy FROM merchant_invitations WHERE token = ? LIMIT 1', [tokenDigest(input.token)]);
+    if (!identity[0]) throw new TeamInvitationError('unavailable');
+    const { store, members } = await lockTeamManagement(connection, identity[0].merchantId, identity[0].invitedBy);
     const [invitations] = await connection.execute<InvitationRow[]>(
       `SELECT id, merchant_id AS merchantId, email, recipient_hash AS recipientHash, role,
               invited_by AS invitedBy, expires_at AS expiresAt, status,
@@ -161,7 +170,7 @@ export async function acceptTeamInvitation(input: {
       await connection.commit();
       return { merchantId: invitation.merchantId, alreadyAccepted: true };
     }
-    if (invitation.status !== 'pending' || new Date(invitation.expiresAt).getTime() <= Date.now()) {
+    if (invitation.status !== 'pending' || !isFutureDatabaseTime(invitation.expiresAt)) {
       throw new TeamInvitationError('unavailable');
     }
 
@@ -181,17 +190,23 @@ export async function acceptTeamInvitation(input: {
     }
 
     const acceptedAt = mysqlTimestamp(new Date());
-    // The unique (merchant_id,user_id) constraint prevents two invitations from
-    // creating duplicate memberships. Existing membership keeps its current role.
+    if (!['manager', 'sales_supervisor', 'viewer'].includes(invitation.role)) throw new TeamInvitationError('unavailable');
+    // Invitations must never demote a legacy owner implicitly. An active member
+    // retains their role; a newly invited revoked member gets the new invite role.
+    const role = store.userId === input.userId && !members.some(row => row.user_id === input.userId) ? 'owner' : invitation.role;
     await connection.execute(
       `INSERT INTO merchant_members
         (merchant_id, user_id, role, invited_by, invited_at, accepted_at, is_active)
        VALUES (?, ?, ?, ?, ?, ?, 1)
-       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id),
+         role = IF(is_active = 0, VALUES(role), role),
+         invited_by = IF(is_active = 0, VALUES(invited_by), invited_by),
+         accepted_at = IF(is_active = 0, VALUES(accepted_at), accepted_at),
+         is_active = 1`,
       [
         invitation.merchantId,
         input.userId,
-        invitation.role,
+        role,
         invitation.invitedBy,
         acceptedAt,
         acceptedAt,

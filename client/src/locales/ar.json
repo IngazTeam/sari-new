@@ -239,7 +239,7 @@
       },
       "secure": {
         "title": "آمن وموثوق",
-        "description": "حماية كاملة لبيانات عملائك ومحادثاتهم"
+        "description": "صلاحيات وصول للتاجر وفريقه، مع أدوات لإدارة بيانات الحساب وخصوصيته"
       }
     },
     "pricing": {
@@ -298,22 +298,22 @@
     "pilotEvidence": {
       "title": "ما أثبتته البيتا حتى الآن",
       "subtitle": "استخدام فعلي مبكر، مع فصل واضح بين النتائج الحالية وما يزال قيد القياس",
-      "disclaimer": "أرقام الاستخدام بحسب إفادة مالك المنتج عن التجارب الحالية (أغسطس 2026)، وتخضع للتوثيق من التحليلات ودراسات الحالة.",
+      "disclaimer": "بحسب إفادة مالك المنتج في 19 سبتمبر 2026: 12 عميلاً مدفوعاً ونشطاً منذ بدء الاستخدام التجاري قبل أربعة أشهر. تختلف مدة اشتراك كل عميل؛ الإيراد والاحتفاظ قيد القياس.",
       "stats": {
-        "pilotClients": "عملاء تجريبيون",
-        "monthlyPerPilot": "عميل نهائي شهرياً لكل تجربة",
-        "monthlyTotal": "عميل نهائي شهرياً عبر التجارب",
+        "pilotClients": "عميل مدفوع ونشط",
+        "operatingMonths": "أشهر منذ بدء الاستخدام التجاري",
+        "sectors": "قطاعات مستخدمة",
         "stageValue": "بيتا",
         "stage": "مرحلة المنتج"
       },
       "cards": {
         "live": {
           "title": "تشغيل فعلي",
-          "description": "ثلاثة عملاء جرّبوا المنتج بنجاح في بيئات استخدام حقيقية."
+          "description": "12 عميلاً مدفوعاً ونشطاً بحسب إفادة مالك المنتج بتاريخ 19 سبتمبر 2026."
         },
         "volume": {
-          "title": "حجم استخدام مبكر",
-          "description": "نحو 100 عميل نهائي شهرياً لكل تجربة، أي قرابة 300 عبر التجارب الحالية."
+          "title": "ثلاثة قطاعات فعلية",
+          "description": "استخدام في التدريب والاستقدام والمتاجر، مع توثيق نتائج كل قطاع على حدة."
         },
         "next": {
           "title": "الخطوة التالية",
@@ -351,12 +351,12 @@
       "testimonial1": {
         "name": "تشغيل فعلي",
         "role": "إفادة مالك المنتج",
-        "content": "ثلاثة عملاء جرّبوا المنتج بنجاح في استخدام حقيقي."
+        "content": "12 عميلاً مدفوعاً ونشطاً بحسب إفادة المالك في 19 سبتمبر 2026."
       },
       "testimonial2": {
         "name": "حجم مبكر",
         "role": "إفادة مالك المنتج",
-        "content": "نحو 100 عميل نهائي شهرياً لكل تجربة حالية."
+        "content": "التدريب والاستقدام والمتاجر قطاعات الاستخدام الحالية؛ حجم العملاء النهائيين قيد القياس."
       },
       "testimonial3": {
         "name": "القياس التالي",
@@ -381,7 +381,7 @@
       },
       "q4": {
         "question": "هل يمكنني تجربة ساري مجاناً؟",
-        "answer": "نعم، نوفر خطة مجانية تتيح لك 100 محادثة شهرياً لتجربة الخدمة."
+        "answer": "تتوفر تجربة لمدة 7 أيام للحساب المؤهل، بحدود استخدام موضحة عند التفعيل. بعدها تحتاج إلى باقة مدفوعة للاستمرار؛ لا توجد خطة مجانية شهرية دائمة."
       },
       "q5": {
         "question": "كيف يتم الدفع؟",
@@ -753,7 +753,7 @@
     "signInButton": "تسجيل الدخول"
   },
   "footer": {
-    "description": "ساري هو وكيل المبيعات الذكي الأول على واتساب. نساعدك على زيادة مبيعاتك، تحسين خدمة عملائك، وأتمتة محادثاتك باحترافية وسهولة.",
+    "description": "ساري وكيل مبيعات بالذكاء الاصطناعي على واتساب، يساعدك على إدارة محادثات العملاء وتنظيم الطلبات وخدمة نشاطك التجاري.",
     "auto_0": "للمبيعات",
     "auto_1": "للتسويق",
     "auto_2": "للدعم الفني",
@@ -2793,7 +2793,7 @@
     "text31": "بعد تفعيل Tap، سيتمكن ساري من إرسال روابط دفع آمنة لعملائك عبر واتساب عند إنشاء الطلبات.",
     "text32": "تفعيل استقبال المدفوعات عبر Tap",
     "text33": "المفتاح العام من لوحة تحكم Tap",
-    "text34": "المتغيرات المتاحة: {{var0}}'}, {{var1}}'}, {{var2}}'}, {{var3}}'}",
+    "text34": "راجع نص الرسالة قبل حفظه، ولا تُدرج بيانات حساسة.",
     "text35": "كيفية الحصول على مفاتيح Tap",
     "text36": "سجل حساب في{{var0}}",
     "text37": "للاختبار، استخدم مفاتيح Sandbox (تبدأ بـ pk_test_ و sk_test_).",
@@ -3890,7 +3890,7 @@
     "text19": "التأثير المتوقع",
     "text20": "صعوبة التنفيذ",
     "text21": "مرفوضة",
-    "text25": " (الأولوية: {{var0}})",
+    "text25": "ملخص:",
     "text8": "قيد التنفيذ",
     "text9": "مكتملة",
     "text10": "مرفوضة",
@@ -8546,5 +8546,105 @@
     "addKeyword": "أضف",
     "redirectMessage": "رسالة التوجيه للخاص",
     "redirectPlaceholder": "مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊"
+  },
+  "sidebar.merchant.salesPipeline": "غرفة قيادة المبيعات",
+  "sidebar.merchant.quotationTemplates": "قوالب عروض الأسعار",
+  "sidebar.merchant.promotions": "العروض الترويجية",
+  "sidebar.merchant.privacyCenter": "مركز الخصوصية",
+  "sidebar.merchant.teamManagement": "إدارة الفريق",
+  "sidebar.merchant.mediaLibrary": "مكتبة الوسائط",
+  "sidebar.admin.monitor": "مركز المراقبة",
+  "sidebar.admin.privacyRequests": "طلبات الخصوصية",
+  "sidebar.admin.tapSettings": "إعدادات Tap",
+  "sidebar.admin.invoices": "الفواتير",
+  "sidebar.admin.subscriptionReports": "تقارير الاشتراكات",
+  "sidebar.admin.notifications": "الإشعارات",
+  "sidebar.admin.abTests": "اختبارات A/B",
+  "sidebar.admin.aiSettings": "إعدادات AI",
+  "emergencyPhone.configured": "{{count}} أرقام تصعيد مفعّلة",
+  "emergencyPhone.notConfigured": "فعّل سلسلة تنبيهات ساري",
+  "emergencyPhone.title": "سلسلة تنبيهات ساري",
+  "emergencyPhone.description": "عندما لا يعرف ساري الجواب، يرسل تنبيه للرقم الأول. لو ما رد خلال 5 دقائق — يرسل للثاني، وهكذا.",
+  "emergencyPhone.chainLabel": "أرقام التصعيد (بالترتيب)",
+  "emergencyPhone.addPhone": "إضافة رقم آخر",
+  "emergencyPhone.warning": "بدون أرقام تصعيد، ساري يبلّغ العميل بالانتظار لكن ما يقدر يوصل لك السؤال.",
+  "emergencyPhone.saved": "تم الحفظ! ✅",
+  "emergencyPhone.save": "حفظ سلسلة التنبيهات",
+  "campaignsPage.confirmSend": "هل أنت متأكد من إرسال حملة \"{{name}}\"؟ سيتم إرسالها لجميع العملاء المستهدفين.",
+  "checkoutPage.vatIncluded": "ضريبة القيمة المضافة (مشمولة)",
+  "checkoutPage.available": "متاح",
+  "common.characters": "حرف",
+  "newCampaignPage.previewPlaceholder": "سيظهر نص الرسالة هنا...",
+  "toast.conversations.sendFailed": "تعذر إرسال الرسالة. حاول مجددًا.",
+  "whatsappManagement.toast.connected": "تم ربط الواتساب بنجاح! 🎉",
+  "whatsappManagement.toast.refreshed": "تم تحديث البيانات — الرقم: {{phone}}",
+  "whatsappManagement.toast.refreshedNoPhone": "تم تحديث البيانات",
+  "whatsappManagement.toast.refreshFailed": "فشل التحديث",
+  "whatsappManagement.toast.loggedOut": "تم تسجيل الخروج. امسح QR Code بالرقم الجديد.",
+  "whatsappManagement.toast.reconnected": "تم ربط الرقم الجديد بنجاح! {{phone}}",
+  "whatsappManagement.refresh": "تحديث البيانات",
+  "whatsappManagement.relink": "إعادة الربط",
+  "whatsappManagement.changeNumber": "تغيير الرقم",
+  "whatsappManagement.readyToConnect": "جاهز للربط! 🎉",
+  "whatsappManagement.readyToConnectDesc": "تمت الموافقة على طلبك. اضغط الزر لمسح QR Code وربط الواتساب.",
+  "whatsappManagement.connectNow": "ربط الواتساب الآن",
+  "whatsappManagement.connectWhatsApp": "ربط الواتساب",
+  "whatsappManagement.dialog.info": "يمكنك إضافة {{remaining}} رقم إضافي حسب باقتك الحالية ({{plan}}).",
+  "whatsappManagement.dialog.limitReached": "وصلت للحد الأقصى من الأرقام. أوقف رقماً أو قم بترقية باقتك.",
+  "whatsappManagement.qr.title": "ربط الواتساب",
+  "whatsappManagement.qr.description": "امسح رمز QR من تطبيق الواتساب على هاتفك",
+  "whatsappManagement.qr.error": "فشل تحميل QR Code",
+  "whatsappManagement.qr.connected": "تم الربط بنجاح! ✅",
+  "whatsappManagement.qr.waiting": "بانتظار مسح الرمز...",
+  "whatsappManagement.qr.refresh": "تحديث الرمز",
+  "whatsappManagement.qr.howTo": "كيفية المسح:",
+  "whatsappManagement.qr.step1": "افتح واتساب على هاتفك",
+  "whatsappManagement.qr.step2": "اذهب إلى الإعدادات ← الأجهزة المرتبطة",
+  "whatsappManagement.qr.step3": "اضغط \"ربط جهاز\"",
+  "whatsappManagement.qr.step4": "وجّه الكاميرا نحو رمز QR",
+  "whatsappManagement.confirm.deactivateDesc": "هل تريد إيقاف الرقم {{phone}}؟ سيتوقف استقبال الرسائل على هذا الرقم.",
+  "whatsappManagement.confirm.activateDesc": "هل تريد إعادة تفعيل الرقم {{phone}}؟",
+  "whatsappManagement.confirm.setPrimaryDesc": "هل تريد تعيين {{phone}} كرقم أساسي؟ سيتم إرسال الرسائل الافتراضية من هذا الرقم.",
+  "whatsappManagement.reconnect.title": "تغيير رقم الواتساب",
+  "whatsappManagement.reconnect.desc": "امسح QR Code بالرقم الجديد الذي تريد ربطه",
+  "whatsappManagement.reconnect.waiting": "في انتظار مسح QR Code...",
+  "whatsappManagement.refreshQR": "تحديث QR Code",
+  "whatsappManagement.reconnect.alreadyConnected": "الرقم متصل بالفعل!",
+  "whatsappManagement.reconnect.loading": "جاري التحميل...",
+  "aiBudget": {
+    "title": "ميزانية الذكاء الاصطناعي للمنصة",
+    "description": "سقف يومي مشترك بين OpenAI وZahyPi وجميع المتاجر. يبدأ اليوم عند 00:00 UTC (03:00 الرياض).",
+    "loading": "جارٍ تحميل الميزانية…",
+    "unavailable": "تعذر قراءة الميزانية. تحقق من اتصال قاعدة البيانات وتطبيق الهجرة.",
+    "limit": "السقف الفعّال اليوم",
+    "spent": "تكلفة مسوّاة حسب الاستخدام",
+    "reserved": "محجوز حتى اكتمال التسوية",
+    "noPrices": "أضف أسعار النماذج المعتمدة قبل التفعيل؛ لن تُرسل الاستدعاءات غير المسعّرة.",
+    "edit": "تعديل السعر",
+    "reconcileTitle": "مطابقة الحجوزات مع المزوّد",
+    "reconcileHelp": "اعتمد مبلغًا من إيصال المزوّد فقط. استخدم صفرًا إذا أكد المزوّد عدم احتساب الاستدعاء. لا تؤدي المطابقة إلى إعادة إرسال الطلب.",
+    "reservationLabel": "الاستدعاء ومعرّفه لدى المزوّد",
+    "chooseReservation": "اختر حجزًا للمطابقة",
+    "billedLabel": "المبلغ المؤكد بالدولار",
+    "referenceLabel": "مرجع الإيصال أو تأكيد المزوّد",
+    "evidenceConfirmation": "طابقت المعرّف والمبلغ مع دليل المزوّد. ستُسجل المطابقة باسم حسابي.",
+    "saveReconciliation": "حفظ المطابقة",
+    "priceHelp": "أدخل الأسعار من عقد المزوّد أو فاتورته. يجب تسعير النموذج الأساسي والبديل والتضمين. للصوت يُحجز مبلغ ثابت محافظ لكل ملف حتى مطابقته مع الفاتورة؛ السقف غير ضمان للفواتير إذا كان تقدير السعر أقل من التكلفة الفعلية.",
+    "provider": "المزوّد",
+    "model": "اسم النموذج المطابق لإعدادات التشغيل",
+    "version": "مرجع السعر وتاريخه",
+    "maxInput": "أقصى رموز الإدخال للنموذج",
+    "inputRate": "دولار لكل مليون رمز إدخال",
+    "outputRate": "دولار لكل مليون رمز إخراج",
+    "flat": "مبلغ ثابت إضافي للاستدعاء بالدولار",
+    "reconciliationSaved": "حُفظت المطابقة دون إعادة الاستدعاء",
+    "priceSaved": "حُفظ السعر للاستخدامات الجديدة",
+    "unknownCount": "{{count}} استدعاءً يحتاج مطابقة مع المزوّد. لا تُعاد ميزانيته تلقائيًا.",
+    "priceSummary": "إدخال {{input}} وإخراج {{output}} لكل مليون رمز؛ ثابت {{flat}}",
+    "enabled": "مفعّل",
+    "disabled": "معطّل",
+    "saving": "جارٍ الحفظ…",
+    "savePrice": "حفظ السعر المعتمد",
+    "enablePrice": "تفعيل بطاقة السعر للاستدعاءات الجديدة"
   }
 }

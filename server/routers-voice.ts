@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import crypto from 'node:crypto';
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, merchantProcedure, router } from "./_core/trpc";
 
 export const voiceRouter = router({
     // Upload audio file to S3
@@ -73,15 +73,16 @@ export const voiceRouter = router({
         }),
 
     // Transcribe audio to text
-    transcribe: protectedProcedure
+    transcribe: merchantProcedure
         .input(z.object({
             audioUrl: z.string().url(),
             language: z.string().optional(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             try {
                 const { transcribeAudio } = await import('./_core/voiceTranscription');
                 const result = await transcribeAudio({
+                    merchantId: ctx.merchantId,
                     audioUrl: input.audioUrl,
                     language: input.language || 'ar',
                 });

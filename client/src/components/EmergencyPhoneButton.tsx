@@ -172,7 +172,7 @@ export function EmergencyPhoneButton() {
               : 'bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse'
           }`}
           title={hasPhones
-            ? t('emergencyPhone.configured', `${configuredCount} أرقام تصعيد مفعّلة`)
+            ? t('emergencyPhone.configured', { count: configuredCount })
             : t('emergencyPhone.notConfigured', 'فعّل سلسلة تنبيهات ساري')
           }
         >

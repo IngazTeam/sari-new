@@ -16,19 +16,10 @@ import { buildProfileContext } from '../../db/customer-intelligence';
 // Test Helpers
 // ═══════════════════════════════════════════════════════════════
 
-let passed = 0;
-let failed = 0;
-const errors: string[] = [];
+import { it, expect } from 'vitest';
 
 function assert(condition: boolean, testName: string) {
-  if (condition) {
-    passed++;
-    console.log(`  ✅ ${testName}`);
-  } else {
-    failed++;
-    errors.push(testName);
-    console.log(`  ❌ ${testName}`);
-  }
+  it(testName, () => expect(condition, testName).toBe(true));
 }
 
 function section(name: string) {
@@ -414,19 +405,3 @@ for (const msg of messages) {
   assert(!prompt.includes('undefined'), `"${msg.text}" → no 'undefined' in prompt`);
   assert(!prompt.includes('null'), `"${msg.text}" → no 'null' in prompt`);
 }
-
-// ═══════════════════════════════════════════════════════════════
-// RESULTS
-// ═══════════════════════════════════════════════════════════════
-
-console.log(`\n${'═'.repeat(60)}`);
-console.log(`📊 النتائج:`);
-console.log(`   ✅ نجح: ${passed}`);
-console.log(`   ❌ فشل: ${failed}`);
-if (errors.length > 0) {
-  console.log(`\n   الاختبارات الفاشلة:`);
-  errors.forEach(e => console.log(`   • ${e}`));
-}
-console.log('═'.repeat(60));
-
-process.exit(failed > 0 ? 1 : 0);

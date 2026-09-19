@@ -4,6 +4,8 @@ export const LOAD_PATHS = new Set(['/health', '/ready']);
 export const CRITICAL_TABLES = Object.freeze([
   'users', 'merchants', 'products', 'customer_profiles', 'conversations', 'messages',
   'orders', 'merchant_subscriptions', 'payment_transactions',
+  'auth_sessions', 'merchant_members', 'order_payments', 'whatsapp_message_deliveries',
+  'ai_budget_policies', 'ai_price_cards', 'ai_budget_periods', 'ai_usage_reservations',
 ]);
 
 const SAFE_RESTORE_DATABASE = /(?:^|[_-])(restore|drill|test)(?:[_-]|$)/i;

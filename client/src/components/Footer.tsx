@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
@@ -18,44 +18,6 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t('footer.description')}
             </p>
-            <div className="flex gap-3">
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors"
-                aria-label="YouTube"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-            </div>
           </div>
 
           {/* الحلول */}
@@ -206,17 +168,11 @@ export default function Footer() {
 
         {/* Contact Info */}
         <div className="mt-12 pt-8 border-t">
-          <div className="grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
+          <div className="grid md:grid-cols-2 gap-6 text-sm text-muted-foreground">
             <div className="flex items-start gap-2">
               <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <a href="mailto:support@sary.live" className="hover:text-foreground transition-colors">
                 support@sary.live
-              </a>
-            </div>
-            <div className="flex items-start gap-2">
-              <Phone className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <a href="tel:+966500000000" className="hover:text-foreground transition-colors" dir="ltr">
-                +966 50 000 0000
               </a>
             </div>
             <div className="flex items-start gap-2">

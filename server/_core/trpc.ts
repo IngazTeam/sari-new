@@ -3,6 +3,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import type { Permission, MerchantRole } from "./permissions";
+import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from "./permissions";
 
 const t = initTRPC.context<TrpcContext>().create({
@@ -59,50 +60,15 @@ export const adminProcedure = t.procedure.use(
  */
 const requireMerchantMember = t.middleware(async opts => {
   const { ctx, next } = opts;
-
-  if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-  }
-
+  if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED', message: UNAUTHED_ERR_MSG });
+  let membership;
   try {
-    const { getMerchantMemberByUserId } = await import('../db');
-    const membership = await getMerchantMemberByUserId(ctx.user.id);
-
-    if (membership) {
-      return next({
-        ctx: {
-          ...ctx,
-          user: ctx.user,
-          merchantId: membership.merchantId,
-          merchantRole: membership.role as MerchantRole,
-        },
-      });
-    }
+    membership = await resolveMerchantAccess(ctx.user.id);
   } catch {
-    // merchant_members table may not exist yet — fall through to legacy
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.' });
   }
-
-  // Legacy fallback: check old merchants.userId column
-  try {
-    const { getMerchantByUserId } = await import('../db');
-    const merchant = await getMerchantByUserId(ctx.user.id);
-
-    if (merchant) {
-      return next({
-        ctx: {
-          ...ctx,
-          user: ctx.user,
-          merchantId: merchant.id,
-          merchantRole: 'owner' as MerchantRole, // Legacy users are always owners
-        },
-      });
-    }
-  } catch { /* ignore */ }
-
-  throw new TRPCError({
-    code: "FORBIDDEN",
-    message: "ليس لديك صلاحية الوصول لهذا المتجر",
-  });
+  if (!membership) throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية الوصول لهذا المتجر' });
+  return next({ ctx: { ...ctx, user: ctx.user, merchantId: membership.merchantId, merchantRole: membership.role } });
 });
 
 /**
@@ -118,8 +84,8 @@ export const merchantProcedure = t.procedure.use(requireMerchantMember);
  *   permissionProcedure('products.manage').mutation(...)
  */
 export function permissionProcedure(permission: Permission) {
-  return t.procedure.use(requireMerchantMember).use(
-    t.middleware(async opts => {
+  return merchantProcedure.use(
+    async opts => {
       const { ctx, next } = opts;
       const role = ctx.merchantRole;
 
@@ -131,6 +97,6 @@ export function permissionProcedure(permission: Permission) {
       }
 
       return next({ ctx });
-    }),
+    },
   );
 }

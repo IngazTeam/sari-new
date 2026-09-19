@@ -1,4 +1,5 @@
 import { Link } from 'wouter';
+import { PUBLIC_EVIDENCE } from '@shared/public-evidence';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -135,9 +136,9 @@ export default function Home() {
   ];
 
   const stats = [
-    { value: '3', label: t('home.pilotEvidence.stats.pilotClients') },
-    { value: '≈100', label: t('home.pilotEvidence.stats.monthlyPerPilot') },
-    { value: '≈300', label: t('home.pilotEvidence.stats.monthlyTotal') },
+    { value: String(PUBLIC_EVIDENCE.payingActiveClients), label: t('home.pilotEvidence.stats.pilotClients') },
+    { value: String(PUBLIC_EVIDENCE.operatingMonths), label: t('home.pilotEvidence.stats.operatingMonths') },
+    { value: String(PUBLIC_EVIDENCE.sectors.length), label: t('home.pilotEvidence.stats.sectors') },
     { value: t('home.pilotEvidence.stats.stageValue'), label: t('home.pilotEvidence.stats.stage') },
   ];
 
@@ -205,7 +206,7 @@ export default function Home() {
                     </Button>
                   </a>
                 </Link>
-                <Link href="/login">
+                <Link href="/signup">
                   <a>
                     <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-lg h-14 px-8 shadow-lg hover:shadow-xl transition-all">
                       {t('home.hero.ctaStartFree')}
@@ -429,7 +430,7 @@ export default function Home() {
         <div className="container text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-4">{t('home.cta.title')}</h2>
           <p className="text-xl mb-8 opacity-90">{t('home.cta.subtitle')}</p>
-          <Link href="/login">
+          <Link href="/signup">
             <a>
               <Button size="lg" variant="secondary" className="text-lg h-14 px-8">
                 {t('home.cta.button')}

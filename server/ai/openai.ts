@@ -11,6 +11,7 @@ import {
   requestZahyPiChat,
   resolveZahyPiRuntimeConfig,
 } from './zahypi-client';
+import { AiBudgetError, withAiBudget, promptBudgetShape } from './budget-ledger';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -154,6 +155,8 @@ export async function callGPT4(
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
+  const budgetIdentity = options?.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId;
+  const budgetTask = options?.taskType ?? getOptionalZahyPiRequestContext()?.taskType ?? 'sari.reply';
   const runtimeConfig = await resolveZahyPiRuntimeConfig();
 
   if (!runtimeConfig.enabled) {
@@ -196,11 +199,6 @@ export async function callGPT4(
         estimatedCost: '0',
         durationMs: Date.now() - startedAt,
       })).catch(() => {});
-      if (typeof merchantId === 'number' && usage.total_tokens > 0) {
-        import('./cost-ceiling').then(({ trackMerchantTokens }) => {
-          trackMerchantTokens(merchantId, usage.total_tokens);
-        }).catch(() => {});
-      }
     }
     return result.content;
   }
@@ -219,10 +217,11 @@ export async function callGPT4(
 
   // Attempt 1: Primary model
   try {
-    const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000);
+    const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000, budgetIdentity, budgetTask);
     circuitBreaker.recordSuccess();
     return result;
   } catch (err1: any) {
+    if (err1 instanceof AiBudgetError) throw err1;
     console.warn(`[OpenAI] Attempt 1 failed (${primaryModel}):`, err1.message);
 
     // Don't retry on auth errors — they'll fail again
@@ -240,18 +239,19 @@ export async function callGPT4(
     // Attempt 2: Retry primary after 1s backoff
     await sleep(1000);
     try {
-      const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000);
+      const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000, budgetIdentity, budgetTask);
       circuitBreaker.recordSuccess();
       console.log('[OpenAI] ✅ Attempt 2 succeeded');
       return result;
     } catch (err2: any) {
+      if (err2 instanceof AiBudgetError) throw err2;
       console.warn(`[OpenAI] Attempt 2 failed (${primaryModel}):`, err2.message);
 
       // Attempt 3: Fallback to mini model (faster, cheaper)
       if (primaryModel !== 'gpt-4o-mini') {
         await sleep(500);
         try {
-          const result = await fetchWithTimeout(apiKey, messages, 'gpt-4o-mini', temperature, Math.min(maxTokens, 500), 15_000);
+          const result = await fetchWithTimeout(apiKey, messages, 'gpt-4o-mini', temperature, Math.min(maxTokens, 500), 15_000, budgetIdentity, budgetTask);
           circuitBreaker.recordSuccess();
           console.log('[OpenAI] ✅ Attempt 3 succeeded (gpt-4o-mini fallback)');
           return result;
@@ -278,8 +278,12 @@ async function fetchWithTimeout(
   model: string,
   temperature: number,
   maxTokens: number,
-  timeoutMs: number
+  timeoutMs: number,
+  merchantId: number | string | undefined,
+  taskType: string,
 ): Promise<string> {
+  const completion = await withAiBudget({ merchantId, provider: 'openai', model, taskType,
+    ...promptBudgetShape(messages), maxOutputTokens: maxTokens }, async attempt => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const startTime = Date.now();
@@ -290,6 +294,7 @@ async function fetchWithTimeout(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'X-Client-Request-Id': attempt.requestId,
       },
       body: JSON.stringify({
         model,
@@ -303,8 +308,8 @@ async function fetchWithTimeout(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => 'unknown');
-      throw new Error(`OpenAI API Error ${response.status}: ${errorBody.substring(0, 200)}`);
+      void response.body?.cancel().catch(() => undefined);
+      throw new Error(`OpenAI API Error ${response.status}`);
     }
 
     const data: ChatCompletionResponse = await response.json();
@@ -318,6 +323,7 @@ async function fetchWithTimeout(
     if (data.usage) {
       import('../db_ai_settings').then(({ logAiUsage, estimateCost }) => {
         logAiUsage({
+          merchantId: typeof merchantId === 'number' ? merchantId : null,
           requestType: 'chat',
           model,
           promptTokens: data.usage.prompt_tokens,
@@ -328,17 +334,9 @@ async function fetchWithTimeout(
         });
       }).catch(() => {}); // Never let logging break the response
 
-      // NQ-6: Track tokens for cost ceiling (non-blocking)
-      if (data.usage.total_tokens > 0) {
-        import('./cost-ceiling').then(({ trackMerchantTokens }) => {
-          // Async request context keeps accounting isolated per merchant.
-          const mid = getOptionalZahyPiRequestContext()?.merchantId;
-          if (typeof mid === 'number') trackMerchantTokens(mid, data.usage.total_tokens);
-        }).catch(() => {});
-      }
     }
 
-    return content;
+    return data;
   } catch (error: any) {
     clearTimeout(timeoutId);
 
@@ -347,6 +345,8 @@ async function fetchWithTimeout(
     }
     throw error;
   }
+  }, data => data.usage);
+  return completion.choices[0].message.content;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -365,16 +365,20 @@ export async function transcribeAudio(
   options?: {
     model?: string;
     language?: string;
+    merchantId?: number;
   }
 ): Promise<string> {
   const model = options?.model || 'whisper-1';
   const language = options?.language || 'ar'; // Arabic by default
+  if (!(await resolveZahyPiRuntimeConfig()).enabled) throw new Error('AI services are disabled by an administrator');
+  if (!audioBuffer.length || audioBuffer.length > 16 * 1024 * 1024) throw new Error('Invalid audio size');
+  const { getOpenAiApiKey } = await import('../db_ai_settings');
+  const apiKey = await getOpenAiApiKey();
+  if (!apiKey) throw new Error('OpenAI API key is not configured');
 
+  return withAiBudget({ merchantId: options?.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
+    provider: 'openai', model, taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0 }, async attempt => {
   try {
-    // Get API key from DB (admin panel) first, then fallback to .env
-    const { getOpenAiApiKey } = await import('../db_ai_settings');
-    const apiKey = await getOpenAiApiKey();
-
     const formData = new FormData();
     
     // Create a Blob from the buffer
@@ -395,6 +399,7 @@ export async function transcribeAudio(
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
+          'X-Client-Request-Id': attempt.requestId,
         },
         body: formData,
         signal: controller.signal,
@@ -420,6 +425,7 @@ export async function transcribeAudio(
     console.error('Error transcribing audio:', error);
     throw new Error(`Failed to transcribe audio: ${error.message}`);
   }
+  }, () => undefined); // Hold the configured per-file maximum until billed duration is reconciled.
 }
 
 /**

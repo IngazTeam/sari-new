@@ -8,22 +8,15 @@ import { invokeLLM } from './_core/llm';
 import axios from 'axios';
 import FormData from 'form-data';
 import { ENV } from './_core/env';
+import { downloadPublicMedia } from './security/download-media';
+import { withAiBudget } from './ai/budget-ledger';
+import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from './ai/zahypi-client';
 
 /**
  * Download voice message file from Green API
  */
 async function downloadVoiceFile(fileUrl: string): Promise<Buffer> {
-  try {
-    const response = await axios.get(fileUrl, {
-      responseType: 'arraybuffer',
-      timeout: 30000, // 30 seconds
-    });
-    
-    return Buffer.from(response.data);
-  } catch (error) {
-    console.error('[Voice] Failed to download voice file:', error);
-    throw new Error('فشل تحميل الملف الصوتي');
-  }
+  return (await downloadPublicMedia(fileUrl)).data;
 }
 
 /**
@@ -31,7 +24,8 @@ async function downloadVoiceFile(fileUrl: string): Promise<Buffer> {
  */
 export async function transcribeVoiceMessage(
   fileUrl: string,
-  language: 'ar' | 'en' = 'ar'
+  language: 'ar' | 'en' = 'ar',
+  merchantId?: number,
 ): Promise<{
   text: string;
   duration?: number;
@@ -40,7 +34,8 @@ export async function transcribeVoiceMessage(
   const startTime = Date.now();
   
   try {
-    console.log('[Voice] Starting transcription:', { fileUrl, language });
+    if (!(await resolveZahyPiRuntimeConfig()).enabled) throw new Error('AI services are disabled');
+    console.log('[Voice] Starting transcription:', { language });
     
     // Download the voice file
     const audioBuffer = await downloadVoiceFile(fileUrl);
@@ -62,23 +57,25 @@ export async function transcribeVoiceMessage(
     formData.append('response_format', 'json');
     
     // Call OpenAI Whisper API
-    const response = await axios.post(
+    const response = await withAiBudget({ merchantId: merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
+      provider: 'openai', model: 'whisper-1', taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
+    }, attempt => axios.post(
       'https://api.openai.com/v1/audio/transcriptions',
       formData,
       {
         headers: {
           ...formData.getHeaders(),
           'Authorization': `Bearer ${ENV.openaiApiKey}`,
+          'X-Client-Request-Id': attempt.requestId,
         },
         timeout: 60000, // 60 seconds
       }
-    );
+    ), () => undefined);
     
     const duration = Date.now() - startTime;
     const text = response.data.text;
     
     console.log('[Voice] Transcription successful:', {
-      text: text.substring(0, 100) + '...',
       duration: `${duration}ms`,
       language: response.data.language || language,
     });

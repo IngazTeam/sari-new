@@ -7,17 +7,17 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, router } from "./_core/trpc";
 import {
-  getMerchantByUserId,
+  getMerchantById,
   getMerchantPaymentSettings,
   upsertMerchantPaymentSettings,
 } from './db';
 
 export const merchantPaymentsRouter = router({
     // Get merchant's payment settings
-    getSettings: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getSettings: permissionProcedure('settings.manage').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -31,7 +31,7 @@ export const merchantPaymentsRouter = router({
     }),
 
     // Save/update payment settings
-    saveSettings: protectedProcedure
+    saveSettings: permissionProcedure('settings.manage')
         .input(z.object({
             tapEnabled: z.boolean(),
             tapPublicKey: z.string().trim().max(500).optional(),
@@ -42,7 +42,7 @@ export const merchantPaymentsRouter = router({
             defaultCurrency: z.enum(['SAR']).default('SAR'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -90,8 +90,8 @@ export const merchantPaymentsRouter = router({
         }),
 
     // Test Tap connection with merchant's keys
-    testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    testConnection: permissionProcedure('settings.manage').mutation(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }

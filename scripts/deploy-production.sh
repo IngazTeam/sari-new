@@ -133,8 +133,11 @@ point_release_env "$build_env_file" build
 cd "$release_dir"
 
 log 'installing immutable dependencies and running release gates'
+corepack pnpm check:runtime
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
   corepack pnpm install --frozen-lockfile
+env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
+  corepack pnpm test:tooling
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
   corepack pnpm audit:production
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
@@ -143,6 +146,10 @@ env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NOD
   corepack pnpm test:zahypi
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
   corepack pnpm test:release
+env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
+  corepack pnpm test:remediation
+env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=test \
+  corepack pnpm test:pentest
 env -u RUN_MYSQL_INTEGRATION DATABASE_URL='mysql://schema_check:schema_check@127.0.0.1:3306/schema_check' \
   SARI_ENV_FILE="$build_env_file" NODE_ENV=test corepack pnpm db:check
 env -u DATABASE_URL -u RUN_MYSQL_INTEGRATION SARI_ENV_FILE="$build_env_file" NODE_ENV=production \
@@ -183,6 +190,7 @@ run_post_migration_checks() {
   corepack pnpm preflight:occasion-campaigns:after
   corepack pnpm preflight:order-notification-ops:after
   corepack pnpm preflight:ai-settings-singleton:after
+  corepack pnpm preflight:ai-budget
   corepack pnpm preflight:whatsapp-disconnect-alerts:after
 }
 

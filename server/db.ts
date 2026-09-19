@@ -15,10 +15,8 @@ import {
 } from './channels/whatsapp/instance-ownership';
 import { assertWhatsAppPrimarySchemaReady } from './channels/whatsapp/schema-readiness';
 
-// Helper function to format Date for MySQL timestamp comparison
-function formatDateForDB(date: Date): string {
-  return date.toISOString().slice(0, 19).replace('T', ' ');
-}
+import { db, getDb, getPool, closeDb, requireDb, formatDateForDB, type SariDb } from './db/connection';
+export { getDb, getPool, closeDb, formatDateForDB } from './db/connection';
 import { drizzle } from "drizzle-orm/mysql2";
 import "../drizzle/relations";
 import * as schema from "../drizzle/schema";
@@ -309,6 +307,7 @@ import {
 } from './integrations/zid-commerce-normalization';
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { privacyHash } from './accounts/privacy-hash';
+import { isFutureDatabaseTime, databaseTimeEpoch } from './db/time';
 
 // Type aliases for tables that don't export their own types
 type BotSettings = InferSelectModel<typeof botSettings>;
@@ -367,10 +366,7 @@ function decryptWooCommerceSettings(record: WooCommerceSettings | undefined): Wo
 
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
 // Sized for 2000+ merchants with concurrent access
-type SariDb = ReturnType<typeof drizzle<typeof schema>>;
 type SariTransaction = Parameters<Parameters<SariDb['transaction']>[0]>[0];
-let _db: SariDb | null = null;
-let _pool: mysql.Pool | null = null;
 
 function getConnectionDb(connection: mysql.PoolConnection): SariDb {
   return drizzle({ client: connection, schema, mode: 'default' }) as unknown as SariDb;
@@ -397,81 +393,6 @@ async function ensureWhatsAppActivePrimary(tx: SariTransaction, merchantId: numb
       eq(whatsappInstances.merchantId, merchantId),
       eq(whatsappInstances.status, 'active'),
     ));
-}
-
-// Module-level alias أ¢â‚¬â€‌ used by 237+ functions below that call db.select/insert/update/delete
-// Gets set when getDb() initializes the connection pool
-let db: SariDb | null = null;
-
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      // Parse DATABASE_URL for pool config
-      const dbUrl = new URL(process.env.DATABASE_URL);
-      const sslParam = dbUrl.searchParams.get('ssl');
-
-      _pool = mysql.createPool({
-        host: dbUrl.hostname,
-        port: parseInt(dbUrl.port) || 3306,
-        user: dbUrl.username,
-        password: decodeURIComponent(dbUrl.password),
-        database: dbUrl.pathname.slice(1), // remove leading /
-        
-        // Pool sizing أ¢â‚¬â€‌ handles ~2000 concurrent merchants
-        connectionLimit: 25,       // Max simultaneous connections
-        maxIdle: 10,               // Keep 10 idle connections warm
-        idleTimeout: 60000,        // Close idle connections after 60s
-        enableKeepAlive: true,     // Prevent TCP timeout on cloud DBs
-        keepAliveInitialDelay: 30000, // Keep-alive every 30s
-        
-        // Queue management أ¢â‚¬â€‌ prevents memory exhaustion under load
-        waitForConnections: true,  // Queue requests when pool is full
-        queueLimit: 100,           // Max queued requests (reject after this)
-        
-        // SSL for production databases (TiDB, DigitalOcean, etc.)
-        ...(sslParam ? { ssl: JSON.parse(sslParam) } : {}),
-      });
-
-      _db = drizzle({ client: _pool, schema, mode: 'default' }) as unknown as SariDb;
-      db = _db; // Sync module-level alias for direct-access functions
-      console.log('[Database] أ¢إ“â€¦ Connection pool initialized (25 connections, queue limit: 100)');
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-      _pool = null;
-      db = null;
-    }
-  }
-  return _db;
-}
-
-/** Non-nullable db accessor for legacy direct-access functions */
-function requireDb(): NonNullable<SariDb> {
-  if (!db) throw new Error('Database not initialized â€” call getDb() first');
-  return db;
-}
-
-/**
- * Get the raw mysql2 pool for direct SQL execution
- * Use for controlled raw queries not supported by Drizzle. Schema changes belong in migrations.
- */
-export async function getPool(): Promise<mysql.Pool | null> {
-  await getDb(); // ensure pool is initialized
-  return _pool;
-}
-
-/**
- * Gracefully close the connection pool
- * Called during server shutdown
- */
-export async function closeDb(): Promise<void> {
-  if (_pool) {
-    await _pool.end();
-    _pool = null;
-    _db = null;
-    db = null;
-    console.log('[Database] Connection pool closed');
-  }
 }
 
 // ============================================
@@ -799,8 +720,15 @@ export async function getMerchantByUserId(userId: number): Promise<Merchant | un
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(merchants).where(eq(merchants.userId, userId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  // Compatibility for owner-only callers that have not migrated to merchantProcedure.
+  // A historical userId must never bypass an explicit role change or revocation.
+  const result = await db.select().from(merchants).where(and(
+    eq(merchants.userId, userId),
+    sql`${merchants.status} <> 'suspended'`,
+    sql`NOT EXISTS (SELECT 1 FROM merchant_members mm WHERE mm.merchant_id = ${merchants.id}
+      AND mm.user_id = ${userId} AND (mm.is_active <> 1 OR mm.role <> 'owner'))`,
+  )).limit(2);
+  return result.length === 1 ? result[0] : undefined;
 }
 
 /**
@@ -5529,7 +5457,7 @@ export async function validatePasswordResetToken(token: string): Promise<{
     return { valid: false, reason: 'token_already_used' };
   }
 
-  if (new Date() > new Date(resetToken.expiresAt)) {
+  if (!isFutureDatabaseTime(resetToken.expiresAt)) {
     return { valid: false, reason: 'token_expired' };
   }
 
@@ -5640,7 +5568,8 @@ export async function canRequestReset(email: string): Promise<{
 
   // ط·آ¥ط·آ°ط·آ§ ط¸ث†ط·آµط¸â€‍ ط·آ¥ط¸â€‍ط¸â€° 3 ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ§ط·ع¾ط·إ’ ط·آ§ط·آ­ط·آ³ط·آ¨ ط·آ§ط¸â€‍ط¸ث†ط¸â€ڑط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·ع¾ط·آ¨ط¸â€ڑط¸ظ¹
   const oldestAttempt = attempts[attempts.length - 1];
-  const attemptTime = new Date(oldestAttempt.attemptedAt).getTime();
+  const attemptTime = databaseTimeEpoch(oldestAttempt.attemptedAt);
+  if (!Number.isFinite(attemptTime)) return { allowed: false, remainingTime: 600, attemptsCount };
   const now = Date.now();
   const tenMinutesInMs = 10 * 60 * 1000;
   const elapsedTime = now - attemptTime;
@@ -10812,8 +10741,8 @@ export async function getAllMerchantSubscriptions(merchantId: number) {
 
 export async function createMerchantSubscription(data: NewMerchantSubscription) {
   // Ensure pool is initialized
-  await getDb();
-  if (!_pool) throw new Error("Database not available");
+  const pool = await getPool();
+  if (!pool) throw new Error("Database not available");
 
   // FIX: Bypass Drizzle ORM entirely أ¢â‚¬â€‌ use mysql2 pool directly.
   // Normalize all timestamps to MySQL format (YYYY-MM-DD HH:MM:SS)
@@ -10823,7 +10752,7 @@ export async function createMerchantSubscription(data: NewMerchantSubscription) 
   const endDate = toMySQL(data.endDate);
   const trialEndsAt = data.trialEndsAt ? toMySQL(data.trialEndsAt) : null;
   const lastResetAt = data.lastResetAt ? toMySQL(data.lastResetAt) : now;
-  const [result] = await _pool.execute(
+  const [result] = await pool.execute(
     `INSERT INTO merchant_subscriptions
       (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew,
        conversations_used, messages_used, voice_messages_used, last_reset_at, created_at, updated_at)
@@ -10855,9 +10784,9 @@ export async function updateMerchantSubscription(id: number, data: Partial<NewMe
 
 // Raw SQL update for subscription end_date أ¢â‚¬â€‌ guaranteed to work
 export async function rawUpdateSubscriptionEndDate(subscriptionId: number, endDate: string) {
-  await getDb();
-  if (!_pool) throw new Error("Database not available");
-  await _pool.execute(
+  const pool = await getPool();
+  if (!pool) throw new Error("Database not available");
+  await pool.execute(
     `UPDATE merchant_subscriptions SET end_date = ?, updated_at = NOW() WHERE id = ?`,
     [endDate, subscriptionId]
   );
@@ -11027,13 +10956,13 @@ export async function getMerchantAddonById(id: number) {
 
 export async function createMerchantAddon(data: NewMerchantAddon) {
   // FIX: Use raw SQL to avoid Drizzle's broken `default` keyword in prepared statements
-  await getDb();
-  if (!_pool) throw new Error("Database not available");
+  const pool = await getPool();
+  if (!pool) throw new Error("Database not available");
 
   const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
   const now = toMySQL(new Date().toISOString());
 
-  const [result] = await _pool.execute(
+  const [result] = await pool.execute(
     `INSERT INTO merchant_addons (merchant_id, addon_id, subscription_id, quantity, start_date, end_date, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [

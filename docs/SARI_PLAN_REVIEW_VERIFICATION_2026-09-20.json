@@ -1,0 +1,2218 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-09-19T21:24:03.737Z",
+  "baseCommit": "a4538c62e0157102bc3113edffebc3e240354350",
+  "branch": "main",
+  "publicationStatus": "Local working source, pending commit; no push or deployment. This record intentionally does not claim an uncreated commit hash.",
+  "scope": {
+    "runtime": {
+      "node": "v22.23.2",
+      "pnpm": "10.4.1",
+      "mysql": "8.0.44",
+      "platform": "win32"
+    },
+    "local": "Disposable synthetic MySQL, empty environment file, no production secrets, outbound provider traffic blocked during application tests.",
+    "production": "Owner-authorized anonymous read-only HTTP and browser checks on https://sary.live. No login, mutations, paid calls, WhatsApp sending or load test.",
+    "completePlan": false,
+    "certified10of10": false
+  },
+  "checks": {
+    "gated": {
+      "exitCode": 0,
+      "durationMs": 55774,
+      "at": "2026-09-19T21:16:51.254Z",
+      "args": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "server/_core/llm-zahypi.test.ts",
+        "server/_core/trpc-zahypi.test.ts",
+        "server/_core/validateEnv-zahypi.test.ts",
+        "server/account-privacy-pentest.test.ts",
+        "server/admin-deletion-lifecycle-pentest.test.ts",
+        "server/ai-settings-budget-access.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai-settings-secrets-pentest.test.ts",
+        "server/ai-settings-singleton-pentest.test.ts",
+        "server/ai/__tests__/sales-agent.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/requirements-pack.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/task-validation.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/api-brain-reset-pentest.test.ts",
+        "server/api-conversion-ledger-pentest.test.ts",
+        "server/api-distributed-rate-limit-mysql-pentest.test.ts",
+        "server/api-distributed-rate-limit-pentest.test.ts",
+        "server/api-faq-source-sync-pentest.test.ts",
+        "server/api-instance-lifecycle-pentest.test.ts",
+        "server/api-key-scope-pentest.test.ts",
+        "server/api-read-model-pentest.test.ts",
+        "server/api-resource-abuse-pentest.test.ts",
+        "server/automation/zid-order-from-chat.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/bot-hardening-pentest.test.ts",
+        "server/byaan-dashboard-hardening-pentest.test.ts",
+        "server/byaan-faq-knowledge-pentest.test.ts",
+        "server/byaan-pagination-pentest.test.ts",
+        "server/byaan-settings-sync-pentest.test.ts",
+        "server/byaan-trainee-sync-pentest.test.ts",
+        "server/calendly-webhook-security-pentest.test.ts",
+        "server/campaign-consent-pentest.test.ts",
+        "server/campaign-delivery-outbox-pentest.test.ts",
+        "server/campaign-router-canonical-pentest.test.ts",
+        "server/campaign-suppression-pentest.test.ts",
+        "server/chromium-runtime-pentest.test.ts",
+        "server/coaching-bugfix-pentest.test.ts",
+        "server/context-intelligence-pentest.test.ts",
+        "server/conversation-order-payment-link-pentest.test.ts",
+        "server/conversations.test.ts",
+        "server/core-team-access.test.ts",
+        "server/customer-profile-canonical-pentest.test.ts",
+        "server/db/connection.test.ts",
+        "server/db/time.test.ts",
+        "server/dependency-contracts.test.ts",
+        "server/deployment-release-pentest.test.ts",
+        "server/email-verification-pentest.test.ts",
+        "server/integrations/zahypi-connector/activation-verifier.test.ts",
+        "server/integrations/zahypi-connector/protocol.test.ts",
+        "server/integrations/zahypi-connector/repository.test.ts",
+        "server/integrations/zahypi-connector/routes.test.ts",
+        "server/login-hardening-pentest.test.ts",
+        "server/media-display-pentest.test.ts",
+        "server/merchant-access.test.ts",
+        "server/merchant-core-accessibility-pentest.test.ts",
+        "server/merchant-order-boundary-pentest.test.ts",
+        "server/merchant-semantic-i18n-pentest.test.ts",
+        "server/merchant-ux-route-recovery-pentest.test.ts",
+        "server/mobile-navigation-soft404-pentest.test.ts",
+        "server/occasion-campaign-outbox-pentest.test.ts",
+        "server/onboarding-profile-review-pentest.test.ts",
+        "server/onboarding-remediation.test.ts",
+        "server/onboarding-state-machine-pentest.test.ts",
+        "server/ops-load-restore-pentest.test.ts",
+        "server/order-notification-operations-pentest.test.ts",
+        "server/order-payment-return-pentest.test.ts",
+        "server/order-status-notification-outbox-pentest.test.ts",
+        "server/password-reset-hardening-pentest.test.ts",
+        "server/platform-payment-gateway-retirement-pentest.test.ts",
+        "server/platform-provision-pentest.test.ts",
+        "server/platform-read-model-pentest.test.ts",
+        "server/platform-tap-settings-pentest.test.ts",
+        "server/polling-reliability-pentest.test.ts",
+        "server/pricing-fallback-pentest.test.ts",
+        "server/product-source-sync-pentest.test.ts",
+        "server/product-truth-ux-pentest.test.ts",
+        "server/products-access.test.ts",
+        "server/public-claims-truth-pentest.test.ts",
+        "server/public-support-pentest.test.ts",
+        "server/rbac-pentest.test.ts",
+        "server/release-ci-performance-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/runtime-schema-pentest.test.ts",
+        "server/sales-conversion-pentest.test.ts",
+        "server/sales-engine-pentest.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/salla-webhook-ingress-pentest.test.ts",
+        "server/salla-webhook-receipts-pentest.test.ts",
+        "server/security-pentest.test.ts",
+        "server/security-stage-pentest.test.ts",
+        "server/security/download-media.test.ts",
+        "server/session-hardening-pentest.test.ts",
+        "server/session-registry-pentest.test.ts",
+        "server/session-revocation-pentest.test.ts",
+        "server/signup-ux-accessibility-pentest.test.ts",
+        "server/subscription-payment-callback-pentest.test.ts",
+        "server/subscription-state-pentest.test.ts",
+        "server/subscription-tap-checkout-pentest.test.ts",
+        "server/tap-credential-probe-pentest.test.ts",
+        "server/tap-order-payment-effects-pentest.test.ts",
+        "server/tap-payment-idempotency-pentest.test.ts",
+        "server/tap-payment-ownership-pentest.test.ts",
+        "server/tap-webhook-authenticity-pentest.test.ts",
+        "server/team-identity-pentest.test.ts",
+        "server/tests/adaptive-sales-engine.test.ts",
+        "server/tests/chat-commerce-pentest.test.ts",
+        "server/tests/export.test.ts",
+        "server/tests/knowledge-evolution-pentest.test.ts",
+        "server/tests/takeover-hardening-pentest.test.ts",
+        "server/tests/v4-pentest.test.ts",
+        "server/tests/whatsapp-instances-pentest.test.ts",
+        "server/training-byaan-marketing-pentest.test.ts",
+        "server/ui-language-truth-pentest.test.ts",
+        "server/upload-boundary-pentest.test.ts",
+        "server/whatsapp-active-phone-unique-pentest.test.ts",
+        "server/whatsapp-byaan-channel-pentest.test.ts",
+        "server/whatsapp-delivery-safety.test.ts",
+        "server/whatsapp-disconnect-alert-window-pentest.test.ts",
+        "server/whatsapp-lock-affinity-pentest.test.ts",
+        "server/whatsapp-lock-recovery-pentest.test.ts",
+        "server/whatsapp-phone-ownership-mysql-pentest.test.ts",
+        "server/whatsapp-phone-ownership-pentest.test.ts",
+        "server/whatsapp-primary-db-constraint-pentest.test.ts",
+        "server/whatsapp-primary-failover-pentest.test.ts",
+        "server/whatsapp-primary-invariant-pentest.test.ts",
+        "server/whatsapp-primary-schema-readiness-pentest.test.ts",
+        "server/whatsapp-primary-writer-schema-gate-pentest.test.ts",
+        "server/woocommerce-lock-admission-pentest.test.ts",
+        "server/woocommerce-lock-cancellation-pentest.test.ts",
+        "server/woocommerce-lock-observability-pentest.test.ts",
+        "server/woocommerce-lock-recovery-pentest.test.ts",
+        "server/woocommerce-lock-tenant-fairness-pentest.test.ts",
+        "server/woocommerce-secure-sync-pentest.test.ts",
+        "server/woocommerce-webhook-ingress-pentest.test.ts",
+        "server/woocommerce-webhook-reconciliation-pentest.test.ts",
+        "server/zid-commerce-sync-pentest.test.ts",
+        "server/zid-convergence-security-pentest.test.ts",
+        "server/zid-oauth-security-pentest.test.ts",
+        "server/zid-order-notification-ack-pentest.test.ts",
+        "server/zid-order-notification-health-pentest.test.ts",
+        "server/zid-order-notification-outbox-pentest.test.ts",
+        "server/zid-order-webhook-pentest.test.ts",
+        "server/zid-product-concurrency-pentest.test.ts",
+        "server/zid-product-sync-pentest.test.ts",
+        "server/zid-reconciliation-pentest.test.ts",
+        "server/zid-sensitive-actions-pentest.test.ts",
+        "server/zid-token-refresh-pentest.test.ts",
+        "server/zid-webhook-security-pentest.test.ts",
+        "server/zid-webhook-settings-pentest.test.ts",
+        "--maxWorkers=2",
+        "--reporter=json",
+        "--outputFile=.tmp/plan-review/gated.json"
+      ],
+      "logSha256": "ae8b9899938fcc0d7d7d90bd9b54f3862522d9d706511d61af48c6fdcdaddd9c",
+      "tests": {
+        "files": 156,
+        "total": 2670,
+        "passed": 2669,
+        "failed": 0,
+        "pending": 1,
+        "reportSha256": "a25416c0893e7216470f5d02b3e7ea0be256786753b5759290beea300afb4613"
+      }
+    },
+    "mysql-ci": {
+      "exitCode": 0,
+      "durationMs": 16478,
+      "at": "2026-09-19T21:15:55.314Z",
+      "args": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "server/aiBudgetLedger.mysql.test.ts",
+        "server/analytics.test.ts",
+        "server/api.distributedRateLimit.test.ts",
+        "server/auth-http.mysql.test.ts",
+        "server/auth.adminDeletion.test.ts",
+        "server/auth.emailVerification.test.ts",
+        "server/auth.loginRateLimit.test.ts",
+        "server/auth.merchantAccess.test.ts",
+        "server/auth.passwordReset.test.ts",
+        "server/auth.platformProvision.test.ts",
+        "server/auth.ratelimit.test.ts",
+        "server/auth.sessionRegistry.test.ts",
+        "server/auth.teamInvitations.test.ts",
+        "server/auth.zidConvergence.test.ts",
+        "server/auth.zidOAuth.test.ts",
+        "server/auth.zidTokenRefresh.test.ts",
+        "server/auth.zidWebhook.test.ts",
+        "server/team-access.mysql.test.ts",
+        "server/tests/analytics.test.ts",
+        "server/tests/dashboard-analytics.test.ts",
+        "server/whatsappDeliverySafety.mysql.test.ts",
+        "server/whatsappPhoneOwnership.test.ts",
+        "--maxWorkers=2",
+        "--reporter=json",
+        "--outputFile=.tmp/plan-review/mysql-ci.json"
+      ],
+      "logSha256": "b75dfe8db0204eee9a41fe27fd51eeba9d6eb016e540a091adf5b0a99f622319",
+      "tests": {
+        "files": 22,
+        "total": 132,
+        "passed": 132,
+        "failed": 0,
+        "pending": 0,
+        "reportSha256": "5a674edfd3cec00b3db34c6d4be137c52ed56ab17679afa109464282b664ef46"
+      }
+    },
+    "typescript": {
+      "exitCode": 0,
+      "durationMs": 38642,
+      "at": "2026-09-19T21:16:13.920Z",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "logSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "locales": {
+      "exitCode": 0,
+      "durationMs": 2958,
+      "at": "2026-09-19T21:16:16.983Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "audit:locales"
+      ],
+      "logSha256": "cf3ee8500f31b7f4f14fd94c04be801c9e3fc8806cac99dd9837b5269867b6ce",
+      "keys": {
+        "advertisedLocale": "ar",
+        "callsChecked": 5722,
+        "dynamicKeysChecked": 213,
+        "unresolvedDynamicCalls": [],
+        "missing": [],
+        "interpolationErrors": []
+      }
+    },
+    "tooling": {
+      "exitCode": 0,
+      "durationMs": 2709,
+      "at": "2026-09-19T21:04:35.765Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "test:tooling"
+      ],
+      "logSha256": "7ea3e04a7c45104b8ce83fb29b63040f4caaee6e88e3e916fd44b2d1a9baed26",
+      "tests": {
+        "total": 23,
+        "passed": 23,
+        "failed": 0
+      }
+    },
+    "build-final": {
+      "exitCode": 0,
+      "durationMs": 17734,
+      "at": "2026-09-19T21:16:34.880Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "build"
+      ],
+      "logSha256": "639d99a6721f339acc238353b7ffd3dcb2f040ad673e6c69946927d9e8d9082f"
+    },
+    "production-audit": {
+      "exitCode": 0,
+      "durationMs": 1189,
+      "at": "2026-09-19T21:02:23.434Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "audit:production"
+      ],
+      "logSha256": "1995d781221bdd2c1dab5936dcb57313651f358f6ab25f549fc2e8067d7eac13"
+    },
+    "mysql-schema": {
+      "exitCode": 0,
+      "durationMs": 1078,
+      "at": "2026-09-19T21:06:15.503Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "db:check"
+      ],
+      "logSha256": "34e719adce526f1703c0798c7cb9ab313f0c542af0b15f61a4a67c27cbbbafbf"
+    },
+    "lockfile": {
+      "exitCode": 0,
+      "durationMs": 544,
+      "at": "2026-09-19T21:20:58.210Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "install",
+        "--lockfile-only",
+        "--frozen-lockfile",
+        "--ignore-scripts",
+        "--offline"
+      ],
+      "logSha256": "65724f9b72f17180bdfdb3917b08294a2cb0279d7aaae8834da8eba89b7eeef5"
+    }
+  },
+  "bashSyntax": {
+    "at": "2026-09-19T21:24:03.878Z",
+    "scripts": [
+      {
+        "file": "scripts/deploy-production.sh",
+        "exitCode": 0
+      },
+      {
+        "file": "scripts/deploy.sh",
+        "exitCode": 0
+      },
+      {
+        "file": "scripts/deploy-advanced.sh",
+        "exitCode": 0
+      }
+    ],
+    "note": "The Vitest Windows skip is covered here by actual Git Bash syntax checks."
+  },
+  "migrations": {
+    "at": "2026-09-19T21:06:12.376Z",
+    "exitCode": 0,
+    "durationMs": 16251,
+    "migrations": 52,
+    "expected": 52,
+    "globalPolicy": {
+      "scope_key": "global",
+      "version": "owner-approved-2026-09-19",
+      "daily_limit_micro_usd": 100000000,
+      "enabled": 1,
+      "updated_at": "2026-09-19T21:06:12.000Z"
+    },
+    "passed": true
+  },
+  "restore": {
+    "at": "2026-09-19T21:01:34.227Z",
+    "startedAt": "2026-09-19T21:01:26.096Z",
+    "scope": "Local disposable MySQL only. Synthetic data. No application, cron, message worker or provider running against the restored database. Not a production RPO/RTO or external-storage drill.",
+    "tables": 193,
+    "bytes": 304583,
+    "backupSha256": "676cfc674c9d0992aea25938783f0af30ab844ce5719d0922ffb893f21d51745",
+    "restoredSha256": "32cecb024410883137f92a3de05d5266f33b7631a7847868ebe27d8dbe9549a2",
+    "exactLogicalDumpMatch": false,
+    "restoreMs": 5177,
+    "durationMs": 8132,
+    "verifiedAt": "2026-09-19T21:03:54.349Z",
+    "rawDifferenceReason": "MySQL SHOW CREATE TABLE emits redundant CHARACTER SET utf8mb4 after restore. Effective column definitions (including charset/collation), indexes and FK metadata are compared separately. No data normalization is used.",
+    "columnsEqual": true,
+    "indexesEqual": true,
+    "foreignKeysEqual": true,
+    "dataEqual": true,
+    "readWritePassed": true,
+    "columnsCompared": 2491,
+    "indexEntriesCompared": 746,
+    "foreignKeyColumnsCompared": 223,
+    "nonEmptyTableInserts": 14,
+    "dataSha256": "4c90208f3f599edb6a03e3bcd125ab3ea9b392d8a1660abe45fc4621bac422d0",
+    "passed": true
+  },
+  "allTests": {
+    "exitCode": 1,
+    "durationMs": 131291,
+    "at": "2026-09-19T21:21:42.536Z",
+    "args": [
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--maxWorkers=2",
+      "--reporter=json",
+      "--outputFile=.tmp/plan-review/all-current.json"
+    ],
+    "files": 264,
+    "total": 3774,
+    "passed": 3174,
+    "failed": 129,
+    "pending": 471,
+    "reportSha256": "a59ab6ff830b4cb013621ecb81eda7866b71e45c334cd0cc004379859f56d8ba",
+    "comparison": {
+      "baseline": {
+        "files": 249,
+        "total": 3539,
+        "passed": 2945,
+        "failed": 151,
+        "pending": 443,
+        "failedFiles": 72
+      },
+      "current": {
+        "files": 264,
+        "total": 3774,
+        "passed": 3174,
+        "failed": 129,
+        "pending": 471,
+        "failedFiles": 58
+      },
+      "regressions": [],
+      "fixed": [
+        "api-instance-lifecycle-pentest.test.ts :: REST WhatsApp instance lifecycle penetration gates keeps primary changes tenant-scoped and hands off a disabled primary",
+        "bot-hardening-pentest.test.ts :: PEN-F1: Identity Sanitizer — Nuclear Mode strips \"معاك ساري\"",
+        "bot-hardening-pentest.test.ts :: PEN-F2: Knowledge Failure Safety Net has defensive prompt injection when knowledge fails",
+        "byaan-faq-knowledge-pentest.test.ts :: Byaan FAQ management and knowledge boundaries publishes the exact current Byaan snapshot before disabling stale bot facts",
+        "context-intelligence-pentest.test.ts :: PEN-CTX-06: Product description injection FULL PATH also injects product description",
+        "password-reset-hardening-pentest.test.ts :: password-reset abuse and token-reuse penetration gates serializes durable per-email and per-IP reservations and fails closed without a database",
+        "security-pentest.test.ts :: SEC-02: Calendly — no client-supplied merchantId in protectedProcedures every protectedProcedure must call getMerchantByUserId",
+        "session-hardening-pentest.test.ts :: Phase 3 — sendReply Security Pentest PEN-REPLY-07: SSRF — assertGreenApiUrl in sendMessageWithCredentials",
+        "woocommerce-lock-admission-pentest.test.ts :: WooCommerce lock admission control reserves pool headroom before checking out a named-lock connection",
+        "woocommerce-webhook-reconciliation-pentest.test.ts :: WooCommerce lock admission control reserves pool headroom before checking out a named-lock connection",
+        "automation/zid-order-from-chat.test.ts :: Zid Order From Chat isZidOrderRequest should detect Arabic order keywords",
+        "tests/adaptive-sales-engine.test.ts :: Intent Detection should detect post_purchase intent"
+      ],
+      "failures": [
+        {
+          "file": "server/abandoned-cart.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/advanced-features.test.ts",
+          "failed": [
+            {
+              "name": "Advanced Features - Weekly Sentiment Reports should create weekly sentiment report",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Advanced Features - Weekly Sentiment Reports should get weekly sentiment reports",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Advanced Features - A/B Testing should create A/B test",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Advanced Features - A/B Testing should get A/B tests",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Advanced Features - A/B Testing should get active A/B test for keyword",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 'السعر' // Object.is equality"
+            },
+            {
+              "name": "Advanced Features - A/B Testing should pause A/B test",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Advanced Features - Integration should have all required APIs in routers",
+              "baseline": "failed",
+              "reason": "Error: STACK_TRACE_ERROR"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/ai.openai.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/ai.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/analysis.test.ts",
+          "failed": [
+            {
+              "name": "Smart Website Analysis Database Functions should update merchant website info",
+              "baseline": "failed",
+              "reason": "Error: Database connection failed"
+            },
+            {
+              "name": "Smart Website Analysis Database Functions should create and retrieve discovered pages",
+              "baseline": "failed",
+              "reason": "Error: Database connection failed"
+            },
+            {
+              "name": "Smart Website Analysis Database Functions should create and retrieve extracted FAQs",
+              "baseline": "failed",
+              "reason": "Error: Database connection failed"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/analytics.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/campaigns.advanced.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/campaigns.send.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/currency.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/database-functions.test.ts",
+          "failed": [
+            {
+              "name": "Database Functions - Subscriptions getMerchantSubscription يجب أن يُرجع الاشتراك النشط",
+              "baseline": "failed",
+              "reason": "AssertionError: expected false to be true // Object.is equality"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/email-notifications.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/greenapi-credentials.test.ts",
+          "failed": [
+            {
+              "name": "Green API Credentials should have GREEN_API_INSTANCE_ID and GREEN_API_TOKEN set",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            },
+            {
+              "name": "Green API Credentials should successfully connect to Green API and get instance state",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/insights.test.ts",
+          "failed": [
+            {
+              "name": "Insights Dashboard Features Keyword Insights should get keyword statistics",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot convert undefined or null to object"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/instance-expiry.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/loyalty.test.ts",
+          "failed": [
+            {
+              "name": "Loyalty System Loyalty Settings should get or create loyalty settings",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of null (reading 'merchantId')"
+            },
+            {
+              "name": "Loyalty System Loyalty Settings should update loyalty settings",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 2 // Object.is equality"
+            },
+            {
+              "name": "Loyalty System Loyalty Tiers should get all tiers",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Loyalty System Loyalty Tiers should have bronze, silver, gold tiers",
+              "baseline": "failed",
+              "reason": "AssertionError: expected [] to include 'Bronze'"
+            },
+            {
+              "name": "Loyalty System Customer Points should initialize customer points",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of null (reading 'merchantId')"
+            },
+            {
+              "name": "Loyalty System Customer Points should add points to customer",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of null (reading 'totalPoints')"
+            },
+            {
+              "name": "Loyalty System Points Calculation should calculate points from order amount",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Loyalty System Loyalty Rewards should create a reward",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 'Test Reward' // Object.is equality"
+            },
+            {
+              "name": "Loyalty System Transactions should get customer transactions",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.getPointsTransactions is not a function"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/merchant-payments.test.ts",
+          "failed": [
+            {
+              "name": "Merchant Payment Settings Database Functions should create payment settings for merchant",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 150001 // Object.is equality"
+            },
+            {
+              "name": "Merchant Payment Settings Database Functions should get payment settings for merchant",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 150001 // Object.is equality"
+            },
+            {
+              "name": "Merchant Payment Settings Database Functions should update existing payment settings",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be +0 // Object.is equality"
+            },
+            {
+              "name": "Merchant Payment Settings Database Functions should update Tap keys for merchant",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 'pk_test_new_key' // Object.is equality"
+            },
+            {
+              "name": "Merchant Payment Settings Database Functions should set merchant payment as verified",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 1 // Object.is equality"
+            },
+            {
+              "name": "Merchant Payment Settings Database Functions should check if merchant has valid Tap config",
+              "baseline": "failed",
+              "reason": "AssertionError: expected false to be true // Object.is equality"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/merchant-settings.test.ts",
+          "failed": [
+            {
+              "name": "Merchant Settings auth.updateProfile should allow user to update their profile",
+              "baseline": "failed",
+              "reason": "TRPCError: تغيير البريد يتطلب مسار تحقق مخصص. تواصل مع الدعم حالياً."
+            },
+            {
+              "name": "Merchant Settings auth.updateProfile should allow user to update only name",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be 'New Name Only' // Object.is equality"
+            },
+            {
+              "name": "Merchant Settings merchants.update should allow merchant to update business info",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Merchant Settings merchants.update should allow merchant to update only business name",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Merchant Settings merchants.getCurrent should return current merchant for logged-in user",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/metrics.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/occasion-campaigns.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/offers.test.ts",
+          "failed": [
+            {
+              "name": "offers.signupPrompt getStats should return AB test statistics for admin",
+              "baseline": "failed",
+              "reason": "AssertionError: expected false to be true // Object.is equality"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/order-notifications.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/personality.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/plan-change-logs.test.ts",
+          "failed": [
+            {
+              "name": "Plan Change Logs should create change log when updating plan price",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plan Change Logs should create change log when updating conversation limit",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plan Change Logs should create multiple change logs when updating multiple fields",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plan Change Logs should allow admin to get all change logs",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Plan Change Logs should not create change log when no fields are changed",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plan Change Logs should log isActive status changes",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/plans.test.ts",
+          "failed": [
+            {
+              "name": "Plans API should list all active plans",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Plans API should get plan by ID",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plans API should allow admin to create plan",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            },
+            {
+              "name": "Plans API should allow admin to update plan",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            },
+            {
+              "name": "Plans API should handle unlimited voice messages (-1)",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            },
+            {
+              "name": "Plans API should deactivate plan",
+              "baseline": "failed",
+              "reason": "TRPCError: ["
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/push-notifications.test.ts",
+          "failed": [
+            {
+              "name": "Push Notifications Management VAPID Public Key should return VAPID public key without authentication",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            },
+            {
+              "name": "Push Notifications Management Push Subscription Management should allow merchant to subscribe to push notifications",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Push Subscription Management should allow merchant to unsubscribe from push notifications",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Push Subscription Management should update existing subscription when subscribing with same endpoint",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Push Notification Sending should allow merchant to send test notification",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Push Notification Logs should allow merchant to get notification logs",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Push Notification Logs should allow merchant to get notification stats",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Push Notifications Management Access Control should only allow merchant to access their own subscriptions",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/referrals.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/reports.test.ts",
+          "failed": [
+            {
+              "name": "Reports API campaigns.getStats should return campaign statistics for merchant",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Reports API campaigns.getStats should bound the provider acceptance rate correctly",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Reports API campaigns.getTimelineData should return timeline data for last 7 days",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Reports API campaigns.getTimelineData should return timeline data for last 30 days",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Reports API campaigns.getTimelineData should return timeline data for last 90 days",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Reports API campaigns.getTimelineData should never fabricate delivery or read receipt counts",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/reviews-apis.test.ts",
+          "failed": [
+            {
+              "name": "Reviews APIs - Database Functions should create a customer review",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should get review by ID",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should get all reviews for merchant",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should get reviews by order ID",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should get only public reviews",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should update review",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            },
+            {
+              "name": "Reviews APIs - Database Functions should filter reviews by rating (4-5 stars only)",
+              "baseline": "failed",
+              "reason": "TypeError: Cannot read properties of undefined (reading 'id')"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/salla.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/sari-ai-complete.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/setup-wizard.test.ts",
+          "failed": [
+            {
+              "name": "Setup Wizard - Templates should get all business templates",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Templates should get templates by business type",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Templates should get template by ID",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Templates should have valid template structure",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Templates should increment template usage count",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Integration Tests should complete full wizard flow",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Setup Wizard - Integration Tests should handle wizard reset correctly",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/smtp-management.test.ts",
+          "failed": [
+            {
+              "name": "SMTP Email Management Admin Access Control should allow admin to get SMTP settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management Admin Access Control should allow admin to update SMTP settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management SMTP Settings Management should encrypt password when saving settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management SMTP Settings Management should update settings without changing password if not provided",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management Email Logs should allow admin to get email logs",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management Email Logs should allow admin to get email stats",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "SMTP Email Management Test Email Sending should create log entry when sending test email",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/subscription-guard.test.ts",
+          "failed": [
+            {
+              "name": "Subscription Guard - Basic Functionality should return remaining slots for merchant with subscription",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Basic Functionality should throw TRPCError when merchant has no subscription",
+              "baseline": "failed",
+              "reason": "AssertionError: expected Error: Database not available to be an instance of TRPCError"
+            },
+            {
+              "name": "Subscription Guard - Basic Functionality should return zero slots for merchant without subscription",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Integration with Database should get merchant subscription",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Integration with Database should get subscription plan details",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Error Messages should provide clear error message when limit reached",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Error Messages should suggest upgrade in error message",
+              "baseline": "failed",
+              "reason": "Error: Database not available"
+            },
+            {
+              "name": "Subscription Guard - Edge Cases should handle invalid phone numbers gracefully",
+              "baseline": "failed",
+              "reason": "AssertionError: expected Error: Database not available to be an instance of TRPCError"
+            },
+            {
+              "name": "Subscription Guard - Edge Cases should handle empty phone numbers",
+              "baseline": "failed",
+              "reason": "AssertionError: expected Error: Database not available to be an instance of TRPCError"
+            },
+            {
+              "name": "Subscription Guard - Edge Cases should handle very long phone numbers",
+              "baseline": "failed",
+              "reason": "AssertionError: expected Error: Database not available to be an instance of TRPCError"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/subscription-limits.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/subscription-signup.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/subscriptions.test.ts",
+          "failed": [
+            {
+              "name": "Subscriptions API merchants.getCurrentPlan should return null if merchant has no subscription",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "Subscriptions API merchants.requestUpgrade should reject upgrade for non-existent plan",
+              "baseline": "failed",
+              "reason": "Error: expected [Function] to throw error including 'Plan not found or inactive' but got 'Merchant not found'"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/tap.test.ts",
+          "failed": [
+            {
+              "name": "Tap Payments API Keys Validation should have TAP_SECRET_KEY configured",
+              "baseline": "failed",
+              "reason": "AssertionError: expected '' not to be '' // Object.is equality"
+            },
+            {
+              "name": "Tap Payments API Keys Validation should validate Tap API by calling retrieve endpoint",
+              "baseline": "failed",
+              "reason": "TypeError: fetch failed"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/testSari.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/trial.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/try-sari-analytics.test.ts",
+          "failed": [
+            {
+              "name": "Try Sari Analytics should create new analytics session",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be defined"
+            },
+            {
+              "name": "Try Sari Analytics should increment message count",
+              "baseline": "failed",
+              "reason": "TypeError: actual value must be number or bigint, received \"undefined\""
+            },
+            {
+              "name": "Try Sari Analytics should mark signup prompt shown",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be true // Object.is equality"
+            },
+            {
+              "name": "Try Sari Analytics should mark converted to signup",
+              "baseline": "failed",
+              "reason": "AssertionError: expected undefined to be true // Object.is equality"
+            },
+            {
+              "name": "Try Sari Analytics should get analytics stats",
+              "baseline": "failed",
+              "reason": "TypeError: actual value must be number or bigint, received \"undefined\""
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/usage-tracking.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/voice-transcription.test.ts",
+          "failed": [
+            {
+              "name": "OpenAI API Key Validation should have a valid OpenAI API key",
+              "baseline": "failed",
+              "reason": "AssertionError: expected '' to be truthy"
+            },
+            {
+              "name": "OpenAI API Key Validation should be able to call OpenAI API with the key",
+              "baseline": "failed",
+              "reason": "Error: Review runner blocks external network connections"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/webhook.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/whatsapp-instances.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/whatsapp-requests.test.ts",
+          "failed": [
+            {
+              "name": "WhatsApp Connection Requests Request Connection should allow merchant to request WhatsApp connection",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "WhatsApp Connection Requests Request Connection should prevent duplicate pending requests",
+              "baseline": "failed",
+              "reason": "Error: expected [Function] to throw error including 'You already have a pending request' but got 'Merchant not found'"
+            },
+            {
+              "name": "WhatsApp Connection Requests Request Connection should get current request status",
+              "baseline": "failed",
+              "reason": "TRPCError: Merchant not found"
+            },
+            {
+              "name": "WhatsApp Connection Requests Admin Operations should allow admin to list all requests",
+              "baseline": "failed",
+              "reason": "AssertionError: expected 0 to be greater than 0"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/whatsapp-setup.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/zid.test.ts",
+          "failed": [
+            {
+              "name": "Zid Integration Zid Settings should create Zid settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should get Zid settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should check if Zid is connected",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should update Zid settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should update auto-sync settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should toggle Zid connection",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Settings should update last sync time",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should create sync log",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should update sync status",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should update sync stats",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should complete sync",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should get sync logs",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should get sync logs by type",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should get last successful sync",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Zid Sync Logs should get sync stats",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            },
+            {
+              "name": "Zid Integration Cleanup should delete Zid settings",
+              "baseline": "failed",
+              "reason": "Error: Database not initialized"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/automation/discount-referral.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/automation/order-from-chat.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/automation/order-tracking.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/automation/review-request.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/ai-enhanced.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/ai-personality.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/analytics.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/onboarding.test.ts",
+          "failed": [
+            {
+              "name": "Onboarding System should get onboarding status for a new merchant",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.getOnboardingStatus is not a function"
+            },
+            {
+              "name": "Onboarding System should update onboarding step",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function"
+            },
+            {
+              "name": "Onboarding System should update to step 2",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function"
+            },
+            {
+              "name": "Onboarding System should update to step 3",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function"
+            },
+            {
+              "name": "Onboarding System should complete onboarding",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.completeOnboarding is not a function"
+            },
+            {
+              "name": "Onboarding System should keep onboarding completed after completion",
+              "baseline": "failed",
+              "reason": "TypeError: __vite_ssr_import_1__.getOnboardingStatus is not a function"
+            }
+          ],
+          "collectionOrHookFailure": false
+        },
+        {
+          "file": "server/tests/orders-management.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/voice.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        },
+        {
+          "file": "server/tests/webhook-voice.test.ts",
+          "failed": [],
+          "collectionOrHookFailure": true
+        }
+      ]
+    }
+  },
+  "live": {
+    "target": "https://sary.live",
+    "at": "2026-09-19T20:55:36.146Z",
+    "scope": "Owner authorized, anonymous read-only requests; no login, mutations, messages, payments or load testing. Raw responses and cookies are not retained.",
+    "requestCount": 16,
+    "rootHeaders": {
+      "content-type": "text/html; charset=UTF-8",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob:;script-src 'self';connect-src 'self' https://api.openai.com;frame-src 'self' https://checkout.tap.company;base-uri 'self';form-action 'self';frame-ancestors 'self';object-src 'none';script-src-attr 'none';upgrade-insecure-requests",
+      "x-frame-options": "SAMEORIGIN",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "permissions-policy": "camera=(), microphone=(self), geolocation=(), payment=(self \"https://checkout.tap.company\"), usb=()",
+      "access-control-allow-origin": null,
+      "access-control-allow-credentials": "true",
+      "server": "cloudflare",
+      "location": null,
+      "cache-control": "public, max-age=3600"
+    },
+    "results": [
+      {
+        "path": "/",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 200,
+        "durationMs": 949,
+        "bytes": 6804,
+        "stackExposure": false,
+        "htmlFallback": true,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/health",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 200,
+        "durationMs": 291,
+        "code": "healthy",
+        "bytes": 20,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/ready",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 200,
+        "durationMs": 988,
+        "code": "ready",
+        "bytes": 71,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/.env",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 404,
+        "durationMs": 643,
+        "bytes": 9,
+        "sensitiveFileExposure": false,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/.git/config",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 404,
+        "durationMs": 673,
+        "bytes": 9,
+        "sensitiveFileExposure": false,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/products.list",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 311,
+        "code": "UNAUTHORIZED",
+        "bytes": 138,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/conversations.list",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 298,
+        "code": "UNAUTHORIZED",
+        "bytes": 143,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/orders.listByMerchant",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 298,
+        "code": "UNAUTHORIZED",
+        "bytes": 146,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/team.list",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 333,
+        "code": "UNAUTHORIZED",
+        "bytes": 134,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/merchantPayments.getSettings",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 289,
+        "code": "UNAUTHORIZED",
+        "bytes": 153,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/aiSettings.getSettings",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 305,
+        "code": "UNAUTHORIZED",
+        "bytes": 147,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/aiSettings.getBudget",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 404,
+        "durationMs": 305,
+        "code": "NOT_FOUND",
+        "bytes": 173,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/dashboard.getStats",
+        "method": "GET",
+        "variant": "anonymous",
+        "status": 401,
+        "durationMs": 303,
+        "code": "UNAUTHORIZED",
+        "bytes": 143,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/products.list",
+        "method": "GET",
+        "variant": "invalid-bearer",
+        "status": 401,
+        "durationMs": 308,
+        "code": "UNAUTHORIZED",
+        "bytes": 138,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/products.list",
+        "method": "GET",
+        "variant": "untrusted-origin",
+        "status": 403,
+        "durationMs": 298,
+        "bytes": 57,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      },
+      {
+        "path": "/api/trpc/products.list",
+        "method": "OPTIONS",
+        "variant": "untrusted-origin",
+        "status": 403,
+        "durationMs": 309,
+        "bytes": 57,
+        "stackExposure": false,
+        "htmlFallback": false,
+        "allowedOrigin": null
+      }
+    ],
+    "browser": {
+      "pages": [
+        "/",
+        "/login",
+        "/pricing"
+      ],
+      "consoleErrorsObserved": 0,
+      "findings": [
+        "Homepage still says three beta customers and 100 monthly free conversations; pricing says seven-day trial.",
+        "Placeholder footer phone/social links still deployed.",
+        "Password visibility control lacks an accessible name on deployed login.",
+        "New aiSettings.getBudget endpoint not found on live deployment."
+      ]
+    }
+  },
+  "sourceManifestEncoding": "SHA-256 of UTF-8 source with CRLF normalized to LF. Documentation excluded to avoid evidence self-reference; deleted paths have null hashes.",
+  "sourceManifestSha256": "a16365e5992704470c45725575c5a83a7de5b50e5fb51cd88ce5bdc0fb7fb118",
+  "sourceManifest": [
+    {
+      "path": ".gitattributes",
+      "sha256": "2bf23e9ceca9d57697b369d33bfd65e6d1795db8eb82f5ccd68234c316d72472",
+      "deleted": false
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "2225795c7162c936c86cc66f1d78de37ed8a752a4eec53d4727a9b19acebac87",
+      "deleted": false
+    },
+    {
+      "path": ".node-version",
+      "sha256": "08062faf0d7a2d22f5d7933c50e975dd1527034275597be7c1b3b9fd2b9d079a",
+      "deleted": false
+    },
+    {
+      "path": "client/src/components/EmergencyPhoneButton.tsx",
+      "sha256": "7815b835cea3c1f95e6a7b2563c65a2040a4dca0bca9c1d96ae09416e5426fd3",
+      "deleted": false
+    },
+    {
+      "path": "client/src/components/Footer.tsx",
+      "sha256": "a6efcb182ae6218e8559889b42e86321366545da7175d4be4d9f68bdf7b093d6",
+      "deleted": false
+    },
+    {
+      "path": "client/src/components/admin/AiBudgetCard.tsx",
+      "sha256": "3f82735f5976cda07f185b2dc88870b3b611030a29f39f64a7e9af700b3fdfa5",
+      "deleted": false
+    },
+    {
+      "path": "client/src/locales/ar.json",
+      "sha256": "2ec2037b1f202a28a4012ff26afad0d6590b431d28027ca689e2a929e346fbac",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/Home.tsx",
+      "sha256": "84dc63d0c00f0fa9371c028805e78c79e6742214a2f38f86b00bf0e1feaf564c",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/Login.tsx",
+      "sha256": "dfa60fb2397335c2bc3aa1650b79590d9c1467e95dc7066e4feba504af4b104c",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "sha256": "9e6c30cef79a15baaa50aa57242232abebc0e3b899badad9083091477a5ba25c",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/admin/AISettings.tsx",
+      "sha256": "04363c89f6e5b70c7c12765b6b66753c2568ad1a0e8c69692d83fa191f6fda48",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/merchant/Campaigns.tsx",
+      "sha256": "887ed0c30303fafec12947008fbcde53a475ef9476c26b4c43986568e20f2347",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
+      "sha256": "eed1eada472ed43414c76495b90fcc3e5201f59a6481a64afd42e1b0d03f7b1f",
+      "deleted": false
+    },
+    {
+      "path": "client/src/pages/resources/SuccessStories.tsx",
+      "sha256": "c8e44512b318faead52fd9b022b596977b33919899b7355a75b8ca4671c23939",
+      "deleted": false
+    },
+    {
+      "path": "drizzle/0051_ai_budget_ledger.sql",
+      "sha256": "2b36a34d5cfa791d0644e7022b49cc73a681e54f82a795c89cd90b0c592a6455",
+      "deleted": false
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "sha256": "1f6ffdcfefe98509dcec7105ed26e8b9f4138eb07d8c2a768e554ff6b9f4af3d",
+      "deleted": false
+    },
+    {
+      "path": "drizzle/schema.ts",
+      "sha256": "37a76940be8f0ff9edb6f1dd45634ea7f89d363d83b3f209f2277ba1b59778d6",
+      "deleted": false
+    },
+    {
+      "path": "package.json",
+      "sha256": "0c9d8acc87acc7f737b4ec79065e6e787462c908ae2a3195b34d342a391c88dc",
+      "deleted": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "47e68d701fdb8bd245c19b734b698feaba4e527e29a990d6c16b0b70d9d9dde1",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-production-audit.mjs",
+      "sha256": "9cdaee68fd4835ad96a03ad862b3fbc98a44d06cb8b90dd62f22432f0a919e82",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-production-audit.test.mjs",
+      "sha256": "b5bf373001a294c1b89f8561ae45ecfd42eadd89617730f52c64df4213ba232c",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-runtime.mjs",
+      "sha256": "501e684c40800ca62f860b94a5988325b3cbc25bf0b20a95b56c7ad0edc3814a",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-runtime.test.mjs",
+      "sha256": "bb8444bc287385abef56bc702056665f79549424fc6640c551fd50784bd1176c",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-translation-keys.test.mjs",
+      "sha256": "a414e4f9cf4ec06615571b59c4e503ba962e4510527b1781d8c4253c5e9ecd22",
+      "deleted": false
+    },
+    {
+      "path": "scripts/check-translation-keys.ts",
+      "sha256": "a77d2fc5f85887db77c7934b90a9390fa9a0e44c7867d1558b1da90e8a20ccf4",
+      "deleted": false
+    },
+    {
+      "path": "scripts/configure-ai-price.ts",
+      "sha256": "e34eda4dbba85f39e5bebb4cc3c570275df6655ce5757d4136690f41444d3a8d",
+      "deleted": false
+    },
+    {
+      "path": "scripts/deploy-production.sh",
+      "sha256": "d1ac1aa6faec5bf53b56898e81bb01c827c615291cf27c034494c02225587dee",
+      "deleted": false
+    },
+    {
+      "path": "scripts/ops/ops-policy.mjs",
+      "sha256": "733d3b067408d6da23d3d53f9d82811e34ebc4bec92e7fd687b57c688c59d024",
+      "deleted": false
+    },
+    {
+      "path": "scripts/ops/restore-manifest.mjs",
+      "sha256": "ccd185a71a6909646f61d18110c4c0ee4696358ecbf6ce24f9153fa88da51557",
+      "deleted": false
+    },
+    {
+      "path": "scripts/preflight-ai-budget.ts",
+      "sha256": "2b4f94ba07568e77e41e4e65ee94bffd9bbf93c74d745a96786d2ae42ece9010",
+      "deleted": false
+    },
+    {
+      "path": "scripts/run-pentest.mjs",
+      "sha256": "fb5553345cebd77bd0481ff05165952b42acbe6f3f81684aaac99eee00e95b13",
+      "deleted": false
+    },
+    {
+      "path": "scripts/zahypi-pack-documentation.mjs",
+      "sha256": "d3cba25553e17cb8ff15b411f082dfcf191e5a32ee43595f54890e530b3703d1",
+      "deleted": false
+    },
+    {
+      "path": "server/_core/llm.ts",
+      "sha256": "bf9d06a24a2ab7b1ebc4967d22b6956d3b5ed58074ec08a301a7d455f85b873f",
+      "deleted": false
+    },
+    {
+      "path": "server/_core/trpc.ts",
+      "sha256": "08bf6b56a618617302901135a0c8bfa84e6f28c90bc480630b7edeba13237af2",
+      "deleted": false
+    },
+    {
+      "path": "server/_core/voiceTranscription.ts",
+      "sha256": "01c2f7184ec7bdd9faf3d9fd9b1d7b30ac17899e6b97de933e0708aaf2f58ee9",
+      "deleted": false
+    },
+    {
+      "path": "server/accounts/email-verification-security.ts",
+      "sha256": "cc541af9ac7ea65d64426a9b4c2cbbcddcd9f8ad93a5c651713b7eef0d3c60f2",
+      "deleted": false
+    },
+    {
+      "path": "server/accounts/merchant-access.ts",
+      "sha256": "84c0c390571235c57b97da112ef5a1119ffb3c967855b4ca5f3557e198b02b8a",
+      "deleted": false
+    },
+    {
+      "path": "server/accounts/password-reset-security.ts",
+      "sha256": "43085eccbe437dad89812c662b245c7cd61934d64e0a5edde561f8fa5ddd796b",
+      "deleted": false
+    },
+    {
+      "path": "server/accounts/team-invitations.ts",
+      "sha256": "ae88992c13516112301e99592ab729793416ff79fba2830864de0f4922da61f2",
+      "deleted": false
+    },
+    {
+      "path": "server/accounts/team-members.ts",
+      "sha256": "49d25e7b7dac2e529ee8553b510b0ffbc0e9928ac8d1c6347a17af982e525555",
+      "deleted": false
+    },
+    {
+      "path": "server/ai-settings-budget-access.test.ts",
+      "sha256": "355f209e21ce455191352e5f871ba8d6f0035cb35838edcdfb6f7d1d02bc9eb2",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/__tests__/sales-agent.test.ts",
+      "sha256": "51d59f6e54bf9f475aa873f3dbd3904937d2d8ff3c5d00db57827c59af607559",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/budget-admin.ts",
+      "sha256": "d7faf5d0f72e988ccdaeee472cf283200202c08dcf0821a90701d69173a05800",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/budget-boundaries.test.ts",
+      "sha256": "c76351ca50e029af43a34839fc755b5b25cbf1a0f08804416ce30fe359a796aa",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/budget-ledger.ts",
+      "sha256": "2ddb6d21023362c4520105c1c706e04f63be181e7d5f4e900c3e435fcc945a34",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/cost-ceiling.ts",
+      "sha256": null,
+      "deleted": true
+    },
+    {
+      "path": "server/ai/openai.ts",
+      "sha256": "da9dff61fd4bdb8c3ce8d22d824c8f18b8aaef918152f76abe251f6b4bbda18b",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/rag-engine.ts",
+      "sha256": "15e3b7d4314fc1f3f2232c169bfa7e88c78345729bad5583d3365c6ec32fb255",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/sari-personality.ts",
+      "sha256": "b93a4b11ef9442371454de36b0124df0205497d8b91da0611895a6de0fe12d2f",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/voice-handler.ts",
+      "sha256": "fe2eab0a563e54a89a29e1326a931efb05dac9d5f243dad92c776d8e294017df",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/zahypi-client.test.ts",
+      "sha256": "b97f6d2d082b26a3bbe22ddb1255c4e3357a3ef1665404ac4efbee745c4cf46d",
+      "deleted": false
+    },
+    {
+      "path": "server/ai/zahypi-client.ts",
+      "sha256": "f4dd785d3e4c79541bb0bdf5b6dcfec556bbaa3fe757858d19eb7a00df92722c",
+      "deleted": false
+    },
+    {
+      "path": "server/aiBudgetLedger.mysql.test.ts",
+      "sha256": "a89551bc108f5be89abc1b595c32317062f52b4b163e560176baca09f5b4c6ef",
+      "deleted": false
+    },
+    {
+      "path": "server/api-instance-lifecycle-pentest.test.ts",
+      "sha256": "99968b2cb78077ed1cd206c217ec29b80c01c1d2025406b2662441a68888e1d3",
+      "deleted": false
+    },
+    {
+      "path": "server/auth-http.mysql.test.ts",
+      "sha256": "8d951590ac9874f3df811dff81878acac7dd30a2f1c30204ad1a33bd3721f3e7",
+      "deleted": false
+    },
+    {
+      "path": "server/auth.merchantAccess.test.ts",
+      "sha256": "ac9d0fca6be860e5b81d5cabe0e4a1e5e7d255ec51d49101c6dbe42fb031edba",
+      "deleted": false
+    },
+    {
+      "path": "server/auth.teamInvitations.test.ts",
+      "sha256": "52ee272aad257d3f4234c75b3693fec41084f49ceb80c27959a714c37732f5e3",
+      "deleted": false
+    },
+    {
+      "path": "server/automation/zid-order-from-chat.test.ts",
+      "sha256": "ab2ecf6b4059df6cb8d7ed3e85de5e478f969cbf4a91e1ab5d89e6318657301d",
+      "deleted": false
+    },
+    {
+      "path": "server/automation/zid-order-from-chat.ts",
+      "sha256": "28a9f541736e5a2fd555e087b52d377c4668ab8286a8a7b133632f96a3f958e9",
+      "deleted": false
+    },
+    {
+      "path": "server/bot-audit-pentest.test.ts",
+      "sha256": "97e46fa6b0f31249cc2c78f4b79eb9c3f29f6904a9ee5939ef1c86f7da060d83",
+      "deleted": false
+    },
+    {
+      "path": "server/bot-hardening-pentest.test.ts",
+      "sha256": "f0ccd9c717a6d5f5fc408dd917d68a7b4c1bc63a2cfea1cc5f2f5b8e59ba9456",
+      "deleted": false
+    },
+    {
+      "path": "server/byaan-faq-knowledge-pentest.test.ts",
+      "sha256": "254766e7edbfa400f0a73f2a444f55ed37110d2dd2e8788000bfbfe1bea68118",
+      "deleted": false
+    },
+    {
+      "path": "server/channels/whatsapp/effect-key.ts",
+      "sha256": "8de18ec24ac2346b1c5d9cb8a7a227feba02c346897f9e7cf3d2b3d759590eb9",
+      "deleted": false
+    },
+    {
+      "path": "server/channels/whatsapp/providers.ts",
+      "sha256": "60426008e1ecb4d559e0d8153878a3afe06ea05c6cdb7699793dd1108b0fc6e9",
+      "deleted": false
+    },
+    {
+      "path": "server/channels/whatsapp/service.ts",
+      "sha256": "c66fcb3b784dcdb24829d3b4606dabeae103651cff1ca22ddb90bfa8e836f654",
+      "deleted": false
+    },
+    {
+      "path": "server/channels/whatsapp/types.ts",
+      "sha256": "5e9259dad6ac63cffe1f3d768134c70d0239dcb628266b2e9eaece2133142b7a",
+      "deleted": false
+    },
+    {
+      "path": "server/context-intelligence-pentest.test.ts",
+      "sha256": "4770eb54addb6d1f989b72cc488ca9f35f3c12f36e60d9b2c35d2db71c934c50",
+      "deleted": false
+    },
+    {
+      "path": "server/conversations.test.ts",
+      "sha256": "ad9eebe9c706ab0da0d3dc8a385440e8cd997178f10ba0632f03f4e9e7945e34",
+      "deleted": false
+    },
+    {
+      "path": "server/core-team-access.test.ts",
+      "sha256": "8a90c7f2d60034c216ce9c9fd54f33b121b0a108e96e16b4b57b2add44205672",
+      "deleted": false
+    },
+    {
+      "path": "server/cron/schema-validator.ts",
+      "sha256": "d0e01cb2ce516ae10d559534377098b17265945d41137d31e9c7ebee1aaf7aa0",
+      "deleted": false
+    },
+    {
+      "path": "server/db.ts",
+      "sha256": "9e5a593a748e8e6b32457b633f6eafade75d3949f99b77449da0c458aece1a94",
+      "deleted": false
+    },
+    {
+      "path": "server/db/_shared.ts",
+      "sha256": "e919bf1c37aa454ccc793a05c22bcd248ae6ff7a6b57ca5f53eecd2be91e89a9",
+      "deleted": false
+    },
+    {
+      "path": "server/db/connection.test.ts",
+      "sha256": "f7c001f9b532f433fdfe70299a6dfb2c310c0b0141311c08a950f79643301655",
+      "deleted": false
+    },
+    {
+      "path": "server/db/connection.ts",
+      "sha256": "959b3d0c29364e23fa8eb1b4ac754bc83fa0df7aa360277c6d8ad362eb790097",
+      "deleted": false
+    },
+    {
+      "path": "server/db/time.test.ts",
+      "sha256": "08079df985bcfe52be7e340b87c015a1ab95684cce9bcbb7dc032f0688786876",
+      "deleted": false
+    },
+    {
+      "path": "server/db/time.ts",
+      "sha256": "b5ea55f955485016e0fadfd499d2b5145a14940c8e9711f0d3917d6d4b9fa118",
+      "deleted": false
+    },
+    {
+      "path": "server/dependency-contracts.test.ts",
+      "sha256": "5fb75e9490c8b8eca3f0ceac448c24b98ddd286c9bc2654bb468fded96d1b0ba",
+      "deleted": false
+    },
+    {
+      "path": "server/integrations/byaan-security.ts",
+      "sha256": "86c47809b94040cb70fd3dac20d47d8067f88ad1d72439de41d366fa65a584eb",
+      "deleted": false
+    },
+    {
+      "path": "server/merchant-access.test.ts",
+      "sha256": "93a0f968c0c10de0882c4e0227ab1cf015ad62206de7918fd9e803bbe6e9736e",
+      "deleted": false
+    },
+    {
+      "path": "server/merchant-order-boundary-pentest.test.ts",
+      "sha256": "3f00c30c59bf803dc7fdcb079a053887a3f9d66924bb892cfdd298c21917255a",
+      "deleted": false
+    },
+    {
+      "path": "server/ops-load-restore-pentest.test.ts",
+      "sha256": "3d6b5959a27062f6ba53ea19b1bb29dd944bfe606c9910e0b7493e2d8c3e6e68",
+      "deleted": false
+    },
+    {
+      "path": "server/password-reset-hardening-pentest.test.ts",
+      "sha256": "6cdc84875939cccb426c2d2ceb64fcabd453d35ca07ae17032d066cfe967e5cf",
+      "deleted": false
+    },
+    {
+      "path": "server/polling.ts",
+      "sha256": "f87ff1e1c9f0dfabe99effb35bae8610e14e97eeeaf307ac3d8d2ddb475971d0",
+      "deleted": false
+    },
+    {
+      "path": "server/products-access.test.ts",
+      "sha256": "8022cfe73dc798ec719b593d8c7f562a6cb295b6bf25ca3ec790818996c3083e",
+      "deleted": false
+    },
+    {
+      "path": "server/rbac-pentest.test.ts",
+      "sha256": "b0e97f15d24f5351012e6931a2c816367b0b8365c8f80e16cc70ee320e682d3f",
+      "deleted": false
+    },
+    {
+      "path": "server/release-ci-performance-pentest.test.ts",
+      "sha256": "9a812ccc339cba75160ef9d615db0de6922d73e71b29983cd85e0e287e8346ad",
+      "deleted": false
+    },
+    {
+      "path": "server/remediation-regression.test.ts",
+      "sha256": "32b1c9f49f6d70e2647f2a10fd258b64d390763203be99a216c5b025c6a37e75",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-ai-settings.ts",
+      "sha256": "d8eb3622ed91b541fb226fe0f49b13628d7ffbaf0a65e0972bb645c23399423c",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-analytics.ts",
+      "sha256": "b15cc10b5a09c7f11bd5eb3dfed8bb266fb37571c23e3fd492c1a4fea09b488e",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-conversations.ts",
+      "sha256": "c4da57bbf88e7038e6e0776cfe6a36b0f7adfff6c9aff11556376deb13b3011e",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-dashboard.ts",
+      "sha256": "bc8e96579adcec209b1b7457473a808676e7a12393c388dcb336520d146002b5",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-merchant-payments.ts",
+      "sha256": "3550a96821ce27e1ca54417282cf665779e805e0687901c9822e1fd94133bccc",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-products.ts",
+      "sha256": "7f0ffcc30eb896b6c67a431208d64995b768e154fa281f4732faee7aff71c5b6",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-reports.ts",
+      "sha256": "c993dcb592e18563e8e4044f8a6d2f19e0d01f4bd1efa187b2dbeeb2303f0391",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-team.ts",
+      "sha256": "321c36aa82426f5b54027d1a9d11d75757858cf17ee6a5b1635a98cddf26bee2",
+      "deleted": false
+    },
+    {
+      "path": "server/routers-voice.ts",
+      "sha256": "2b14a0b41ab0f6eb8c9b1145bcd22b8edcf60ca2d64a56b0f222c88317633834",
+      "deleted": false
+    },
+    {
+      "path": "server/routers.ts",
+      "sha256": "5cde5ba269a33f2954e6435b66c8f113aee892ff2925d989904f1ea5b5427330",
+      "deleted": false
+    },
+    {
+      "path": "server/sales-engine-pentest.test.ts",
+      "sha256": "dcea58e5619ec7ef3474894bc1ef3348be5c18caeef08c478b803c36b4c1b0cb",
+      "deleted": false
+    },
+    {
+      "path": "server/security-pentest.test.ts",
+      "sha256": "f70455c8c49af22837130d68a43bfbf43c1f390cf9b729d48509ed1cff9de833",
+      "deleted": false
+    },
+    {
+      "path": "server/security/download-media.test.ts",
+      "sha256": "78b127e64ef56a60f82c2dd168218412446fefd2265a86cbafb3f0041de7bbb8",
+      "deleted": false
+    },
+    {
+      "path": "server/security/download-media.ts",
+      "sha256": "531ac00fe60b44402c65e9a18af33564ab82c93b11ceccd70de2316d7c418292",
+      "deleted": false
+    },
+    {
+      "path": "server/session-hardening-pentest.test.ts",
+      "sha256": "1b086e5b966514e6f367e99d8b5cb62b8679d257f967b22a2789e651812773f5",
+      "deleted": false
+    },
+    {
+      "path": "server/team-access.mysql.test.ts",
+      "sha256": "0183632d2a22f2f359f49c761ae4bed1fef3d412d073e6140589abac37108a87",
+      "deleted": false
+    },
+    {
+      "path": "server/team-identity-pentest.test.ts",
+      "sha256": "41ea7319e1feb8e7eedbd0c2bfcdb773b61e583e0110632f68d7700650669192",
+      "deleted": false
+    },
+    {
+      "path": "server/tests/adaptive-sales-engine.test.ts",
+      "sha256": "b388d47e6d6b53077c015c76b68f45b20938896b9997b6b2f373157f589af313",
+      "deleted": false
+    },
+    {
+      "path": "server/tests/chat-commerce-pentest.test.ts",
+      "sha256": "b61e01899d675810b786805cd913c62df00cf6c285bb44b265577c999bb41d2b",
+      "deleted": false
+    },
+    {
+      "path": "server/tests/helpers/disposable-merchant.ts",
+      "sha256": "2952fbae98f7dc31b95d4f88faf1476351928772dc658fb438cce7b9e3c7ff80",
+      "deleted": false
+    },
+    {
+      "path": "server/ui-language-truth-pentest.test.ts",
+      "sha256": "4607e77d6a416bd1bda81c6714d6ebfdc7f988fec626bf1751ac5e119fa5d21d",
+      "deleted": false
+    },
+    {
+      "path": "server/voice-transcription.ts",
+      "sha256": "3082b85eb6aefd6b34c4bf4751a316f7bacb233b7afdd9f37e7ae73453e9ea2f",
+      "deleted": false
+    },
+    {
+      "path": "server/webhooks/greenapi.ts",
+      "sha256": "a0dfff5b086fd46f33f6be747e8d89dd4fbb6479c81a790b4d35de99481366b0",
+      "deleted": false
+    },
+    {
+      "path": "server/whatsapp-delivery-safety.test.ts",
+      "sha256": "df29bd1f27b967e998d2ef5fbe9e04986b98a0530ec8ec5e6db4ad46d4c83455",
+      "deleted": false
+    },
+    {
+      "path": "server/whatsapp-primary-failover-pentest.test.ts",
+      "sha256": "476307a2299e9dccf6ebbcd91b872e3038fd970741dd0d39d52471badf337306",
+      "deleted": false
+    },
+    {
+      "path": "server/whatsapp-primary-invariant-pentest.test.ts",
+      "sha256": "a8b63ef24d968092e45a7ec3dc8c4f100b74a7802390bced0ab29443a2fdaaac",
+      "deleted": false
+    },
+    {
+      "path": "server/whatsapp.ts",
+      "sha256": "32dc69809e4df670a009152d71b11b8126ae3367118ca44becd0f3cbfd2d79b8",
+      "deleted": false
+    },
+    {
+      "path": "server/whatsappDeliverySafety.mysql.test.ts",
+      "sha256": "ae74e99d2bdea0e6aa29620c58929e549a67ed887f7ec1882f698e05dec4e94e",
+      "deleted": false
+    },
+    {
+      "path": "server/woocommerce-lock-admission-pentest.test.ts",
+      "sha256": "9cecc7ee2ec05d42543a6dca6aaf1b6bd398b566e1dda0cc52295f6972f02c0e",
+      "deleted": false
+    },
+    {
+      "path": "shared/public-evidence.ts",
+      "sha256": "82e06e8cc3fca5ebf9942c01af565a8bff66b7e173d506e9b66f640009e2dc73",
+      "deleted": false
+    }
+  ],
+  "buildArtifacts": {
+    "server": {
+      "path": "dist/index.js",
+      "sha256": "f1446b5cddaffba1b3a244a800bea2868e6fa4901011dd0c66103d435d20873a"
+    }
+  }
+}

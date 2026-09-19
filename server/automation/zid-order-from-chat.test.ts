@@ -16,8 +16,8 @@ describe('Zid Order From Chat', () => {
     it('should detect Arabic order keywords', async () => {
       expect(await isZidOrderRequest('أبغى أشتري منتج')).toBe(true);
       expect(await isZidOrderRequest('أريد طلب هذا المنتج')).toBe(true);
-      expect(await isZidOrderRequest('كم سعر الجهاز؟')).toBe(true);
-      expect(await isZidOrderRequest('عندكم ساعات ذكية؟')).toBe(true);
+      expect(await isZidOrderRequest('كم سعر الجهاز؟')).toBe(false);
+      expect(await isZidOrderRequest('عندكم ساعات ذكية؟')).toBe(false);
       expect(await isZidOrderRequest('ابي اطلب 2 قطع')).toBe(true);
     });
 
@@ -44,6 +44,13 @@ describe('Zid Order From Chat', () => {
       expect(isOrderConfirmation('ممكن')).toBe(false);
       expect(isOrderConfirmation('ما أدري')).toBe(false);
     });
+
+    it.each(['غير موافق', 'لا أريد الطلب', 'نعم لكن غير السعر', 'not okay', 'okay if you lower the price', 'book', 'موافق إذا توصل بكرة', 'لا، ألغِ الطلب'])('never treats negated or conditional text as approval: %s', message => {
+      expect(isOrderConfirmation(message)).toBe(false);
+    });
+    it.each(['نَعَم', 'تمام، أكد الطلب', 'نعم!', 'موافق على الطلب', 'yes please'])('accepts explicit complete approval: %s', message => {
+      expect(isOrderConfirmation(message)).toBe(true);
+    });
   });
 
   describe('isOrderRejection', () => {
@@ -59,6 +66,8 @@ describe('Zid Order From Chat', () => {
     it('should not detect non-rejection messages', () => {
       expect(isOrderRejection('نعم')).toBe(false);
       expect(isOrderRejection('تمام')).toBe(false);
+      expect(isOrderRejection('السلام عليكم')).toBe(false);
+      expect(isOrderRejection('خلاص')).toBe(false);
     });
   });
 

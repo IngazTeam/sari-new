@@ -4,6 +4,7 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { emailVerificationTokens, users } from '../../drizzle/schema';
 import { getDb, getPool } from '../db';
 import { privacyHash } from './privacy-hash';
+import { isFutureDatabaseTime } from '../db/time';
 
 export const EMAIL_VERIFICATION_TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 export const EMAIL_VERIFICATION_TOKEN_TTL_MINUTES = 60;
@@ -207,7 +208,7 @@ export async function consumeEmailVerificationToken(token: string): Promise<bool
     if (
       !verificationToken ||
       verificationToken.isUsed ||
-      new Date(verificationToken.expiresAt).getTime() <= Date.now()
+      !isFutureDatabaseTime(verificationToken.expiresAt)
     ) {
       return false;
     }

@@ -1,0 +1,567 @@
+{
+  "recordedAt": "2026-09-19T20:13:52.238Z",
+  "baseCommit": "a4538c62e0157102bc3113edffebc3e240354350",
+  "uncommittedWorktree": true,
+  "sourceManifestSha256": "236058b3790ffa55667665d61b51a7a2ea431b5fc6658686035be7073bcd93ed",
+  "runtime": {
+    "node": "v22.23.2",
+    "pinnedNode": "22.23.2",
+    "pnpm": "10.4.1",
+    "os": "win32",
+    "mysql": "8.0.44",
+    "ciMysql": "8.4 (not run remotely)"
+  },
+  "deploymentPerformed": false,
+  "liveProviderCalls": 0,
+  "tenOfTenApproved": false,
+  "budgetDecision": {
+    "usdPerUtcDay": 100,
+    "scope": "entire-platform",
+    "providerSelection": "super-admin",
+    "livePricesConfigured": false
+  },
+  "checks": {
+    "releaseAndZahyPi": {
+      "report": ".tmp/audit-2026-09-19/tests.json",
+      "reportSha256": "901f8d9ed4a95eb6fbcaa5eba27a65af3855190f0c5edeb5832643517108aa2a",
+      "completedAt": "2026-09-19T20:04:51.634Z",
+      "files": 99,
+      "total": 1268,
+      "passed": 1267,
+      "failed": 0,
+      "skipped": 1,
+      "skippedCases": [
+        {
+          "file": "server/deployment-release-pentest.test.ts",
+          "test": "production release gate keeps every shipped deploy entry point valid Bash"
+        }
+      ]
+    },
+    "remediationBehavior": {
+      "report": ".tmp/remediation-behavior.json",
+      "reportSha256": "0c9fae1935592bf86115a24c5e9eddbd959bc97134eefa991aa8c5df476b2ea4",
+      "completedAt": "2026-09-19T20:10:46.351Z",
+      "files": 9,
+      "total": 57,
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    "mysqlIntegration": {
+      "report": ".tmp/remediation-mysql.json",
+      "reportSha256": "f534136883e800abd18a45b6c6a2a9484304c485e2617ee19396dbe79992c4e2",
+      "completedAt": "2026-09-19T19:54:12.675Z",
+      "files": 20,
+      "total": 117,
+      "passed": 117,
+      "failed": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    "budgetFinalRecheck": {
+      "report": ".tmp/remediation-budget-final.json",
+      "reportSha256": "d04bc9b7aa5874f0b2498d9917c146e6b7aba388783bd695a71d4fb8ed97cbf0",
+      "completedAt": "2026-09-19T20:11:48.357Z",
+      "files": 1,
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    "tooling": {
+      "passed": 20,
+      "failed": 0,
+      "evidence": "node --test tool output in this task"
+    },
+    "typecheck": {
+      "exitCode": 0,
+      "log": ".tmp/audit-2026-09-19/check.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "completedAt": "2026-09-19T20:11:55.817Z"
+    },
+    "schema": {
+      "drizzleCheckPassed": true,
+      "migrationsAppliedToFreshDisposableDatabase": 52
+    },
+    "audit": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0
+      },
+      "reportSha256": "20d654d05c9502fcc47d1d0b4ae9ac9d4829bda8f32b3e27c5c317ff88144fac",
+      "failClosedCliPassed": true
+    },
+    "locales": {
+      "exitCode": 0,
+      "note": "Diagnostic catalogue report; incomplete non-Arabic catalogues remain. Not a multilingual launch approval."
+    },
+    "build": {
+      "exitCode": 0,
+      "log": ".tmp/remediation-build.log",
+      "completedAt": "2026-09-19T20:12:49.413Z",
+      "clientBudgetLine": "[bundle-budget] index-CbR6UmsH.js: 570908 bytes raw / 170964 bytes gzip",
+      "serverArtifactSha256": "617d5261301b4de066230f7aced71320af538f8c4e50c7ef0305222ff2990cc1"
+    },
+    "budgetOperations": {
+      "dryRunDidNotWrite": true,
+      "fixturePriceCardsApplied": 4,
+      "preflight": {
+        "passed": true,
+        "aiEnabled": true,
+        "provider": "openai",
+        "globalDailyLimitUsd": 100,
+        "missingPriceCards": [],
+        "activeMerchantsWithoutEligibleSubscription": 1,
+        "unknownReservations": 0
+      },
+      "realProviderCalls": 0,
+      "pricesAreSynthetic": true
+    },
+    "unpricedBudgetPreflight": {
+      "exitCode": 1,
+      "expected": true,
+      "liveProviderCalls": 0
+    },
+    "publicUi": {
+      "pages": [
+        "/",
+        "/resources/success-stories"
+      ],
+      "viewports": [
+        "desktop default",
+        "390 x 844"
+      ],
+      "method": "local built frontend, screenshot and accessibility-tree inspection",
+      "adminUiAuthenticatedE2e": false
+    }
+  },
+  "remaining": [
+    "live model price cards and voice-duration costing",
+    "full durable WhatsApp reply plan and remaining legacy effects",
+    "complete router permission matrix and multi-store selection",
+    "live integration/E2E, load, restore, canary, independent review",
+    "commercial cohort, margin, case-study and growth evidence"
+  ],
+  "fileManifest": [
+    {
+      "path": ".gitattributes",
+      "deleted": false,
+      "sha256": "7cac6bd82c274fa8d9a0c0411e82fce0675c53389df885aeea7d53110e026631"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "deleted": false,
+      "sha256": "1f13636f9fb1157af9c34dca5cd8407a0d109899fd0fa72e2bf0040b1475ce4f"
+    },
+    {
+      "path": ".node-version",
+      "deleted": false,
+      "sha256": "08062faf0d7a2d22f5d7933c50e975dd1527034275597be7c1b3b9fd2b9d079a"
+    },
+    {
+      "path": "client/src/components/Footer.tsx",
+      "deleted": false,
+      "sha256": "871530a9085db6bf5d1fe240f9566735b5f0b62834f50838d2858163cb66795e"
+    },
+    {
+      "path": "client/src/components/admin/AiBudgetCard.tsx",
+      "deleted": false,
+      "sha256": "99f5e113d2d1b5b4eca7cb4c6dea09ed1f41b581e281f8475ab595ac34c4da13"
+    },
+    {
+      "path": "client/src/locales/ar.json",
+      "deleted": false,
+      "sha256": "f7f1e7b5139642223040a7880fdf036f99fac5126d2a4c68a044bc145dd15fa3"
+    },
+    {
+      "path": "client/src/pages/Home.tsx",
+      "deleted": false,
+      "sha256": "ac0cb7cb5b842a4e909db2dc8f26354252898e029b9bee41c9a1f534a291cd68"
+    },
+    {
+      "path": "client/src/pages/admin/AISettings.tsx",
+      "deleted": false,
+      "sha256": "b4d6a9c018a0d9a8e3a72ea3e10f0b5758a5b9fcd38ca9ce2691864e35604e9d"
+    },
+    {
+      "path": "client/src/pages/resources/SuccessStories.tsx",
+      "deleted": false,
+      "sha256": "bc09110c067be840afaf23002420fc81f5dd27c7eba7482b7e97652a4bf185a7"
+    },
+    {
+      "path": "docs/SARI_10_OF_10_EXECUTION_PLAN_2026-09-19.md",
+      "deleted": false,
+      "sha256": "04fb60a98b3d156cd42918091fd0ea9076cff0c1a02984d586afd11dc99cf560"
+    },
+    {
+      "path": "docs/SARI_DEEP_REVIEW_2026-09-19.md",
+      "deleted": false,
+      "sha256": "dbc99dd2fadde598dae18e6907cdb1af53190019af91fa3207bdfed0d5bd09a8"
+    },
+    {
+      "path": "docs/SARI_DEEP_REVIEW_2026-09-19_EVIDENCE.json",
+      "deleted": false,
+      "sha256": "6c82ca8f764afb6a1fdd77057f03b467fd2778eb2c46d36e6113bc7ea4f40b8f"
+    },
+    {
+      "path": "docs/SARI_REMEDIATION_IMPLEMENTATION_2026-09-19.md",
+      "deleted": false,
+      "sha256": "d1919ae190991142b410bd7993067c6e7a1a7d57b6a0f9a6f572f3a624f72139"
+    },
+    {
+      "path": "drizzle/0051_ai_budget_ledger.sql",
+      "deleted": false,
+      "sha256": "2b36a34d5cfa791d0644e7022b49cc73a681e54f82a795c89cd90b0c592a6455"
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "deleted": false,
+      "sha256": "1f6ffdcfefe98509dcec7105ed26e8b9f4138eb07d8c2a768e554ff6b9f4af3d"
+    },
+    {
+      "path": "drizzle/schema.ts",
+      "deleted": false,
+      "sha256": "ea476d91d3b64444aab6e25baafc1ac8fc5df6f2fcb9d63641ce738ea00a6e1f"
+    },
+    {
+      "path": "package.json",
+      "deleted": false,
+      "sha256": "ef24e87f08f3a6a9f1f88316f4ac0b4061c2005ec9ec6e9c475bcac49b52a060"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "deleted": false,
+      "sha256": "47e68d701fdb8bd245c19b734b698feaba4e527e29a990d6c16b0b70d9d9dde1"
+    },
+    {
+      "path": "scripts/check-production-audit.mjs",
+      "deleted": false,
+      "sha256": "9cdaee68fd4835ad96a03ad862b3fbc98a44d06cb8b90dd62f22432f0a919e82"
+    },
+    {
+      "path": "scripts/check-production-audit.test.mjs",
+      "deleted": false,
+      "sha256": "b5bf373001a294c1b89f8561ae45ecfd42eadd89617730f52c64df4213ba232c"
+    },
+    {
+      "path": "scripts/check-runtime.mjs",
+      "deleted": false,
+      "sha256": "501e684c40800ca62f860b94a5988325b3cbc25bf0b20a95b56c7ad0edc3814a"
+    },
+    {
+      "path": "scripts/check-runtime.test.mjs",
+      "deleted": false,
+      "sha256": "bb8444bc287385abef56bc702056665f79549424fc6640c551fd50784bd1176c"
+    },
+    {
+      "path": "scripts/configure-ai-price.ts",
+      "deleted": false,
+      "sha256": "e34eda4dbba85f39e5bebb4cc3c570275df6655ce5757d4136690f41444d3a8d"
+    },
+    {
+      "path": "scripts/deploy-production.sh",
+      "deleted": false,
+      "sha256": "1fb731d12f2be0ccec6321cecea4700c2124e943cb10569dc24865b9c1d61215"
+    },
+    {
+      "path": "scripts/preflight-ai-budget.ts",
+      "deleted": false,
+      "sha256": "2b4f94ba07568e77e41e4e65ee94bffd9bbf93c74d745a96786d2ae42ece9010"
+    },
+    {
+      "path": "scripts/zahypi-pack-documentation.mjs",
+      "deleted": false,
+      "sha256": "369afd276f1b266d0e57c22c52431266b3e461b07ed6250d544d95da608caae7"
+    },
+    {
+      "path": "server/_core/llm.ts",
+      "deleted": false,
+      "sha256": "71110aaa74d0b3c6422b52499d85aa10d0c22226e0ac3601243b0fb6c24d0d2a"
+    },
+    {
+      "path": "server/_core/trpc.ts",
+      "deleted": false,
+      "sha256": "08bf6b56a618617302901135a0c8bfa84e6f28c90bc480630b7edeba13237af2"
+    },
+    {
+      "path": "server/_core/voiceTranscription.ts",
+      "deleted": false,
+      "sha256": "77897eafc2fe4eb87d051b566a06104e76e867ee84cadd3993656ee10c96517c"
+    },
+    {
+      "path": "server/accounts/email-verification-security.ts",
+      "deleted": false,
+      "sha256": "7c6b85e83cd3a5148fcf502fe8da4c2c2e2bfd6af5e07c817522eb1928c1bf65"
+    },
+    {
+      "path": "server/accounts/merchant-access.ts",
+      "deleted": false,
+      "sha256": "84c0c390571235c57b97da112ef5a1119ffb3c967855b4ca5f3557e198b02b8a"
+    },
+    {
+      "path": "server/accounts/password-reset-security.ts",
+      "deleted": false,
+      "sha256": "c694fa279161f27f509200a968aae3534044516790bc1bfaf48e411443a15f53"
+    },
+    {
+      "path": "server/accounts/team-invitations.ts",
+      "deleted": false,
+      "sha256": "7fccc12a034b538ed79967f3bf32f53b925bb368e13ff5c2c7d97ff443f66c04"
+    },
+    {
+      "path": "server/ai-settings-budget-access.test.ts",
+      "deleted": false,
+      "sha256": "355f209e21ce455191352e5f871ba8d6f0035cb35838edcdfb6f7d1d02bc9eb2"
+    },
+    {
+      "path": "server/ai/budget-admin.ts",
+      "deleted": false,
+      "sha256": "812c14f29ebfc7805bf34935efeb077724126114241c6aab1d265622969355c3"
+    },
+    {
+      "path": "server/ai/budget-boundaries.test.ts",
+      "deleted": false,
+      "sha256": "16ce59799b17d43fbcde68b326fa1106f6f6442523bfd5eac8da8f68ea98a0b5"
+    },
+    {
+      "path": "server/ai/budget-ledger.ts",
+      "deleted": false,
+      "sha256": "2ddb6d21023362c4520105c1c706e04f63be181e7d5f4e900c3e435fcc945a34"
+    },
+    {
+      "path": "server/ai/cost-ceiling.ts",
+      "deleted": true,
+      "sha256": null
+    },
+    {
+      "path": "server/ai/openai.ts",
+      "deleted": false,
+      "sha256": "b3bccca7f0746e04a516500e1baf77bd4fa7b18c5f094f15cef3ba60de5131a7"
+    },
+    {
+      "path": "server/ai/rag-engine.ts",
+      "deleted": false,
+      "sha256": "d62d550b2f79d5512123859ffd05d1bc52339aa4def76f728095446599cd73eb"
+    },
+    {
+      "path": "server/ai/sari-personality.ts",
+      "deleted": false,
+      "sha256": "b93a4b11ef9442371454de36b0124df0205497d8b91da0611895a6de0fe12d2f"
+    },
+    {
+      "path": "server/ai/voice-handler.ts",
+      "deleted": false,
+      "sha256": "bc0214b3ede4f33bef1b60c712f69bb7b7e0c4970587f1e1ba0755a74e98ecf3"
+    },
+    {
+      "path": "server/ai/zahypi-client.test.ts",
+      "deleted": false,
+      "sha256": "80b9a50d61ed08162487c2bf65fb2954d2e164c12388c7f1d79bbe7639905838"
+    },
+    {
+      "path": "server/ai/zahypi-client.ts",
+      "deleted": false,
+      "sha256": "f4dd785d3e4c79541bb0bdf5b6dcfec556bbaa3fe757858d19eb7a00df92722c"
+    },
+    {
+      "path": "server/aiBudgetLedger.mysql.test.ts",
+      "deleted": false,
+      "sha256": "a89551bc108f5be89abc1b595c32317062f52b4b163e560176baca09f5b4c6ef"
+    },
+    {
+      "path": "server/api-instance-lifecycle-pentest.test.ts",
+      "deleted": false,
+      "sha256": "1b43325a3d67a8f28195491bd7e7fd09e3c7f832b835f7a21b9a3104015242ea"
+    },
+    {
+      "path": "server/auth.merchantAccess.test.ts",
+      "deleted": false,
+      "sha256": "754fa9a30e5a61a70a4c0547b61385bf9f0f4fe6244b7a73b303815de5f73321"
+    },
+    {
+      "path": "server/byaan-faq-knowledge-pentest.test.ts",
+      "deleted": false,
+      "sha256": "a4ae138821bff46fe21151a795d48c2ce36f311345f7caa1f21ec686d5eb6f4f"
+    },
+    {
+      "path": "server/channels/whatsapp/effect-key.ts",
+      "deleted": false,
+      "sha256": "8de18ec24ac2346b1c5d9cb8a7a227feba02c346897f9e7cf3d2b3d759590eb9"
+    },
+    {
+      "path": "server/channels/whatsapp/providers.ts",
+      "deleted": false,
+      "sha256": "60426008e1ecb4d559e0d8153878a3afe06ea05c6cdb7699793dd1108b0fc6e9"
+    },
+    {
+      "path": "server/channels/whatsapp/service.ts",
+      "deleted": false,
+      "sha256": "a28d4af5b6935bae1632a73f2dd1fd69b6a89defe2d21ef413694838d1ea4647"
+    },
+    {
+      "path": "server/channels/whatsapp/types.ts",
+      "deleted": false,
+      "sha256": "20978c8dbdb1f5fe6f49d76419261ccdf9c3678d603e8c79f13cdd117142a4f0"
+    },
+    {
+      "path": "server/cron/schema-validator.ts",
+      "deleted": false,
+      "sha256": "bee21205ea5615fe56d8aec78e83fb01dd4e31144851b3b22767b09d1b27e558"
+    },
+    {
+      "path": "server/db.ts",
+      "deleted": false,
+      "sha256": "f4dce8fa78bbc17b8b8a3766c935b18de57107c4c2480c9e5e14f04c03ae913f"
+    },
+    {
+      "path": "server/db/_shared.ts",
+      "deleted": false,
+      "sha256": "e919bf1c37aa454ccc793a05c22bcd248ae6ff7a6b57ca5f53eecd2be91e89a9"
+    },
+    {
+      "path": "server/db/connection.test.ts",
+      "deleted": false,
+      "sha256": "f7c001f9b532f433fdfe70299a6dfb2c310c0b0141311c08a950f79643301655"
+    },
+    {
+      "path": "server/db/connection.ts",
+      "deleted": false,
+      "sha256": "959b3d0c29364e23fa8eb1b4ac754bc83fa0df7aa360277c6d8ad362eb790097"
+    },
+    {
+      "path": "server/db/time.test.ts",
+      "deleted": false,
+      "sha256": "08079df985bcfe52be7e340b87c015a1ab95684cce9bcbb7dc032f0688786876"
+    },
+    {
+      "path": "server/db/time.ts",
+      "deleted": false,
+      "sha256": "b5ea55f955485016e0fadfd499d2b5145a14940c8e9711f0d3917d6d4b9fa118"
+    },
+    {
+      "path": "server/dependency-contracts.test.ts",
+      "deleted": false,
+      "sha256": "5fb75e9490c8b8eca3f0ceac448c24b98ddd286c9bc2654bb468fded96d1b0ba"
+    },
+    {
+      "path": "server/integrations/byaan-security.ts",
+      "deleted": false,
+      "sha256": "820b9e31f773be0f09ffd17edfcdc6f3b0a1d6ea6a56ef6d25ef54bde2e44279"
+    },
+    {
+      "path": "server/merchant-access.test.ts",
+      "deleted": false,
+      "sha256": "93a0f968c0c10de0882c4e0227ab1cf015ad62206de7918fd9e803bbe6e9736e"
+    },
+    {
+      "path": "server/password-reset-hardening-pentest.test.ts",
+      "deleted": false,
+      "sha256": "d1e52a789e05f144f38ecf7ef85487664ebd5c5e5489430351c17768fc578e7f"
+    },
+    {
+      "path": "server/polling.ts",
+      "deleted": false,
+      "sha256": "f87ff1e1c9f0dfabe99effb35bae8610e14e97eeeaf307ac3d8d2ddb475971d0"
+    },
+    {
+      "path": "server/products-access.test.ts",
+      "deleted": false,
+      "sha256": "8022cfe73dc798ec719b593d8c7f562a6cb295b6bf25ca3ec790818996c3083e"
+    },
+    {
+      "path": "server/release-ci-performance-pentest.test.ts",
+      "deleted": false,
+      "sha256": "cf4125b6d7f719c5087ef3379465642bfd08bd0581c1e68b9068d82be21c45b4"
+    },
+    {
+      "path": "server/routers-ai-settings.ts",
+      "deleted": false,
+      "sha256": "f8fc9e941163f90719dbb851807343b5d0f13c4bfafdfdebe66b1c2f54c7da63"
+    },
+    {
+      "path": "server/routers-products.ts",
+      "deleted": false,
+      "sha256": "7f0ffcc30eb896b6c67a431208d64995b768e154fa281f4732faee7aff71c5b6"
+    },
+    {
+      "path": "server/routers-team.ts",
+      "deleted": false,
+      "sha256": "e28996ebf51047bbf6796c7dd1d06223f08146b08b2faadc864e2ac15d12b1a1"
+    },
+    {
+      "path": "server/routers-voice.ts",
+      "deleted": false,
+      "sha256": "2f912903affef14861c7f690d8ba7e49aa2c92a657b09e2fe1837dc39b496586"
+    },
+    {
+      "path": "server/routers.ts",
+      "deleted": false,
+      "sha256": "89e0b804e78352e741b6f7e26013d468df8c994ad0ac2fb7ba14bd152a642a93"
+    },
+    {
+      "path": "server/security/download-media.test.ts",
+      "deleted": false,
+      "sha256": "78b127e64ef56a60f82c2dd168218412446fefd2265a86cbafb3f0041de7bbb8"
+    },
+    {
+      "path": "server/security/download-media.ts",
+      "deleted": false,
+      "sha256": "531ac00fe60b44402c65e9a18af33564ab82c93b11ceccd70de2316d7c418292"
+    },
+    {
+      "path": "server/tests/helpers/disposable-merchant.ts",
+      "deleted": false,
+      "sha256": "2952fbae98f7dc31b95d4f88faf1476351928772dc658fb438cce7b9e3c7ff80"
+    },
+    {
+      "path": "server/voice-transcription.ts",
+      "deleted": false,
+      "sha256": "7758191998b8b0e49e9362c3eb6ba4414feb8baeb58c9ccbe0e659ba3cf774a1"
+    },
+    {
+      "path": "server/webhooks/greenapi.ts",
+      "deleted": false,
+      "sha256": "1a3f1a01e0bff9494bf10d732411baf6ec3f13b1c1f33aa1d299af424567bd27"
+    },
+    {
+      "path": "server/whatsapp-delivery-safety.test.ts",
+      "deleted": false,
+      "sha256": "df29bd1f27b967e998d2ef5fbe9e04986b98a0530ec8ec5e6db4ad46d4c83455"
+    },
+    {
+      "path": "server/whatsapp-primary-failover-pentest.test.ts",
+      "deleted": false,
+      "sha256": "606dc4d284c3f7135503c4dfc703c6ecf052991f7f616d5a371ab6ae8713c9b1"
+    },
+    {
+      "path": "server/whatsapp-primary-invariant-pentest.test.ts",
+      "deleted": false,
+      "sha256": "20223d9eb2e1333a1cc786afed30c843a1c37e7774821284325e2b6661e40e44"
+    },
+    {
+      "path": "server/whatsapp.ts",
+      "deleted": false,
+      "sha256": "32dc69809e4df670a009152d71b11b8126ae3367118ca44becd0f3cbfd2d79b8"
+    },
+    {
+      "path": "server/whatsappDeliverySafety.mysql.test.ts",
+      "deleted": false,
+      "sha256": "ae74e99d2bdea0e6aa29620c58929e549a67ed887f7ec1882f698e05dec4e94e"
+    },
+    {
+      "path": "server/woocommerce-lock-admission-pentest.test.ts",
+      "deleted": false,
+      "sha256": "a4114c7cddf91dfba820047eae27813da9cc504ceb32f5af1594bf650fc0af34"
+    },
+    {
+      "path": "shared/public-evidence.ts",
+      "deleted": false,
+      "sha256": "82e06e8cc3fca5ebf9942c01af565a8bff66b7e173d506e9b66f640009e2dc73"
+    }
+  ]
+}

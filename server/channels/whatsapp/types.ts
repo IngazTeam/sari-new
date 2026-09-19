@@ -25,6 +25,8 @@ export type WhatsAppSendRequest = {
 
 export type WhatsAppProviderResult = {
   accepted: boolean;
+  /** Transport failure/ambiguous response is not an explicit provider rejection. */
+  outcome?: 'accepted' | 'rejected' | 'unknown';
   providerMessageId?: string;
   status: 'sent' | 'failed';
   errorCode?: string;

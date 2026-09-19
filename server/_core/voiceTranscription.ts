@@ -26,8 +26,12 @@
  * ```
  */
 import { ENV } from "./env";
+import { downloadPublicMedia } from '../security/download-media';
+import { withAiBudget } from '../ai/budget-ledger';
+import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from '../ai/zahypi-client';
 
 export type TranscribeOptions = {
+  merchantId?: number;
   audioUrl: string; // URL to the audio file (e.g., S3 URL)
   language?: string; // Optional: specify language code (e.g., "en", "es", "zh")
   prompt?: string; // Optional: custom prompt for the transcription
@@ -74,6 +78,7 @@ export async function transcribeAudio(
   options: TranscribeOptions
 ): Promise<TranscriptionResponse | TranscriptionError> {
   try {
+    if (!(await resolveZahyPiRuntimeConfig()).enabled) return { error: 'AI services are disabled', code: 'SERVICE_ERROR' };
     // Step 1: Get API key from DB (fallback to env)
     const { getOpenAiApiKey } = await import("../db_ai_settings");
     const apiKey = await getOpenAiApiKey();
@@ -89,17 +94,9 @@ export async function transcribeAudio(
     let audioBuffer: Buffer;
     let mimeType: string;
     try {
-      const response = await fetch(options.audioUrl);
-      if (!response.ok) {
-        return {
-          error: "Failed to download audio file",
-          code: "INVALID_FORMAT",
-          details: `HTTP ${response.status}: ${response.statusText}`
-        };
-      }
-      
-      audioBuffer = Buffer.from(await response.arrayBuffer());
-      mimeType = response.headers.get('content-type') || 'audio/mpeg';
+      const response = await downloadPublicMedia(options.audioUrl);
+      audioBuffer = response.data;
+      mimeType = response.mimeType;
       
       // Check file size (16MB limit)
       const sizeMB = audioBuffer.length / (1024 * 1024);
@@ -141,26 +138,28 @@ export async function transcribeAudio(
     const startTime = Date.now();
     const fullUrl = "https://api.openai.com/v1/audio/transcriptions";
 
+    const whisperResponse = await withAiBudget({ merchantId: options.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
+      provider: 'openai', model: 'whisper-1', taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
+    }, async attempt => {
     const response = await fetch(fullUrl, {
       method: "POST",
       headers: {
         authorization: `Bearer ${apiKey}`,
+        'X-Client-Request-Id': attempt.requestId,
         "Accept-Encoding": "identity",
       },
       body: formData,
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      return {
-        error: "Transcription service request failed",
-        code: "TRANSCRIPTION_FAILED",
-        details: `${response.status} ${response.statusText}${errorText ? `: ${errorText}` : ""}`
-      };
+      void response.body?.cancel().catch(() => undefined);
+      throw new Error(`Transcription service status ${response.status}`);
     }
 
     // Step 5: Parse and return the transcription result
-    const whisperResponse = await response.json() as WhisperResponse;
+    return await response.json() as WhisperResponse;
+    }, () => undefined);
     
     // Validate response structure
     if (!whisperResponse.text || typeof whisperResponse.text !== 'string') {
@@ -176,7 +175,7 @@ export async function transcribeAudio(
       const { logAiUsage, estimateWhisperCost } = await import("../db_ai_settings");
       const durationSec = Math.round(whisperResponse.duration || 0);
       logAiUsage({
-        merchantId: null,
+        merchantId: options.merchantId ?? null,
         requestType: "whisper",
         model: "whisper-1",
         promptTokens: 0,

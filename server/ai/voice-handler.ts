@@ -4,6 +4,7 @@
  */
 
 import { transcribeAudio } from './openai';
+import { downloadPublicMedia } from '../security/download-media';
 import { chatWithSari } from './sari-personality';
 import {
   createMessage,
@@ -47,7 +48,7 @@ export async function processVoiceMessage(params: {
       });
 
   try {
-    console.log('[Voice Handler] Processing voice message:', params.audioUrl);
+    console.log('[Voice Handler] Processing voice message');
 
     // Download audio file
     const audioBuffer = await downloadAudio(params.audioUrl);
@@ -55,10 +56,10 @@ export async function processVoiceMessage(params: {
     // Transcribe using Whisper
     console.log('[Voice Handler] Transcribing audio...');
     const transcription = await transcribeAudio(audioBuffer, {
+      merchantId: params.merchantId,
       language: 'ar', // Arabic by default
     });
     
-    console.log('[Voice Handler] Transcription:', transcription);
 
     // UPDATE placeholder with actual transcription
     if (placeholderMsg?.id) {
@@ -82,7 +83,6 @@ export async function processVoiceMessage(params: {
       conversationId: params.conversationId,
     });
 
-    console.log('[Voice Handler] AI Response:', response);
 
     // NOTE: Outgoing message save + isProcessed update moved to caller
     // (ensures we don't mark as processed before WhatsApp delivery succeeds)
@@ -102,19 +102,7 @@ export async function processVoiceMessage(params: {
  * Download audio file from URL
  */
 async function downloadAudio(url: string): Promise<Buffer> {
-  try {
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to download audio: ${response.statusText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error: any) {
-    console.error('Error downloading audio:', error);
-    throw new Error(`Failed to download audio: ${error.message}`);
-  }
+  return (await downloadPublicMedia(url)).data;
 }
 
 /**

@@ -59,7 +59,7 @@ export default function Campaigns() {
 
   // FIX #7: Confirmation before send
   const handleSend = async (id: number, name: string) => {
-    const confirmed = confirm(t('campaignsPage.confirmSend', `هل أنت متأكد من إرسال حملة "${name}"؟ سيتم إرسالها لجميع العملاء المستهدفين.`));
+    const confirmed = confirm(t('campaignsPage.confirmSend', { name }));
     if (confirmed) {
       await sendMutation.mutateAsync({ id });
     }

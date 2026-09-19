@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
 import {
   UploadValidationError,
@@ -20,7 +20,7 @@ import {
   deleteProduct,
   getGoogleIntegration,
   getKnowledgeDocByMerchantId,
-  getMerchantByUserId,
+  getMerchantById,
   getProductById,
   getProductCountByMerchantId,
   getProductsByMerchantId,
@@ -295,60 +295,19 @@ function buildSheetRows(
     return rows;
 }
 
-// One-time migration: fix Byaan courses imported with stock=0 (appeared as "out of stock")
-const _stockMigrationDone = new Set<number>(); // Per-merchant flag
-async function migrateByaanStockDefaults(merchantId: number) {
-    if (_stockMigrationDone.has(merchantId)) return;
-    try {
-        const { getPool } = await import('./db');
-        const pool = await getPool();
-        if (!pool) return;
-        // Fix: products with stock=0 AND trackInventory=1 (default values from schema)
-        // These are Byaan courses that never had stock tracking — set to unlimited
-        const [result] = await pool.execute(
-            `UPDATE products SET track_inventory = 0, stock = NULL WHERE stock = 0 AND track_inventory = 1 AND merchantId = ?`,
-            [merchantId]
-        );
-        const affected = (result as any)?.affectedRows || 0;
-        if (affected > 0) {
-            console.log(`[Products] 🔧 Fixed ${affected} products with false stock=0 for merchant ${merchantId}`);
-        }
-
-        // Deduplication: remove duplicate products (same name, keep newest)
-        const [dupes] = await pool.execute(
-            `DELETE p1 FROM products p1
-             INNER JOIN products p2
-             WHERE p1.merchantId = ? AND p2.merchantId = ?
-               AND p1.name = p2.name
-               AND p1.id < p2.id`,
-            [merchantId, merchantId]
-        );
-        const dupesRemoved = (dupes as any)?.affectedRows || 0;
-        if (dupesRemoved > 0) {
-            console.log(`[Products] 🧹 Removed ${dupesRemoved} duplicate products for merchant ${merchantId}`);
-        }
-
-        _stockMigrationDone.add(merchantId);
-    } catch (e) {
-        // Non-blocking migration
-        console.warn('[Products] Stock migration skipped:', (e as any)?.message);
-    }
-}
-
+// Data repair belongs in reviewed migrations, never in product reads.
 export const productsRouter = router({
     // List products for merchant — PERF-03 FIX: server-side pagination + search
-    list: protectedProcedure
+    list: merchantProcedure
         .input(z.object({
             page: z.number().min(1).default(1),
             pageSize: z.number().min(1).max(100).default(50),
             search: z.string().max(200).optional(),
         }).optional())
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            // One-time fix for Byaan courses imported with stock=0
-            await migrateByaanStockDefaults(merchant.id);
 
             const page = input?.page ?? 1;
             const pageSize = input?.pageSize ?? 50;
@@ -370,7 +329,7 @@ export const productsRouter = router({
         }),
 
     // Create product (with advanced fields)
-    create: protectedProcedure
+    create: permissionProcedure('products.manage')
         .input(z.object({
             name: z.string().min(1),
             description: z.string().optional(),
@@ -412,7 +371,7 @@ export const productsRouter = router({
             })).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const { variants, options, ...productData } = input;
@@ -469,7 +428,7 @@ export const productsRouter = router({
         }),
 
     // Update product (with advanced fields)
-    update: protectedProcedure
+    update: permissionProcedure('products.manage')
         .input(z.object({
             productId: z.number(),
             name: z.string().min(1).optional(),
@@ -493,7 +452,7 @@ export const productsRouter = router({
             status: z.enum(['active', 'draft', 'archived']).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // Verify product belongs to this merchant (prevent IDOR)
@@ -508,10 +467,10 @@ export const productsRouter = router({
         }),
 
     // Delete product
-    delete: protectedProcedure
+    delete: permissionProcedure('products.manage')
         .input(z.object({ productId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const product = await getProductById(input.productId);
@@ -524,12 +483,12 @@ export const productsRouter = router({
         }),
 
     // Bulk delete products
-    bulkDelete: protectedProcedure
+    bulkDelete: permissionProcedure('products.manage')
         .input(z.object({
             productIds: z.array(z.number()).min(1).max(500),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             let deleted = 0;
@@ -544,10 +503,10 @@ export const productsRouter = router({
         }),
 
     // Get product with variants and options
-    getById: protectedProcedure
+    getById: merchantProcedure
         .input(z.object({ productId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const product = await getProductById(input.productId);
@@ -566,7 +525,7 @@ export const productsRouter = router({
     // Variant CRUD
     // ============================================
 
-    addVariant: protectedProcedure
+    addVariant: permissionProcedure('products.manage')
         .input(z.object({
             productId: z.number(),
             name: z.string(),
@@ -581,7 +540,7 @@ export const productsRouter = router({
             options: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const product = await getProductById(input.productId);
@@ -605,7 +564,7 @@ export const productsRouter = router({
             return variant;
         }),
 
-    updateVariant: protectedProcedure
+    updateVariant: permissionProcedure('products.manage')
         .input(z.object({
             variantId: z.number(),
             productId: z.number(),
@@ -622,7 +581,7 @@ export const productsRouter = router({
             isActive: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const product = await getProductById(input.productId);
@@ -641,10 +600,10 @@ export const productsRouter = router({
             return { success: true };
         }),
 
-    deleteVariant: protectedProcedure
+    deleteVariant: permissionProcedure('products.manage')
         .input(z.object({ variantId: z.number(), productId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const product = await getProductById(input.productId);
@@ -673,21 +632,21 @@ export const productsRouter = router({
     // Category CRUD
     // ============================================
 
-    listCategories: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    listCategories: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const prodDb = await import('./db/products');
         return await prodDb.getCategoriesByMerchantId(merchant.id);
     }),
 
-    createCategory: protectedProcedure
+    createCategory: permissionProcedure('products.manage')
         .input(z.object({
             name: z.string().min(1),
             nameEn: z.string().optional(),
             parentId: z.number().nullable().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const prodDb = await import('./db/products');
@@ -697,7 +656,7 @@ export const productsRouter = router({
             });
         }),
 
-    updateCategory: protectedProcedure
+    updateCategory: permissionProcedure('products.manage')
         .input(z.object({
             id: z.number(),
             name: z.string().optional(),
@@ -706,7 +665,7 @@ export const productsRouter = router({
             isActive: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
             // SEC-IDOR: Verify category belongs to this merchant
@@ -719,10 +678,10 @@ export const productsRouter = router({
             return { success: true };
         }),
 
-    deleteCategory: protectedProcedure
+    deleteCategory: permissionProcedure('products.manage')
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
             // SEC-IDOR: Verify category belongs to this merchant
@@ -738,8 +697,8 @@ export const productsRouter = router({
     // Low Stock Alerts
     // ============================================
 
-    getLowStock: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getLowStock: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const prodDb = await import('./db/products');
         const products = await prodDb.getLowStockProducts(merchant.id);
@@ -748,12 +707,12 @@ export const productsRouter = router({
     }),
 
     // Upload CSV
-    uploadCSV: protectedProcedure
+    uploadCSV: permissionProcedure('products.manage')
         .input(z.object({
             csvData: z.string().max(5_000_000, 'الحد الأقصى لحجم الملف 5 ميجابايت'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_spreadsheet_import', 20);
 
@@ -835,13 +794,13 @@ export const productsRouter = router({
         }),
 
     // Upload Excel (.xlsx) — Smart import with auto-column detection + bot brain feeding
-    uploadExcel: protectedProcedure
+    uploadExcel: permissionProcedure('products.manage')
         .input(z.object({
             fileBase64: z.string().max(15_000_000, 'الحد الأقصى لحجم الملف 10 ميجابايت'),
             fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_spreadsheet_import', 20);
@@ -1116,14 +1075,14 @@ export const productsRouter = router({
     // ════════════════════════════════════════════════════════════════
     // GPT Smart Import — AI analyzes ANY file and adds items correctly
     // ════════════════════════════════════════════════════════════════
-    smartImport: protectedProcedure
+    smartImport: permissionProcedure('products.manage')
         .input(z.object({
             fileBase64: z.string().max(15_000_000, 'الحد الأقصى لحجم الملف 10 ميجابايت'),
             fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
             importType: z.enum(['auto', 'products', 'services']).default('auto'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             await assertSpreadsheetImportRateLimit(merchant.id, 'merchant_smart_import', 10);
@@ -1410,9 +1369,9 @@ ${typeHint}
         }),
 
     // Sync products from linked Google Sheet
-    syncFromGoogleSheets: protectedProcedure
+    syncFromGoogleSheets: permissionProcedure('products.manage')
         .mutation(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const integration = await getGoogleIntegration(merchant.id, 'sheets');
@@ -1515,8 +1474,8 @@ ${typeHint}
         }),
 
     // Get Google Sheet sync status
-    getSheetSyncStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getSheetSyncStatus: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) return { connected: false };
 
         const integration = await getGoogleIntegration(merchant.id, 'sheets');

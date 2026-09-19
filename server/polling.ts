@@ -1,3 +1,4 @@
+import { whatsAppEffectKey } from './channels/whatsapp/effect-key';
 /**
  * Green API Polling System
  * 
@@ -426,6 +427,7 @@ async function handleIncomingMessage(
         apiUrl,
         customerPhone,
         confirmation,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'consent_confirmation') }
       );
       if (!confirmationResult.success) {
         throw new PollingDeliveryError(`Polling marketing consent confirmation failed: ${confirmationResult.error || 'unknown error'}`);
@@ -464,12 +466,13 @@ async function handleIncomingMessage(
               const activeInst = instances.find((i: any) => i.status === 'active');
               if (activeInst) {
                 await whatsapp.sendMessageWithCredentials(
-                  (activeInst as any).instanceId,
-                  (activeInst as any).token,
-                  (activeInst as any).apiUrl || 'https://api.green-api.com',
-                  merchantPhone,
-                  `📩 *رسالة جديدة من العميل* ***${customerPhone.slice(-4)}:\n\n"${msgPreview}"\n\n💡 رد على هذه الرسالة بالجواب وسيوصله للعميل\n🛑 أو أرسل "لا ترد" لإيقاف التنبيهات`
-                );
+        (activeInst as any).instanceId,
+        (activeInst as any).token,
+        (activeInst as any).apiUrl || 'https://api.green-api.com',
+        merchantPhone,
+        `📩 *رسالة جديدة من العميل* ***${customerPhone.slice(-4)}:\n\n"${msgPreview}"\n\n💡 رد على هذه الرسالة بالجواب وسيوصله للعميل\n🛑 أو أرسل "لا ترد" لإيقاف التنبيهات`,
+        { idempotencyKey: whatsAppEffectKey(merchantId, (activeInst as any).instanceId, incomingMessageId!, 'human_takeover_alert') }
+      );
               }
             }
           }
@@ -529,9 +532,13 @@ async function handleIncomingMessage(
         // Send out-of-hours message if configured
         if (botSettings.outOfHoursMessage) {
           const outOfHoursResult = await whatsapp.sendMessageWithCredentials(
-            instanceId, apiToken, apiUrl, customerPhone,
-            botSettings.outOfHoursMessage as string
-          );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        botSettings.outOfHoursMessage as string,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'out_of_hours') }
+      );
           if (!outOfHoursResult.success) {
             throw new PollingDeliveryError(`Polling out-of-hours send failed: ${outOfHoursResult.error || 'unknown error'}`);
           }
@@ -551,9 +558,13 @@ async function handleIncomingMessage(
       if (bsWelcome.welcomeMessage && isFirstConversationMessage) {
         console.log(`[Polling] 🎉 First-time customer ${customerPhone} — sending welcome`);
         await whatsapp.sendMessageWithCredentials(
-          instanceId, apiToken, apiUrl, customerPhone,
-          bsWelcome.welcomeMessage as string
-        );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        bsWelcome.welcomeMessage as string,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'welcome') }
+      );
       }
     } catch { /* non-blocking */ }
 
@@ -599,7 +610,8 @@ async function handleIncomingMessage(
         apiToken,
         apiUrl,
         customerPhone,
-        aiResponse.text
+        aiResponse.text,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'reply') }
       );
 
       if (sendResult.success) {
@@ -618,24 +630,39 @@ async function handleIncomingMessage(
           try {
             if (mediaItem.type === 'image') {
               const imgResult = await whatsapp.sendImageWithCredentials(
-                instanceId, apiToken, apiUrl, customerPhone,
-                mediaItem.url, mediaItem.caption
-              );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        mediaItem.url,
+        mediaItem.caption,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'media:image:' + mediaItem.url) }
+      );
               if (imgResult.success) {
                 console.log(`[Polling] 🖼️ Sent product image to ${customerPhone}`);
               } else {
                 // UX-02: Notify customer that image failed with fallback text
                 console.warn(`[Polling] Image send failed, sending fallback text`);
                 await whatsapp.sendMessageWithCredentials(
-                  instanceId, apiToken, apiUrl, customerPhone,
-                  `📷 ${mediaItem.caption || 'صورة المنتج غير متوفرة مؤقتاً'}`
-                );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        `📷 ${mediaItem.caption || 'صورة المنتج غير متوفرة مؤقتاً'}`,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'media:fallback:' + mediaItem.url) }
+      );
               }
             } else if (mediaItem.type === 'document') {
               const fileResult = await whatsapp.sendFileWithCredentials(
-                instanceId, apiToken, apiUrl, customerPhone,
-                mediaItem.url, mediaItem.fileName || 'document.pdf', mediaItem.caption
-              );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        mediaItem.url,
+        mediaItem.fileName || 'document.pdf',
+        mediaItem.caption,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'media:document:' + mediaItem.url) }
+      );
               if (fileResult.success) {
                 console.log(`[Polling] 📎 Sent document to ${customerPhone}`);
               }
@@ -662,9 +689,13 @@ async function handleIncomingMessage(
           if (validDiscount) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             await whatsapp.sendMessageWithCredentials(
-              instanceId, apiToken, apiUrl, customerPhone,
-              `🎁 كود خصم خاص لك: *${aiResponse.discountCode}*\nاستخدمه عند الطلب للحصول على الخصم ✨`
-            );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        `🎁 كود خصم خاص لك: *${aiResponse.discountCode}*\nاستخدمه عند الطلب للحصول على الخصم ✨`,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'discount') }
+      );
             console.log(`[Polling] 🎁 Sent validated discount code ${aiResponse.discountCode} to ${customerPhone}`);
           } else {
             console.warn(`[Polling] ⚠️ AI hallucinated discount code "${aiResponse.discountCode}" — not sent to customer`);
@@ -731,8 +762,13 @@ async function handleIncomingMessage(
               conversationId: conversation!.id,
               sendMessage: async (phone: string, msg: string) => {
                 await whatsapp.sendMessageWithCredentials(
-                  instanceId, apiToken, apiUrl, phone, msg
-                );
+        instanceId,
+        apiToken,
+        apiUrl,
+        phone,
+        msg,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'action:' + action.type + ':' + phone) }
+      );
               },
             });
           }
@@ -817,16 +853,19 @@ async function handleVoiceMessage(
 
     // Send text response
     const sendResult = await whatsapp.sendMessageWithCredentials(
-      instanceId,
-      apiToken,
-      apiUrl,
-      customerPhone,
-      voiceAiResponse.text
-    );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        voiceAiResponse.text,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'voice_reply') }
+      );
 
     if (sendResult.success) {
       console.log(`[Polling] Sent voice response to ${customerPhone}`);
-      await markPollingMessageProcessed(incomingMessageId, voiceAiResponse.text);
+      await markPollingMessageProcessed(incomingMessageId, voiceAiResponse.text).catch(() => {
+        throw new PollingDeliveryError('Voice reply was accepted but completion could not be persisted');
+      });
     } else {
       console.error(`[Polling] Failed to send voice response:`, sendResult.error);
       throw new PollingDeliveryError(`Polling voice response send failed: ${sendResult.error || 'unknown error'}`);
@@ -839,9 +878,14 @@ async function handleVoiceMessage(
         try {
           if (mediaItem.type === 'image') {
             await whatsapp.sendImageWithCredentials(
-              instanceId, apiToken, apiUrl, customerPhone,
-              mediaItem.url, mediaItem.caption
-            );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        mediaItem.url,
+        mediaItem.caption,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'voice_media:' + mediaItem.url) }
+      );
           }
         } catch (mediaErr) {
           console.error(`[Polling] Failed to send voice media:`, mediaErr);
@@ -856,12 +900,13 @@ async function handleVoiceMessage(
 
     const fallback = 'عذراً، لم أتمكن من فهم الرسالة الصوتية. يرجى إرسال رسالة نصية أو إعادة المحاولة. 🙏';
     const fallbackResult = await whatsapp.sendMessageWithCredentials(
-      instanceId,
-      apiToken,
-      apiUrl,
-      customerPhone,
-      fallback,
-    );
+        instanceId,
+        apiToken,
+        apiUrl,
+        customerPhone,
+        fallback,
+        { idempotencyKey: whatsAppEffectKey(merchantId, instanceId, incomingMessageId!, 'voice_fallback') }
+      );
     if (!fallbackResult.success) {
       throw new PollingDeliveryError(`Polling voice fallback send failed: ${fallbackResult.error || 'unknown error'}`);
     }

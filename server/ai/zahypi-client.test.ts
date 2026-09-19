@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// These tests isolate the gateway HTTP contract. Real budget admission and accounting
+// are exercised against MySQL in aiBudgetLedger.mysql.test.ts and at the call boundary.
+vi.mock('./budget-ledger', async (importOriginal) => ({
+  ...await importOriginal<typeof import('./budget-ledger')>(),
+  withAiBudget: async (_request: unknown, operation: () => Promise<unknown>) => operation(),
+}));
+
 import {
   clearZahyPiRuntimeConfigCache,
   getZahyPiRequestContext,

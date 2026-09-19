@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { AiBudgetCard } from '@/components/admin/AiBudgetCard';
 
 export default function AISettings() {
   const { t } = useTranslation();
@@ -176,6 +177,7 @@ export default function AISettings() {
         </div>
       </div>
 
+      <AiBudgetCard />
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-emerald-500">

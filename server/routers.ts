@@ -69,7 +69,7 @@ import { emailTemplatesRouter } from "./routers-email-templates";
 import { teamRouter } from "./routers-team";
 import { byaanRouter } from "./routers-byaan";
 import { orderNotificationsRouter } from "./routers-order-notifications";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -1138,7 +1138,7 @@ export const appRouter = router({
         const baseUrl = `https://${instancePrefix}.api.greenapi.com`;
         const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.apiToken}`;
 
-        console.log('[QR Code] Fetching from:', url);
+        console.log('[QR Code] Fetching', { merchantId: merchant.id, instanceId: request.instanceId });
 
         const response = await axios.default.get(url, { timeout: 15000 });
 
@@ -1159,10 +1159,10 @@ export const appRouter = router({
           throw new Error('Unexpected response from Green API');
         }
       } catch (error: any) {
-        console.error('[QR Code] Error:', error.message);
+        console.error('[QR Code] Provider request failed', { status: error.response?.status, code: error.code });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.response?.data?.message || error.message || 'Failed to get QR code',
+          message: 'تعذر جلب رمز الربط من المزوّد. حاول لاحقًا.',
         });
       }
     }),
@@ -1473,7 +1473,7 @@ export const appRouter = router({
   // Conversations
   conversations: router({
     // Get all conversations for current merchant (with optional pipeline filters)
-    list: protectedProcedure
+    list: permissionProcedure('conversations.read')
       .input(z.object({
         page: z.number().min(1).default(1),
         pageSize: z.number().min(1).max(100).default(50),
@@ -1482,7 +1482,7 @@ export const appRouter = router({
         needsHuman: z.boolean().optional(),
       }).optional())
       .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -1542,10 +1542,10 @@ export const appRouter = router({
       }),
 
     // Lightweight: get only recent conversations (for Dashboard)
-    listRecent: protectedProcedure
+    listRecent: permissionProcedure('conversations.read')
       .input(z.object({ limit: z.number().min(1).max(20).default(5) }))
       .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -1553,8 +1553,8 @@ export const appRouter = router({
       }),
 
     // Lightweight: get count only (for Dashboard stats)
-    count: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+    count: permissionProcedure('conversations.read').query(async ({ ctx }) => {
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -1562,7 +1562,7 @@ export const appRouter = router({
     }),
 
     // Get messages for a conversation
-    getMessages: protectedProcedure
+    getMessages: permissionProcedure('conversations.read')
       .input(z.object({ conversationId: z.number() }))
       .query(async ({ input, ctx }) => {
         const conversation = await getConversationById(input.conversationId);
@@ -1571,7 +1571,7 @@ export const appRouter = router({
         }
 
         // Check ownership
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant || conversation.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'FORBIDDEN' });
         }
@@ -1580,13 +1580,13 @@ export const appRouter = router({
       }),
 
     // Send reply from merchant dashboard
-    sendReply: protectedProcedure
+    sendReply: permissionProcedure('conversations.reply')
       .input(z.object({
         conversationId: z.number(),
         message: z.string().min(1).max(5000),
       }))
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -1666,7 +1666,7 @@ export const appRouter = router({
 
     // Send a voice reply that was uploaded through the authenticated voice endpoint.
     // The client passes an opaque storage key, never an arbitrary URL.
-    sendVoiceReply: protectedProcedure
+    sendVoiceReply: permissionProcedure('conversations.reply')
       .input(z.object({
         conversationId: z.number().int().positive(),
         storageKey: z.string().min(1).max(500),
@@ -1674,7 +1674,7 @@ export const appRouter = router({
         duration: z.number().positive().max(3600),
       }))
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -1768,9 +1768,9 @@ export const appRouter = router({
       }),
 
     // ── Sync conversations from Green API (recover missed data) ──
-    syncFromWhatsApp: protectedProcedure
+    syncFromWhatsApp: permissionProcedure('whatsapp.manage')
       .mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -1928,9 +1928,9 @@ export const appRouter = router({
       }),
 
     // ── Diagnose & fix webhook configuration ──
-    diagnoseWebhook: protectedProcedure
+    diagnoseWebhook: permissionProcedure('whatsapp.manage')
       .mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -2052,9 +2052,9 @@ export const appRouter = router({
       }),
 
     // ── Lightweight connection status check (auto-query on page load) ──
-    connectionStatus: protectedProcedure
+    connectionStatus: permissionProcedure('conversations.read')
       .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) return { connected: true, state: 'unknown' };
 
         const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
@@ -2320,14 +2320,14 @@ export const appRouter = router({
   // Orders from WhatsApp Chat
   orders: router({
     // Create order from chat
-    createFromChat: protectedProcedure
+    createFromChat: permissionProcedure('orders.manage')
       .input(z.object({
         customerPhone: z.string().trim().min(7).max(50),
         customerName: z.string().trim().min(1).max(255),
         message: z.string().trim().min(1).max(10_000), // Customer's message
       }).strict())
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { parseOrderMessage, createOrderFromChat, generateOrderConfirmationMessage, generateGiftOrderConfirmationMessage } = await import('./automation/order-from-chat');
@@ -2410,10 +2410,10 @@ export const appRouter = router({
       }),
 
     // Get order by ID
-    getById: protectedProcedure
+    getById: merchantProcedure
       .input(z.object({ orderId: z.number().int().positive() }).strict())
       .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const order = await getMerchantOrder(merchant.id, input.orderId);
@@ -2425,9 +2425,9 @@ export const appRouter = router({
       }),
 
     // List orders for merchant
-    listByMerchant: protectedProcedure
+    listByMerchant: merchantProcedure
       .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -2436,7 +2436,7 @@ export const appRouter = router({
       }),
 
     // Get orders with filters
-    getWithFilters: protectedProcedure
+    getWithFilters: merchantProcedure
       .input(z.object({
         status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).optional(),
         startDate: z.string().datetime({ offset: true }).optional(),
@@ -2447,7 +2447,7 @@ export const appRouter = router({
         limit: z.number().int().min(1).max(100).default(25),
       }).strict())
       .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -2465,9 +2465,9 @@ export const appRouter = router({
       }),
 
     // Get order statistics
-    getStats: protectedProcedure
+    getStats: permissionProcedure('analytics.read')
       .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -2476,13 +2476,13 @@ export const appRouter = router({
       }),
 
     // Cancel order
-    cancel: protectedProcedure
+    cancel: permissionProcedure('orders.manage')
       .input(z.object({
         orderId: z.number().int().positive(),
         reason: z.string().trim().min(1).max(500).optional(),
       }).strict())
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const order = await getMerchantOrder(merchant.id, input.orderId);
         if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
@@ -2530,14 +2530,14 @@ export const appRouter = router({
       }),
 
     // Update order status
-    updateStatus: protectedProcedure
+    updateStatus: permissionProcedure('orders.manage')
       .input(z.object({
         orderId: z.number().int().positive(),
         status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']),
         trackingNumber: z.string().trim().min(1).max(100).optional(),
       }).strict())
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const order = await getMerchantOrder(merchant.id, input.orderId);
         if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
@@ -2960,17 +2960,17 @@ export const appRouter = router({
   // Advanced Analytics
   analytics: router({
     // Dashboard KPIs
-    getDashboardKPIs: protectedProcedure
+    getDashboardKPIs: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -2982,10 +2982,10 @@ export const appRouter = router({
       }),
 
     // Revenue Trends
-    getRevenueTrends: protectedProcedure
+    getRevenueTrends: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
           groupBy: z.enum(['day', 'week', 'month']).optional(),
@@ -2993,7 +2993,7 @@ export const appRouter = router({
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3009,10 +3009,10 @@ export const appRouter = router({
       }),
 
     // Top Products
-    getTopProducts: protectedProcedure
+    getTopProducts: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
           limit: z.number().optional(),
@@ -3020,7 +3020,7 @@ export const appRouter = router({
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3036,17 +3036,17 @@ export const appRouter = router({
       }),
 
     // Campaign Analytics
-    getCampaignAnalytics: protectedProcedure
+    getCampaignAnalytics: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3058,17 +3058,17 @@ export const appRouter = router({
       }),
 
     // Customer Segments
-    getCustomerSegments: protectedProcedure
+    getCustomerSegments: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3080,17 +3080,17 @@ export const appRouter = router({
       }),
 
     // Hourly Analytics
-    getHourlyAnalytics: protectedProcedure
+    getHourlyAnalytics: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3102,17 +3102,17 @@ export const appRouter = router({
       }),
 
     // Weekday Analytics
-    getWeekdayAnalytics: protectedProcedure
+    getWeekdayAnalytics: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -3124,17 +3124,17 @@ export const appRouter = router({
       }),
 
     // Discount Code Analytics
-    getDiscountCodeAnalytics: protectedProcedure
+    getDiscountCodeAnalytics: permissionProcedure('analytics.read')
       .input(
         z.object({
-          merchantId: z.number(),
+          merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
         })
       )
       .query(async ({ input, ctx }) => {
         const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+        if (!merchant || merchant.id !== ctx.merchantId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
@@ -4277,15 +4277,16 @@ export const appRouter = router({
       }),
 
     // تحويل الصوت إلى نص
-    transcribe: protectedProcedure
+    transcribe: merchantProcedure
       .input(z.object({
         audioUrl: z.string().url(),
         language: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
           const { transcribeAudio } = await import('./_core/voiceTranscription');
           const result = await transcribeAudio({
+            merchantId: ctx.merchantId,
             audioUrl: input.audioUrl,
             language: input.language || 'ar',
           });
@@ -7294,8 +7295,8 @@ export const appRouter = router({
   // ==================== Merchant Payment Settings ====================
   merchantPayments: router({
     // Get merchant's payment settings
-    getSettings: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+    getSettings: permissionProcedure('settings.manage').query(async ({ ctx }) => {
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -7309,7 +7310,7 @@ export const appRouter = router({
     }),
 
     // Save/update payment settings
-    saveSettings: protectedProcedure
+    saveSettings: permissionProcedure('settings.manage')
       .input(z.object({
         tapEnabled: z.boolean(),
         tapPublicKey: z.string().trim().max(500).optional(),
@@ -7320,7 +7321,7 @@ export const appRouter = router({
         defaultCurrency: z.enum(['SAR']).default('SAR'),
       }))
       .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -7369,8 +7370,8 @@ export const appRouter = router({
       }),
 
     // Test Tap connection with merchant's keys
-    testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+    testConnection: permissionProcedure('settings.manage').mutation(async ({ ctx }) => {
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }

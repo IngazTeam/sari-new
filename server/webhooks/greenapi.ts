@@ -19,6 +19,7 @@ import {
 } from '../db';
 import type { CustomerProfile } from '../db/customer-intelligence';
 import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
+import { whatsAppEffectKey, whatsAppEventEffectKey } from '../channels/whatsapp/effect-key';
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
@@ -481,6 +482,7 @@ async function processVoiceMessageWebhook(params: {
  * Send response with typing simulation using merchant's WhatsApp instance
  */
 async function sendResponseWithDelay(params: {
+  idempotencyKey: string;
   customerPhone: string;
   message: string;
   delayMs?: number;
@@ -508,12 +510,11 @@ async function sendResponseWithDelay(params: {
         params.token,
         apiUrl,
         params.customerPhone,
-        params.message
+        params.message,
+        { idempotencyKey: params.idempotencyKey },
       );
     } else {
-      // Fallback to env credentials
-      console.log('[Webhook] Using env credentials (fallback)');
-      result = await sendTextMessage(params.customerPhone, params.message);
+      throw new Error('A stored merchant instance is required for webhook replies');
     }
     
     if (!result.success) {
@@ -976,6 +977,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           const senderPhone = extractPhoneNumber(payload.senderData.sender || payload.senderData.chatId);
           const redirectMsg = gSettings.groupRedirectMessage || 'مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊';
           await sendResponseWithDelay({
+            idempotencyKey: whatsAppEventEffectKey(gInstance.merchantId, gInstance.instanceId, payload.idMessage, 'private_redirect'),
             customerPhone: senderPhone,
             message: redirectMsg,
             delayMs: 1000,
@@ -1322,6 +1324,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       if (reason === 'Outside working hours' || reason === 'Outside working days') {
         if (botSettings.outOfHoursMessage) {
           await sendResponseWithDelay({
+            idempotencyKey: whatsAppEffectKey(instance.merchantId, instance.instanceId, oohMsg!.id, 'out_of_hours'),
             customerPhone: groupChatId || customerPhone,
             message: botSettings.outOfHoursMessage,
             delayMs: 1000,
@@ -1493,6 +1496,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         if (existingMessages.length === 0) {
           console.log(`[Webhook] 🎉 First-time customer ${customerPhone} — sending welcome message`);
           await sendResponseWithDelay({
+            idempotencyKey: whatsAppEventEffectKey(instance.merchantId, instance.instanceId, payload.idMessage, 'welcome'),
             customerPhone: groupChatId || customerPhone,
             message: botSettings.welcomeMessage,
             delayMs: 500,
@@ -1725,6 +1729,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // ── FIX-1: Send to WhatsApp FIRST, then save outgoing + mark processed ──
     // GAP-4 FIX: Reply to group chatId when triggered from mention/keyword group modes
     await sendResponseWithDelay({
+      idempotencyKey: whatsAppEffectKey(instance.merchantId, instance.instanceId, incomingMsgId!,
+        ['voiceMessage', 'audioMessage'].includes(payload.messageData.typeMessage) ? 'voice_reply' : 'reply'),
       customerPhone: groupChatId || customerPhone,
       message: response,
       delayMs: (botSettings.responseDelay ?? 2) * 1000,

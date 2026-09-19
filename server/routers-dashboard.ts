@@ -7,17 +7,17 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId } from './db';
+import { permissionProcedure, router } from "./_core/trpc";
+import { getMerchantById } from './db';
 
 export const dashboardRouter = router({
     // Orders trend
-    getOrdersTrend: protectedProcedure
+    getOrdersTrend: permissionProcedure('analytics.read')
         .input(z.object({
             days: z.number().optional().default(30),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -27,12 +27,12 @@ export const dashboardRouter = router({
         }),
 
     // Revenue trend
-    getRevenueTrend: protectedProcedure
+    getRevenueTrend: permissionProcedure('analytics.read')
         .input(z.object({
             days: z.number().optional().default(30),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -42,12 +42,12 @@ export const dashboardRouter = router({
         }),
 
     // Comparison with previous period
-    getComparisonStats: protectedProcedure
+    getComparisonStats: permissionProcedure('analytics.read')
         .input(z.object({
             days: z.number().optional().default(30),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -57,12 +57,12 @@ export const dashboardRouter = router({
         }),
 
     // Top products
-    getTopProducts: protectedProcedure
+    getTopProducts: permissionProcedure('analytics.read')
         .input(z.object({
             limit: z.number().optional().default(5),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -72,9 +72,9 @@ export const dashboardRouter = router({
         }),
 
     // Main dashboard stats
-    getStats: protectedProcedure
+    getStats: permissionProcedure('analytics.read')
         .query(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -84,13 +84,13 @@ export const dashboardRouter = router({
         }),
 
     // Combined dashboard summary - reduces 5 requests to 1
-    getSummary: protectedProcedure
+    getSummary: permissionProcedure('analytics.read')
         .input(z.object({
             days: z.number().optional().default(30),
             topProductsLimit: z.number().optional().default(5),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -100,9 +100,9 @@ export const dashboardRouter = router({
         }),
 
     // AI Opportunity Engine — "ساري يقترح"
-    getAiInsights: protectedProcedure
+    getAiInsights: permissionProcedure('analytics.read')
         .query(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }

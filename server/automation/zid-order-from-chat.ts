@@ -409,7 +409,7 @@ export async function isZidOrderRequest(message: string): Promise<boolean> {
   // on price questions wastes GPT tokens + confuses browsing customers.
   const orderKeywords = [
     'أبي أطلب', 'أبغى أطلب', 'أبغى أشتري', 'أبي أشتري',
-    'ابي اطلب', 'ابغى اشتري', 'أريد الشراء', 'اريد اشتري',
+    'ابي اطلب', 'ابغى اشتري', 'أريد الشراء', 'اريد اشتري', 'أريد طلب', 'اريد طلب',
     'اطلب', 'اشتري', 'شراء', 'سجلني',
     'هدية', 'هدية لـ',
     'كيف أطلب', 'طريقة الطلب', 'أكمل الطلب',
@@ -423,29 +423,25 @@ export async function isZidOrderRequest(message: string): Promise<boolean> {
  * التحقق من تأكيد العميل للطلب
  */
 export function isOrderConfirmation(message: string): boolean {
-  const confirmKeywords = [
-    'نعم', 'اي', 'ايه', 'أيوه', 'أكيد', 'تمام', 'موافق',
-    'yes', 'ok', 'okay', 'confirm', 'أكد', 'اكد',
-    'صحيح', 'مضبوط', 'اوكي', 'اوك', 'ماشي', 'خلاص',
-    'أكمل', 'اكمل', 'كمل', 'نفذ', 'أنفذ'
-  ];
+  const text = normalizeOrderDecision(message);
+  // A substring such as "غير موافق" or "not okay" must never authorize a purchase.
+  // Ambiguous or conditional answers need clarification before executing the order.
+  if (isOrderRejection(message) || /(?:^|\s)(?:لا|مو|مش|غير|لكن|بس|اذا|يمكن|ربما|not|no|but|if)(?:\s|$)/.test(text)) return false;
+  return /^(?:(?:نعم|اي|ايه|ايوه|اكيد|تمام|موافق|صحيح|مضبوط|اوكي|اوك|ماشي|خلاص)(?:\s+(?:اكد|اكمل|كمل|نفذ|ارسل))?(?:\s+(?:الطلب|على الطلب))?|(?:اكد|اكمل|كمل|نفذ|انفذ)(?:\s+الطلب)?|(?:yes|ok|okay|confirm)(?:\s+(?:please|the order))?)$/.test(text);
+}
 
-  const lowerMessage = message.toLowerCase().trim();
-  return confirmKeywords.some(keyword => lowerMessage.includes(keyword));
+function normalizeOrderDecision(message: string): string {
+  return message.normalize('NFKC').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/[.!،,؟?؛;]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
 
 /**
  * التحقق من رفض العميل للطلب
  */
 export function isOrderRejection(message: string): boolean {
-  const rejectKeywords = [
-    'لا', 'لأ', 'no', 'cancel', 'الغي', 'ألغي', 'إلغاء',
-    'مش عايز', 'مابي', 'ما ابي', 'ماابي', 'لا شكرا',
-    'بعدين', 'لاحقا', 'مو الحين'
-  ];
-
-  const lowerMessage = message.toLowerCase().trim();
-  return rejectKeywords.some(keyword => lowerMessage.includes(keyword));
+  const text = normalizeOrderDecision(message);
+  return /^(?:لا|لا شكرا|نو|no|no thanks|cancel|الغي(?: الطلب)?|الغاء(?: الطلب)?|مش عايز|مابي|ما ابي|ماابي|بعدين|لاحقا|مو الحين)(?:\s|$)/.test(text)
+    || /(?:^|\s)(?:غير موافق|مو موافق|مش موافق|لا اوافق|لا اريد|ما ابي|not okay|not ok|do not confirm|don't confirm)(?:\s|$)/.test(text);
 }
 
 export default {

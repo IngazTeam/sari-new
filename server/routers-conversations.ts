@@ -7,13 +7,13 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, router } from "./_core/trpc";
 import {
   getConversationById,
   getConversationCountByMerchantId,
   getConversationsByMerchantId,
   getBotSettings,
-  getMerchantByUserId,
+  getMerchantById,
   getMessagesByConversationId,
   getWhatsAppConnectionRequestByMerchantId,
   createMessage,
@@ -22,7 +22,7 @@ import {
 
 export const conversationsRouter = router({
     // Get all conversations for current merchant (with optional pipeline filters)
-    list: protectedProcedure
+    list: permissionProcedure('conversations.read')
         .input(z.object({
             page: z.number().min(1).default(1),
             pageSize: z.number().min(1).max(100).default(50),
@@ -31,7 +31,7 @@ export const conversationsRouter = router({
             needsHuman: z.boolean().optional(),
         }).optional())
         .query(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -91,10 +91,10 @@ export const conversationsRouter = router({
         }),
 
     // Lightweight: get only recent conversations (for Dashboard)
-    listRecent: protectedProcedure
+    listRecent: permissionProcedure('conversations.read')
         .input(z.object({ limit: z.number().min(1).max(20).default(5) }))
         .query(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -102,8 +102,8 @@ export const conversationsRouter = router({
         }),
 
     // Lightweight: get count only (for Dashboard stats)
-    count: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    count: permissionProcedure('conversations.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -111,7 +111,7 @@ export const conversationsRouter = router({
     }),
 
     // Get messages for a conversation
-    getMessages: protectedProcedure
+    getMessages: permissionProcedure('conversations.read')
         .input(z.object({ conversationId: z.number() }))
         .query(async ({ input, ctx }) => {
             const conversation = await getConversationById(input.conversationId);
@@ -120,7 +120,7 @@ export const conversationsRouter = router({
             }
 
             // Check ownership
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant || conversation.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -129,13 +129,13 @@ export const conversationsRouter = router({
         }),
 
     // Send reply from merchant dashboard
-    sendReply: protectedProcedure
+    sendReply: permissionProcedure('conversations.reply')
         .input(z.object({
             conversationId: z.number(),
             message: z.string().min(1).max(5000),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -214,9 +214,9 @@ export const conversationsRouter = router({
         }),
 
     // ── Sync conversations from Green API (recover missed data) ──
-    syncFromWhatsApp: protectedProcedure
+    syncFromWhatsApp: permissionProcedure('whatsapp.manage')
         .mutation(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }

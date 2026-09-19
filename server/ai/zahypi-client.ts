@@ -1,3 +1,4 @@
+import { withAiBudget, promptBudgetShape } from './budget-ledger';
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
@@ -759,6 +760,8 @@ export async function requestZahyPiJobCompletion(
     throw finalError ?? new Error("ZahyPi request failed");
   }
 
+  return withAiBudget({ merchantId: resolvedContext.merchantId, provider: 'zahypi', model: runtimeConfig.model,
+    taskType: contract.taskType, requestId: traceId, ...promptBudgetShape(requestPayload), maxOutputTokens: Number(maxTokens) }, async () => {
   try {
     let job = await requestJson(`${baseUrl}/jobs`, { method: "POST", body: requestBody });
     const jobId = job.job_id;
@@ -791,6 +794,7 @@ export async function requestZahyPiJobCompletion(
     }
     throw error;
   }
+  }, completion => completion.usage);
 }
 
 export async function requestZahyPiChat(
@@ -827,6 +831,7 @@ export async function requestZahyPiCompletion(
   assertValidContext(resolvedContext);
   const runtimeConfig = await resolveZahyPiRuntimeConfig(runtimeConfigOverride);
   const baseUrl = validateZahyPiBaseUrl(runtimeConfig.baseUrl);
+  if (!runtimeConfig.enabled) throw new Error('AI services are disabled by an administrator');
   const apiKey = runtimeConfig.apiKey.trim();
   const projectId = normalizeHeaderIdentifier(
     runtimeConfig.projectId,
@@ -867,6 +872,8 @@ export async function requestZahyPiCompletion(
   let finalError: Error | undefined;
   let circuitFailure = false;
 
+  return withAiBudget({ merchantId: resolvedContext.merchantId, provider: 'zahypi', model,
+    taskType, requestId: traceId, ...promptBudgetShape(payload), maxOutputTokens: Number(payload.max_tokens ?? 1000) }, async () => {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) {
@@ -930,4 +937,5 @@ export async function requestZahyPiCompletion(
 
   if (circuitFailure) recordCircuitFailure(circuitKey);
   throw finalError ?? new Error("ZahyPi request failed");
+  }, completion => completion.usage);
 }

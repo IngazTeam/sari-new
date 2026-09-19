@@ -30,7 +30,8 @@ async function inspectDatabase(databaseUrl) {
     transactionStarted = true;
     const placeholders = CRITICAL_TABLES.map(() => '?').join(',');
     const [columns] = await connection.execute(
-      `SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+      `SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA,
+              CHARACTER_SET_NAME, COLLATION_NAME, GENERATION_EXPRESSION
        FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN (${placeholders})
        ORDER BY TABLE_NAME, ORDINAL_POSITION`,
@@ -44,6 +45,9 @@ async function inspectDatabase(databaseUrl) {
         nullable: column.IS_NULLABLE,
         default: column.COLUMN_DEFAULT === null ? null : String(column.COLUMN_DEFAULT),
         extra: column.EXTRA,
+        characterSet: column.CHARACTER_SET_NAME,
+        collation: column.COLLATION_NAME,
+        generationExpression: column.GENERATION_EXPRESSION,
       });
     }
 

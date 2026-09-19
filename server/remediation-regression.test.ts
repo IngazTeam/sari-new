@@ -48,7 +48,7 @@ describe('10/10 remediation regression guards', () => {
 
   it('sends uploaded voice media through WhatsApp before recording success locally', () => {
     const routers = read('./server/routers.ts');
-    const voiceSend = section(routers, 'sendVoiceReply: protectedProcedure', '// ── Sync conversations');
+    const voiceSend = section(routers, "sendVoiceReply: permissionProcedure('conversations.reply')", '// ── Sync conversations');
     const voiceUpload = section(routers, 'voice: router({', 'messageAnalytics: router({');
     const client = read('./client/src/pages/merchant/Conversations.tsx');
 

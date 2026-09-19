@@ -152,7 +152,7 @@ export default function WhatsAppInstancesPage() {
   const refreshInstanceMutation = trpc.whatsappInstances.refreshInstance.useMutation({
     onSuccess: (data: any) => {
       const msg = data.phoneNumber
-        ? t('whatsappManagement.toast.refreshed', `تم تحديث البيانات — الرقم: ${data.phoneNumber}`)
+        ? t('whatsappManagement.toast.refreshed', { phone: data.phoneNumber })
         : t('whatsappManagement.toast.refreshedNoPhone', 'تم تحديث البيانات');
       toast.success(msg);
       refetchAll();
@@ -190,7 +190,7 @@ export default function WhatsAppInstancesPage() {
       setShowReconnectDialog(false);
       setReconnectInstanceId(null);
       setIsPollingReconnect(false);
-      toast.success(t('whatsappManagement.toast.reconnected', `تم ربط الرقم الجديد بنجاح! ${reconnectStatus.phoneNumber || ''} 🎉`));
+      toast.success(t('whatsappManagement.toast.reconnected', { phone: reconnectStatus.phoneNumber || '' }));
       refetchAll();
     }
   }, [reconnectStatus?.connected]);
@@ -679,7 +679,7 @@ export default function WhatsAppInstancesPage() {
                 <p className={`text-sm flex items-start gap-2 ${usage.remaining > 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                   {usage.remaining > 0
-                    ? t('whatsappManagement.dialog.info', `يمكنك إضافة ${usage.remaining} رقم إضافي حسب باقتك الحالية (${usage.planName}).`)
+                    ? t('whatsappManagement.dialog.info', { remaining: usage.remaining, plan: usage.planName })
                     : t('whatsappManagement.dialog.limitReached', 'وصلت للحد الأقصى من الأرقام. أوقف رقماً أو قم بترقية باقتك.')
                   }
                 </p>
@@ -801,9 +801,9 @@ export default function WhatsAppInstancesPage() {
               {confirmAction?.type === 'setPrimary' && t('whatsappManagement.confirm.setPrimaryTitle', 'تعيين كرقم أساسي')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === 'deactivate' && t('whatsappManagement.confirm.deactivateDesc', `هل تريد إيقاف الرقم ${confirmAction?.phoneNumber || ''}؟ سيتوقف استقبال الرسائل على هذا الرقم.`)}
-              {confirmAction?.type === 'activate' && t('whatsappManagement.confirm.activateDesc', `هل تريد إعادة تفعيل الرقم ${confirmAction?.phoneNumber || ''}؟`)}
-              {confirmAction?.type === 'setPrimary' && t('whatsappManagement.confirm.setPrimaryDesc', `هل تريد تعيين ${confirmAction?.phoneNumber || ''} كرقم أساسي؟ سيتم إرسال الرسائل الافتراضية من هذا الرقم.`)}
+              {confirmAction?.type === 'deactivate' && t('whatsappManagement.confirm.deactivateDesc', { phone: confirmAction?.phoneNumber || '' })}
+              {confirmAction?.type === 'activate' && t('whatsappManagement.confirm.activateDesc', { phone: confirmAction?.phoneNumber || '' })}
+              {confirmAction?.type === 'setPrimary' && t('whatsappManagement.confirm.setPrimaryDesc', { phone: confirmAction?.phoneNumber || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

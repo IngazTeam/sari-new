@@ -7,8 +7,8 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId, getDb } from './db';
+import { permissionProcedure, router } from "./_core/trpc";
+import { getMerchantById, getDb } from './db';
 import { orders, conversations, messages } from '../drizzle/schema';
 import { eq, and, gte, sql, count, desc, inArray } from 'drizzle-orm';
 
@@ -39,12 +39,12 @@ function formatDateForDB(date: Date): string {
 
 export const reportsRouter = router({
     // Get sales report — real data from orders table
-    getSalesReport: protectedProcedure
+    getSalesReport: permissionProcedure('analytics.read')
         .input(z.object({
             period: z.enum(['day', 'week', 'month', 'year']),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -152,12 +152,12 @@ export const reportsRouter = router({
         }),
 
     // Get customers report — real data from conversations table
-    getCustomersReport: protectedProcedure
+    getCustomersReport: permissionProcedure('analytics.read')
         .input(z.object({
             period: z.enum(['day', 'week', 'month', 'year']),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -227,12 +227,12 @@ export const reportsRouter = router({
         }),
 
     // Get conversations report — real data from conversations/messages tables
-    getConversationsReport: protectedProcedure
+    getConversationsReport: permissionProcedure('analytics.read')
         .input(z.object({
             period: z.enum(['day', 'week', 'month', 'year']),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }

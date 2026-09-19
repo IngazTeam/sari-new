@@ -1,6 +1,57 @@
 import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, foreignKey, check } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
+export const aiBudgetPolicies = mysqlTable('ai_budget_policies', {
+  scopeKey: varchar('scope_key', { length: 160 }).primaryKey(),
+  version: varchar({ length: 80 }).notNull(),
+  dailyLimitMicroUsd: bigint('daily_limit_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  enabled: tinyint().default(1).notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+export const aiPriceCards = mysqlTable('ai_price_cards', {
+  provider: varchar({ length: 40 }).notNull(),
+  model: varchar({ length: 128 }).notNull(),
+  version: varchar({ length: 80 }).notNull(),
+  inputMicroUsdPerMillion: bigint('input_micro_usd_per_million', { mode: 'number', unsigned: true }).notNull(),
+  outputMicroUsdPerMillion: bigint('output_micro_usd_per_million', { mode: 'number', unsigned: true }).notNull(),
+  flatMicroUsd: bigint('flat_micro_usd', { mode: 'number', unsigned: true }).default(0).notNull(),
+  maxInputTokens: int('max_input_tokens', { unsigned: true }).notNull(),
+  enabled: tinyint().default(1).notNull(),
+}, table => [primaryKey({ columns: [table.provider, table.model] })]);
+export const aiBudgetPeriods = mysqlTable('ai_budget_periods', {
+  scopeKey: varchar('scope_key', { length: 160 }).notNull(),
+  periodStart: date('period_start', { mode: 'string' }).notNull(),
+  policyVersion: varchar('policy_version', { length: 80 }).notNull(),
+  limitMicroUsd: bigint('limit_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  reservedMicroUsd: bigint('reserved_micro_usd', { mode: 'number', unsigned: true }).default(0).notNull(),
+  spentMicroUsd: bigint('spent_micro_usd', { mode: 'number', unsigned: true }).default(0).notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [primaryKey({ columns: [table.scopeKey, table.periodStart] })]);
+export const aiUsageReservations = mysqlTable('ai_usage_reservations', {
+  requestId: varchar('request_id', { length: 160 }).notNull(),
+  reconciliationReference: varchar('reconciliation_reference', { length: 160 }),
+  reconciledBy: int('reconciled_by'),
+  reservationKey: char('reservation_key', { length: 64 }).primaryKey(),
+  scopeKey: varchar('scope_key', { length: 160 }).notNull(),
+  periodStart: date('period_start', { mode: 'string' }).notNull(),
+  fingerprint: char({ length: 64 }).notNull(),
+  provider: varchar({ length: 40 }).notNull(),
+  model: varchar({ length: 128 }).notNull(),
+  taskType: varchar('task_type', { length: 96 }).notNull(),
+  priceVersion: varchar('price_version', { length: 80 }).notNull(),
+  inputRate: bigint('input_rate', { mode: 'number', unsigned: true }).notNull(),
+  outputRate: bigint('output_rate', { mode: 'number', unsigned: true }).notNull(),
+  flatMicroUsd: bigint('flat_micro_usd', { mode: 'number', unsigned: true }).default(0).notNull(),
+  reservedMicroUsd: bigint('reserved_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  settledMicroUsd: bigint('settled_micro_usd', { mode: 'number', unsigned: true }),
+  state: mysqlEnum(['reserved', 'settled', 'released', 'unknown']).default('reserved').notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+  index('idx_ai_reservation_scope_state').on(table.scopeKey, table.state, table.createdAt),
+  foreignKey({ name: 'fk_ai_reservation_period', columns: [table.scopeKey, table.periodStart], foreignColumns: [aiBudgetPeriods.scopeKey, aiBudgetPeriods.periodStart] }),
+]);
+
 export const abTestResults = mysqlTable("ab_test_results", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

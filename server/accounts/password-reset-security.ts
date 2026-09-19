@@ -4,6 +4,7 @@ import type { RowDataPacket } from 'mysql2/promise';
 import { authSessions, passwordResetTokens, users } from '../../drizzle/schema';
 import { getDb, getPool } from '../db';
 import { privacyHash } from './privacy-hash';
+import { isFutureDatabaseTime } from '../db/time';
 
 interface PasswordResetAttemptRow extends RowDataPacket {
   attemptedAt: Date | string;
@@ -128,7 +129,7 @@ export async function consumePasswordResetTokenAndUpdatePassword(
       .where(eq(passwordResetTokens.token, tokenDigest))
       .limit(1);
 
-    if (!resetToken || resetToken.used || new Date(resetToken.expiresAt).getTime() <= Date.now()) {
+    if (!resetToken || resetToken.used || !isFutureDatabaseTime(resetToken.expiresAt)) {
       return false;
     }
 

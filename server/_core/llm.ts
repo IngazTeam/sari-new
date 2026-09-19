@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { withAiBudget, promptBudgetShape } from "../ai/budget-ledger";
 import {
   getOptionalZahyPiRequestContext,
   requestZahyPiJobCompletion,
@@ -343,7 +344,7 @@ export async function invokeLLM(
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 4096;
+  payload.max_tokens = params.maxTokens ?? params.max_tokens ?? 4096;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -371,6 +372,11 @@ export async function invokeLLM(
       3,
     );
   } else {
+    result = await withAiBudget({
+      merchantId: merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
+      provider: 'openai', model: activeModel, taskType: taskType ?? 'llm.invoke',
+      ...promptBudgetShape(payload), maxOutputTokens: Number(payload.max_tokens),
+    }, async attempt => {
     // PEN-RES-01 FIX: 30s timeout to prevent hanging forever
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
@@ -382,6 +388,7 @@ export async function invokeLLM(
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${apiKey}`,
+          'X-Client-Request-Id': attempt.requestId,
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -397,13 +404,14 @@ export async function invokeLLM(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
+      void response.body?.cancel().catch(() => undefined);
       throw new Error(
-        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+        `LLM invoke failed: ${response.status}`
       );
     }
 
-    result = (await response.json()) as InvokeResult;
+    return (await response.json()) as InvokeResult;
+    }, completion => completion.usage);
   }
 
   // Log usage asynchronously (fire-and-forget)
