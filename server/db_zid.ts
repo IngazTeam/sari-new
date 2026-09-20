@@ -13,9 +13,14 @@ async function getDb() {
 }
 import { platformIntegrations, zidSettings, zidSyncLogs } from "../drizzle/schema";
 import type { ZidSettings, InsertZidSettings, ZidSyncLog, InsertZidSyncLog } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, lt } from "drizzle-orm";
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { getValidZidApiCredentials } from './integrations/zid-token-manager';
+import { databaseTimeEpoch } from './db/time';
+
+function mysqlTimestamp(date = new Date()): string {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
 
 // ==================== Zid Settings ====================
 
@@ -111,7 +116,7 @@ export async function updateZidSettings(
     .update(zidSettings)
     .set({
       ...protectLegacyCredentials(updates),
-      updatedAt: new Date().toISOString(),
+      updatedAt: mysqlTimestamp(),
     })
     .where(eq(zidSettings.merchantId, merchantId));
 }
@@ -156,7 +161,10 @@ export async function updateZidTokens(
     tokenExpiresAt: string;
   }
 ): Promise<void> {
-  await updateZidSettings(merchantId, tokens);
+  await updateZidSettings(merchantId, {
+    ...tokens,
+    tokenExpiresAt: mysqlTimestamp(new Date(databaseTimeEpoch(tokens.tokenExpiresAt))),
+  });
 }
 
 /**
@@ -166,7 +174,7 @@ export async function updateLastSync(
   merchantId: number,
   syncType: 'products' | 'orders' | 'customers'
 ): Promise<void> {
-  const now = new Date().toISOString();
+  const now = mysqlTimestamp();
   const updates: Partial<InsertZidSettings> = {};
 
   if (syncType === 'products') {
@@ -353,16 +361,19 @@ export async function getLastSuccessfulSync(
  * حذف سجلات المزامنة القديمة
  */
 export async function cleanupOldSyncLogs(merchantId: number, daysToKeep = 30): Promise<void> {
+  if (!Number.isSafeInteger(daysToKeep) || daysToKeep < 1) {
+    throw new Error('Sync log retention must be a positive whole number of days');
+  }
   const db = await getDb();
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+  const cutoffDate = mysqlTimestamp(new Date(Date.now() - daysToKeep * 86_400_000));
 
   await db
     .delete(zidSyncLogs)
     .where(
       and(
         eq(zidSyncLogs.merchantId, merchantId),
-        // Note: This comparison might need adjustment based on your date format
+        inArray(zidSyncLogs.status, ['completed', 'failed']),
+        lt(zidSyncLogs.completedAt, cutoffDate),
       )
     );
 }

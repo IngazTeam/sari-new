@@ -7,11 +7,11 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   getBotSettings,
   getConversationsByMerchantId,
-  getMerchantByUserId,
+  getMerchantById,
   getOrCreatePersonalitySettings,
   shouldBotRespond,
   updateBotSettings,
@@ -20,8 +20,8 @@ import {
 
 export const botSettingsRouter = router({
     // Get bot settings for current merchant
-    get: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    get: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -30,7 +30,7 @@ export const botSettingsRouter = router({
     }),
 
     // Update bot settings
-    update: protectedProcedure
+    update: permissionProcedure('bot_settings.manage')
         .input(z.object({
             autoReplyEnabled: z.boolean().optional(),
             workingHoursEnabled: z.boolean().optional(),
@@ -62,7 +62,7 @@ export const botSettingsRouter = router({
             autoDiscountExpireHours: z.number().min(1).max(168).optional(), // max 7 days
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -90,8 +90,8 @@ export const botSettingsRouter = router({
         }),
 
     // Check if bot should respond
-    shouldRespond: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    shouldRespond: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -100,8 +100,8 @@ export const botSettingsRouter = router({
     }),
 
     // Send test message
-    sendTestMessage: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    sendTestMessage: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -151,8 +151,8 @@ export const botSettingsRouter = router({
     }),
 
     // Get conversations currently under human takeover
-    getTakeoverConversations: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getTakeoverConversations: permissionProcedure('conversations.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }

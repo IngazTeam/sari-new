@@ -1,0 +1,1882 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-09-20T05:40:21.538Z",
+  "baseCommit": "9b0e0da530e8b8008292ef751e848e8590c7105e",
+  "publicationStatus": "Local committed source is identified by enclosing commit; no push/deploy/live provider calls in this continuation.",
+  "runtime": {
+    "node": "v22.23.2",
+    "mysql": "8.0.44",
+    "pnpm": "10.4.1"
+  },
+  "scope": {
+    "planComplete": false,
+    "certified10of10": false,
+    "productionRequests": 0,
+    "database": "Synthetic disposable MySQL on loopback; no production environment or credentials loaded.",
+    "aiPolicy": "USD 100 per day platform-wide; provider remains controlled by superadmin; no invented vendor pricing."
+  },
+  "checks": {
+    "mysql-phase3-ci": {
+      "exitCode": 0,
+      "durationMs": 58827,
+      "at": "2026-09-20T05:33:44.527Z",
+      "args": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "server/zid.test.ts",
+        "server/merchant-payments.test.ts",
+        "server/merchant-settings.test.ts",
+        "server/analytics.test.ts",
+        "server/tests/analytics.test.ts",
+        "server/tests/dashboard-analytics.test.ts",
+        "server/auth.ratelimit.test.ts",
+        "server/auth.passwordReset.test.ts",
+        "server/auth.sessionRegistry.test.ts",
+        "server/auth.loginRateLimit.test.ts",
+        "server/auth.emailVerification.test.ts",
+        "server/auth.platformProvision.test.ts",
+        "server/auth.teamInvitations.test.ts",
+        "server/auth.merchantAccess.test.ts",
+        "server/team-access.mysql.test.ts",
+        "server/auth-http.mysql.test.ts",
+        "server/whatsappDeliverySafety.mysql.test.ts",
+        "server/messaging/inbound.mysql.test.ts",
+        "server/messaging/inbound-process.mysql.test.ts",
+        "server/ai/session-store.mysql.test.ts",
+        "server/aiBudgetLedger.mysql.test.ts",
+        "server/auth.adminDeletion.test.ts",
+        "server/auth.zidWebhook.test.ts",
+        "server/auth.zidOAuth.test.ts",
+        "server/auth.zidConvergence.test.ts",
+        "server/auth.zidTokenRefresh.test.ts",
+        "server/api.distributedRateLimit.test.ts",
+        "server/whatsappPhoneOwnership.test.ts",
+        "--maxWorkers=2",
+        "--reporter=json",
+        "--outputFile=.tmp/plan-review/mysql-phase3-ci.json"
+      ],
+      "logSha256": "d5e5d038cbbb88f9c435b1c3cbde6e4a7601d70ce4c5849fce10b13c2c9b2c00",
+      "tests": {
+        "files": 28,
+        "total": 198,
+        "passed": 198,
+        "failed": 0,
+        "pending": 0,
+        "failedFiles": []
+      }
+    },
+    "phase3-smoke-final": {
+      "exitCode": 0,
+      "durationMs": 11246,
+      "at": "2026-09-20T05:35:54.765Z",
+      "args": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "server/campaigns.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/security-pentest.test.ts",
+        "--reporter=json",
+        "--outputFile=.tmp/plan-review/phase3-smoke-final.json"
+      ],
+      "logSha256": "84b590aebe64039b1e14e5eb7617a4e1cd6dcc0e0167899cd8b43546a202c128",
+      "tests": {
+        "files": 4,
+        "total": 70,
+        "passed": 70,
+        "failed": 0,
+        "pending": 0,
+        "failedFiles": []
+      }
+    },
+    "phase3-types-complete": {
+      "exitCode": 0,
+      "durationMs": 45605,
+      "at": "2026-09-20T05:36:31.877Z",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "logSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "phase3-locales-final": {
+      "exitCode": 0,
+      "durationMs": 7637,
+      "at": "2026-09-20T05:32:52.409Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "audit:locales"
+      ],
+      "logSha256": "584bd84033b721e264716ad08d05f2b62541b8799c1c09d92c1b8311d4821d63",
+      "keys": {
+        "advertisedLocale": "ar",
+        "callsChecked": 5742,
+        "dynamicKeysChecked": 213,
+        "unresolvedDynamicCalls": [],
+        "missing": [],
+        "interpolationErrors": []
+      }
+    },
+    "phase3-tooling": {
+      "exitCode": 0,
+      "durationMs": 7991,
+      "at": "2026-09-20T05:32:54.332Z",
+      "args": [
+        "--test",
+        "scripts/check-production-audit.test.mjs",
+        "scripts/check-runtime.test.mjs",
+        "scripts/check-translation-keys.test.mjs",
+        "scripts/check-inbound-rollback.test.mjs"
+      ],
+      "logSha256": "bb2b7f384007bf36288054f242adb608e0df71c850295a2b803031c7241b7c59"
+    },
+    "build-phase3-final": {
+      "exitCode": 0,
+      "durationMs": 67059,
+      "at": "2026-09-20T05:33:53.558Z",
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "build"
+      ],
+      "logSha256": "b7b625abf9f9fd007614fe9adbbbcb22e67b5d637d53528c5adc8126c4096794"
+    }
+  },
+  "gates": {
+    "origin": "Subset of the final full isolated run, not an independently rerun suite.",
+    "files": 164,
+    "total": 2740,
+    "passed": 2739,
+    "failed": 0,
+    "pending": 1,
+    "fileResults": [
+      {
+        "file": "server/ai/task-validation.test.ts",
+        "status": "passed",
+        "passed": 52,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/task-catalog.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/requirements-pack.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/zahypi-callsite-governance.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/zahypi-runtime-config.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/zahypi-client.test.ts",
+        "status": "passed",
+        "passed": 101,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/zahypi-context-propagation.test.ts",
+        "status": "passed",
+        "passed": 14,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/openai-zahypi.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/_core/llm-zahypi.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/_core/trpc-zahypi.test.ts",
+        "status": "passed",
+        "passed": 1,
+        "pending": 0
+      },
+      {
+        "file": "server/_core/validateEnv-zahypi.test.ts",
+        "status": "passed",
+        "passed": 3,
+        "pending": 0
+      },
+      {
+        "file": "server/ai-settings-provider-routing.test.ts",
+        "status": "passed",
+        "passed": 2,
+        "pending": 0
+      },
+      {
+        "file": "server/integrations/zahypi-connector/protocol.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/integrations/zahypi-connector/repository.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/integrations/zahypi-connector/routes.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/integrations/zahypi-connector/activation-verifier.test.ts",
+        "status": "passed",
+        "passed": 28,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-disconnect-alert-window-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/ai-settings-singleton-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/ai-settings-secrets-pentest.test.ts",
+        "status": "passed",
+        "passed": 14,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-order-boundary-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/order-status-notification-outbox-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/order-notification-operations-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/deployment-release-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 1
+      },
+      {
+        "file": "server/campaign-consent-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/campaign-router-canonical-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/campaign-delivery-outbox-pentest.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/occasion-campaign-outbox-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-webhook-reconciliation-pentest.test.ts",
+        "status": "passed",
+        "passed": 47,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-webhook-ingress-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-secure-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/account-privacy-pentest.test.ts",
+        "status": "passed",
+        "passed": 13,
+        "pending": 0
+      },
+      {
+        "file": "server/product-truth-ux-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/remediation-regression.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/runtime-schema-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/security-stage-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/subscription-state-pentest.test.ts",
+        "status": "passed",
+        "passed": 14,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-byaan-channel-pentest.test.ts",
+        "status": "passed",
+        "passed": 21,
+        "pending": 0
+      },
+      {
+        "file": "server/release-ci-performance-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/password-reset-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/session-revocation-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/session-registry-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/login-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/email-verification-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/platform-provision-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/team-identity-pentest.test.ts",
+        "status": "passed",
+        "passed": 13,
+        "pending": 0
+      },
+      {
+        "file": "server/admin-deletion-lifecycle-pentest.test.ts",
+        "status": "passed",
+        "passed": 13,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-webhook-security-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-oauth-security-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-convergence-security-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-token-refresh-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-sensitive-actions-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-product-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-commerce-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-reconciliation-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-product-concurrency-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-order-webhook-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-webhook-settings-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-order-notification-outbox-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-order-notification-health-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/zid-order-notification-ack-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/onboarding-remediation.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/onboarding-profile-review-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/onboarding-state-machine-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-ux-route-recovery-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-semantic-i18n-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/ui-language-truth-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/upload-boundary-pentest.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-core-accessibility-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/signup-ux-accessibility-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/pricing-fallback-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/public-support-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/mobile-navigation-soft404-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/training-byaan-marketing-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/salla-webhook-receipts-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/calendly-webhook-security-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/public-claims-truth-pentest.test.ts",
+        "status": "passed",
+        "passed": 129,
+        "pending": 0
+      },
+      {
+        "file": "server/ops-load-restore-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/chromium-runtime-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/customer-profile-canonical-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/byaan-dashboard-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/byaan-pagination-pentest.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/byaan-faq-knowledge-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/byaan-trainee-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/product-source-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 13,
+        "pending": 0
+      },
+      {
+        "file": "server/api-faq-source-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/byaan-settings-sync-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/api-conversion-ledger-pentest.test.ts",
+        "status": "passed",
+        "passed": 13,
+        "pending": 0
+      },
+      {
+        "file": "server/api-key-scope-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/api-brain-reset-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/api-read-model-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/api-distributed-rate-limit-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/api-distributed-rate-limit-mysql-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/platform-read-model-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/api-resource-abuse-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/api-instance-lifecycle-pentest.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-phone-ownership-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-phone-ownership-mysql-pentest.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-active-phone-unique-pentest.test.ts",
+        "status": "passed",
+        "passed": 65,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/export.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-access.test.ts",
+        "status": "passed",
+        "passed": 17,
+        "pending": 0
+      },
+      {
+        "file": "server/products-access.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/db/connection.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/db/time.test.ts",
+        "status": "passed",
+        "passed": 2,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-delivery-safety.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/dependency-contracts.test.ts",
+        "status": "passed",
+        "passed": 4,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/budget-boundaries.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/ai-settings-budget-access.test.ts",
+        "status": "passed",
+        "passed": 3,
+        "pending": 0
+      },
+      {
+        "file": "server/security/download-media.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/core-team-access.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/conversations.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/messaging/ingress.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/polling-transport.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/merchant-domains-access.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/action-execution.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/subscription-guard.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/greenapi-credentials.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/voice-transcription.test.ts",
+        "status": "passed",
+        "passed": 11,
+        "pending": 0
+      },
+      {
+        "file": "server/campaigns.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/bot-audit-pentest.test.ts",
+        "status": "passed",
+        "passed": 93,
+        "pending": 0
+      },
+      {
+        "file": "server/bot-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 57,
+        "pending": 0
+      },
+      {
+        "file": "server/campaign-suppression-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/coaching-bugfix-pentest.test.ts",
+        "status": "passed",
+        "passed": 55,
+        "pending": 0
+      },
+      {
+        "file": "server/context-intelligence-pentest.test.ts",
+        "status": "passed",
+        "passed": 49,
+        "pending": 0
+      },
+      {
+        "file": "server/conversation-order-payment-link-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/media-display-pentest.test.ts",
+        "status": "passed",
+        "passed": 51,
+        "pending": 0
+      },
+      {
+        "file": "server/order-payment-return-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/platform-payment-gateway-retirement-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/platform-tap-settings-pentest.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/polling-reliability-pentest.test.ts",
+        "status": "passed",
+        "passed": 3,
+        "pending": 0
+      },
+      {
+        "file": "server/rbac-pentest.test.ts",
+        "status": "passed",
+        "passed": 63,
+        "pending": 0
+      },
+      {
+        "file": "server/sales-conversion-pentest.test.ts",
+        "status": "passed",
+        "passed": 39,
+        "pending": 0
+      },
+      {
+        "file": "server/sales-engine-pentest.test.ts",
+        "status": "passed",
+        "passed": 187,
+        "pending": 0
+      },
+      {
+        "file": "server/sales-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 34,
+        "pending": 0
+      },
+      {
+        "file": "server/salla-webhook-ingress-pentest.test.ts",
+        "status": "passed",
+        "passed": 14,
+        "pending": 0
+      },
+      {
+        "file": "server/security-pentest.test.ts",
+        "status": "passed",
+        "passed": 44,
+        "pending": 0
+      },
+      {
+        "file": "server/session-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 29,
+        "pending": 0
+      },
+      {
+        "file": "server/subscription-payment-callback-pentest.test.ts",
+        "status": "passed",
+        "passed": 6,
+        "pending": 0
+      },
+      {
+        "file": "server/subscription-tap-checkout-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/tap-credential-probe-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/tap-order-payment-effects-pentest.test.ts",
+        "status": "passed",
+        "passed": 12,
+        "pending": 0
+      },
+      {
+        "file": "server/tap-payment-idempotency-pentest.test.ts",
+        "status": "passed",
+        "passed": 9,
+        "pending": 0
+      },
+      {
+        "file": "server/tap-payment-ownership-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/tap-webhook-authenticity-pentest.test.ts",
+        "status": "passed",
+        "passed": 10,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/chat-commerce-pentest.test.ts",
+        "status": "passed",
+        "passed": 22,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/knowledge-evolution-pentest.test.ts",
+        "status": "passed",
+        "passed": 41,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/takeover-hardening-pentest.test.ts",
+        "status": "passed",
+        "passed": 33,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/v4-pentest.test.ts",
+        "status": "passed",
+        "passed": 62,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/whatsapp-instances-pentest.test.ts",
+        "status": "passed",
+        "passed": 55,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-lock-affinity-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-lock-recovery-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-primary-db-constraint-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-primary-failover-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-primary-invariant-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-primary-schema-readiness-pentest.test.ts",
+        "status": "passed",
+        "passed": 15,
+        "pending": 0
+      },
+      {
+        "file": "server/whatsapp-primary-writer-schema-gate-pentest.test.ts",
+        "status": "passed",
+        "passed": 5,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-lock-admission-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-lock-cancellation-pentest.test.ts",
+        "status": "passed",
+        "passed": 8,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-lock-observability-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-lock-recovery-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/woocommerce-lock-tenant-fairness-pentest.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      },
+      {
+        "file": "server/automation/zid-order-from-chat.test.ts",
+        "status": "passed",
+        "passed": 21,
+        "pending": 0
+      },
+      {
+        "file": "server/tests/adaptive-sales-engine.test.ts",
+        "status": "passed",
+        "passed": 49,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/__tests__/sales-agent.test.ts",
+        "status": "passed",
+        "passed": 115,
+        "pending": 0
+      },
+      {
+        "file": "server/ai/transactional-truth.test.ts",
+        "status": "passed",
+        "passed": 7,
+        "pending": 0
+      }
+    ]
+  },
+  "bashSyntax": [
+    {
+      "file": "scripts/deploy-production.sh",
+      "exitCode": 0
+    },
+    {
+      "file": "scripts/deploy.sh",
+      "exitCode": 0
+    },
+    {
+      "file": "scripts/deploy-advanced.sh",
+      "exitCode": 0
+    }
+  ],
+  "dependencyDefinitionsChanged": false,
+  "localesUnchanged": true,
+  "allTests": {
+    "files": 271,
+    "total": 3853,
+    "passed": 3230,
+    "failed": 86,
+    "pending": 537,
+    "failedFiles": [
+      "server/abandoned-cart.test.ts",
+      "server/advanced-features.test.ts",
+      "server/ai.openai.test.ts",
+      "server/ai.test.ts",
+      "server/analysis.test.ts",
+      "server/analytics.test.ts",
+      "server/campaigns.advanced.test.ts",
+      "server/campaigns.send.test.ts",
+      "server/currency.test.ts",
+      "server/database-functions.test.ts",
+      "server/email-notifications.test.ts",
+      "server/insights.test.ts",
+      "server/instance-expiry.test.ts",
+      "server/loyalty.test.ts",
+      "server/metrics.test.ts",
+      "server/occasion-campaigns.test.ts",
+      "server/offers.test.ts",
+      "server/order-notifications.test.ts",
+      "server/personality.test.ts",
+      "server/plan-change-logs.test.ts",
+      "server/plans.test.ts",
+      "server/push-notifications.test.ts",
+      "server/referrals.test.ts",
+      "server/reports.test.ts",
+      "server/reviews-apis.test.ts",
+      "server/salla.test.ts",
+      "server/sari-ai-complete.test.ts",
+      "server/setup-wizard.test.ts",
+      "server/smtp-management.test.ts",
+      "server/subscription-limits.test.ts",
+      "server/subscription-signup.test.ts",
+      "server/subscriptions.test.ts",
+      "server/testSari.test.ts",
+      "server/trial.test.ts",
+      "server/try-sari-analytics.test.ts",
+      "server/usage-tracking.test.ts",
+      "server/webhook.test.ts",
+      "server/whatsapp-instances.test.ts",
+      "server/whatsapp-requests.test.ts",
+      "server/whatsapp-setup.test.ts",
+      "server/automation/discount-referral.test.ts",
+      "server/automation/order-from-chat.test.ts",
+      "server/automation/order-tracking.test.ts",
+      "server/automation/review-request.test.ts",
+      "server/tests/ai-enhanced.test.ts",
+      "server/tests/ai-personality.test.ts",
+      "server/tests/analytics.test.ts",
+      "server/tests/onboarding.test.ts",
+      "server/tests/orders-management.test.ts",
+      "server/tests/voice.test.ts",
+      "server/tests/webhook-voice.test.ts"
+    ],
+    "exitCode": 1,
+    "durationMs": 163197,
+    "at": "2026-09-20T05:39:26.438Z",
+    "args": [
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--maxWorkers=2",
+      "--reporter=json",
+      "--outputFile=.tmp/plan-review/phase3-all-final.json"
+    ],
+    "reportSha256": "605bb39c273858d6acb1d670e4556d405f00f83b4dc01bbddf2aeadd1abd03f4",
+    "baseline": {
+      "files": 269,
+      "total": 3807,
+      "passed": 3178,
+      "failed": 127,
+      "pending": 502,
+      "failedFiles": [
+        "server/abandoned-cart.test.ts",
+        "server/advanced-features.test.ts",
+        "server/ai.openai.test.ts",
+        "server/ai.test.ts",
+        "server/analysis.test.ts",
+        "server/analytics.test.ts",
+        "server/campaigns.advanced.test.ts",
+        "server/campaigns.send.test.ts",
+        "server/currency.test.ts",
+        "server/database-functions.test.ts",
+        "server/email-notifications.test.ts",
+        "server/greenapi-credentials.test.ts",
+        "server/insights.test.ts",
+        "server/instance-expiry.test.ts",
+        "server/loyalty.test.ts",
+        "server/merchant-payments.test.ts",
+        "server/merchant-settings.test.ts",
+        "server/metrics.test.ts",
+        "server/occasion-campaigns.test.ts",
+        "server/offers.test.ts",
+        "server/order-notifications.test.ts",
+        "server/personality.test.ts",
+        "server/plan-change-logs.test.ts",
+        "server/plans.test.ts",
+        "server/push-notifications.test.ts",
+        "server/referrals.test.ts",
+        "server/reports.test.ts",
+        "server/reviews-apis.test.ts",
+        "server/salla.test.ts",
+        "server/sari-ai-complete.test.ts",
+        "server/setup-wizard.test.ts",
+        "server/smtp-management.test.ts",
+        "server/subscription-guard.test.ts",
+        "server/subscription-limits.test.ts",
+        "server/subscription-signup.test.ts",
+        "server/subscriptions.test.ts",
+        "server/testSari.test.ts",
+        "server/trial.test.ts",
+        "server/try-sari-analytics.test.ts",
+        "server/usage-tracking.test.ts",
+        "server/voice-transcription.test.ts",
+        "server/webhook.test.ts",
+        "server/whatsapp-instances.test.ts",
+        "server/whatsapp-requests.test.ts",
+        "server/whatsapp-setup.test.ts",
+        "server/zid.test.ts",
+        "server/automation/discount-referral.test.ts",
+        "server/automation/order-from-chat.test.ts",
+        "server/automation/order-tracking.test.ts",
+        "server/automation/review-request.test.ts",
+        "server/tests/ai-enhanced.test.ts",
+        "server/tests/ai-personality.test.ts",
+        "server/tests/analytics.test.ts",
+        "server/tests/onboarding.test.ts",
+        "server/tests/orders-management.test.ts",
+        "server/tests/voice.test.ts",
+        "server/tests/webhook-voice.test.ts"
+      ]
+    },
+    "newFailures": [],
+    "newFailedFiles": [],
+    "failures": [
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - Weekly Sentiment Reports should create weekly sentiment report",
+        "message": "Error: Database not initialized\n    at Module.createWeeklySentimentReport (C:/Users/ingaz/Herd/sari/server/db.ts:5162:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:84:22"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - Weekly Sentiment Reports should get weekly sentiment reports",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:103:28\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - A/B Testing should create A/B test",
+        "message": "Error: Database not initialized\n    at Module.createABTest (C:/Users/ingaz/Herd/sari/server/db.ts:5243:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:136:20"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - A/B Testing should get A/B tests",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:150:26\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - A/B Testing should get active A/B test for keyword",
+        "message": "AssertionError: expected undefined to be 'السعر' // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:156:27\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - A/B Testing should pause A/B test",
+        "message": "Error: Database not initialized\n    at Module.createABTest (C:/Users/ingaz/Herd/sari/server/db.ts:5243:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/advanced-features.test.ts:184:20"
+      },
+      {
+        "file": "server/advanced-features.test.ts",
+        "test": "Advanced Features - Integration should have all required APIs in routers",
+        "message": "Error: STACK_TRACE_ERROR\n    at task (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1784:27)\n    at Object.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1817:16)\n    at Object.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1563:28)\n    at chain (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vite"
+      },
+      {
+        "file": "server/analysis.test.ts",
+        "test": "Smart Website Analysis Database Functions should update merchant website info",
+        "message": "Error: Database connection failed\n    at Module.updateMerchantWebsiteInfo (C:/Users/ingaz/Herd/sari/server/db.ts:9065:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/analysis.test.ts:16:7"
+      },
+      {
+        "file": "server/analysis.test.ts",
+        "test": "Smart Website Analysis Database Functions should create and retrieve discovered pages",
+        "message": "Error: Database connection failed\n    at Module.createDiscoveredPage (C:/Users/ingaz/Herd/sari/server/db.ts:9118:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/analysis.test.ts:30:22"
+      },
+      {
+        "file": "server/analysis.test.ts",
+        "test": "Smart Website Analysis Database Functions should create and retrieve extracted FAQs",
+        "message": "Error: Database connection failed\n    at Module.createExtractedFaq (C:/Users/ingaz/Herd/sari/server/db.ts:9244:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/analysis.test.ts:49:21"
+      },
+      {
+        "file": "server/database-functions.test.ts",
+        "test": "Database Functions - Subscriptions getMerchantSubscription يجب أن يُرجع الاشتراك النشط",
+        "message": "AssertionError: expected false to be true // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/database-functions.test.ts:241:55\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runW"
+      },
+      {
+        "file": "server/insights.test.ts",
+        "test": "Insights Dashboard Features Keyword Insights should get keyword statistics",
+        "message": "TypeError: Cannot convert undefined or null to object\n    at Function.hasOwn (<anonymous>)\n    at getValue (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1399:26)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1408:29)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///C:/Users/ingaz/Herd/sari/node"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Loyalty Settings should get or create loyalty settings",
+        "message": "TypeError: Cannot read properties of null (reading 'merchantId')\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:27:23\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Loyalty Settings should update loyalty settings",
+        "message": "AssertionError: expected undefined to be 2 // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:39:42\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Loyalty Tiers should get all tiers",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:50:28\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Loyalty Tiers should have bronze, silver, gold tiers",
+        "message": "AssertionError: expected [] to include 'Bronze'\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1319:15)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:57:25\n    at processTicksAndRejections (node:internal/process/task_q"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Customer Points should initialize customer points",
+        "message": "TypeError: Cannot read properties of null (reading 'merchantId')\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:72:29\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Customer Points should add points to customer",
+        "message": "TypeError: Cannot read properties of null (reading 'totalPoints')\n    at Module.addPointsToCustomer (C:/Users/ingaz/Herd/sari/server/db_loyalty.ts:250:41)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:94:22\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Points Calculation should calculate points from order amount",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:129:22\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Loyalty Rewards should create a reward",
+        "message": "AssertionError: expected undefined to be 'Test Reward' // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:167:29\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/loyalty.test.ts",
+        "test": "Loyalty System Transactions should get customer transactions",
+        "message": "TypeError: __vite_ssr_import_1__.getPointsTransactions is not a function\n    at C:/Users/ingaz/Herd/sari/server/loyalty.test.ts:174:44\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWit"
+      },
+      {
+        "file": "server/offers.test.ts",
+        "test": "offers.signupPrompt getStats should return AB test statistics for admin",
+        "message": "AssertionError: expected false to be true // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/offers.test.ts:253:37\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should create change log when updating plan price",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should create change log when updating conversation limit",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should create multiple change logs when updating multiple fields",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should allow admin to get all change logs",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/plan-change-logs.test.ts:125:25\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should not create change log when no fields are changed",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plan-change-logs.test.ts",
+        "test": "Plan Change Logs should log isActive status changes",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should list all active plans",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/plans.test.ts:32:26\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should get plan by ID",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should allow admin to create plan",
+        "message": "AssertionError: expected undefined to be defined\n    at C:/Users/ingaz/Herd/sari/server/plans.test.ts:67:21\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should allow admin to update plan",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should handle unlimited voice messages (-1)",
+        "message": "AssertionError: expected undefined to be defined\n    at C:/Users/ingaz/Herd/sari/server/plans.test.ts:164:27\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/plans.test.ts",
+        "test": "Plans API should deactivate plan",
+        "message": "TRPCError: [\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"id\"\n    ],\n    \"message\": \"Invalid input: expected number, received undefined\"\n  }\n]\n    at inputValidatorMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:44:10)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management VAPID Public Key should return VAPID public key without authentication",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/push-notifications.test.ts:30:39\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Subscription Management should allow merchant to subscribe to push notifications",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7781:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Subscription Management should allow merchant to unsubscribe from push notifications",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7781:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Subscription Management should update existing subscription when subscribing with same endpoint",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7781:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Notification Sending should allow merchant to send test notification",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7781:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Notification Logs should allow merchant to get notification logs",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7840:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Push Notification Logs should allow merchant to get notification stats",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7850:15\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/push-notifications.test.ts",
+        "test": "Push Notifications Management Access Control should only allow merchant to access their own subscriptions",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7781:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@"
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getStats should return campaign statistics for merchant",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getStats should bound the provider acceptance rate correctly",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getTimelineData should return timeline data for last 7 days",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getTimelineData should return timeline data for last 30 days",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getTimelineData should return timeline data for last 90 days",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reports.test.ts",
+        "test": "Reports API campaigns.getTimelineData should never fabricate delivery or read receipt counts",
+        "message": "TRPCError: تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.\n    at C:/Users/ingaz/Herd/sari/server/_core/trpc.ts:81:11\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at procedure (file:///C:/Users/ingaz/Herd/sari/node_modules/."
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should create a customer review",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should get review by ID",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should get all reviews for merchant",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should get reviews by order ID",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should get only public reviews",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should update review",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/reviews-apis.test.ts",
+        "test": "Reviews APIs - Database Functions should filter reviews by rating (4-5 stars only)",
+        "message": "TypeError: Cannot read properties of undefined (reading 'id')\n    at C:/Users/ingaz/Herd/sari/server/reviews-apis.test.ts:17:32\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Templates should get all business templates",
+        "message": "Error: Database not available\n    at Module.getAllBusinessTemplates (C:/Users/ingaz/Herd/sari/server/db.ts:6118:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:98:23"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Templates should get templates by business type",
+        "message": "Error: Database not available\n    at Module.getBusinessTemplatesByType (C:/Users/ingaz/Herd/sari/server/db.ts:6124:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:114:28"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Templates should get template by ID",
+        "message": "Error: Database not available\n    at Module.getAllBusinessTemplates (C:/Users/ingaz/Herd/sari/server/db.ts:6118:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:126:26"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Templates should have valid template structure",
+        "message": "Error: Database not available\n    at Module.getAllBusinessTemplates (C:/Users/ingaz/Herd/sari/server/db.ts:6118:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:137:23"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Templates should increment template usage count",
+        "message": "Error: Database not available\n    at Module.getAllBusinessTemplates (C:/Users/ingaz/Herd/sari/server/db.ts:6118:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:156:23"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Integration Tests should complete full wizard flow",
+        "message": "Error: Database not available\n    at Module.createUser (C:/Users/ingaz/Herd/sari/server/db.ts:662:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:294:22"
+      },
+      {
+        "file": "server/setup-wizard.test.ts",
+        "test": "Setup Wizard - Integration Tests should handle wizard reset correctly",
+        "message": "Error: Database not available\n    at Module.createUser (C:/Users/ingaz/Herd/sari/server/db.ts:662:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at C:/Users/ingaz/Herd/sari/server/setup-wizard.test.ts:368:22"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management Admin Access Control should allow admin to get SMTP settings",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at getSmtpSettings (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:40:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7865:24\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modu"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management Admin Access Control should allow admin to update SMTP settings",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at upsertSmtpSettings (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:60:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7891:9\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_mo"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management SMTP Settings Management should encrypt password when saving settings",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at upsertSmtpSettings (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:60:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7891:9\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_mo"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management SMTP Settings Management should update settings without changing password if not provided",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at upsertSmtpSettings (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:60:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7891:9\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_mo"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management Email Logs should allow admin to get email logs",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at getEmailLogs (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:122:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7946:16\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_module"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management Email Logs should allow admin to get email stats",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at getEmailStats (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:128:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7955:14\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modul"
+      },
+      {
+        "file": "server/smtp-management.test.ts",
+        "test": "SMTP Email Management Test Email Sending should create log entry when sending test email",
+        "message": "Error: Database not initialized\n    at getDb (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:6:18)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at getEmailLogs (C:/Users/ingaz/Herd/sari/server/db_smtp.ts:122:14)\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:7946:16\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_module"
+      },
+      {
+        "file": "server/subscriptions.test.ts",
+        "test": "Subscriptions API merchants.getCurrentPlan should return null if merchant has no subscription",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers-merchants.ts:504:19\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trp"
+      },
+      {
+        "file": "server/subscriptions.test.ts",
+        "test": "Subscriptions API merchants.requestUpgrade should reject upgrade for non-existent plan",
+        "message": "Error: expected [Function] to throw error including 'Plan not found or inactive' but got 'Merchant not found'\n    at _Assertion.__VITEST_REJECTS__ (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1747:17)\n    at _Assertion.propertyGetter (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1570:27)\n    at Reflect.get (<anonymous>)\n    at Object.proxyGetter [as get] (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1659:22)\n    at C:/Users/ingaz/Herd"
+      },
+      {
+        "file": "server/try-sari-analytics.test.ts",
+        "test": "Try Sari Analytics should create new analytics session",
+        "message": "AssertionError: expected undefined to be defined\n    at C:/Users/ingaz/Herd/sari/server/try-sari-analytics.test.ts:21:21\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/try-sari-analytics.test.ts",
+        "test": "Try Sari Analytics should increment message count",
+        "message": "TypeError: actual value must be number or bigint, received \"undefined\"\n    at assertTypes (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+utils@4.1.10/node_modules/@vitest/utils/dist/helpers.js:56:9)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1338:3)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6"
+      },
+      {
+        "file": "server/try-sari-analytics.test.ts",
+        "test": "Try Sari Analytics should mark signup prompt shown",
+        "message": "AssertionError: expected undefined to be true // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/try-sari-analytics.test.ts:37:40\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/try-sari-analytics.test.ts",
+        "test": "Try Sari Analytics should mark converted to signup",
+        "message": "AssertionError: expected undefined to be true // Object.is equality\n    at C:/Users/ingaz/Herd/sari/server/try-sari-analytics.test.ts:44:40\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/try-sari-analytics.test.ts",
+        "test": "Try Sari Analytics should get analytics stats",
+        "message": "TypeError: actual value must be number or bigint, received \"undefined\"\n    at assertTypes (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+utils@4.1.10/node_modules/@vitest/utils/dist/helpers.js:56:9)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1338:3)\n    at Proxy.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6"
+      },
+      {
+        "file": "server/whatsapp-requests.test.ts",
+        "test": "WhatsApp Connection Requests Request Connection should allow merchant to request WhatsApp connection",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:916:17\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@1"
+      },
+      {
+        "file": "server/whatsapp-requests.test.ts",
+        "test": "WhatsApp Connection Requests Request Connection should prevent duplicate pending requests",
+        "message": "Error: expected [Function] to throw error including 'You already have a pending request' but got 'Merchant not found'\n    at _Assertion.__VITEST_REJECTS__ (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1747:17)\n    at _Assertion.propertyGetter (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1570:27)\n    at Reflect.get (<anonymous>)\n    at Object.proxyGetter [as get] (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1659:22)\n    at C:/Users/in"
+      },
+      {
+        "file": "server/whatsapp-requests.test.ts",
+        "test": "WhatsApp Connection Requests Request Connection should get current request status",
+        "message": "TRPCError: Merchant not found\n    at C:/Users/ingaz/Herd/sari/server/routers.ts:962:15\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at resolveMiddleware (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:221:17)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@11.17.0_typescript@5.9.3/node_modules/@trpc/server/dist/initTRPC-BRf4imah.mjs:256:18)\n    at callRecursive (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@trpc+server@1"
+      },
+      {
+        "file": "server/whatsapp-requests.test.ts",
+        "test": "WhatsApp Connection Requests Admin Operations should allow admin to list all requests",
+        "message": "AssertionError: expected 0 to be greater than 0\n    at C:/Users/ingaz/Herd/sari/server/whatsapp-requests.test.ts:50:31\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should get onboarding status for a new merchant",
+        "message": "TypeError: __vite_ssr_import_1__.getOnboardingStatus is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:22:29\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at "
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should update onboarding step",
+        "message": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:31:14\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at"
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should update to step 2",
+        "message": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:39:14\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at"
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should update to step 3",
+        "message": "TypeError: __vite_ssr_import_1__.updateOnboardingStep is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:46:14\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at"
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should complete onboarding",
+        "message": "TypeError: __vite_ssr_import_1__.completeOnboarding is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:53:14\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at r"
+      },
+      {
+        "file": "server/tests/onboarding.test.ts",
+        "test": "Onboarding System should keep onboarding completed after completion",
+        "message": "TypeError: __vite_ssr_import_1__.getOnboardingStatus is not a function\n    at C:/Users/ingaz/Herd/sari/server/tests/onboarding.test.ts:62:29\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at "
+      }
+    ]
+  },
+  "testReorganization": {
+    "databaseFixturesMovedToExplicitCi": [
+      "server/zid.test.ts",
+      "server/merchant-payments.test.ts",
+      "server/merchant-settings.test.ts"
+    ],
+    "realDatabaseEvidence": "mysql-phase3-ci: all 28 files pass, including the three isolated fixture suites.",
+    "replacedLiveKeySmokeTests": [
+      "server/greenapi-credentials.test.ts",
+      "server/voice-transcription.test.ts"
+    ],
+    "limitations": "Mocked provider transports do not establish live credential validity. Source contracts updated for canonical customers router and selected merchant membership; runtime behavior tested separately."
+  },
+  "sourceManifestEncoding": "SHA256 of UTF-8 source with CRLF normalized to LF; docs excluded to avoid self-reference.",
+  "sourceManifest": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "1f3cd80200e066a0d6044820493bdbb7aa1b46907c6b74fc6daad0bb7fd0de78"
+    },
+    {
+      "path": "package.json",
+      "sha256": "9b40368911eb1431bb340ee0de46680f4d33ce58e3648e312cce5feebf2f4d7d"
+    },
+    {
+      "path": "server/_core/trpc.ts",
+      "sha256": "c97792e02da07e5f0272f8bcfec904ce130366846a8488f2efebb082ce191d14"
+    },
+    {
+      "path": "server/accounts/merchant-access.ts",
+      "sha256": "a7057683828ebbba9a7d1b63c9a440048821ca0e48424c41f9cb626eaa50d692"
+    },
+    {
+      "path": "server/ai/action-execution.test.ts",
+      "sha256": "48fd916d3e3336a0ff7305d10814002b32ef92cf514e8e5ddebf6d6046267440"
+    },
+    {
+      "path": "server/ai/action-selector.ts",
+      "sha256": "2ae006fd430e89d5c87b27686f94b63b551627396c0b3cb306c1e4384d73f6f8"
+    },
+    {
+      "path": "server/auth.adminDeletion.test.ts",
+      "sha256": "a7ed3e270a0c7d95c4346742afc541bbd4edefffa8b679fddebed43c86286e3d"
+    },
+    {
+      "path": "server/auth.merchantAccess.test.ts",
+      "sha256": "28d77f6ddfb09c4f1cf09786282fab701488ba6a88e5835715987047abfb519a"
+    },
+    {
+      "path": "server/campaign-router-canonical-pentest.test.ts",
+      "sha256": "d92bc2542d96bd1df3ece43ec9ecbd40d34b5ac626fca1f780aef93263394bdc"
+    },
+    {
+      "path": "server/campaigns.test.ts",
+      "sha256": "c9e1c020a542b5d660dfd53bd8a955a76f24698c67b5ea00ba1ab59b3588272a"
+    },
+    {
+      "path": "server/db_zid.ts",
+      "sha256": "41644e3df465abfc4842cb0505ff1511633548e7b5fc34a9d98a7a82dc3546f4"
+    },
+    {
+      "path": "server/greenapi-credentials.test.ts",
+      "sha256": "8eb1c6f317d536f20c7eb32cf5c4658b10517b3b8c4c160c37fdeab3ca6b80fb"
+    },
+    {
+      "path": "server/helpers/subscriptionGuard.ts",
+      "sha256": "3891d130350410e2c41421f71964d030bab2e4380b18e5e5c006e4da32f02237"
+    },
+    {
+      "path": "server/merchant-access.test.ts",
+      "sha256": "cced4b9f5e740662973848de627f0e15f8956921790229cf14036cf2bcb50089"
+    },
+    {
+      "path": "server/merchant-domains-access.test.ts",
+      "sha256": "af52594513a4cd898f3c4083e000dd0a187b55f7ddd2fada8b6360591eba9e83"
+    },
+    {
+      "path": "server/merchant-payments.test.ts",
+      "sha256": "976446e76538b6581561c1bdb613fb42821fe4c32748a6aee07653b62ac62d4d"
+    },
+    {
+      "path": "server/merchant-settings.test.ts",
+      "sha256": "1427ebd1ed5ca9de5cb2cac16a68989abe6c42869adff5c785bd6593e269c6f8"
+    },
+    {
+      "path": "server/remediation-regression.test.ts",
+      "sha256": "e7468999629e19c31e3e0042618615c4ef1a1ce3267e128ea7131fadb79681e7"
+    },
+    {
+      "path": "server/routers-bot-settings.ts",
+      "sha256": "e7c4dc02612b170605e24b75d645289fcc0ec9067a4a3c8dc2bffe548d77a530"
+    },
+    {
+      "path": "server/routers-campaigns.ts",
+      "sha256": "8402fff486aa733d23e99cc42658103c060d7474186cf10ea1ea2d3de9e4dbab"
+    },
+    {
+      "path": "server/routers-customers.ts",
+      "sha256": "e3bac1ee93cd6df226ef2c1c108626a12f76d0beb66e041f0317d8b6e2a5d2ff"
+    },
+    {
+      "path": "server/routers.ts",
+      "sha256": "a13239e358e3c344c4e18615d2e9a7cec10faf16842c204ea478e3edcc8f2eac"
+    },
+    {
+      "path": "server/security-pentest.test.ts",
+      "sha256": "80217fe5b2a73433fc28173160bc0fa088aa0364f56051e7a39fca91a8f9e2b8"
+    },
+    {
+      "path": "server/subscription-guard.test.ts",
+      "sha256": "5cf73b3baea10e1346203c616454317ac72be51ec95d2e68fdb6674c3555cd7f"
+    },
+    {
+      "path": "server/team-access.mysql.test.ts",
+      "sha256": "272937de226a51b1ebc60c8e1c5f77ad490e6aab91d4b8644fd71969962e32b7"
+    },
+    {
+      "path": "server/tests/helpers/disposable-merchant.ts",
+      "sha256": "49bc2f39a43a4199489a0ce5e80778e03a150b76aa1f8c82eb4889efdd344be7"
+    },
+    {
+      "path": "server/voice-transcription.test.ts",
+      "sha256": "efe5182a9542ad974aa2f5b700c6e632d52ae68216cf3b92ee702141007ba483"
+    },
+    {
+      "path": "server/voice-transcription.ts",
+      "sha256": "c83b6aff5ea3572d947e354b5fcd763e0bbae1cb7b10d78e09c1e300dd108cff"
+    },
+    {
+      "path": "server/webhooks/greenapi.ts",
+      "sha256": "13e6f1f797dd6cf241376246a7c6d4604f838d7f3dff3350c413ff3b8bde9e50"
+    },
+    {
+      "path": "server/zid.test.ts",
+      "sha256": "15909d826f8710fb18fa07281cd756fcc004d0080c36ee2589ec6e79f4efe0a9"
+    }
+  ],
+  "sourceManifestSha256": "80cc8ba96dbe858dc027be6f9a2fbc5ba5a04849d85c6d611fa079600bc1b645",
+  "buildArtifacts": [
+    {
+      "path": "dist/index.js",
+      "bytes": 4277736,
+      "sha256": "88a670d18a93dff0094bed2ea675bd635a9d09ba0f88c6c4b0857d8e634de448"
+    },
+    {
+      "path": "dist/worker.js",
+      "bytes": 1948243,
+      "sha256": "3594aeb2edb8efe0f3714d80b05a9ea3859dba12f990cccb58a11b71aefa1204"
+    }
+  ],
+  "historicalEvidence": "SARI_REMAINING_VERIFICATION_2026-09-20.json: migration and restore evidence remains historical; no migration/schema change in this continuation.",
+  "limitations": [
+    "Full historical suite still has failures, enumerated above.",
+    "Secondary business effects are not all durably journaled; unknown outcomes require manual review.",
+    "Campaign/customer/bot permissions migrated, not all legacy domains.",
+    "Legacy product price units and currency must be reconciled across local and imported catalogues before financial launch acceptance.",
+    "Voice usage settlement, vendor sandboxes, full browser E2E, load, deployed SHA and operational recovery remain unproven."
+  ]
+}

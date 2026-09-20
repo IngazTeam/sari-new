@@ -2,33 +2,30 @@
  * Customers Router Module
  * Handles customer management and statistics
  * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
- * 
- * FIX #4: All endpoints now use merchantId (via getMerchantByUserId) instead of
- * directly passing ctx.user.id to DB functions that expect merchantId.
+ * Canonical router. Every operation uses the selected, verified merchant membership.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, router } from "./_core/trpc";
 import {
   getCustomerByPhone,
   getCustomerStats,
   getCustomersByMerchant,
-  getMerchantByUserId,
+  getMerchantById,
   searchCustomers,
 } from './db';
 
 export const customersRouter = router({
     // Get all customers with stats
-    list: protectedProcedure
+    list: permissionProcedure('conversations.read')
         .input(z.object({
             search: z.string().optional(),
             status: z.enum(['all', 'active', 'new', 'inactive']).optional(),
         }))
         .query(async ({ ctx, input }) => {
             // FIX #4: Use merchantId, not userId
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -49,10 +46,10 @@ export const customersRouter = router({
         }),
 
     // Get customer by phone
-    getByPhone: protectedProcedure
+    getByPhone: permissionProcedure('conversations.read')
         .input(z.object({ customerPhone: z.string() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -65,8 +62,8 @@ export const customersRouter = router({
         }),
 
     // Get customer statistics
-    getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getStats: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -74,8 +71,8 @@ export const customersRouter = router({
     }),
 
     // Export customers data
-    export: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    export: permissionProcedure('customers.manage').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -92,8 +89,8 @@ export const customersRouter = router({
         }));
     }),
 
-    exportCsv: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    exportCsv: permissionProcedure('customers.manage').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }

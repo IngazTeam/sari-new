@@ -65,6 +65,7 @@ import { merchantsRouter } from "./routers-merchants";
 import { monitorRouter } from "./routers-monitor";
 import { inboundOperationsRouter } from './routers-inbound-operations';
 import { merchantSelectionRouter } from './routers-merchant-selection';
+import { customersRouter } from "./routers-customers";
 import { botSettingsRouter } from "./routers-bot-settings";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
@@ -7417,95 +7418,7 @@ export const appRouter = router({
   aiSuggestions: aiSuggestionsRouter,
 
   // Customers Management
-  customers: router({
-    // Get all customers with stats
-    list: protectedProcedure
-      .input(z.object({
-        search: z.string().optional(),
-        status: z.enum(['all', 'active', 'new', 'inactive']).optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        let customers = await getCustomersByMerchant(merchant.id);
-
-        // Apply search filter
-        if (input.search) {
-          customers = await searchCustomers(merchant.id, input.search);
-        }
-
-        // Apply status filter
-        if (input.status && input.status !== 'all') {
-          customers = customers.filter(c => c.status === input.status);
-        }
-
-        return customers;
-      }),
-
-    // Get customer by phone
-    getByPhone: protectedProcedure
-      .input(z.object({ customerPhone: z.string() }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const customer = await getCustomerByPhone(merchant.id, input.customerPhone);
-        if (!customer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'العميل غير موجود' });
-        }
-        return customer;
-      }),
-
-    // Get customer statistics
-    getStats: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await getCustomerStats(merchant.id);
-    }),
-
-    // Export customers data
-    export: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      const customers = await getCustomersByMerchant(merchant.id);
-      return customers.map(c => ({
-        '\u0627\u0644\u0627\u0633\u0645': c.customerName || '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641',
-        '\u0631\u0642\u0645 \u0627\u0644\u062c\u0648\u0627\u0644': c.customerPhone,
-        '\u0639\u062f\u062f \u0627\u0644\u0637\u0644\u0628\u0627\u062a': c.orderCount,
-        '\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a': c.totalSpent,
-        '\u0646\u0642\u0627\u0637 \u0627\u0644\u0648\u0644\u0627\u0621': c.loyaltyPoints,
-        '\u0627\u0644\u062d\u0627\u0644\u0629': c.status === 'active' ? '\u0646\u0634\u0637' : c.status === 'new' ? '\u062c\u062f\u064a\u062f' : '\u063a\u064a\u0631 \u0646\u0634\u0637',
-        '\u0622\u062e\u0631 \u062a\u0641\u0627\u0639\u0644': new Date(c.lastMessageAt).toLocaleDateString('ar-SA'),
-      }));
-    }),
-
-    // Download-ready UTF-8 CSV. Tenant identity is derived exclusively from the session.
-    exportCsv: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const customers = await getCustomersByMerchant(merchant.id);
-      const { buildCsv } = await import('./utils/csv');
-      const data = buildCsv(
-        ['الاسم', 'رقم الجوال', 'عدد الطلبات', 'إجمالي المشتريات', 'نقاط الولاء', 'الحالة', 'آخر تفاعل'],
-        customers.map(customer => [
-          customer.customerName || 'غير معروف',
-          customer.customerPhone,
-          customer.orderCount || 0,
-          customer.totalSpent || 0,
-          customer.loyaltyPoints || 0,
-          customer.status === 'active' ? 'نشط' : customer.status === 'new' ? 'جديد' : 'غير نشط',
-          customer.lastMessageAt ? new Date(customer.lastMessageAt).toISOString() : '',
-        ]),
-      );
-
-      return {
-        filename: `customers-${merchant.id}-${new Date().toISOString().slice(0, 10)}.csv`,
-        mimeType: 'text/csv;charset=utf-8',
-        count: customers.length,
-        data,
-      };
-    }),
-  }),
+  customers: customersRouter,
 
   // Website Analysis
   websiteAnalysis: websiteAnalysisRouter,

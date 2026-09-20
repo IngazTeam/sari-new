@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   createCampaign,
   deleteCampaign,
@@ -26,7 +26,7 @@ import {
   getCampaignLogsWithStats,
   getCampaignsByMerchantId,
   getConversationsByMerchantId,
-  getMerchantByUserId,
+  getMerchantById,
   getPrimaryWhatsAppInstance,
   updateCampaign,
 } from './db';
@@ -66,8 +66,8 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 export const campaignsRouter = router({
     // Get all campaigns for current merchant
-    list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    list: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -80,7 +80,7 @@ export const campaignsRouter = router({
     }),
 
     // Get single campaign
-    getById: protectedProcedure
+    getById: permissionProcedure('analytics.read')
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
@@ -88,8 +88,8 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
+            const merchant = await getMerchantById(ctx.merchantId);
+            if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
@@ -97,7 +97,7 @@ export const campaignsRouter = router({
         }),
 
     // Create new campaign — targetAudience is now stored as JSON
-    create: protectedProcedure
+    create: permissionProcedure('campaigns.manage')
         .input(z.object({
             name: z.string().trim().min(1).max(255),
             message: z.string().trim().min(1).max(3800),
@@ -106,7 +106,7 @@ export const campaignsRouter = router({
             scheduledAt: z.date().optional(),
         }).strict())
         .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -131,7 +131,7 @@ export const campaignsRouter = router({
         }),
 
     // Update campaign
-    update: protectedProcedure
+    update: permissionProcedure('campaigns.manage')
         .input(z.object({
             id: z.number(),
             name: z.string().trim().min(1).max(255).optional(),
@@ -146,7 +146,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -163,7 +163,7 @@ export const campaignsRouter = router({
         }),
 
     // FIX #4: Delete campaign — real DELETE instead of soft-delete to failed
-    delete: protectedProcedure
+    delete: permissionProcedure('campaigns.manage')
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
@@ -171,7 +171,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -188,7 +188,7 @@ export const campaignsRouter = router({
 
     // Durable send: consent-gated recipients are committed to an outbox in the
     // same transaction that claims the campaign. Provider I/O never runs here.
-    send: protectedProcedure
+    send: permissionProcedure('campaigns.manage')
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
@@ -196,7 +196,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -300,7 +300,7 @@ export const campaignsRouter = router({
         }),
 
     // FIX #9: Get send progress for live tracking
-    getSendProgress: protectedProcedure
+    getSendProgress: permissionProcedure('analytics.read')
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
@@ -308,8 +308,8 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
+            const merchant = await getMerchantById(ctx.merchantId);
+            if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
@@ -329,22 +329,22 @@ export const campaignsRouter = router({
         }),
 
     // Acknowledgement closes uncertain outcomes without deleting or resending.
-    acknowledgeManualReview: protectedProcedure
+    acknowledgeManualReview: permissionProcedure('campaigns.manage')
         .input(z.object({ id: z.number().int().positive() }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
             return acknowledgeCampaignManualReviews(campaign.id, merchant.id);
         }),
 
-    getManualReviewSummary: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getManualReviewSummary: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -353,8 +353,8 @@ export const campaignsRouter = router({
 
     // Campaign statistics. `sentCount` records provider acceptance, not a
     // delivery receipt or a customer read receipt.
-    getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+    getStats: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -380,7 +380,7 @@ export const campaignsRouter = router({
     }),
 
     // Get campaign report with logs
-    getReport: protectedProcedure
+    getReport: permissionProcedure('analytics.read')
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
@@ -388,8 +388,8 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
+            const merchant = await getMerchantById(ctx.merchantId);
+            if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
@@ -404,12 +404,12 @@ export const campaignsRouter = router({
 
     // Timeline used by the merchant reports page. The only currently provable
     // event is provider acceptance; delivery/read require receipt projection.
-    getTimelineData: protectedProcedure
+    getTimelineData: permissionProcedure('analytics.read')
         .input(z.object({
             days: z.number().int().min(1).max(365).default(30),
         }).strict())
         .query(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -418,14 +418,14 @@ export const campaignsRouter = router({
         }),
 
     // Filter customers for targeting (migrated from legacy router)
-    filterCustomers: protectedProcedure
+    filterCustomers: permissionProcedure('campaigns.manage')
         .input(z.object({
             lastActivityDays: z.number().optional(),
             purchaseCountMin: z.number().optional(),
             purchaseCountMax: z.number().optional(),
         }))
         .query(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -455,9 +455,9 @@ export const campaignsRouter = router({
         }),
 
     // Main dashboard stats
-    getStats2: protectedProcedure
+    getStats2: permissionProcedure('analytics.read')
         .query(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }

@@ -97,6 +97,9 @@ jobs:
       - name: Run database integration contracts
         run: >-
           pnpm vitest run
+          server/zid.test.ts
+          server/merchant-payments.test.ts
+          server/merchant-settings.test.ts
           server/analytics.test.ts
           server/tests/analytics.test.ts
           server/tests/dashboard-analytics.test.ts

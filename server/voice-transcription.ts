@@ -4,7 +4,6 @@
  * Converts voice messages from WhatsApp to text using OpenAI Whisper API
  */
 
-import { invokeLLM } from './_core/llm';
 import axios from 'axios';
 import FormData from 'form-data';
 import { ENV } from './_core/env';
@@ -42,7 +41,7 @@ export async function transcribeVoiceMessage(
     console.log('[Voice] Downloaded file, size:', audioBuffer.length, 'bytes');
     
     // Check file size (max 25MB for Whisper API)
-    if (audioBuffer.length > 25 * 1024 * 1024) {
+    if (audioBuffer.length === 0 || audioBuffer.length > 25 * 1024 * 1024) {
       throw new Error('الملف الصوتي كبير جداً (الحد الأقصى 25 ميجابايت)');
     }
     
@@ -69,11 +68,13 @@ export async function transcribeVoiceMessage(
           'X-Client-Request-Id': attempt.requestId,
         },
         timeout: 60000, // 60 seconds
+        maxRedirects: 0,
       }
     ), () => undefined);
     
     const duration = Date.now() - startTime;
-    const text = response.data.text;
+    const text = response.data?.text;
+    if (typeof text !== 'string' || !text.trim()) throw new Error('Invalid transcription response');
     
     console.log('[Voice] Transcription successful:', {
       duration: `${duration}ms`,
@@ -89,16 +90,16 @@ export async function transcribeVoiceMessage(
   } catch (error: any) {
     const duration = Date.now() - startTime;
     console.error('[Voice] Transcription failed:', {
-      error: error.message,
+      status: Number.isInteger(error?.response?.status) ? error.response.status : undefined,
       duration: `${duration}ms`,
     });
     
     // Return user-friendly error message
-    if (error.response?.status === 429) {
+    if (error?.response?.status === 429) {
       throw new Error('تم تجاوز الحد الأقصى للطلبات، يرجى المحاولة لاحقاً');
-    } else if (error.response?.status === 401) {
+    } else if (error?.response?.status === 401) {
       throw new Error('خطأ في مفتاح OpenAI API');
-    } else if (error.message.includes('timeout')) {
+    } else if (error?.code === 'ECONNABORTED' || /timeout/i.test(String(error?.message || ''))) {
       throw new Error('انتهت مهلة معالجة الملف الصوتي');
     } else {
       throw new Error('فشل تحويل الرسالة الصوتية إلى نص');

@@ -23,6 +23,7 @@ import {
   getProductsByMerchantId,
 } from '../db';
 import { filterProductsAvailableForSale } from './product-availability';
+import { currentInboundExecution } from '../messaging/inbound-context';
 
 // Rate-limit map: prevent sending discount codes too frequently to the same customer
 const _discountRateLimit = new Map<string, number>();
@@ -266,7 +267,7 @@ function sanitizeActionText(text: string): string {
 
 /**
  * Execute a supplementary action after the main response.
- * Called by the webhook handler — fire-and-forget.
+ * Awaited by the webhook handler. Failed or uncertain effects require review.
  */
 export async function executeAction(params: {
   action: SariAction;
@@ -282,6 +283,7 @@ export async function executeAction(params: {
   if (action.type === 'text_only') return;
 
   try {
+    await currentInboundExecution()?.assertOwned();
     switch (action.type) {
       case 'send_product_link': {
         // Find matching product and send details
@@ -378,11 +380,11 @@ export async function executeAction(params: {
                 console.log(`[ActionSelector] ✅ Auto-generated discount: ${autoCode.code} (${autoCode.value}%)`);
               }
             } catch (autoErr: any) {
-              console.warn(`[ActionSelector] Auto-discount failed: ${autoErr.message}`);
+              throw autoErr;
             }
           }
         } catch (discErr: any) {
-          console.warn(`[ActionSelector] Discount lookup failed: ${discErr.message}`);
+          throw discErr;
         }
         break;
       }
@@ -399,7 +401,7 @@ export async function executeAction(params: {
           });
           console.log(`[ActionSelector] ✅ Escalated to merchant: ${action.reason} (urgency: ${action.urgency})`);
         } catch (escErr: any) {
-          console.warn(`[ActionSelector] Escalation failed: ${escErr.message}`);
+          throw escErr;
         }
         break;
       }
@@ -419,7 +421,7 @@ export async function executeAction(params: {
           });
           console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
         } catch (fuErr: any) {
-          console.warn(`[ActionSelector] Follow-up scheduling failed: ${fuErr.message}`);
+          throw fuErr;
         }
         break;
       }
@@ -436,7 +438,7 @@ export async function executeAction(params: {
           });
           console.log(`[ActionSelector] ✅ Merchant info requested: ${action.question}`);
         } catch (escErr: any) {
-          console.warn(`[ActionSelector] Merchant info request failed: ${escErr.message}`);
+          throw escErr;
         }
         break;
       }
@@ -447,6 +449,8 @@ export async function executeAction(params: {
         // ══════════════════════════════════════════════════════════
         if (action.items.length === 0) break;
 
+        let createdOrderId: number | undefined;
+        let persistenceAttempted = false;
         try {
           // 1. Match requested items to real products (with variant support)
           const allProducts = filterProductsAvailableForSale(
@@ -457,34 +461,40 @@ export async function executeAction(params: {
           let subtotal = 0;
 
           for (const itemName of action.items) {
-            const match = allProducts.find((p: any) =>
-              (p.name || '').toLowerCase().includes(itemName.toLowerCase()) ||
-              itemName.toLowerCase().includes((p.name || '').toLowerCase())
+            const normalizedName = itemName.trim().toLowerCase();
+            if (!normalizedName) continue;
+            const matches = allProducts.filter((p: any) =>
+              p.name?.trim() && ((p.name || '').toLowerCase().includes(normalizedName) ||
+              normalizedName.includes((p.name || '').toLowerCase()))
             );
+            const exact = matches.filter(p => p.name.trim().toLowerCase() === normalizedName);
+            const match = exact.length === 1 ? exact[0] : matches.length === 1 ? matches[0] : undefined;
             if (match) {
               // Check if product has variants
               if (match.hasVariants) {
-                try {
-                  const variants = await getVariantsByProductId(match.id);
-                  // Try to match variant name (e.g. "أزرق XL")
-                  const variantMatch = variants.find((v: any) =>
-                    itemName.toLowerCase().includes((v.name || '').toLowerCase()) ||
-                    (v.name || '').toLowerCase().includes(itemName.toLowerCase())
-                  );
-                  if (variantMatch && variantMatch.isActive) {
-                    matchedItems.push({
-                      productId: match.id,
-                      variantId: variantMatch.id,
-                      name: `${match.name} - ${variantMatch.name}`,
-                      price: variantMatch.price || match.price,
-                      quantity: 1,
-                    });
-                    subtotal += variantMatch.price || match.price;
-                    continue;
-                  }
-                } catch { /* fallback to base product */ }
+                const variants = await getVariantsByProductId(match.id);
+                // Try to match variant name (e.g. "أزرق XL")
+                const variantMatches = variants.filter((v: any) =>
+                  v.isActive && v.name?.trim() && (
+                  normalizedName.includes(v.name.toLowerCase()) ||
+                  v.name.toLowerCase().includes(normalizedName))
+                );
+                const variantMatch = variantMatches.length === 1 ? variantMatches[0] : undefined;
+                if (variantMatch && variantMatch.isActive) {
+                  matchedItems.push({
+                    productId: match.id,
+                    variantId: variantMatch.id,
+                    name: `${match.name} - ${variantMatch.name}`,
+                    price: variantMatch.price ?? match.price,
+                    quantity: 1,
+                  });
+                  subtotal += variantMatch.price ?? match.price;
+                  continue;
+                }
+                // An unresolved option is not permission to order the base product.
+                continue;
               }
-              // No variants or no variant match → use base product
+              // Products without variants use the catalogue price.
               matchedItems.push({
                 productId: match.id,
                 name: match.name,
@@ -495,11 +505,11 @@ export async function executeAction(params: {
             }
           }
 
-          if (matchedItems.length === 0) {
-            // No products matched — send confirmation prompt only
+          if (matchedItems.length !== action.items.length) {
+            // Every requested item must resolve before any order is recorded.
             const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
             await sendMessage(customerPhone,
-              `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nتبي تأكد الطلب؟ أرسل "نعم" 🛒`
+              `تعذر مطابقة جميع المنتجات المطلوبة بدقة، ولم يُنشأ طلب.\n\n${itemsList}\n\nحدد المنتجات المتاحة وخياراتها أولاً.`
             );
             console.log(`[ActionSelector] ⚠️ No products matched — sent text confirmation only`);
             break;
@@ -509,14 +519,13 @@ export async function executeAction(params: {
           let taxAmount = 0;
           let totalAmount = subtotal;
           let taxRate = 0;
-          try {
-            const paySettings = await getMerchantPaymentSettings(merchantId);
-            if ((paySettings as any)?.taxEnabled && (paySettings as any)?.taxRate) {
-              taxRate = Math.max(0, Math.min(Number((paySettings as any).taxRate), 100)); // PEN-CC-05: clamp [0, 100]
-              taxAmount = Math.round(subtotal * taxRate / 100);
-              totalAmount = subtotal + taxAmount;
-            }
-          } catch { /* no tax */ }
+          const paySettings = await getMerchantPaymentSettings(merchantId);
+          if ((paySettings as any)?.taxEnabled && (paySettings as any)?.taxRate) {
+            taxRate = Math.max(0, Math.min(Number((paySettings as any).taxRate), 100)); // PEN-CC-05: clamp [0, 100]
+            taxAmount = Math.round(subtotal * taxRate / 100);
+            totalAmount = subtotal + taxAmount;
+          }
+          if (!Number.isSafeInteger(totalAmount) || totalAmount < 0) throw new Error('Invalid order total');
 
           // 3. Create order in DB (enrich customer name from profile)
           let customerName = customerPhone;
@@ -526,6 +535,8 @@ export async function executeAction(params: {
             if (profile?.displayName) customerName = profile.displayName;
           } catch { /* use phone as fallback */ }
 
+          await currentInboundExecution()?.assertOwned();
+          persistenceAttempted = true;
           const order = await createOrder({
             merchantId,
             customerPhone,
@@ -542,6 +553,7 @@ export async function executeAction(params: {
           if (!order) {
             throw new Error('Failed to create order in DB');
           }
+          createdOrderId = order.id;
 
           console.log(`[ActionSelector] ✅ Order #${order.id} created in DB (${matchedItems.length} items, ${totalAmount} ر.س)`);
 
@@ -584,6 +596,8 @@ export async function executeAction(params: {
               });
             }
           } catch (tapErr: any) {
+            const execution = currentInboundExecution();
+            if (execution) execution.uncertainEffect = true;
             console.warn('[ActionSelector] Canonical order payment link failed', {
               merchantId,
               orderId: order.id,
@@ -626,12 +640,15 @@ export async function executeAction(params: {
           console.log(`[ActionSelector] ✅ Order #${order.id} — confirmation sent to customer (payment: ${paymentUrl ? 'Tap' : 'manual'})`);
 
         } catch (orderErr: any) {
-          console.warn(`[ActionSelector] Order creation failed: ${orderErr.message}`);
-          // Transactional truth: never confirm an order when persistence failed.
-          const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
-          await sendMessage(customerPhone,
-            `تعذر إنشاء الطلب، ولم يتم تسجيله حتى الآن.\n\nالمنتجات المطلوبة:\n${itemsList}\n\nحاول مرة ثانية بعد قليل 🙏`
-          );
+          // A failed response after INSERT is not evidence that the order does
+          // not exist. Never send a contradictory second message or urge retry.
+          console.warn('[ActionSelector] Order action requires review', {
+            merchantId, conversationId, orderId: createdOrderId, persistenceAttempted,
+          });
+          if (!persistenceAttempted) {
+            await sendMessage(customerPhone, 'تعذر تجهيز تفاصيل الطلب، ولم تبدأ عملية تسجيله. يرجى مراجعة المنتجات والخيارات.');
+          }
+          throw orderErr;
         }
         break;
       }
@@ -668,7 +685,7 @@ export async function executeAction(params: {
           }
           console.log(`[ActionSelector] ✅ Order status sent (${recentOrders.length} orders found)`);
         } catch (statusErr: any) {
-          console.warn(`[ActionSelector] Order status check failed: ${statusErr.message}`);
+          throw statusErr;
         }
         break;
       }
@@ -677,6 +694,9 @@ export async function executeAction(params: {
         console.log(`[ActionSelector] Action ${(action as any).type} — no handler`);
     }
   } catch (err: any) {
-    console.warn(`[ActionSelector] Action execution failed: ${err.message}`);
+    const execution = currentInboundExecution();
+    if (execution) execution.uncertainEffect = true;
+    console.warn('[ActionSelector] Action execution requires review', { action: action.type, merchantId, conversationId });
+    throw err;
   }
 }

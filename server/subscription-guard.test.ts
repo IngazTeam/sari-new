@@ -1,190 +1,120 @@
-import { describe, it, expect } from 'vitest';
-import { checkCustomerLimit, getRemainingCustomerSlots } from './helpers/subscriptionGuard';
-import * as db from './db';
-import { TRPCError } from '@trpc/server';
-
-// Use existing merchant ID from database (150001 is the default test merchant)
-const TEST_MERCHANT_ID = 150001;
-
-describe('Subscription Guard - Basic Functionality', () => {
-  it('should have checkCustomerLimit function', () => {
-    expect(typeof checkCustomerLimit).toBe('function');
-  });
-
-  it('should have getRemainingCustomerSlots function', () => {
-    expect(typeof getRemainingCustomerSlots).toBe('function');
-  });
-
-  it('should return remaining slots for merchant with subscription', async () => {
-    const slots = await getRemainingCustomerSlots(TEST_MERCHANT_ID);
-    
-    expect(slots).toBeDefined();
-    expect(typeof slots.current).toBe('number');
-    expect(typeof slots.max).toBe('number');
-    expect(typeof slots.remaining).toBe('number');
-    expect(typeof slots.percentage).toBe('number');
-    
-    // Validate that current <= max
-    expect(slots.current).toBeLessThanOrEqual(slots.max);
-    
-    // Validate that remaining = max - current
-    expect(slots.remaining).toBe(Math.max(0, slots.max - slots.current));
-    
-    // Validate percentage is between 0 and 100
-    expect(slots.percentage).toBeGreaterThanOrEqual(0);
-    expect(slots.percentage).toBeLessThanOrEqual(100);
-  });
-
-  it('should allow existing customer to send messages', async () => {
-    // Get an existing customer from conversations
-    const conversations = await db.getConversationsByMerchantId(TEST_MERCHANT_ID);
-    
-    if (conversations.length > 0) {
-      const existingCustomerPhone = conversations[0].customerPhone;
-      
-      try {
-        // Should not throw error for existing customer
-        const result = await checkCustomerLimit(TEST_MERCHANT_ID, existingCustomerPhone);
-        expect(result).toBe(true);
-      } catch (error: any) {
-        // May throw error if merchant has no active subscription
-        expect(error).toBeInstanceOf(TRPCError);
-      }
-    } else {
-      // No conversations to test with
-      expect(true).toBe(true);
-    }
-  });
-
-  it('should throw TRPCError when merchant has no subscription', async () => {
-    // Use a non-existent merchant ID
-    const nonExistentMerchantId = 999999;
-    
-    try {
-      await checkCustomerLimit(nonExistentMerchantId, '+966500000000');
-      // If we reach here, test should fail
-      expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error).toBeInstanceOf(TRPCError);
-      expect(error.code).toBe('FORBIDDEN');
-      expect(error.message).toContain('لا يوجد اشتراك نشط');
-    }
-  });
-
-  it('should return zero slots for merchant without subscription', async () => {
-    const nonExistentMerchantId = 999999;
-    const slots = await getRemainingCustomerSlots(nonExistentMerchantId);
-    
-    expect(slots.current).toBe(0);
-    expect(slots.max).toBe(0);
-    expect(slots.remaining).toBe(0);
-    expect(slots.percentage).toBe(0);
-  });
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const mocks = vi.hoisted(() => ({
+  subscription: vi.fn(),
+  plan: vi.fn(),
+  count: vi.fn(),
+  conversation: vi.fn(),
+  instances: vi.fn(),
+}));
+vi.mock("./db", () => ({
+  getMerchantCurrentSubscription: mocks.subscription,
+  getSubscriptionPlanById: mocks.plan,
+  getCustomerCountByMerchant: mocks.count,
+  getConversationByMerchantAndPhone: mocks.conversation,
+  getWhatsAppInstancesByMerchantId: mocks.instances,
+}));
+import {
+  checkCustomerLimit,
+  checkWhatsAppNumberLimit,
+  getRemainingCustomerSlots,
+} from "./helpers/subscriptionGuard";
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.subscription.mockResolvedValue({ planId: 2 });
+  mocks.plan.mockResolvedValue({ maxCustomers: 10, maxWhatsAppNumbers: 2 });
+  mocks.count.mockResolvedValue(3);
+  mocks.conversation.mockResolvedValue(null);
+  mocks.instances.mockResolvedValue([]);
 });
-
-describe('Subscription Guard - Integration with Database', () => {
-  it('should correctly count customers for merchant', async () => {
-    const customerCount = await db.getCustomerCountByMerchant(TEST_MERCHANT_ID);
-    
-    expect(typeof customerCount).toBe('number');
-    expect(customerCount).toBeGreaterThanOrEqual(0);
+describe("subscription quota behavior", () => {
+  it("reports the actual finite remaining quota", async () => {
+    expect(await getRemainingCustomerSlots(7)).toEqual({
+      current: 3,
+      max: 10,
+      remaining: 7,
+      percentage: 30,
+    });
+    expect(mocks.count).toHaveBeenCalledWith(7);
   });
-
-  it('should get merchant subscription', async () => {
-    const subscription = await db.getMerchantCurrentSubscription(TEST_MERCHANT_ID);
-    
-    if (subscription) {
-      expect(subscription).toBeDefined();
-      expect(subscription.merchantId).toBe(TEST_MERCHANT_ID);
-      expect(subscription.planId).toBeDefined();
-      expect(['active', 'trial', 'expired', 'cancelled']).toContain(subscription.status);
-    }
+  it("rejects new customers at the exact limit", async () => {
+    mocks.count.mockResolvedValue(10);
+    await expect(checkCustomerLimit(7, "966500000009")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
-
-  it('should get subscription plan details', async () => {
-    const subscription = await db.getMerchantCurrentSubscription(TEST_MERCHANT_ID);
-    
-    if (subscription) {
-      const plan = await db.getSubscriptionPlanById(subscription.planId);
-      
-      expect(plan).toBeDefined();
-      expect(plan.maxCustomers).toBeGreaterThan(0);
-      expect(plan.maxWhatsAppNumbers).toBeGreaterThan(0);
-    }
+  it("allows an existing customer at the quota without counting it twice", async () => {
+    mocks.conversation.mockResolvedValue({ id: 8 });
+    await expect(checkCustomerLimit(7, "966500000009")).resolves.toBe(true);
+    expect(mocks.conversation).toHaveBeenCalledWith(7, "966500000009");
+    expect(mocks.count).not.toHaveBeenCalled();
   });
-});
-
-describe('Subscription Guard - Error Messages', () => {
-  it('should provide clear error message when limit reached', async () => {
-    // Create a test scenario where we manually check the logic
-    const slots = await getRemainingCustomerSlots(TEST_MERCHANT_ID);
-    
-    // If merchant has subscription and is at or near limit
-    if (slots.max > 0 && slots.remaining === 0) {
-      try {
-        // Try to add a new customer
-        await checkCustomerLimit(TEST_MERCHANT_ID, `+966${Date.now()}`);
-        // If no error, merchant has not reached limit yet
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(TRPCError);
-        expect(error.code).toBe('FORBIDDEN');
-        expect(error.message).toContain('الحد الأقصى للعملاء');
-        expect(error.message).toContain(slots.max.toString());
-        expect(error.message).toContain('الترقية');
-      }
-    } else {
-      // Skip test if merchant has no subscription or has remaining slots
-      expect(true).toBe(true);
-    }
+  it("does not bypass a missing subscription for an existing customer", async () => {
+    mocks.subscription.mockResolvedValue(null);
+    await expect(checkCustomerLimit(7, "966500000009")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(mocks.conversation).not.toHaveBeenCalled();
+    expect(await getRemainingCustomerSlots(7)).toEqual({
+      current: 0,
+      max: 0,
+      remaining: 0,
+      percentage: 0,
+    });
   });
-
-  it('should suggest upgrade in error message', async () => {
-    const slots = await getRemainingCustomerSlots(TEST_MERCHANT_ID);
-    
-    // Only test if merchant has subscription and is at limit
-    if (slots.max > 0 && slots.remaining === 0) {
-      try {
-        await checkCustomerLimit(TEST_MERCHANT_ID, `+966${Date.now()}`);
-      } catch (error: any) {
-        expect(error.message).toContain('الترقية');
-        expect(error.message).toContain('الباقة الأعلى');
-      }
-    } else {
-      // Skip test if merchant has no subscription or has remaining slots
-      expect(true).toBe(true);
-    }
+  it("allows a new customer below quota", async () => {
+    await expect(checkCustomerLimit(7, "966500000009")).resolves.toBe(true);
   });
-});
-
-describe('Subscription Guard - Edge Cases', () => {
-  it('should handle invalid phone numbers gracefully', async () => {
-    try {
-      const result = await checkCustomerLimit(TEST_MERCHANT_ID, 'invalid-phone');
-      expect(typeof result).toBe('boolean');
-    } catch (error: any) {
-      // May throw error if no subscription - that's expected
-      expect(error).toBeInstanceOf(TRPCError);
-    }
+  it("caps percentage without hiding actual overage", async () => {
+    mocks.count.mockResolvedValue(12);
+    expect(await getRemainingCustomerSlots(7)).toEqual({
+      current: 12,
+      max: 10,
+      remaining: 0,
+      percentage: 100,
+    });
   });
-
-  it('should handle empty phone numbers', async () => {
-    try {
-      const result = await checkCustomerLimit(TEST_MERCHANT_ID, '');
-      expect(typeof result).toBe('boolean');
-    } catch (error: any) {
-      // May throw error if no subscription - that's expected
-      expect(error).toBeInstanceOf(TRPCError);
-    }
+  it("does not return NaN for a zero-sized plan", async () => {
+    mocks.plan.mockResolvedValue({ maxCustomers: 0 });
+    mocks.count.mockResolvedValue(0);
+    expect(await getRemainingCustomerSlots(7)).toEqual({
+      current: 0,
+      max: 0,
+      remaining: 0,
+      percentage: 0,
+    });
+    await expect(checkCustomerLimit(7)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
-
-  it('should handle very long phone numbers', async () => {
-    try {
-      const longPhone = '+966' + '1'.repeat(100);
-      const result = await checkCustomerLimit(TEST_MERCHANT_ID, longPhone);
-      expect(typeof result).toBe('boolean');
-    } catch (error: any) {
-      // May throw error if no subscription - that's expected
-      expect(error).toBeInstanceOf(TRPCError);
+  it.each([undefined, NaN, Infinity, -1, 1.5])(
+    "fails closed on invalid stored quota %s",
+    async maxCustomers => {
+      mocks.plan.mockResolvedValue({ maxCustomers });
+      await expect(checkCustomerLimit(7)).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+      });
+      await expect(getRemainingCustomerSlots(7)).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+      });
     }
+  );
+  it("propagates a database failure instead of treating it as available quota", async () => {
+    mocks.subscription.mockRejectedValue(new Error("offline"));
+    await expect(checkCustomerLimit(7)).rejects.toThrow("offline");
+  });
+  it("fails closed when a subscribed plan cannot be loaded", async () => {
+    mocks.plan.mockResolvedValue(null);
+    await expect(checkCustomerLimit(7)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+    });
+  });
+  it("checks WhatsApp number capacity against the selected merchant", async () => {
+    mocks.instances.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    await expect(checkWhatsAppNumberLimit(7)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(mocks.instances).toHaveBeenCalledWith(7);
+    mocks.instances.mockResolvedValue([{ id: 1 }]);
+    await expect(checkWhatsAppNumberLimit(7)).resolves.toBe(true);
   });
 });

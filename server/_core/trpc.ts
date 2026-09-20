@@ -74,7 +74,10 @@ const requireMerchantMember = t.middleware(async opts => {
   try {
     const selected = parseMerchantSelection(ctx.req?.headers?.['x-merchant-id']);
     membership = await resolveMerchantAccess(ctx.user.id, selected);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'MerchantSelectionRequiredError') {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'اختر المتجر الذي تريد العمل عليه أولاً.' });
+    }
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر التحقق من صلاحيات المتجر. حاول لاحقاً.' });
   }
   if (!membership) throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية الوصول لهذا المتجر' });

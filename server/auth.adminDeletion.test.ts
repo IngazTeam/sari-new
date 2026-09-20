@@ -67,6 +67,15 @@ describe.skipIf(!process.env.DATABASE_URL)('admin deletion lifecycle (database i
        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 DAY))`,
       [target.user.id, randomBytes(32).toString('hex')],
     );
+    const [instance] = await pool.execute<any>(
+      "INSERT INTO whatsapp_instances (merchant_id, instance_id, token, provider, status) VALUES (?, ?, 'synthetic-token', 'mock', 'active')",
+      [target.merchantId, `deletion-${randomUUID()}`],
+    );
+    await pool.execute(
+      `INSERT INTO whatsapp_message_deliveries (merchant_id, instance_id, provider, idempotency_key, direction, status)
+       VALUES (?, ?, 'mock', ?, 'outgoing', 'sent')`,
+      [target.merchantId, Number(instance.insertId), `deletion-${randomUUID()}`],
+    );
 
     const first = await requestAccountDeletionByAdmin({
       merchantId: target.merchantId,
@@ -117,6 +126,8 @@ describe.skipIf(!process.env.DATABASE_URL)('admin deletion lifecycle (database i
     const [deletedMerchants] = await pool.execute('SELECT id FROM merchants WHERE id = ?', [target.merchantId]);
     expect(deletedUsers as any[]).toHaveLength(0);
     expect(deletedMerchants as any[]).toHaveLength(0);
+    const [deliveries] = await pool.execute('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id = ?', [target.merchantId]);
+    expect(deliveries).toHaveLength(0);
     const [requestsAfter] = await pool.execute(
       'SELECT status, user_id AS userId FROM data_subject_requests WHERE id = ?',
       [first.id],

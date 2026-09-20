@@ -30,5 +30,19 @@ export async function cleanupDisposableMerchants(userIds: number[]): Promise<voi
   assertDisposableDatabase();
   const pool = await getPool();
   if (!pool) throw new Error('Test database unavailable');
-  await pool.execute(`DELETE FROM users WHERE id IN (${userIds.map(() => '?').join(',')}) AND openId LIKE 'remediation-%'`, userIds);
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const placeholders = userIds.map(() => '?').join(',');
+    // Delete the leaf first: MySQL can reject the cascade diamond from merchant
+    // through instance/message SET NULL and delivery CASCADE in one parent delete.
+    await connection.execute(`DELETE d FROM whatsapp_message_deliveries d
+      JOIN merchants m ON m.id = d.merchant_id JOIN users u ON u.id = m.userId
+      WHERE u.id IN (${placeholders}) AND u.openId LIKE 'remediation-%'`, userIds);
+    await connection.execute(`DELETE FROM users WHERE id IN (${placeholders}) AND openId LIKE 'remediation-%'`, userIds);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally { connection.release(); }
 }

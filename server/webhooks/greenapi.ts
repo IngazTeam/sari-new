@@ -1823,11 +1823,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerMessage: messageText || undefined,
             conversationId,
             sendMessage: async (phone, msg) => {
-              await sendMessageWithCredentials(
+              const sent = await sendMessageWithCredentials(
                 instance.instanceId, instance.token,
                 instance.apiUrl || 'https://api.green-api.com',
                 phone, msg
               );
+              if (!sent.success) throw new Error('Supplementary delivery was not confirmed');
             },
           });
         }

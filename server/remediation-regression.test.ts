@@ -72,11 +72,12 @@ describe('10/10 remediation regression guards', () => {
 
   it('keeps customer export tenant-scoped and CSV-injection safe', () => {
     const routers = read('./server/routers.ts');
-    const customers = section(routers, 'customers: router({', '// Website Analysis');
+    expect(routers).toContain('customers: customersRouter,');
+    const customers = read('./server/routers-customers.ts');
     const csv = read('./server/utils/csv.ts');
 
-    expect(customers).toContain('exportCsv: protectedProcedure.query(async ({ ctx })');
-    expect(customers).toContain('getMerchantByUserId(ctx.user.id)');
+    expect(customers).toContain("exportCsv: permissionProcedure('customers.manage').query(async ({ ctx })");
+    expect(customers).toContain('getMerchantById(ctx.merchantId)');
     expect(csv).toMatch(/FORMULA_PREFIX/);
     expect(csv).toContain("text = `'${text}`;");
   });

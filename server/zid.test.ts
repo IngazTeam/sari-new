@@ -1,19 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { db } from './db';
+import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
+import { closeDb } from './db/connection';
 import * as dbZid from './db_zid';
 import type { InsertZidSettings } from '../drizzle/schema';
 
-describe('Zid Integration', () => {
-  const testMerchantId = 99999; // Test merchant ID
+describe.skipIf(!process.env.DATABASE_URL)('Zid Integration', () => {
+  let testMerchantId: number;
+  let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
+  beforeAll(async () => { fixture = await createDisposableMerchant('zid-adapter'); testMerchantId = fixture.merchantId; });
 
-  // Cleanup after tests
-  afterAll(async () => {
-    try {
-      await dbZid.deleteZidSettings(testMerchantId);
-    } catch (error) {
-      // Ignore cleanup errors
-    }
-  });
+  afterAll(async () => { if (fixture) await cleanupDisposableMerchants([fixture.userId]); await closeDb(); });
 
   describe('Zid Settings', () => {
     it('should create Zid settings', async () => {
@@ -176,6 +172,31 @@ describe('Zid Integration', () => {
   });
 
   describe('Cleanup', () => {
+    it('retains recent and unfinished logs and never cleans another merchant', async () => {
+      const other = await createDisposableMerchant('zid-retention-other');
+      try {
+        const old = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 19).replace('T', ' ');
+        const expired = await dbZid.createZidSyncLog({ merchantId: testMerchantId, syncType: 'orders', status: 'failed', completedAt: old });
+        const pending = await dbZid.createZidSyncLog({ merchantId: testMerchantId, syncType: 'orders', status: 'in_progress', startedAt: old });
+        const recent = await dbZid.createZidSyncLog({ merchantId: testMerchantId, syncType: 'orders', status: 'completed', completedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') });
+        const foreign = await dbZid.createZidSyncLog({ merchantId: other.merchantId, syncType: 'orders', status: 'completed', completedAt: old });
+        await dbZid.cleanupOldSyncLogs(testMerchantId, 30);
+        expect(await dbZid.getZidSyncLog(expired.id)).toBeUndefined();
+        for (const retained of [pending, recent, foreign]) expect(await dbZid.getZidSyncLog(retained.id)).toBeDefined();
+        await expect(dbZid.cleanupOldSyncLogs(testMerchantId, 0)).rejects.toThrow('retention');
+      } finally { await cleanupDisposableMerchants([other.userId]); }
+    });
+
+    it('persists token expiry as a UTC MySQL timestamp', async () => {
+      await dbZid.updateZidTokens(testMerchantId, {
+        accessToken: 'rotated-test-access', managerToken: 'rotated-test-manager', refreshToken: 'rotated-test-refresh',
+        tokenExpiresAt: '2027-01-20T10:30:00.000Z',
+      });
+      const settings = await dbZid.getZidSettings(testMerchantId);
+      expect(settings?.tokenExpiresAt).toBe('2027-01-20 10:30:00');
+      expect(settings?.accessToken).toBe('rotated-test-access');
+    });
+
     it('should delete Zid settings', async () => {
       await dbZid.deleteZidSettings(testMerchantId);
       const settings = await dbZid.getZidSettings(testMerchantId);

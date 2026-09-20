@@ -6,11 +6,15 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as db from './db';
+import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
+import { closeDb } from './db/connection';
 
 // Test merchant ID (use existing test merchant)
-const testMerchantId = 150001;
+let testMerchantId: number;
+let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
 
-describe('Merchant Payment Settings', () => {
+describe.skipIf(!process.env.DATABASE_URL)('Merchant Payment Settings', () => {
+  beforeAll(async () => { fixture = await createDisposableMerchant('tap-settings'); testMerchantId = fixture.merchantId; });
   describe('Database Functions', () => {
     it('should create payment settings for merchant', async () => {
       const settings = await db.upsertMerchantPaymentSettings(testMerchantId, {
@@ -94,7 +98,7 @@ describe('Merchant Payment Settings', () => {
     });
 
     it('should return null for non-existent merchant', async () => {
-      const settings = await db.getMerchantPaymentSettings(999999);
+      const settings = await db.getMerchantPaymentSettings(2147483647);
       expect(settings).toBeNull();
     });
   });
@@ -123,15 +127,5 @@ describe('Merchant Payment Settings', () => {
     });
   });
 
-  // Cleanup
-  afterAll(async () => {
-    // Reset to default state
-    await db.upsertMerchantPaymentSettings(testMerchantId, {
-      tapEnabled: 0,
-      tapPublicKey: null,
-      tapSecretKey: null,
-      tapTestMode: 1,
-      isVerified: 0,
-    });
-  });
+  afterAll(async () => { if (fixture) await cleanupDisposableMerchants([fixture.userId]); await closeDb(); });
 });

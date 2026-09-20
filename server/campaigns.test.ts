@@ -1,189 +1,70 @@
-import { describe, expect, it } from "vitest";
-import { appRouter } from "./routers";
-import type { TrpcContext } from "./_core/context";
-
-type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
-
-function createMerchantContext(): TrpcContext {
-  const user: AuthenticatedUser = {
-    id: 1,
-    openId: "test-merchant",
-    email: "merchant@example.com",
-    name: "Test Merchant",
-    loginMethod: "email",
-    role: "user",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedIn: new Date(),
-  };
-
-  const ctx: TrpcContext = {
-    user,
-    req: {
-      protocol: "https",
-      headers: {},
-    } as TrpcContext["req"],
-    res: {
-      clearCookie: () => {},
-    } as TrpcContext["res"],
-  };
-
-  return ctx;
-}
-
-function createAdminContext(): TrpcContext {
-  const user: AuthenticatedUser = {
-    id: 2,
-    openId: "test-admin",
-    email: "admin@example.com",
-    name: "Test Admin",
-    loginMethod: "email",
-    role: "admin",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedIn: new Date(),
-  };
-
-  const ctx: TrpcContext = {
-    user,
-    req: {
-      protocol: "https",
-      headers: {},
-    } as TrpcContext["req"],
-    res: {
-      clearCookie: () => {},
-    } as TrpcContext["res"],
-  };
-
-  return ctx;
-}
-
-describe("campaigns router", () => {
-  describe("campaigns.list", () => {
-    it("should return campaigns for authenticated merchant", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      // This will fail if no merchant exists, but that's expected in a real test
-      // In production, you'd mock the database calls
-      try {
-        const result = await caller.campaigns.list();
-        expect(Array.isArray(result)).toBe(true);
-      } catch (error: any) {
-        // Expected if merchant doesn't exist in test DB
-        expect(error.message).toContain('Merchant not found');
-      }
-    });
-  });
-
-  describe("campaigns.create", () => {
-    it("should create a campaign with valid data", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const campaignData = {
-        name: "Test Campaign",
-        message: "This is a test campaign message",
-      };
-
-      try {
-        const result = await caller.campaigns.create(campaignData);
-        expect(result).toHaveProperty('id');
-        expect(result).toHaveProperty('name', campaignData.name);
-        expect(result).toHaveProperty('message', campaignData.message);
-      } catch (error: any) {
-        // Expected if merchant doesn't exist in test DB
-        expect(error.message).toContain('Merchant not found');
-      }
-    });
-
-    it("should reject campaign creation with empty name", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const campaignData = {
-        name: "",
-        message: "This is a test campaign message",
-      };
-
-      await expect(caller.campaigns.create(campaignData)).rejects.toThrow();
-    });
-  });
-
-  describe("campaigns.listAll (admin only)", () => {
-    it("should allow admin to list all campaigns", async () => {
-      const ctx = createAdminContext();
-      const caller = appRouter.createCaller(ctx);
-
-      try {
-        const result = await caller.campaigns.listAll();
-        expect(Array.isArray(result)).toBe(true);
-      } catch (error: any) {
-        // Database might not be available in test environment
-        console.log('Expected error in test environment:', error.message);
-      }
-    });
-
-    it("should reject non-admin users", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(caller.campaigns.listAll()).rejects.toThrow('Admin access required');
-    });
-  });
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), campaigns: vi.fn(), create: vi.fn(), allCampaigns: vi.fn(), allMerchants: vi.fn(), plans: vi.fn() }));
+vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
+vi.mock('./db', async original => ({
+  ...(await original<typeof import('./db')>()),
+  getMerchantById: mocks.merchant,
+  getMerchantByUserId: mocks.merchant,
+  getCampaignsByMerchantId: mocks.campaigns,
+  createCampaign: mocks.create,
+  getAllCampaignsWithMerchants: mocks.allCampaigns,
+  getAllMerchants: mocks.allMerchants,
+  getAllPlans: mocks.plans,
+}));
+import { appRouter } from './routers';
+const caller = (role = 'user') => appRouter.createCaller({ user: { id: 7, role }, req: { headers: { 'x-merchant-id': '20' } }, res: {} } as any);
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.access.mockResolvedValue({ merchantId: 20, role: 'owner', memberId: 1 });
+  mocks.merchant.mockResolvedValue({ id: 20, status: 'active' });
+  mocks.campaigns.mockResolvedValue([{ id: 4, merchantId: 20 }]);
+  mocks.create.mockImplementation(async data => ({ id: 4, ...data }));
+  mocks.allCampaigns.mockResolvedValue([{ id: 4, merchantId: 20 }]);
+  mocks.allMerchants.mockResolvedValue([{ id: 20 }]);
+  mocks.plans.mockResolvedValue([{ id: 2, name: 'fixture' }]);
 });
-
-describe("merchants router", () => {
-  describe("merchants.getCurrent", () => {
-    it("should return current merchant for authenticated user", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      try {
-        const result = await caller.merchants.getCurrent();
-        // Result might be null if merchant doesn't exist
-        expect(result === null || typeof result === 'object').toBe(true);
-      } catch (error: any) {
-        // Database might not be available
-        console.log('Expected error in test environment:', error.message);
-      }
-    });
+describe('mounted campaign, merchant and plan contracts', () => {
+  it('returns only campaigns of the verified selected merchant', async () => {
+    expect(await caller().campaigns.list()).toEqual([{ id: 4, merchantId: 20 }]);
+    expect(mocks.access).toHaveBeenCalledWith(7, 20);
+    expect(mocks.campaigns).toHaveBeenCalledWith(20);
   });
-
-  describe("merchants.list (admin only)", () => {
-    it("should allow admin to list all merchants", async () => {
-      const ctx = createAdminContext();
-      const caller = appRouter.createCaller(ctx);
-
-      try {
-        const result = await caller.merchants.list();
-        expect(Array.isArray(result)).toBe(true);
-      } catch (error: any) {
-        console.log('Expected error in test environment:', error.message);
-      }
-    });
-
-    it("should reject non-admin users", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(caller.merchants.list()).rejects.toThrow('Admin access required');
-    });
+  it('creates a draft with server-owned tenant and lifecycle fields', async () => {
+    const input = { name: 'Test campaign', message: 'Test message' };
+    expect(await caller().campaigns.create(input)).toMatchObject({ id: 4, merchantId: 20, status: 'draft', ...input });
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ merchantId: 20, sentCount: 0, totalRecipients: 0 }));
   });
-});
-
-describe("plans router", () => {
-  describe("plans.list", () => {
-    it("should return all active plans for public access", async () => {
-      const ctx = createMerchantContext();
-      const caller = appRouter.createCaller(ctx);
-
-      try {
-        const result = await caller.plans.list();
-        expect(Array.isArray(result)).toBe(true);
-      } catch (error: any) {
-        console.log('Expected error in test environment:', error.message);
-      }
-    });
+  it('rejects empty campaign names before any database write', async () => {
+    await expect(caller().campaigns.create({ name: '', message: 'fixture' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it('allows the platform admin to list all campaigns', async () => {
+    expect(await caller('admin').campaigns.listAll()).toEqual([{ id: 4, merchantId: 20 }]);
+    expect(mocks.allCampaigns).toHaveBeenCalledTimes(1);
+  });
+  it('rejects non-admin global campaign reads before querying', async () => {
+    await expect(caller().campaigns.listAll()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(mocks.allCampaigns).not.toHaveBeenCalled();
+  });
+  it('returns the current merchant through the mounted adapter', async () => {
+    expect(await caller().merchants.getCurrent()).toMatchObject({ id: 20 });
+    expect(mocks.merchant).toHaveBeenCalledWith(7);
+  });
+  it('allows the platform admin to list merchants', async () => {
+    expect(await caller('admin').merchants.list()).toEqual([{ id: 20 }]);
+    expect(mocks.allMerchants).toHaveBeenCalledTimes(1);
+  });
+  it('rejects non-admin global merchant reads before querying', async () => {
+    await expect(caller().merchants.list()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(mocks.allMerchants).not.toHaveBeenCalled();
+  });
+  it('serves public plans without requiring a merchant identity', async () => {
+    const publicCaller = appRouter.createCaller({ user: null, req: { headers: {} }, res: {} } as any);
+    expect(await publicCaller.plans.list()).toEqual([{ id: 2, name: 'fixture' }]);
+    expect(mocks.access).not.toHaveBeenCalled();
+  });
+  it('propagates database failures instead of treating them as a passed smoke test', async () => {
+    mocks.campaigns.mockRejectedValue(new Error('fixture database unavailable'));
+    await expect(caller().campaigns.list()).rejects.toThrow('fixture database unavailable');
   });
 });

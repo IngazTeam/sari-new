@@ -71,4 +71,13 @@ describe.skipIf(!process.env.DATABASE_URL)('merchant identity and products (MySQ
     await pool.execute('UPDATE merchant_members SET is_active = 0 WHERE merchant_id = ? AND user_id = ?', [b.merchantId, a.userId]);
     await expect(caller.list()).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
+  it('requires a choice across a legacy owned store and a separate modern membership', async () => {
+    const a = await fixture('mixed-owner'); const b = await fixture('mixed-member');
+    await (await getPool())!.execute("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'viewer',1)", [b.merchantId, a.userId]);
+    await expect(resolveMerchantAccess(a.userId)).rejects.toThrow('selection required');
+    expect(await resolveMerchantAccess(a.userId, a.merchantId)).toMatchObject({ merchantId: a.merchantId, role: 'owner' });
+    expect(await resolveMerchantAccess(a.userId, b.merchantId)).toMatchObject({ merchantId: b.merchantId, role: 'viewer' });
+    const caller = productsRouter.createCaller({ user: { id: a.userId }, req: {}, res: {} } as any);
+    await expect(caller.list()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+  });
 });

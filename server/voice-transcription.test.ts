@@ -1,43 +1,118 @@
-import { describe, it, expect } from 'vitest';
-import axios from 'axios';
-import { ENV } from './_core/env';
-
-describe('OpenAI API Key Validation', () => {
-  it('should have a valid OpenAI API key', async () => {
-    expect(ENV.openaiApiKey).toBeTruthy();
-    expect(ENV.openaiApiKey.length).toBeGreaterThan(20);
-    expect(ENV.openaiApiKey.startsWith('sk-')).toBe(true);
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const mocks = vi.hoisted(() => ({
+  download: vi.fn(),
+  budget: vi.fn(),
+  config: vi.fn(),
+  post: vi.fn(),
+}));
+vi.mock("axios", () => ({ default: { post: mocks.post } }));
+vi.mock("./security/download-media", () => ({
+  downloadPublicMedia: mocks.download,
+}));
+vi.mock("./ai/budget-ledger", () => ({ withAiBudget: mocks.budget }));
+vi.mock("./ai/zahypi-client", () => ({
+  resolveZahyPiRuntimeConfig: mocks.config,
+  getOptionalZahyPiRequestContext: () => undefined,
+}));
+vi.mock("./_core/env", () => ({
+  ENV: { openaiApiKey: "synthetic-test-token" },
+}));
+import { transcribeVoiceMessage } from "./voice-transcription";
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.config.mockResolvedValue({ enabled: true });
+  mocks.download.mockResolvedValue({
+    data: Buffer.from("synthetic audio fixture"),
   });
-
-  it('should be able to call OpenAI API with the key', async () => {
-    // Test with a simple API call to verify the key works
-    try {
-      const response = await axios.get(
-        'https://api.openai.com/v1/models',
-        {
-          headers: {
-            'Authorization': `Bearer ${ENV.openaiApiKey}`,
-          },
-          timeout: 10000,
-        }
-      );
-      
-      expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('data');
-      expect(Array.isArray(response.data.data)).toBe(true);
-      
-      // Check if whisper-1 model is available
-      const whisperModel = response.data.data.find((model: any) => model.id === 'whisper-1');
-      expect(whisperModel).toBeDefined();
-      
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Invalid OpenAI API key - Authentication failed');
-      } else if (error.response?.status === 429) {
-        throw new Error('Rate limit exceeded - Please check your OpenAI account');
-      } else {
-        throw error;
-      }
+  mocks.budget.mockImplementation(async (_input, run) =>
+    run({ requestId: "test-attempt" })
+  );
+  mocks.post.mockResolvedValue({
+    data: { text: "نص الاختبار", language: "ar" },
+  });
+});
+describe("production voice transcription (isolated transport)", () => {
+  it("uses guarded download and platform budget before the provider call", async () => {
+    expect(
+      await transcribeVoiceMessage(
+        "https://media.example.test/voice.ogg",
+        "ar",
+        7
+      )
+    ).toMatchObject({ text: "نص الاختبار", language: "ar" });
+    expect(mocks.download).toHaveBeenCalledWith(
+      "https://media.example.test/voice.ogg"
+    );
+    expect(mocks.budget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        merchantId: 7,
+        provider: "openai",
+        taskType: "voice.transcription",
+      }),
+      expect.any(Function),
+      expect.any(Function)
+    );
+    expect(mocks.post).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/audio/transcriptions",
+      expect.anything(),
+      expect.objectContaining({
+        timeout: 60000,
+        maxRedirects: 0,
+        headers: expect.objectContaining({
+          "X-Client-Request-Id": "test-attempt",
+        }),
+      })
+    );
+  });
+  it("does not download or transcribe when AI is disabled", async () => {
+    mocks.config.mockResolvedValue({ enabled: false });
+    await expect(
+      transcribeVoiceMessage("https://media.example.test/a")
+    ).rejects.toThrow();
+    expect(mocks.download).not.toHaveBeenCalled();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it("does not bypass a refused platform reservation", async () => {
+    mocks.budget.mockRejectedValue(new Error("budget exhausted"));
+    await expect(
+      transcribeVoiceMessage("https://media.example.test/a")
+    ).rejects.toThrow();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it.each([0, 25 * 1024 * 1024 + 1])(
+    "rejects audio of %s bytes before spending",
+    async length => {
+      mocks.download.mockResolvedValue({ data: Buffer.alloc(length) });
+      await expect(
+        transcribeVoiceMessage("https://media.example.test/a")
+      ).rejects.toThrow();
+      expect(mocks.budget).not.toHaveBeenCalled();
+      expect(mocks.post).not.toHaveBeenCalled();
     }
-  }, 15000); // 15 second timeout
+  );
+  it.each([undefined, "", "   ", 42, {}])(
+    "rejects invalid transcript: %j",
+    async text => {
+      mocks.post.mockResolvedValue({ data: { text } });
+      await expect(
+        transcribeVoiceMessage("https://media.example.test/a")
+      ).rejects.toThrow("فشل تحويل");
+    }
+  );
+  it("sanitizes transport errors in logs and caller responses", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mocks.post.mockRejectedValue(
+        new Error("Authorization: synthetic-test-token")
+      );
+      await expect(
+        transcribeVoiceMessage("https://media.example.test/a")
+      ).rejects.toThrow("فشل تحويل");
+      expect(JSON.stringify(log.mock.calls)).not.toContain(
+        "synthetic-test-token"
+      );
+    } finally {
+      log.mockRestore();
+    }
+  });
 });

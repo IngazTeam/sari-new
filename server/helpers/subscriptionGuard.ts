@@ -7,6 +7,13 @@ import {
   getWhatsAppInstancesByMerchantId,
 } from '../db';
 
+function verifiedCount(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر التحقق من حدود الاشتراك' });
+  }
+  return value;
+}
+
 /**
  * Check if merchant can add new customers based on subscription limits
  * @param merchantId The merchant ID
@@ -47,7 +54,7 @@ export async function checkCustomerLimit(merchantId: number, customerPhone?: str
   const currentCustomerCount = await getCustomerCountByMerchant(merchantId);
 
   // Check if limit reached
-  if (currentCustomerCount >= plan.maxCustomers) {
+  if (verifiedCount(currentCustomerCount) >= verifiedCount(plan.maxCustomers)) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `لقد وصلت إلى الحد الأقصى للعملاء (${plan.maxCustomers}) في باقتك الحالية. يرجى الترقية للباقة الأعلى لإضافة المزيد من العملاء.`,
@@ -89,7 +96,7 @@ export async function checkWhatsAppNumberLimit(merchantId: number): Promise<bool
   const currentCount = whatsappNumbers.length;
 
   // Check if limit reached
-  if (currentCount >= plan.maxWhatsAppNumbers) {
+  if (verifiedCount(currentCount) >= verifiedCount(plan.maxWhatsAppNumbers)) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `لقد وصلت إلى الحد الأقصى لأرقام الواتساب (${plan.maxWhatsAppNumbers}) في باقتك الحالية. يرجى الترقية للباقة الأعلى أو شراء خدمة إضافية.`,
@@ -123,13 +130,14 @@ export async function getRemainingCustomerSlots(merchantId: number): Promise<{
     return { current: 0, max: 0, remaining: 0, percentage: 0 };
   }
 
-  const currentCount = await getCustomerCountByMerchant(merchantId);
-  const remaining = Math.max(0, plan.maxCustomers - currentCount);
-  const percentage = (currentCount / plan.maxCustomers) * 100;
+  const currentCount = verifiedCount(await getCustomerCountByMerchant(merchantId));
+  const maximum = verifiedCount(plan.maxCustomers);
+  const remaining = Math.max(0, maximum - currentCount);
+  const percentage = maximum === 0 ? (currentCount === 0 ? 0 : 100) : (currentCount / maximum) * 100;
 
   return {
     current: currentCount,
-    max: plan.maxCustomers,
+    max: maximum,
     remaining,
     percentage: Math.min(100, percentage),
   };

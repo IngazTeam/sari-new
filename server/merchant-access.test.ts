@@ -29,7 +29,7 @@ describe('merchant access identity boundary', () => {
   it('uses authenticated membership and ignores a prepopulated/forged tenant', async () => {
     mocks.execute.mockResolvedValue([[{ merchantId: 20, memberId: 1, role: 'manager' }]]);
     await expect(accessRouter.createCaller(context()).write()).resolves.toEqual({ merchantId: 20 });
-    expect(mocks.execute.mock.calls[0][1]).toEqual([10]);
+    expect(mocks.execute.mock.calls[0][1]).toEqual([10, 10, 10]);
   });
   it.each(['owner', 'manager', 'sales_supervisor'])('allows %s product writes', async role => {
     mocks.execute.mockResolvedValue([[{ merchantId: 20, memberId: 1, role }]]);
@@ -52,13 +52,13 @@ describe('merchant access identity boundary', () => {
     await expect(accessRouter.createCaller({ ...context(), user: null }).read()).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
   it('limits legacy ownership to accounts with no membership history in that store', async () => {
-    mocks.execute.mockResolvedValueOnce([[]]).mockResolvedValueOnce([[{ merchantId: 20 }]]);
+    mocks.execute.mockResolvedValueOnce([[{ merchantId: 20, memberId: null, role: 'owner' }]]);
     await expect(resolveMerchantAccess(10)).resolves.toEqual({ merchantId: 20, memberId: null, role: 'owner' });
-    const [sql, params] = mocks.execute.mock.calls[1];
+    const [sql, params] = mocks.execute.mock.calls[0];
     expect(sql).toContain('NOT EXISTS');
     expect(sql).toContain('mm.merchant_id = m.id AND mm.user_id = ?');
-    expect(sql).not.toContain('mm.is_active');
-    expect(params).toEqual([10, 10]);
+    expect(sql.slice(sql.indexOf('UNION ALL'))).not.toContain('mm.is_active');
+    expect(params).toEqual([10, 10, 10]);
   });
   it('rejects missing/revoked membership and suspended or deleted stores', async () => {
     mocks.execute.mockResolvedValue([[]]);
