@@ -1,6 +1,7 @@
 // Load .env FIRST — this module must be imported before anything else
 // so esbuild places it at the top of the bundle
 import "./loadEnv";
+import { authorizeKnowledgeUpload, KnowledgeUploadAccessError } from '../knowledge/upload-access';
 import express from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
@@ -282,9 +283,7 @@ async function startServer() {
       const user = await resolveUser(req);
       if (!user) return res.status(401).json({ error: 'غير مصرح' });
 
-      const { getMerchantByUserId } = await import('../db');
-      const merchant = await getMerchantByUserId(user.id);
-      if (!merchant) return res.status(404).json({ error: 'التاجر غير موجود' });
+      const merchant = await authorizeKnowledgeUpload(user.id, req.headers['x-merchant-id']);
 
       const decision = await reserveApiRateLimit({
         namespace: 'merchant_knowledge_upload',
@@ -298,7 +297,8 @@ async function startServer() {
       }
       req.uploadMerchant = merchant;
       next();
-    } catch {
+    } catch (error) {
+      if (error instanceof KnowledgeUploadAccessError) return res.status(error.status).json({ error: error.message });
       return res.status(503).json({ error: 'تعذر التحقق من جاهزية الرفع حاليًا.' });
     }
   }, (req: any, res: any, next: any) => {

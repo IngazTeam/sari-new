@@ -822,7 +822,7 @@ export async function getActiveKnowledgeDoc(merchantId: number): Promise<Merchan
       eq(merchantKnowledgeDocs.merchantId, merchantId),
       eq(merchantKnowledgeDocs.extractionStatus, 'completed')
     ))
-    .orderBy(desc(merchantKnowledgeDocs.uploadedAt))
+    .orderBy(desc(merchantKnowledgeDocs.uploadedAt), desc(merchantKnowledgeDocs.id))
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;

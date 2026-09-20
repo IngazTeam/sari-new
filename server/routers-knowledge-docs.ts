@@ -5,15 +5,17 @@
  * This is a standalone module following the "Parallel Coexistence" pattern.
  */
 
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
-  deleteKnowledgeDocsByMerchantId,
   getKnowledgeDocByMerchantId,
   getMerchantById,
   updateKnowledgeDoc,
 } from './db';
+
+import { removeKnowledgeSource } from './knowledge/source-lifecycle';
+import { downloadPublicMedia } from './security/download-media';
+import { assertKnowledgeDocumentSignature } from './security/upload-validation';
 
 export const knowledgeDocsRouter = router({
   // Get current knowledge doc for logged-in merchant
@@ -34,7 +36,8 @@ export const knowledgeDocsRouter = router({
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    await deleteKnowledgeDocsByMerchantId(merchant.id);
+    try { await removeKnowledgeSource(merchant.id, 'document'); }
+    catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' }); }
     return { success: true };
   }),
 
@@ -49,17 +52,21 @@ export const knowledgeDocsRouter = router({
     if (!doc.fileUrl) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد ملف محفوظ لإعادة المعالجة' });
     }
+    const fileType = doc.fileType;
+    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'xlsx') {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع الملف غير مدعوم لإعادة المعالجة' });
+    }
 
     // Re-download and re-extract
     try {
       const { storageGet } = await import('./storage');
       const fileData = await storageGet(doc.fileUrl);
 
-      const response = await fetch(fileData.url);
-      const buffer = Buffer.from(await response.arrayBuffer());
+      const { data: buffer } = await downloadPublicMedia(fileData.url, 5 * 1024 * 1024);
+      assertKnowledgeDocumentSignature(buffer, fileType);
 
       const { extractTextFromDocument } = await import('./document-parser');
-      const { text } = await extractTextFromDocument(buffer, doc.fileType as 'pdf' | 'docx');
+      const { text } = await extractTextFromDocument(buffer, fileType);
 
       await updateKnowledgeDoc(doc.id, {
         extractedText: text,
@@ -83,13 +90,13 @@ export const knowledgeDocsRouter = router({
           await embedAllSections(merchant.id, true);
           await knowledgeDb.invalidateCache(merchant.id);
         }
-      } catch (keErr: any) {
-        console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
+      } catch {
+        console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking)');
       }
 
       return { success: true, textLength: text.length };
-    } catch (error) {
-      console.error('[KnowledgeDocs] Reprocess failed:', error);
+    } catch {
+      console.error('[KnowledgeDocs] Reprocess failed');
       await updateKnowledgeDoc(doc.id, { extractionStatus: 'failed' });
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إعادة معالجة الملف' });
     }

@@ -1,3 +1,4 @@
+import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
  * Sari Brain Management Router
  * Manages knowledge sources, brain reset, and activity logging
@@ -11,12 +12,7 @@ import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   createExtractedFaq,
   createWebsiteAnalysis,
-  deleteAllExtractedFaqs,
-  deleteAllProductsByMerchantId,
   deleteExtractedFaq,
-  deleteKnowledgeDoc,
-  deleteKnowledgeDocsByMerchantId,
-  deleteWebsiteAnalysis,
   getDb,
   getExtractedFaqsByMerchantId,
   getKnowledgeDocByMerchantId,
@@ -24,10 +20,10 @@ import {
   getPool,
   getProductCountByMerchantId,
   getProductsByMerchantId,
-  getWebsiteAnalysesByMerchant,
   updateExtractedFaq,
   updateWebsiteAnalysis,
 } from './db';
+import { removeKnowledgeSource, resetKnowledgeSources, KnowledgeSourceNotFoundError } from './knowledge/source-lifecycle';
 import { assertRuntimeSchema } from './db/schema-readiness';
 import { getIntegrationAudienceCount } from './integrations/audience-count';
 
@@ -218,12 +214,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
     const result = await analyzeWebsite(websiteUrl, merchant.id);
     updateProgress('processing', 40);
 
-    // Delete old analyses, create new
-    try {
-      const existingAnalyses = await getWebsiteAnalysesByMerchant(merchant.id);
-      for (const old of existingAnalyses) { await deleteWebsiteAnalysis(old.id); }
-    } catch { /* first run */ }
-
+    // Preserve the previous usable analysis until the new result is stored.
     const analysisId = await createWebsiteAnalysis({
       merchantId: merchant.id, url: websiteUrl,
       title: result.title || '', description: result.description || '',
@@ -243,26 +234,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
       scrapedContent: cleanText((result._scrapedText || '') + '\n\n' + (result._enrichedText || '')),
     });
 
-    // Save crawled pages
-    if ((result as any)._crawledPages?.length > 0) {
-      try {
-        const dbConn = await getRawPool();
-        if (dbConn) {
-          await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
-          const enumSet = new Set(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
-          for (const page of (result as any)._crawledPages) {
-            if (!page.success) continue;
-            const safeType = enumSet.has(page.pageType) ? page.pageType : 'other';
-            try {
-              await (dbConn as any).execute(
-                `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), cleanText((page.content || '')).substring(0, 65000)]
-              );
-            } catch { /* skip */ }
-          }
-        }
-      } catch (e: any) { console.warn('[SariBrain] Pages save failed:', e.message); }
-    }
+    await persistCrawledKnowledge(merchant.id, websiteUrl, result);
 
     await logBrainActivity(merchant.id, 'website_analyzed', `تم تحليل الموقع: ${websiteUrl}`, {
       url: websiteUrl, title: result.title, score: result.overallScore,
@@ -463,72 +435,11 @@ export const sariBrainRouter = router({
       // PEN-BRAIN-05: Rate limit destructive operations (10s cooldown)
       checkDestructiveRateLimit(merchant.id, 10_000);
 
-      switch (input.sourceType) {
-        case 'document': {
-          // PEN-BRAIN-03 FIX: Validate sourceId matches actual doc
-          const doc = await getKnowledgeDocByMerchantId(merchant.id);
-          if (!doc || `doc-${doc.id}` !== input.sourceId) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
-          }
-          await deleteKnowledgeDoc(doc.id);
-          // CASCADE: Delete knowledge sections from document source
-          try {
-            const knowledgeDb = await import('./db/knowledge');
-            await knowledgeDb.deleteSectionsBySource(merchant.id, 'document');
-          } catch { /* non-blocking */ }
-          await logBrainActivity(merchant.id, 'document_deleted', 'تم حذف الملف التعريفي وأقسام المعرفة المرتبطة');
-          break;
-        }
-        case 'products': {
-          // PERF-02 FIX: use COUNT instead of fetching all rows
-          const count = await getProductCountByMerchantId(merchant.id);
-          if (count === 0) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد منتجات للحذف' });
-          }
-          await deleteAllProductsByMerchantId(merchant.id);
-          await logBrainActivity(merchant.id, 'products_deleted', `تم حذف ${count} منتج`, { count });
-          break;
-        }
-        case 'website': {
-          try {
-            const dbConn = await getRawPool();
-            if (dbConn) {
-              const [result] = await (dbConn as any).execute(
-                `DELETE FROM website_analyses WHERE merchant_id = ?`,
-                [merchant.id]
-              );
-              if ((result as any)?.affectedRows === 0) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد تحليل موقع للحذف' });
-              }
-              // CASCADE: Delete discovered pages
-              await (dbConn as any).execute(
-                `DELETE FROM discovered_pages WHERE merchant_id = ?`,
-                [merchant.id]
-              );
-            }
-          } catch (e: any) {
-            if (e?.code === 'NOT_FOUND') throw e;
-            console.error('[SariBrain] Failed to delete website analysis:', e);
-          }
-          // CASCADE: Delete knowledge sections from website source
-          try {
-            const knowledgeDb = await import('./db/knowledge');
-            await knowledgeDb.deleteSectionsBySource(merchant.id, 'website');
-          } catch { /* non-blocking */ }
-          await logBrainActivity(merchant.id, 'website_deleted', 'تم حذف تحليل الموقع وجميع البيانات المرتبطة');
-          break;
-        }
-        case 'faqs': {
-          const faqCount = (await getExtractedFaqsByMerchantId(merchant.id)).length;
-          if (faqCount === 0) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد أسئلة شائعة للحذف' });
-          }
-          await deleteAllExtractedFaqs(merchant.id);
-          await logBrainActivity(merchant.id, 'faqs_deleted', `تم حذف ${faqCount} سؤال شائع`, { count: faqCount });
-          break;
-        }
-        default:
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المصدر غير صالح' });
+      try {
+        await removeKnowledgeSource(merchant.id, input.sourceType, input.sourceId);
+      } catch (error) {
+        if (error instanceof KnowledgeSourceNotFoundError) throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' });
       }
 
       return { success: true };
@@ -542,52 +453,12 @@ export const sariBrainRouter = router({
     // PEN-BRAIN-05: Rate limit — 60s cooldown for full reset
     checkDestructiveRateLimit(merchant.id, 60_000);
 
-    let deletedSources: string[] = [];
-
-    // Delete knowledge documents
     try {
-      await deleteKnowledgeDocsByMerchantId(merchant.id);
-      deletedSources.push('document');
-    } catch (e) { /* skip */ }
-
-    // Delete all products
-    try {
-      await deleteAllProductsByMerchantId(merchant.id);
-      deletedSources.push('products');
-    } catch (e) { /* skip */ }
-
-    // Delete website analyses + discovered pages
-    try {
-      const dbConn = await getRawPool();
-      if (dbConn) {
-        await (dbConn as any).execute(
-          `DELETE FROM website_analyses WHERE merchant_id = ?`,
-          [merchant.id]
-        );
-        await (dbConn as any).execute(
-          `DELETE FROM discovered_pages WHERE merchant_id = ?`,
-          [merchant.id]
-        );
-        deletedSources.push('website');
-      }
-    } catch (e) { /* skip */ }
-
-    // Delete all FAQs
-    try {
-      await deleteAllExtractedFaqs(merchant.id);
-      deletedSources.push('faqs');
-    } catch (e) { /* skip */ }
-
-    // Delete all knowledge sections + changelog
-    try {
-      const knowledgeDb = await import('./db/knowledge');
-      await knowledgeDb.deleteAllSections(merchant.id);
-      deletedSources.push('knowledge_sections');
-    } catch (e) { /* skip */ }
-
-    await logBrainActivity(merchant.id, 'brain_reset', 'تم إعادة ضبط عقل ساري بالكامل', { deletedSources });
-
-    return { success: true, deletedSources };
+      const result = await resetKnowledgeSources(merchant.id);
+      return { success: true, ...result };
+    } catch {
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إعادة ضبط المعرفة. لم يتم اعتماد عملية جزئية.' });
+    }
   }),
 
   // Get activity log

@@ -1,4 +1,5 @@
 import { trpc } from '@/lib/trpc';
+import { selectedMerchantId } from '@/lib/merchant-selection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -54,9 +55,7 @@ export default function MerchantSettings() {
     const allowedTypes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
     ];
     if (!allowedTypes.includes(file.type)) {
       toast.error('نوع الملف غير مدعوم. يرجى رفع PDF أو Word أو Excel فقط.');
@@ -71,8 +70,10 @@ export default function MerchantSettings() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      const selected = selectedMerchantId();
       const res = await fetch('/api/knowledge-docs/upload', {
         method: 'POST',
+        headers: selected ? { 'x-merchant-id': selected } : {},
         body: formData,
         credentials: 'include',
       });
@@ -528,7 +529,7 @@ export default function MerchantSettings() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.doc,.xlsx,.xls"
+              accept=".pdf,.docx,.xlsx"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];

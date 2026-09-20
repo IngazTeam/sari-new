@@ -7,6 +7,8 @@
  * Schema is provisioned by tracked migrations and verified by a read-only readiness gate.
  */
 
+import { removeKnowledgeSections } from '../knowledge/source-lifecycle';
+import { withKnowledgeTransaction } from '../knowledge/transaction';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 
@@ -279,47 +281,12 @@ export async function deleteSection(sectionId: number, merchantId: number): Prom
 
 /** Delete all sections for a merchant */
 export async function deleteAllSections(merchantId: number): Promise<void> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return;
-
-  // Delete children first (no FK cascade issues)
-  await pool.execute(
-    `DELETE FROM knowledge_sections WHERE merchant_id = ? AND parent_id IS NOT NULL`,
-    [merchantId]
-  );
-  await pool.execute(
-    `DELETE FROM knowledge_sections WHERE merchant_id = ?`,
-    [merchantId]
-  );
-  // Also clear changelog
-  await pool.execute(
-    `DELETE FROM knowledge_changelog WHERE merchant_id = ?`,
-    [merchantId]
-  );
+  await removeKnowledgeSections(merchantId);
 }
 
 /** Delete sections by source type (website, document, etc.) */
 export async function deleteSectionsBySource(merchantId: number, source: SectionSource): Promise<number> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return 0;
-
-  // Delete children of matching sections first
-  await pool.execute(
-    `DELETE cs FROM knowledge_sections cs 
-     INNER JOIN knowledge_sections ps ON cs.parent_id = ps.id 
-     WHERE ps.merchant_id = ? AND ps.source = ?`,
-    [merchantId, source]
-  );
-  // Then delete parent sections
-  const [result] = await pool.execute(
-    `DELETE FROM knowledge_sections WHERE merchant_id = ? AND source = ?`,
-    [merchantId, source]
-  );
-  const deleted = (result as any).affectedRows || 0;
-  console.log(`[KnowledgeEngine] Deleted ${deleted} sections with source '${source}' for merchant ${merchantId}`);
-  return deleted;
+  return removeKnowledgeSections(merchantId, source);
 }
 
 /**
@@ -556,19 +523,7 @@ export async function recordCacheHit(cacheId: number): Promise<void> {
 
 /** Invalidate all cache for a merchant */
 export async function invalidateCache(merchantId: number): Promise<void> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return;
-
-  // 1. Invalidate response cache in DB
-  await pool.execute(
-    `UPDATE sari_response_cache SET is_valid = 0 WHERE merchant_id = ?`,
-    [merchantId]
-  );
-
-  // 2. GAP-4 FIX: Evict in-memory session contexts so stale knowledge is purged
-  const { invalidateMerchantSessions } = await import('../ai/session-store');
-  await invalidateMerchantSessions(merchantId);
+  await withKnowledgeTransaction(merchantId, async () => undefined);
 }
 
 // ═══════════════════════════════════════════════════════════════

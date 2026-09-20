@@ -1,3 +1,4 @@
+import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
  * Website Analysis Router
  * 
@@ -10,11 +11,9 @@ import { TRPCError } from '@trpc/server';
 import {
   createCompetitorAnalysis,
   createCompetitorProduct,
-  createExtractedFaq,
   createExtractedProduct,
   createWebsiteAnalysis,
   createWebsiteInsight,
-  deleteAllExtractedFaqs,
   deleteCompetitorAnalysis,
   deleteWebsiteAnalysis,
   getCompetitorAnalysesByMerchant,
@@ -152,59 +151,7 @@ export const websiteAnalysisRouter = router({
               }
             }
 
-            // Save extracted FAQs
-            if (result.faqs && result.faqs.length > 0) {
-              try {
-                await deleteAllExtractedFaqs(merchant.id);
-                for (const faq of result.faqs) {
-                  await createExtractedFaq({
-                    merchantId: merchant.id,
-                    question: faq.question,
-                    answer: faq.answer,
-                    category: faq.category,
-                  });
-                }
-                console.log(`[WebsiteAnalysis] Saved ${result.faqs.length} FAQs for merchant ${merchant.id}`);
-              } catch (faqErr: any) {
-                console.warn('[WebsiteAnalysis] Failed to save FAQs:', faqErr.message);
-              }
-            }
-
-            // Save crawled pages to discovered_pages table (Knowledge Dashboard)
-            if (result._crawledPages && result._crawledPages.length > 0) {
-              try {
-                const pool = await getPool();
-                if (pool) {
-                  // Clear old discovered pages
-                  await pool.execute(
-                    `DELETE FROM discovered_pages WHERE merchant_id = ?`,
-                    [merchant.id]
-                  );
-                  // DB ENUM constraint: page_type only allows these values
-                  const DB_ENUM_TYPES = new Set(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
-                  let savedCount = 0;
-                  let failedCount = 0;
-                  for (const page of result._crawledPages) {
-                    if (!page.success) continue;
-                    const safeType = DB_ENUM_TYPES.has(page.pageType) ? page.pageType : 'other';
-                    try {
-                      await pool.execute(
-                        `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                        // PEN-SESSION-04: Clean page content before storage
-                        [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), analyzer.cleanScrapedText((page.content || '')).substring(0, 65000)]
-                      );
-                      savedCount++;
-                    } catch (insertErr: any) {
-                      failedCount++;
-                      console.warn(`[WebsiteAnalysis] Failed to save page ${page.url}:`, insertErr.message);
-                    }
-                  }
-                  console.log(`[WebsiteAnalysis] Discovered pages: ${savedCount} saved, ${failedCount} failed for merchant ${merchant.id}`);
-                }
-              } catch (pageErr: any) {
-                console.warn('[WebsiteAnalysis] Failed to save discovered pages:', pageErr.message);
-              }
-            }
+            await persistCrawledKnowledge(merchant.id, input.url, result);
 
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);

@@ -3,7 +3,8 @@ import { and, eq, isNotNull, notInArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { discoveredPages, extractedFaqs, merchants, products, productVariants } from '../../drizzle/schema';
 import { majorToMinor } from '../../shared/product-money';
-import { formatDateForDB, getDb, type SariDb } from '../db/connection';
+import { formatDateForDB } from '../db/connection';
+import { withKnowledgeTransaction, type KnowledgeTransaction } from '../knowledge/transaction';
 
 const action = z.enum(['replace', 'merge', 'skip']);
 const pageType = z.enum(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
@@ -34,7 +35,7 @@ export const analysisSnapshotSchema = z.object({
   }).optional(),
 });
 
-type Transaction = Parameters<Parameters<SariDb['transaction']>[0]>[0];
+type Transaction = KnowledgeTransaction;
 const identity = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 export class AnalysisSnapshotValidationError extends Error {
@@ -67,12 +68,6 @@ function prepareProducts(websiteUrl: string, inputs: unknown[]) {
       category: product.category || null, sallaProductId: externalId,
     };
   });
-}
-
-async function lockMerchant(tx: Transaction, merchantId: number) {
-  if (!Number.isSafeInteger(merchantId) || merchantId < 1) throw new Error('Invalid merchant');
-  const rows = await tx.select({ id: merchants.id }).from(merchants).where(eq(merchants.id, merchantId)).for('update');
-  if (!rows.length) throw new Error('Merchant not found');
 }
 
 async function saveProducts(tx: Transaction, merchantId: number, mode: 'merge' | 'replace', batch: ReturnType<typeof prepareProducts>) {
@@ -110,29 +105,23 @@ async function saveProducts(tx: Transaction, merchantId: number, mode: 'merge' |
   return saved;
 }
 
-/** All catalogue imports use the same merchant lock as external source synchronization. */
+/** These catalogue imports use the same merchant lock as external source synchronization. */
 export async function mergeAnalyzedProducts(merchantId: number, websiteUrl: string, inputs: unknown[]) {
   if (inputs.length > 2000) throw new Error('Too many products in analysis');
   const batch = prepareProducts(websiteUrl, inputs);
-  const database = await getDb();
-  if (!database) throw new Error('Database unavailable');
-  return database.transaction(async tx => {
-    await lockMerchant(tx, merchantId);
+  return withKnowledgeTransaction(merchantId, async tx => {
     return saveProducts(tx, merchantId, 'merge', batch);
   });
 }
 
 /** The user's selected changes commit together. No AI/network call runs inside the transaction. */
-export async function applyAnalysisSnapshot(merchantId: number, raw: z.input<typeof analysisSnapshotSchema>) {
+export async function applyAnalysisSnapshot(merchantId: number, raw: z.input<typeof analysisSnapshotSchema>, options: { updateWebsiteInfo?: boolean } = {}) {
   const input = analysisSnapshotSchema.parse(raw);
   const websiteUrl = storedUrl(input.websiteUrl);
   const batch = input.productsAction === 'skip' ? [] : prepareProducts(websiteUrl, input.products);
   const pages = input.pages.map(page => ({ ...page, url: storedUrl(page.url) }));
   if (websiteUrl.length > 500 || pages.some(page => page.url.length > 1000)) throw new AnalysisSnapshotValidationError();
-  const database = await getDb();
-  if (!database) throw new Error('Database unavailable');
-  return database.transaction(async tx => {
-    await lockMerchant(tx, merchantId);
+  return withKnowledgeTransaction(merchantId, async tx => {
     let savedProducts = 0, savedFaqs = 0, savedPages = 0;
     // Preserve the existing contract: an empty extraction cannot clear a catalogue.
     if (input.productsAction !== 'skip' && batch.length) savedProducts = await saveProducts(tx, merchantId, input.productsAction, batch);
@@ -181,10 +170,12 @@ export async function applyAnalysisSnapshot(merchantId: number, raw: z.input<typ
       if (input.faqsAction === 'replace') await tx.update(extractedFaqs).set({ sourceStatus: 'archived', isActive: 0, useInBot: 0 })
         .where(and(eq(extractedFaqs.merchantId, merchantId), notInArray(extractedFaqs.id, kept)));
     }
-    await tx.update(merchants).set({ websiteUrl, platformType: input.platform, analysisStatus: 'completed', lastAnalysisDate: formatDateForDB(new Date()),
+    const merchantUpdate = {
+      ...(options.updateWebsiteInfo !== false ? { websiteUrl, platformType: input.platform, analysisStatus: 'completed' as const, lastAnalysisDate: formatDateForDB(new Date()) } : {}),
       ...(input.applyContactInfo && input.contactInfo?.phones.length ? { phone: input.contactInfo.phones[0] } : {}),
       ...(input.applyContactInfo && input.contactInfo?.address ? { address: input.contactInfo.address } : {}),
-    }).where(eq(merchants.id, merchantId));
+    };
+    if (Object.keys(merchantUpdate).length) await tx.update(merchants).set(merchantUpdate).where(eq(merchants.id, merchantId));
     return { success: true as const, savedProducts, savedFaqs, savedPages };
   });
 }
