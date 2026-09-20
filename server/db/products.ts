@@ -1,3 +1,4 @@
+import { normalizeProductMoneyWrite } from '../../shared/product-money';
 /**
  * Product Management Database Functions
  * Extracted from db.ts for better maintainability
@@ -25,11 +26,11 @@ import { getDb } from "../db";
 // Product Management
 // ============================================
 
-export async function createProduct(product: InsertProduct): Promise<Product | undefined> {
+export async function createProduct(product: InsertProduct, inputUnit: 'major' | 'minor' = 'minor'): Promise<Product | undefined> {
     const db = await getDb();
     if (!db) return undefined;
 
-    const result = await db.insert(products).values(product);
+    const result = await db.insert(products).values(normalizeProductMoneyWrite(product, inputUnit));
     const insertedId = Number(result[0].insertId);
 
     return getProductById(insertedId);
@@ -62,11 +63,11 @@ export async function getActiveProductsByMerchantId(merchantId: number): Promise
         .orderBy(desc(products.createdAt));
 }
 
-export async function updateProduct(id: number, data: Partial<InsertProduct>): Promise<void> {
+export async function updateProduct(id: number, data: Partial<InsertProduct>, inputUnit: 'major' | 'minor' = 'minor'): Promise<void> {
     const db = await getDb();
     if (!db) return;
 
-    await db.update(products).set(data).where(eq(products.id, id));
+    await db.update(products).set(normalizeProductMoneyWrite(data, inputUnit)).where(eq(products.id, id));
 }
 
 export async function deleteProduct(id: number): Promise<void> {
@@ -82,7 +83,7 @@ export async function bulkCreateProducts(productList: InsertProduct[]): Promise<
 
     if (productList.length === 0) return;
 
-    await db.insert(products).values(productList);
+    await db.insert(products).values(productList.map(product => normalizeProductMoneyWrite(product)));
 }
 
 export async function deleteAllProductsByMerchantId(merchantId: number): Promise<void> {
@@ -170,19 +171,19 @@ export async function getVariantsByProductId(productId: number): Promise<Product
         .orderBy(productVariants.sortOrder);
 }
 
-export async function createVariant(data: InsertProductVariant): Promise<ProductVariant | undefined> {
+export async function createVariant(data: InsertProductVariant, inputUnit: 'major' | 'minor' = 'minor'): Promise<ProductVariant | undefined> {
     const db = await getDb();
     if (!db) return undefined;
-    const result = await db.insert(productVariants).values(data);
+    const result = await db.insert(productVariants).values(normalizeProductMoneyWrite(data, inputUnit));
     const id = Number(result[0].insertId);
     const rows = await db.select().from(productVariants).where(eq(productVariants.id, id)).limit(1);
     return rows[0];
 }
 
-export async function updateVariant(id: number, data: Partial<InsertProductVariant>): Promise<void> {
+export async function updateVariant(id: number, data: Partial<InsertProductVariant>, inputUnit: 'major' | 'minor' = 'minor'): Promise<void> {
     const db = await getDb();
     if (!db) return;
-    await db.update(productVariants).set(data).where(eq(productVariants.id, id));
+    await db.update(productVariants).set(normalizeProductMoneyWrite(data, inputUnit)).where(eq(productVariants.id, id));
 }
 
 export async function deleteVariant(id: number): Promise<void> {
@@ -195,7 +196,7 @@ export async function bulkCreateVariants(variantList: InsertProductVariant[]): P
     const db = await getDb();
     if (!db) return;
     if (variantList.length === 0) return;
-    await db.insert(productVariants).values(variantList);
+    await db.insert(productVariants).values(variantList.map(variant => normalizeProductMoneyWrite(variant)));
 }
 
 export async function deleteVariantsByProductId(productId: number): Promise<void> {

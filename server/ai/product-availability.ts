@@ -1,4 +1,5 @@
 export type ProductAvailabilityInput = {
+  priceUnit?: unknown;
   isActive?: unknown;
   status?: unknown;
   stock?: unknown;
@@ -24,6 +25,7 @@ function normalized(value: unknown): string {
  */
 export function isProductAvailableForSale(product: ProductAvailabilityInput | null | undefined): boolean {
   if (!product) return false;
+  if (product.priceUnit === 'unverified') return false;
   if (isFalseFlag(product.isActive) || isFalseFlag(product.isPublished)) return false;
 
   const status = normalized(product.status);

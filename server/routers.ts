@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { sallaShippingSchema } from '../shared/salla-order';
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
@@ -2328,6 +2329,7 @@ export const appRouter = router({
         customerPhone: z.string().trim().min(7).max(50),
         customerName: z.string().trim().min(1).max(255),
         message: z.string().trim().min(1).max(10_000), // Customer's message
+        shipTo: sallaShippingSchema,
       }).strict())
       .mutation(async ({ input, ctx }) => {
         const merchant = await getMerchantById(ctx.merchantId);
@@ -2349,7 +2351,8 @@ export const appRouter = router({
           merchant.id,
           input.customerPhone,
           input.customerName,
-          parsedOrder
+          { ...parsedOrder, shipTo: input.shipTo },
+          input.message
         );
 
         if (!result) {
@@ -6991,6 +6994,14 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط الدفع غير متاح أو منتهي' });
         }
 
+        if (link.orderId != null) {
+          const order = await getOrderById(link.orderId);
+          if (!order || order.merchantId !== link.merchantId || order.sallaOrderId
+            || !['pending', 'processing'].includes(order.status)
+            || order.totalAmount !== link.amount || order.currency !== link.currency) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'رابط الدفع لا يطابق طلبًا محليًا قابلًا للدفع' });
+          }
+        }
         const settings = await getMerchantPaymentSettings(link.merchantId);
         if (!settings || !settings.tapSecretKey || !isTapPaymentReady(settings)) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'بوابة الدفع غير جاهزة لهذا المتجر' });

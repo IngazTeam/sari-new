@@ -1,3 +1,4 @@
+import { majorToMinor } from '../../shared/product-money';
 export type ExternalProductSource = 'api' | 'byaan';
 export type ExternalProductSyncMode = 'append' | 'replace';
 
@@ -15,6 +16,7 @@ export interface NormalizedExternalProduct {
   description: string | null;
   descriptionAr: string | null;
   price: number;
+  priceUnit: 'minor' | 'unverified';
   currency: 'SAR' | 'USD';
   category: string | null;
   imageUrl: string | null;
@@ -123,7 +125,15 @@ export function normalizeExternalProductBatch(
       throw new ProductSyncValidationError();
     }
 
-    const price = boundedInteger(product.price, null);
+    // Older clients did not declare units. Preserve their data without inventing
+    // a payable price; a verified resync must explicitly declare the contract.
+    if (product.priceUnit !== undefined && !['major', 'minor'].includes(String(product.priceUnit))) throw new ProductSyncValidationError();
+    let price: number | null;
+    try {
+      price = product.priceUnit === 'major'
+        ? majorToMinor(product.price as number | string)
+        : boundedInteger(product.price, null);
+    } catch { throw new ProductSyncValidationError(); }
     if (price === null) throw new ProductSyncValidationError();
     const maxStudents = boundedInteger(product.maxStudents, null);
     const enrolledCount = boundedInteger(product.enrolledCount ?? product.enrollmentCount, 0) as number;
@@ -160,6 +170,7 @@ export function normalizeExternalProductBatch(
       description: optionalText(product.description, 2_000),
       descriptionAr: optionalText(product.descriptionAr, 2_000),
       price,
+      priceUnit: product.priceUnit === undefined ? 'unverified' : 'minor',
       currency: rawCurrency,
       category: optionalText(product.category, 100),
       imageUrl: optionalHttpUrl(product.imageUrl),

@@ -1,3 +1,4 @@
+import { formatProductPrice } from '../../shared/product-money';
 /**
  * Product Intelligence System
  * Smart product search and recommendations
@@ -88,7 +89,7 @@ async function aiAssistedSearch(
 ): Promise<Array<any>> {
   try {
     const productList = products.map((p, i) => 
-      `${i + 1}. ${p.name} - ${p.description || 'لا يوجد وصف'} - ${p.price} ريال`
+      `${i + 1}. ${p.name} - ${p.description || 'لا يوجد وصف'} - ${formatProductPrice(p)}`
     ).join('\n');
 
     const prompt = `لديك قائمة منتجات:
@@ -152,7 +153,7 @@ export async function suggestProducts(params: {
 
     // Build product list for AI
     const productList = allProducts.map((p, i) => 
-      `${i + 1}. ${p.name} - ${p.price} ريال${p.category ? ` (${p.category})` : ''}`
+      `${i + 1}. ${p.name} - ${formatProductPrice(p)}${p.category ? ` (${p.category})` : ''}`
     ).join('\n');
 
     // Build customer history context
@@ -237,7 +238,7 @@ export function formatProductsForWhatsApp(products: Array<any>): string {
       message += `   ${product.description}\n`;
     }
     
-    message += `   💰 السعر: *${product.price} ريال*\n`;
+    message += `   💰 السعر: *${formatProductPrice(product)}*\n`;
     
     if (product.stock !== undefined && product.stock !== null) {
       if (product.stock > 0) {

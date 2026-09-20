@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { formatMinorMoney } from '../../shared/product-money';
 import * as db from '../db';
 import { 
   isOrderRequest, 
@@ -88,7 +89,7 @@ describe('Order From Chat - Utility Functions', () => {
       expect(message).toContain('ORD-12345');
       expect(message).toContain('iPhone 15 Pro');
       expect(message).toContain('AirPods Pro');
-      expect(message).toContain('5998');
+      expect(message).toContain(formatMinorMoney(5998));
       expect(message).toContain('https://pay.salla.sa/12345');
     });
 
@@ -104,8 +105,8 @@ describe('Order From Chat - Utility Functions', () => {
         'https://pay.test'
       );
 
-      expect(message).toContain('200'); // 2 × 100
-      expect(message).toContain('150'); // 3 × 50
+      expect(message).toContain(formatMinorMoney(200)); // 2 × 100
+      expect(message).toContain(formatMinorMoney(150)); // 3 × 50
     });
   });
 
@@ -126,7 +127,7 @@ describe('Order From Chat - Utility Functions', () => {
       expect(message).toContain('هدية');
       expect(message).toContain('أحمد محمد');
       expect(message).toContain('ORD-GIFT-123');
-      expect(message).toContain('299');
+      expect(message).toContain(formatMinorMoney(299));
     });
 
     it('should include gift-specific messaging', () => {

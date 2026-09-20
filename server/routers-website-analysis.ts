@@ -16,7 +16,6 @@ import {
   createWebsiteAnalysis,
   createWebsiteInsight,
   deleteAllExtractedFaqs,
-  deleteAllProductsByMerchantId,
   deleteCompetitorAnalysis,
   deleteWebsiteAnalysis,
   getCompetitorAnalysesByMerchant,
@@ -25,6 +24,7 @@ import {
   getExtractedProductsByAnalysisId,
   getInsightsByAnalysisId,
   getMerchantByUserId,
+  getProductsByMerchantId,
   getPool,
   getWebsiteAnalysesByMerchant,
   getWebsiteAnalysisById,
@@ -297,22 +297,26 @@ export const websiteAnalysisRouter = router({
             // ✅ ALSO save to main products table so the AI bot can use them immediately
             if (savedCount > 0) {
               try {
-                await deleteAllProductsByMerchantId(merchant.id);
+                // Extraction must not erase the catalogue or replace reviewed prices.
+                const existingNames = new Set((await getProductsByMerchantId(merchant.id)).map(p => p.name.trim().toLowerCase()));
                 let mainSavedCount = 0;
                 for (const product of products) {
                   if (!product.name || (typeof product.name === 'string' && !product.name.trim())) continue;
+                  const identity = String(product.name).trim().toLowerCase();
+                  if (existingNames.has(identity)) continue;
                   try {
                     await createProduct({
                       merchantId: merchant.id,
                       name: typeof product.name === 'string' ? product.name.substring(0, 500) : String(product.name),
                       description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
-                      price: Math.round(product.price || 0),
+                      price: product.price,
                       currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
                       imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
                       productUrl: typeof product.productUrl === 'string' ? product.productUrl : null,
                       category: typeof product.category === 'string' ? product.category : null,
-                    });
+                    }, 'major');
                     mainSavedCount++;
+                    existingNames.add(identity);
                   } catch (err: any) {
                     console.error(`[WebsiteAnalysis] Failed to save to main products: ${product.name}`, err.message);
                   }

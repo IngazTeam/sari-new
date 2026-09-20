@@ -6,6 +6,10 @@
  */
 
 import { z } from "zod";
+import { majorToMinor } from '../shared/product-money';
+const majorPriceSchema = z.number().refine(value => {
+  try { majorToMinor(value); return true; } catch { return false; }
+}, 'Price must be nonnegative with at most two decimal places');
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
@@ -333,7 +337,7 @@ export const productsRouter = router({
         .input(z.object({
             name: z.string().min(1),
             description: z.string().optional(),
-            price: z.number().min(0),
+            price: majorPriceSchema.min(0),
             currency: z.enum(['SAR', 'USD']).optional(),
             imageUrl: z.string().url().optional().or(z.literal('')),
             stock: z.number().int().min(0).optional(),
@@ -342,8 +346,8 @@ export const productsRouter = router({
             // Advanced fields
             sku: z.string().max(100).optional(),
             barcode: z.string().max(100).optional(),
-            compareAtPrice: z.number().optional(),
-            costPrice: z.number().optional(),
+            compareAtPrice: majorPriceSchema.optional(),
+            costPrice: majorPriceSchema.optional(),
             weight: z.string().max(20).optional(),
             trackInventory: z.number().optional(),
             lowStockAlert: z.number().min(0).max(99999).optional(),
@@ -355,9 +359,9 @@ export const productsRouter = router({
             variants: z.array(z.object({
                 name: z.string(),
                 sku: z.string().optional(),
-                price: z.number().optional(),
-                compareAtPrice: z.number().optional(),
-                costPrice: z.number().optional(),
+                price: majorPriceSchema.optional(),
+                compareAtPrice: majorPriceSchema.optional(),
+                costPrice: majorPriceSchema.optional(),
                 stock: z.number().optional(),
                 barcode: z.string().optional(),
                 weight: z.string().optional(),
@@ -383,7 +387,7 @@ export const productsRouter = router({
                 imageUrl: productData.imageUrl || undefined,
                 currency: productData.currency || merchant.currency || 'SAR',
                 hasVariants,
-            });
+            }, 'major');
 
             if (!productId) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create product' });
 
@@ -420,7 +424,7 @@ export const productsRouter = router({
                         imageUrl: variants[i].imageUrl,
                         options: variants[i].options,
                         sortOrder: i,
-                    });
+                    }, 'major');
                 }
             }
 
@@ -433,7 +437,7 @@ export const productsRouter = router({
             productId: z.number(),
             name: z.string().min(1).optional(),
             description: z.string().optional(),
-            price: z.number().min(0).optional(),
+            price: majorPriceSchema.min(0).optional(),
             currency: z.enum(['SAR', 'USD']).optional(),
             imageUrl: z.string().optional(),
             stock: z.number().int().min(0).optional(),
@@ -441,8 +445,8 @@ export const productsRouter = router({
             categoryId: z.number().nullable().optional(),
             sku: z.string().optional(),
             barcode: z.string().optional(),
-            compareAtPrice: z.number().nullable().optional(),
-            costPrice: z.number().nullable().optional(),
+            compareAtPrice: majorPriceSchema.nullable().optional(),
+            costPrice: majorPriceSchema.nullable().optional(),
             weight: z.string().optional(),
             trackInventory: z.number().optional(),
             lowStockAlert: z.number().optional(),
@@ -462,7 +466,11 @@ export const productsRouter = router({
             }
 
             const { productId, ...updates } = input;
-            await updateProduct(productId, updates as any);
+            if (product.priceUnit !== 'minor' && updates.price !== undefined) {
+                updates.compareAtPrice ??= null;
+                updates.costPrice ??= null;
+            }
+            await updateProduct(productId, updates as any, 'major');
             return { success: true };
         }),
 
@@ -530,9 +538,9 @@ export const productsRouter = router({
             productId: z.number(),
             name: z.string(),
             sku: z.string().optional(),
-            price: z.number().optional(),
-            compareAtPrice: z.number().optional(),
-            costPrice: z.number().optional(),
+            price: majorPriceSchema.optional(),
+            compareAtPrice: majorPriceSchema.optional(),
+            costPrice: majorPriceSchema.optional(),
             stock: z.number().optional(),
             barcode: z.string().optional(),
             weight: z.string().optional(),
@@ -554,11 +562,11 @@ export const productsRouter = router({
                 merchantId: merchant.id,
                 stock: input.stock ?? 0,
                 sortOrder: 0,
-            });
+            }, 'major');
 
             // Mark product as having variants
             if (!product.hasVariants) {
-                await updateProduct(input.productId, { hasVariants: 1 } as any);
+                await updateProduct(input.productId, { hasVariants: 1 } as any, 'major');
             }
 
             return variant;
@@ -570,9 +578,9 @@ export const productsRouter = router({
             productId: z.number(),
             name: z.string().optional(),
             sku: z.string().optional(),
-            price: z.number().nullable().optional(),
-            compareAtPrice: z.number().nullable().optional(),
-            costPrice: z.number().nullable().optional(),
+            price: majorPriceSchema.nullable().optional(),
+            compareAtPrice: majorPriceSchema.nullable().optional(),
+            costPrice: majorPriceSchema.nullable().optional(),
             stock: z.number().optional(),
             barcode: z.string().optional(),
             weight: z.string().optional(),
@@ -592,11 +600,16 @@ export const productsRouter = router({
             const prodDb = await import('./db/products');
             // SEC-IDOR: Verify variant belongs to this product
             const variants = await prodDb.getVariantsByProductId(input.productId);
-            if (!variants.find(v => v.id === input.variantId)) {
+            const variant = variants.find(v => v.id === input.variantId);
+            if (!variant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Variant not found for this product' });
             }
             const { variantId, productId, ...data } = input;
-            await prodDb.updateVariant(variantId, data as any);
+            if (variant.priceUnit !== 'minor' && data.price !== undefined) {
+                data.compareAtPrice ??= null;
+                data.costPrice ??= null;
+            }
+            await prodDb.updateVariant(variantId, data as any, 'major');
             return { success: true };
         }),
 
@@ -622,7 +635,7 @@ export const productsRouter = router({
             // Check if product still has variants
             const remaining = await prodDb.getVariantsByProductId(input.productId);
             if (remaining.length === 0) {
-                await updateProduct(input.productId, { hasVariants: 0 } as any);
+                await updateProduct(input.productId, { hasVariants: 0 } as any, 'major');
             }
 
             return { success: true };
@@ -769,7 +782,7 @@ export const productsRouter = router({
                             price: parseFloat(product.price),
                             imageUrl: product.imageurl || product.image || null,
                             stock: product.stock ? parseInt(product.stock) : null,
-                        });
+                        }, 'major');
                         successCount++;
                     } else {
                         errorCount++;
@@ -881,7 +894,7 @@ export const productsRouter = router({
                         category: row.category || null,
                         // Auto-detect product type: service for courses/services files
                         ...(isServiceFile ? { productType: 'service' as const } : {}),
-                    });
+                    }, 'major');
                     successCount++;
 
                     if (preview.length < 5) {
@@ -1231,9 +1244,9 @@ ${typeHint}
                     const safeCategory = item.category ? sanitizeGptOutput(item.category).substring(0, 100) : null;
 
                     // SEC-02: Validate price is a safe number
-                    let safePrice = parseFloat(item.price) || 0;
-                    if (!isFinite(safePrice) || safePrice < 0) safePrice = 0;
-                    safePrice = Math.round(Math.min(safePrice, 99999999)); // Max ~1M SAR
+                    const safePrice = Number(item.price);
+                    if (item.price == null || item.price === '') throw new Error('Missing product price');
+                    majorToMinor(safePrice); // Validate precision and range without rounding.
 
                     await createProduct({
                         merchantId: merchant.id,
@@ -1242,7 +1255,7 @@ ${typeHint}
                         price: safePrice,
                         category: safeCategory,
                         productType: productType as any,
-                    });
+                    }, 'major');
                     successCount++;
 
                     if (preview.length < 5) {
@@ -1443,14 +1456,14 @@ ${typeHint}
                 try {
                     if (existingId) {
                         // Update existing product
-                        await updateProduct(existingId, data);
+                        await updateProduct(existingId, data, 'major');
                         updated++;
                     } else {
                         // Create new product
                         await createProduct({
                             merchantId: merchant.id,
                             ...data,
-                        });
+                        }, 'major');
                         created++;
                     }
                 } catch (error) {

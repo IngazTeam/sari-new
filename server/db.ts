@@ -1,3 +1,4 @@
+import { normalizeProductMoneyWrite } from '../shared/product-money';
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
@@ -1096,11 +1097,11 @@ export async function updateWhatsappConnection(id: number, data: Partial<InsertW
 // Product Management
 // ============================================
 
-export async function createProduct(product: InsertProduct): Promise<Product | undefined> {
+export async function createProduct(product: InsertProduct, inputUnit: 'major' | 'minor' = 'minor'): Promise<Product | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.insert(products).values(product);
+  const result = await db.insert(products).values(normalizeProductMoneyWrite(product, inputUnit));
   const insertedId = Number((result[0] as any).insertId);
 
   return getProductById(insertedId);
@@ -1187,11 +1188,11 @@ export async function getActiveProductsByMerchantId(merchantId: number): Promise
     .orderBy(desc(products.createdAt));
 }
 
-export async function updateProduct(id: number, data: Partial<InsertProduct>): Promise<void> {
+export async function updateProduct(id: number, data: Partial<InsertProduct>, inputUnit: 'major' | 'minor' = 'minor'): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  await db.update(products).set(data).where(eq(products.id, id));
+  await db.update(products).set(normalizeProductMoneyWrite(data, inputUnit)).where(eq(products.id, id));
 }
 
 export async function deleteProduct(id: number): Promise<void> {
@@ -1207,7 +1208,7 @@ export async function bulkCreateProducts(productList: InsertProduct[]): Promise<
 
   if (productList.length === 0) return;
 
-  await db.insert(products).values(productList);
+  await db.insert(products).values(productList.map(product => normalizeProductMoneyWrite(product)));
 }
 
 export async function deleteAllProductsByMerchantId(merchantId: number): Promise<void> {
@@ -3747,6 +3748,8 @@ export async function getTopProducts(merchantId: number, limit: number = 10) {
         productName: product?.name || '',
         mentionCount: count,
         price: product?.price || 0,
+        priceUnit: product?.priceUnit,
+        currency: product?.currency,
       };
     })
     .sort((a, b) => b.mentionCount - a.mentionCount)
@@ -7833,10 +7836,10 @@ async function persistNormalizedProductsFromZid(
       // Reserve the external identity using the database uniqueness contract.
       // A no-op duplicate update acquires the row lock before the freshness-
       // guarded update, eliminating the select/insert race across workers.
-      await tx.insert(products).values(productData).onDuplicateKeyUpdate({
+      await tx.insert(products).values(normalizeProductMoneyWrite(productData)).onDuplicateKeyUpdate({
         set: { sallaProductId: sql`${products.sallaProductId}` },
       });
-      await tx.update(products).set(productData).where(and(
+      await tx.update(products).set(normalizeProductMoneyWrite(productData)).where(and(
         eq(products.merchantId, merchantId),
         eq(products.sallaProductId, projectionId),
         or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, zidProduct.lastSyncedAt)),

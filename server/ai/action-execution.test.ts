@@ -48,7 +48,7 @@ const request = (sendMessage = vi.fn().mockResolvedValue(undefined)) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.products.mockResolvedValue([
-    { id: 4, name: "منتج", price: 12500, isActive: 1, trackInventory: 0 },
+    { id: 4, name: "منتج", price: 12500, isActive: 1, priceUnit: "minor", currency: "SAR", trackInventory: 0 },
   ]);
   mocks.settings.mockResolvedValue(null);
   mocks.create.mockResolvedValue({ id: 45 });
@@ -56,6 +56,25 @@ beforeEach(() => {
   mocks.variants.mockResolvedValue([]);
 });
 describe("supplementary action outcome truth", () => {
+  it.each([{priceUnit:'unverified'}, {currency:'USD'}])('does not create an order with uncertain money: %j', async patch => {
+    mocks.products.mockResolvedValue([{id:4,name:'منتج',price:9999,priceUnit:'minor',currency:'SAR',isActive:1,trackInventory:0,...patch}]);
+    const input = request();
+    if (patch.priceUnit === 'unverified') {
+      await executeAction(input);
+      expect(input.sendMessage.mock.calls[0][1]).toContain('لم يُنشأ طلب');
+    } else await expect(executeAction(input)).rejects.toThrow();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it('keeps a free variant at zero and charges a 99.99 product as exactly 9999', async () => {
+    mocks.products.mockResolvedValue([{id:4,name:'منتج',price:9999,priceUnit:'minor',currency:'SAR',isActive:1,trackInventory:0}]);
+    await executeAction(request());
+    expect(mocks.create.mock.calls[0][0].totalAmount).toBe(9999);
+    mocks.products.mockResolvedValue([{id:4,name:'منتج',price:9999,priceUnit:'minor',currency:'SAR',isActive:1,hasVariants:1,trackInventory:0}]);
+    mocks.variants.mockResolvedValue([{id:8,name:'مجاني',price:0,priceUnit:'minor',isActive:1}]);
+    const input=request();input.action.items=['منتج مجاني'];
+    await executeAction(input);
+    expect(mocks.create.mock.calls[1][0].totalAmount).toBe(0);
+  });
   it("confirms a recorded order using its real identifier", async () => {
     const input = request();
     await executeAction(input);
@@ -95,8 +114,8 @@ describe("supplementary action outcome truth", () => {
   });
   it("requires a unique product match before persisting an order", async () => {
     mocks.products.mockResolvedValue([
-      { id: 4, name: "منتج أ", price: 100, isActive: 1, trackInventory: 0 },
-      { id: 5, name: "منتج ب", price: 200, isActive: 1, trackInventory: 0 },
+      { id: 4, name: "منتج أ", price: 100, isActive: 1, priceUnit: "minor", currency: "SAR", trackInventory: 0 },
+      { id: 5, name: "منتج ب", price: 200, isActive: 1, priceUnit: "minor", currency: "SAR", trackInventory: 0 },
     ]);
     const input = request();
     await executeAction(input);
@@ -105,7 +124,7 @@ describe("supplementary action outcome truth", () => {
   });
   it("does not substitute the base product for an unresolved variant", async () => {
     mocks.products.mockResolvedValue([
-      { id: 4, name: "منتج", price: 100, isActive: 1, hasVariants: 1, trackInventory: 0 },
+      { id: 4, name: "منتج", price: 100, isActive: 1, priceUnit: "minor", currency: "SAR", hasVariants: 1, trackInventory: 0 },
     ]);
     mocks.variants.mockResolvedValue([
       { id: 8, name: "أزرق", price: 120, isActive: 1 },

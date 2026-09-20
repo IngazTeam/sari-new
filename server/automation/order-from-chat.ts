@@ -1,3 +1,6 @@
+import { currentInboundExecution } from '../messaging/inbound-context';
+import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
+import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMinor } from '../../shared/product-money';
 /**
  * Order From Chat System
  * 
@@ -16,27 +19,18 @@ import {
   getMerchantById,
   getProductById,
   getProductsByMerchantId,
-  getReferralCodeByCode,
   getSallaConnectionByMerchantId,
   getUserById,
-  incrementDiscountCodeUsage,
 } from '../db';
 // import { sendWhatsAppMessage } from '../greenapi-wrapper';
-import { 
-  extractDiscountCodeFromMessage, 
-  validateDiscountCode,
-  calculateFinalPrice 
-} from './discount-system';
-import { 
-  extractReferralCodeFromMessage,
-  trackReferral 
-} from './referral-system';
+import { extractDiscountCodeFromMessage } from './discount-system';
 import {
   filterProductsAvailableForSale,
   isProductAvailableForSale,
 } from '../ai/product-availability';
 
 interface ParsedOrder {
+  shipTo?: SallaShipping;
   products: Array<{
     name: string;
     quantity: number;
@@ -69,7 +63,7 @@ export async function parseOrderMessage(message: string, merchantId: number): Pr
     const products = filterProductsAvailableForSale(
       await getProductsByMerchantId(merchantId),
     );
-    const productList = products.map(p => `- ${p.name} (${p.price} ريال)`).join('\n');
+    const productList = products.map(p => `- ${p.name} (${formatProductPrice(p)})`).join('\n');
 
     const response = await invokeLLM({
       merchantId,
@@ -135,10 +129,12 @@ ${productList}
 
     // Match products with database IDs
     for (const product of parsed.products) {
-      const dbProduct = products.find(p => 
+      const matches = products.filter(p =>
         p.name.toLowerCase().includes(product.name.toLowerCase()) ||
         product.name.toLowerCase().includes(p.name.toLowerCase())
       );
+      const exact = matches.filter(p => p.name.trim().toLowerCase() === product.name.trim().toLowerCase());
+      const dbProduct = exact.length === 1 ? exact[0] : matches.length === 1 ? matches[0] : undefined;
       if (dbProduct) {
         product.productId = dbProduct.id;
       }
@@ -161,7 +157,10 @@ export async function createOrderFromChat(
   parsedOrder: ParsedOrder,
   message?: string
 ): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null; discountInfo?: DiscountInfo } | null> {
+  let providerAttempted = false;
   try {
+    const shipTo = sallaShippingSchema.parse(parsedOrder.shipTo);
+    await currentInboundExecution()?.assertOwned();
     // Get Salla connection
     const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
     if (!sallaConnection) {
@@ -179,7 +178,10 @@ export async function createOrderFromChat(
       if (!product.productId) continue;
 
       const dbProduct = await getProductById(product.productId);
-      if (!dbProduct) continue;
+      if (!dbProduct || dbProduct.merchantId !== merchantId) throw new Error('Product unavailable for this merchant');
+      const money = verifiedProductMoney(dbProduct);
+      if (money.currency !== 'SAR' || !dbProduct.sallaProductId || dbProduct.sallaProductId.includes(':')) throw new Error('Product is not payable through Salla');
+      if (!Number.isSafeInteger(product.quantity) || product.quantity < 1) throw new Error('Invalid order quantity');
 
       if (!isProductAvailableForSale(dbProduct)) {
         outOfStockItems.push(dbProduct.name);
@@ -188,8 +190,8 @@ export async function createOrderFromChat(
 
       // P3: Zero Stock Guard
       const stock = (dbProduct as any).stock ?? (dbProduct as any).quantity ?? null;
-      if (stock !== null && stock <= 0) { outOfStockItems.push(dbProduct.name); continue; }
-      if (stock !== null && product.quantity > stock) { product.quantity = stock; }
+      if (dbProduct.trackInventory && stock !== null && stock <= 0) { outOfStockItems.push(dbProduct.name); continue; }
+      if (dbProduct.trackInventory && stock !== null && product.quantity > stock) throw new Error('Requested quantity unavailable');
 
       items.push({
         sallaProductId: dbProduct.sallaProductId || '',
@@ -202,75 +204,26 @@ export async function createOrderFromChat(
       totalAmount += dbProduct.price * product.quantity;
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 || items.length !== parsedOrder.products.length) {
       if (outOfStockItems.length > 0) {
         throw new Error(`OUT_OF_STOCK:${outOfStockItems.join(',')}`);
       }
       throw new Error('No valid products found');
     }
 
-    // P3: VAT Guard — apply tax if merchant has it enabled
-    try {
-      const merchantForTax = await getMerchantById(merchantId);
-      const taxEnabled = (merchantForTax as any)?.taxEnabled || (merchantForTax as any)?.vatEnabled;
-      if (taxEnabled) {
-        const taxRate = (merchantForTax as any)?.taxRate || 15;
-        const taxAmount = Math.round(totalAmount * taxRate / 100);
-        totalAmount += taxAmount;
-        console.log(`[OrderFromChat] VAT applied: ${taxRate}% = ${taxAmount} halalas`);
-      }
-    } catch { /* non-blocking */ }
-
-    // Check for discount or referral codes
-    let discountInfo: DiscountInfo | undefined;
-    let finalAmount = totalAmount;
-
-    if (message) {
-      // Try to extract discount code
-      const discountCode = extractDiscountCodeFromMessage(message);
-      if (discountCode) {
-        const validation = await validateDiscountCode(merchantId, discountCode, totalAmount);
-        if (validation.valid && validation.discountCode) {
-          const reserved = await incrementDiscountCodeUsage(merchantId, discountCode);
-          if (!reserved) {
-            console.warn(`[OrderFromChat] Discount ${discountCode} became unavailable before reservation`);
-          } else {
-            finalAmount = validation.finalAmount || totalAmount;
-            const discountAmount = validation.discount || 0;
-            discountInfo = {
-              code: discountCode,
-              type: 'discount',
-              discountType: validation.discountCode.type,
-              value: validation.discountCode.value,
-              originalAmount: totalAmount,
-              discountAmount,
-              finalAmount
-            };
-          }
-        }
-      }
-
-      // Try to extract referral code if no discount applied
-      if (!discountInfo) {
-        const referralCode = extractReferralCodeFromMessage(message);
-        if (referralCode) {
-          const referralCodeData = await getReferralCodeByCode(referralCode);
-          if (referralCodeData && referralCodeData.merchantId === merchantId) {
-            // Track referral (will be completed when order is paid)
-            await trackReferral(merchantId, referralCode, customerPhone, customerName);
-            // Note: Referral discount is applied after first successful purchase
-          }
-        }
-      }
-    }
-
-    // Create order in Salla
+    requireMinor(totalAmount);
+    // Provider owns tax, shipping and coupon redemption. Do not debit a local
+    // coupon reservation before a provider order has even been accepted.
+    const discountCode = message ? extractDiscountCodeFromMessage(message) : undefined;
+    await currentInboundExecution()?.assertOwned();
+    providerAttempted = true;
     const sallaOrder = await salla.createOrder({
       customerName,
+      discountCode: discountCode || undefined,
+      shipTo,
       phone: customerPhone,
       email: `${customerPhone.replace('+', '')}@temp.salla.sa`,
-      address: parsedOrder.address || 'سيتم التواصل لتحديد العنوان',
-      city: parsedOrder.city || 'الرياض',
+      address: shipTo.address_line,
       items: items.map(item => ({
         sallaProductId: item.sallaProductId,
         quantity: item.quantity,
@@ -285,6 +238,10 @@ export async function createOrderFromChat(
       throw new Error('Failed to create order in Salla');
     }
 
+    // Financial authority is the accepted provider total, including shipping/tax.
+    if (sallaOrder.currency !== 'SAR') throw new Error('Unsupported Salla currency');
+    const finalAmount = requireMinor(sallaOrder.amountMinor);
+    await currentInboundExecution()?.assertOwned();
     // Save order in our database
     const order = await createOrder({
       merchantId,
@@ -292,7 +249,7 @@ export async function createOrderFromChat(
       orderNumber: sallaOrder.orderNumber,
       customerPhone,
       customerName,
-      address: parsedOrder.address,
+      address: shipTo.address_line,
       city: parsedOrder.city,
       items: JSON.stringify(items),
       totalAmount: finalAmount, // Use final amount after discount
@@ -301,46 +258,15 @@ export async function createOrderFromChat(
       isGift: parsedOrder.isGift ? 1 : 0,
       giftRecipientName: parsedOrder.giftRecipientName,
       giftMessage: parsedOrder.giftMessage,
-      discountCode: discountInfo?.code
+      discountCode: discountCode || null
     });
 
     if (!order) {
       throw new Error('Failed to save order in database');
     }
 
-    // إصدار رابط طلب محلي؛ إنشاء Tap charge يحدث فقط داخل checkout المركزي.
-    let tapPaymentUrl: string | null = null;
-    try {
-      const { issueCanonicalOrderPaymentLink } = await import('../payment/order-payment-link');
-      const issued = await issueCanonicalOrderPaymentLink({
-        merchantId,
-        orderId: order.id,
-        requestedAmountInHalalas: finalAmount,
-        title: `طلب رقم ${order.orderNumber || order.id}`,
-      });
-      if (issued.issued) {
-        tapPaymentUrl = issued.paymentUrl;
-        console.log('[OrderFromChat] Canonical order payment link issued', {
-          merchantId,
-          orderId: order.id,
-          reused: issued.reused,
-        });
-      } else {
-        console.warn('[OrderFromChat] Canonical order payment link unavailable', {
-          merchantId,
-          orderId: order.id,
-          reason: issued.reason,
-        });
-      }
-    } catch (error) {
-      console.error('[OrderFromChat] Canonical order payment link failed', {
-        merchantId,
-        orderId: order.id,
-        failure: error instanceof Error ? error.name : 'unknown',
-      });
-      // نستمر حتى لو تعذر الرابط المحلي، ونستخدم رابط Salla إن وجد.
-    }
-
+    // Salla owns payment for its order. A separate Tap link would leave the
+    // provider's COD balance unpaid and could cause a second collection.
     // Notify admin about new order
     try {
       const { notifyNewOrder } = await import('../_core/emailNotifications');
@@ -362,12 +288,16 @@ export async function createOrderFromChat(
 
     return {
       orderId: order.id,
-      paymentUrl: tapPaymentUrl || sallaOrder.paymentUrl || null,
+      paymentUrl: sallaOrder.paymentUrl || null,
       orderNumber: order.orderNumber,
-      discountInfo
     };
   } catch (error) {
-    console.error('[OrderFromChat] Error creating order:', error);
+    console.error('[OrderFromChat] Error creating order:', { providerAttempted });
+    if (providerAttempted) {
+      const execution = currentInboundExecution();
+      if (execution) execution.uncertainEffect = true;
+      throw error;
+    }
     return null;
   }
 }
@@ -383,7 +313,7 @@ export function generateOrderConfirmationMessage(
   discountInfo?: DiscountInfo
 ): string {
   const itemsList = items.map(item => 
-    `• ${item.name} × ${item.quantity} = ${item.price * item.quantity} ريال`
+    `• ${item.name} × ${item.quantity} = ${formatMinorMoney(item.price * item.quantity)}`
   ).join('\n');
 
   let discountSection = '';
@@ -391,8 +321,8 @@ export function generateOrderConfirmationMessage(
     const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
     discountSection = `
 💳 *${discountTypeText}:* ${discountInfo.code}
-💵 *السعر الأصلي:* ${discountInfo.originalAmount} ريال
-🎉 *الخصم:* -${discountInfo.discountAmount} ريال
+💵 *السعر الأصلي:* ${formatMinorMoney(discountInfo.originalAmount)}
+🎉 *الخصم:* -${formatMinorMoney(discountInfo.discountAmount)}
 `;
   }
 
@@ -402,10 +332,9 @@ export function generateOrderConfirmationMessage(
 
 *المنتجات:*
 ${itemsList}${discountSection}
-💰 *الإجمالي:* ${totalAmount} ريال
+💰 *الإجمالي:* ${formatMinorMoney(totalAmount)}
 
-🔗 *لإتمام الطلب، اضغط على الرابط التالي للدفع:*
-${paymentUrl}
+${paymentUrl ? `🔗 *لإتمام الطلب، افتح رابط المتجر:*\n${paymentUrl}` : 'لم يتوفر رابط دفع؛ راجع وسيلة الدفع المسجلة لدى المتجر.'}
 
 📱 سنرسل لك تحديثات عن حالة طلبك عبر الواتساب
 
@@ -423,13 +352,13 @@ export function generatePaymentLinkMessage(
   return `💳 *رابط الدفع جاهز!*
 
 📦 *رقم الطلب:* ${orderNumber}
-💰 *المبلغ:* ${amount} ريال
+💰 *المبلغ:* ${formatMinorMoney(amount)}
 
 🔒 *لإتمام الدفع بشكل آمن:*
 ${paymentUrl}
 
 ✅ الدفع مؤمن بالكامل عبر Tap Payments
-⏰ الرابط صالح لمدة 24 ساعة
+⏰ افتح الرابط للاطلاع على صلاحيته
 📱 ستصلك رسالة تأكيد فور إتمام الدفع
 
 شكراً لثقتك بنا! 🌟`;
@@ -455,8 +384,8 @@ export function generateGiftOrderConfirmationMessage(
     const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
     discountSection = `
 💳 *${discountTypeText}:* ${discountInfo.code}
-💵 *السعر الأصلي:* ${discountInfo.originalAmount} ريال
-🎉 *الخصم:* -${discountInfo.discountAmount} ريال
+💵 *السعر الأصلي:* ${formatMinorMoney(discountInfo.originalAmount)}
+🎉 *الخصم:* -${formatMinorMoney(discountInfo.discountAmount)}
 `;
   }
 
@@ -467,10 +396,9 @@ export function generateGiftOrderConfirmationMessage(
 
 *المنتجات:*
 ${itemsList}${discountSection}
-💰 *الإجمالي:* ${totalAmount} ريال
+💰 *الإجمالي:* ${formatMinorMoney(totalAmount)}
 
-🔗 *لإتمام الطلب، اضغط على الرابط التالي للدفع:*
-${paymentUrl}
+${paymentUrl ? `🔗 *لإتمام الطلب، افتح رابط المتجر:*\n${paymentUrl}` : 'لم يتوفر رابط دفع؛ راجع وسيلة الدفع المسجلة لدى المتجر.'}
 
 🎉 سنقوم بتوصيل الهدية مع بطاقة تهنئة خاصة
 

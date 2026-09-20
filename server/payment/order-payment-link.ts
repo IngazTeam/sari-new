@@ -97,6 +97,7 @@ export async function issueCanonicalOrderPaymentLink(input: {
   }
   if (
     !['pending', 'processing'].includes(order.status)
+    || !!order.sallaOrderId
     || !Number.isSafeInteger(order.totalAmount)
     || order.totalAmount < 100
     || order.currency !== 'SAR'

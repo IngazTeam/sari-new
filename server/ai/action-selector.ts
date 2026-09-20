@@ -23,6 +23,7 @@ import {
   getProductsByMerchantId,
 } from '../db';
 import { filterProductsAvailableForSale } from './product-availability';
+import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMinor } from '../../shared/product-money';
 import { currentInboundExecution } from '../messaging/inbound-context';
 
 // Rate-limit map: prevent sending discount codes too frequently to the same customer
@@ -293,7 +294,7 @@ export async function executeAction(params: {
           action.productName.includes(p.name || '')
         );
         if (match) {
-          const price = (match as any).price ? ` — ${(match as any).price} ر.س` : '';
+          const price = ` — ${formatProductPrice(match)}`;
           await sendMessage(customerPhone,
             `📦 *${(match as any).name}*${price}\n${(match as any).description?.substring(0, 150) || ''}`
           );
@@ -309,7 +310,7 @@ export async function executeAction(params: {
         ).slice(0, 5);
         if (products.length > 0) {
           const lines = products.map((p: any, i: number) => {
-            const price = p.price ? ` — ${p.price} ر.س` : '';
+            const price = ` — ${formatProductPrice(p)}`;
             return `${i + 1}. *${p.name}*${price}`;
           });
           const msg = `🛍️ *منتجاتنا الأكثر طلباً:*\n\n${lines.join('\n')}\n\nأي منتج يعجبك؟ أقدر أعطيك تفاصيل أكثر! 😊`;
@@ -470,6 +471,8 @@ export async function executeAction(params: {
             const exact = matches.filter(p => p.name.trim().toLowerCase() === normalizedName);
             const match = exact.length === 1 ? exact[0] : matches.length === 1 ? matches[0] : undefined;
             if (match) {
+              const productMoney = verifiedProductMoney(match);
+              if (productMoney.currency !== 'SAR') throw new Error('Unsupported order currency');
               // Check if product has variants
               if (match.hasVariants) {
                 const variants = await getVariantsByProductId(match.id);
@@ -481,14 +484,16 @@ export async function executeAction(params: {
                 );
                 const variantMatch = variantMatches.length === 1 ? variantMatches[0] : undefined;
                 if (variantMatch && variantMatch.isActive) {
+                  if (match.trackInventory && (variantMatch.stock == null || variantMatch.stock < 1)) continue;
+                  const variantMoney = variantMatch.price == null ? productMoney : verifiedProductMoney({ ...variantMatch, currency: match.currency });
                   matchedItems.push({
                     productId: match.id,
                     variantId: variantMatch.id,
                     name: `${match.name} - ${variantMatch.name}`,
-                    price: variantMatch.price ?? match.price,
+                    price: variantMoney.minor,
                     quantity: 1,
                   });
-                  subtotal += variantMatch.price ?? match.price;
+                  subtotal += variantMoney.minor;
                   continue;
                 }
                 // An unresolved option is not permission to order the base product.
@@ -525,7 +530,7 @@ export async function executeAction(params: {
             taxAmount = Math.round(subtotal * taxRate / 100);
             totalAmount = subtotal + taxAmount;
           }
-          if (!Number.isSafeInteger(totalAmount) || totalAmount < 0) throw new Error('Invalid order total');
+          requireMinor(totalAmount);
 
           // 3. Create order in DB (enrich customer name from profile)
           let customerName = customerPhone;
@@ -542,6 +547,8 @@ export async function executeAction(params: {
             customerPhone,
             customerName,
             items: JSON.stringify(matchedItems.map(i => ({
+              productId: i.productId,
+              variantId: i.variantId,
               name: i.name,
               quantity: i.quantity,
               price: i.price,
@@ -555,7 +562,7 @@ export async function executeAction(params: {
           }
           createdOrderId = order.id;
 
-          console.log(`[ActionSelector] ✅ Order #${order.id} created in DB (${matchedItems.length} items, ${totalAmount} ر.س)`);
+          console.log(`[ActionSelector] ✅ Order #${order.id} created in DB (${matchedItems.length} items, ${totalAmount} minor units)`);
 
           // 4. Issue one local order link; the customer checkout creates the Tap charge.
           let paymentUrl: string | null = null;
@@ -607,12 +614,12 @@ export async function executeAction(params: {
 
           // 5. Send confirmation message to customer
           const itemsText = matchedItems.map((item, i) =>
-            `${i + 1}. *${item.name}* — ${item.price} ر.س`
+            `${i + 1}. *${item.name}* — ${formatMinorMoney(item.price)}`
           ).join('\n');
 
           const taxLine = taxAmount > 0
-            ? `\n🧾 *المبلغ قبل الضريبة:* ${subtotal} ر.س\n💰 *الضريبة (${taxRate}%):* ${taxAmount} ر.س\n💵 *الإجمالي:* ${totalAmount} ر.س`
-            : `\n💰 *الإجمالي:* ${totalAmount} ر.س`;
+            ? `\n🧾 *المبلغ قبل الضريبة:* ${formatMinorMoney(subtotal)}\n💰 *الضريبة (${taxRate}%):* ${formatMinorMoney(taxAmount)}\n💵 *الإجمالي:* ${formatMinorMoney(totalAmount)}`
+            : `\n💰 *الإجمالي:* ${formatMinorMoney(totalAmount)}`;
 
           if (paymentUrl) {
             // Full order with payment link
@@ -675,7 +682,7 @@ export async function executeAction(params: {
             const orderLines = recentOrders.map((o: any) => {
               const status = statusMap[o.status] || o.status;
               const date = new Date(o.createdAt).toLocaleDateString('ar-SA');
-              let line = `📦 *طلب #${o.id}* — ${status}\n   📅 ${date} | 💰 ${o.totalAmount} ر.س`;
+              let line = `📦 *طلب #${o.id}* — ${status}\n   📅 ${date} | 💰 ${formatMinorMoney(o.totalAmount, o.currency || 'SAR')}`;
               if (o.trackingNumber) line += `\n   🔗 رقم التتبع: ${o.trackingNumber}`;
               return line;
             }).join('\n\n');

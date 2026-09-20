@@ -1,3 +1,4 @@
+import { formatProductPrice } from '../../shared/product-money';
 /**
  * Merchant Mode — Intelligent merchant-facing chat handler
  * 
@@ -769,7 +770,7 @@ async function handleDirectiveSearch(params: {
     let productResults = '';
     if (pool) {
       const [products] = await pool.execute(
-        `SELECT name, price, stock, description FROM products 
+        `SELECT name, price, price_unit AS priceUnit, currency, stock, description FROM products
          WHERE merchantId = ? AND isActive = 1 
          AND (name LIKE ? OR description LIKE ? OR nameAr LIKE ?)
          LIMIT 5`,
@@ -777,7 +778,7 @@ async function handleDirectiveSearch(params: {
       ) as any;
       if (products?.length > 0) {
         productResults = '\n🛍️ *المنتجات:*\n' + products.map((p: any, i: number) =>
-          `${i + 1}. *${p.name}* — ${p.price} ر.س${p.stock != null ? ` (المخزون: ${p.stock})` : ''}`
+          `${i + 1}. *${p.name}* — ${formatProductPrice(p)}${p.stock != null ? ` (المخزون: ${p.stock})` : ''}`
         ).join('\n');
       }
     }

@@ -8568,5 +8568,9 @@
     "label": "Current store",
     "choose": "Choose a store to continue",
     "loadError": "Could not load available stores"
+  },
+  "productMoney": {
+    "reviewRequired": "Price needs review",
+    "reviewHint": "Enter and save the correct price in the product currency before automated ordering, or resync from the connected store."
   }
 }

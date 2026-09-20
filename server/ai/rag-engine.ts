@@ -1,3 +1,4 @@
+import { formatProductPrice } from '../../shared/product-money';
 /**
  * RAG Engine — Retrieval-Augmented Generation
  * 
@@ -454,7 +455,7 @@ async function buildProductContext(merchantId: number, question: string): Promis
     const [rows] = await pool.execute(
       `SELECT 
          COALESCE(p.name, p.nameAr, 'بدون اسم') AS display_name,
-         p.price, p.description, p.category,
+         p.price, p.price_unit AS priceUnit, p.currency, p.description, p.category,
          p.course_start_date, p.course_end_date,
          p.max_students, p.enrolled_count, p.registration_open
        FROM products p
@@ -471,7 +472,7 @@ async function buildProductContext(merchantId: number, question: string): Promis
 
     const lines = products.map(p => {
       const name = p.display_name || 'بدون اسم';
-      const price = p.price ? ` — ${p.price} ر.س` : '';
+      const price = ` — ${formatProductPrice(p)}`;
       const desc = p.description ? ` (${(p.description as string).substring(0, 80)})` : '';
       
       // Course availability info

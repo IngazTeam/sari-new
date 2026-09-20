@@ -1,3 +1,4 @@
+import { majorToMinor } from '../../shared/product-money';
 export type NormalizedZidProduct = {
   externalId: string;
   name: string;
@@ -83,9 +84,8 @@ function nonNegativeInt(value: unknown): number | null {
 }
 
 function cents(value: unknown): number | null {
-  const parsed = finiteNumber(value);
-  if (parsed === null || parsed < 0 || parsed > 21_474_836.47) return null;
-  return Math.round(parsed * 100);
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  try { return majorToMinor(value); } catch { return null; }
 }
 
 export function safeZidHttpUrl(value: unknown): string | null {

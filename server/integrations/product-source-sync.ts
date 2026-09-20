@@ -32,7 +32,7 @@ export async function syncExternalProducts(
   const normalizedByExternalId = normalizeExternalProductBatch(products, source);
   await assertRuntimeSchema('external product sync', [
     { table: 'merchants' },
-    { table: 'products', columns: ['sallaProductId', 'lastSyncedAt', 'courseStartDate', 'courseEndDate'] },
+    { table: 'products', columns: ['sallaProductId', 'lastSyncedAt', 'course_start_date', 'course_end_date', 'price_unit'] },
   ]);
   const pool = await getPool();
   if (!pool) throw new Error('Product data unavailable');
@@ -64,23 +64,24 @@ export async function syncExternalProducts(
     for (const product of Array.from(normalizedByExternalId.values())) {
       await connection.execute(
         `INSERT INTO products (
-           \`merchantId\`, name, \`nameAr\`, description, \`descriptionAr\`, price, currency,
-           category, \`imageUrl\`, \`productUrl\`, \`isActive\`, stock, \`trackInventory\`,
-           \`productType\`, status, \`sallaProductId\`, \`lastSyncedAt\`, \`courseStartDate\`,
-           \`courseEndDate\`, \`maxStudents\`, \`enrolledCount\`, \`registrationOpen\`
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), ?, ?, ?, ?, ?)
+           \`merchantId\`, name, \`nameAr\`, description, \`descriptionAr\`, price, currency, price_unit,
+           category, \`imageUrl\`, \`productUrl\`, \`isActive\`, stock, \`track_inventory\`,
+           \`product_type\`, status, \`sallaProductId\`, \`lastSyncedAt\`, \`course_start_date\`,
+           \`course_end_date\`, \`max_students\`, \`enrolled_count\`, \`registration_open\`
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            name = VALUES(name), \`nameAr\` = VALUES(\`nameAr\`), description = VALUES(description),
-           \`descriptionAr\` = VALUES(\`descriptionAr\`), price = VALUES(price), currency = VALUES(currency),
+           \`descriptionAr\` = VALUES(\`descriptionAr\`), price = VALUES(price), currency = VALUES(currency), price_unit = VALUES(price_unit),
+           compare_at_price = NULL, cost_price = NULL,
            category = VALUES(category), \`imageUrl\` = VALUES(\`imageUrl\`), \`productUrl\` = VALUES(\`productUrl\`),
-           \`isActive\` = VALUES(\`isActive\`), stock = VALUES(stock), \`trackInventory\` = VALUES(\`trackInventory\`),
-           \`productType\` = VALUES(\`productType\`), status = VALUES(status), \`lastSyncedAt\` = NOW(3),
-           \`courseStartDate\` = VALUES(\`courseStartDate\`), \`courseEndDate\` = VALUES(\`courseEndDate\`),
-           \`maxStudents\` = VALUES(\`maxStudents\`), \`enrolledCount\` = VALUES(\`enrolledCount\`),
-           \`registrationOpen\` = VALUES(\`registrationOpen\`)`,
+           \`isActive\` = VALUES(\`isActive\`), stock = VALUES(stock), \`track_inventory\` = VALUES(\`track_inventory\`),
+           \`product_type\` = VALUES(\`product_type\`), status = VALUES(status), \`lastSyncedAt\` = NOW(3),
+           \`course_start_date\` = VALUES(\`course_start_date\`), \`course_end_date\` = VALUES(\`course_end_date\`),
+           \`max_students\` = VALUES(\`max_students\`), \`enrolled_count\` = VALUES(\`enrolled_count\`),
+           \`registration_open\` = VALUES(\`registration_open\`)`,
         [
           merchantId, product.name, product.nameAr, product.description, product.descriptionAr,
-          product.price, product.currency, product.category, product.imageUrl, product.productUrl,
+          product.price, product.currency, product.priceUnit, product.category, product.imageUrl, product.productUrl,
           product.isActive, product.stock, product.trackInventory, product.productType, product.status,
           product.externalId, product.courseStartDate, product.courseEndDate, product.maxStudents,
           product.enrolledCount, product.registrationOpen,
@@ -95,12 +96,12 @@ export async function syncExternalProducts(
       const sourcePattern = `${source}:%`;
       const [result] = externalIds.length === 0
         ? await connection.execute(
-          `UPDATE products SET \`isActive\` = 0, status = 'archived', \`registrationOpen\` = 0, \`lastSyncedAt\` = NOW(3)
+          `UPDATE products SET \`isActive\` = 0, status = 'archived', \`registration_open\` = 0, \`lastSyncedAt\` = NOW(3)
            WHERE \`merchantId\` = ? AND \`sallaProductId\` LIKE ? AND status <> 'archived'`,
           [merchantId, sourcePattern],
         )
         : await connection.execute(
-          `UPDATE products SET \`isActive\` = 0, status = 'archived', \`registrationOpen\` = 0, \`lastSyncedAt\` = NOW(3)
+          `UPDATE products SET \`isActive\` = 0, status = 'archived', \`registration_open\` = 0, \`lastSyncedAt\` = NOW(3)
            WHERE \`merchantId\` = ? AND \`sallaProductId\` LIKE ? AND status <> 'archived'
              AND \`sallaProductId\` NOT IN (${externalIds.map(() => '?').join(', ')})`,
           [merchantId, sourcePattern, ...externalIds],

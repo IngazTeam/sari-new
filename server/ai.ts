@@ -1,3 +1,4 @@
+import { formatProductPrice, formatMinorMoney, majorToMinor } from '../shared/product-money';
 import { invokeLLM } from "./_core/llm";
 import {
   checkBookingConflict,
@@ -62,6 +63,8 @@ const SARI_PERSONALITY = `أنت "ساري"، مساعد مبيعات ذكي و�
 - ابقَ دائماً في إطار نشاط المتجر فقط`;
 
 interface ProductInfo {
+  priceUnit?: 'minor' | 'unverified';
+  currency?: string;
   id: number;
   name: string;
   description: string | null;
@@ -91,6 +94,7 @@ export interface AIResponse {
 }
 
 interface OrderInfo {
+  currency: 'SAR' | 'USD';
   id: number;
   status: string;
   totalAmount: number;
@@ -135,6 +139,7 @@ async function searchCustomerOrders(merchantId: number, customerPhone: string): 
       id: order.id,
       status: order.status,
       totalAmount: order.totalAmount,
+      currency: order.currency,
       createdAt: order.createdAt,
       trackingNumber: order.trackingNumber,
       items: order.items,
@@ -167,7 +172,7 @@ function formatOrdersInfo(orders: OrderInfo[]): string {
     const tracking = order.trackingNumber ? ` - رقم التتبع: ${order.trackingNumber}` : '';
     const date = new Date(order.createdAt).toLocaleDateString('ar-SA');
     
-    return `• طلب رقم ${order.id} - ${statusAr}${tracking}\n  المبلغ: ${order.totalAmount} ريال - التاريخ: ${date}`;
+    return `• طلب رقم ${order.id} - ${statusAr}${tracking}\n  المبلغ: ${formatMinorMoney(order.totalAmount, order.currency)} - التاريخ: ${date}`;
   }).join('\n\n');
 }
 
@@ -188,7 +193,8 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
       id: zp.id,
       name: zp.nameAr || zp.nameEn || 'منتج بدون اسم',
       description: zp.descriptionAr || zp.descriptionEn,
-      price: Math.round(parseFloat(zp.price) * 100), // Convert to cents
+      priceUnit: 'minor', currency: zp.currency || 'SAR',
+      price: majorToMinor(zp.price), // Convert to cents
       stock: zp.quantity,
       category: zp.categoryName,
       imageUrl: zp.mainImage,
@@ -220,6 +226,8 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
     name: p.name,
     description: p.description,
     price: p.price,
+    priceUnit: p.priceUnit,
+    currency: p.currency,
     stock: p.stock,
     category: p.category,
     imageUrl: p.imageUrl,
@@ -240,7 +248,8 @@ async function searchWooCommerceProducts(merchantId: number, query: string): Pro
       id: wp.id,
       name: wp.name,
       description: wp.shortDescription || wp.description,
-      price: Math.round(parseFloat(wp.price) * 100), // Convert to cents
+      priceUnit: 'minor', currency: wp.currency || 'SAR',
+      price: majorToMinor(wp.price), // Convert to cents
       stock: wp.stockQuantity,
       category: wp.categories ? JSON.parse(wp.categories)[0]?.name : null,
       imageUrl: wp.images ? JSON.parse(wp.images)[0]?.src : null,
@@ -265,7 +274,7 @@ function formatProductsInfo(products: ProductInfo[]): string {
     const desc = p.description ? `\n${p.description}` : '';
     // UX-01: Include product ID so AI can reference it in [SEND_IMAGE:id]
     const hasImage = p.imageUrl ? ' 📷' : '';
-    return `• [#${p.id}] ${p.name} - ${p.price} ر.س ${stock}${hasImage}${desc}`;
+    return `• [#${p.id}] ${p.name} - ${formatProductPrice(p)} ${stock}${hasImage}${desc}`;
   }).join('\n\n');
 }
 
@@ -577,7 +586,7 @@ export async function parseAICommands(rawText: string, merchantId: number): Prom
         media.push({
           type: 'image',
           url: product.imageUrl,
-          caption: product.name + ' - ' + product.price + ' ريال',
+          caption: product.name + ' - ' + formatProductPrice(product),
         });
         console.log('[AI] 🖼️ Queued product image: ' + product.name + ' (ID: ' + productId + ')');
       }

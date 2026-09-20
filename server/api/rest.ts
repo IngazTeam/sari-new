@@ -1,3 +1,4 @@
+import { formatProductPrice } from '../../shared/product-money';
 /**
  * Sari REST API — Public Integration Layer
  * 
@@ -1561,7 +1562,7 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
       for (const p of products) {
         const name = p.name || p.nameAr || 'بدون اسم';
         let line = `\n• ${name}`;
-        if (p.price) line += `\nالسعر: ${p.price} ر.س`;
+        if (p.price) line += `\nالسعر: ${formatProductPrice(p)}`;
         if (p.category) line += `\nالتصنيف: ${p.category}`;
         
         // Course dates

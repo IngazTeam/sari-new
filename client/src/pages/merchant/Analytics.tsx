@@ -1,3 +1,4 @@
+import { formatProductPrice } from '@shared/product-money';
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -566,7 +567,7 @@ export default function Analytics() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{product.productName}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatCurrency(product.price)}
+                      {formatProductPrice(product, 'ar-SA', t('productMoney.reviewRequired'))}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

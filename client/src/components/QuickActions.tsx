@@ -1,3 +1,4 @@
+import { formatProductPrice } from '@shared/product-money';
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -191,7 +192,7 @@ export function QuickActions({
             // @ts-ignore
             products.slice(0, 10).forEach((product, index) => {
               message += `${index + 1}. *${product.name}*\n`;
-              message += `   💰 السعر: ${product.price} ريال\n`;
+              message += `   💰 السعر: ${formatProductPrice(product)}\n`;
               if (product.description) {
                 message += `   📝 ${product.description.substring(0, 50)}...\n`;
               }

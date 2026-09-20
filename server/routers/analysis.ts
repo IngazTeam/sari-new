@@ -1,5 +1,6 @@
 import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
+import { majorToMinor } from '../../shared/product-money';
 import { TRPCError } from "@trpc/server";
 import {
   createDiscoveredPage,
@@ -219,7 +220,7 @@ export const analysisRouter = router({
           name: z.string(),
           description: z.string().default(''),
           price: z.number().default(0),
-          currency: z.string().default('SAR'),
+          currency: z.enum(['SAR', 'USD']).default('SAR'),
           imageUrl: z.string().default(''),
           productUrl: z.string().default(''),
           category: z.string().default(''),
@@ -256,6 +257,8 @@ export const analysisRouter = router({
 
         // ── Products ──
         if (input.productsAction !== 'skip' && input.products.length > 0) {
+          // Reject the entire invalid-price batch before a requested replacement.
+          for (const product of input.products) majorToMinor(product.price);
           if (input.productsAction === 'replace') {
             await deleteAllProductsByMerchantId(merchantId);
           }
@@ -277,11 +280,12 @@ export const analysisRouter = router({
               name: product.name,
               description: product.description,
               price: product.price || 0,
+              currency: product.currency,
               imageUrl: product.imageUrl || null,
               productUrl: product.productUrl || null,
               category: product.category || null,
               isActive: 1,
-            });
+            }, 'major');
             savedProducts++;
           }
         }
@@ -494,7 +498,7 @@ export const analysisRouter = router({
             price: product.price || 0,
             imageUrl: product.imageUrl,
             isActive: 1,
-          });
+          }, 'major');
         }
 
         // 3. Discover Pages (from homepage links)

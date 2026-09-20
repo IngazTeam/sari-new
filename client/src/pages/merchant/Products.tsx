@@ -1,3 +1,4 @@
+import { formatProductPrice } from '@shared/product-money';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3, CheckSquare, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useState } from 'react';
-import { formatCurrency } from '@/../../shared/currency';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { ProductsSkeleton } from '@/components/ProductsSkeleton';
@@ -28,11 +28,11 @@ export default function Products() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
-  const currency = merchant?.currency || 'SAR';
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const currency = editingProduct?.currency || merchant?.currency || 'SAR';
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -156,13 +156,14 @@ export default function Products() {
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
+    if (product.priceUnit !== 'minor') toast.info(t('productMoney.reviewHint'));
     setFormData({
       name: product.name, description: product.description || '',
-      price: product.price.toString(), imageUrl: product.imageUrl || '',
+      price: product.priceUnit === 'minor' ? String(product.price / 100) : '', imageUrl: product.imageUrl || '',
       stock: product.stock?.toString() || '',
       sku: product.sku || '', barcode: product.barcode || '',
-      compareAtPrice: product.compareAtPrice?.toString() || '',
-      costPrice: product.costPrice?.toString() || '',
+      compareAtPrice: product.priceUnit === 'minor' && product.compareAtPrice != null ? String(product.compareAtPrice / 100) : '',
+      costPrice: product.priceUnit === 'minor' && product.costPrice != null ? String(product.costPrice / 100) : '',
       weight: product.weight || '', category: product.category || '',
       tags: product.tags || '', productType: product.productType || 'physical',
       status: product.status || 'active',
@@ -175,6 +176,7 @@ export default function Products() {
 
   const handleUpdate = () => {
     if (!editingProduct) return;
+    if (!formData.price || !Number.isFinite(Number(formData.price))) { toast.error(t('productMoney.reviewRequired')); return; }
 
     updateMutation.mutate({
       productId: editingProduct.id,
@@ -551,7 +553,7 @@ export default function Products() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium whitespace-nowrap">{formatCurrency(product.price, currency)}</span>
+                        <span className="font-medium whitespace-nowrap">{formatProductPrice(product, 'ar-SA', t('productMoney.reviewRequired'))}</span>
                       </TableCell>
                       <TableCell>
                         {product.trackInventory && product.stock !== null && product.stock !== undefined ? (
@@ -762,7 +764,7 @@ export default function Products() {
             </TabsContent>
             <TabsContent value="pricing" className="space-y-3 mt-3">
               <div className="grid gap-2">
-                <Label>{t('productsPage.priceLabel')} *</Label>
+                <Label>{t('productsPage.priceLabel')} ({currency}) *</Label>
                 <Input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { formatProductPrice } from '../../shared/product-money';
 /**
  * Sari AI Agent Personality - Enhanced Version
  * A friendly, professional Saudi sales assistant with improved context awareness
@@ -1340,10 +1341,10 @@ export async function buildEnhancedContextPrompt(context: {
     for (let index = 0; index < availableProducts.length; index++) {
       const product = availableProducts[index];
       contextPrompt += `\n${index + 1}. **${product.name}**`;
-      if (product.price) {
-        contextPrompt += ` — ${formatCurrency(product.price, currency, 'ar-SA')}`;
-        if ((product as any).compareAtPrice && (product as any).compareAtPrice > product.price) {
-          contextPrompt += ` ~~${formatCurrency((product as any).compareAtPrice, currency, 'ar-SA')}~~`;
+      if (product.price != null) {
+        contextPrompt += ` — ${formatProductPrice(product)}`;
+        if (product.priceUnit === 'minor' && (product as any).compareAtPrice && (product as any).compareAtPrice > product.price) {
+          contextPrompt += ` ~~${formatProductPrice({ ...product, price: (product as any).compareAtPrice })}~~`;
         }
       }
       contextPrompt += `\n`;
@@ -2150,7 +2151,7 @@ ${result.orderUrl}
             for (let i = 0; i < productsToInject.length; i++) {
               const p = productsToInject[i];
               productInjection += `${i + 1}. **${p.name}**`;
-              if (p.price) productInjection += ` - ${formatCurrency(p.price, currency, 'ar-SA')}`;
+              if (p.price != null) productInjection += ` - ${formatProductPrice(p)}`;
               if ((p as any).startDate) productInjection += ` | يبدأ: ${(p as any).startDate}`;
               if (p.category) productInjection += ` [${p.category}]`;
               // FIX-DESC: Include product description so GPT doesn't guess features
@@ -2310,7 +2311,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           // ═══ FAST PATH: Same score threshold as FULL PATH ═══
           if (critique.score < 3) {
             const fastCriticProducts = productsToShow?.map((p: any) => 
-              p.price ? `${p.name} (${p.price} ريال)` : p.name
+              p.price != null ? `${p.name} (${formatProductPrice(p)})` : p.name
             ).filter(Boolean) || [];
             const rewrittenFast = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages, productNames: fastCriticProducts });
             
@@ -2819,7 +2820,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         // risking product hallucination from a full rewrite.
         if (critiqueFull.score < 3) {
           const criticProductNames = productsToShow?.map((p: any) => 
-            p.price ? `${p.name} (${p.price} ريال)` : p.name
+            p.price != null ? `${p.name} (${formatProductPrice(p)})` : p.name
           ).filter(Boolean) || [];
           const rewrittenResponse = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages, productNames: criticProductNames });
           
@@ -2846,7 +2847,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       const lastBotMsgFull = previousMessages.filter(m => m.role === 'assistant').pop();
       // FIX: Include prices in product names so validator can fix missing_price violations
       const productNamesFull = productsToShow?.map((p: any) => 
-        p.price ? `${p.name} (${p.price} ريال)` : p.name
+        p.price != null ? `${p.name} (${formatProductPrice(p)})` : p.name
       ).filter(Boolean) || [];
       const validationFull = await validateResponse({
         response,
@@ -3215,7 +3216,7 @@ export async function recommendProducts(params: {
     if (params.budget) {
       // @ts-ignore
       filteredProducts = filteredProducts.filter(p =>
-        p.price && p.price <= params.budget!
+        p.priceUnit === 'minor' && p.currency === 'SAR' && p.price / 100 <= params.budget!
       );
     }
 

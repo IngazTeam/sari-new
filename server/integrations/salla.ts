@@ -1,6 +1,7 @@
+import { majorToMinor, requireMinor } from '../../shared/product-money';
+import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
 import axios from 'axios';
 import {
-  createOrder,
   createProduct,
   createSyncLog,
   getProductBySallaId,
@@ -16,6 +17,7 @@ const sallaHttp = axios.create({
   timeout: 10_000,
   maxContentLength: 2 * 1024 * 1024,
   maxBodyLength: 2 * 1024 * 1024,
+  maxRedirects: 0,
 });
 
 export type SallaStoreIdentity = {
@@ -44,8 +46,9 @@ interface SallaProduct {
   id: string;
   name: string;
   description?: string;
-  price: string;
-  sale_price?: string;
+  price: string | number;
+  currency?: 'SAR' | 'USD';
+  sale_price?: string | number | null;
   quantity: number;
   sku?: string;
   main_image?: string;
@@ -59,6 +62,7 @@ interface SallaOrderData {
   email?: string;
   address: string;
   city?: string;
+  shipTo?: SallaShipping;
   items: Array<{
     sallaProductId: string;
     quantity: number;
@@ -224,9 +228,9 @@ export class SallaIntegration {
       const existing = await getProductBySallaId(this.merchantId, sallaProduct.id);
 
       // تحويل السعر من string إلى integer (بالهللات)
-      const price = Math.round(parseFloat(sallaProduct.price) * 100);
-      const salePrice = sallaProduct.sale_price 
-        ? Math.round(parseFloat(sallaProduct.sale_price) * 100) 
+      const price = majorToMinor(sallaProduct.price);
+      const salePrice = sallaProduct.sale_price != null && sallaProduct.sale_price !== ''
+        ? majorToMinor(sallaProduct.sale_price)
         : null;
 
       const productData = {
@@ -234,7 +238,10 @@ export class SallaIntegration {
         sallaProductId: sallaProduct.id,
         name: sallaProduct.name,
         description: sallaProduct.description || '',
-        price: salePrice || price, // استخدم سعر التخفيض إذا كان موجوداً
+        price: salePrice ?? price, // استخدم سعر التخفيض إذا كان موجوداً
+        currency: sallaProduct.currency || 'SAR',
+        compareAtPrice: salePrice != null ? price : null,
+        costPrice: null,
         imageUrl: sallaProduct.main_image || sallaProduct.images?.[0]?.url || null,
         category: sallaProduct.categories?.[0]?.name || 'عام',
         stock: sallaProduct.quantity || 0,
@@ -265,7 +272,15 @@ export class SallaIntegration {
     orderNumber: string;
     paymentUrl?: string;
     orderId: string;
+    amountMinor: number;
+    currency: 'SAR';
   }> {
+    if (!orderData.items.length) throw new Error('Empty Salla order');
+    const shipTo = sallaShippingSchema.parse(orderData.shipTo);
+    for (const item of orderData.items) {
+      requireMinor(item.price);
+      if (!Number.isSafeInteger(item.quantity) || item.quantity < 1 || !/^[1-9][0-9]*$/.test(item.sallaProductId)) throw new Error('Invalid Salla item');
+    }
     console.log(`[Salla] Creating order for merchant ${this.merchantId}`);
     
     try {
@@ -273,26 +288,26 @@ export class SallaIntegration {
         `${SALLA_API_BASE}/orders`,
         {
           customer: {
-            first_name: orderData.customerName.split(' ')[0],
-            last_name: orderData.customerName.split(' ').slice(1).join(' ') || 'العميل',
+            name: orderData.customerName,
             mobile: orderData.phone,
             email: orderData.email || `${orderData.phone}@temp.sary.live`
           },
-          items: orderData.items.map(item => ({
-            product_id: item.sallaProductId,
+          products: orderData.items.map(item => ({
+            identifier_type: 'id',
+            identifier: item.sallaProductId,
             quantity: item.quantity,
-            price: item.price / 100 // تحويل من هللات إلى ريال
           })),
-          shipping: {
+          receiver: {
             name: orderData.customerName,
-            address: orderData.address,
-            city: orderData.city || 'الرياض',
-            country: 'SA',
-            phone: orderData.phone
+            country_code: 'SA',
+            phone: orderData.phone,
+            notify: false,
           },
-          payment_method: 'cod', // Cash on delivery
+          delivery_method: 'shipping',
+          ship_to: shipTo,
+          payment: { status: 'pending', method: 'cod' },
           notes: orderData.notes || `طلب من ساري - ${new Date().toISOString()}`,
-          coupon_code: orderData.discountCode || null
+          ...(orderData.discountCode ? { coupon: orderData.discountCode } : {})
         },
         {
           headers: {
@@ -305,36 +320,35 @@ export class SallaIntegration {
 
       const sallaOrder = response.data.data;
 
-      // حفظ الطلب في قاعدة بياناتنا
-      await createOrder({
-        merchantId: this.merchantId,
-        sallaOrderId: sallaOrder.id,
-        orderNumber: sallaOrder.reference_id,
-        customerPhone: orderData.phone,
-        customerName: orderData.customerName,
-        customerEmail: orderData.email,
-        address: orderData.address,
-        city: orderData.city,
-        items: JSON.stringify(orderData.items),
-        totalAmount: Math.round(sallaOrder.amounts.total * 100), // تحويل إلى هللات
-        discountCode: orderData.discountCode,
-        status: 'pending',
-        paymentUrl: sallaOrder.payment_url,
-        notes: orderData.notes
-      });
+      // Transport returns the provider result; the caller owns the single local insert.
+      const amount = sallaOrder?.amounts?.total;
+      const currency = (amount && typeof amount === 'object' ? amount.currency : undefined) || sallaOrder?.currency;
+      if (response.data.success !== true || currency !== 'SAR' || (sallaOrder.currency && sallaOrder.currency !== 'SAR') || !sallaOrder?.id || !sallaOrder?.reference_id) throw new Error('Unverified Salla order result');
+      const amountMinor = majorToMinor(typeof amount === 'object' ? amount.amount : amount);
+      const orderId = String(sallaOrder.id);
+      const orderNumber = String(sallaOrder.reference_id);
+      if (![orderId, orderNumber].every(id => /^[1-9][0-9]{0,19}$/.test(id))) throw new Error('Invalid Salla order identity');
+      let paymentUrl: string | undefined;
+      if (typeof sallaOrder.urls?.checkout === 'string' && sallaOrder.urls.checkout) {
+        const url = new URL(sallaOrder.urls.checkout);
+        if (url.protocol !== 'https:' || url.username || url.password || url.port) throw new Error('Invalid Salla checkout URL');
+        paymentUrl = url.toString();
+      }
 
       console.log(`[Salla] Order created successfully: ${sallaOrder.reference_id}`);
 
       return {
         success: true,
-        orderNumber: sallaOrder.reference_id,
-        paymentUrl: sallaOrder.payment_url,
-        orderId: sallaOrder.id
+        orderNumber,
+        paymentUrl,
+        orderId,
+        amountMinor,
+        currency: 'SAR'
       };
       
     } catch (error: any) {
-      console.error('[Salla] Order creation failed:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.error?.message || 'فشل إنشاء الطلب في Salla');
+      console.error('[Salla] Order creation failed:', { status: error?.response?.status });
+      throw new Error('تعذر التحقق من نتيجة إنشاء الطلب في سلة');
     }
   }
 

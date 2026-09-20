@@ -123,7 +123,7 @@ export async function loadArsenal(
     arsenal.totalProducts = products.length;
     arsenal.bestSellers = products
       .slice(0, 5)
-      .map((p: any) => ({ name: p.name, price: p.price || 0 }));
+      .map((p: any) => ({ name: p.name, price: p.priceUnit === 'minor' ? p.price / 100 : 0 }));
   } catch { /* silent */ }
 
   try {

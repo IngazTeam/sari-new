@@ -379,6 +379,13 @@
       "when": 1789905600000,
       "tag": "0053_delivery_receipt_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1790010000000,
+      "tag": "0054_catalog_price_units",
+      "breakpoints": true
     }
   ]
 }

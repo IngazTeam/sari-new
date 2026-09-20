@@ -350,7 +350,7 @@ export async function syncInventoryToSheets(merchantId: number): Promise<{
       product.id.toString(),
       product.name,
       product.category || '-',
-      `${product.price} ريال`,
+      product.priceUnit === 'minor' ? String(product.price / 100) : '',
       product.stock?.toString() || '0',
       new Date().toLocaleDateString('ar-SA')
     ]);
@@ -409,19 +409,21 @@ export async function updateInventoryFromSheets(merchantId: number): Promise<{
 
     let updatedCount = 0;
 
+    const ownedProductIds = new Set((await getProductsByMerchantId(merchantId)).map(product => product.id));
     // تحديث كل منتج
     for (const row of result.values) {
       const [productIdStr, , , , stockStr] = row;
 
       if (!productIdStr || !stockStr) continue;
 
-      const productId = parseInt(productIdStr);
-      const stock = parseInt(stockStr);
+      const productId = Number(productIdStr);
+      const stock = Number(stockStr);
 
-      if (isNaN(productId) || isNaN(stock)) continue;
+      if (!Number.isSafeInteger(productId) || !ownedProductIds.has(productId)
+        || !Number.isSafeInteger(stock) || stock < 0 || stock > 2_147_483_647) continue;
 
       try {
-        await updateProduct(productId, { stock });
+        await updateProduct(productId, { stock }, 'major');
         updatedCount++;
       } catch (error) {
         console.error(`[Sheets Sync] Error updating product ${productId}:`, error);
@@ -552,10 +554,10 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
 
       try {
         if (existingId) {
-          await updateProduct(existingId, data);
+          await updateProduct(existingId, data, 'major');
           updated++;
         } else {
-          await createProduct({ merchantId, ...data });
+          await createProduct({ merchantId, ...data }, 'major');
           created++;
         }
       } catch (error) {
