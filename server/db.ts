@@ -9128,10 +9128,10 @@ export async function createDiscoveredPage(data: {
     content: data.content,
     isActive: data.isActive !== undefined ? (data.isActive ? 1 : 0) : 1,
     useInBot: data.useInBot !== undefined ? (data.useInBot ? 1 : 0) : 1,
-    discoveredAt: new Date().toISOString(),
+    discoveredAt: formatDateForDB(new Date()),
   });
 
-  return (result as any).insertId;
+  return Number(result[0].insertId);
 }
 
 /**
@@ -9256,10 +9256,10 @@ export async function createExtractedFaq(data: {
     useInBot: data.useInBot !== undefined ? (data.useInBot ? 1 : 0) : 1,
     priority: data.priority || 0,
     usageCount: 0,
-    extractedAt: new Date().toISOString(),
+    extractedAt: formatDateForDB(new Date()),
   });
 
-  return (result as any).insertId;
+  return Number(result[0].insertId);
 }
 
 /**

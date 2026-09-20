@@ -1,14 +1,9 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, merchantProcedure, permissionProcedure } from "../_core/trpc";
 import { z } from "zod";
-import { majorToMinor } from '../../shared/product-money';
+import { formatProductPrice } from '../../shared/product-money';
+import { analysisSnapshotSchema, AnalysisSnapshotValidationError, applyAnalysisSnapshot } from '../catalog/analysis-snapshot';
 import { TRPCError } from "@trpc/server";
 import {
-  createDiscoveredPage,
-  createExtractedFaq,
-  createProduct,
-  deleteAllDiscoveredPages,
-  deleteAllExtractedFaqs,
-  deleteAllProductsByMerchantId,
   deleteDiscoveredPage,
   deleteExtractedFaq,
   getActiveFaqsForBot,
@@ -17,13 +12,12 @@ import {
   getDiscoveredPagesByType,
   getExtractedFaqsByCategory,
   getExtractedFaqsByMerchantId,
-  getMerchantByUserId,
+  getMerchantById,
   getMerchantWebsiteInfo,
   getProductsByMerchantId,
   searchFaqsByQuestion,
   updateDiscoveredPage,
   updateExtractedFaq,
-  updateMerchant,
   updateMerchantWebsiteInfo,
 } from '../db';
 import {
@@ -41,13 +35,9 @@ import {
 } from "../_core/websiteAnalyzer";
 import { checkRateLimit } from "../_core/rateLimiter";
 
-/**
- * Helper: Get merchant or throw
- * FIX: ctx.user.id is the USER id, not the MERCHANT id.
- * All DB functions expect merchant.id, so we must look it up first.
- */
-async function getMerchantOrThrow(userId: number) {
-  const merchant = await getMerchantByUserId(userId);
+/** Resolve the merchant selected and authorized by the procedure middleware. */
+async function getMerchantOrThrow(merchantId: number) {
+  const merchant = await getMerchantById(merchantId);
   if (!merchant) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
   }
@@ -59,7 +49,7 @@ export const analysisRouter = router({
    * Phase 1: Preview Analysis — Extract data WITHOUT saving to DB
    * Returns all extracted data for comparison in the frontend
    */
-  previewAnalysis: protectedProcedure
+  previewAnalysis: permissionProcedure('bot_settings.manage')
     .input(
       z.object({
         websiteUrl: z.string().url(),
@@ -72,7 +62,7 @@ export const analysisRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به.' });
         }
 
-        const merchant = await getMerchantOrThrow(ctx.user.id);
+        const merchant = await getMerchantOrThrow(ctx.merchantId);
 
         // SEC-A2: Rate limit (5 per hour per merchant)
         const rl = checkRateLimit(`analysis_preview:${merchant.id}`, 5, 3600000);
@@ -190,8 +180,9 @@ export const analysisRouter = router({
           },
         };
       } catch (error: any) {
+        if (error instanceof TRPCError) throw error;
         // Reset status on failure
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (merchant) {
           await updateMerchantWebsiteInfo({
             merchantId: merchant.id,
@@ -209,172 +200,25 @@ export const analysisRouter = router({
   /**
    * Phase 2: Apply Analysis — Save chosen data to DB based on merchant decisions
    */
-  applyAnalysis: protectedProcedure
-    .input(
-      z.object({
-        websiteUrl: z.string().url(),
-        platform: z.enum(['salla', 'zid', 'shopify', 'woocommerce', 'custom', 'unknown']),
-        // Products
-        productsAction: z.enum(['replace', 'merge', 'skip']),
-        products: z.array(z.object({
-          name: z.string(),
-          description: z.string().default(''),
-          price: z.number().default(0),
-          currency: z.enum(['SAR', 'USD']).default('SAR'),
-          imageUrl: z.string().default(''),
-          productUrl: z.string().default(''),
-          category: z.string().default(''),
-        })).default([]),
-        // FAQs
-        faqsAction: z.enum(['replace', 'merge', 'skip']),
-        faqs: z.array(z.object({
-          question: z.string(),
-          answer: z.string(),
-          category: z.string().default(''),
-        })).default([]),
-        // Pages
-        pagesAction: z.enum(['replace', 'merge', 'skip']),
-        pages: z.array(z.object({
-          pageType: z.string(),
-          title: z.string(),
-          url: z.string(),
-        })).default([]),
-        // Contact info
-        applyContactInfo: z.boolean().default(false),
-        contactInfo: z.object({
-          phones: z.array(z.string()).default([]),
-          emails: z.array(z.string()).default([]),
-          whatsappNumber: z.string().nullable().default(null),
-          address: z.string().nullable().default(null),
-        }).optional(),
-      })
-    )
+  applyAnalysis: permissionProcedure('bot_settings.manage')
+    .input(analysisSnapshotSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        const merchant = await getMerchantOrThrow(ctx.user.id);
+        const merchant = await getMerchantOrThrow(ctx.merchantId);
         const merchantId = merchant.id;
-        let savedProducts = 0, savedFaqs = 0, savedPages = 0;
-
-        // ── Products ──
-        if (input.productsAction !== 'skip' && input.products.length > 0) {
-          // Reject the entire invalid-price batch before a requested replacement.
-          for (const product of input.products) majorToMinor(product.price);
-          if (input.productsAction === 'replace') {
-            await deleteAllProductsByMerchantId(merchantId);
-          }
-
-          // For merge: get existing product names to skip duplicates
-          let existingNames: Set<string> = new Set();
-          if (input.productsAction === 'merge') {
-            const existing = await getProductsByMerchantId(merchantId);
-            existingNames = new Set((existing || []).map((p: any) => p.name?.toLowerCase().trim()));
-          }
-
-          for (const product of input.products) {
-            // Skip duplicates in merge mode
-            if (input.productsAction === 'merge' && existingNames.has(product.name.toLowerCase().trim())) {
-              continue;
-            }
-            await createProduct({
-              merchantId,
-              name: product.name,
-              description: product.description,
-              price: product.price || 0,
-              currency: product.currency,
-              imageUrl: product.imageUrl || null,
-              productUrl: product.productUrl || null,
-              category: product.category || null,
-              isActive: 1,
-            }, 'major');
-            savedProducts++;
-          }
-        }
-
-        // ── FAQs ──
-        if (input.faqsAction !== 'skip' && input.faqs.length > 0) {
-          if (input.faqsAction === 'replace') {
-            await deleteAllExtractedFaqs(merchantId);
-          }
-
-          // For merge: get existing questions to skip duplicates
-          let existingQuestions: Set<string> = new Set();
-          if (input.faqsAction === 'merge') {
-            const existing = await getExtractedFaqsByMerchantId(merchantId);
-            existingQuestions = new Set((existing || []).map((f: any) => f.question?.toLowerCase().trim()));
-          }
-
-          for (const faq of input.faqs) {
-            if (input.faqsAction === 'merge' && existingQuestions.has(faq.question.toLowerCase().trim())) {
-              continue;
-            }
-            await createExtractedFaq({
-              merchantId,
-              question: faq.question,
-              answer: faq.answer,
-              // @ts-ignore
-              category: faq.category || null,
-            });
-            savedFaqs++;
-          }
-        }
-
-        // ── Pages ──
-        if (input.pagesAction !== 'skip' && input.pages.length > 0) {
-          if (input.pagesAction === 'replace') {
-            await deleteAllDiscoveredPages(merchantId);
-          }
-
-          // For merge: get existing page URLs to skip duplicates
-          let existingUrls: Set<string> = new Set();
-          if (input.pagesAction === 'merge') {
-            const existing = await getDiscoveredPagesByMerchantId(merchantId);
-            existingUrls = new Set((existing || []).map((p: any) => p.url?.toLowerCase().trim()));
-          }
-
-          for (const page of input.pages) {
-            if (input.pagesAction === 'merge' && existingUrls.has(page.url.toLowerCase().trim())) {
-              continue;
-            }
-            await createDiscoveredPage({
-              merchantId,
-              pageType: page.pageType as any,
-              title: page.title,
-              url: page.url,
-            });
-            savedPages++;
-          }
-        }
-
-        // ── Contact Info ──
-        if (input.applyContactInfo && input.contactInfo) {
-          const updateData: Record<string, any> = {};
-          if (input.contactInfo.phones.length > 0) updateData.phone = input.contactInfo.phones[0];
-          if (input.contactInfo.address) updateData.address = input.contactInfo.address;
-          if (Object.keys(updateData).length > 0) {
-            await updateMerchant(merchantId, updateData).catch(() => {});
-          }
-        }
-
-        // ── Update merchant website info ──
-        await updateMerchantWebsiteInfo({
-          merchantId,
-          websiteUrl: input.websiteUrl,
-          platformType: input.platform,
-          analysisStatus: "completed",
-          lastAnalysisDate: new Date(),
-        });
+        const result = await applyAnalysisSnapshot(merchantId, input);
         // ── GAP-1 FIX: Feed saved data into Knowledge Engine ──
         try {
           const savedContent: string[] = [];
-          if (input.products.length > 0) {
+          if (result.savedProducts > 0) {
             savedContent.push('--- المنتجات ---');
-            for (const p of input.products) {
-              savedContent.push(`• ${p.name}: ${p.description || ''} — ${p.price || 0} ر.س`);
+            for (const p of (await getProductsByMerchantId(merchantId)).filter(p => p.isActive === 1 && p.status === 'active')) {
+              savedContent.push(`• ${p.name}: ${p.description || ''} — ${formatProductPrice(p)}`);
             }
           }
-          if (input.faqs.length > 0) {
+          if (result.savedFaqs > 0) {
             savedContent.push('--- الأسئلة الشائعة ---');
-            for (const f of input.faqs) {
+            for (const f of await getActiveFaqsForBot(merchantId)) {
               savedContent.push(`س: ${f.question}\nج: ${f.answer}`);
             }
           }
@@ -389,17 +233,18 @@ export const analysisRouter = router({
             await knowledgeDb.invalidateCache(merchantId);
           }
         } catch { /* non-blocking */ }
+        // Even short content or a failed embedding must invalidate the previous bot context.
+        try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchantId); } catch { /* non-blocking */ }
 
-        return {
-          success: true,
-          savedProducts,
-          savedFaqs,
-          savedPages,
-        };
+        return result;
       } catch (error: any) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof AnalysisSnapshotValidationError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'بيانات التحليل غير صالحة. راجع المنتجات والروابط.' });
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "فشل حفظ بيانات التحليل",
+          message: "فشل حفظ بيانات التحليل",
         });
       }
     }),
@@ -407,8 +252,8 @@ export const analysisRouter = router({
   /**
    * Get existing data for comparison
    */
-  getExistingData: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantOrThrow(ctx.user.id);
+  getExistingData: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantOrThrow(ctx.merchantId);
     const merchantId = merchant.id;
 
     const products = await getProductsByMerchantId(merchantId);
@@ -446,7 +291,7 @@ export const analysisRouter = router({
   /**
    * Analyze Website — Full Analysis (legacy — does everything in one shot)
    */
-  analyzeWebsite: protectedProcedure
+  analyzeWebsite: permissionProcedure('bot_settings.manage')
     .input(
       z.object({
         websiteUrl: z.string().url(),
@@ -459,7 +304,7 @@ export const analysisRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به.' });
         }
 
-        const merchant = await getMerchantOrThrow(ctx.user.id);
+        const merchant = await getMerchantOrThrow(ctx.merchantId);
         const merchantId = merchant.id;
 
         // SEC-A2: Rate limit (5 per hour per merchant)
@@ -489,35 +334,11 @@ export const analysisRouter = router({
           merchantId,
         );
 
-        // Save products to database
-        for (const product of products) {
-          await createProduct({
-            merchantId,
-            name: product.name,
-            description: product.description,
-            price: product.price || 0,
-            imageUrl: product.imageUrl,
-            isActive: 1,
-          }, 'major');
-        }
-
         // 3. Discover Pages (from homepage links)
         const pages = discoverPages(dom, input.websiteUrl);
 
-        // Delete old pages
-        await deleteAllDiscoveredPages(merchantId);
-
-        // Save discovered pages (initially without content — content added during crawl)
-        const savedPageIds: Map<string, number> = new Map();
-        for (const page of pages) {
-          const pageId = await createDiscoveredPage({
-            merchantId,
-            pageType: page.pageType,
-            title: page.title,
-            url: page.url,
-          });
-          savedPageIds.set(page.url, pageId);
-        }
+        const pageContents = new Map<string, string>();
+        let contactPhone: string | undefined;
 
         // 4. Extract FAQs from each FAQ/shipping/returns page — and save page content for bot
         let allFaqs: ExtractedFAQ[] = [];
@@ -530,12 +351,7 @@ export const analysisRouter = router({
             const pageText = pageScrape.text;
 
             // Save page content for bot context (truncated to 2000 chars)
-            const pageId = savedPageIds.get(page.url);
-            if (pageId && pageText.length > 20) {
-              await updateDiscoveredPage(pageId, {
-                content: pageText.substring(0, 2000),
-              });
-            }
+            if (pageText.length > 20) pageContents.set(page.url, pageText.substring(0, 2000));
 
             // Extract FAQs using common selectors
             pageDoc.querySelectorAll('.faq, .faqs, [class*="faq"], [class*="question"], .accordion, details, [class*="accordion"]').forEach((el: any) => {
@@ -570,56 +386,34 @@ export const analysisRouter = router({
             const contactInfoData = extractContactInfo(pageScrape.dom, pageScrape.text, pageScrape.html);
 
             // Save page content for bot context
-            const pageId = savedPageIds.get(page.url);
-            if (pageId && pageScrape.text.length > 20) {
-              await updateDiscoveredPage(pageId, {
-                content: pageScrape.text.substring(0, 2000),
-              });
-            }
-
-            // Save phone/whatsapp to merchant if not already set
-            const updateData: Record<string, any> = {};
-            if (contactInfoData.phones.length > 0) updateData.phone = contactInfoData.phones[0];
-            if (contactInfoData.whatsappNumber) updateData.whatsappNumber = contactInfoData.whatsappNumber;
-            if (Object.keys(updateData).length > 0) {
-              await updateMerchant(merchantId, updateData).catch(() => {});
-            }
+            if (pageScrape.text.length > 20) pageContents.set(page.url, pageScrape.text.substring(0, 2000));
+            if (contactInfoData.phones.length) contactPhone = contactInfoData.phones[0];
           } catch (error) {
             console.error(`Error extracting contact from ${page.url}:`, error);
           }
         }
 
-        // Delete old FAQs
-        await deleteAllExtractedFaqs(merchantId);
-
-        // Save extracted FAQs — auto-enable for bot usage
-        for (const faq of allFaqs) {
-          await createExtractedFaq({
-            merchantId,
-            question: faq.question,
-            answer: faq.answer,
-            category: faq.category,
-          });
-        }
-
-        // Update merchant info
-        await updateMerchantWebsiteInfo({
-          merchantId,
-          platformType: platform,
-          analysisStatus: "completed",
-          lastAnalysisDate: new Date(),
+        // Crawl first; persist the complete local result with the same atomic writer.
+        const saved = await applyAnalysisSnapshot(merchantId, {
+          websiteUrl: input.websiteUrl, platform,
+          productsAction: 'merge', products: products.map(product => ({ ...product, currency: product.currency as 'SAR' | 'USD' })),
+          faqsAction: 'replace', faqs: allFaqs,
+          pagesAction: 'replace', pages: pages.map(page => ({ ...page, content: pageContents.get(page.url) })),
+          applyContactInfo: Boolean(contactPhone), contactInfo: { phones: contactPhone ? [contactPhone] : [] },
         });
+        try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchantId); } catch { /* non-blocking */ }
 
         return {
           success: true,
           platform,
-          productsCount: products.length,
-          pagesCount: pages.length,
-          faqsCount: allFaqs.length,
+          productsCount: saved.savedProducts,
+          pagesCount: saved.savedPages,
+          faqsCount: saved.savedFaqs,
         };
       } catch (error: any) {
+        if (error instanceof TRPCError) throw error;
         // Update status to failed
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (merchant) {
           await updateMerchantWebsiteInfo({
             merchantId: merchant.id,
@@ -637,8 +431,8 @@ export const analysisRouter = router({
   /**
    * Get Analysis Status
    */
-  getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  getStatus: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) {
       return {
         hasWebsite: false,
@@ -669,15 +463,15 @@ export const analysisRouter = router({
   /**
    * Get Discovered Pages
    */
-  getDiscoveredPages: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantOrThrow(ctx.user.id);
+  getDiscoveredPages: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantOrThrow(ctx.merchantId);
     return await getDiscoveredPagesByMerchantId(merchant.id);
   }),
 
   /**
    * Get Discovered Pages by Type
    */
-  getPagesByType: protectedProcedure
+  getPagesByType: merchantProcedure
     .input(
       z.object({
         pageType: z.enum([
@@ -693,14 +487,14 @@ export const analysisRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       return await getDiscoveredPagesByType(merchant.id, input.pageType);
     }),
 
   /**
    * Update Discovered Page
    */
-  updatePage: protectedProcedure
+  updatePage: permissionProcedure('bot_settings.manage')
     .input(
       z.object({
         pageId: z.number(),
@@ -713,7 +507,7 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // IDOR FIX: Verify ownership before update
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       const pages = await getDiscoveredPagesByMerchantId(merchant.id);
       const owned = pages.find((p: any) => p.id === input.pageId);
       if (!owned) {
@@ -729,11 +523,11 @@ export const analysisRouter = router({
   /**
    * Delete Discovered Page
    */
-  deletePage: protectedProcedure
+  deletePage: permissionProcedure('bot_settings.manage')
     .input(z.object({ pageId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       // IDOR FIX: Verify ownership before delete
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       const pages = await getDiscoveredPagesByMerchantId(merchant.id);
       const owned = pages.find((p: any) => p.id === input.pageId);
       if (!owned) {
@@ -748,33 +542,33 @@ export const analysisRouter = router({
   /**
    * Get Extracted FAQs
    */
-  getExtractedFaqs: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantOrThrow(ctx.user.id);
+  getExtractedFaqs: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantOrThrow(ctx.merchantId);
     return await getExtractedFaqsByMerchantId(merchant.id);
   }),
 
   /**
    * Get FAQs by Category
    */
-  getFaqsByCategory: protectedProcedure
+  getFaqsByCategory: merchantProcedure
     .input(z.object({ category: z.string() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       return await getExtractedFaqsByCategory(merchant.id, input.category);
     }),
 
   /**
    * Get Active FAQs for Bot
    */
-  getActiveFaqsForBot: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantOrThrow(ctx.user.id);
+  getActiveFaqsForBot: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantOrThrow(ctx.merchantId);
     return await getActiveFaqsForBot(merchant.id);
   }),
 
   /**
    * Update FAQ
    */
-  updateFaq: protectedProcedure
+  updateFaq: permissionProcedure('bot_settings.manage')
     .input(
       z.object({
         faqId: z.number(),
@@ -788,7 +582,7 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // IDOR FIX: Verify ownership before update
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       const faqs = await getExtractedFaqsByMerchantId(merchant.id);
       const owned = faqs.find((f: any) => f.id === input.faqId);
       if (!owned) {
@@ -804,11 +598,11 @@ export const analysisRouter = router({
   /**
    * Delete FAQ
    */
-  deleteFaq: protectedProcedure
+  deleteFaq: permissionProcedure('bot_settings.manage')
     .input(z.object({ faqId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       // IDOR FIX: Verify ownership before delete
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       const faqs = await getExtractedFaqsByMerchantId(merchant.id);
       const owned = faqs.find((f: any) => f.id === input.faqId);
       if (!owned) {
@@ -823,18 +617,18 @@ export const analysisRouter = router({
   /**
    * Search FAQs
    */
-  searchFaqs: protectedProcedure
+  searchFaqs: merchantProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const merchant = await getMerchantOrThrow(ctx.merchantId);
       return await searchFaqsByQuestion(merchant.id, input.query);
     }),
 
   /**
    * Get Analysis Statistics
    */
-  getStats: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantOrThrow(ctx.user.id);
+  getStats: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantOrThrow(ctx.merchantId);
     return await getAnalysisStats(merchant.id);
   }),
 });

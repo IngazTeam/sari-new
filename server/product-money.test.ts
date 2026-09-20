@@ -7,7 +7,9 @@ describe('catalogue monetary boundary', () => {
   it('keeps automated website extraction additive and protects reviewed catalogue entries', () => {
     const source=readFileSync('server/routers-website-analysis.ts','utf8');
     expect(source).not.toContain('deleteAllProductsByMerchantId');
-    expect(source).toContain('if (existingNames.has(identity)) continue;');
+    expect(source).toContain('mergeAnalyzedProducts(merchant.id, input.url, products)');
+    const snapshot = readFileSync('server/catalog/analysis-snapshot.ts', 'utf8');
+    expect(snapshot).toContain("mode === 'merge' && (previous || existingNames.has(identity(product.name)))");
   });
   it.each([[99.99, 9999], [0, 0], ['1.01', 101], ['0.10', 10], ['10.0000', 1000], ['21474836.47', 2147483647]])('converts %s exactly to %s minor units', (major, minor) => {
     expect(majorToMinor(major)).toBe(minor);

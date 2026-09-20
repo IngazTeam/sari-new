@@ -7,18 +7,18 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   deleteKnowledgeDocsByMerchantId,
   getKnowledgeDocByMerchantId,
-  getMerchantByUserId,
+  getMerchantById,
   updateKnowledgeDoc,
 } from './db';
 
 export const knowledgeDocsRouter = router({
   // Get current knowledge doc for logged-in merchant
-  getCurrent: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  getCurrent: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const doc = await getKnowledgeDocByMerchantId(merchant.id);
@@ -30,8 +30,8 @@ export const knowledgeDocsRouter = router({
   }),
 
   // Delete knowledge doc
-  delete: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  delete: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     await deleteKnowledgeDocsByMerchantId(merchant.id);
@@ -39,8 +39,8 @@ export const knowledgeDocsRouter = router({
   }),
 
   // Reprocess (re-extract text from existing doc)
-  reprocess: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  reprocess: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const doc = await getKnowledgeDocByMerchantId(merchant.id);

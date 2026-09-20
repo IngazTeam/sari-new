@@ -4,7 +4,7 @@
  * APIs للتحليل الذكي للمواقع
  */
 
-import { router, protectedProcedure } from './_core/trpc';
+import { router, merchantProcedure, permissionProcedure } from './_core/trpc';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import {
@@ -12,7 +12,6 @@ import {
   createCompetitorProduct,
   createExtractedFaq,
   createExtractedProduct,
-  createProduct,
   createWebsiteAnalysis,
   createWebsiteInsight,
   deleteAllExtractedFaqs,
@@ -23,8 +22,7 @@ import {
   getCompetitorProductsByCompetitorId,
   getExtractedProductsByAnalysisId,
   getInsightsByAnalysisId,
-  getMerchantByUserId,
-  getProductsByMerchantId,
+  getMerchantById,
   getPool,
   getWebsiteAnalysesByMerchant,
   getWebsiteAnalysisById,
@@ -32,13 +30,14 @@ import {
   updateMerchant,
   updateWebsiteAnalysis,
 } from './db';
+import { mergeAnalyzedProducts } from './catalog/analysis-snapshot';
 import * as analyzer from './_core/websiteAnalyzer';
 
 export const websiteAnalysisRouter = router({
   /**
    * تحليل موقع جديد
    */
-  analyze: protectedProcedure
+  analyze: permissionProcedure('bot_settings.manage')
     .input(z.object({
       url: z.string().url(),
     }))
@@ -59,7 +58,7 @@ export const websiteAnalysisRouter = router({
         }
 
         // Get merchant ID
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -297,30 +296,7 @@ export const websiteAnalysisRouter = router({
             // ✅ ALSO save to main products table so the AI bot can use them immediately
             if (savedCount > 0) {
               try {
-                // Extraction must not erase the catalogue or replace reviewed prices.
-                const existingNames = new Set((await getProductsByMerchantId(merchant.id)).map(p => p.name.trim().toLowerCase()));
-                let mainSavedCount = 0;
-                for (const product of products) {
-                  if (!product.name || (typeof product.name === 'string' && !product.name.trim())) continue;
-                  const identity = String(product.name).trim().toLowerCase();
-                  if (existingNames.has(identity)) continue;
-                  try {
-                    await createProduct({
-                      merchantId: merchant.id,
-                      name: typeof product.name === 'string' ? product.name.substring(0, 500) : String(product.name),
-                      description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
-                      price: product.price,
-                      currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
-                      imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
-                      productUrl: typeof product.productUrl === 'string' ? product.productUrl : null,
-                      category: typeof product.category === 'string' ? product.category : null,
-                    }, 'major');
-                    mainSavedCount++;
-                    existingNames.add(identity);
-                  } catch (err: any) {
-                    console.error(`[WebsiteAnalysis] Failed to save to main products: ${product.name}`, err.message);
-                  }
-                }
+                const mainSavedCount = await mergeAnalyzedProducts(merchant.id, input.url, products);
                 console.log(`[WebsiteAnalysis] ✅ Saved ${mainSavedCount} products to MAIN products table for merchant ${merchant.id}`);
               } catch (mainErr: any) {
                 console.error('[WebsiteAnalysis] Failed to save to main products table:', mainErr.message);
@@ -464,7 +440,7 @@ export const websiteAnalysisRouter = router({
   /**
    * الحصول على تحليل محفوظ
    */
-  getAnalysis: protectedProcedure
+  getAnalysis: merchantProcedure
     .input(z.object({
       id: z.number(),
     }))
@@ -476,7 +452,7 @@ export const websiteAnalysisRouter = router({
       }
 
       // Verify ownership
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -491,8 +467,8 @@ export const websiteAnalysisRouter = router({
   /**
    * قائمة التحليلات
    */
-  listAnalyses: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  listAnalyses: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
@@ -503,7 +479,7 @@ export const websiteAnalysisRouter = router({
   /**
    * الحصول على المنتجات المستخرجة
    */
-  getExtractedProducts: protectedProcedure
+  getExtractedProducts: merchantProcedure
     .input(z.object({
       analysisId: z.number(),
     }))
@@ -514,7 +490,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -525,7 +501,7 @@ export const websiteAnalysisRouter = router({
   /**
    * الحصول على الرؤى الذكية
    */
-  getInsights: protectedProcedure
+  getInsights: merchantProcedure
     .input(z.object({
       analysisId: z.number(),
     }))
@@ -536,7 +512,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -547,7 +523,7 @@ export const websiteAnalysisRouter = router({
   /**
    * حذف تحليل
    */
-  deleteAnalysis: protectedProcedure
+  deleteAnalysis: permissionProcedure('bot_settings.manage')
     .input(z.object({
       id: z.number(),
     }))
@@ -558,7 +534,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -570,14 +546,14 @@ export const websiteAnalysisRouter = router({
   /**
    * إضافة منافس
    */
-  addCompetitor: protectedProcedure
+  addCompetitor: permissionProcedure('bot_settings.manage')
     .input(z.object({
       name: z.string(),
       url: z.string().url(),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const merchant = await getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -669,8 +645,8 @@ export const websiteAnalysisRouter = router({
   /**
    * قائمة المنافسين
    */
-  listCompetitors: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  listCompetitors: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
@@ -681,7 +657,7 @@ export const websiteAnalysisRouter = router({
   /**
    * الحصول على تحليل منافس
    */
-  getCompetitor: protectedProcedure
+  getCompetitor: merchantProcedure
     .input(z.object({
       id: z.number(),
     }))
@@ -693,7 +669,7 @@ export const websiteAnalysisRouter = router({
       }
 
       // Verify ownership
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -704,7 +680,7 @@ export const websiteAnalysisRouter = router({
   /**
    * الحصول على منتجات المنافس
    */
-  getCompetitorProducts: protectedProcedure
+  getCompetitorProducts: merchantProcedure
     .input(z.object({
       competitorId: z.number(),
     }))
@@ -715,7 +691,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -726,7 +702,7 @@ export const websiteAnalysisRouter = router({
   /**
    * مقارنة مع المنافسين
    */
-  compareWithCompetitors: protectedProcedure
+  compareWithCompetitors: permissionProcedure('bot_settings.manage')
     .input(z.object({
       analysisId: z.number(),
       competitorIds: z.array(z.number()),
@@ -738,7 +714,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -815,7 +791,7 @@ export const websiteAnalysisRouter = router({
   /**
    * حذف منافس
    */
-  deleteCompetitor: protectedProcedure
+  deleteCompetitor: permissionProcedure('bot_settings.manage')
     .input(z.object({
       id: z.number(),
     }))
@@ -826,7 +802,7 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
 
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }

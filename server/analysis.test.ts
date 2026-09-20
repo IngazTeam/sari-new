@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
+import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
+import { closeDb } from './db/connection';
 import * as db from './db';
 import { detectPlatform, discoverPages, scrapeWebsite } from './_core/websiteAnalyzer';
 import { JSDOM } from 'jsdom';
@@ -6,12 +8,17 @@ import { JSDOM } from 'jsdom';
 describe('Smart Website Analysis', () => {
   let testMerchantId: number;
 
-  beforeAll(async () => {
-    // Use existing merchant or create a test one
-    testMerchantId = 150001; // Default test merchant
-  });
+  describe.skipIf(!process.env.DATABASE_URL)('Database Functions', () => {
+    let userId: number;
+    beforeEach(async () => {
+      const fixture = await createDisposableMerchant('analysis-db');
+      userId = fixture.userId; testMerchantId = fixture.merchantId;
+      await db.createDiscoveredPage({ merchantId: testMerchantId, pageType: 'about', title: 'About', url: 'https://example.test/about' });
+      await db.createExtractedFaq({ merchantId: testMerchantId, question: 'What is the return policy?', answer: 'Within 30 days.', category: 'returns' });
+    });
+    afterEach(async () => { if (userId) await cleanupDisposableMerchants([userId]); });
+    afterAll(closeDb);
 
-  describe('Database Functions', () => {
     it('should update merchant website info', async () => {
       await db.updateMerchantWebsiteInfo({
         merchantId: testMerchantId,
@@ -64,7 +71,7 @@ describe('Smart Website Analysis', () => {
 
     it('should get active FAQs for bot', async () => {
       const activeFaqs = await db.getActiveFaqsForBot(testMerchantId);
-      expect(Array.isArray(activeFaqs)).toBe(true);
+      expect(activeFaqs).toHaveLength(1);
       
       // All returned FAQs should be active and enabled for bot
       activeFaqs.forEach(faq => {
@@ -75,7 +82,8 @@ describe('Smart Website Analysis', () => {
 
     it('should search FAQs by question', async () => {
       const results = await db.searchFaqsByQuestion(testMerchantId, 'return');
-      expect(Array.isArray(results)).toBe(true);
+      expect(results).toHaveLength(1);
+      expect(results[0].question).toContain('return');
     });
 
     it('should get analysis statistics', async () => {
@@ -90,6 +98,7 @@ describe('Smart Website Analysis', () => {
 
     it('should update discovered page', async () => {
       const pages = await db.getDiscoveredPagesByMerchantId(testMerchantId);
+      expect(pages).toHaveLength(1);
       if (pages.length > 0) {
         const pageId = pages[0].id;
         
@@ -108,6 +117,7 @@ describe('Smart Website Analysis', () => {
 
     it('should update extracted FAQ', async () => {
       const faqs = await db.getExtractedFaqsByMerchantId(testMerchantId);
+      expect(faqs).toHaveLength(1);
       if (faqs.length > 0) {
         const faqId = faqs[0].id;
         
@@ -126,6 +136,7 @@ describe('Smart Website Analysis', () => {
 
     it('should increment FAQ usage count', async () => {
       const faqs = await db.getExtractedFaqsByMerchantId(testMerchantId);
+      expect(faqs).toHaveLength(1);
       if (faqs.length > 0) {
         const faqId = faqs[0].id;
         const initialCount = faqs[0].usageCount;

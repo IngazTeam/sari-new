@@ -199,11 +199,11 @@ describe('CG-05: Knowledge pipeline cache invalidation coverage', () => {
 
   // Every mutation that changes knowledge must invalidateCache
   const mutations = [
-    { name: 'createSection', searchStart: 'createSection: protectedProcedure', window: 3000 },
-    { name: 'updateSection', searchStart: 'updateSection: protectedProcedure', window: 3000 },
-    { name: 'deleteSection', searchStart: 'deleteSection: protectedProcedure', window: 2000 },
-    { name: 'approveSection', searchStart: 'approveSection: protectedProcedure', window: 3000 },
-    { name: 'reembedSections', searchStart: 'reembedSections: protectedProcedure', window: 1000 },
+    { name: 'createSection', searchStart: 'createSection: permissionProcedure', window: 3000 },
+    { name: 'updateSection', searchStart: 'updateSection: permissionProcedure', window: 3000 },
+    { name: 'deleteSection', searchStart: 'deleteSection: permissionProcedure', window: 2000 },
+    { name: 'approveSection', searchStart: 'approveSection: permissionProcedure', window: 3000 },
+    { name: 'reembedSections', searchStart: 'reembedSections: permissionProcedure', window: 1000 },
   ];
 
   for (const m of mutations) {

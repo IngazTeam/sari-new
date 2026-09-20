@@ -32,17 +32,24 @@ export async function cleanupDisposableMerchants(userIds: number[]): Promise<voi
   if (!pool) throw new Error('Test database unavailable');
   const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-    const placeholders = userIds.map(() => '?').join(',');
-    // Delete the leaf first: MySQL can reject the cascade diamond from merchant
-    // through instance/message SET NULL and delivery CASCADE in one parent delete.
-    await connection.execute(`DELETE d FROM whatsapp_message_deliveries d
-      JOIN merchants m ON m.id = d.merchant_id JOIN users u ON u.id = m.userId
-      WHERE u.id IN (${placeholders}) AND u.openId LIKE 'remediation-%'`, userIds);
-    await connection.execute(`DELETE FROM users WHERE id IN (${placeholders}) AND openId LIKE 'remediation-%'`, userIds);
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
+    // Parallel private fixtures can collide through MySQL's cascade/SET NULL locks.
+    // Retry the rolled-back cleanup transaction only; test operations are never retried here.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await connection.beginTransaction();
+        const placeholders = userIds.map(() => '?').join(',');
+        // Delete the leaf first: MySQL can reject the cascade diamond from merchant
+        // through instance/message SET NULL and delivery CASCADE in one parent delete.
+        await connection.execute(`DELETE d FROM whatsapp_message_deliveries d
+          JOIN merchants m ON m.id = d.merchant_id JOIN users u ON u.id = m.userId
+          WHERE u.id IN (${placeholders}) AND u.openId LIKE 'remediation-%'`, userIds);
+        await connection.execute(`DELETE FROM users WHERE id IN (${placeholders}) AND openId LIKE 'remediation-%'`, userIds);
+        await connection.commit();
+        break;
+      } catch (error) {
+        await connection.rollback();
+        if ((error as { code?: string }).code !== 'ER_LOCK_DEADLOCK' || attempt >= 2) throw error;
+      }
+    }
   } finally { connection.release(); }
 }
