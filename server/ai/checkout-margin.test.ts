@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { calculateCheckoutMargin, invoiceCostsSchema, invoiceApprovalSchema, marginPolicySchema, reviewedCostFromText } from '../../shared/checkout-margin';
+import { calculateCheckoutMargin, invoiceCostsSchema, invoiceApprovalSchema, marginPolicySchema, reviewedCostFromText, marginExceptionSchema } from '../../shared/checkout-margin';
 const zero={taxMinor:0,shippingCostMinor:0,otherCostMinor:0};
 describe('exact reviewed order margin',()=>{
+  it('normalizes a reviewed exception reason while retaining its original language',()=>{
+    expect(marginExceptionSchema.parse({reason:'  سبب تجاري موثق لهذه الفاتورة  ',reviewed:true})).toEqual({reason:'سبب تجاري موثق لهذه الفاتورة',reviewed:true});
+  });
+  it.each([{reason:''},{reason:' '.repeat(20)},{reason:'قصير'},{reason:'x'.repeat(1001)},{reviewed:false},{reviewed:'true'},{actorUserId:1},{evidence:'fake'},{scope:'all_orders'}])('rejects malformed exception %j',attack=>{
+    expect(marginExceptionSchema.safeParse({reason:'Documented invoice exception',reviewed:true,...attack}).success).toBe(false);
+  });
   it.each([['12.34',1234],['١٢٫٣٤',1234],['۱۲٫۳۴',1234],['٠',0],[' 0.50 ',50]])('parses reviewed input %s without losing cents', (text,minor)=>{
     expect(reviewedCostFromText(String(text))).toBe(minor);
   });

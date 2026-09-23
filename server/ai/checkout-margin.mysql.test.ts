@@ -3,7 +3,7 @@ import { getPool,closeDb } from '../db/connection';
 import { createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { prepareCheckoutQuote,acceptCheckoutQuote,approveCheckoutInvoice,type CheckoutIdentity } from './checkout-agreements';
 import { getMarginPolicy,updateMarginPolicy } from './checkout-margin-policy';
-import { previewCheckoutMargin } from './checkout-margin';
+import { previewCheckoutMargin, getCheckoutMarginException } from './checkout-margin';
 import { stageInteraction,finishInteractionDelivery } from './interaction-jobs';
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { issueCanonicalOrderPaymentLink } from '../payment/order-payment-link';
@@ -18,7 +18,7 @@ describe.skipIf(!process.env.DATABASE_URL)('local invoice margin authority on My
     const p=await getMarginPolicy(owner.merchantId);return {merchantId:owner.merchantId,actorUserId:owner.userId,policy,expectedRevision:p.revision,evidence:p.evidence,reviewed:true as const};
   };
   const preview=(extra={})=>previewCheckoutMargin({merchantId:owner.merchantId,orderId,costs,...extra});
-  const approve=(margin?:InvoiceMarginProof)=>approveCheckoutInvoice({merchantId:owner.merchantId,orderId,actorUserId:owner.userId,expectedAmountMinor:10000,totalIsFinal:true,margin});
+  const approve=(margin?:InvoiceMarginProof,authorizeMarginException=false)=>approveCheckoutInvoice({merchantId:owner.merchantId,orderId,actorUserId:owner.userId,expectedAmountMinor:10000,totalIsFinal:true,margin,authorizeMarginException});
   const proof=async():Promise<InvoiceMarginProof>=>({costs,evidence:(await preview()).evidence,reviewedCosts:true});
   const stored=async()=>({order:(await query('SELECT * FROM orders WHERE id=?',[orderId]))[0],quote:(await query('SELECT * FROM sales_quotations WHERE id=?',[quotationId]))[0]});
   beforeEach(async()=>{
@@ -37,6 +37,79 @@ describe.skipIf(!process.env.DATABASE_URL)('local invoice margin authority on My
     const result=await acceptCheckoutQuote({...identity,incomingMessageId:yes.insertId},quotationId);if(result.kind!=='order')throw Error('Missing order');orderId=result.orderId;
   }
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants([owner.userId,other.userId]);});afterAll(closeDb);
+  const exception={reason:'اعتماد تكلفة اكتساب هذا العميل بعد مراجعة الربحية',reviewed:true as const};
+  const belowFloor=async()=>{await updateMarginPolicy(await policyInput({enabled:true,minPercent:50}));return {...await proof(),exception};};
+  const audits=()=>query('SELECT * FROM checkout_margin_exceptions WHERE merchant_id=?',[owner.merchantId]);
+  it('approves one reviewed exception with its exact loss, actor and facts, without lowering the policy or changing the amount',async()=>{
+    await updateMarginPolicy(await policyInput({enabled:true,minPercent:50}));await query('UPDATE products SET cost_price=12000,updatedAt=updatedAt WHERE id=?',[productId]);
+    await approve({...await proof(),exception},true);
+    const audit=await getCheckoutMarginException(owner.merchantId,orderId),state=await stored();
+    expect(audit).toMatchObject({actorUserId:owner.userId,reason:exception.reason,policyRevision:1,policy:{minPercent:50},totalMinor:10000,
+      calculation:{profitMinor:-2000,marginBps:-2000}});
+    expect(new Date(audit!.createdAt).getTime()).toBeGreaterThan(Date.now()-60000);
+    expect(state.quote.checkout_snapshot.billingApproval.margin).toMatchObject({status:'below_floor',calculation:{passes:false},exception:{id:audit!.id,actorUserId:owner.userId,scope:'this_invoice_only'}});
+    expect(state.order).toMatchObject({totalAmount:10000,checkout_review_required:0,payment_status:'unpaid',discountCode:null});
+    expect((await getMarginPolicy(owner.merchantId)).policy).toEqual({enabled:true,minPercent:50});
+    expect(await query('SELECT id FROM payment_links WHERE order_id=?',[orderId])).toEqual([]);
+  });
+  it('does not treat a client exception as authority without the server grant',async()=>{
+    await expect(approve(await belowFloor())).rejects.toThrow('not authorized');expect(await audits()).toEqual([]);
+    expect((await stored()).order.checkout_review_required).toBe(1);
+  });
+  it.each(['missing','unverified','invalid totals','passing','disabled'])('does not override %s with an exception',async mode=>{
+    const p=await belowFloor();
+    if(mode==='missing')await query('UPDATE products SET cost_price=NULL,updatedAt=updatedAt WHERE id=?',[productId]);
+    if(mode==='unverified')await query("UPDATE products SET price_unit='unverified',updatedAt=updatedAt WHERE id=?",[productId]);
+    if(mode==='passing')await updateMarginPolicy(await policyInput({enabled:true,minPercent:30}));
+    if(mode==='disabled')await updateMarginPolicy(await policyInput({enabled:false,minPercent:50}));
+    const inputCosts=mode==='invalid totals'?{...costs,taxMinor:10000}:costs;
+    if(mode!=='unverified')p.evidence=(await preview({costs:inputCosts})).evidence;
+    await expect(approve({...p,costs:inputCosts},true)).rejects.toThrow();expect(await audits()).toEqual([]);
+    expect((await stored()).order.checkout_review_required).toBe(1);
+  });
+  it.each(['cost','policy','declared costs','catalogue'])('rejects an exception after changed %s',async mode=>{
+    const p=await belowFloor();
+    if(mode==='cost')await query('UPDATE products SET cost_price=6001,updatedAt=updatedAt WHERE id=?',[productId]);
+    if(mode==='policy')await updateMarginPolicy(await policyInput({enabled:true,minPercent:51}));
+    if(mode==='declared costs')p.costs={...costs,shippingCostMinor:1};
+    if(mode==='catalogue')await query('UPDATE products SET price=10001 WHERE id=?',[productId]);
+    await expect(approve(p,true)).rejects.toThrow();expect(await audits()).toEqual([]);expect((await stored()).order.checkout_review_required).toBe(1);
+  });
+  it('rejects a copied exception proof on another invoice or merchant',async()=>{
+    const p=await belowFloor();
+    await expect(approveCheckoutInvoice({merchantId:other.merchantId,orderId,actorUserId:other.userId,expectedAmountMinor:10000,totalIsFinal:true,margin:p,authorizeMarginException:true})).rejects.toThrow();
+    const m=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming','أريد شراء سماعة واحدة')",[identity.conversationId]);identity={...identity,incomingMessageId:m.insertId};await makeOrder();
+    await expect(approve(p,true)).rejects.toThrow('Margin proof changed');expect(await audits()).toEqual([]);
+  });
+  it('keeps a single original audit across concurrent approval and replay',async()=>{
+    const p=await belowFloor();await Promise.all([approve(p,true),approve({...p,exception:{...exception,reason:'سبب بديل من مراجع متزامن لا يستبدل الأصل'}},true)]);
+    const original=await getCheckoutMarginException(owner.merchantId,orderId);expect(await audits()).toHaveLength(1);
+    await approve({...p,exception:{...exception,reason:'محاولة استبدال سبب سابق بعد اعتماد الفاتورة'}},true);
+    expect(await getCheckoutMarginException(owner.merchantId,orderId)).toEqual(original);expect(await audits()).toHaveLength(1);
+  });
+  it.each(['audit','invoice'])('rolls back exception and invoice when %s persistence fails',async failure=>{
+    const p=await belowFloor(),pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{
+      const connection=await original();return new Proxy(connection,{get(target,key){if(key==='execute')return async(sql:string,args:unknown[])=>{
+        if(sql.includes(failure==='audit'?'INSERT INTO checkout_margin_exceptions':'UPDATE orders SET checkout_review_required = 0'))throw Error('Injected exception persistence failure');
+        return target.execute(sql,args);};const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
+    });
+    await expect(approve(p,true)).rejects.toThrow('Injected');vi.restoreAllMocks();
+    expect(await audits()).toEqual([]);const state=await stored();expect(state.order.checkout_review_required).toBe(1);expect(state.quote.checkout_snapshot.billingApproval).toBeUndefined();
+    await approve(p,true);expect(await audits()).toHaveLength(1);
+  });
+  it('does not reuse a conflicting audit record to approve a still blocked invoice',async()=>{
+    const p=await belowFloor();await query('INSERT INTO checkout_margin_exceptions (merchant_id,order_id,actor_user_id,reason,evidence_hash,assessment) VALUES (?,?,?,?,?,?)',
+      [owner.merchantId,orderId,owner.userId,'conflicting imported record','0'.repeat(64),'{}']);
+    await expect(approve(p,true)).rejects.toThrow();expect((await stored()).order.checkout_review_required).toBe(1);
+  });
+  it('scopes audit reads and preserves approved values after payment and policy changes',async()=>{
+    expect(await getCheckoutMarginException(owner.merchantId,orderId)).toBeNull();
+    await approve(await belowFloor(),true);const audit=await getCheckoutMarginException(owner.merchantId,orderId);
+    await expect(getCheckoutMarginException(other.merchantId,orderId)).rejects.toThrow();
+    await query("UPDATE orders SET payment_status='paid' WHERE id=?",[orderId]);await updateMarginPolicy(await policyInput({enabled:true,minPercent:70}));
+    expect(await getCheckoutMarginException(owner.merchantId,orderId)).toEqual(audit);
+  });
   it('is disabled by default without fabricating policy history or blocking prior contracts',async()=>{
     expect(await getMarginPolicy(owner.merchantId)).toMatchObject({policy:{enabled:false,minPercent:0},revision:0,history:[]});
     await approve();expect((await stored()).order.checkout_review_required).toBe(0);

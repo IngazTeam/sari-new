@@ -197,6 +197,8 @@ export async function assertInvoiceCatalog(connection: PoolConnection, merchantI
 export async function approveCheckoutInvoice(input: {
   merchantId: number; orderId: number; actorUserId: number; expectedAmountMinor: number; totalIsFinal: true;
   margin?: InvoiceMarginProof;
+  /** Server-derived authority; never accepted by invoiceApprovalSchema. */
+  authorizeMarginException?: boolean;
 }): Promise<{ approved: true; conversationId: number }> {
   if (input.totalIsFinal !== true || !Number.isSafeInteger(input.actorUserId) || input.actorUserId <= 0) throw new Error('Invoice attestation required');
   invoiceApprovalSchema.parse({ orderId: input.orderId, expectedAmountMinor: input.expectedAmountMinor, totalIsFinal: input.totalIsFinal, margin: input.margin });
@@ -207,7 +209,8 @@ export async function approveCheckoutInvoice(input: {
     if (!order.checkout_review_required) return { approved: true, conversationId: quote.conversation_id };
     await assertInvoiceCatalog(connection, input.merchantId, snapshot);
     const { enforceCheckoutMargin } = await import('./checkout-margin');
-    const margin = await enforceCheckoutMargin(connection, { merchantId: input.merchantId, orderId: input.orderId, snapshot, policy, proof: input.margin });
+    const margin = await enforceCheckoutMargin(connection, { merchantId: input.merchantId, orderId: input.orderId, snapshot, policy, proof: input.margin,
+      actorUserId: input.actorUserId, authorizeMarginException: input.authorizeMarginException });
     const approvedSnapshot = { ...snapshot, billingApproval: { actorUserId: input.actorUserId,
       approvedAt: new Date().toISOString(), totalMinor: order.totalAmount, includesAllTaxesAndDelivery: true, margin } };
     await connection.execute('UPDATE sales_quotations SET checkout_snapshot = ? WHERE id = ?', [JSON.stringify(approvedSnapshot), quote.id]);

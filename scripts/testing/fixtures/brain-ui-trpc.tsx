@@ -14,7 +14,7 @@ export const trpc = {
       const [revision,setRevision]=useState(0),[retry,setRetry]=useState(false);
       useEffect(()=>{const changed=()=>setRevision(r=>r+1);window.addEventListener('margin-change',changed);(window as any).__changeMarginPolicy=()=>window.dispatchEvent(new Event('margin-change'));return()=>window.removeEventListener('margin-change',changed);},[]);
       const data=useMemo(()=>({policy:(window as any).__marginPolicyInput?.policy||{enabled:mode.startsWith('margin-'),minPercent:30},revision,
-        evidence:(revision?'b':'a').repeat(64),canManage:mode!=='viewer',history:revision?[{revision,actorUserId:7,createdAt:'2026-09-23T10:00:00Z',
+        evidence:(revision?'b':'a').repeat(64),canManage:mode!=='viewer'&&mode!=='margin-supervisor',history:revision?[{revision,actorUserId:7,createdAt:'2026-09-23T10:00:00Z',
           beforePolicy:{enabled:false,minPercent:30},afterPolicy:(window as any).__marginPolicyInput?.policy||{enabled:true,minPercent:30}}]:[]}),[revision]);
       return {data,isLoading:mode==='loading'&&!retry,isError:mode==='error'&&!retry,isFetching:false,
         refetch:async()=>{setRetry(true);const next=(window as any).__marginPolicyInput?revision+1:revision;setRevision(next);return{data:{...data,revision:next,evidence:(next?'b':'a').repeat(64)},isError:false};}};
@@ -151,17 +151,26 @@ export const trpc = {
       isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry, refetch: async () => setRetry(true) };
   } } },
   orders: {
+    getCheckoutMarginException:{useQuery:({orderId}:{orderId:number})=>{
+      const [retry,setRetry]=useState(false);
+      const saved=(window as any).__invoiceInput?.margin?.exception;
+      return {isLoading:mode==='margin-audit-loading'&&!retry,isError:mode==='margin-audit-error'&&!retry,
+        data:(orderId===123&&saved)||(orderId===124&&mode.startsWith('margin-audit'))?{id:5,actorUserId:7,reason:saved?.reason||'سبب موثق <img src=x onerror=alert(1)> '+ 'audit-reason-with-long-word-'.repeat(35),
+          createdAt:'2026-09-23T10:00:00Z',totalMinor:23000,policyRevision:1,policy:{minPercent:30},calculation:{netRevenueMinor:20000,totalCostMinor:23000,profitMinor:-3000,marginBps:-1500}}:null,
+        refetch:async()=>setRetry(true)};
+    }},
     previewCheckoutMargin:{useQuery:(input:any)=>{
       const [data,setData]=useState<any>(),[fetching,setFetching]=useState(false),[error,setError]=useState(false),[attempts,setAttempts]=useState(0);
       return {data,isFetching:fetching,isError:error,refetch:async()=>{
         setFetching(true);setError(false);setAttempts(attempts+1);(window as any).__marginPreviewInput=input;await new Promise(resolve=>setTimeout(resolve,50));
         if(mode==='margin-failure'&&attempts===0){setFetching(false);setError(true);return{data:undefined,isError:true};}
-        const result={status:mode==='margin-missing'?'missing_cost':mode==='margin-below'?'below_floor':'pass',totalMinor:23000,
-          costs:input.costs,policy:{enabled:true,minPercent:30},policyRevision:0,evidence:'c'.repeat(64),productCostMinor:10000,
-          calculation:{netRevenueMinor:23000-input.costs.taxMinor,totalCostMinor:10000+input.costs.shippingCostMinor+input.costs.otherCostMinor,
-            profitMinor:13000-input.costs.taxMinor-input.costs.shippingCostMinor-input.costs.otherCostMinor,
-            marginBps:Math.floor((13000-input.costs.taxMinor-input.costs.shippingCostMinor-input.costs.otherCostMinor)*10000/(23000-input.costs.taxMinor)),passes:mode!=='margin-below'},
-          lines:[{productId:7,variantId:null,quantity:1,name:'منتج اختبار <img src=x onerror=alert(1)>',unitCostMinor:mode==='margin-missing'?null:10000}]};
+        const below=mode==='margin-below'||mode==='margin-supervisor'||mode.startsWith('margin-exception'),productCostMinor=below?16000:10000;
+        const profitMinor=23000-productCostMinor-input.costs.taxMinor-input.costs.shippingCostMinor-input.costs.otherCostMinor;
+        const result={status:mode==='margin-missing'?'missing_cost':below?'below_floor':'pass',totalMinor:23000,
+          costs:input.costs,policy:{enabled:true,minPercent:30},policyRevision:0,evidence:'c'.repeat(64),productCostMinor,
+          calculation:{netRevenueMinor:23000-input.costs.taxMinor,totalCostMinor:productCostMinor+input.costs.shippingCostMinor+input.costs.otherCostMinor,
+            profitMinor,marginBps:Math.floor(profitMinor*10000/(23000-input.costs.taxMinor)),passes:!below},
+          lines:[{productId:7,variantId:null,quantity:1,name:'منتج اختبار <img src=x onerror=alert(1)>',unitCostMinor:mode==='margin-missing'?null:productCostMinor}]};
         setData(result);setFetching(false);return{data:result,isError:false};
       }};
     }},
@@ -188,7 +197,7 @@ export const trpc = {
     return { isSuccess: state === 'success', isPending: state === 'pending', isError: state === 'error',
       data: { paymentUrl: '/fixture-payment' }, mutate: (input: unknown) => {
         (window as any).__invoiceInput = input; setState('pending'); setAttempts(attempts + 1);
-        setTimeout(() => { if (mode === 'mutation-error' && attempts === 0) setState('error'); else { setState('success'); options.onSuccess(); } }, 50);
+        setTimeout(() => { if ((mode === 'mutation-error'||mode==='margin-exception-failure') && attempts === 0) setState('error'); else { setState('success'); options.onSuccess(); } }, 50);
       } };
   } } },
 };

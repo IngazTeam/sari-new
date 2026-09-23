@@ -92,6 +92,68 @@ async function main() {
       await page.type('#invoice-tax-123','٣٠');await page.type('#invoice-shipping-123','10');await page.type('#invoice-other-123','10');
       await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');
     };
+    const exceptionReason='اعتماد خاص لهذه الفاتورة بعد مراجعة التكاليف';
+    const reviewException=async()=>{
+      await page.type('#invoice-exception-reason-123',exceptionReason);
+      await page.focus('#invoice-exception-reviewed-123');await page.keyboard.press('Space');
+      await page.click('#invoice-final-attested-123');
+    };
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=margin-exception&lang=${lang}`,{waitUntil:'networkidle0'});
+      await fillMargin();assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+      await reviewException();assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),false);
+      await replace('#invoice-exception-reason-123','قصير');
+      assert.equal(await page.$eval('#invoice-exception-reviewed-123',n=>n.checked),false);
+      assert.equal(await page.$eval('#invoice-final-attested-123',n=>n.checked),false);
+      await page.click('#invoice-exception-reviewed-123');await page.click('#invoice-final-attested-123');
+      assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+      await replace('#invoice-exception-reason-123',exceptionReason);await page.click('#invoice-exception-reviewed-123');await page.click('#invoice-final-attested-123');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.ok(await page.$$eval('#invoice-fixture button,#invoice-fixture textarea',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#invoice-fixture')).screenshot({path:path.join(output,`margin-exception-${width}.png`)});
+      await page.focus('#invoice-fixture [data-invoice-approve]');await page.keyboard.press('Enter');await page.waitForSelector('#invoice-fixture [data-margin-exception-audit]');
+      assert.deepEqual(await page.evaluate(()=>window.__invoiceInput),{orderId:123,expectedAmountMinor:23000,totalIsFinal:true,margin:{
+        costs:{taxMinor:3000,shippingCostMinor:1000,otherCostMinor:1000},evidence:'c'.repeat(64),reviewedCosts:true,exception:{reason:exceptionReason,reviewed:true}}});
+      assert.equal(await page.evaluate(()=>window.__marginPolicyInput),undefined);
+      assert.equal(await page.evaluate(()=>document.body.innerText.includes('merchantUx.')),false);
+      assert.ok(await page.$eval('#invoice-fixture [data-margin-exception-audit]',n=>n.textContent.includes('اعتماد خاص لهذه الفاتورة')));
+      results.push({width,lang,mode:'invoice_exception_reason_review_keyboard_approval_audit',passed:true});
+      await page.goto(`${origin}/?case=margin-audit&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$('#margin-audit-fixture img'),null);assert.equal(await page.$('#margin-audit-fixture button'),null);
+      assert.ok(await page.$eval('#margin-audit-fixture',n=>n.textContent.includes('-15%')));
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      if(lang==='ar'&&width===375)await(await page.$('#margin-audit-fixture')).screenshot({path:path.join(output,'margin-exception-audit-375.png')});
+      results.push({width,lang,mode:'invoice_exception_historical_audit_and_escaped_reason',passed:true});
+    }
+    for(const mode of ['margin-supervisor','margin-missing']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});await fillMargin();
+      assert.equal(await page.$('#invoice-exception-reason-123'),null);await page.click('#invoice-final-attested-123');
+      assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+      results.push({width:1440,mode:`exception_unavailable_${mode}`,passed:true});
+    }
+    for(const change of ['cost','policy']) {
+      await page.goto(`${origin}/?case=margin-exception`,{waitUntil:'networkidle0'});await fillMargin();await reviewException();
+      if(change==='cost')await replace('#invoice-other-123','11');else await page.evaluate(()=>window.__changeMarginPolicy());
+      await page.waitForFunction(()=>document.querySelector('#invoice-fixture [data-invoice-approve]').disabled);
+      assert.equal(await page.$eval('#invoice-final-attested-123',n=>n.checked),false);
+      assert.equal(await page.evaluate(()=>window.__invoiceInput),undefined);
+      if(change==='cost') {
+        await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-exception-reviewed-123');
+        assert.equal(await page.$eval('#invoice-exception-reviewed-123',n=>n.checked),false);
+      }
+      results.push({width:1440,mode:`exception_review_invalidated_by_${change}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=margin-exception-failure`,{waitUntil:'networkidle0'});await fillMargin();await reviewException();await page.click('#invoice-fixture [data-invoice-approve]');
+    await page.waitForSelector('#invoice-fixture > section > [role=alert]');assert.equal(await page.$('#invoice-fixture [data-margin-exception-audit]'),null);
+    await page.click('#invoice-fixture [data-invoice-approve]');await page.waitForSelector('#invoice-fixture [data-margin-exception-audit]');
+    results.push({width:1440,mode:'exception_failed_approval_retry_without_false_success',passed:true});
+    for(const mode of ['margin-audit-loading','margin-audit-error']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$('#margin-audit-fixture [data-margin-exception-audit]'),null);
+      if(mode==='margin-audit-error'){await page.click('#margin-audit-fixture button');await page.waitForSelector('#margin-audit-fixture [data-margin-exception-audit]');}
+      else assert.ok(await page.$('#margin-audit-fixture [role=status]'));
+      results.push({width:1440,mode,passed:true});
+    }
     for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
       await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
       assert.equal(await page.$eval('#margin-policy-save',n=>n.disabled),true);
@@ -105,22 +167,22 @@ async function main() {
       if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#margin-policy-fixture')).screenshot({path:path.join(output,`margin-policy-${width}.png`)});
       results.push({width,lang,mode:'margin_policy_review_and_save',passed:true});
       await page.goto(`${origin}/?case=margin-ready&lang=${lang}`,{waitUntil:'networkidle0'});
-      assert.equal(await page.$eval('#invoice-margin-preview-123',n=>n.disabled),true);await page.click('#invoice-fixture input[type=checkbox]');
+      assert.equal(await page.$eval('#invoice-margin-preview-123',n=>n.disabled),true);await page.click('#invoice-final-attested-123');
       assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
       await fillMargin();
       assert.deepEqual(await page.evaluate(()=>window.__marginPreviewInput),{orderId:123,costs:{taxMinor:3000,shippingCostMinor:1000,otherCostMinor:1000}});
-      assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);
+      assert.equal(await page.$eval('#invoice-final-attested-123',n=>n.checked),false);
       await page.click('#invoice-margin-123 summary');assert.equal(await page.$('#invoice-margin-123 img'),null);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       assert.equal(await page.evaluate(()=>document.body.innerText.includes('merchantUx.')),false);
       await page.$eval('#invoice-fixture',async node=>{await Promise.allSettled(node.getAnimations({subtree:true}).map(a=>a.finished));});
       assert.ok(await page.$$eval('#invoice-fixture input:not([type=checkbox]),#invoice-fixture button',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
       if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#invoice-fixture')).screenshot({path:path.join(output,`invoice-margin-${width}.png`)});
-      await page.click('#invoice-fixture input[type=checkbox]');await replace('#invoice-other-123','11');
-      assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);
+      await page.click('#invoice-final-attested-123');await replace('#invoice-other-123','11');
+      assert.equal(await page.$eval('#invoice-final-attested-123',n=>n.checked),false);
       assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
       await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');
-      await page.click('#invoice-fixture input[type=checkbox]');await page.click('#invoice-fixture [data-invoice-approve]');
+      await page.click('#invoice-final-attested-123');await page.click('#invoice-fixture [data-invoice-approve]');
       await page.waitForSelector('#invoice-fixture [role=status] a');
       assert.deepEqual(await page.evaluate(()=>window.__invoiceInput),{orderId:123,expectedAmountMinor:23000,totalIsFinal:true,
         margin:{costs:{taxMinor:3000,shippingCostMinor:1000,otherCostMinor:1100},evidence:'c'.repeat(64),reviewedCosts:true}});
@@ -145,18 +207,18 @@ async function main() {
     await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.id),'margin-policy-save');await page.keyboard.press('Enter');await page.waitForSelector('#margin-policy-fixture [role=status]');
     results.push({width:1440,mode:'margin_policy_failed_save_and_keyboard_review',passed:true});
     for(const mode of ['margin-missing','margin-below']) {
-      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-fixture input[type=checkbox]');
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-final-attested-123');
       assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);assert.equal(await page.evaluate(()=>window.__invoiceInput),undefined);
       results.push({width:1440,mode:`invoice_${mode}_blocked`,passed:true});
     }
-    await page.goto(`${origin}/?case=margin-ready`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-fixture input[type=checkbox]');await page.evaluate(()=>window.__changeMarginPolicy());
+    await page.goto(`${origin}/?case=margin-ready`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-final-attested-123');await page.evaluate(()=>window.__changeMarginPolicy());
     await page.waitForFunction(()=>document.querySelector('#invoice-fixture [data-invoice-approve]').disabled);
-    assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);results.push({width:1440,mode:'invoice_policy_changed_after_preview',passed:true});
+    assert.equal(await page.$eval('#invoice-final-attested-123',n=>n.checked),false);results.push({width:1440,mode:'invoice_policy_changed_after_preview',passed:true});
     await page.goto(`${origin}/?case=margin-failure`,{waitUntil:'networkidle0'});
     await page.type('#invoice-tax-123','0.001');await page.type('#invoice-shipping-123','0');await page.type('#invoice-other-123','0');
     assert.equal(await page.$eval('#invoice-margin-preview-123',n=>n.disabled),true);await replace('#invoice-tax-123','0');await page.click('#invoice-margin-preview-123');
     await page.waitForSelector('#invoice-margin-123 [role=alert]');assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
-    await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');await page.click('#invoice-fixture input[type=checkbox]');
+    await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');await page.click('#invoice-final-attested-123');
     assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),false);results.push({width:1440,mode:'invoice_invalid_precision_and_preview_retry',passed:true});
     for (const lang of ['ar','en']) for (const width of [320,375,390,768,1440]) {
       await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});

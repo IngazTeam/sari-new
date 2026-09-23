@@ -4072,3 +4072,12 @@ export const salesMarginPolicyChanges = mysqlTable('sales_margin_policy_changes'
   beforePolicy: json('before_policy').notNull(), afterPolicy: json('after_policy').notNull(),
   createdAt: datetime('created_at', {mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_margin_policy_revision').on(table.merchantId,table.revision)]);
+
+export const checkoutMarginExceptions = mysqlTable('checkout_margin_exceptions', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  orderId: int('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').notNull(), reason: varchar({ length: 1000 }).notNull(),
+  evidenceHash: char('evidence_hash', { length: 64 }).notNull(), assessment: json().notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_margin_exception_order').on(table.orderId), index('idx_margin_exception_merchant').on(table.merchantId, table.orderId)]);

@@ -14,6 +14,7 @@ import { EscalationReconciliation } from '../../../client/src/components/Escalat
 import { SalesOfferReview } from '../../../client/src/components/SalesOfferReview';
 import { LearningEvidenceCard } from '../../../client/src/components/LearningEvidenceCard';
 import { CheckoutInvoiceReview } from '../../../client/src/components/CheckoutInvoiceReview';
+import { CheckoutMarginExceptionAudit } from '../../../client/src/components/CheckoutMarginExceptionAudit';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
 async function render() {
@@ -22,6 +23,7 @@ async function render() {
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
   createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl space-y-6 p-4" dir={lng === 'ar' ? 'rtl' : 'ltr'}>
     <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }} /></div>
+    <div id="margin-audit-fixture"><CheckoutMarginExceptionAudit orderId={124} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>
     <form id="margin-policy-fixture" onSubmit={event=>{event.preventDefault();(window as any).__unexpectedMarginSubmit=true;}}><CheckoutMarginPolicySettings /></form>

@@ -4,6 +4,8 @@ import { checkoutTransaction, loadCheckoutInvoiceReview, assertInvoiceCatalog, t
 import { readLockedMarginPolicy } from './checkout-margin-policy';
 import { calculateCheckoutMargin, invoiceCostsSchema, invoiceMarginProofSchema, previewMarginSchema, type InvoiceCosts, type InvoiceMarginProof } from '../../shared/checkout-margin';
 import { requireMinor } from '../../shared/product-money';
+import { z } from 'zod';
+import { databaseTimeEpoch } from '../db/time';
 
 type Policy = Awaited<ReturnType<typeof readLockedMarginPolicy>>;
 type CostLine = { productId: number; variantId: number | null; quantity: number; name: string; unitCostMinor: number | null };
@@ -50,10 +52,41 @@ export async function previewCheckoutMargin(input: { merchantId:number; orderId:
     return evaluate(connection,{...input,snapshot,policy});
   });
 }
-export async function enforceCheckoutMargin(connection: PoolConnection, input: { merchantId:number; orderId:number; snapshot:Snapshot; policy:Policy; proof?:InvoiceMarginProof }) {
-  if (!input.policy.policy.enabled) return { enforced:false as const,policy:input.policy.policy,policyRevision:input.policy.revision,policyEvidence:input.policy.evidence };
+export async function enforceCheckoutMargin(connection: PoolConnection, input: { merchantId:number; orderId:number; snapshot:Snapshot; policy:Policy;
+  actorUserId:number; authorizeMarginException?:boolean; proof?:InvoiceMarginProof }) {
+  if (!input.policy.policy.enabled) {
+    if (input.proof?.exception) throw new Error('Margin exception does not apply to a disabled policy');
+    return { enforced:false as const,policy:input.policy.policy,policyRevision:input.policy.revision,policyEvidence:input.policy.evidence };
+  }
   const proof = invoiceMarginProofSchema.parse(input.proof);
   const fresh = await evaluate(connection,{...input,costs:proof.costs});
-  if (fresh.status !== 'pass' || fresh.evidence !== proof.evidence) throw new Error('Margin proof changed or below authority');
+  if (fresh.evidence !== proof.evidence) throw new Error('Margin proof changed');
+  if (proof.exception) {
+    // Immediate authority for these exact facts only. No transferable grant or future bypass.
+    if (input.authorizeMarginException !== true || fresh.status !== 'below_floor' || !fresh.calculation) throw new Error('Margin exception not authorized');
+    z.number().int().positive().parse(input.actorUserId);
+    const [insert] = await connection.execute<any>(`INSERT INTO checkout_margin_exceptions
+      (merchant_id,order_id,actor_user_id,reason,evidence_hash,assessment) VALUES (?,?,?,?,?,?)`,
+    [input.merchantId,input.orderId,input.actorUserId,proof.exception.reason,fresh.evidence,JSON.stringify(fresh)]);
+    return { enforced:true as const,...fresh,reviewedCosts:true,
+      exception:{id:insert.insertId as number,actorUserId:input.actorUserId,reason:proof.exception.reason,scope:'this_invoice_only' as const} };
+  }
+  if (fresh.status !== 'pass') throw new Error('Margin below authority');
   return { enforced:true as const,...fresh,reviewedCosts:true };
+}
+
+/** Private audit, readable even after payment; never used as a reusable authorization. */
+export async function getCheckoutMarginException(merchantId:number,orderId:number) {
+  z.number().int().positive().parse(merchantId);z.number().int().positive().parse(orderId);
+  return checkoutTransaction(async connection => {
+    const [orders]=await connection.execute<any[]>('SELECT id FROM orders WHERE id=? AND merchantId=?',[orderId,merchantId]);
+    if (!orders.length) throw new Error('Invoice unavailable');
+    const [rows]=await connection.execute<any[]>('SELECT id,actor_user_id,reason,assessment,created_at FROM checkout_margin_exceptions WHERE order_id=? AND merchant_id=?',[orderId,merchantId]);
+    if (!rows.length) return null;
+    const row=rows[0], assessment=typeof row.assessment==='string'?JSON.parse(row.assessment):row.assessment;
+    const facts=z.object({totalMinor:z.number().int().nonnegative(),policyRevision:z.number().int().nonnegative(),
+      policy:z.object({minPercent:z.number().int().min(0).max(100)}),
+      calculation:z.object({netRevenueMinor:z.number().int().positive(),totalCostMinor:z.number().int().nonnegative(),profitMinor:z.number().int(),marginBps:z.number().int()})}).parse(assessment);
+    return {id:Number(row.id),actorUserId:Number(row.actor_user_id),reason:String(row.reason),createdAt:new Date(databaseTimeEpoch(row.created_at)).toISOString(),...facts};
+  });
 }

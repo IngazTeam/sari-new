@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T20:21:59.004Z",
+  "generatedAt": "2026-09-23T20:44:32.528Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -14,6 +14,9 @@
     "invoice-margin-375.png",
     "learning-invoice-1440.png",
     "learning-invoice-375.png",
+    "margin-exception-1440.png",
+    "margin-exception-375.png",
+    "margin-exception-audit-375.png",
     "margin-policy-1440.png",
     "margin-policy-375.png",
     "offer-review-1440.png",
@@ -143,6 +146,161 @@
     {
       "width": 1440,
       "mode": "zid_sector_failure_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "invoice_exception_reason_review_keyboard_approval_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "invoice_exception_historical_audit_and_escaped_reason",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "exception_unavailable_margin-supervisor",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "exception_unavailable_margin-missing",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "exception_review_invalidated_by_cost",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "exception_review_invalidated_by_policy",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "exception_failed_approval_retry_without_false_success",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "margin-audit-loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "margin-audit-error",
       "passed": true
     },
     {

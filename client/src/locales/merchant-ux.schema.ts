@@ -63,7 +63,7 @@ export const learningEvidenceCopyKeys = [
 
 export type MerchantUxCopy = {
   marginPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","minimum","scope","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","empty","change","before","after","terms","on","off"]>;
-  invoiceMargin: CopySection<readonly ["loading","policyFailed","refresh","title","description","tax","shipping","other","checking","preview","invalid","failed","pass","below","missing","invalidTotals","revenue","totalCosts","profit","ratio","products","unknown","disabled","attestation"]>;
+  invoiceMargin: CopySection<readonly ["loading","policyFailed","refresh","title","description","tax","shipping","other","checking","preview","invalid","failed","pass","below","missing","invalidTotals","revenue","totalCosts","profit","ratio","products","unknown","disabled","attestation","exceptionTitle","exceptionScope","exceptionReason","exceptionInvalid","exceptionReviewed","exceptionPermission","exceptionApprove","auditLoading","auditFailed","auditTitle","auditActor","auditRatio","auditScope"]>;
   discountPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","maxPercent","expireHours","scope","margin","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","historyScope","empty","change","before","after","terms","on","off"]>;
   offerReview: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','latest','pages','attempt',
     'missing','invalid','pending','failed','sent','delivered','read','cancelled','reserved','priorAcceptance','projectionConflict','projected','projectionPending',

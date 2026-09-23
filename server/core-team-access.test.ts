@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
+  marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
   getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
 vi.mock('./ai/checkout-margin-policy', async original => ({...await original<typeof import('./ai/checkout-margin-policy')>(),getMarginPolicy:mocks.marginRead,updateMarginPolicy:mocks.marginWrite}));
-vi.mock('./ai/checkout-margin', async original => ({...await original<typeof import('./ai/checkout-margin')>(),previewCheckoutMargin:mocks.marginPreview}));
+vi.mock('./ai/checkout-margin', async original => ({...await original<typeof import('./ai/checkout-margin')>(),previewCheckoutMargin:mocks.marginPreview,getCheckoutMarginException:mocks.marginAudit}));
 vi.mock('./ai/checkout-agreements', async original => ({...await original<typeof import('./ai/checkout-agreements')>(),approveCheckoutInvoice:mocks.invoiceApprove}));
 vi.mock('./payment/order-payment-link', async original => ({...await original<typeof import('./payment/order-payment-link')>(),issueCanonicalOrderPaymentLink:mocks.invoiceLink}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
@@ -42,12 +42,37 @@ beforeEach(() => {
   mocks.offerList.mockResolvedValue({items:[],nextCursor:null}); mocks.offerReview.mockResolvedValue({outcome:'unresolved'});
   mocks.discountRead.mockResolvedValue({revision:0}); mocks.discountWrite.mockResolvedValue({revision:1}); mocks.botWrite.mockResolvedValue({});
   mocks.marginRead.mockResolvedValue({revision:0});mocks.marginWrite.mockResolvedValue({revision:1});mocks.marginPreview.mockResolvedValue({status:'pass'});
+  mocks.marginAudit.mockResolvedValue(null);
   mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
   const marginPolicyInput={policy:{enabled:true,minPercent:30},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const};
   const marginCosts={taxMinor:0,shippingCostMinor:0,otherCostMinor:0};
   const invoiceInput={orderId:10,expectedAmountMinor:10000,totalIsFinal:true as const,margin:{costs:marginCosts,evidence:'b'.repeat(64),reviewedCosts:true as const}};
+  const exceptionInput={...invoiceInput,margin:{...invoiceInput.margin,exception:{reason:'Reviewed reason for this invoice only',reviewed:true as const}}};
+  it.each(['owner','manager'])('derives immediate exception authority for %s from the session',async role=>{
+    mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().orders.approveCheckoutInvoice(exceptionInput);
+    expect(mocks.invoiceApprove).toHaveBeenCalledWith({...exceptionInput,merchantId:20,actorUserId:7,authorizeMarginException:true});
+  });
+  it.each(['viewer','sales_supervisor'])('denies %s an invoice exception without changing the floor',async role=>{
+    mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await expect(caller().orders.approveCheckoutInvoice(exceptionInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    expect(mocks.invoiceApprove).not.toHaveBeenCalled();expect(mocks.invoiceLink).not.toHaveBeenCalled();expect(mocks.marginWrite).not.toHaveBeenCalled();
+  });
+  it.each([{authorizeMarginException:true},{merchantId:30},{actorUserId:1},
+    {margin:{...exceptionInput.margin,exception:{reason:'  ',reviewed:true}}},
+    {margin:{...exceptionInput.margin,exception:{...exceptionInput.margin.exception,actorUserId:1}}},
+    {margin:{...exceptionInput.margin,exception:{...exceptionInput.margin.exception,reviewed:false}}},
+    {margin:{...exceptionInput.margin,exception:{...exceptionInput.margin.exception,scope:'all'}}}])('rejects forged exception authority %j',async attack=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+    await expect(caller().orders.approveCheckoutInvoice({...exceptionInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.invoiceApprove).not.toHaveBeenCalled();expect(mocks.invoiceLink).not.toHaveBeenCalled();
+  });
+  it('requires an active membership and permission to read the invoice exception audit',async()=>{
+    await expect(caller().orders.getCheckoutMarginException({orderId:10})).rejects.toMatchObject({code:'FORBIDDEN'});
+    mocks.access.mockResolvedValue({merchantId:20,role:'sales_supervisor',memberId:3});expect(await caller().orders.getCheckoutMarginException({orderId:10})).toBeNull();expect(mocks.marginAudit).toHaveBeenCalledWith(20,10);
+    await expect(caller().orders.getCheckoutMarginException({orderId:10,merchantId:30} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+    mocks.marginAudit.mockRejectedValueOnce(new Error('private storage'));await expect(caller().orders.getCheckoutMarginException({orderId:10})).rejects.toMatchObject({code:'CONFLICT',message:'Invoice exception audit unavailable'});
+    mocks.access.mockResolvedValue(null);await expect(caller().orders.approveCheckoutInvoice(exceptionInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   it('separates authority to set floors from authority to approve an individual invoice',async()=>{
     expect(await caller().botSettings.getMarginPolicy()).toMatchObject({canManage:false});expect(mocks.marginRead).toHaveBeenCalledWith(20);
     await expect(caller().botSettings.updateMarginPolicy(marginPolicyInput)).rejects.toMatchObject({code:'FORBIDDEN'});

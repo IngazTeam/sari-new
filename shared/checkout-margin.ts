@@ -9,7 +9,9 @@ export const marginPolicyUpdateSchema = z.object({ policy: marginPolicySchema, e
 const amount = z.number().int().min(0).max(MAX_MONEY_MINOR);
 export const invoiceCostsSchema = z.object({ taxMinor: amount, shippingCostMinor: amount, otherCostMinor: amount }).strict();
 export type InvoiceCosts = z.infer<typeof invoiceCostsSchema>;
-export const invoiceMarginProofSchema = z.object({ costs: invoiceCostsSchema, evidence: z.string().regex(/^[a-f0-9]{64}$/), reviewedCosts: z.literal(true) }).strict();
+export const marginExceptionSchema = z.object({ reason: z.string().trim().min(12).max(1000), reviewed: z.literal(true) }).strict();
+export const invoiceMarginProofSchema = z.object({ costs: invoiceCostsSchema, evidence: z.string().regex(/^[a-f0-9]{64}$/),
+  reviewedCosts: z.literal(true), exception: marginExceptionSchema.optional() }).strict();
 export type InvoiceMarginProof = z.infer<typeof invoiceMarginProofSchema>;
 export const previewMarginSchema = z.object({ orderId: z.number().int().positive(), costs: invoiceCostsSchema }).strict();
 export const invoiceApprovalSchema = z.object({ orderId: z.number().int().positive(), expectedAmountMinor: amount,

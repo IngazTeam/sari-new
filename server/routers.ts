@@ -2545,6 +2545,11 @@ export const appRouter = router({
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'تعذر التحقق من تطابق الطلب والعميل ومرجع التنفيذ لدى زد. لم تُعد محاولة إنشائه.' }); }
       }),
 
+    getCheckoutMarginException: permissionProcedure('orders.manage').input(z.object({orderId:z.number().int().positive()}).strict()).query(async ({ctx,input}) => {
+      const { getCheckoutMarginException } = await import('./ai/checkout-margin');
+      try { return await getCheckoutMarginException(ctx.merchantId,input.orderId); }
+      catch { throw new TRPCError({code:'CONFLICT',message:'Invoice exception audit unavailable'}); }
+    }),
     previewCheckoutMargin: permissionProcedure('orders.manage').input(previewMarginSchema).query(async ({ctx,input}) => {
       const { previewCheckoutMargin } = await import('./ai/checkout-margin');
       try { return await previewCheckoutMargin({...input,merchantId:ctx.merchantId}); }
@@ -2553,11 +2558,15 @@ export const appRouter = router({
     approveCheckoutInvoice: permissionProcedure('orders.manage')
       .input(invoiceApprovalSchema)
       .mutation(async ({ input, ctx }) => {
+        const { hasPermission } = await import('./_core/permissions');
+        const authorizeMarginException=!!input.margin?.exception && hasPermission(ctx.merchantRole,'bot_settings.manage');
+        if (input.margin?.exception && !authorizeMarginException) throw new TRPCError({code:'FORBIDDEN',message:'Margin exceptions require settings management permission'});
         const { approveCheckoutInvoice } = await import('./ai/checkout-agreements');
         const { issueCanonicalOrderPaymentLink } = await import('./payment/order-payment-link');
         let approval;
         try {
-          approval = await approveCheckoutInvoice({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id });
+          approval = await approveCheckoutInvoice({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id,
+            ...(authorizeMarginException?{authorizeMarginException:true}:{}) });
         } catch {
           throw new TRPCError({ code: 'CONFLICT', message: 'تعذر اعتماد الفاتورة؛ تحقق من حالة الطلب والكميات والأسعار وموافقة العميل.' });
         }

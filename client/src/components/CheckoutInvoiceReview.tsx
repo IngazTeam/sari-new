@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckoutMarginReview, type MarginReviewState } from './CheckoutMarginReview';
+import { CheckoutMarginExceptionAudit } from './CheckoutMarginExceptionAudit';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -18,13 +19,13 @@ export function CheckoutInvoiceReview({ orderId, totalAmount, onApproved }: {
     {!approve.isSuccess && <>
       <CheckoutMarginReview orderId={orderId} totalAmount={totalAmount} onReady={setMargin} disabled={approve.isPending} />
       <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-relaxed">
-        <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={attested}
+        <input id={`invoice-final-attested-${orderId}`} type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={attested}
           onChange={event => setAttested(event.target.checked)} disabled={approve.isPending} />
         <span>{margin.proof?t('merchantUx.invoiceMargin.attestation'):t('merchantUx.checkoutInvoice.attestation')}</span>
       </label>
       <Button type="button" data-invoice-approve className="h-auto min-h-11 w-full whitespace-normal" disabled={!attested || approve.isPending || !margin.ready}
         onClick={() => approve.mutate({ orderId, expectedAmountMinor: totalAmount, totalIsFinal: true, ...(margin.proof?{margin:margin.proof}:{}) })}>
-        {approve.isPending ? t('merchantUx.checkoutInvoice.saving') : t('merchantUx.checkoutInvoice.approve')}
+        {approve.isPending ? t('merchantUx.checkoutInvoice.saving') : margin.proof?.exception?t('merchantUx.invoiceMargin.exceptionApprove'):t('merchantUx.checkoutInvoice.approve')}
       </Button>
     </>}
     {approve.isError && <p role="alert" className="text-sm text-destructive">{t('merchantUx.checkoutInvoice.failed')}</p>}
@@ -32,6 +33,7 @@ export function CheckoutInvoiceReview({ orderId, totalAmount, onApproved }: {
       <p>{t('merchantUx.checkoutInvoice.approved')}</p>
       {approve.data.paymentUrl ? <a className="inline-flex min-h-11 items-center underline" href={approve.data.paymentUrl} target="_blank" rel="noopener noreferrer">
         {t('merchantUx.checkoutInvoice.link')}</a> : <p>{t('merchantUx.checkoutInvoice.noLink')}</p>}
+      <CheckoutMarginExceptionAudit orderId={orderId} />
     </div>}
   </section>;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
+import { CheckoutMarginExceptionAudit } from '@/components/CheckoutMarginExceptionAudit';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
@@ -405,6 +406,7 @@ export default function Orders() {
               {/* Status & Tracking */}
               {Boolean(selectedOrder.checkoutReviewRequired) && <CheckoutInvoiceReview key={selectedOrder.id}
                 orderId={selectedOrder.id} totalAmount={selectedOrder.totalAmount} onApproved={() => { void refetch(); }} />}
+              {!selectedOrder.checkoutReviewRequired && <CheckoutMarginExceptionAudit key={selectedOrder.id} orderId={selectedOrder.id} />}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm text-muted-foreground">{t('ordersPage.statusLabel')}:</span>
