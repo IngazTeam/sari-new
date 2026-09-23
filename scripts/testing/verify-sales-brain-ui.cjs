@@ -106,6 +106,27 @@ async function main() {
     await page.goto(`${origin}/?case=discounted-invalid`,{waitUntil:'networkidle0'});await page.waitForSelector('#invoice-fixture [role=alert]');await page.click('#invoice-final-attested-123');
     assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);assert.equal(await page.evaluate(()=>window.__invoiceInput),undefined);
     results.push({width:1440,mode:'checkout_discount_inconsistent_amount_blocks_review',passed:true});
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=checkout-attempts-ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      await page.waitForSelector('[data-checkout-attempts]');assert.equal((await page.$$('#checkout-attempts-fixture article')).length,4);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.$eval('#checkout-attempts-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      assert.equal(await page.$('#checkout-attempts-fixture a'),null);
+      assert.ok(await page.$eval('#checkout-attempts-fixture button',n=>n.getBoundingClientRect().height>=44));
+      await page.click('#checkout-attempts-fixture button');assert.equal(await page.evaluate(()=>window.__attemptRefreshed),true);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#checkout-attempts-fixture')).screenshot({path:path.join(output,`checkout-attempts-${width}.png`)});
+      results.push({width,lang,mode:'checkout_attempts_states_read_only_refresh',passed:true});
+    }
+    for(const state of ['error','loading','empty']) {
+      await page.goto(`${origin}/?case=checkout-attempts-${state}`,{waitUntil:'networkidle0'});
+      if(state==='error'){await page.waitForSelector('#checkout-attempts-fixture [role=alert]');await page.click('#checkout-attempts-fixture button');await page.waitForSelector('[data-checkout-attempts]');}
+      if(state==='loading')await page.waitForSelector('#checkout-attempts-fixture [role=status]');
+      if(state==='empty')assert.equal(await page.$('[data-checkout-attempts]'),null);
+      results.push({width:1440,mode:`checkout_attempts_${state}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=checkout-attempts-xss`,{waitUntil:'networkidle0'});await page.waitForSelector('[data-checkout-attempts]');
+    assert.equal(await page.$('#checkout-attempts-fixture img'),null);assert.equal(await page.evaluate(()=>window.__attemptXss),undefined);
+    results.push({width:1440,mode:'checkout_attempts_reference_escaped',passed:true});
     const exceptionReason='اعتماد خاص لهذه الفاتورة بعد مراجعة التكاليف';
     const reviewException=async()=>{
       await page.type('#invoice-exception-reason-123',exceptionReason);

@@ -4,6 +4,7 @@ import i18n from '@/lib/i18n';
 import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
 import { CheckoutMarginExceptionAudit } from '@/components/CheckoutMarginExceptionAudit';
 import { CheckoutDiscountBreakdown } from '@/components/CheckoutDiscountBreakdown';
+import { OrderCheckoutAttempts } from '@/components/OrderCheckoutAttempts';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
@@ -411,6 +412,7 @@ export default function Orders() {
               {!selectedOrder.checkoutReviewRequired&&selectedOrder.checkoutDiscountMinor!=null&&selectedOrder.checkoutSubtotalMinor!=null&&<CheckoutDiscountBreakdown
                 discount={{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}} totalMinor={selectedOrder.totalAmount} approved />}
               {!selectedOrder.checkoutReviewRequired && <CheckoutMarginExceptionAudit key={selectedOrder.id} orderId={selectedOrder.id} />}
+              {!selectedOrder.sallaOrderId&&<OrderCheckoutAttempts key={`checkout-${selectedOrder.id}`} orderId={selectedOrder.id} />}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm text-muted-foreground">{t('ordersPage.statusLabel')}:</span>

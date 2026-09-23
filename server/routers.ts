@@ -2545,6 +2545,11 @@ export const appRouter = router({
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'تعذر التحقق من تطابق الطلب والعميل ومرجع التنفيذ لدى زد. لم تُعد محاولة إنشائه.' }); }
       }),
 
+    getCheckoutAttempts: permissionProcedure('orders.manage').input(z.object({orderId:z.number().int().positive()}).strict()).query(async ({ctx,input}) => {
+      const { getOrderCheckoutAttempts } = await import('./payment/order-checkout-attempts');
+      try { return await getOrderCheckoutAttempts(ctx.merchantId,input.orderId); }
+      catch { throw new TRPCError({code:'CONFLICT',message:'Checkout attempt evidence unavailable'}); }
+    }),
     getCheckoutMarginException: permissionProcedure('orders.manage').input(z.object({orderId:z.number().int().positive()}).strict()).query(async ({ctx,input}) => {
       const { getCheckoutMarginException } = await import('./ai/checkout-margin');
       try { return await getCheckoutMarginException(ctx.merchantId,input.orderId); }
@@ -7042,6 +7047,9 @@ export const appRouter = router({
             || order.totalAmount !== link.amount || order.currency !== link.currency) {
             throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'رابط الدفع لا يطابق طلبًا محليًا قابلًا للدفع' });
           }
+          const { createDurableOrderCheckout } = await import('./payment/order-checkout-attempts');
+          try { return await createDurableOrderCheckout(input); }
+          catch { throw new TRPCError({code:'CONFLICT',message:'تعذر اعتماد جلسة دفع لهذا الطلب. قد تكون محاولة سابقة قيد التحقق؛ راجع حالة الطلب قبل إعادة المحاولة.'}); }
         }
         const settings = await getMerchantPaymentSettings(link.merchantId);
         if (!settings || !settings.tapSecretKey || !isTapPaymentReady(settings)) {

@@ -547,6 +547,13 @@
       "when": 1790152200000,
       "tag": "0077_checkout_discounts",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "5",
+      "when": 1790208000000,
+      "tag": "0078_order_checkout_attempts",
+      "breakpoints": true
     }
   ]
 }

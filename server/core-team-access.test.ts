@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
+  checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
   getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
@@ -8,6 +8,7 @@ vi.mock('./ai/checkout-margin-policy', async original => ({...await original<typ
 vi.mock('./ai/checkout-margin', async original => ({...await original<typeof import('./ai/checkout-margin')>(),previewCheckoutMargin:mocks.marginPreview,getCheckoutMarginException:mocks.marginAudit}));
 vi.mock('./ai/checkout-agreements', async original => ({...await original<typeof import('./ai/checkout-agreements')>(),approveCheckoutInvoice:mocks.invoiceApprove}));
 vi.mock('./payment/order-payment-link', async original => ({...await original<typeof import('./payment/order-payment-link')>(),issueCanonicalOrderPaymentLink:mocks.invoiceLink}));
+vi.mock('./payment/order-checkout-attempts',async original=>({...await original<typeof import('./payment/order-checkout-attempts')>(),getOrderCheckoutAttempts:mocks.checkoutAttempts}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
@@ -43,9 +44,24 @@ beforeEach(() => {
   mocks.discountRead.mockResolvedValue({revision:0}); mocks.discountWrite.mockResolvedValue({revision:1}); mocks.botWrite.mockResolvedValue({});
   mocks.marginRead.mockResolvedValue({revision:0});mocks.marginWrite.mockResolvedValue({revision:1});mocks.marginPreview.mockResolvedValue({status:'pass'});
   mocks.marginAudit.mockResolvedValue(null);
+  mocks.checkoutAttempts.mockResolvedValue([]);
   mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
+  it('hides checkout attempts from a viewer and scopes reads to resolved membership',async()=>{
+    await expect(caller().orders.getCheckoutAttempts({orderId:10})).rejects.toMatchObject({code:'FORBIDDEN'});expect(mocks.checkoutAttempts).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({merchantId:20,role:'sales_supervisor',memberId:3});await caller().orders.getCheckoutAttempts({orderId:10});
+    expect(mocks.checkoutAttempts).toHaveBeenCalledWith(20,10);
+  });
+  it.each([{merchantId:30},{orderId:0},{orderId:1.5},{includeSecret:true}])('rejects injected checkout evidence input %j',async patch=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+    await expect(caller().orders.getCheckoutAttempts({orderId:10,...patch} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.checkoutAttempts).not.toHaveBeenCalled();
+  });
+  it('redacts checkout evidence failures and denies a revoked membership',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'owner',memberId:3});mocks.checkoutAttempts.mockRejectedValueOnce(new Error('private storage details'));
+    await expect(caller().orders.getCheckoutAttempts({orderId:10})).rejects.toMatchObject({code:'CONFLICT',message:'Checkout attempt evidence unavailable'});
+    mocks.access.mockResolvedValue(null);await expect(caller().orders.getCheckoutAttempts({orderId:10})).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   const marginPolicyInput={policy:{enabled:true,minPercent:30},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const};
   const marginCosts={taxMinor:0,shippingCostMinor:0,otherCostMinor:0};
   const invoiceInput={orderId:10,expectedAmountMinor:10000,totalIsFinal:true as const,margin:{costs:marginCosts,evidence:'b'.repeat(64),reviewedCosts:true as const}};

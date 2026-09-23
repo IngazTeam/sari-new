@@ -7,6 +7,9 @@ import {buildReplyPlan} from '../messaging/reply-plan';
 import {getMarginPolicy,updateMarginPolicy} from './checkout-margin-policy';
 import {previewCheckoutMargin} from './checkout-margin';
 import {issueCanonicalOrderPaymentLink} from '../payment/order-payment-link';
+import {createDurableOrderCheckout} from '../payment/order-checkout-attempts';
+import * as tap from '../payment/tap-client';
+import {randomUUID} from 'node:crypto';
 import * as db from '../db';
 
 describe.skipIf(!process.env.DATABASE_URL)('agreed local coupon redemption on MySQL',()=>{
@@ -54,6 +57,17 @@ describe.skipIf(!process.env.DATABASE_URL)('agreed local coupon redemption on My
   it('does not create duplicate quotations on concurrent source retry',async()=>{
     await incoming('طبق الكود LOCAL10');const [a,b]=await Promise.all([prepareCheckoutCouponQuote(identity),prepareCheckoutCouponQuote(identity)]);
     expect(asQuote(a).quotationId).toBe(asQuote(b).quotationId);expect(await used()).toBe(0);
+  });
+  it('opens one durable Tap session at the consented discount amount without consuming the coupon again',async()=>{
+    const orderId=await accept(await coupon());await approve(orderId);
+    vi.spyOn(db,'getMerchantPaymentSettings').mockResolvedValue({tapEnabled:1,tapTestMode:1,isVerified:1,tapPublicKey:'pk_test_fixture',tapSecretKey:'sk_test_fixture'} as any);
+    await issueCanonicalOrderPaymentLink({merchantId:owner.merchantId,orderId,requestedAmountInHalalas:26998});
+    const [link]=await query('SELECT link_id FROM payment_links WHERE order_id=?',[orderId]);
+    vi.spyOn(tap,'postTapCharge').mockResolvedValue({ok:true,status:200,body:{id:`chg_${randomUUID()}`,status:'INITIATED',amount:269.98,currency:'SAR',live_mode:false,transaction:{url:'https://sandbox.payments.tap.company/discount'}}});
+    const input={linkId:link.link_id,checkoutAttemptId:randomUUID(),customerName:'Test Customer',customerPhone:phone};
+    await createDurableOrderCheckout(input);await createDurableOrderCheckout({...input,checkoutAttemptId:randomUUID()});
+    expect(tap.postTapCharge).toHaveBeenCalledTimes(1);expect(tap.postTapCharge).toHaveBeenCalledWith('sk_test_fixture',expect.objectContaining({amount:269.98}));
+    expect(await used()).toBe(1);expect(await ledger()).toHaveLength(1);expect((await stored(orderId)).payment_status).toBe('unpaid');
   });
   it('removes a coupon by issuing a new full-price offer and never stacks a replacement',async()=>{
     await coupon();const replaced=await coupon();expect(replaced.snapshot.totalMinor).toBe(26998);

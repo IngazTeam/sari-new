@@ -1,6 +1,12 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  checkoutAttempts: {
+    title:'Payment session attempts',loading:'Loading payment session history…',error:'Payment session history could not be loaded.',refresh:'Refresh payment history',
+    dispatching:'Attempt started; outcome not yet recorded',unknown:'Attempt outcome needs review',created:'Session recorded; check the order payment status',failed:'Attempt closed after a verified failure or cancellation',
+    scope:'The latest 10 attempts to start payment for this order. Creating a session does not establish payment. This history does not send a new payment request.',
+    reference:'Tap attempt reference',review:'Match this reference against Tap and review the payment outcome before creating another attempt or releasing the coupon use. An uncertain attempt is never resent automatically.'
+  },
   checkoutDiscount: {
     title:'Agreed discount breakdown',subtotal:'Products before discount',discount:'Code {{code}} discount',total:'Products after discount',
     pending:'The customer agreed to this amount. The code, margin and charges are checked again before invoice approval; the code has not been consumed yet.',

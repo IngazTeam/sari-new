@@ -151,6 +151,14 @@ export const trpc = {
       isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry, refetch: async () => setRetry(true) };
   } } },
   orders: {
+    getCheckoutAttempts: {useQuery:()=>{
+      const [recovered,setRecovered]=useState(false);
+      return {isLoading:mode==='checkout-attempts-loading',isError:mode==='checkout-attempts-error'&&!recovered,
+        data:mode.startsWith('checkout-attempts-')&&mode!=='checkout-attempts-empty'?['unknown','dispatching','created','failed'].map((state,id)=>({
+          id:String(id),state,reference:mode==='checkout-attempts-xss'?'<img src=x onerror="window.__attemptXss=1">':'sari_pl_'+'f'.repeat(64),
+          amountMinor:26998,currency:'SAR',paymentId:null,createdAt:'2026-09-24T00:00:00.000Z',updatedAt:'2026-09-24T00:00:00.000Z'})):[],
+        refetch:async()=>{setRecovered(true);(window as any).__attemptRefreshed=true;}};
+    }},
     getCheckoutMarginException:{useQuery:({orderId}:{orderId:number})=>{
       const [retry,setRetry]=useState(false);
       const saved=(window as any).__invoiceInput?.margin?.exception;

@@ -15,6 +15,7 @@ import { SalesOfferReview } from '../../../client/src/components/SalesOfferRevie
 import { LearningEvidenceCard } from '../../../client/src/components/LearningEvidenceCard';
 import { CheckoutInvoiceReview } from '../../../client/src/components/CheckoutInvoiceReview';
 import { CheckoutMarginExceptionAudit } from '../../../client/src/components/CheckoutMarginExceptionAudit';
+import { OrderCheckoutAttempts } from '../../../client/src/components/OrderCheckoutAttempts';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
 async function render() {
@@ -26,6 +27,7 @@ async function render() {
     <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }}
       discount={mode.startsWith('discounted-')?{code:'SAVE_'+'X'.repeat(45),subtotalMinor:25000,discountMinor:mode==='discounted-invalid'?1000:2000}:undefined} /></div>
     <div id="margin-audit-fixture"><CheckoutMarginExceptionAudit orderId={124} /></div>
+    <div id="checkout-attempts-fixture"><OrderCheckoutAttempts orderId={123} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>
     <form id="margin-policy-fixture" onSubmit={event=>{event.preventDefault();(window as any).__unexpectedMarginSubmit=true;}}><CheckoutMarginPolicySettings /></form>

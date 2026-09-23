@@ -1,8 +1,10 @@
 {
-  "generatedAt": "2026-09-23T21:15:16.657Z",
+  "generatedAt": "2026-09-23T21:42:21.372Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
+    "checkout-attempts-1440.png",
+    "checkout-attempts-375.png",
     "checkout-discount-1440.png",
     "checkout-discount-375.png",
     "discount-policy-1440.png",
@@ -213,6 +215,86 @@
     {
       "width": 1440,
       "mode": "checkout_discount_inconsistent_amount_blocks_review",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "checkout_attempts_states_read_only_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_attempts_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_attempts_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_attempts_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_attempts_reference_escaped",
       "passed": true
     },
     {

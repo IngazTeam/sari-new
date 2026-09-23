@@ -1,0 +1,23 @@
+CREATE TABLE order_checkout_attempts (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  merchant_id INT NOT NULL,
+  order_id INT NOT NULL,
+  payment_link_id INT NOT NULL,
+  request_id CHAR(36) NOT NULL,
+  request_hash CHAR(64) NOT NULL,
+  provider_reference VARCHAR(100) NOT NULL,
+  amount_minor INT NOT NULL,
+  currency CHAR(3) NOT NULL,
+  state VARCHAR(20) NOT NULL DEFAULT 'dispatching',
+  payment_id INT NULL,
+  failure_code VARCHAR(40) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  active_order_id INT GENERATED ALWAYS AS (CASE WHEN state IN ('dispatching','unknown','created') THEN order_id ELSE NULL END) VIRTUAL,
+  UNIQUE KEY uq_checkout_request (payment_link_id,request_id),
+  UNIQUE KEY uq_checkout_active_order (active_order_id),
+  UNIQUE KEY uq_checkout_provider_reference (provider_reference),
+  CONSTRAINT fk_checkout_attempt_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE,
+  CONSTRAINT fk_checkout_attempt_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_checkout_attempt_link FOREIGN KEY (payment_link_id) REFERENCES payment_links(id) ON DELETE CASCADE
+);
