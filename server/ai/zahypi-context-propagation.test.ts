@@ -63,14 +63,12 @@ describe("ZahyPi tenant propagation", () => {
     });
   });
 
-  it("keeps both merchant-reply webhook AI calls scoped to the instance merchant", () => {
+  it("routes employee replies without unapproved AI rewriting and scopes the relay to the instance", () => {
     const source = readFileSync(new URL("../webhooks/greenapi.ts", import.meta.url), "utf8");
-    expect(source).toMatch(
-      /merchantId: instance\.merchantId,[\s\S]{0,120}taskType: 'sari\.webhook\.merchant_reply_improvement'/,
-    );
-    expect(source).toMatch(
-      /merchantId: instance\.merchantId,[\s\S]{0,120}taskType: 'sari\.webhook\.merchant_reply_feedback'/,
-    );
+    expect(source).not.toContain('sari.webhook.merchant_reply_improvement');
+    // Advice after an observed manual reply remains tenant-scoped; it does not replace that reply.
+    expect(source).toMatch(/merchantId: instance\.merchantId,[\s\S]{0,120}taskType: 'sari\.webhook\.merchant_reply_feedback'/);
+    expect(source).toMatch(/handleMerchantEscalationReply\(\{\s*merchantId: instance\.merchantId,\s*instanceRecordId: instance\.id/);
   });
 
   it("scopes every AI suggestion and brain analysis call to the authenticated merchant", () => {
@@ -111,8 +109,10 @@ describe("ZahyPi tenant propagation", () => {
   it("scopes every merchant-mode AI operation", () => {
     const source = readFileSync(new URL("./merchant-mode.ts", import.meta.url), "utf8");
     expect(source).toContain("taskType: 'sari.merchant.intent'");
-    expect(source).toContain("taskType: 'sari.merchant.reply_coaching'");
     expect(source).toContain("taskType: 'sari.merchant.assistant'");
+    // Employee reply approval now uses a durable quoted alert, never a merchant-wide draft.
+    expect(source).not.toContain('_pendingReplies');
+    expect(source.match(/callGPT4\([\s\S]*?taskType: 'sari\.merchant\./g)).toHaveLength(2);
   });
 
   it("scopes product search, product suggestions, and welcome generation", () => {

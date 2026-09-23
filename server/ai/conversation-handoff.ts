@@ -1,4 +1,4 @@
-import type { Pool } from 'mysql2/promise';
+import type { Pool, PoolConnection } from 'mysql2/promise';
 import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { checkoutTransaction } from './checkout-agreements';
@@ -29,11 +29,17 @@ function offerItems(snapshot: unknown): Array<{ name: string; quantity: number }
 
 /** The common write boundary for dashboard, WhatsApp directives and expiry workers. */
 export async function transitionConversationOwnership(conversationId: number, patch: OwnershipPatch, options: OwnershipOptions = {}) {
+  const result = await checkoutTransaction(connection => transitionOwnershipInTransaction(connection, conversationId, patch, options));
+  if (result.changed) destroySession(result.merchantId, conversationId);
+  return result;
+}
+
+/** Internal composition point: caller must commit or roll back the whole transaction. */
+export async function transitionOwnershipInTransaction(connection: PoolConnection, conversationId: number, patch: OwnershipPatch, options: OwnershipOptions = {}) {
   z.number().int().positive().parse(conversationId);
   if (Object.keys(patch).some(key => !['humanTakeover', 'humanTakeoverAt', 'humanExpiresAt', 'agentHistory'].includes(key))) throw new Error('Mixed ownership update is not supported');
   if (patch.humanTakeover !== 0 && patch.humanTakeover !== 1) throw new Error('Invalid conversation ownership');
   if (options.expectedVersion !== undefined) z.number().int().nonnegative().parse(options.expectedVersion);
-  const result = await checkoutTransaction(async connection => {
     const [rows] = await connection.execute<any[]>(`SELECT *,
       (human_expires_at IS NOT NULL AND human_expires_at<=UTC_TIMESTAMP()) AS timed_expired,
       (human_expires_at IS NULL AND human_takeover_at<=TIMESTAMPADD(HOUR,-24,UTC_TIMESTAMP())) AS manual_expired
@@ -72,9 +78,6 @@ export async function transitionConversationOwnership(conversationId: number, pa
     if (patch.humanTakeover === 0) await connection.execute(`UPDATE messages SET isProcessed=1
       WHERE conversationId=? AND direction='incoming' AND id<=? AND isProcessed=0`, [conversationId, cutoff]);
     return { changed: true, merchantId: current.merchantId, version: Number(current.handoff_version) + 1 };
-  });
-  if (result.changed) destroySession(result.merchantId, conversationId);
-  return result;
 }
 
 export type ConversationReplyGuard = { conversationId: number; version: number; incomingMessageId?: number };

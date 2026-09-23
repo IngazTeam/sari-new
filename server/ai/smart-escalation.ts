@@ -7,7 +7,7 @@
  * 3. If no reply after 5 minutes → cascade to phone #2
  * 4. If no reply after another 5 min → cascade to phone #3
  * 5. If ALL phones exhausted → send customer a professional apology
- * 6. When ANY contact replies — relay the answer to the customer + cache Q&A
+ * 6. An authorized contact quotes the recorded alert; accepted replies become reviewable teaching proposals.
  * 
  * Based on professional customer service frameworks:
  * - Acknowledge & validate the question
@@ -17,18 +17,14 @@
  */
 
 import { getMerchantById, getWhatsAppInstancesByMerchantId } from '../db';
-import { sendMessageWithCredentials } from '../whatsapp';
+import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
+import { sendSourcedEscalationAlert, relayEscalationReply, type RelayInput } from './escalation-relay';
 import {
   createEscalation,
   markEscalationNotified,
-  updateEscalationLevel,
   markEscalationExhausted,
-  resolveEscalation,
-  getActiveEscalation,
   getEscalationsNeedingCascade,
-  type EscalationItem,
 } from '../db/learning';
-import { saveMerchantTeaching } from '../knowledge/merchant-teaching';
 import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
 import { z } from 'zod';
@@ -70,7 +66,7 @@ const FOLLOW_UP_RESPONSES = [
 ];
 
 /** Final message when ALL escalation contacts have been exhausted */
-const EXHAUSTION_MESSAGE = 'شكراً على صبرك! 🙏 سجلنا استفسارك وسنرد عليك في أقرب وقت ممكن. تقدر تسأل نفس السؤال لاحقاً وبيكون الجواب جاهز إن شاء الله ✅';
+const EXHAUSTION_MESSAGE = 'شكراً على صبرك 🙏 لم يصلنا تأكيد للمعلومة بعد. استفسارك محفوظ في المحادثة ليتمكن الفريق من متابعته.';
 
 // ═══════════════════════════════════════════════════════════════
 // Alert Message Templates — per escalation level
@@ -97,7 +93,7 @@ function buildAlertMessage(params: {
 👤 *العميل:* ${customerName} (${maskedPhone})
 ❓ *السؤال:* ${q}
 
-💡 *رد على هذه الرسالة بالجواب وسيوصله للعميل تلقائياً*
+💡 *استخدم الرد بالاقتباس على هذا التنبيه واكتب إجابتك للعميل. سيُرسل النص كما كتبته إذا ظل التصعيد صالحاً.*
 ⏰ العميل ينتظر ردك...`;
   }
 
@@ -109,7 +105,7 @@ function buildAlertMessage(params: {
 ❓ *السؤال:* ${q}
 
 ⚠️ لم يرد المسؤول الأول خلال 5 دقائق
-💡 *رد على هذه الرسالة بالجواب وسيوصله للعميل فوراً*`;
+💡 *استخدم الرد بالاقتباس على هذا التنبيه. سيُرسل النص كما كتبته إذا ظل التصعيد صالحاً.*`;
   }
 
   // Level 3+ — Final escalation
@@ -120,7 +116,7 @@ function buildAlertMessage(params: {
 ❓ *السؤال:* ${q}
 
 ⛔ لم يرد أحد خلال ${minutesPassed} دقيقة — العميل ما زال ينتظر!
-💡 *رد على هذه الرسالة الآن لإنقاذ العميل*`;
+💡 *استخدم الرد بالاقتباس على هذا التنبيه. سيُرسل النص كما كتبته إذا ظل التصعيد صالحاً.*`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -194,6 +190,7 @@ export async function handleSmartEscalation(params: {
   customerPhone: string;
   customerName?: string;
   customerQuestion: string;
+  incomingMessageId: number | undefined;
   botResponse?: string;
 }): Promise<SmartEscalationResult> {
   try {
@@ -204,6 +201,7 @@ export async function handleSmartEscalation(params: {
       customerPhone: params.customerPhone,
       customerName: params.customerName,
       question: params.customerQuestion,
+      incomingMessageId: params.incomingMessageId,
       botResponse: params.botResponse,
       priority: 'standard',
     });
@@ -358,13 +356,9 @@ async function notifyEscalationContact(params: {
   });
 
   try {
-    await sendMessageWithCredentials(
-      (activeInstance as any).instanceId,
-      (activeInstance as any).token,
-      (activeInstance as any).apiUrl || 'https://api.green-api.com',
-      contact.phone,
-      alertMessage
-    );
+    const result = await sendSourcedEscalationAlert({ merchantId: params.merchantId, escalationId: params.escalationId,
+      instanceRecordId: activeInstance.id, to: contact.phone, text: alertMessage, level: params.level });
+    if (!result.accepted) throw new Error('Escalation alert acceptance unconfirmed');
 
     await markEscalationNotified(params.escalationId, params.merchantId, params.level);
     const levelLabel = params.level === 0 ? 'أول' : params.level === 1 ? 'ثاني' : `${params.level + 1}`;
@@ -418,14 +412,10 @@ export async function processCascadingEscalations(): Promise<number> {
 
         if (activeInstance && customerPhone) {
           try {
-            await sendMessageWithCredentials(
-              (activeInstance as any).instanceId,
-              (activeInstance as any).token,
-              (activeInstance as any).apiUrl || 'https://api.green-api.com',
-              customerPhone,
-              EXHAUSTION_MESSAGE
-            );
-            console.log(`[Escalation] 📩 Apology sent to customer ${customerPhone.slice(-4)}`);
+            const result = await sendMerchantWhatsApp({ merchantId, instanceRecordId: activeInstance.id, to: customerPhone,
+              kind: 'text', text: EXHAUSTION_MESSAGE, idempotencyKey: `escalation_exhaustion:${merchantId}:${esc.id}`,
+              escalationGuard: { id: esc.id, version: esc.handoff_version, sourceMessageId: esc.source_message_id, mode: 'exhaustion' } });
+            if (result.accepted) console.log(`[Escalation] Apology accepted for escalation ${esc.id}`);
           } catch (sendErr: any) {
             console.error(`[Escalation] Failed to send apology:`, sendErr.message);
           }
@@ -469,59 +459,8 @@ export async function processCascadingEscalations(): Promise<number> {
  * Handle merchant's reply to an escalation.
  * Called from webhook when ANY phone in the chain sends a reply.
  */
-export async function handleMerchantEscalationReply(params: {
-  merchantId: number;
-  merchantPhone: string;
-  replyText: string;
-}): Promise<{ handled: boolean; escalation?: EscalationItem }> {
-  try {
-    // Find active escalation for this merchant
-    // The merchant's reply comes from their personal number (any phone in the chain)
-    const resolved = await resolveEscalation({
-      merchantId: params.merchantId,
-      customerPhone: '', // We need to find by merchant, not customer
-      merchantAnswer: params.replyText,
-    });
-
-    if (!resolved) return { handled: false };
-
-    // Get WhatsApp instance to send reply to customer
-    const instances = await getWhatsAppInstancesByMerchantId(params.merchantId);
-    const activeInstance = instances.find((i: any) => i.status === 'active');
-
-    if (activeInstance && resolved.customerPhone) {
-      // PEN-GAP-04 FIX: Sanitize reply before sending to customer AND caching
-      const safeReplyText = params.replyText
-        .substring(0, 2000)
-        .replace(/https?:\/\/[^\s]+/g, '[رابط]')      // Strip raw URLs
-        .replace(/\[.*?\]\(.*?\)/g, '[رابط]');          // Strip markdown links
-
-      // Forward merchant's reply transparently — NO bot credit claiming
-      const customerReply = safeReplyText;
-
-      await sendMessageWithCredentials(
-        (activeInstance as any).instanceId,
-        (activeInstance as any).token,
-        (activeInstance as any).apiUrl || 'https://api.green-api.com',
-        resolved.customerPhone,
-        customerReply
-      );
-
-      console.log(`[Escalation] ✅ Answer delivered to customer ***${resolved.customerPhone?.slice(-4)}`);
-
-      // Cache this Q&A for future reuse — the bot learns permanently
-      try {
-        await saveMerchantTeaching({ merchantId: params.merchantId, question: resolved.question.slice(0, 500),
-          answer: safeReplyText, origin: 'escalation_reply', referenceId: resolved.id });
-        console.log(`[Escalation] 🧬 Customer-specific correction saved for merchant review`);
-      } catch { /* cache is optional */ }
-    }
-
-    return { handled: true, escalation: resolved };
-  } catch (err: any) {
-    console.error('[Escalation] handleMerchantEscalationReply failed:', err.message);
-    return { handled: false };
-  }
+export async function handleMerchantEscalationReply(params: RelayInput) {
+  return relayEscalationReply(params);
 }
 
 /**
@@ -787,4 +726,3 @@ setInterval(() => {
     entries.slice(-200).forEach(([k, v]) => _v2ObjectionCounts.set(k, v));
   }
 }, 30 * 60 * 1000);
-

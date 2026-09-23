@@ -24,6 +24,13 @@ const sourceHashes = Object.fromEntries(changedFiles.sort().map(file => [file,
 // so the final commit can be verified against these exact tested source files.
 const sourceGitBlobs = Object.fromEntries(changedFiles.map(file => [file,
   execFileSync('git', ['hash-object', `--path=${file}`, file], { encoding: 'utf8', windowsHide: true }).trim()]));
+const componentUi = JSON.parse(readFileSync(resolve(destination, 'ui/results.json'), 'utf8'));
+const reusedComponentUi = JSON.stringify(componentUi) === JSON.stringify(priorEvidence.componentUi);
+const uiSourceFiles = Object.keys(priorEvidence.sourceGitBlobs ?? {}).filter(file => /^(client|shared)\//.test(file)
+  || file === 'scripts/testing/verify-sales-brain-ui.cjs');
+if (reusedComponentUi && (!uiSourceFiles.length || uiSourceFiles.some(file => sourceGitBlobs[file] !== priorEvidence.sourceGitBlobs[file]))) {
+  throw new Error('UI source changed: rerun the component UI verification before reusing its evidence');
+}
 const uniqueTests = new Map();
 for (const report of reports) for (const test of report.tests) {
   const key = `${test.file}\n${test.name}`;
@@ -57,7 +64,9 @@ const evidence = { generatedAt: new Date().toISOString(),
   uniqueTests: { passed: Array.from(uniqueTests.values()).filter(status => status === 'passed').length,
     skipped: Array.from(uniqueTests.values()).filter(status => status === 'pending' || status === 'skipped').length },
   verification,
-  componentUi: JSON.parse(readFileSync(resolve(destination, 'ui/results.json'), 'utf8')),
+  componentUi,
+  componentUiReuse: { reused: reusedComponentUi, sourceFilesChecked: uiSourceFiles.length,
+    scope: 'Component UI with mocked API; reuse checks captured client/shared/verifier blobs only, not production browser acceptance' },
 };
 if (evidence.componentUi.errors.length || evidence.componentUi.results.some(result => !result.passed)) throw new Error('Component UI verification failed');
 writeFileSync(resolve(destination, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n');

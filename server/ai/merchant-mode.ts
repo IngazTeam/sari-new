@@ -5,15 +5,13 @@ import { formatProductPrice } from '../../shared/product-money';
  * When a message comes from a phone in the escalation chain,
  * it is NEVER treated as a customer message. Instead:
  * 
- * 1. Escalation replies → coached before delivery to customer
+ * 1. Escalation replies → sent as written only with an owned alert reference
  * 2. Training commands → handled by coaching engine
  * 3. Reports/stats → quick merchant dashboard via WhatsApp
  * 4. General questions → Sari responds as merchant assistant
  */
 
 import { callGPT4, type ChatMessage } from './openai';
-import type { CustomerProfile } from '../db/customer-intelligence';
-import { readCustomerMemory, groundCustomerProfile } from './customer-memory';
 
 // ═══════════════════════════════════════════════════════════════
 // Intent Detection — What does the merchant want?
@@ -179,212 +177,26 @@ async function detectMerchantIntent(message: string, hasActiveEscalation: boolea
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Escalation Reply Coach — Analyze reply before sending
+// Escalation Reply — Forward employee text through the durable alert reference
 // ═══════════════════════════════════════════════════════════════
 
-// In-memory store for pending coached replies (merchant must confirm)
-const _pendingReplies = new Map<number, {
-  originalReply: string;
-  suggestedReply: string;
-  customerPhone: string;
-  customerName: string;
-  escalationId: number;
-  expiresAt: number;
-}>();
-
-// Post-confirmation cooldown — prevents loop when merchant sends "موافق" and it gets re-processed
-const _confirmationCooldown = new Map<number, number>();
-
-// Cleanup expired pending replies and cooldowns every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(_pendingReplies.entries());
-  for (let i = 0; i < entries.length; i++) {
-    const [key, val] = entries[i];
-    if (now > val.expiresAt) _pendingReplies.delete(key);
-  }
-  // Cleanup expired cooldowns
-  for (const [key, ts] of Array.from(_confirmationCooldown.entries())) {
-    if (now - ts > 30_000) _confirmationCooldown.delete(key);
-  }
-}, 10 * 60 * 1000);
-
-async function coachEscalationReply(params: {
-  merchantId: number;
-  merchantPhone: string;
-  message: string;
-  instanceId: string;
-  token: string;
-  apiUrl: string;
-}): Promise<{ action: string }> {
+async function handleEscalationReply(params: {
+  merchantId: number; merchantPhone: string; message: string; quotedMessageId?: string; instanceRecordId?: number;
+  instanceId: string; token: string; apiUrl: string;
+}, onlyIfMatched = false): Promise<{ action: string }> {
+  const { relayEscalationReply } = await import('./escalation-relay');
+  const replyText = REPLY_CUSTOMER_PATTERNS.some(pattern => pattern.test(params.message.trim()))
+    ? params.message.trim().replace(/^(قول|قولي|قل|أرسل|ارسل|أجب|اجب|رد|ردي|بلّغ|بلغ)\s+(?:على\s+)?(لل?عميل|له|ال?عميل|عليه|ه)\s*/i, '').trim()
+    : params.message;
+  const result = await relayEscalationReply({ merchantId: params.merchantId, merchantPhone: params.merchantPhone,
+    replyText, quotedMessageId: params.quotedMessageId, instanceRecordId: params.instanceRecordId });
+  if (!result.handled && onlyIfMatched) return { action: 'escalation_unmatched' };
   const { sendMessageWithCredentials } = await import('../whatsapp');
-
-  // Check if merchant is confirming a pending reply
-  const pending = _pendingReplies.get(params.merchantId);
-  if (pending && Date.now() < pending.expiresAt) {
-    const msgLower = params.message.trim();
-    
-    if (msgLower === 'موافق' || msgLower === '1' || msgLower === 'نعم') {
-      // Send the AI-suggested reply to customer
-      _pendingReplies.delete(params.merchantId);
-      await deliverToCustomer(params, pending.customerPhone, pending.suggestedReply);
-      await sendMessageWithCredentials(
-        params.instanceId, params.token, params.apiUrl,
-        params.merchantPhone,
-        `✅ تم إرسال الرد المحسّن للعميل بنجاح! 🎯`
-      );
-      // Cache Q&A for future learning
-      try {
-        const { saveMerchantTeaching } = await import('../knowledge/merchant-teaching');
-        const { getActiveEscalationForMerchant } = await import('../db/learning');
-        const esc = await getActiveEscalationForMerchant(params.merchantId);
-        if (esc) {
-          await saveMerchantTeaching({ merchantId: params.merchantId, question: String((esc as any).question || '').slice(0, 500), answer: pending.suggestedReply.slice(0, 2000), origin: 'escalation_reply', referenceId: esc.id });
-          const { resolveEscalation } = await import('../db/learning');
-          await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.suggestedReply });
-        }
-      } catch { /* non-blocking */ }
-      _confirmationCooldown.set(params.merchantId, Date.now());
-      return { action: 'escalation_coached_reply_sent' };
-    }
-    
-    if (msgLower === 'أرسل' || msgLower === 'ارسل' || msgLower === '2') {
-      // Send the merchant's original reply as-is
-      _pendingReplies.delete(params.merchantId);
-      await deliverToCustomer(params, pending.customerPhone, pending.originalReply);
-      await sendMessageWithCredentials(
-        params.instanceId, params.token, params.apiUrl,
-        params.merchantPhone,
-        `✅ تم إرسال ردك الأصلي للعميل!`
-      );
-      // Cache and resolve
-      try {
-        const { saveMerchantTeaching } = await import('../knowledge/merchant-teaching');
-        const { resolveEscalation } = await import('../db/learning');
-        const { getActiveEscalationForMerchant } = await import('../db/learning');
-        const esc = await getActiveEscalationForMerchant(params.merchantId);
-        if (esc) {
-          await saveMerchantTeaching({ merchantId: params.merchantId, question: String((esc as any).question || '').slice(0, 500), answer: pending.originalReply.slice(0, 2000), origin: 'escalation_reply', referenceId: esc.id });
-          await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.originalReply });
-        }
-      } catch { /* non-blocking */ }
-      _confirmationCooldown.set(params.merchantId, Date.now());
-      return { action: 'escalation_original_reply_sent' };
-    }
-    
-    // Merchant typed something else — treat as a revised reply, re-coach
-    _pendingReplies.delete(params.merchantId);
-  }
-
-  // Get active escalation details
-  const { getActiveEscalationForMerchant } = await import('../db/learning');
-  const escalation = await getActiveEscalationForMerchant(params.merchantId);
-  
-  if (!escalation) {
-    // No active escalation — this might be a general message
-    return { action: 'no_active_escalation' };
-  }
-
-  const esc = escalation as any;
-  const customerPhone = esc.customer_phone || esc.customerPhone;
-  const customerName = esc.customer_name || esc.customerName || 'العميل';
-  const customerQuestion = esc.question || '';
-
-  // Get customer profile for intelligent coaching
-  let profileContext = '';
-  try {
-    const { getOrCreateProfile, buildProfileContext } = await import('../db/customer-intelligence');
-    const profile = await getOrCreateProfile(params.merchantId, customerPhone, customerName);
-    if (profile) {
-      profileContext = buildProfileContext(groundCustomerProfile(profile, await readCustomerMemory(params.merchantId, customerPhone)));
-    }
-  } catch { /* non-blocking */ }
-
-  // Ask GPT to coach the merchant's reply
-  try {
-    const coachPrompt: ChatMessage[] = [
-      {
-        role: 'system',
-        content: `أنت مستشار مبيعات ذكي تساعد التاجر على الرد بأفضل طريقة.
-
-مهمتك:
-1. حلّل رد التاجر مقابل سؤال العميل وبيانات تحليل العميل
-2. إذا الرد ممتاز → أكّد وأثنِ عليه
-3. إذا يمكن تحسينه → اقترح رد أفضل مع شرح السبب
-
-قواعد الرد:
-- اللهجة السعودية الودية
-- ابدأ بملخص تحليل العميل (سطرين كحد أقصى)
-- قيّم الرد بصراحة ولطف
-- إذا اقترحت تحسين، اكتب الرد المقترح كاملاً
-- لا تزيد عن 10 أسطر`
-      },
-      {
-        role: 'user',
-        content: `📊 *تحليل العميل:*
-${profileContext || 'عميل جديد — لا توجد بيانات سابقة'}
-
-❓ *سؤال العميل:* "${customerQuestion.substring(0, 300)}"
-
-💬 *رد التاجر:* "${params.message.substring(0, 500)}"
-
-قيّم رد التاجر وقدم اقتراحك:`
-      }
-    ];
-
-    const coaching = await callGPT4(coachPrompt, {
-      merchantId: params.merchantId,
-      taskType: 'sari.merchant.reply_coaching',
-      model: 'gpt-4o-mini',
-      temperature: 0.7,
-      maxTokens: 400,
-      noRetry: true,
-    });
-
-    // Build the coaching message to merchant
-    const coachMessage = `🧠 *تحليل المساعد الذكي قبل الإرسال:*
-
-${coaching.trim()}
-
-━━━━━━━━━━━━━━━
-✅ أرسل *"موافق"* — لإرسال الرد المحسّن
-📤 أرسل *"أرسل"* — لإرسال ردك الأصلي كما هو
-✏️ أو اكتب رد جديد — والمساعد يراجعه لك`;
-
-    // Store pending reply for confirmation
-    _pendingReplies.set(params.merchantId, {
-      originalReply: params.message,
-      suggestedReply: extractSuggestedReply(coaching, params.message),
-      customerPhone,
-      customerName,
-      escalationId: esc.id,
-      expiresAt: Date.now() + 15 * 60 * 1000, // 15 min expiry
-    });
-
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone,
-      coachMessage
-    );
-
-    return { action: 'escalation_coaching_sent' };
-  } catch (err: any) {
-    // Coaching failed — send the reply directly
-    console.warn('[MerchantMode] Coaching failed, sending directly:', err.message);
-    await deliverToCustomer(params, customerPhone, params.message);
-    
-    try {
-      const { resolveEscalation } = await import('../db/learning');
-      await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: params.message });
-    } catch { /* non-blocking */ }
-
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone,
-      `✅ تم توصيل ردك للعميل مباشرة (تعذر تشغيل المستشار)`
-    );
-    return { action: 'escalation_direct_send' };
-  }
+  const confirmation = result.accepted ? '✅ قُبل ردك للإرسال إلى العميل وحُفظ في المحادثة.'
+    : result.status === 'unknown' ? 'تعذر حسم نتيجة الإرسال. راجع المحادثة قبل إعادة إرسال الرد.'
+    : 'لم يُعتمد إرسال هذا الرد. افتح تنبيه السؤال الحالي واستخدم الرد بالاقتباس، أو رد من لوحة المحادثات بعد مراجعتها.';
+  await sendMessageWithCredentials(params.instanceId, params.token, params.apiUrl, params.merchantPhone, confirmation);
+  return { action: result.accepted ? 'escalation_reply_accepted' : 'escalation_reply_review_required' };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -823,91 +635,14 @@ async function handleDirectiveSearch(params: {
   }
 }
 
-/** Directive: "قول للعميل X" — Send specific text to the most recent customer */
+/** Directive: "قول للعميل X" — Requires the quoted alert identifying the customer. */
 async function handleDirectiveReply(params: {
-  merchantId: number;
-  merchantPhone: string;
-  message: string;
-  instanceId: string;
-  token: string;
-  apiUrl: string;
+  merchantId: number; merchantPhone: string; message: string; quotedMessageId?: string; instanceRecordId?: number;
+  instanceId: string; token: string; apiUrl: string;
 }): Promise<{ action: string }> {
-  const { sendMessageWithCredentials } = await import('../whatsapp');
-
-  // Extract the reply text
-  const replyText = params.message.trim()
-    .replace(/^(قول|قولي|قل|أرسل|ارسل|أجب|اجب|رد|ردي|بلّغ|بلغ)\s+(لل?عميل|له|ال?عميل|عليه|ه)\s*/i, '')
-    .replace(/^(على\s+ال?عميل|عليه)\s*/i, '')
-    .trim();
-
-  if (!replyText || replyText.length < 2) {
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone,
-      '❓ اكتب النص اللي تبي أرسله:\n\nمثلاً: *قول للعميل الطلب جاهز ويوصلك خلال ساعة*'
-    );
-    return { action: 'directive_reply_empty' };
-  }
-
-  try {
-    // Find the most recent active conversation
-    const { getConversationsByMerchantId, updateConversation, createMessage } = await import('../db');
-    const convs = await getConversationsByMerchantId(params.merchantId, { limit: 1 });
-    const lastConv = convs[0];
-
-    if (!lastConv) {
-      await sendMessageWithCredentials(
-        params.instanceId, params.token, params.apiUrl,
-        params.merchantPhone,
-        '⚠️ ما لقيت محادثة نشطة لإرسال الرد.'
-      );
-      return { action: 'directive_reply_no_conv' };
-    }
-
-    // Activate takeover so bot doesn't reply on top
-    const { TAKEOVER_DURATION_MS } = await import('./takeover-constants');
-    await updateConversation(lastConv.id, {
-      humanTakeover: 1,
-      humanTakeoverAt: new Date(),
-      humanExpiresAt: new Date(Date.now() + TAKEOVER_DURATION_MS),
-    } as any);
-
-    // Send to customer
-    const deliveredReply = await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      lastConv.customerPhone, replyText
-    );
-
-    if (!deliveredReply.success) throw new Error('Merchant reply was not confirmed');
-
-    // Save message in DB
-    await createMessage({
-      conversationId: lastConv.id,
-      direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
-      messageType: 'text',
-      content: replyText,
-      externalId: deliveredReply.messageId || null,
-    });
-
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone,
-      `✅ تم إرسال ردك للعميل *${lastConv.customerName || 'عميل'}* (***${lastConv.customerPhone.slice(-4)})`
-    );
-
-    console.log(`[Directive] 📤 Reply sent to customer ***${lastConv.customerPhone.slice(-4)} via merchant directive`);
-    return { action: 'directive_reply_sent' };
-  } catch (err: any) {
-    console.error('[Directive] Reply failed:', err.message);
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone,
-      '⚠️ تعذر إرسال الرد للعميل. حاول مرة ثانية.'
-    );
-    return { action: 'directive_reply_error' };
-  }
+  // An unqualified "tell the customer" never selects the merchant's most recent conversation.
+  return handleEscalationReply(params);
 }
-
 /** Directive: "استأنف" — Resume auto-replies */
 async function handleDirectiveResume(params: {
   merchantId: number;
@@ -976,21 +711,18 @@ export async function handleMerchantChat(params: {
   merchantPhone: string;
   message: string;
   quotedText: string;
+  quotedMessageId?: string;
+  instanceRecordId?: number;
   instanceId: string;
   token: string;
   apiUrl: string;
 }): Promise<{ action: string }> {
   console.log(`[MerchantMode] 🏪 Processing merchant message: "${params.message.substring(0, 50)}..."`);
 
-  // ANTI-LOOP: Check if merchant just confirmed a coached reply — skip re-processing
-  const cooldownTs = _confirmationCooldown.get(params.merchantId);
-  if (cooldownTs && Date.now() - cooldownTs < 30_000) {
-    const msg = params.message.trim();
-    // If same confirmation word arrives again within 30s, ignore it (double-send)
-    if (['موافق', 'موافقه', 'نعم', '1', 'أرسل', 'ارسل', '2'].includes(msg)) {
-      console.log(`[MerchantMode] ⏭️ Cooldown active — ignoring duplicate confirmation: "${msg}"`);
-      return { action: 'cooldown_skip' };
-    }
+  // Quoted evidence takes precedence over intent guesses or merchant-wide pending state.
+  if (params.quotedMessageId) {
+    const result = await handleEscalationReply(params, true);
+    if (result.action !== 'escalation_unmatched') return result;
   }
 
   // ── Check for pending "لا ترد" confirmation BEFORE intent detection ──
@@ -1044,7 +776,7 @@ export async function handleMerchantChat(params: {
 🎯 *توجيهات سريعة:*
 • 🛑 *"لا ترد"* — أوقف ردودي على عميل محدد
 • 🔍 *"ابحث عن [X]"* — بحث في المنتجات وقاعدة المعرفة
-• 📤 *"قول للعميل [نص]"* — أرسل رسالة للعميل من خلالي
+• 📤 *الرد بالاقتباس على تنبيه العميل* — اكتب إجابتك أو "قول للعميل [نص]" ليُراجع مرجعها قبل الإرسال
 • ▶️ *"استأنف"* — أعد تفعيل ردودي التلقائية
 
 كيف أقدر أخدمك اليوم؟ 🙏`;
@@ -1075,7 +807,7 @@ export async function handleMerchantChat(params: {
     }
 
     case 'escalation_reply': {
-      const result = await coachEscalationReply(params);
+      const result = await handleEscalationReply(params);
       return result;
     }
 
@@ -1113,75 +845,3 @@ export async function handleMerchantChat(params: {
 // ═══════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════
-
-function extractSuggestedReply(coaching: string, originalReply: string): string {
-  // Normalize all fancy Unicode quotes to standard ASCII before matching
-  const c = coaching
-    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '"')
-    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
-  
-  // --- Pattern 1: Quoted text after "الرد المقترح" (with optional bold/colon/newlines) ---
-  const quotedPatterns = [
-    /\*?الرد المقترح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
-    /\*?الرد الأفضل\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
-    /\*?أقترح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
-    /\*?بدلاً من ذلك\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
-    /\*?الاقتراح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
-  ];
-  
-  for (const p of quotedPatterns) {
-    const match = c.match(p);
-    if (match?.[1] && match[1].trim().length > 10) {
-      console.log(`[extractSuggestedReply] ✅ Matched quoted pattern, len=${match[1].length}`);
-      return match[1].trim();
-    }
-  }
-
-  // --- Pattern 2: Text block between "الرد المقترح:" and the next section divider ---
-  // Handles cases where GPT doesn't use quotes but has a clear section
-  const sectionMatch = c.match(
-    /\*?الرد المقترح\*?[:\s]*\n+([\s\S]+?)(?:\n\n|━|بهذا الرد|$)/
-  );
-  if (sectionMatch?.[1]) {
-    // Strip leading/trailing quotes and whitespace
-    let extracted = sectionMatch[1].trim()
-      .replace(/^[""""*]+/, '')
-      .replace(/[""""*]+$/, '')
-      .trim();
-    if (extracted.length > 10 && extracted !== originalReply) {
-      console.log(`[extractSuggestedReply] ✅ Matched section pattern, len=${extracted.length}`);
-      return extracted;
-    }
-  }
-
-  // --- Pattern 3: Any long quoted text in the coaching (last resort) ---
-  const anyQuote = c.match(/"([^"]{20,})"/);
-  if (anyQuote?.[1] && anyQuote[1].trim() !== originalReply) {
-    console.log(`[extractSuggestedReply] ✅ Matched any-quote pattern, len=${anyQuote[1].length}`);
-    return anyQuote[1].trim();
-  }
-  
-  // No explicit suggestion found — the original reply is probably fine
-  console.log(`[extractSuggestedReply] ⚠️ No suggestion extracted, falling back to original`);
-  return originalReply;
-}
-
-/** Deliver reply to customer with professional wrapping */
-async function deliverToCustomer(params: {
-  instanceId: string;
-  token: string;
-  apiUrl: string;
-  merchantId: number;
-}, customerPhone: string, replyText: string): Promise<void> {
-  const { sendMessageWithCredentials } = await import('../whatsapp');
-  
-  // Forward merchant's reply transparently — NO bot credit claiming
-  const customerReply = replyText.substring(0, 2000);
-  
-  await sendMessageWithCredentials(
-    params.instanceId, params.token, params.apiUrl,
-    customerPhone, customerReply
-  );
-  
-  console.log(`[MerchantMode] ✅ Reply delivered to customer ***${customerPhone.slice(-4)}`);
-}

@@ -365,62 +365,12 @@ export interface EscalationItem {
 
 /** Create a new escalation entry */
 export async function createEscalation(data: {
-  merchantId: number;
-  conversationId: number;
-  customerPhone: string;
-  customerName?: string;
-  question: string;
-  botResponse?: string;
-  priority?: EscalationPriority;
+  merchantId: number; conversationId: number; customerPhone: string; incomingMessageId?: number;
+  customerName?: string; question: string; botResponse?: string; priority?: EscalationPriority;
 }): Promise<number | null> {
   await ensureLearningTables();
-  const pool = await getPool();
-  if (!pool) return null;
-
-  // Daily cap: max 50 escalations per merchant per day
-  try {
-    const [countRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM sari_escalation_queue 
-       WHERE merchant_id = ? AND created_at >= CURDATE()`,
-      [data.merchantId]
-    );
-    if ((countRows as any[])[0]?.cnt >= 50) return null;
-  } catch { /* continue */ }
-
-  // Check for duplicate active escalation for same customer
-  try {
-    const [existing] = await pool.execute(
-      `SELECT id FROM sari_escalation_queue 
-       WHERE merchant_id = ? AND customer_phone = ? AND status IN ('pending', 'notified')
-       LIMIT 1`,
-      [data.merchantId, data.customerPhone]
-    );
-    if ((existing as any[]).length > 0) return (existing as any[])[0].id;
-  } catch { /* continue */ }
-
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  try {
-    const [result] = await pool.execute(
-      `INSERT INTO sari_escalation_queue 
-       (merchant_id, conversation_id, customer_phone, customer_name, question, bot_response, priority, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        data.merchantId,
-        data.conversationId,
-        data.customerPhone.substring(0, 30),
-        data.customerName?.substring(0, 100) ?? null,
-        data.question.substring(0, 2000),
-        data.botResponse?.substring(0, 2000) ?? null,
-        data.priority || 'standard',
-        expiresAt,
-      ]
-    );
-    return (result as any).insertId;
-  } catch (e: any) {
-    console.error('[Escalation] createEscalation failed:', e.message);
-    return null;
-  }
+  const { createSourcedEscalation } = await import('../ai/escalation-relay');
+  return createSourcedEscalation(data);
 }
 
 /** Mark escalation as notified (merchant was alerted) at given level */
@@ -430,8 +380,8 @@ export async function markEscalationNotified(escalationId: number, merchantId: n
   await pool.execute(
     `UPDATE sari_escalation_queue 
      SET status = 'notified', merchant_notified_at = NOW(),
-         current_escalation_level = ?, last_escalated_at = NOW()
-     WHERE id = ? AND merchant_id = ?`,
+         current_escalation_level = GREATEST(current_escalation_level, ?), last_escalated_at = NOW()
+     WHERE id = ? AND merchant_id = ? AND status IN ('pending','notified')`,
     [level, escalationId, merchantId]
   );
 }
@@ -469,6 +419,7 @@ export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> 
      WHERE status = 'notified'
      AND last_escalated_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
      AND expires_at > NOW()
+     AND NOT EXISTS (SELECT 1 FROM sales_escalation_relays r WHERE r.escalation_id=sari_escalation_queue.id AND r.merchant_id=sari_escalation_queue.merchant_id)
      LIMIT 20`
   );
   return rows as EscalationItem[];
@@ -476,52 +427,33 @@ export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> 
 
 /** Mark escalation as exhausted (all phones tried, no answer) — PEN-ESC-03 FIX */
 export async function markEscalationExhausted(escalationId: number, merchantId?: number): Promise<void> {
+  if (!Number.isSafeInteger(merchantId) || Number(merchantId) <= 0) return;
   const pool = await getPool();
   if (!pool) return;
-  if (merchantId) {
-    await pool.execute(
-      `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ? AND merchant_id = ?`,
-      [escalationId, merchantId]
+  await pool.execute(
+    `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ? AND merchant_id = ?
+      AND status IN ('pending','notified') AND NOT EXISTS (SELECT 1 FROM sales_escalation_relays r
+        WHERE r.escalation_id=sari_escalation_queue.id AND r.merchant_id=sari_escalation_queue.merchant_id)`,
+      [escalationId, merchantId!]
     );
-  } else {
-    await pool.execute(
-      `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ?`,
-      [escalationId]
-    );
-  }
 }
 
 /** Resolve escalation with merchant's answer */
 export async function resolveEscalation(data: {
   merchantId: number;
   customerPhone: string;
+  conversationId?: number;
   merchantAnswer: string;
 }): Promise<EscalationItem | null> {
+  if (!data.customerPhone || !Number.isSafeInteger(data.conversationId) || Number(data.conversationId) <= 0) return null;
   await ensureLearningTables();
   const pool = await getPool();
   if (!pool) return null;
 
-  let rows: any[];
-
-  if (data.customerPhone) {
-    // Find by specific customer
-    const [result] = await pool.execute(
-      `SELECT * FROM sari_escalation_queue 
-       WHERE merchant_id = ? AND customer_phone = ? AND status IN ('pending', 'notified')
-       ORDER BY created_at DESC LIMIT 1`,
-      [data.merchantId, data.customerPhone]
-    );
-    rows = result as any[];
-  } else {
-    // Merchant reply — find the most recent pending escalation
-    const [result] = await pool.execute(
-      `SELECT * FROM sari_escalation_queue 
-       WHERE merchant_id = ? AND status IN ('pending', 'notified')
-       ORDER BY created_at DESC LIMIT 1`,
-      [data.merchantId]
-    );
-    rows = result as any[];
-  }
+  const [rows] = await pool.execute<any[]>(
+    `SELECT * FROM sari_escalation_queue WHERE merchant_id=? AND conversation_id=? AND customer_phone=?
+      AND status IN ('pending','notified') ORDER BY created_at DESC LIMIT 1`,
+    [data.merchantId, data.conversationId!, data.customerPhone]);
 
   const escalation = rows[0];
   if (!escalation) return null;
@@ -529,7 +461,7 @@ export async function resolveEscalation(data: {
   await pool.execute(
     `UPDATE sari_escalation_queue 
      SET status = 'answered', merchant_answer = ?, merchant_answered_at = NOW()
-     WHERE id = ? AND merchant_id = ?`,
+     WHERE id = ? AND merchant_id = ? AND status IN ('pending','notified')`,
     [data.merchantAnswer.substring(0, 2000), escalation.id, data.merchantId]
   );
 

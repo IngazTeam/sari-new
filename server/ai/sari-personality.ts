@@ -1770,7 +1770,14 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
     // ═══ ESCALATION HOLD — Smart context-aware hold with AI auto-release ═══
     // FIX: Skip escalation hold for test-playground — tests should never be silenced
-    const pendingQuestion = params.customerPhone === 'test-playground' ? null : getEscalationHold(params.merchantId, params.customerPhone);
+    let pendingQuestion = params.customerPhone === 'test-playground' ? null : getEscalationHold(params.merchantId, params.customerPhone);
+    if (pendingQuestion) {
+      const { hasOpenEscalation } = await import('./escalation-relay');
+      if (!await hasOpenEscalation(params.merchantId, params.conversationId, params.customerPhone)) {
+        clearEscalationHold(params.merchantId, params.customerPhone);
+        pendingQuestion = null;
+      }
+    }
     if (pendingQuestion) {
       const holdState = getEscalationHoldState(params.merchantId, params.customerPhone);
       if (holdState) {
@@ -2119,6 +2126,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           customerPhone: params.customerPhone,
           customerName: params.customerName,
           customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
           botResponse: response,
         });
         response = escalation.message;
@@ -2151,6 +2159,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
             customerPhone: params.customerPhone,
             customerName: params.customerName,
             customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
             botResponse: v2Decision.customerMessage || response,
           });
           response = escalation.message;
@@ -2537,6 +2546,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         customerPhone: params.customerPhone,
         customerName: params.customerName,
         customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
         botResponse: response,
       });
       response = escalation.message;
@@ -2569,6 +2579,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           customerPhone: params.customerPhone,
           customerName: params.customerName,
           customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
           botResponse: v2Decision.customerMessage || response,
         });
         response = escalation.message;
@@ -2679,6 +2690,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         customerPhone: params.customerPhone,
         customerName: params.customerName,
         customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
         botResponse: '⚠️ [تنبيه نظام] مفتاح AI غير صالح — البوت لا يستطيع الرد بذكاء. يرجى تحديث مفتاح OpenAI.',
       }).catch(() => { });
       return 'تعذر تشغيل المساعد الآن. حاول مرة ثانية بعد قليل، وسنحافظ على رسالتك هنا 🙏';
@@ -2702,6 +2714,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           customerPhone: params.customerPhone,
           customerName: params.customerName,
           customerQuestion: params.message,
+          incomingMessageId: params.incomingMessageId,
         }).catch(() => { });
 
         return `شكراً لسؤالك عن ${name}! 😊 تعذر التحقق من المعلومة الآن؛ حاول مرة ثانية بعد قليل 🙏`;

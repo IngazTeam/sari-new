@@ -282,6 +282,7 @@ export async function executeAction(params: {
   customerName?: string;
   customerMessage?: string;
   conversationId: number;
+  incomingMessageId?: number;
   sendMessage: (phone: string, message: string) => Promise<void>;
 }): Promise<void> {
   const { action, merchantId, customerPhone, conversationId, sendMessage } = params;
@@ -399,12 +400,18 @@ export async function executeAction(params: {
         // Trigger the real smart-escalation system
         try {
           const { handleSmartEscalation } = await import('./smart-escalation');
-          await handleSmartEscalation({
+          if (!Number.isSafeInteger(params.incomingMessageId) || Number(params.incomingMessageId) <= 0 || !params.customerMessage?.trim()) {
+            throw new Error('Escalation requires an incoming source message');
+          }
+          const escalation = await handleSmartEscalation({
             merchantId,
             conversationId,
             customerPhone,
-            customerQuestion: `[تصعيد تلقائي] ${action.reason}`,
+            incomingMessageId: params.incomingMessageId,
+            customerQuestion: params.customerMessage,
+            botResponse: `[تصعيد تلقائي] ${action.reason}`,
           });
+          if (!escalation.escalationId) throw new Error('Escalation was not persisted');
           console.log(`[ActionSelector] ✅ Escalated to merchant: ${action.reason} (urgency: ${action.urgency})`);
         } catch (escErr: any) {
           throw escErr;
@@ -436,12 +443,18 @@ export async function executeAction(params: {
         // Use smart-escalation to ask the merchant
         try {
           const { handleSmartEscalation } = await import('./smart-escalation');
-          await handleSmartEscalation({
+          if (!Number.isSafeInteger(params.incomingMessageId) || Number(params.incomingMessageId) <= 0 || !params.customerMessage?.trim()) {
+            throw new Error('Escalation requires an incoming source message');
+          }
+          const escalation = await handleSmartEscalation({
             merchantId,
             conversationId,
             customerPhone,
-            customerQuestion: action.question,
+            incomingMessageId: params.incomingMessageId,
+            customerQuestion: params.customerMessage,
+            botResponse: action.question,
           });
+          if (!escalation.escalationId) throw new Error('Escalation was not persisted');
           console.log(`[ActionSelector] ✅ Merchant info requested: ${action.question}`);
         } catch (escErr: any) {
           throw escErr;

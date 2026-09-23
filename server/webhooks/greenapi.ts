@@ -1,3 +1,4 @@
+import { quotedEscalationMessageId, merchantReplyText } from '../ai/escalation-relay';
 import { transitionConversationOwnership } from '../ai/conversation-handoff';
 /**
  * Green API Webhook Handler
@@ -543,16 +544,20 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       const instanceId = payload.instanceData.idInstance.toString();
       const instance = await getWhatsAppInstanceByInstanceId(instanceId);
       if (!instance) return { success: true, message: 'Instance not found' };
+      // API text and media cannot trigger manual takeover commands.
+      if (payload.typeWebhook === 'outgoingAPIMessageReceived' || payload.typeWebhook === 'outgoingAPIMessageWebhook') {
+        return { success: true, message: 'System message ignored' };
+      }
 
       const chatId = (payload as any).chatId || (payload as any).senderData?.chatId;
       if (!chatId || isGroupMessage(chatId)) return { success: true, message: 'Ignored' };
       const customerPhone = extractPhoneNumber(chatId);
 
       // Check for takeover commands (natural phrases + legacy hashtag fallback)
-      const outText = extractMessageText(payload);
+      const outText = merchantReplyText(payload);
       const botSettings = await getBotSettings(instance.merchantId);
 
-      if (outText && botSettings.takeoverCommandsEnabled) {
+      if (outText && !quotedEscalationMessageId(payload) && !extractQuotedText(payload) && botSettings.takeoverCommandsEnabled) {
         const cmd = outText.trim();
         const cmdLower = cmd.toLowerCase();
 
@@ -600,162 +605,20 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         return { success: true, message: 'System message ignored' };
       }
 
-      // ── Merchant Reply to Sari Alert → Forward to Customer + AI Feedback ──
-      // When the merchant replies (quotes) a "تنبيه من ساري — سؤال عميل" message:
-      // 1. Forward the answer to the customer
-      // 2. Confirm delivery to the merchant
-      // 3. AI-analyze the reply quality and suggest improvements or praise
-      if (outText) {
-        const quotedText = extractQuotedText(payload);
-        
-        const isReplyToSariAlert = quotedText.includes('تنبيه من ساري') // legacy
-          || quotedText.includes('تنبيه — سؤال عميل') // new format
-          || quotedText.includes('تصعيد عاجل') // escalation L2
-          || quotedText.includes('تصعيد أخير') // escalation L3
-          || quotedText.includes('سؤال عميل')
-          || quotedText.includes('العميل ينتظر')
-          || quotedText.includes('سيوصله للعميل');
-        
-        if (isReplyToSariAlert) {
-          console.log(`[MerchantReply] 📩 Merchant replied to Sari alert — forwarding to customer`);
-          
-          // Extract the original customer question from the quoted alert
-          const customerQuestionMatch = quotedText.match(/❓\s*\*?السؤال:?\*?\s*([\s\S]+?)(?:\n|💡|⏰|⚠️|$)/);
-          const originalQuestion = customerQuestionMatch?.[1]?.trim() || '';
-          
-          let targetCustomerPhone = '';
-          let deliverySuccess = false;
-          
-          // ═══ Clear Escalation Hold — Merchant answered ═══
-          // This MUST happen regardless of delivery success
+      // Quoted alerts must be bound to a persisted delivery; text is not customer identity.
+      const quotedAlertId = quotedEscalationMessageId(payload);
+      const quotedAlertText = extractQuotedText(payload);
+      if (outText && (quotedAlertId || /سؤال عميل|تصعيد عاجل|تصعيد أخير/.test(quotedAlertText))) {
+        const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
+        const result = await handleMerchantEscalationReply({ merchantId: instance.merchantId, instanceRecordId: instance.id,
+          merchantPhone: customerPhone, quotedMessageId: quotedAlertId, replyText: outText });
+        if (result.handled || /سؤال عميل|تصعيد عاجل|تصعيد أخير/.test(quotedAlertText)) {
           try {
-            const { clearEscalationHold } = await import('../ai/sari-personality');
-            // Try to find the customer phone from escalation record
-            const { getActiveEscalationForMerchant } = await import('../db/learning');
-            const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
-            const holdCustomerPhone = (activeEsc as any)?.customer_phone || (activeEsc as any)?.customerPhone || '';
-            if (holdCustomerPhone) {
-              clearEscalationHold(instance.merchantId, holdCustomerPhone);
-            }
-          } catch { /* non-blocking */ }
-          
-          // ═══ Response Quality Gate — Improve short/inappropriate merchant replies ═══
-          let merchantReplyText = outText;
-          const isLowQualityReply = outText.trim().length < 15 
-            || /^(اسأل|شوف|ما أدري|ما ادري|مدري|لا أعرف|بعدين|ok|اوكي|تمام)$/i.test(outText.trim());
-          
-          if (isLowQualityReply) {
-            console.log(`[MerchantReply] ⚠️ Low-quality merchant reply detected: "${outText.substring(0, 50)}" — asking AI to improve`);
-            try {
-              const { callGPT4 } = await import('../ai/openai');
-              const improvementResult = await callGPT4([
-                {
-                  role: 'system' as const,
-                  content: `أنت مساعد ذكي. التاجر رد على سؤال عميل برد قصير أو غير مناسب. حوّل رد التاجر إلى رد احترافي ومفيد.
-                  
-قواعد:
-- إذا الرد لا يفيد العميل أصلاً (مثل "اسأل المدام" أو "ما أدري") → اعتذر بلطف وقل أن الفريق سيتواصل مع العميل
-- إذا الرد فيه معلومة لكن مختصر → وسّعه واجعله احترافي
-- رد باللهجة السعودية، مختصر ومفيد
-- لا تزد معلومات من عندك — فقط حسّن الصياغة`
-                },
-                {
-                  role: 'user' as const,
-                  content: `سؤال العميل: "${sanitizeForPrompt((originalQuestion || '').substring(0, 200))}"\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 300))}"\n\nحسّن الرد:`
-                }
-              ], {
-                merchantId: instance.merchantId,
-                taskType: 'sari.webhook.merchant_reply_improvement',
-                model: 'gpt-4o-mini',
-                temperature: 0.5,
-                maxTokens: 200,
-                noRetry: true,
-              });
-              
-              if (improvementResult && improvementResult.trim().length > 10) {
-                merchantReplyText = improvementResult.trim();
-                console.log(`[MerchantReply] ✅ Reply improved: "${merchantReplyText.substring(0, 60)}"`);
-              }
-            } catch (improveErr) {
-              console.warn('[MerchantReply] AI improvement failed, using original:', improveErr);
-            }
-          }
-          
-          // Try to resolve via escalation system first (most reliable)
-          try {
-            const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
-            const escResult = await handleMerchantEscalationReply({
-              merchantId: instance.merchantId,
-              merchantPhone: customerPhone,
-              replyText: merchantReplyText, // Use improved text
-            });
-            
-            if (escResult.handled) {
-              deliverySuccess = true;
-              targetCustomerPhone = escResult.escalation?.customerPhone || '';
-              console.log(`[MerchantReply] ✅ Escalation reply handled — answer delivered to customer`);
-              // Clear hold for the actual customer
-              try {
-                const { clearEscalationHold } = await import('../ai/sari-personality');
-                if (targetCustomerPhone) clearEscalationHold(instance.merchantId, targetCustomerPhone);
-              } catch { /* non-blocking */ }
-            }
-          } catch (escErr) {
-            console.warn('[MerchantReply] Escalation relay failed, trying direct:', escErr);
-          }
-          
-          // Fallback: direct delivery via escalation DB
-          if (!deliverySuccess) {
-            try {
-              const { getActiveEscalationForMerchant } = await import('../db/learning');
-              const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
-              if (activeEsc) {
-                targetCustomerPhone = (activeEsc as any).customer_phone || (activeEsc as any).customerPhone || '';
-              }
-            } catch { /* silent */ }
-            
-            if (targetCustomerPhone) {
-              // Direct transparent forwarding — NO bot credit claiming
-              const customerReply = merchantReplyText.substring(0, 2000);
-              
-              try {
-                await sendMessageWithCredentials(
-                  (instance as any).instanceId,
-                  (instance as any).token,
-                  (instance as any).apiUrl || 'https://api.green-api.com',
-                  targetCustomerPhone,
-                  customerReply
-                );
-                deliverySuccess = true;
-                console.log(`[MerchantReply] ✅ Reply forwarded to customer ***${targetCustomerPhone.slice(-4)}`);
-                // Clear hold
-                try {
-                  const { clearEscalationHold } = await import('../ai/sari-personality');
-                  clearEscalationHold(instance.merchantId, targetCustomerPhone);
-                } catch { /* non-blocking */ }
-              } catch (sendErr) {
-                console.error('[MerchantReply] Failed to forward reply:', sendErr);
-              }
-            }
-          }
-          
-          // ── Merchant Feedback via IN-APP NOTIFICATION (NOT WhatsApp to customer!) ──
-          if (deliverySuccess) {
-            try {
-              const { notifyNewMessage } = await import('../_core/notificationService');
-              await notifyNewMessage(
-                instance.merchantId,
-                '✅ تم توصيل الرد',
-                `تم توصيل ردك للعميل ***${targetCustomerPhone.slice(-4)} بنجاح.`
-              );
-              console.log(`[MerchantReply] ✅ Delivery confirmation sent via in-app notification (NOT to customer)`);
-            } catch { /* non-blocking */ }
-            
-            return { success: true, message: 'Merchant reply forwarded to customer' };
-          }
-          
-          
-          console.warn('[MerchantReply] Could not determine target customer — falling through to takeover');
+            const { notifyNewMessage } = await import('../_core/notificationService');
+            await notifyNewMessage(instance.merchantId, result.accepted ? 'تم قبول الرد' : 'الرد يحتاج مراجعة',
+              result.accepted ? 'قُبل رد الموظف للإرسال وحُفظ في المحادثة.' : 'راجع المحادثة ومرجع السؤال ونتيجة الإرسال قبل إعادة المحاولة.');
+          } catch { /* Notification cannot change the persisted delivery result. */ }
+          return { success: true, message: result.accepted ? 'Escalation reply accepted' : 'Escalation reply needs review' };
         }
       }
 
@@ -782,11 +645,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         try {
           const { resolveEscalation } = await import('../db/learning');
           const { clearEscalationHold } = await import('../ai/sari-personality');
-          const resolved = await resolveEscalation({
+          const resolved = payload.idMessage && outText ? await resolveEscalation({
             merchantId: instance.merchantId,
             customerPhone: conv.customerPhone,
+            conversationId: conv.id,
             merchantAnswer: outText || '[رد مباشر من التاجر]',
-          });
+          }) : null;
           if (resolved) {
             clearEscalationHold(instance.merchantId, conv.customerPhone);
             console.log(`[Takeover] ✅ Auto-resolved escalation for customer ***${conv.customerPhone.slice(-4)} — merchant replied directly`);
@@ -1017,7 +881,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // in group context, even if they're the merchant. Merchant mode replies privately
     // which breaks the group reply flow.
     try {
-      const incomingText = extractMessageText(payload);
+      const incomingText = merchantReplyText(payload);
       if (incomingText && !groupChatId) {
         // ═══ LAYER 0: Compare against the bot's own phone (WID) ═══
         // payload.instanceData.wid = "966XXXXXXXXX@c.us" — the phone the bot runs on
@@ -1055,6 +919,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           // ═══ MERCHANT MODE: Chain members NEVER enter customer flow ═══
           // Route ALL messages from escalation chain to merchant handler
           console.log(`[Classify] 🏪 MERCHANT detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
+
+          const exactQuote = quotedEscalationMessageId(payload);
+          if (exactQuote) {
+            const { handleMerchantChat } = await import('../ai/merchant-mode');
+            await handleMerchantChat({ merchantId: instance.merchantId, merchantPhone: customerPhone, message: incomingText,
+              quotedText: extractQuotedText(payload), quotedMessageId: exactQuote, instanceRecordId: instance.id,
+              instanceId: instance.instanceId, token: instance.token, apiUrl: instance.apiUrl || 'https://api.green-api.com' });
+            return { success: true, message: 'Merchant quoted reply reviewed' };
+          }
 
           // Priority 1: Teaching command (expanded natural patterns)
           const teachTriggers = ['#علم', 'علم:', 'علم ', 'تعلم:', 'تعلم ', 'أضف معلومة', 'اضف معلومة', 'حفظ:', 'حفظ ', 'سجل:', 'سجل ', 'احفظ:', 'احفظ ', 'معلومة:'];
@@ -1141,6 +1014,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             merchantPhone: customerPhone,
             message: incomingText,
             quotedText,
+            quotedMessageId: quotedEscalationMessageId(payload),
+            instanceRecordId: instance.id,
             instanceId: (instance as any).instanceId,
             token: (instance as any).token,
             apiUrl: (instance as any).apiUrl || 'https://api.green-api.com',
@@ -1755,6 +1630,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerName: customerName || undefined,
             customerMessage: messageText || undefined,
             conversationId,
+            incomingMessageId: incomingMsgId,
             sendMessage: async (phone, msg) => {
               const sent = await sendMessageWithCredentials(
                 instance.instanceId, instance.token,

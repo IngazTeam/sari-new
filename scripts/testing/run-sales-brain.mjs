@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 // Keep virtual-clock provider tests separate from real MySQL integration tests.
 const units = [
+  'server/webhooks/greenapi-escalation.test.ts',
+  'server/ai/escalation-routing.test.ts',
   'server/ai/customer-memory.test.ts',
   'server/ai/customer-memory-chat.test.ts',
   'server/tests/adaptive-sales-engine.test.ts',
@@ -26,6 +28,7 @@ const database = [
   'server/ai/customer-memory.mysql.test.ts',
   'server/ai/followup-policy.mysql.test.ts',
   'server/ai/conversation-handoff.mysql.test.ts',
+  'server/ai/escalation-relay.mysql.test.ts',
   'server/ai/interaction-jobs.mysql.test.ts', 'server/ai/proactive-followup.mysql.test.ts',
   'server/ai/review-sales-delivery.mysql.test.ts', 'server/ai/session-store.mysql.test.ts',
   'server/ai/verified-purchase-memory.mysql.test.ts',

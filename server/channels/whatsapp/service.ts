@@ -102,7 +102,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
        VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued', ?)`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
-          fileName: input.fileName, template: input.template, inboundJobId: execution?.id })]
+          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard })]
     );
     reserved = true;
   } catch (error: any) {
@@ -139,6 +139,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
 
   const provider = getWhatsAppProvider(config.provider);
   if (execution) await execution.assertOwned();
+  if (/^escalation_(?:alert|relay|exhaustion):/.test(input.idempotencyKey)) {
+    const { canDispatchEscalation } = await import('../../ai/escalation-relay');
+    if (!await canDispatchEscalation(pool, input)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='escalation_suppressed',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: 'escalation_suppressed' };
+    }
+  }
   if (input.idempotencyKey.startsWith('sales_followup:')) {
     const { canDispatchSalesFollowup } = await import('../../ai/followup-send-guard');
     if (!await canDispatchSalesFollowup(pool, input)) {

@@ -3838,6 +3838,8 @@ export const sariEscalationQueue = mysqlTable("sari_escalation_queue", {
 	customerName: varchar("customer_name", { length: 100 }),
 	question: text().notNull(),
 	botResponse: text("bot_response"),
+	sourceMessageId: int("source_message_id"),
+	handoffVersion: int("handoff_version"),
 	status: varchar({ length: 20 }).default('pending'),
 	merchantAnswer: text("merchant_answer"),
 	priority: varchar({ length: 10 }).default('standard'),
@@ -3854,6 +3856,19 @@ export const sariEscalationQueue = mysqlTable("sari_escalation_queue", {
 	index("idx_escalation_customer").on(table.merchantId, table.customerPhone, table.status),
 	index("idx_escalation_cascade").on(table.status, table.lastEscalatedAt),
 ]);
+
+export const salesEscalationRelays = mysqlTable('sales_escalation_relays', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  escalationId: int('escalation_id').notNull().references(() => sariEscalationQueue.id, { onDelete: 'cascade' }),
+  instanceId: int('instance_id').notNull(), authorPhone: varchar('author_phone', { length: 30 }).notNull(),
+  quotedMessageId: varchar('quoted_message_id', { length: 255 }).notNull(), replyText: text('reply_text').notNull(),
+  ownershipVersion: int('ownership_version').notNull(),
+  status: mysqlEnum(['reserved', 'accepted', 'unknown', 'failed', 'suppressed']).notNull().default('reserved'),
+  providerMessageId: varchar('provider_message_id', { length: 255 }),
+  createdAt: timestamp('created_at', { mode: 'string' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow().onUpdateNow(),
+}, table => [uniqueIndex('uq_escalation_relay').on(table.merchantId, table.escalationId)]);
 
 export const mediaLibrary = mysqlTable("media_library", {
 	id: int().autoincrement().primaryKey(),
