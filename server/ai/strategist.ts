@@ -10,12 +10,12 @@
  */
 
 import type { CustomerIntent, HesitationAnalysis } from './session-context';
+import { decideSalesTurnGoal } from './sales-turn-policy';
 import { analyzeHesitation } from './session-context';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { PersuasionStrategy } from './sales-arsenal';
 import { getBestStrategy, isGoldenHour } from './sales-conductor';
 import type { ClosingDirective } from './closing-engine';
-import { isSalesRefusal } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -348,31 +348,31 @@ function buildRules(
   };
 
   // Global: Conversation Momentum Rule
-  avoid.push('لا تنهي الرد بدون زخم — كل رد يجب أن يدفع المحادثة للأمام');
+  avoid.push('لا تفرض خطوة جديدة إذا اكتملت الإجابة؛ اجعل الخطوة التالية مرتبطة بحاجة العميل');
   avoid.push('ممنوع الرد بـ "نعم" أو "لا" فقط');
-  avoid.push('لا تقل "إذا تحتاج شي أنا هنا" — هذا إنهاء محادثة');
+  avoid.push('لا تكرر أسئلة حُسمت أو تضغط بعد انتهاء حاجة العميل');
 
   // CTA-level specific
   switch (ctaLevel) {
     case 'open_question':
-      mustInclude.push('اسأل سؤال مفتوح خفيف لاكتشاف الاحتياج');
+      mustInclude.push('أجب عن السؤال المباشر أولاً؛ اسأل سؤالاً واحداً مؤثراً إذا بقي احتياج مجهول');
       break;
     case 'curiosity':
-      mustInclude.push('أضف عبارة تثير الفضول عن المنتج أو الخدمة');
+      mustInclude.push('أجب عن التفصيل المطلوب بمصدر واضح؛ لا تحجب الإجابة لإثارة الفضول');
       avoid.push('لا تطرح أكثر من سؤال واحد');
       break;
     case 'reassurance':
-      mustInclude.push('طمئن العميل بدليل أو تجربة — مو سؤال');
-      avoid.push('لا تسأل سؤال مباشر — استخدم طمأنة');
+      mustInclude.push('عالج سبب التردد بدليل موثق؛ عند غموض السبب اسأل عنه دون افتراض');
+      avoid.push('لا تذكر تجربة عميل أو ضماناً دون مصدر معتمد');
       break;
     case 'value_framing':
-      mustInclude.push('ابدأ بالقيمة والمميزات قبل السعر');
+      mustInclude.push('أجب عن السعر المطلوب أولاً ثم اربط القيمة باحتياج العميل');
       break;
     case 'direct_cta':
       mustInclude.push('سهّل خطوة الشراء/الحجز بوضوح');
       break;
     case 'upsell_natural':
-      mustInclude.push('اذكر منتج مكمل بطريقة طبيعية: "بالمناسبة..."');
+      mustInclude.push('استأنف من حاجة العميل الحالية؛ لا تفترض أنه يريد شراءً إضافياً');
       break;
     case 'empathy':
       mustInclude.push('أظهر تعاطف حقيقي أولاً قبل أي حل');
@@ -393,11 +393,11 @@ function buildRules(
 
   // Persona-specific
   if (persona === 'premium_consultative') {
-    avoid.push('لا تعرض خصم أبداً — يقلل القيمة');
-    avoid.push('لا تذكر السعر كأول معلومة');
+    avoid.push('لا تجعل الخصم الحل الافتراضي؛ السؤال عن خصم يُجاب من السياسة المعتمدة');
+    avoid.push('لا تحجب السعر إذا سأل عنه العميل مباشرة');
   }
   if (persona === 'fast_closer') {
-    mustInclude.push('كن مباشراً وقصيراً — CTA سريع');
+    mustInclude.push('كن مباشراً وواضحاً؛ اختر خطوة واحدة إذا احتاجها الاتفاق دون استعجال');
   }
 
   // Hesitation-specific
@@ -467,7 +467,7 @@ function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis)
     case 'inquiring':
       return [
         'الرسالة الجاية: إذا سأل عن السعر — اذكره بثقة مع القيمة',
-        'بعدها: اطلب منه الخطوة التالية ("تبي أحجز لك؟")',
+        'بعدها: وضّح الخطوة المناسبة لما اختاره؛ لا تفترض وجود حجز مبدئي',
       ];
     case 'comparing':
       return [
@@ -487,8 +487,8 @@ function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis)
         ];
       }
       return [
-        'الرسالة الجاية: عالج الاعتراض بدليل أو ضمان',
-        'بعدها: اسأل "في شي ثاني يقلقك؟" ثم أغلق',
+        'الرسالة الجاية: عالج سبب الاعتراض بدليل معتمد، ولا تفترض ضماناً',
+        'بعدها: تحقق مما بقي غير واضح؛ الإغلاق ينتظر قراراً واضحاً واتفاقاً صالحاً',
       ];
     case 'ready_to_buy':
       return [
@@ -524,9 +524,11 @@ export function buildMissionBlock(params: {
   salesPersona?: SalesPersona;
   merchantId?: number;
   closingHint?: ClosingDirective;
+  lastAssistantMessage?: string;
 }): MissionBlock {
   const { message, lastSentiment, customerProfile, salesPersona, merchantId } = params;
-  const intent = isSalesRefusal(message) ? 'declined' : params.intent;
+  const goal = decideSalesTurnGoal({ intent: params.intent, customerMessage: message, lastAssistantMessage: params.lastAssistantMessage });
+  const intent = goal === 'respect_decline' ? 'declined' : goal === 'explain_requested_information' ? 'inquiring' : params.intent;
   const persona = salesPersona || 'balanced';
 
   // Analyze hesitation/objection if relevant
@@ -556,7 +558,7 @@ export function buildMissionBlock(params: {
     nextTwoMoves: planNextTwoMoves(intent, objection),
     memoryDirectives,
     timingContext: intent === 'declined' || intent === 'post_purchase' ? undefined : getTimingContext(merchantId),
-    closingHint: intent === 'declined' || intent === 'post_purchase' ? undefined : params.closingHint,
+    closingHint: intent === 'declined' || intent === 'post_purchase' || goal === 'explain_requested_information' ? undefined : params.closingHint,
   };
 }
 
@@ -580,8 +582,8 @@ const STATE_LABELS: Record<string, string> = {
 const STRATEGY_LABELS: Record<string, string> = {
   warm_welcome: 'ترحيب دافي + اكتشاف احتياج',
   need_discovery: 'اكتشاف احتياج بأسئلة ذكية',
-  value_first: 'إبراز القيمة قبل السعر',
-  trust_building: 'بناء ثقة بالاعتماد والشهادات',
+  value_first: 'إجابة مباشرة وقيمة مرتبطة بالاحتياج',
+  trust_building: 'بناء ثقة بمعلومات معتمدة',
   social_proof: 'دليل اجتماعي معتمد إن توفر',
   value_comparison: 'مقارنة القيمة المضافة',
   friction_removal: 'إزالة العوائق والتردد',

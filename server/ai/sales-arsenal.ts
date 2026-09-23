@@ -1,11 +1,4 @@
-/**
- * Sales Arsenal — Phase 3 of Adaptive Sales Engine
- * 
- * Loads ALL available sales weapons for a merchant and selects
- * the optimal persuasion strategy based on customer state.
- * 
- * Loaded ONCE per conversation session, not per message.
- */
+/** Fresh factual sales context and tactics subordinate to the current customer decision. */
 
 import {
   getAbandonedCartsByMerchantId,
@@ -14,9 +7,11 @@ import {
   getProductsByMerchantId,
   getServicesByMerchant,
 } from '../db';
+import { decideSalesTurnGoal } from './sales-turn-policy';
+import { asksAboutDiscount, salesDiscountPrompt, selectSalesDiscounts, type SalesDiscountEvidence } from './sales-offer-evidence';
 import { filterProductsAvailableForSale } from './product-availability';
-import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
-import type { CustomerIntent, ConversationSession } from './session-context';
+import type { CustomerProfile } from '../db/customer-intelligence';
+import type { CustomerIntent } from './session-context';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
@@ -46,7 +41,7 @@ function sanitizeForArsenalPrompt(text: string): string {
 // ═══════════════════════════════════════════════════════════════
 
 export interface SalesArsenal {
-  activeDiscounts: { code: string; type: string; value: number; expiresAt?: string }[];
+  activeDiscounts: SalesDiscountEvidence[];
   loyaltyPoints: number;
   loyaltyTier: { name: string; icon: string; discount: number } | null;
   availableRewards: { name: string; pointsCost: number }[];
@@ -83,8 +78,7 @@ export interface PersuasionPlan {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Load all available sales weapons for this merchant + customer.
- * Called ONCE at session creation, not per message.
+ * Load fresh merchant/customer facts for the full path. Fast-path reads use the same offer validation.
  */
 export async function loadArsenal(
   merchantId: number,
@@ -106,15 +100,7 @@ export async function loadArsenal(
   try {
     // 1. Active discount codes
     const discounts = await getDiscountCodesByMerchantId(merchantId);
-    arsenal.activeDiscounts = discounts
-      .filter((d: any) => d.isActive && (!d.maxUses || d.usedCount < d.maxUses))
-      .slice(0, 5)
-      .map((d: any) => ({
-        code: d.code,
-        type: d.discountType || 'percentage',
-        value: d.discountValue || d.discountPercentage || 0,
-        expiresAt: d.expiresAt?.toISOString?.() || d.expiresAt,
-      }));
+    arsenal.activeDiscounts = selectSalesDiscounts(discounts, { merchantId, customerPhone });
   } catch { /* discounts table may not exist */ }
 
   try {
@@ -150,7 +136,7 @@ export async function loadArsenal(
       arsenal.loyaltyPoints = customerPoints.totalPoints || 0;
       if (customerPoints.currentTierId) {
         const tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId);
-        if (tier) {
+        if (tier && tier.merchantId === merchantId) {
           arsenal.loyaltyTier = {
             name: tier.nameAr || tier.name,
             icon: tier.icon || '⭐',
@@ -200,141 +186,30 @@ export async function loadArsenal(
  * Pure logic — no API calls.
  */
 export function selectPersuasion(
-  profile: CustomerProfile,
-  arsenal: SalesArsenal,
-  intent: CustomerIntent,
-  lastSentiment: string,
-  usedTactics: string[]
+  profile: CustomerProfile, arsenal: SalesArsenal, intent: CustomerIntent, lastSentiment: string, usedTactics: string[],
+  turn: { customerMessage: string; lastAssistantMessage?: string } = { customerMessage: '' },
 ): PersuasionPlan {
-  if (intent === 'declined' || intent === 'post_purchase') return { strategy: 'none', prompt: '' };
-  // Defensive: normalize parameters to prevent undefined.length crashes
-  // (e.g., when ConversationSession is accidentally passed as arsenal)
-  if (!arsenal || typeof arsenal !== 'object') return { strategy: 'none', prompt: '' };
-  const safeArsenal: SalesArsenal = {
-    activeDiscounts: arsenal.activeDiscounts || [],
-    loyaltyPoints: arsenal.loyaltyPoints || 0,
-    loyaltyTier: arsenal.loyaltyTier || null,
-    availableRewards: arsenal.availableRewards || [],
-    abandonedCart: arsenal.abandonedCart || null,
-    bestSellers: arsenal.bestSellers || [],
-    totalProducts: arsenal.totalProducts || 0,
-    crossSellSuggestions: arsenal.crossSellSuggestions || [],
-    upcomingBookings: arsenal.upcomingBookings || [],
-    availableServices: arsenal.availableServices || [],
+  const goal = decideSalesTurnGoal({ intent, ...turn });
+  if (['respect_decline', 'resolve_existing_order', 'explain_requested_information', 'confirm_agreement'].includes(goal)
+    || !arsenal || typeof arsenal !== 'object') return { strategy: 'none', prompt: '' };
+  const used = usedTactics || [];
+  // Solve the current problem before considering a basket, loyalty or an incentive.
+  if (['angry', 'frustrated'].includes(lastSentiment)) return { strategy: 'empathy_resolve', prompt: buildEmpathyPrompt() };
+  if (asksAboutDiscount(turn.customerMessage) && arsenal.activeDiscounts?.length) {
+    return { strategy: 'proactive_discount', prompt: salesDiscountPrompt(arsenal.activeDiscounts.slice(0,1)), sweetener: arsenal.activeDiscounts[0].code };
+  }
+  if (goal === 'understand_objection' || goal === 'compare_suitable_options') return {
+    strategy: 'value_comparison', prompt: '\nعالج السبب الحالي للاعتراض أو المقارنة بخصائص موثقة مرتبطة بالاحتياج. إن لم يتضح السبب اسأل عنه مرة واحدة. لا تفترض أن الخصم أو الشهادة أو رأي عملاء آخرين هو الحل.\n',
   };
-  const safeTactics = usedTactics || [];
-  
-  // 1. Abandoned cart → highest priority recovery
-  if (safeArsenal.abandonedCart && !safeTactics.includes('cart_recovery')) {
-    const sweetener = safeArsenal.activeDiscounts[0]?.code;
-    return {
-      strategy: 'cart_recovery',
-      prompt: buildCartRecoveryPrompt(safeArsenal.abandonedCart, sweetener),
-      sweetener,
-    };
+  if (arsenal.abandonedCart && /السلة|سلتي|cart/i.test(turn.customerMessage) && !used.includes('cart_recovery')) {
+    return { strategy: 'cart_recovery', prompt: buildCartRecoveryPrompt(arsenal.abandonedCart) };
   }
-
-  // 2. Angry/frustrated → empathy + compensation
-  if ((lastSentiment === 'angry' || lastSentiment === 'frustrated') && !safeTactics.includes('empathy_resolve')) {
-    const sweetener = safeArsenal.activeDiscounts[0]?.code;
-    return {
-      strategy: 'empathy_resolve',
-      prompt: buildEmpathyPrompt(sweetener),
-      sweetener,
-    };
+  if (/نقاط|ولاء|مكافآت|points|loyalty|rewards/i.test(turn.customerMessage) && (arsenal.loyaltyPoints || 0) > 0) {
+    return { strategy: 'loyalty_reward', prompt: buildLoyaltyPrompt(arsenal.loyaltyPoints, arsenal.loyaltyTier, arsenal.availableRewards) };
   }
-
-  // 3. VIP/loyal with loyalty points → reward (enhanced v6)
-  if ((profile.customerTier === 'vip' || profile.customerTier === 'loyal') && safeArsenal.loyaltyPoints > 50 && !safeTactics.includes('loyalty_reward')) {
-    return {
-      strategy: 'loyalty_reward',
-      prompt: buildLoyaltyPrompt(safeArsenal.loyaltyPoints, safeArsenal.loyaltyTier, safeArsenal.availableRewards),
-    };
+  if (/مكمل|إكسسوار|اكسسوار|accessor|complement/i.test(turn.customerMessage) && arsenal.crossSellSuggestions?.length && !used.includes('cross_sell')) {
+    return { strategy: 'cross_sell', prompt: buildCrossSellPrompt(arsenal.crossSellSuggestions) };
   }
-
-  // 4. Price objection → value comparison + proactive discount
-  if (intent === 'objecting' && !safeTactics.includes('proactive_discount') && safeArsenal.activeDiscounts.length > 0) {
-    const discount = safeArsenal.activeDiscounts[0];
-    return {
-      strategy: 'proactive_discount',
-      prompt: buildDiscountPrompt(discount),
-      sweetener: discount.code,
-    };
-  }
-
-  // 5. Comparing → social proof
-  if (intent === 'comparing' && !safeTactics.includes('social_proof')) {
-    return {
-      strategy: 'social_proof',
-      prompt: buildSocialProofPrompt(),
-    };
-  }
-
-  // 5b. Hesitating → social proof + reassurance (most important sales moment!)
-  if (intent === 'hesitating' && !safeTactics.includes('social_proof')) {
-    return {
-      strategy: 'social_proof',
-      prompt: buildSocialProofPrompt() + `\n\n## تعليمات التردد:\n- العميل متردد — لا تضغط بعدوانية\n- استخدم دليل اجتماعي طبيعي: "أغلب عملائنا" أو "الأكثر طلباً"\n- اقترح خطوة بدون التزام: "تحب أحجز لك مقعد مبدئي؟"\n- لا تنهي بسؤال مباشر — استخدم طمأنة`,
-    };
-  }
-
-  // 5c. Returning → cross-sell or welcome back
-  if (intent === 'returning') {
-    if (safeArsenal.crossSellSuggestions.length > 0 && !safeTactics.includes('cross_sell')) {
-      return {
-        strategy: 'cross_sell',
-        prompt: buildCrossSellPrompt(safeArsenal.crossSellSuggestions) + `\n\n## عميل عائد:\n- رحب بحرارة واذكر آخر تجربة إن أمكن\n- اقترح منتج مكمل بطريقة طبيعية`,
-      };
-    }
-    return {
-      strategy: 'social_proof',
-      prompt: buildSocialProofPrompt() + `\n\n## عميل عائد:\n- رحب بحرارة: "حياك مرة ثانية!"\n- اسأل عن تجربته السابقة إن أمكن`,
-    };
-  }
-
-  // 6. Ready to buy → smart upsell
-  if (intent === 'ready_to_buy' && safeArsenal.bestSellers.length > 1 && !safeTactics.includes('smart_upsell')) {
-    return {
-      strategy: 'smart_upsell',
-      prompt: buildUpsellPrompt(safeArsenal.bestSellers),
-    };
-  }
-
-  // 7. Cross-sell from purchase history (v6)
-  if (safeArsenal.crossSellSuggestions.length > 0 && !safeTactics.includes('cross_sell')) {
-    return {
-      strategy: 'cross_sell',
-      prompt: buildCrossSellPrompt(safeArsenal.crossSellSuggestions),
-    };
-  }
-
-  // 8. Upcoming booking → follow-up (v6)
-  if (safeArsenal.upcomingBookings.length > 0 && !safeTactics.includes('booking_followup')) {
-    return {
-      strategy: 'booking_followup',
-      prompt: buildBookingFollowupPrompt(safeArsenal.upcomingBookings, safeArsenal.availableServices),
-    };
-  }
-
-  // 9. New customer → social proof welcome
-  if (profile.customerTier === 'new' && !safeTactics.includes('social_proof')) {
-    return {
-      strategy: 'social_proof',
-      prompt: buildSocialProofPrompt(),
-    };
-  }
-
-  // 10. Has active discounts but hasn't been offered → offer naturally
-  if (safeArsenal.activeDiscounts.length > 0 && !safeTactics.includes('proactive_discount')) {
-    const discount = safeArsenal.activeDiscounts[0];
-    return {
-      strategy: 'proactive_discount',
-      prompt: buildDiscountPrompt(discount),
-      sweetener: discount.code,
-    };
-  }
-
-  // Default: no special tactic
   return { strategy: 'none', prompt: '' };
 }
 
@@ -342,27 +217,21 @@ export function selectPersuasion(
 // Prompt Builders
 // ═══════════════════════════════════════════════════════════════
 
-function buildCartRecoveryPrompt(cart: { items: string[]; total: number }, discountCode?: string): string {
+function buildCartRecoveryPrompt(cart: { items: string[]; total: number }): string {
   // SEC-V6-01 FIX: sanitize cart item names
   const safeItems = cart.items.map(i => sanitizeForArsenalPrompt(i));
   let prompt = `\n## 🛒 فرصة بيع — سلة مهجورة:\nهذا العميل عنده سلة مهجورة فيها: ${safeItems.join('، ')} بمبلغ ${cart.total} ريال.\n`;
   prompt += `- اذكر السلة بشكل طبيعي: "لاحظت إنك ما كملت طلبك السابق..."\n`;
   prompt += `- اسأل إذا يحتاج مساعدة لإكمال الطلب\n`;
-  if (discountCode) {
-    prompt += `- إذا تردد، اعرض كود خصم "${sanitizeForArsenalPrompt(discountCode)}" كحافز إضافي\n`;
-  }
   prompt += `- ⚠️ لا تضغط — اجعلها محادثة طبيعية\n`;
   return prompt;
 }
 
-function buildEmpathyPrompt(discountCode?: string): string {
+function buildEmpathyPrompt(): string {
   let prompt = `\n## ⚠️ العميل غاضب/محبط — استراتيجية التعاطف:\n`;
   prompt += `- ابدأ بالاعتذار الصادق والتفهم\n`;
   prompt += `- اسأل عن المشكلة بالتحديد\n`;
-  prompt += `- قدّم حل عملي فوري\n`;
-  if (discountCode) {
-    prompt += `- كتعويض، اعرض كود خصم "${discountCode}" على طلبه القادم\n`;
-  }
+  prompt += `- قدّم الحل الذي تثبته الأدوات أو وضّح ما يحتاج تحققاً؛ لا تعد بتعويض أو اتصال لم ينفذ\n`;
   prompt += `- لا تدافع — فقط حل واعتذر\n`;
   return prompt;
 }
@@ -386,25 +255,11 @@ function buildLoyaltyPrompt(
     rewards.slice(0, 2).forEach(r => {
       const canRedeem = points >= r.pointsCost;
       // SEC-V6-01 FIX: sanitize reward name
-      prompt += `  • ${sanitizeForArsenalPrompt(r.name)} (${r.pointsCost} نقطة) ${canRedeem ? '✅ يقدر الآن' : '🔒'}\n`;
+      prompt += `  • ${sanitizeForArsenalPrompt(r.name)} (${r.pointsCost} نقطة) ${canRedeem ? 'رصيده يكفي؛ تحقق من شروط الاستبدال' : '🔒'}\n`;
     });
   }
   prompt += `- ⚠️ اذكر النقاط بشكل طبيعي: "بالمناسبة عندك ${points} نقطة!"\n`;
   return prompt;
-}
-
-function buildDiscountPrompt(discount: { code: string; type: string; value: number }): string {
-  const label = discount.type === 'percentage' ? `${discount.value}%` : `${discount.value} ريال`;
-  return `\n## 💰 خصم متاح — اعرضه بذكاء:\n- كود الخصم: "${discount.code}" (${label})\n- ⚠️ لا تبدأ بالخصم! ابدأ بشرح القيمة والمميزات\n- بعد ما يبدي اهتمام، اعرض الخصم كـ "مكافأة": "وبما إنك عميل مميز، عندي لك كود خصم ${label}!"\n- لا تعطي الخصم إلا بعد ما يسأل عن السعر أو يتردد\n`;
-}
-
-function buildSocialProofPrompt(): string {
-  return `\n## 👥 استخدم الدليل الاجتماعي:\n- اذكر أن المنتج "الأكثر طلباً" أو "المفضل عند عملائنا"\n- استخدم عبارات مثل: "أغلب عملائنا يختارون هذا"\n- لا تخترع أرقام — استخدم عبارات عامة صادقة\n`;
-}
-
-function buildUpsellPrompt(products: { name: string; price: number }[]): string {
-  const suggestions = products.slice(1, 3).map(p => p.name).join(' أو ');
-  return `\n## 📦 فرصة بيع إضافي (Upsell):\n- بعد ما يختار المنتج، اقترح منتج مكمل بشكل طبيعي\n- مثل: "أغلب اللي طلبوا هذا أخذوا معاه ${suggestions}"\n- ⚠️ اقترح منتج واحد فقط — لا تبالغ\n`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -412,13 +267,13 @@ function buildUpsellPrompt(products: { name: string; price: number }[]): string 
 // ═══════════════════════════════════════════════════════════════
 
 function buildCrossSellPrompt(suggestions: { productName: string; reason: string }[]): string {
-  let prompt = `\n## 🔗 اقتراحات ذكية مبنية على مشترياته السابقة:\n`;
+  let prompt = `\n## 🔗 خيارات مرشحة للمقارنة؛ تحقق من الملاءمة ولا تفترض التوافق:\n`;
   // SEC-V6-08 FIX: show max 2 in prompt
   suggestions.slice(0, 2).forEach(s => {
     // SEC-V6-01 FIX: sanitize product names
     prompt += `- "${sanitizeForArsenalPrompt(s.productName)}" (${sanitizeForArsenalPrompt(s.reason)})\n`;
   });
-  prompt += `- ⚠️ اقترح واحد فقط بشكل طبيعي: "بما إنك أخذت X، ممكن يعجبك Y"\n`;
+  prompt += `- ⚠️ اقترح واحد فقط بشكل طبيعي: "إذا كان Y يناسب الاستخدام الذي ذكرته يمكن مقارنته"\n`;
   prompt += `- لا تذكر كل الاقتراحات دفعة وحدة\n`;
   return prompt;
 }
@@ -462,47 +317,19 @@ export function buildCrossSellSuggestions(
 ): { productName: string; reason: string }[] {
   if (!purchaseHistory || purchaseHistory.length === 0 || !allProducts.length) return [];
 
-  const lastPurchase = purchaseHistory[purchaseHistory.length - 1];
-  const purchasedNames = new Set(purchaseHistory.map(p => p.toLowerCase()));
-
-  // Find the category of the last purchased product
-  const lastProduct = allProducts.find((p: any) =>
-    p.name?.toLowerCase() === lastPurchase.toLowerCase()
-  );
-  const lastCategory = lastProduct?.category || lastProduct?.categoryId;
-
-  const suggestions: { productName: string; reason: string }[] = [];
-
-  if (lastCategory) {
-    // Same category products they haven't bought
-    const sameCat = allProducts.filter((p: any) =>
-      (p.category === lastCategory || p.categoryId === lastCategory) &&
-      !purchasedNames.has(p.name?.toLowerCase()) &&
-      (p.isActive ?? true)
-    );
-    sameCat.slice(0, 2).forEach((p: any) => {
-      suggestions.push({
-        productName: p.name,
-        reason: `من نفس فئة "${lastPurchase}"`,
-      });
-    });
-  }
-
-  // If not enough, add best sellers they haven't bought
-  if (suggestions.length < 3) {
-    const unbought = allProducts.filter((p: any) =>
-      !purchasedNames.has(p.name?.toLowerCase()) &&
-      (p.isActive ?? true)
-    );
-    unbought.slice(0, 3 - suggestions.length).forEach((p: any) => {
-      suggestions.push({
-        productName: p.name,
-        reason: `منتج مميز يكمّل مشترياتك`,
-      });
-    });
-  }
-
-  return suggestions.slice(0, 3);
+  const history = purchaseHistory.filter(p => typeof p === 'string' && p.trim());
+  if (!history.length) return [];
+  const lastPurchase = history[history.length - 1];
+  const purchased = new Set(history.map(p => p.toLowerCase()));
+  const last = allProducts.find(p => p.name?.toLowerCase() === lastPurchase.toLowerCase());
+  const category = last?.category || last?.categoryId;
+  if (!category) return []; // Catalogue order alone says nothing about complementary products.
+  const seen = new Set<string>();
+  return filterProductsAvailableForSale(allProducts).filter(p => {
+    if (typeof p.name !== 'string' || !p.name.trim() || purchased.has(p.name.toLowerCase()) || seen.has(p.name.toLowerCase())) return false;
+    if (p.category !== category && p.categoryId !== category) return false;
+    seen.add(p.name.toLowerCase()); return true;
+  }).slice(0,3).map(p => ({ productName: p.name, reason: 'خيار في فئة "' + lastPurchase + '"؛ الفئة وحدها لا تثبت أنه مكمل أو متوافق' }));
 }
 
 // ═══════════════════════════════════════════════════════════════

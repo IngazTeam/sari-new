@@ -94,7 +94,7 @@ describe('Session Context Cache', () => {
 describe('Intent Detection', () => {
   it('should detect ready_to_buy intent', () => {
     expect(detectIntent('ابغى اطلب')).toBe('ready_to_buy');
-    expect(detectIntent('كيف اطلب')).toBe('ready_to_buy');
+    expect(detectIntent('كيف اطلب')).toBe('inquiring');
     expect(detectIntent('أبي أشتري')).toBe('ready_to_buy');
     expect(detectIntent('i want to buy')).toBe('ready_to_buy');
   });
@@ -249,9 +249,9 @@ describe('Sales Arsenal — Persuasion Selection', () => {
     availableServices: [],
   };
 
-  it('should prioritize cart recovery for abandoned cart', () => {
+  it('should discuss the owned abandoned cart when the customer asks about it', () => {
     const arsenal = { ...baseArsenal, abandonedCart: { items: ['Phone'], total: 2000 } };
-    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', []);
+    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', [], { customerMessage: 'ما الموجود في السلة؟' });
     expect(plan.strategy).toBe('cart_recovery');
   });
 
@@ -263,7 +263,7 @@ describe('Sales Arsenal — Persuasion Selection', () => {
   it('should use loyalty for VIP with points', () => {
     const vipProfile = { ...baseProfile, customerTier: 'vip' as const };
     const arsenal = { ...baseArsenal, loyaltyPoints: 200, loyaltyTier: { name: 'ذهبي', icon: '🥇', discount: 15 } };
-    const plan = selectPersuasion(vipProfile, arsenal, 'browsing', 'neutral', []);
+    const plan = selectPersuasion(vipProfile, arsenal, 'inquiring', 'neutral', [], { customerMessage: 'كم نقاط الولاء؟' });
     expect(plan.strategy).toBe('loyalty_reward');
     expect(plan.prompt).toContain('ذهبي');
   });
@@ -271,7 +271,7 @@ describe('Sales Arsenal — Persuasion Selection', () => {
   it('should use loyalty for loyal tier too (v6)', () => {
     const loyalProfile = { ...baseProfile, customerTier: 'loyal' as const };
     const arsenal = { ...baseArsenal, loyaltyPoints: 100 };
-    const plan = selectPersuasion(loyalProfile, arsenal, 'browsing', 'neutral', []);
+    const plan = selectPersuasion(loyalProfile, arsenal, 'inquiring', 'neutral', [], { customerMessage: 'كم نقاطي؟' });
     expect(plan.strategy).toBe('loyalty_reward');
   });
 
@@ -280,43 +280,44 @@ describe('Sales Arsenal — Persuasion Selection', () => {
       ...baseArsenal,
       crossSellSuggestions: [{ productName: 'كفر iPhone', reason: 'من نفس فئة "iPhone 15"' }],
     };
-    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', []);
+    const plan = selectPersuasion(baseProfile, arsenal, 'inquiring', 'neutral', [], { customerMessage: 'أحتاج إكسسوار مناسب' });
     expect(plan.strategy).toBe('cross_sell');
     expect(plan.prompt).toContain('كفر iPhone');
   });
 
-  it('should use booking_followup when bookings exist (v6)', () => {
+  it('does not interrupt browsing with an unrelated stored booking', () => {
     const arsenal = {
       ...baseArsenal,
       upcomingBookings: [{ serviceName: 'قص شعر', date: '2026-05-20' }],
       availableServices: [{ name: 'صبغة', price: 150 }],
     };
     const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', []);
-    expect(plan.strategy).toBe('booking_followup');
-    expect(plan.prompt).toContain('قص شعر');
+    expect(plan.strategy).toBe('none');
+    expect(plan.prompt).not.toContain('قص شعر');
   });
 
-  it('should use proactive discount for objecting customer', () => {
+  it('addresses the objection without defaulting to an incentive', () => {
     const arsenal = { ...baseArsenal, activeDiscounts: [{ code: 'SAVE10', type: 'percentage', value: 10 }] };
     const plan = selectPersuasion(baseProfile, arsenal, 'objecting', 'neutral', []);
-    expect(plan.strategy).toBe('proactive_discount');
-    expect(plan.sweetener).toBe('SAVE10');
+    expect(plan.strategy).toBe('value_comparison');
+    expect(plan.sweetener).toBeUndefined();
   });
 
-  it('should use social proof for comparing customer', () => {
+  it('compares documented value instead of inventing popularity evidence', () => {
     const plan = selectPersuasion(baseProfile, baseArsenal, 'comparing', 'neutral', []);
-    expect(plan.strategy).toBe('social_proof');
+    expect(plan.strategy).toBe('value_comparison');
+    expect(plan.prompt).not.toContain('أغلب عملائنا');
   });
 
-  it('should use smart upsell for ready-to-buy', () => {
+  it('preserves a ready agreement instead of introducing an upsell', () => {
     const arsenal = { ...baseArsenal, bestSellers: [{ name: 'A', price: 100 }, { name: 'B', price: 50 }] };
     const plan = selectPersuasion(baseProfile, arsenal, 'ready_to_buy', 'neutral', []);
-    expect(plan.strategy).toBe('smart_upsell');
+    expect(plan.strategy).toBe('none');
   });
 
   it('should not repeat used tactics', () => {
     const arsenal = { ...baseArsenal, abandonedCart: { items: ['Phone'], total: 2000 } };
-    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', ['cart_recovery']);
+    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', ['cart_recovery'], { customerMessage: 'ما الموجود في السلة؟' });
     // Should skip cart_recovery since already used
     expect(plan.strategy).not.toBe('cart_recovery');
   });
@@ -334,11 +335,11 @@ describe('Sales Arsenal — Persuasion Selection', () => {
 
 describe('Cross-sell Suggestions Builder (v6)', () => {
   const mockProducts = [
-    { name: 'iPhone 15', category: 'phones', isActive: true, price: 4000 },
-    { name: 'Galaxy S24', category: 'phones', isActive: true, price: 3500 },
-    { name: 'AirPods', category: 'audio', isActive: true, price: 800 },
-    { name: 'كفر iPhone', category: 'accessories', isActive: true, price: 50 },
-    { name: 'شاحن سريع', category: 'accessories', isActive: true, price: 100 },
+    { name: 'iPhone 15', category: 'phones', isActive: true, stock: 3, priceUnit: 'minor', price: 4000 },
+    { name: 'Galaxy S24', category: 'phones', isActive: true, stock: 3, priceUnit: 'minor', price: 3500 },
+    { name: 'AirPods', category: 'audio', isActive: true, stock: 3, priceUnit: 'minor', price: 800 },
+    { name: 'كفر iPhone', category: 'accessories', isActive: true, stock: 3, priceUnit: 'minor', price: 50 },
+    { name: 'شاحن سريع', category: 'accessories', isActive: true, stock: 3, priceUnit: 'minor', price: 100 },
   ];
 
   it('should suggest same-category products', () => {

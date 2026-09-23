@@ -1,71 +1,17 @@
-/**
- * Lightweight Arsenal — Fast Path Sales Data
- * 
- * Provides essential sales data (discounts, loyalty, abandoned cart)
- * for messages 2-20 without the full loadArsenal() overhead.
- * 
- * Loaded from DB with a 5-minute TTL cache per merchant+customer.
- * This replaces the `emptyArsenal` that was stripping all sales
- * intelligence from the FAST PATH.
- */
+/** Fast-path sales context: fresh offers, cart and loyalty scoped to the current customer. */
 
 import {
   getAbandonedCartsByMerchantId,
   getDiscountCodesByMerchantId,
 } from '../db';
 import type { SalesArsenal } from './sales-arsenal';
+import { selectSalesDiscounts } from './sales-offer-evidence';
 
-// ═══════════════════════════════════════════════════════════════
-// Cache — 5 minute TTL per merchant:customer
-// ═══════════════════════════════════════════════════════════════
-
-interface CachedLightArsenal {
-  arsenal: SalesArsenal;
-  cachedAt: number;
-}
-
-const LIGHT_ARSENAL_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_SIZE = 200;
-const lightArsenalCache = new Map<string, CachedLightArsenal>();
-
-function cacheKey(merchantId: number, customerPhone: string): string {
-  return `${merchantId}:${customerPhone}`;
-}
-
-// Periodic cleanup every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(lightArsenalCache.entries());
-  for (const [key, entry] of entries) {
-    if (now - entry.cachedAt > LIGHT_ARSENAL_TTL_MS * 2) {
-      lightArsenalCache.delete(key);
-    }
-  }
-}, 10 * 60 * 1000);
-
-// ═══════════════════════════════════════════════════════════════
-// Public API
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Load lightweight sales data for FAST PATH.
- * Only fetches: discounts, abandoned cart, loyalty.
- * Cached for 5 minutes to avoid DB calls every message.
- * 
- * Falls back to empty arsenal on any failure (never blocks the response).
- */
+/** Fresh customer-specific facts on every turn. Mutable offers and loyalty are never session authority. */
 export async function loadLightweightArsenal(
   merchantId: number,
   customerPhone: string,
 ): Promise<SalesArsenal> {
-  const key = cacheKey(merchantId, customerPhone);
-
-  // Check cache first
-  const cached = lightArsenalCache.get(key);
-  if (cached && (Date.now() - cached.cachedAt) < LIGHT_ARSENAL_TTL_MS) {
-    return cached.arsenal;
-  }
-
   // Build lightweight arsenal from DB
   const arsenal: SalesArsenal = {
     activeDiscounts: [],
@@ -83,15 +29,7 @@ export async function loadLightweightArsenal(
   try {
     // 1. Active discount codes (most critical for sales)
     const discounts = await getDiscountCodesByMerchantId(merchantId);
-    arsenal.activeDiscounts = discounts
-      .filter((d: any) => d.isActive && (!d.maxUses || d.usedCount < d.maxUses))
-      .slice(0, 5)
-      .map((d: any) => ({
-        code: d.code,
-        type: d.discountType || 'percentage',
-        value: d.discountValue || d.discountPercentage || 0,
-        expiresAt: d.expiresAt?.toISOString?.() || d.expiresAt,
-      }));
+    arsenal.activeDiscounts = selectSalesDiscounts(discounts, { merchantId, customerPhone });
   } catch { /* discounts table may not exist */ }
 
   try {
@@ -118,7 +56,7 @@ export async function loadLightweightArsenal(
       arsenal.loyaltyPoints = customerPoints.totalPoints || 0;
       if (customerPoints.currentTierId) {
         const tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId);
-        if (tier) {
+        if (tier && tier.merchantId === merchantId) {
           arsenal.loyaltyTier = {
             name: tier.nameAr || tier.name,
             icon: tier.icon || '⭐',
@@ -129,15 +67,6 @@ export async function loadLightweightArsenal(
     }
   } catch { /* loyalty may not be set up */ }
 
-  // Evict oldest if cache is full
-  if (lightArsenalCache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = lightArsenalCache.keys().next().value;
-    if (oldestKey) lightArsenalCache.delete(oldestKey);
-  }
-
-  // Cache the result
-  lightArsenalCache.set(key, { arsenal, cachedAt: Date.now() });
-
   return arsenal;
 }
 
@@ -145,5 +74,5 @@ export async function loadLightweightArsenal(
  * Invalidate cache for a specific customer (e.g., after purchase).
  */
 export function invalidateLightArsenal(merchantId: number, customerPhone: string): void {
-  lightArsenalCache.delete(cacheKey(merchantId, customerPhone));
+  // Compatibility hook: reads are already fresh; no customer facts are cached.
 }

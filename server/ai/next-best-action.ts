@@ -1,22 +1,10 @@
-/**
- * Next Best Action (NBA) Engine
- * 
- * Unlike action-selector.ts (which picks supplementary actions AFTER the reply),
- * NBA determines the SALES DECISION BEFORE the reply is generated.
- * 
- * This is the brain that turns Sari from a "smart responder" into a
- * "sales decision maker" — it doesn't just reply well, it decides
- * what's the best move to close this deal.
- * 
- * Decision hierarchy:
- * 1. Payment actions (send link, remind, retry)
- * 2. Objection counters (price → discount, trust → social proof, etc.)
- * 3. Escalation triggers (high value, complaint, competitor)
- * 4. Follow-up scheduling (ghost recovery based on loss reason)
- * 5. Information gathering (ask qualifying questions)
- */
+/** Current-turn sales guidance. Suggestions never establish payment, reserve stock or schedule contact.
+ * The customer decision and current evidence dominate old objections, inactivity and message counts. */
 
 import { getPool } from '../db';
+import { asksAboutDiscount, selectSalesDiscounts } from './sales-offer-evidence';
+import { decideSalesTurnGoal } from './sales-turn-policy';
+import type { CustomerIntent } from './session-context';
 import { isSalesRefusal } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
@@ -53,6 +41,7 @@ export interface NBAContext {
   hasDiscount: boolean;
   messageCount: number;
   lossReason?: string | null;
+  lastAssistantMessage?: string;
 }
 
 export interface NBAResult {
@@ -77,7 +66,13 @@ export async function determineNextBestAction(ctx: NBAContext): Promise<NBAResul
     return { action: 'continue_conversation', confidence: 1, priority: 'high',
       reason: 'الرسالة تخص طلباً قائماً', promptInjection: 'عالج موضوع الطلب القائم باستخدام حالته الموثقة، ولا تعاود البيع أو تضغط للدفع.' };
   }
+  if (decideSalesTurnGoal({ intent: ctx.intent as CustomerIntent, customerMessage: ctx.customerMessage,
+    lastAssistantMessage: ctx.lastAssistantMessage }) === 'explain_requested_information') {
+    return { action: 'continue_conversation', confidence: 1, priority: 'high', reason: 'الموافقة تخص السؤال السابق فقط',
+      promptInjection: 'أكمل الشرح المطلوب أو وضح المقصود؛ هذه الموافقة وحدها لا تجيز شراء أو إرسال رابط دفع.' };
+  }
   const rules = [
+    checkComplaintEscalation(ctx),
     // ── Priority 1: Payment Actions ──
     checkPaymentReady(ctx),
     checkPaymentReminder(ctx),
@@ -90,14 +85,10 @@ export async function determineNextBestAction(ctx: NBAContext): Promise<NBAResul
 
     // ── Priority 3: Escalation ──
     checkHighValueEscalation(ctx),
-    checkComplaintEscalation(ctx),
-
-    // ── Priority 4: Recovery ──
-    checkGhostRecovery(ctx),
 
     // ── Priority 5: Progression ──
     checkQualifyingQuestion(ctx),
-    checkUrgencyTrigger(ctx),
+
   ];
 
   // Pick the first matching rule (rules are ordered by priority)
@@ -121,10 +112,10 @@ export async function determineNextBestAction(ctx: NBAContext): Promise<NBAResul
 function checkPaymentReady(ctx: NBAContext): NBAResult | null {
   if (ctx.dealStage === 'ready' && !ctx.paymentLinkSent && ctx.intent === 'ready_to_buy') {
     return {
-      action: 'send_payment_link',
+      action: 'continue_conversation',
       confidence: 0.95,
-      reason: 'العميل جاهز للشراء ولم يُرسل له رابط دفع',
-      promptInjection: `[تعليمات مبيعات] العميل جاهز للشراء! أرسل له رابط الدفع مباشرة مع رسالة حماسية قصيرة. لا تسأل أسئلة إضافية.`,
+      reason: 'راجع الاتفاق المحفوظ قبل أي إجراء مالي',
+      promptInjection: `[تعليمات مبيعات] استفد من التفاصيل المحسومة وراجع العرض المحفوظ والكميات والإجمالي والموافقة. اطلب فقط ما ينقص الاتفاق. لا تدّع وجود طلب أو رابط صالح قبل نتيجة موثقة من مسار التنفيذ.`,
       priority: 'critical',
     };
   }
@@ -132,12 +123,12 @@ function checkPaymentReady(ctx: NBAContext): NBAResult | null {
 }
 
 function checkPaymentReminder(ctx: NBAContext): NBAResult | null {
-  if (ctx.dealStage === 'payment_link_sent' && ctx.timeSinceLastMessage >= 2 && ctx.timeSinceLastMessage <= 24) {
+  if (ctx.dealStage === 'payment_link_sent' && ctx.paymentLinkSent && /رابط|link/i.test(ctx.customerMessage)) {
     return {
       action: 'payment_reminder',
       confidence: 0.85,
       reason: `رابط دفع مُرسل منذ ${Math.round(ctx.timeSinceLastMessage)} ساعة بدون دفع`,
-      promptInjection: `[تعليمات مبيعات] العميل عنده رابط دفع لم يستخدمه بعد. ذكّره بلطف بأن الطلب محجوز له. لا تضغط.`,
+      promptInjection: `[تعليمات مبيعات] العميل يسأل عن رابط سابق. تحقّق من حالة الطلب والدفع وصلاحية الرابط قبل مشاركته. وجود رسالة رابط قديمة لا يثبت حجز المخزون أو أن الدفع لم يتم.`,
       priority: 'high',
     };
   }
@@ -145,17 +136,16 @@ function checkPaymentReminder(ctx: NBAContext): NBAResult | null {
 }
 
 function checkPriceObjection(ctx: NBAContext): NBAResult | null {
-  if (ctx.lastObjection !== 'price' && ctx.intent !== 'objecting') return null;
 
   const pricePatterns = /غالي|كثير|مبالغ|السعر عالي|أرخص|أقل|خصم|تخفيض|expensive|too much|cheaper/i;
-  if (!pricePatterns.test(ctx.customerMessage) && ctx.lastObjection !== 'price') return null;
+  if (!pricePatterns.test(ctx.customerMessage)) return null;
 
-  if (ctx.hasDiscount) {
+  if (ctx.hasDiscount && asksAboutDiscount(ctx.customerMessage)) {
     return {
       action: 'offer_discount',
       confidence: 0.88,
-      reason: 'اعتراض على السعر + يوجد خصم متاح',
-      promptInjection: `[تعليمات مبيعات] العميل يعترض على السعر. عندك خصم متاح — اعرضه بذكاء كعرض "محدود" أو "خاص". اشرح القيمة أولاً ثم اذكر الخصم.`,
+      reason: 'طلب معلومات عن خصم له دليل متاح',
+      promptInjection: `[تعليمات مبيعات] العميل يسأل عن الخصم. اشرح كوداً واحداً من سجل العروض الحالي مع شروطه؛ لا تسمّه حصرياً أو تعويضاً ولا تعد بتطبيقه قبل تحقق الطلب.`,
       priority: 'high',
     };
   }
@@ -163,28 +153,28 @@ function checkPriceObjection(ctx: NBAContext): NBAResult | null {
   return {
     action: 'offer_alternative',
     confidence: 0.80,
-    reason: 'اعتراض على السعر بدون خصم متاح',
-    promptInjection: `[تعليمات مبيعات] العميل يعترض على السعر ولا يوجد خصم حالياً. اعرض بديل أرخص أو اشرح القيمة مقارنة بالسوق. لا تعد بخصم غير موجود.`,
+    reason: 'فهم قيد السعر والقيمة قبل اختيار الحل',
+    promptInjection: `[تعليمات مبيعات] أجب عن السعر مباشرة إن كان السؤال عنه. عند اعتراض القيمة اربط الفائدة بحاجته أو قارن بديلاً موثقاً يناسب الميزانية. لا تفترض أن الحل خصم، ولا تقل إنه لا يوجد خصم لمجرد عدم اقتراحه.`,
     priority: 'high',
   };
 }
 
 function checkTrustObjection(ctx: NBAContext): NBAResult | null {
   const trustPatterns = /ما أعرفكم|مضمون|موثوق|أول مرة|مو نصب|ضمان|ما أثق|مجرب/i;
-  if (!trustPatterns.test(ctx.customerMessage) && ctx.lastObjection !== 'trust') return null;
+  if (!trustPatterns.test(ctx.customerMessage)) return null;
 
   return {
     action: 'send_social_proof',
     confidence: 0.85,
     reason: 'العميل يشك في الموثوقية',
-    promptInjection: `[تعليمات مبيعات] العميل لا يثق بعد. شارك أدلة اجتماعية: عدد العملاء، تقييمات إيجابية، سنوات الخبرة، ضمان الاسترجاع. كن صادقاً ولا تبالغ.`,
+    promptInjection: `[تعليمات مبيعات] العميل لا يثق بعد. أجب عن سبب القلق بدليل معتمد ذي مصدر إن توفر. عند نقصه وضح ما يحتاج التحقق؛ لا تصنع أعداد عملاء أو تقييمات أو ضماناً.`,
     priority: 'high',
   };
 }
 
 function checkDeliveryObjection(ctx: NBAContext): NBAResult | null {
   const deliveryPatterns = /توصيل|شحن|يوصل|كم يوم|ما يوصل|بعيد/i;
-  if (!deliveryPatterns.test(ctx.customerMessage) && ctx.lastObjection !== 'delivery') return null;
+  if (!deliveryPatterns.test(ctx.customerMessage)) return null;
 
   return {
     action: 'offer_free_shipping',
@@ -197,13 +187,13 @@ function checkDeliveryObjection(ctx: NBAContext): NBAResult | null {
 
 function checkCompetitorMention(ctx: NBAContext): NBAResult | null {
   const competitorPatterns = /مكان ثاني|محل ثاني|أقارن|بشوف عند|لقيت أفضل|عند غيركم|منافس|بديل/i;
-  if (!competitorPatterns.test(ctx.customerMessage) && ctx.lastObjection !== 'competitor') return null;
+  if (!competitorPatterns.test(ctx.customerMessage)) return null;
 
   return {
     action: 'escalate_to_human',
     confidence: 0.80,
     reason: 'العميل يقارن مع منافس — يحتاج تدخل بشري',
-    promptInjection: `[تعليمات مبيعات] العميل يقارنك بمنافس. ركز على القيمة الفريدة، لا تذم المنافس. اسأل "ما الذي يهمك أكثر؟" لفهم أولوياته. إذا لم تقنعه، سيتدخل أحد الفريق.`,
+    promptInjection: `[تعليمات مبيعات] العميل يقارنك بمنافس. ركز على القيمة الفريدة، لا تذم المنافس. اسأل "ما الذي يهمك أكثر؟" لفهم أولوياته. لا تعد بتدخل موظف قبل تسجيل تصعيد فعلي.`,
     priority: 'high',
   };
 }
@@ -214,7 +204,7 @@ function checkHighValueEscalation(ctx: NBAContext): NBAResult | null {
       action: 'escalate_to_human',
       confidence: 0.70,
       reason: `صفقة عالية القيمة (${ctx.productValue} ريال) جاهزة — الأفضل تدخل بشري`,
-      promptInjection: `[تعليمات مبيعات] هذا طلب بقيمة عالية. قدم أفضل خدمة واسأل إذا يحتاج مساعدة إضافية. أحد الفريق سيتابع معه.`,
+      promptInjection: `[تعليمات مبيعات] هذا طلب بقيمة عالية. قدم أفضل خدمة واسأل إذا يحتاج مساعدة إضافية. لا تعد بمتابعة موظف قبل تسجيل تصعيد فعلي.`,
       priority: 'high',
     };
   }
@@ -229,35 +219,9 @@ function checkComplaintEscalation(ctx: NBAContext): NBAResult | null {
     action: 'escalate_to_human',
     confidence: 0.90,
     reason: 'العميل مستاء — يحتاج تدخل بشري فوري',
-    promptInjection: `[تعليمات مبيعات] العميل غير راضٍ. اعتذر بصدق وأكد أن أحد المسؤولين سيتواصل معه فوراً. لا تحاول البيع الآن.`,
+    promptInjection: `[تعليمات مبيعات] العميل غير راضٍ. اعترف بالمشكلة واطلب التصعيد المتاح عند الحاجة؛ لا تدّع تسجيله أو موعد اتصال قبل نتيجة الأداة. لا تحاول البيع الآن.`,
     priority: 'critical',
   };
-}
-
-function checkGhostRecovery(ctx: NBAContext): NBAResult | null {
-  if (ctx.timeSinceLastMessage >= 48 && ctx.timeSinceLastMessage < 168 && 
-      ctx.dealStage && ['interested', 'qualified', 'ready'].includes(ctx.dealStage)) {
-    return {
-      action: 'gentle_followup',
-      confidence: 0.70,
-      reason: `العميل لم يرد منذ ${Math.round(ctx.timeSinceLastMessage)} ساعة`,
-      promptInjection: `[تعليمات مبيعات] العميل لم يرد منذ فترة. أرسل رسالة متابعة خفيفة ولطيفة. لا تكرر العرض، بل اسأل سؤال مفتوح أو شارك شيء جديد.`,
-      priority: 'medium',
-    };
-  }
-
-  if (ctx.timeSinceLastMessage >= 168 && 
-      ctx.dealStage && ['interested', 'qualified', 'ready'].includes(ctx.dealStage)) {
-    return {
-      action: 'final_attempt',
-      confidence: 0.60,
-      reason: `آخر محاولة — العميل لم يرد منذ ${Math.round(ctx.timeSinceLastMessage / 24)} يوم`,
-      promptInjection: `[تعليمات مبيعات] هذه المحاولة الأخيرة. أرسل رسالة قصيرة ومحترمة، مثلاً: "حبيت أسأل إذا لسه مهتم — أحترم وقتك". لا تضغط.`,
-      priority: 'low',
-    };
-  }
-
-  return null;
 }
 
 function checkQualifyingQuestion(ctx: NBAContext): NBAResult | null {
@@ -266,20 +230,7 @@ function checkQualifyingQuestion(ctx: NBAContext): NBAResult | null {
       action: 'ask_qualifying_question',
       confidence: 0.65,
       reason: 'عميل جديد — يحتاج أسئلة تأهيل',
-      promptInjection: `[تعليمات مبيعات] عميل جديد. اسأل 1-2 أسئلة تأهيل: "ما الذي تبحث عنه بالضبط؟" أو "عندك ميزانية محددة؟". لا تعرض منتجات فوراً.`,
-      priority: 'medium',
-    };
-  }
-  return null;
-}
-
-function checkUrgencyTrigger(ctx: NBAContext): NBAResult | null {
-  if (ctx.dealStage === 'qualified' && ctx.timeSinceLastMessage < 1 && ctx.messageCount >= 5) {
-    return {
-      action: 'urgency_trigger',
-      confidence: 0.70,
-      reason: 'عميل مؤهل ونشط — يحتاج دفعة للإغلاق',
-      promptInjection: `[تعليمات مبيعات] العميل مهتم ونشط لكن لم يقرر. استخدم محفز لطيف: "الكمية محدودة" أو "العرض ينتهي قريباً" فقط إذا كان صحيحاً. لا تكذب.`,
+      promptInjection: `[تعليمات مبيعات] عميل جديد. أجب عن سؤاله المباشر أولاً. إذا نقصت معلومة تغير الترشيح، اسأل سؤالاً واحداً عنها واستفد من المعلومات السابقة.`,
       priority: 'medium',
     };
   }
@@ -302,7 +253,8 @@ export async function loadNBAContext(
   merchantId: number,
   conversationId: number,
   customerMessage: string,
-  intent: string
+  intent: string,
+  lastAssistantMessage?: string,
 ): Promise<NBAContext> {
   const pool = await getPool();
 
@@ -313,6 +265,7 @@ export async function loadNBAContext(
     lastObjection: null,
     customerMessage,
     intent,
+    lastAssistantMessage,
     paymentLinkSent: false,
     timeSinceLastMessage: 0,
     hasDiscount: false,
@@ -325,7 +278,7 @@ export async function loadNBAContext(
     // P0-FIX: messageCount is NOT a column in conversations schema.
     // Use subquery from messages table to avoid query failure.
     const [rows] = await pool.execute(
-      `SELECT c.deal_stage, c.loss_reason, c.payment_link_sent_at,
+      `SELECT c.customerPhone, c.deal_stage, c.loss_reason, c.payment_link_sent_at,
               TIMESTAMPDIFF(HOUR, c.lastMessageAt, NOW()) as hours_since,
               (SELECT COUNT(*) FROM messages WHERE conversationId = c.id) as msg_count
        FROM conversations c WHERE c.id = ? AND c.merchantId = ? LIMIT 1`,
@@ -336,8 +289,8 @@ export async function loadNBAContext(
 
     // Check if discount system has active offers
     const [discountRows] = await pool.execute(
-      `SELECT id FROM discount_codes WHERE merchantId = ? AND isActive = 1 AND 
-       (expiresAt IS NULL OR expiresAt > NOW()) LIMIT 1`,
+      `SELECT *, customer_phone AS customerPhone FROM discount_codes WHERE merchantId = ? AND isActive = 1
+       AND (expiresAt IS NULL OR expiresAt > UTC_TIMESTAMP()) AND (maxUses IS NULL OR usedCount < maxUses)`,
       [merchantId]
     ).catch(() => [[]] as any);
 
@@ -373,7 +326,7 @@ export async function loadNBAContext(
       paymentLinkSent: !!conv.payment_link_sent_at,
       timeSinceLastMessage: conv.hours_since || 0,
       messageCount: conv.msg_count || 0,
-      hasDiscount: (discountRows as any[]).length > 0,
+      hasDiscount: selectSalesDiscounts(discountRows as any[], { merchantId, customerPhone: conv.customerPhone }).length > 0,
       lastObjection,
     };
   } catch (err) {

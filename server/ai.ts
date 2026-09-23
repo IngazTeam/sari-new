@@ -16,13 +16,13 @@ import {
   getServicesByMerchant,
   getWebsiteAnalysesByMerchant,
   getZidProducts,
-  // @ts-ignore
-  searchWooCommerceProducts,
+  searchWooCommerceProducts as searchWooCommerceCatalog,
   getActivePromotionsByMerchant,
   getPromotionById,
   incrementPromotionViewCount,
   incrementPromotionClickCount,
 } from './db';
+import { selectSalesDiscounts, salesDiscountPrompt } from './ai/sales-offer-evidence';
 import { filterProductsAvailableForSale } from './ai/product-availability';
 
 /**
@@ -241,8 +241,7 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
  */
 async function searchWooCommerceProducts(merchantId: number, query: string): Promise<ProductInfo[]> {
   try {
-    // @ts-ignore
-    const wooProducts = await searchWooCommerceProducts(merchantId, query, 5);
+    const wooProducts = await searchWooCommerceCatalog(merchantId, query, 5);
     
     return wooProducts.map((wp: any) => ({
       id: wp.id,
@@ -359,25 +358,8 @@ export async function generateAIResponse(
     let discountsContext = '';
     try {
       const allDiscounts = await getDiscountCodesByMerchantId(merchantId);
-      const now = new Date();
-      const activeDiscounts = allDiscounts.filter((d) =>
-        d.isActive === 1 &&
-        (!d.expiresAt || new Date(d.expiresAt) > now) &&
-        (!d.maxUses || d.usedCount < d.maxUses) &&
-        // PEN-MEDIA-03: Hide VIP/limited codes (maxUses <= 5) from AI
-        (!d.maxUses || d.maxUses > 5)
-      );
-      if (activeDiscounts.length > 0) {
-        // LIM-04: Cap discounts in prompt to 10 to prevent context bloat
-        const discountsForPrompt = activeDiscounts.slice(0, 10);
-        const discountLines = discountsForPrompt.map((d) => {
-          const typeLabel = d.type === 'percentage' ? d.value + '%' : d.value + ' \u0631\u064a\u0627\u0644';
-          const expiry = d.expiresAt ? ' (\u0635\u0627\u0644\u062d \u062d\u062a\u0649 ' + new Date(d.expiresAt).toLocaleDateString('ar-SA') + ')' : '';
-          const minOrder = d.minOrderAmount ? ' - \u0627\u0644\u062d\u062f \u0627\u0644\u0623\u062f\u0646\u0649: ' + d.minOrderAmount + ' \u0631\u064a\u0627\u0644' : '';
-          return '\ud83c\udf81 \u0643\u0648\u062f "' + d.code + '": \u062e\u0635\u0645 ' + typeLabel + minOrder + expiry;
-        }).join('\n');
-        discountsContext = '\n\n--- العروض والخصومات النشطة ---\n' + discountLines + '\n\nقواعد مشاركة الخصومات:\n- شاركها إذا العميل سأل عن عروض أو خصومات\n- اقترحها إذا العميل متردد في الشراء\n- لا ترسلها بدون سبب واضح\n- عند مشاركة كود خصم أضف في نهاية ردك: [SEND_DISCOUNT:الكود]\n- لا تذكر أبداً أكثر من كود خصم واحد في الرد الواحد\n- لا تعرض جميع الأكواد مرة واحدة — اختر الأنسب للعميل\n--- نهاية العروض ---';
-      }
+      const activeDiscounts = selectSalesDiscounts(allDiscounts, { merchantId, customerPhone });
+      discountsContext = salesDiscountPrompt(activeDiscounts);
     } catch (err) {
       console.warn('[AI] Failed to fetch discount codes:', err);
     }

@@ -1,3 +1,4 @@
+import { asksAboutDiscount, selectSalesDiscounts, salesDiscountMessage } from './sales-offer-evidence';
 /**
  * Action Selector — Multi-Action Decision Engine
  * 
@@ -115,7 +116,7 @@ export async function selectAction(params: {
 الإجراءات المتاحة:
 1. text_only — الرد النصي كافي، لا حاجة لإجراء إضافي
 2. send_product_link — أرسل رابط/صورة منتج محدد ذُكر في المحادثة
-3. offer_discount — اقترح عرض خصم (فقط إذا العميل اعترض على السعر بقوة)
+3. offer_discount — أجب عن طلب خصم صريح من العميل بكود صالح له؛ الاعتراض على القيمة وحده لا يجيز الخصم
 4. escalate_to_merchant — حوّل للتاجر (فقط للمشاكل/الشكاوى الجدية)
 5. send_catalog — أرسل قائمة منتجات (إذا العميل يستكشف بدون تحديد)
 6. schedule_followup — جدول متابعة (إذا العميل متردد وقال بعدين)
@@ -184,6 +185,7 @@ export async function selectAction(params: {
     const action = mapDecisionToAction(decision);
     // Model output cannot grant itself consent to place an order.
 
+    if (action.type === 'offer_discount' && !asksAboutDiscount(customerMessage)) return { type: 'text_only' };
     return action;
 
   } catch (err: any) {
@@ -327,71 +329,31 @@ export async function executeAction(params: {
       }
 
       case 'offer_discount': {
-        // Rate-limit: max 1 discount per customer per hour
-        const discountKey = `${merchantId}:${customerPhone}`;
+        // Model-selected incentives still need the customer's request and current scoped evidence.
+        if (!params.customerMessage || !asksAboutDiscount(params.customerMessage) || isSalesRefusal(params.customerMessage)) break;
+        const discountKey = merchantId + ':' + customerPhone;
         const lastSent = _discountRateLimit.get(discountKey);
-        if (lastSent && Date.now() - lastSent < 3600_000) {
-          console.log(`[ActionSelector] ⏳ Discount rate-limited for ${customerPhone.slice(-4)}`);
-          break;
+        if (lastSent && Date.now() - lastSent < 3600_000) break;
+        const { getPool } = await import('../db');
+        const pool = await getPool();
+        if (!pool) throw new Error('Discount evidence unavailable');
+        const read = async () => {
+          const [rows] = await pool.execute(`SELECT *, customer_phone AS customerPhone FROM discount_codes WHERE merchantId = ? AND isActive = 1
+            AND (expiresAt IS NULL OR expiresAt > UTC_TIMESTAMP()) AND (maxUses IS NULL OR usedCount < maxUses)
+            ORDER BY createdAt DESC`, [merchantId]);
+          return selectSalesDiscounts(rows as any[], { merchantId, customerPhone });
+        };
+        let offers = await read();
+        if (!offers.length) {
+          // Existing opt-in policy remains the authority; creation alone is not proof for sharing.
+          const { generateAutoDiscount } = await import('./auto-discount');
+          const created = await generateAutoDiscount({ merchantId, customerPhone, customerName: params.customerName, customerMessage: params.customerMessage });
+          if (created) offers = (await read()).filter(offer => offer.code === created.code);
         }
-        // Find active discount codes for this merchant
-        try {
-          const { getPool } = await import('../db');
-          const pool = await getPool();
-          let discountSent = false;
-          if (pool) {
-            const [rows] = await pool.execute(
-              `SELECT id, code, type, value FROM discount_codes 
-               WHERE merchantId = ? AND isActive = 1 
-               AND (expiresAt IS NULL OR expiresAt > NOW())
-               AND (maxUses IS NULL OR usedCount < maxUses)
-               ORDER BY createdAt DESC LIMIT 1`,
-              [merchantId]
-            );
-            const discounts = rows as any[];
-            if (discounts.length > 0) {
-              const d = discounts[0];
-              const valueStr = d.type === 'percentage' ? `${d.value}%` : `${d.value} ر.س`;
-              await sendMessage(customerPhone,
-                `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nتطبق شروط الكود المعتمدة عند إتمام الطلب.`
-              );
-              // Sending an offer is not a redemption. Usage is reserved atomically
-              // only when an order actually applies the code.
-              _discountRateLimit.set(discountKey, Date.now());
-              discountSent = true;
-              console.log(`[ActionSelector] ✅ Sent existing discount code: ${d.code}`);
-            }
-          }
-
-          // ── Auto-Discount Fallback: no existing codes → generate personalized one ──
-          if (!discountSent && params.customerMessage) {
-            try {
-              const { generateAutoDiscount } = await import('./auto-discount');
-              const autoCode = await generateAutoDiscount({
-                merchantId,
-                customerPhone,
-                customerName: params.customerName,
-                customerMessage: params.customerMessage,
-              });
-              if (autoCode) {
-                const expireDate = autoCode.expiresAt;
-                const expireText = `${Math.round((expireDate.getTime() - Date.now()) / 3600_000)} ساعة`;
-                await sendMessage(customerPhone,
-                  `🎁 عندي عرض خاص *لك أنت*!\n\n` +
-                  `كود الخصم: *${autoCode.code}*\n` +
-                  `قيمة الخصم: *${autoCode.value}%*\n` +
-                  `⏰ صالح لمدة ${expireText} فقط\n\n` +
-                  `هذا الكود مخصص لك — استغله قبل ما ينتهي! 🔥`
-                );
-                _discountRateLimit.set(discountKey, Date.now());
-                console.log(`[ActionSelector] ✅ Auto-generated discount: ${autoCode.code} (${autoCode.value}%)`);
-              }
-            } catch (autoErr: any) {
-              throw autoErr;
-            }
-          }
-        } catch (discErr: any) {
-          throw discErr;
+        if (offers.length) {
+          await sendMessage(customerPhone, salesDiscountMessage(offers[0]));
+          // An offer is not redemption. Checkout owns usage reservation and final eligibility.
+          _discountRateLimit.set(discountKey, Date.now());
         }
         break;
       }

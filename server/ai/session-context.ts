@@ -12,7 +12,7 @@
 // Types
 // ═══════════════════════════════════════════════════════════════
 
-import { isSalesRefusal, isShortAffirmation, normalizeCustomerText, pendingDecisionFromQuestion } from './customer-decision';
+import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, normalizeCustomerText, pendingDecisionFromQuestion } from './customer-decision';
 
 export interface ConversationSession {
   contextSchemaVersion?: number;
@@ -316,6 +316,7 @@ export function detectIntent(
   if (isSalesRefusal(message)) return 'declined';
   // An existing-order issue takes precedence over price words or old profile data.
   if (['طلبي', 'وين وصل', 'ما وصل', 'tracking', 'my order'].some(s => msg.includes(s))) return 'post_purchase';
+  if (isPurchaseProcessQuestion(message)) return 'inquiring';
   if (isShortAffirmation(message)) {
     const pending = pendingDecisionFromQuestion(lastAssistantMessage);
     return pending === 'purchase' ? 'ready_to_buy' : pending === 'information' ? 'inquiring' : 'unknown';

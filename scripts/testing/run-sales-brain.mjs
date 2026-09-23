@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 // Keep virtual-clock provider tests separate from real MySQL integration tests.
 const units = [
+  'server/ai/sales-offer-evidence.test.ts', 'server/ai/sales-persuasion-consistency.test.ts', 'server/ai/auto-discount-authority.test.ts',
   'server/webhooks/greenapi-escalation.test.ts',
   'server/ai/escalation-routing.test.ts',
   'server/ai/customer-memory.test.ts',
@@ -25,6 +26,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/sales-offer-evidence.mysql.test.ts',
   'server/ai/escalation-reconciliation.mysql.test.ts',
   'server/ai/customer-memory.mysql.test.ts',
   'server/ai/followup-policy.mysql.test.ts',
@@ -57,7 +59,8 @@ if (process.argv.includes('--regression')) {
   const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
   const files = [...new Set(['test:remediation', 'pretest:release', 'test:zahypi'].flatMap(name =>
     pkg.scripts[name].split(/\s+/).filter(value => value.endsWith('.test.ts'))))];
-  files.push('server/merchant-semantic-i18n-pentest.test.ts', 'server/customer-profile-canonical-pentest.test.ts',
+  files.push('server/central-interactions.test.ts', 'server/central-landing.test.ts',
+    'server/merchant-semantic-i18n-pentest.test.ts', 'server/customer-profile-canonical-pentest.test.ts',
     'server/sales-conversion-pentest.test.ts', 'server/tap-payment-idempotency-pentest.test.ts', 'server/tap-payment-ownership-pentest.test.ts',
     'server/coaching-bugfix-pentest.test.ts', 'server/context-intelligence-pentest.test.ts');
   run('regression', files);

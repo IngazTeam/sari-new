@@ -22,7 +22,7 @@ import { safeCheckoutReturn, wireTransactions } from "./transactions";
 
 export function bootstrapCentral() {
   const lang = centralLanguage(location.search),
-    t = (ar: string, en: string) => (lang === "ar" ? ar : en);
+    localizedText = (ar: string, en: string) => (lang === "ar" ? ar : en);
   const href = (p: string) => centralHref(p, lang),
     e = escapeHtml;
   const page = getCentralPage(location.pathname, lang);
@@ -76,11 +76,11 @@ export function bootstrapCentral() {
   };
   const failure = (err: unknown) =>
     err instanceof TRPCClientError && err.data?.code === "TOO_MANY_REQUESTS"
-      ? t(
+      ? localizedText(
           "محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.",
           "Too many attempts. Please wait before trying again."
         )
-      : t(
+      : localizedText(
           "تعذرت العملية. تحقق من المعلومات وحاول مرة أخرى.",
           "We could not complete the action. Check the details and try again."
         );
@@ -132,8 +132,8 @@ export function bootstrapCentral() {
       button.setAttribute(
         "aria-label",
         visible
-          ? t("إخفاء كلمة المرور", "Hide password")
-          : t("إظهار كلمة المرور", "Show password")
+          ? localizedText("إخفاء كلمة المرور", "Hide password")
+          : localizedText("إظهار كلمة المرور", "Show password")
       );
     })
   );
@@ -171,78 +171,78 @@ export function bootstrapCentral() {
   let sector = "commerce";
   const demoContent = {
     commerce: {
-      name: t("متجر ورق", "Waraq store"),
-      greeting: t(
+      name: localizedText("متجر ورق", "Waraq store"),
+      greeting: localizedText(
         "يا هلا! تدور على هدية أو دفتر لأفكارك الكبيرة؟",
         "Hello! Looking for a gift or a notebook for your big ideas?"
       ),
       questions: [
-        t("أدور على هدية", "I’m looking for a gift"),
-        t("كيف أكمل الطلب؟", "How do I order?"),
-        t("أحتاج أكلم الفريق", "I need the team"),
+        localizedText("أدور على هدية", "I’m looking for a gift"),
+        localizedText("كيف أكمل الطلب؟", "How do I order?"),
+        localizedText("أحتاج أكلم الفريق", "I need the team"),
       ],
       replies: [
-        t(
+        localizedText(
           "عندنا في هذا المثال دفتر بغلاف أخضر. وش تفضّل: هدية لشخص، أو أدوات لفريقك؟",
           "In this example, we have a green notebook. Is it a gift for one person or supplies for your team?"
         ),
-        t(
+        localizedText(
           "نراجع المنتج والكمية والبيانات المطلوبة، ثم نوضح لك الخطوة التالية. هذه محاكاة ولا تنشئ طلبًا.",
           "We would review the product, quantity and required details, then explain the next step. This example creates no real order."
         ),
-        t(
+        localizedText(
           "في النشاط الفعلي يتولى الفريق المحادثة مع بقاء سياقها. هنا نعرض مثالًا على انتقال واضح للموظف.",
           "In a real workspace, a teammate can take over with the conversation context. This illustrates that handover."
         ),
       ],
     },
     training: {
-      name: t("مركز التدريب", "Training centre"),
-      greeting: t(
+      name: localizedText("مركز التدريب", "Training centre"),
+      greeting: localizedText(
         "أهلًا بطموحك! أي مهارة ودّك تطوّرها؟",
         "Welcome! What skill would you like to develop?"
       ),
       questions: [
-        t("أدور على دورة", "I’m looking for a course"),
-        t("كيف أسجل؟", "How do I enrol?"),
-        t("عندي سؤال للفريق", "I have a question for the team"),
+        localizedText("أدور على دورة", "I’m looking for a course"),
+        localizedText("كيف أسجل؟", "How do I enrol?"),
+        localizedText("عندي سؤال للفريق", "I have a question for the team"),
       ],
       replies: [
-        t(
+        localizedText(
           "نبدأ بهدفك ومستواك، ثم نعرض معلومات الدورات المتاحة في بيانات المركز. أي مجال يهمك؟",
           "We start with your goals and experience, then use the centre’s available course information. Which field interests you?"
         ),
-        t(
+        localizedText(
           "نوضح المحتوى والموعد والمتطلبات، ثم نتبع مسار التسجيل المدعوم. لا يتم تسجيل فعلي من هذه التجربة.",
           "We explain the content, schedule and requirements, then follow the supported registration process. This example does not enrol you."
         ),
-        t(
+        localizedText(
           "الأسئلة الخاصة ومتطلبات التسجيل غير الواضحة تنتقل للفريق ليكمل معك.",
           "The team handles special questions and enrolment requirements that need clarification."
         ),
       ],
     },
     services: {
-      name: t("مساحة للخدمات", "Service studio"),
-      greeting: t(
+      name: localizedText("مساحة للخدمات", "Service studio"),
+      greeting: localizedText(
         "يا هلا! وش الخدمة اللي تحتاجها؟",
         "Hello! What service do you need?"
       ),
       questions: [
-        t("أبغى أعرف الخدمات", "Tell me about your services"),
-        t("كيف أحجز؟", "How do I book?"),
-        t("أحتاج أغيّر الموعد", "I need to reschedule"),
+        localizedText("أبغى أعرف الخدمات", "Tell me about your services"),
+        localizedText("كيف أحجز؟", "How do I book?"),
+        localizedText("أحتاج أغيّر الموعد", "I need to reschedule"),
       ],
       replies: [
-        t(
+        localizedText(
           "نشرح الخدمة ومدتها ومتطلباتها من معلومات النشاط، ثم نساعدك تختار الأنسب.",
           "We explain the service, duration and requirements from business information and help you choose."
         ),
-        t(
+        localizedText(
           "نجمع تفضيلاتك ونراجع التوفر عبر الأدوات المربوطة قبل التأكيد. لا يُحجز موعد فعلي هنا.",
           "We collect your preferences and check availability through connected tools before confirmation. No real appointment is booked here."
         ),
-        t(
+        localizedText(
           "نراجع تفاصيل طلب التغيير مع الفريق أو النظام المدعوم، ونوضح النتيجة المؤكدة.",
           "We review the requested change with the team or supported system and communicate the confirmed result."
         ),
@@ -270,7 +270,7 @@ export function bootstrapCentral() {
     if (!box || !text.trim()) return;
     const answer =
       index === undefined
-        ? t(
+        ? localizedText(
             "شكرًا لتوضيحك. في ساري نربط السؤال بمعلومات نشاطك. جرّب الاقتراحات لتشاهد خطوات هذا المثال.",
             "Thanks for explaining. Sary connects the question with your business knowledge. Try a suggestion to explore this example."
           )
@@ -338,11 +338,11 @@ export function bootstrapCentral() {
     });
     $("#signup-progress")!.textContent =
       step === 1
-        ? t(
+        ? localizedText(
             "الخطوة 1 من 2 · نبدأ بالتعارف",
             "Step 1 of 2 · Let’s get to know you"
           )
-        : t("الخطوة 2 من 2 · أمّن حسابك", "Step 2 of 2 · Secure your account");
+        : localizedText("الخطوة 2 من 2 · أمّن حسابك", "Step 2 of 2 · Secure your account");
     const first = $<HTMLInputElement>(`[data-signup-step="${step}"] input`);
     first?.focus();
   };
@@ -353,7 +353,7 @@ export function bootstrapCentral() {
         !input("businessName")!.value.trim()
       ) {
         message(
-          t(
+          localizedText(
             "اكتب الاسم واسم النشاط للمتابعة.",
             "Enter your name and business name to continue."
           ),
@@ -393,7 +393,7 @@ export function bootstrapCentral() {
         !/[0-9]/.test(password)
       ) {
         message(
-          t(
+          localizedText(
             "استخدم من 8 إلى 128 حرفًا، وحرفًا إنجليزيًا كبيرًا ورقمًا.",
             "Use 8–128 characters, including an uppercase letter and a number."
           ),
@@ -403,14 +403,14 @@ export function bootstrapCentral() {
       }
       if (password !== value("confirmPassword")) {
         message(
-          t("كلمتا المرور غير متطابقتين.", "The passwords do not match."),
+          localizedText("كلمتا المرور غير متطابقتين.", "The passwords do not match."),
           true
         );
         return;
       }
     }
     busy(auth, true);
-    message(t("جارٍ تنفيذ طلبك…", "Working on your request…"));
+    message(localizedText("جارٍ تنفيذ طلبك…", "Working on your request…"));
     try {
       if (action === "login") {
         const params = new URLSearchParams(location.search);
@@ -429,16 +429,16 @@ export function bootstrapCentral() {
         if (!response.ok) {
           message(
             response.status === 429
-              ? t(
+              ? localizedText(
                   "محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.",
                   "Too many attempts. Wait before trying again."
                 )
               : response.status === 401 || response.status === 404
-                ? t(
+                ? localizedText(
                     "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
                     "The email address or password is incorrect."
                   )
-                : t(
+                : localizedText(
                     "تعذر تسجيل الدخول الآن. حاول مرة أخرى.",
                     "Sign-in is unavailable. Please try again."
                   ),
@@ -473,7 +473,7 @@ export function bootstrapCentral() {
           !input("acceptedPrivacy")?.checked
         ) {
           message(
-            t(
+            localizedText(
               "يلزم قبول الشروط وسياسة الخصوصية.",
               "Accept the terms and privacy policy to continue."
             ),
@@ -504,14 +504,14 @@ export function bootstrapCentral() {
         await api.auth.requestPasswordReset.mutate({
           email: value("email").trim(),
         });
-        auth.innerHTML = `<div class="inline-notice success" role="status"><h2>${t("راجع بريدك.", "Check your inbox.")}</h2><p>${t("إذا كان البريد مرتبطًا بحساب، ستصلك تعليمات استعادة كلمة المرور.", "If the email is associated with an account, you will receive password recovery instructions.")}</p></div>`;
+        auth.innerHTML = `<div class="inline-notice success" role="status"><h2>${localizedText("راجع بريدك.", "Check your inbox.")}</h2><p>${localizedText("إذا كان البريد مرتبطًا بحساب، ستصلك تعليمات استعادة كلمة المرور.", "If the email is associated with an account, you will receive password recovery instructions.")}</p></div>`;
       }
       if (action === "reset") {
         if (!tokenReady) throw new Error("Invalid token");
         await api.auth.resetPassword.mutate({ token, newPassword: password });
         token = "";
         tokenReady = false;
-        auth.innerHTML = `<div class="inline-notice success" role="status"><p>${t("تم تغيير كلمة المرور. سجّل دخولك بكلمتك الجديدة.", "Your password has been changed. Sign in with your new password.")}</p><a class="button green" href="${href("/login")}">${t("تسجيل الدخول", "Sign in")}</a></div>`;
+        auth.innerHTML = `<div class="inline-notice success" role="status"><p>${localizedText("تم تغيير كلمة المرور. سجّل دخولك بكلمتك الجديدة.", "Your password has been changed. Sign in with your new password.")}</p><a class="button green" href="${href("/login")}">${localizedText("تسجيل الدخول", "Sign in")}</a></div>`;
       }
     } catch (err) {
       message(failure(err), true);
@@ -545,7 +545,7 @@ export function bootstrapCentral() {
     });
     const invalid = () =>
       message(
-        t(
+        localizedText(
           "الرابط غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.",
           "The link is invalid or has expired. Request a new one."
         ),
@@ -566,23 +566,23 @@ export function bootstrapCentral() {
             await api.auth.emailVerification.verifyEmail.mutate({ token });
             token = "";
             message(
-              t("تم تأكيد بريدك بنجاح.", "Your email has been verified."),
+              localizedText("تم تأكيد بريدك بنجاح.", "Your email has been verified."),
               false,
               "#token-status"
             );
             $("#token-actions")!.innerHTML =
-              `<a class="button green" href="/merchant/dashboard">${t("افتح حسابك", "Open your account")}</a>`;
+              `<a class="button green" href="/merchant/dashboard">${localizedText("افتح حسابك", "Open your account")}</a>`;
           }
           if (clean === "/accept-invite") {
             const invitation = await api.team.acceptInvite.mutate({ token });
             message(
-              t("دعوة للانضمام إلى: ", "Invitation to join: ") +
+              localizedText("دعوة للانضمام إلى: ", "Invitation to join: ") +
                 invitation.merchantName,
               false,
               "#token-status"
             );
             $("#token-actions")!.innerHTML =
-              `<p>${t("اقبل الدعوة بالحساب الذي استلمها.", "Accept using the account that received this invitation.")}</p><button class="button green" id="accept-invitation">${t("قبول الدعوة", "Accept invitation")}</button><a class="text-link" href="${href("/login")}" target="_blank" rel="noopener noreferrer">${t("افتح تسجيل الدخول في نافذة أخرى", "Open sign-in in another tab")}</a>`;
+              `<p>${localizedText("اقبل الدعوة بالحساب الذي استلمها.", "Accept using the account that received this invitation.")}</p><button class="button green" id="accept-invitation">${localizedText("قبول الدعوة", "Accept invitation")}</button><a class="text-link" href="${href("/login")}" target="_blank" rel="noopener noreferrer">${localizedText("افتح تسجيل الدخول في نافذة أخرى", "Open sign-in in another tab")}</a>`;
             $("#accept-invitation")!.addEventListener("click", async ev => {
               const b = ev.currentTarget as HTMLButtonElement;
               b.disabled = true;
@@ -590,7 +590,7 @@ export function bootstrapCentral() {
                 await api.team.confirmInvite.mutate({ token });
                 token = "";
                 message(
-                  t(
+                  localizedText(
                     "انضم حسابك للمتجر بنجاح.",
                     "Your account has joined the store."
                   ),
@@ -598,10 +598,10 @@ export function bootstrapCentral() {
                   "#token-status"
                 );
                 $("#token-actions")!.innerHTML =
-                  `<a class="button green" href="/merchant/dashboard">${t("افتح لوحة العمل", "Open the workspace")}</a>`;
+                  `<a class="button green" href="/merchant/dashboard">${localizedText("افتح لوحة العمل", "Open the workspace")}</a>`;
               } catch {
                 message(
-                  t(
+                  localizedText(
                     "تعذر القبول. سجّل الدخول بالحساب الذي استلم الدعوة وتحقق من توثيق بريدك.",
                     "We could not accept the invitation. Sign in with the receiving account and ensure its email is verified."
                   ),
@@ -634,14 +634,14 @@ export function bootstrapCentral() {
         const data = await response.json();
         $("#service-status")!.textContent =
           data.status === "operational"
-            ? t("حالة الخدمة: تعمل", "Service status: operational")
-            : t(
+            ? localizedText("حالة الخدمة: تعمل", "Service status: operational")
+            : localizedText(
                 "حالة الخدمة: بعض الخدمات متأثرة",
                 "Service status: some services are degraded"
               );
       })
       .catch(() => {
-        $("#service-status")!.textContent = t(
+        $("#service-status")!.textContent = localizedText(
           "تعذر التحقق من حالة الخدمة الآن.",
           "Service status is currently unavailable."
         );
@@ -665,11 +665,11 @@ export function bootstrapCentral() {
         if (!response.ok || !result?.accepted || !result.reference) {
           message(
             response.status === 429
-              ? t(
+              ? localizedText(
                   "محاولات كثيرة. أعد المحاولة بعد قليل.",
                   "Too many attempts. Try again later."
                 )
-              : t(
+              : localizedText(
                   "لم يُرسل الطلب. راجع البيانات وحاول مجددًا، أو تواصل عبر البريد.",
                   "The request was not sent. Check the details and retry, or contact us by email."
                 ),
@@ -678,7 +678,7 @@ export function bootstrapCentral() {
           return;
         }
         message(
-          t(
+          localizedText(
             "استلمنا طلبك. رقم المتابعة: ",
             "We received your request. Reference: "
           ) + result.reference
@@ -687,7 +687,7 @@ export function bootstrapCentral() {
         startedAt = Date.now();
       } catch {
         message(
-          t(
+          localizedText(
             "تعذر إرسال الطلب. حاول مجددًا أو تواصل عبر البريد.",
             "The request could not be sent. Retry or contact us by email."
           ),
@@ -715,13 +715,13 @@ export function bootstrapCentral() {
               const name =
                 lang === "ar"
                   ? p.name
-                  : p.nameEn || t("باقة", "Plan") + " " + p.id;
+                  : p.nameEn || localizedText("باقة", "Plan") + " " + p.id;
               const description =
                 lang === "ar" ? p.description : p.descriptionEn;
-              return `<article class="plan-card ${i === 1 ? "featured" : ""}">${icon(["leaf", "sparkles", "zap"][i % 3], "plan-icon")}<h2>${e(name)}</h2><p>${e(description || "")}</p><div class="plan-price"><strong dir="ltr">${new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US", { maximumFractionDigits: 2 }).format(price)}</strong><span>${e(p.currency)} / ${billing === "monthly" ? t("شهر", "month") : t("سنة", "year")}</span></div><p class="billing-detail">${t("السعر الحالي من النظام", "Current published price")}</p><a class="button ${i === 1 ? "lime" : "outline"}" href="${href("/subscribe/" + p.id + "?billing=" + billing)}">${t("اختر الباقة", "Choose plan")}${icon("arrow-up-left", "directional")}</a>${renderPlanLimits(p, lang)}</article>`;
+              return `<article class="plan-card ${i === 1 ? "featured" : ""}">${icon(["leaf", "sparkles", "zap"][i % 3], "plan-icon")}<h2>${e(name)}</h2><p>${e(description || "")}</p><div class="plan-price"><strong dir="ltr">${new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US", { maximumFractionDigits: 2 }).format(price)}</strong><span>${e(p.currency)} / ${billing === "monthly" ? localizedText("شهر", "month") : localizedText("سنة", "year")}</span></div><p class="billing-detail">${localizedText("السعر الحالي من النظام", "Current published price")}</p><a class="button ${i === 1 ? "lime" : "outline"}" href="${href("/subscribe/" + p.id + "?billing=" + billing)}">${localizedText("اختر الباقة", "Choose plan")}${icon("arrow-up-left", "directional")}</a>${renderPlanLimits(p, lang)}</article>`;
             })
             .join("")
-        : `<div class="inline-notice">${t("لا توجد باقات منشورة حاليًا. تواصل معنا لمعرفة الخيارات.", "No plans are currently published. Contact us for available options.")}</div>`;
+        : `<div class="inline-notice">${localizedText("لا توجد باقات منشورة حاليًا. تواصل معنا لمعرفة الخيارات.", "No plans are currently published. Contact us for available options.")}</div>`;
     };
     const load = async () => {
       try {
@@ -729,7 +729,7 @@ export function bootstrapCentral() {
         renderPlans();
       } catch {
         $("#central-plans")!.innerHTML =
-          `<div class="inline-notice error" role="alert"><h2>${t("تعذر تحميل الأسعار الحالية.", "Current prices are unavailable.")}</h2><p>${t("حاول مجددًا أو تواصل معنا لمعرفة الخيارات.", "Retry or contact us for available options.")}</p><button class="button outline" id="retry-prices">${t("إعادة المحاولة", "Try again")}</button></div>`;
+          `<div class="inline-notice error" role="alert"><h2>${localizedText("تعذر تحميل الأسعار الحالية.", "Current prices are unavailable.")}</h2><p>${localizedText("حاول مجددًا أو تواصل معنا لمعرفة الخيارات.", "Retry or contact us for available options.")}</p><button class="button outline" id="retry-prices">${localizedText("إعادة المحاولة", "Try again")}</button></div>`;
         $("#retry-prices")!.addEventListener("click", () => void load());
       }
     };

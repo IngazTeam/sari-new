@@ -1,4 +1,4 @@
-import { isSalesRefusal, isShortAffirmation, pendingDecisionFromQuestion } from './customer-decision';
+import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, pendingDecisionFromQuestion } from './customer-decision';
 import type { CustomerIntent } from './session-context';
 import { buildSalesSectorGuidance, getSalesSectorPlaybook, type SalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
 
@@ -10,11 +10,12 @@ export type SalesTurnGoal = 'respect_decline' | 'resolve_existing_order' | 'expl
 export function decideSalesTurnGoal(input: { intent: CustomerIntent; customerMessage: string; lastAssistantMessage?: string }): SalesTurnGoal {
   if (input.intent === 'declined' || isSalesRefusal(input.customerMessage)) return 'respect_decline';
   if (input.intent === 'post_purchase') return 'resolve_existing_order';
+  if (isPurchaseProcessQuestion(input.customerMessage)) return 'explain_requested_information';
   if (isShortAffirmation(input.customerMessage) && pendingDecisionFromQuestion(input.lastAssistantMessage || '') !== 'purchase') {
     return 'explain_requested_information';
   }
   if (input.intent === 'ready_to_buy') return 'confirm_agreement';
-  if (input.intent === 'hesitating') return 'understand_objection';
+  if (input.intent === 'hesitating' || input.intent === 'objecting') return 'understand_objection';
   if (input.intent === 'comparing') return 'compare_suitable_options';
   return 'answer_then_qualify';
 }

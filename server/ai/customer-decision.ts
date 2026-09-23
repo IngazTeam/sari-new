@@ -22,6 +22,11 @@ export function isShortAffirmation(message: string): boolean {
     .test(normalizeCustomerText(message));
 }
 
+/** Asking how an order or payment works is a request for information, not consent. */
+export function isPurchaseProcessQuestion(message: string): boolean {
+  return /(?:كيف|طريقه|خطوات|how (?:do|can|to)|can i|could i).{0,45}(?:اطلب|الطلب|اشتري|شراء|ادفع|الدفع|order|buy|pay)/i.test(normalizeCustomerText(message));
+}
+
 /** A question about how to buy is interest, not permission to create an order. */
 export function isExplicitPurchaseInstruction(message: string): boolean {
   if (isSalesRefusal(message)) return false;

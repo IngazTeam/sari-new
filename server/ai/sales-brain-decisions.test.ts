@@ -87,7 +87,7 @@ describe('sales decisions preserve current consent', () => {
     expect(buildClosingDirective(params).mode).toBe('none');
     const directive = buildClosingDirective({ ...params, message: 'كم السعر؟', session: { messageCount: 10 } as any,
       previousMessages: [{ role: 'user', content: 'بكم المنتج؟' }] });
-    expect(directive.mode).toBe('soft_close');
-    expect(directive.suggestedCTA).not.toMatch(/قبل ينتهي|ضغط|محدود/);
+    expect(directive.mode).toBe('none');
+    expect(directive.suggestedCTA).toBeUndefined();
   });
 });

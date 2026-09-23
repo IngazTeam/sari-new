@@ -1,21 +1,9 @@
-/**
- * Closing Engine — Determines WHEN and HOW to close the sale
- * 
- * Analyzes conversation signals to decide the optimal closing moment.
- * Works WITH the Strategist — doesn't replace it.
- * 
- * Signals:
- *   - Customer asked about price 2+ times → "time to close"
- *   - Customer said "تمام" / "أبي" after objection → "smooth close"  
- *   - Customer in golden hour + high momentum → "urgent close"
- *   - Customer picked a product → "ask for commitment"
- * 
- * Output: A closing directive injected into the Mission Block prompt.
- */
+/** Closing guidance follows current intent and the previous question.
+ * Message volume, repeated price questions and time of day are not consent or scarcity evidence. */
 
 import type { CustomerIntent, ConversationSession } from './session-context';
 import type { CustomerProfile } from '../db/customer-intelligence';
-import { isSalesRefusal, isShortAffirmation, pendingDecisionFromQuestion } from './customer-decision';
+import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, pendingDecisionFromQuestion } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -23,10 +11,10 @@ import { isSalesRefusal, isShortAffirmation, pendingDecisionFromQuestion } from 
 
 export type ClosingMode =
   | 'none'                // Not ready to close
-  | 'soft_close'          // "تبي أحجز لك؟" — low pressure
+  | 'soft_close'          // Review a selected option without assuming execution consent
   | 'direct_close'        // "أرسل لك رابط الدفع؟" — clear CTA
-  | 'urgency_close'       // "باقي 2 فقط!" — scarcity + time pressure
-  | 'assumptive_close'    // "خلني أجهز طلبك..." — assume the sale
+  | 'urgency_close'       // Legacy mode; no longer inferred by this engine
+  | 'assumptive_close'    // Legacy mode; no longer inferred by this engine
   | 'recovery_close';     // "شفت إنك ما كملت..." — re-engage
 
 export interface ClosingDirective {
@@ -41,13 +29,10 @@ export interface ClosingDirective {
 // ═══════════════════════════════════════════════════════════════
 
 interface ClosingSignals {
-  priceInquiryCount: number;       // How many times they asked about price
   positiveAfterObjection: boolean; // Said "تمام" after objecting
   productSelected: boolean;        // Mentioned a specific product
   paymentMentioned: boolean;       // Asked about payment/delivery
-  highMomentum: boolean;           // Multiple messages in short time
   abandonedCartExists: boolean;    // Has abandoned cart
-  isGoldenHour: boolean;           // Conductor says golden hour
 }
 
 /**
@@ -57,23 +42,9 @@ function detectClosingSignals(
   message: string,
   previousMessages: Array<{ role: string; content: string }>,
   session: ConversationSession | null,
-  intent: CustomerIntent,
   hasAbandonedCart: boolean,
-  isGoldenHour: boolean,
 ): ClosingSignals {
   const msg = message.toLowerCase();
-  const allMessages = previousMessages.filter(m => m.role === 'user').map(m =>
-    typeof m.content === 'string' ? m.content.toLowerCase() : ''
-  );
-
-  // Count price inquiries in conversation
-  const priceKeywords = ['كم', 'سعر', 'أسعار', 'price', 'cost', 'كم سعر', 'بكم'];
-  let priceInquiryCount = 0;
-  for (const m of allMessages) {
-    if (priceKeywords.some(k => m.includes(k))) priceInquiryCount++;
-  }
-  if (priceKeywords.some(k => msg.includes(k))) priceInquiryCount++;
-
   // Positive signals after objection phase
   const positiveAfterObjection = (
     (session?.customerIntent === 'objecting' || session?.persuasionUsed?.includes('proactive_discount')) &&
@@ -82,22 +53,16 @@ function detectClosingSignals(
   );
 
   // Product selection signals
-  const productSelected = /أبي هذا|أبغى هذا|هذا اللي أبيه|أبي الأول|الثاني|أختار|اختار|i want this|this one/.test(msg);
+  const productSelected = !/[?؟]|بكم|كم سعر|how much|what is/i.test(msg) && /أبي هذا|أبغى هذا|هذا اللي أبيه|أبي الأول|أختار|اختار|i want this|i choose/i.test(msg);
 
   // Payment signals (NOT delivery/shipping inquiries — those are just logistics questions)
   const paymentMentioned = /كيف أدفع|طريقة الدفع|payment|أدفع|visa|مدى|apple pay|تحويل|ادفع|الدفع/.test(msg);
 
-  // High momentum: 5+ messages in session
-  const highMomentum = (session?.messageCount || 0) >= 5;
-
   return {
-    priceInquiryCount,
     positiveAfterObjection: !!positiveAfterObjection,
     productSelected,
     paymentMentioned,
-    highMomentum,
     abandonedCartExists: hasAbandonedCart,
-    isGoldenHour,
   };
 }
 
@@ -118,10 +83,10 @@ export function buildClosingDirective(params: {
   hasAbandonedCart: boolean;
   isGoldenHour: boolean;
 }): ClosingDirective {
-  const { message, intent, previousMessages, session, customerProfile, hasAbandonedCart, isGoldenHour } = params;
+  const { message, intent, previousMessages, session, hasAbandonedCart } = params;
 
   // Don't try to close in these states
-  if (intent === 'declined' || isSalesRefusal(message) || intent === 'post_purchase' || intent === 'browsing') {
+  if (intent === 'declined' || isSalesRefusal(message) || isPurchaseProcessQuestion(message) || intent === 'post_purchase' || intent === 'browsing') {
     return { mode: 'none', confidence: 0, prompt: '' };
   }
 
@@ -130,8 +95,13 @@ export function buildClosingDirective(params: {
     return { mode: 'none', confidence: 0, prompt: '' };
   }
 
+  const lastAssistant = previousMessages.filter(m => m.role === 'assistant').at(-1)?.content;
+  if (isShortAffirmation(message) && pendingDecisionFromQuestion(lastAssistant) !== 'purchase') {
+    return { mode: 'none', confidence: 0, prompt: '' };
+  }
+
   const signals = detectClosingSignals(
-    message, previousMessages, session, intent, hasAbandonedCart, isGoldenHour,
+    message, previousMessages, session, hasAbandonedCart,
   );
 
   // ── 1. DIRECT CLOSE: Customer already wants to buy ──
@@ -160,36 +130,17 @@ export function buildClosingDirective(params: {
       mode: 'soft_close',
       confidence: 75,
       prompt: buildSoftClosePrompt(),
-      suggestedCTA: 'تبي أحجز لك؟',
-    };
-  }
-
-  // ── 4. URGENCY CLOSE: Golden hour + high momentum + price asked 2+ times ──
-  if (signals.isGoldenHour && signals.highMomentum && signals.priceInquiryCount >= 2) {
-    return {
-      mode: 'soft_close',
-      confidence: 80,
-      prompt: buildSoftClosePrompt(),
-      suggestedCTA: 'تحب نراجع التفاصيل ونكمل؟',
+      suggestedCTA: 'تحب نراجع تفاصيل الخيار؟',
     };
   }
 
   // ── 5. RECOVERY CLOSE: Has abandoned cart ──
-  if (signals.abandonedCartExists && intent !== 'objecting') {
+  if (signals.abandonedCartExists && intent !== 'objecting' && /السلة|سلتي|cart/i.test(message)) {
     return {
       mode: 'recovery_close',
       confidence: 70,
       prompt: buildRecoveryClosePrompt(),
       suggestedCTA: 'تبي أكمل طلبك السابق؟',
-    };
-  }
-
-  // ── 6. SOFT CLOSE: Asked price 2+ times = serious interest ──
-  if (signals.priceInquiryCount >= 2 && signals.highMomentum) {
-    return {
-      mode: 'soft_close',
-      confidence: 65,
-      prompt: buildSoftClosePrompt(),
     };
   }
 
@@ -223,20 +174,10 @@ function buildAssumptiveClosePrompt(): string {
 function buildSoftClosePrompt(): string {
   return `
 ## 💬 إغلاق ناعم — العميل مهتم لكن لم يلتزم:
-- العميل اختار منتج أو سأل عن السعر أكثر من مرة = اهتمام حقيقي
+- العميل أبدى اهتماماً باختيار محدد؛ هذا ليس موافقة تنفيذ
 - اقترح خطوة مناسبة للاهتمام: "تحب نراجع الخيارات؟" أو "أرسل لك التفاصيل؟"
 - لا تضغط — اجعله يشعر بالسيطرة
 - لا تعد بحجز مجاني أو تجربة أو ندرة إلا إذا كانت سياسة معتمدة موثقة في السياق
-`;
-}
-
-function buildUrgencyClosePrompt(): string {
-  return `
-## ⏰ إغلاق عاجل — وقت ذهبي + اهتمام عالي:
-- العميل في وقت ذهبي للشراء ومهتم جداً
-- لا تستنتج ندرة من الوقت أو كثرة الرسائل؛ يلزم مصدر مخزون أو عرض مؤرخ
-- لا تستخدم ضغطاً زمنياً دون موعد انتهاء معتمد
-- اقترح خطوة فورية: "تبي أحجز لك قبل ينتهي؟"
 `;
 }
 

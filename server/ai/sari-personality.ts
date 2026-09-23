@@ -1034,7 +1034,7 @@ function buildSentimentPrompt(
 1. اعتذر بصدق: "أعتذر عن أي إزعاج — حقك علينا"
 2. أظهر إنك فاهم المشكلة وتأخذها بجدية
 3. **ممنوع** تعرض منتجات أو تبيع — حل المشكلة أولاً
-4. قل: "خلني أوصّل ملاحظتك للفريق المختص ويتواصلون معك مباشرة"
+4. اطلب التصعيد المتاح عند الحاجة؛ لا تعد بتواصل موظف أو موعد قبل تسجيل الإجراء ونتيجته
 5. لا تبرر ولا تدافع — فقط تعاطف وحل`,
 
     frustrated: `\n## ⚠️ حالة العميل: محبط/متضايق
@@ -1042,7 +1042,7 @@ function buildSentimentPrompt(
 1. اعترف بمشكلته فوراً — لا تتجاهلها
 2. أعطِ خطوة عملية واضحة
 3. **ممنوع** ردود عامة مثل "نسعد بخدمتك" — يريد حل ملموس
-4. إذا ما تقدر تحل — صعّد بصراحة: "خلني أوصّلك بالمختص الحين"`,
+4. إذا تعذر الحل فوضّح ما يحتاج التحقق واستخدم التصعيد المتاح دون ادعاء تنفيذ لم يحدث`,
 
     sad: `\n## 😔 حالة العميل: حزين/مخيب أمله
 **العميل محتاج طمأنة:**
@@ -1053,24 +1053,24 @@ function buildSentimentPrompt(
     happy: `\n## 😊 حالة العميل: سعيد/راضي
 **استثمر الرضا:**
 1. اشكره بطبيعية وادعم حماسه
-2. هذا أفضل وقت لعرض منتج مكمل أو إضافي
-3. اسأل: "تبي تشوف شي ثاني يناسبك؟"`,
+2. اربط المعلومات بحاجته الحالية؛ الرضا وحده لا يثبت حاجة لمنتج إضافي
+3. لا تعِد فتح اتفاق مكتمل أو تفرض سؤالاً جديداً`,
 
     positive: `\n## 👍 حالة العميل: إيجابي/مهتم
 **العميل مهتم — استمر بالزخم:**
 1. ادعم اهتمامه بتفاصيل إضافية مفيدة
-2. قرّبه من قرار الشراء بخطوة واضحة`,
+2. وضّح الخطوة التي يحتاجها قراره الحالي؛ الاهتمام ليس موافقة تنفيذ`,
   };
 
   let prompt = directives[sentiment] || '';
 
   // Sales hint override (from mixed signal detection)
   if (salesHint === 'close_to_buying') {
-    prompt += `\n📌 **إشارة: العميل قريب من الشراء!** — ادفع بلطف نحو الإغلاق`;
+    prompt += `\nإشارة اهتمام مع تردد: عالج ما لم يُحسم، ولا تعتبر الشعور الإيجابي موافقة شراء أو مبرراً لتجاوز الاعتراض.`;
   } else if (salesHint === 'needs_reassurance') {
-    prompt += `\n📌 **إشارة: يحتاج طمأنة** — ابدأ بتأكيد اختياره ثم عالج التردد`;
+    prompt += `\nيحتاج طمأنة: عالج سبب القلق بدليل موثق، دون افتراض أن اختياراً أو اتفاقاً قد حُسم.`;
   } else if (salesHint === 'losing_interest') {
-    prompt += `\n📌 **إشارة: يفقد الاهتمام!** — أثِر فضوله بقيمة غير متوقعة`;
+    prompt += `\nانخفاض الاهتمام: تحقق مما بقي يحتاجه دون ضغط أو عرض مفترض أو سؤال مكرر.`;
   }
 
   return prompt;
@@ -1874,7 +1874,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
     let nbaPromptInjection = '';
     try {
       const { loadNBAContext, determineNextBestAction } = await import('./next-best-action');
-      const nbaCtx = await loadNBAContext(params.merchantId, convId, params.message, earlyIntent);
+      const nbaCtx = await loadNBAContext(params.merchantId, convId, params.message, earlyIntent, lastAssistantContent);
       const nba = await determineNextBestAction(nbaCtx);
       if (nba.promptInjection) {
         nbaPromptInjection = nba.promptInjection;
@@ -1931,16 +1931,15 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
         salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
         merchantId: params.merchantId,
         closingHint,
+        lastAssistantMessage: lastAssistantContent,
       });
       const missionPrompt = missionToPrompt(mission);
 
       // v7: If mixed signal detected, override strategy for better targeting
-      let effectiveIntent = intent;
+      const effectiveIntent = intent;
       let mixedSignalHint = '';
       if (sentimentSignals.mixedSignal && sentimentSignals.salesHint) {
-        if (sentimentSignals.salesHint === 'close_to_buying' && intent === 'hesitating') {
-          effectiveIntent = 'ready_to_buy'; // Override: customer is actually close!
-        }
+        // Mixed sentiment is an observation, never new purchase consent.
         // STRATEGIC FIX #3: needs_reassurance — build on the positive before addressing objection
         if (sentimentSignals.salesHint === 'needs_reassurance') {
           mixedSignalHint = '\n\nالعميل أبدى اهتماماً واعتراضاً: اعترف بالنقطة التي ذكرها ثم عالج الاعتراض بقيمة موثقة، دون مدح عام.';
@@ -1962,7 +1961,8 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
         fastArsenal,
         effectiveIntent,
         trajectory[trajectory.length - 1] || 'neutral',
-        existingSession.persuasionUsed || []
+        existingSession.persuasionUsed || [],
+        { customerMessage: params.message, lastAssistantMessage: lastAssistantContent }
       );
 
       if (persuasion.strategy !== 'none') {
@@ -2172,7 +2172,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       }
 
       // Proactive Follow-up: schedule if customer is hesitating
-      // BUG-4 FIX: Use effectiveIntent — don't schedule follow-up if mixed signal says 'close_to_buying'
+      // The follow-up scheduler rechecks consent and policy; sentiment never upgrades purchase intent.
       if (effectiveIntent === 'hesitating' || effectiveIntent === 'objecting') {
         const followUpType: FollowUpType = effectiveIntent === 'hesitating' ? 'hesitating' : 'post_interest';
         scheduleFollowUp({
@@ -2298,6 +2298,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
         merchantId: params.merchantId,
         closingHint: fullPathClosingHint,
+        lastAssistantMessage: lastAssistantContent,
       });
       missionPrompt = missionToPrompt(mission);
 
@@ -2317,7 +2318,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         arsenal,
         intent,
         sentiment?.sentiment || 'neutral',
-        []
+        [],
+        { customerMessage: params.message, lastAssistantMessage: lastAssistantContent }
       );
       arsenalPrompt = persuasion.prompt;
 
