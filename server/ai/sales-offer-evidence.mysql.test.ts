@@ -11,7 +11,7 @@ import { generateAIResponse } from '../ai';
 
 describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner;
-  let phone: string, otherPhone: string, conversationId: number, privateId: number;
+  let phone: string, otherPhone: string, conversationId: number, privateId: number, incomingMessageId: number;
   let sequence = 0;
   const query = async (sql: string, values: any[] = []) =>
     (await (await getPool())!.execute<any>(sql, values))[0];
@@ -40,6 +40,8 @@ describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', ()
       phone,
     ]);
     conversationId = Number(conv.insertId);
+    const source = await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming','هل يوجد خصم؟')", [conversationId]);
+    incomingMessageId = Number(source.insertId);
     privateId = await code(owner.merchantId, 'PRIVATE25', phone, 1);
     await code(owner.merchantId, 'OTHER-CUSTOMER', otherPhone, 1);
     await code(other.merchantId, 'OTHER-TENANT', phone);
@@ -105,6 +107,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', ()
       merchantId: owner.merchantId,
       customerPhone: phone,
       conversationId,
+      incomingMessageId,
       customerMessage: 'هل يوجد خصم؟',
       sendMessage: send,
       action: { type: 'offer_discount', reason: 'customer request' },
@@ -124,6 +127,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', ()
       merchantId: owner.merchantId,
       customerPhone: phone,
       conversationId,
+      incomingMessageId,
       customerMessage: 'هل يوجد خصم؟',
       sendMessage: send,
       action: { type: 'offer_discount', reason: 'stale generation' },

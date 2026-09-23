@@ -1,4 +1,5 @@
-import { asksAboutDiscount, selectSalesDiscounts, salesDiscountMessage } from './sales-offer-evidence';
+import { asksAboutDiscount, selectSalesDiscounts } from './sales-offer-evidence';
+import { reserveSalesOfferShare, beginSalesOfferDispatch, finishSalesOfferDispatch } from './sales-offer-authority';
 /**
  * Action Selector — Multi-Action Decision Engine
  * 
@@ -26,8 +27,7 @@ import { filterProductsAvailableForSale } from './product-availability';
 import { formatProductPrice, formatMinorMoney } from '../../shared/product-money';
 import { currentInboundExecution } from '../messaging/inbound-context';
 
-// Rate-limit map: prevent sending discount codes too frequently to the same customer
-const _discountRateLimit = new Map<string, number>();
+// Shared-offer limits and idempotency are persisted before transport.
 
 // ═══════════════════════════════════════════════════════════════
 // Action Types
@@ -331,9 +331,8 @@ export async function executeAction(params: {
       case 'offer_discount': {
         // Model-selected incentives still need the customer's request and current scoped evidence.
         if (!params.customerMessage || !asksAboutDiscount(params.customerMessage) || isSalesRefusal(params.customerMessage)) break;
-        const discountKey = merchantId + ':' + customerPhone;
-        const lastSent = _discountRateLimit.get(discountKey);
-        if (lastSent && Date.now() - lastSent < 3600_000) break;
+        if (!Number.isSafeInteger(params.incomingMessageId) || Number(params.incomingMessageId) <= 0) throw new Error('Discount requires an incoming source message');
+        const identity = { merchantId, customerPhone, conversationId, incomingMessageId: params.incomingMessageId! };
         const { getPool } = await import('../db');
         const pool = await getPool();
         if (!pool) throw new Error('Discount evidence unavailable');
@@ -347,13 +346,21 @@ export async function executeAction(params: {
         if (!offers.length) {
           // Existing opt-in policy remains the authority; creation alone is not proof for sharing.
           const { generateAutoDiscount } = await import('./auto-discount');
-          const created = await generateAutoDiscount({ merchantId, customerPhone, customerName: params.customerName, customerMessage: params.customerMessage });
+          const created = await generateAutoDiscount({ ...identity, customerName: params.customerName, customerMessage: params.customerMessage });
           if (created) offers = (await read()).filter(offer => offer.code === created.code);
         }
         if (offers.length) {
-          await sendMessage(customerPhone, salesDiscountMessage(offers[0]));
-          // An offer is not redemption. Checkout owns usage reservation and final eligibility.
-          _discountRateLimit.set(discountKey, Date.now());
+          const share = await reserveSalesOfferShare(identity, offers[0]);
+          if (!share || !await beginSalesOfferDispatch(identity, share)) break;
+          try {
+            await currentInboundExecution()?.assertOwned();
+            await sendMessage(share.phone, share.text);
+            await finishSalesOfferDispatch(identity, share.id, 'accepted');
+          } catch (error) {
+            await finishSalesOfferDispatch(identity, share.id, 'unknown').catch(() => {});
+            throw error;
+          }
+          // An offer is not redemption. No uncertain attempt is automatically replayed.
         }
         break;
       }

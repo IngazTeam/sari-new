@@ -1,14 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const calls = vi.hoisted(() => ({ settings: vi.fn(), list: vi.fn(), create: vi.fn() }));
-vi.mock('../db', () => ({
-  getBotSettings: calls.settings,
-  getDiscountCodesByMerchantId: calls.list,
-  createDiscountCode: calls.create,
+vi.mock('./sales-offer-authority', () => ({
+  hasSalesOfferAttempt: async () => false,
+  recordSalesOfferAttempt: async () => 'fixture',
+  withSalesOfferAuthority: async (input: any, run: any) => run({
+    phone: input.customerPhone, source: 'ممكن خصم؟', now: Date.now(), issueLimited: false,
+    connection: { execute: async (sql: string, values: any[]) => {
+      if (sql.includes('FROM bot_settings')) return [[await calls.settings()]];
+      if (sql.includes('FROM discount_codes')) return [await calls.list()];
+      if (sql.includes('INSERT INTO discount_codes')) {
+        const result = await calls.create({ value: values[2] }); return [{ insertId: result.id }];
+      }
+      throw new Error('Unexpected fixture query');
+    } },
+  }),
 }));
 import { generateAutoDiscount } from './auto-discount';
 let seq = 0;
 const request = () => ({
   merchantId: 7,
+  conversationId: 8,
+  incomingMessageId: 21,
   customerPhone: '966550' + String(++seq).padStart(6, '0'),
   customerMessage: 'ممكن خصم؟',
 });

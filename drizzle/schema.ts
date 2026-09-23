@@ -4001,3 +4001,26 @@ export const aiSalesPlaybooks = mysqlTable("ai_sales_playbooks", {
   weeklyUpdatedAt: datetime("weekly_updated_at", { mode: "string", fsp: 3 }),
   revision: bigint("revision", { mode: "number", unsigned: true }).notNull().default(1),
 });
+
+export const salesOfferLimits = mysqlTable('sales_offer_limits', {
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
+  lastIssuedAt: datetime('last_issued_at', { mode: 'string', fsp: 3 }),
+  lastShareAt: datetime('last_share_at', { mode: 'string', fsp: 3 }),
+}, table => [primaryKey({ columns: [table.merchantId, table.customerPhone] })]);
+
+// Retain source/coupon identifiers after deletion so removal cannot reset a monetary limit or replay a send.
+export const salesOfferAttempts = mysqlTable('sales_offer_attempts', {
+  id: varchar({ length: 36 }).primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  conversationId: int('conversation_id').notNull(),
+  sourceMessageId: int('source_message_id').notNull(),
+  customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
+  kind: mysqlEnum(['issue', 'share']).notNull(),
+  state: mysqlEnum(['issued', 'reserved', 'dispatching', 'accepted', 'unknown', 'cancelled']).notNull(),
+  discountCodeId: int('discount_code_id').notNull(),
+  evidence: json().notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_offer_source').on(table.merchantId, table.sourceMessageId, table.kind),
+  index('idx_offer_customer').on(table.merchantId, table.customerPhone, table.createdAt)]);
