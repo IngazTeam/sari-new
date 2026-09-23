@@ -1,6 +1,12 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  checkoutDiscount: {
+    title:'Agreed discount breakdown',subtotal:'Products before discount',discount:'Code {{code}} discount',total:'Products after discount',
+    pending:'The customer agreed to this amount. The code, margin and charges are checked again before invoice approval; the code has not been consumed yet.',
+    applied:'The discount was confirmed on invoice approval and code usage recorded. Invoice approval does not establish payment.',
+    invalid:'The discount breakdown does not match the amount. Refresh the order and review the agreement before approval.'
+  },
   marginPolicy: {
     "title": "Local order margin floor",
     "description": "Set the minimum margin before approving invoices for local orders recorded by Sari. The calculation uses revenue after tax and reviewed product, delivery and other order costs.",

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ query: vi.fn(), llm: vi.fn(), prepare: vi.fn(), accept: vi.fn() }));
+const mocks = vi.hoisted(() => ({ query: vi.fn(), llm: vi.fn(), prepare: vi.fn(), coupon: vi.fn(), accept: vi.fn() }));
 vi.mock('../db/connection', () => ({ getPool: async () => ({ execute: mocks.query }) }));
 vi.mock('./openai', () => ({ callGPT4: mocks.llm }));
-vi.mock('./checkout-agreements', async original => ({ ...await original<typeof import('./checkout-agreements')>(), prepareCheckoutQuote: mocks.prepare, acceptCheckoutQuote: mocks.accept }));
+vi.mock('./checkout-agreements', async original => ({ ...await original<typeof import('./checkout-agreements')>(), prepareCheckoutQuote: mocks.prepare, prepareCheckoutCouponQuote:mocks.coupon, acceptCheckoutQuote: mocks.accept }));
 import { handleLocalCheckout } from './checkout-conversation';
 const input = { merchantId: 1, conversationId: 3, incomingMessageId: 5, customerPhone: 'synthetic', message: 'أريد شراء 3 سماعات' };
 beforeEach(() => {
@@ -10,8 +10,20 @@ beforeEach(() => {
   mocks.query.mockImplementation(async (sql: string) => [sql.includes('FROM products') ? [{ id: 7, name: 'سماعة' }] : []]);
   mocks.prepare.mockResolvedValue({ kind: 'quote', text: 'saved quote' });
   mocks.accept.mockResolvedValue({ kind: 'order', text: 'recorded order' });
+  mocks.coupon.mockResolvedValue({kind:'quote',text:'new discounted offer requires consent'});
 });
 describe('local checkout routing', () => {
+  it.each(['طبق الكود LOCAL10','أزل الخصم','apply code REWARDS10'])('routes %s without model extraction or automatic acceptance',async message=>{
+    expect(await handleLocalCheckout({...input,message})).toBe('new discounted offer requires consent');expect(mocks.coupon).toHaveBeenCalledWith({...input,message});
+    expect(mocks.llm).not.toHaveBeenCalled();expect(mocks.accept).not.toHaveBeenCalled();
+  });
+  it('does not drop a coupon mentioned in a combined purchase instruction',async()=>{
+    expect(await handleLocalCheckout({...input,message:'أريد شراء 3 سماعات بكود LOCAL10'})).toContain('بعد ملخصها');expect(mocks.llm).not.toHaveBeenCalled();expect(mocks.prepare).not.toHaveBeenCalled();
+  });
+  it('does not claim application or blindly retry after coupon storage failure',async()=>{
+    mocks.coupon.mockRejectedValueOnce(Error('lost acknowledgement'));const text=await handleLocalCheckout({...input,message:'طبق الكود LOCAL10'});
+    expect(text).toContain('تعذر تجهيز');expect(mocks.coupon).toHaveBeenCalledTimes(1);expect(mocks.accept).not.toHaveBeenCalled();expect(mocks.llm).not.toHaveBeenCalled();
+  });
   it('extracts structured quantities and returns a saved offer without claiming an order', async () => {
     mocks.llm.mockResolvedValue('[{"productId":7,"variantId":null,"quantity":3}]');
     expect(await handleLocalCheckout(input)).toBe('saved quote');

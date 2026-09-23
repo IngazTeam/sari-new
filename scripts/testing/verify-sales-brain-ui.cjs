@@ -92,6 +92,20 @@ async function main() {
       await page.type('#invoice-tax-123','٣٠');await page.type('#invoice-shipping-123','10');await page.type('#invoice-other-123','10');
       await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');
     };
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=discounted-ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      await page.waitForSelector('#invoice-fixture [data-discount-state=pending]');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.$eval('#invoice-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      assert.ok(await page.$eval('#invoice-fixture [data-checkout-discount]',n=>n.textContent.includes('SAVE_')));
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#invoice-fixture')).screenshot({path:path.join(output,`checkout-discount-${width}.png`)});
+      await page.click('#invoice-final-attested-123');await page.click('#invoice-fixture [data-invoice-approve]');await page.waitForSelector('#invoice-fixture [data-discount-state=applied]');
+      assert.deepEqual(await page.evaluate(()=>window.__invoiceInput),{orderId:123,expectedAmountMinor:23000,totalIsFinal:true});
+      results.push({width,lang,mode:'checkout_discount_breakdown_and_final_amount',passed:true});
+    }
+    await page.goto(`${origin}/?case=discounted-invalid`,{waitUntil:'networkidle0'});await page.waitForSelector('#invoice-fixture [role=alert]');await page.click('#invoice-final-attested-123');
+    assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);assert.equal(await page.evaluate(()=>window.__invoiceInput),undefined);
+    results.push({width:1440,mode:'checkout_discount_inconsistent_amount_blocks_review',passed:true});
     const exceptionReason='اعتماد خاص لهذه الفاتورة بعد مراجعة التكاليف';
     const reviewException=async()=>{
       await page.type('#invoice-exception-reason-123',exceptionReason);

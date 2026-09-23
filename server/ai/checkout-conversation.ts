@@ -2,7 +2,8 @@ import { getPool } from '../db/connection';
 import { callGPT4 } from './openai';
 import { currentInboundExecution } from '../messaging/inbound-context';
 import { isExplicitPurchaseInstruction, isShortAffirmation, isSalesRefusal } from './customer-decision';
-import { checkoutSelectionSchema, prepareCheckoutQuote, acceptCheckoutQuote, type CheckoutIdentity } from './checkout-agreements';
+import { checkoutSelectionSchema, prepareCheckoutQuote, prepareCheckoutCouponQuote, acceptCheckoutQuote, type CheckoutIdentity } from './checkout-agreements';
+import { checkoutCouponCommand } from '../../shared/checkout-discount';
 
 /** Local catalogue checkout. External commerce and appointment adapters retain their own contracts. */
 export async function handleLocalCheckout(input: CheckoutIdentity & { message: string }): Promise<string | null> {
@@ -11,6 +12,10 @@ export async function handleLocalCheckout(input: CheckoutIdentity & { message: s
     WHERE merchant_id = ? AND conversation_id = ? AND customer_phone = ? AND checkout_snapshot IS NOT NULL
     ORDER BY id DESC LIMIT 1`, [input.merchantId, input.conversationId, input.customerPhone]);
   const quote = quotes[0];
+  if(checkoutCouponCommand(input.message).kind!=='none') {
+    try { await currentInboundExecution()?.assertOwned();return (await prepareCheckoutCouponQuote(input)).text; }
+    catch { return 'تعذر تجهيز ملخص الخصم. تحقق من الكود وشروطه واطلب ملخصًا جديدًا للمراجعة؛ لا تعتمد سعرًا مخفّضًا دون ظهوره في الملخص وموافقتك عليه.'; }
+  }
   if (quote && (isShortAffirmation(input.message) || isSalesRefusal(input.message)
     || /^(?:أكمل الطلب|اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/i.test(input.message))) {
     try {
@@ -23,6 +28,7 @@ export async function handleLocalCheckout(input: CheckoutIdentity & { message: s
   }
   const editsPendingOffer = quote && /(?:بدل|عدّل|عدل|غيّر|غير|خلي|خلها|خليها|change|make it).{0,60}(?:[0-9٠-٩]|عدد|كمي)/i.test(input.message);
   if (!isExplicitPurchaseInstruction(input.message) && !editsPendingOffer) return null;
+  if(/كود|كوبون|coupon|promo code/i.test(input.message))return 'حدد المنتجات والخيارات والكميات أولًا. بعد ملخصها أرسل «طبق الكود» ثم الكود نفسه لأعرض الإجمالي الجديد قبل موافقتك.';
   // Enough context to resolve a mentioned option; no API keys, prices, or customer profiles are sent for extraction.
   const [products] = await pool.execute<any[]>(`SELECT id, name, has_variants FROM products WHERE merchantId = ?
     AND isActive = 1 AND status = 'active' AND sallaProductId IS NULL ORDER BY id LIMIT 150`, [input.merchantId]);

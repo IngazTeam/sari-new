@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
 import { CheckoutMarginExceptionAudit } from '@/components/CheckoutMarginExceptionAudit';
+import { CheckoutDiscountBreakdown } from '@/components/CheckoutDiscountBreakdown';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
@@ -405,7 +406,10 @@ export default function Orders() {
 
               {/* Status & Tracking */}
               {Boolean(selectedOrder.checkoutReviewRequired) && <CheckoutInvoiceReview key={selectedOrder.id}
-                orderId={selectedOrder.id} totalAmount={selectedOrder.totalAmount} onApproved={() => { void refetch(); }} />}
+                orderId={selectedOrder.id} totalAmount={selectedOrder.totalAmount} onApproved={() => { void refetch(); }}
+                discount={selectedOrder.checkoutDiscountMinor!=null&&selectedOrder.checkoutSubtotalMinor!=null?{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}:undefined} />}
+              {!selectedOrder.checkoutReviewRequired&&selectedOrder.checkoutDiscountMinor!=null&&selectedOrder.checkoutSubtotalMinor!=null&&<CheckoutDiscountBreakdown
+                discount={{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}} totalMinor={selectedOrder.totalAmount} approved />}
               {!selectedOrder.checkoutReviewRequired && <CheckoutMarginExceptionAudit key={selectedOrder.id} orderId={selectedOrder.id} />}
               <div className="grid grid-cols-2 gap-4">
                 <div>

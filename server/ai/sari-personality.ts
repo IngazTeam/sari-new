@@ -3,6 +3,7 @@ import { conversationHandoffSummary, handoffPrompt } from './conversation-handof
 import { reviewSalesResponse } from './review-sales-response';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
 import { formatProductPrice } from '../../shared/product-money';
+import { checkoutCouponCommand } from '../../shared/checkout-discount';
 /**
  * Sari AI Agent Personality - Enhanced Version
  * A friendly, professional Saudi sales assistant with improved context awareness
@@ -1796,14 +1797,15 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
     // Check for loyalty commands first
     const messageLower = params.message.toLowerCase().trim();
+    const explicitCouponCommand = checkoutCouponCommand(params.message).kind !== 'none';
 
     // أوامر نظام الولاء
-    if (messageLower.includes('نقاط') || messageLower.includes('رصيد') || messageLower.includes('points') || messageLower.includes('loyalty')) {
+    if (!explicitCouponCommand && (messageLower.includes('نقاط') || messageLower.includes('رصيد') || messageLower.includes('points') || messageLower.includes('loyalty'))) {
       const loyaltyInfo = await getCustomerLoyaltyInfo(params.merchantId, params.customerPhone);
       return loyaltyInfo;
     }
 
-    if (messageLower.includes('مكافآت') || messageLower.includes('جوائز') || messageLower.includes('rewards') || messageLower.includes('استبدال')) {
+    if (!explicitCouponCommand && (messageLower.includes('مكافآت') || messageLower.includes('جوائز') || messageLower.includes('rewards') || messageLower.includes('استبدال'))) {
       const rewardsInfo = await getAvailableRewardsInfo(params.merchantId, params.customerPhone);
       return rewardsInfo;
     }

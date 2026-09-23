@@ -19,10 +19,12 @@ import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidChe
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
 async function render() {
   const lng = new URL(location.href).searchParams.get('lang') === 'en' ? 'en' : 'ar';
+  const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
   createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl space-y-6 p-4" dir={lng === 'ar' ? 'rtl' : 'ltr'}>
-    <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }} /></div>
+    <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }}
+      discount={mode.startsWith('discounted-')?{code:'SAVE_'+'X'.repeat(45),subtotalMinor:25000,discountMinor:mode==='discounted-invalid'?1000:2000}:undefined} /></div>
     <div id="margin-audit-fixture"><CheckoutMarginExceptionAudit orderId={124} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>

@@ -540,6 +540,13 @@
       "when": 1790152100000,
       "tag": "0076_checkout_margin_exceptions",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1790152200000,
+      "tag": "0077_checkout_discounts",
+      "breakpoints": true
     }
   ]
 }

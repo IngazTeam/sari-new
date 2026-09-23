@@ -528,6 +528,8 @@ export const orders = mysqlTable("orders", {
 	trackingNumber: varchar({ length: 100 }),
 	notes: text(),
 	checkoutReviewRequired: tinyint('checkout_review_required').default(0).notNull(),
+	checkoutSubtotalMinor: int('checkout_subtotal_minor'),
+	checkoutDiscountMinor: int('checkout_discount_minor'),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	isGift: tinyint().default(0).notNull(),
@@ -4081,3 +4083,11 @@ export const checkoutMarginExceptions = mysqlTable('checkout_margin_exceptions',
   evidenceHash: char('evidence_hash', { length: 64 }).notNull(), assessment: json().notNull(),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_margin_exception_order').on(table.orderId), index('idx_margin_exception_merchant').on(table.merchantId, table.orderId)]);
+
+export const checkoutDiscountRedemptions = mysqlTable('checkout_discount_redemptions', {
+  id:int().autoincrement().primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  orderId:int('order_id').notNull().references(()=>orders.id,{onDelete:'cascade'}), quotationId:int('quotation_id').notNull(),
+  couponId:int('coupon_id').notNull(), actorUserId:int('actor_user_id').notNull(), discountCode:varchar('discount_code',{length:50}).notNull(),
+  subtotalMinor:int('subtotal_minor').notNull(),discountMinor:int('discount_minor').notNull(),totalMinor:int('total_minor').notNull(),terms:json().notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_checkout_discount_order').on(table.orderId)]);

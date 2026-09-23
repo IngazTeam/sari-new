@@ -48,7 +48,7 @@ export async function previewCheckoutMargin(input: { merchantId:number; orderId:
     const policy = await readLockedMarginPolicy(connection,input.merchantId);
     const {order,snapshot} = await loadCheckoutInvoiceReview(connection,input.merchantId,input.orderId);
     if (!order.checkout_review_required) throw new Error('Invoice already reviewed');
-    await assertInvoiceCatalog(connection,input.merchantId,snapshot);
+    await assertInvoiceCatalog(connection,input.merchantId,snapshot,order.customerPhone);
     return evaluate(connection,{...input,snapshot,policy});
   });
 }

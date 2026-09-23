@@ -91,7 +91,7 @@ describe('real app router team boundaries', () => {
       mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
       await expect(caller().botSettings.updateMarginPolicy({...marginPolicyInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.marginWrite).not.toHaveBeenCalled();
     });
-  it.each([{merchantId:30},{actorUserId:1},{orderId:-1},{totalIsFinal:false},
+  it.each([{merchantId:30},{actorUserId:1},{orderId:-1},{totalIsFinal:false},{discountCode:'FAKE'},{checkoutDiscountMinor:1},{subtotalMinor:10000},
     {margin:{...invoiceInput.margin,reviewedCosts:false}},{margin:{...invoiceInput.margin,evidence:'fake'}},
     {margin:{...invoiceInput.margin,policy:{enabled:false}}},{margin:{...invoiceInput.margin,costs:{...marginCosts,productCostMinor:0}}},
     {margin:{...invoiceInput.margin,costs:{...marginCosts,taxMinor:-1}}}])('rejects forged margin approval %j',async attack=>{

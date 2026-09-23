@@ -7,6 +7,8 @@ import { requireMinor, verifiedProductMoney, formatMinorMoney } from '../../shar
 import { isProductAvailableForSale } from './product-availability';
 import { isSalesRefusal, isShortAffirmation, normalizeCustomerText } from './customer-decision';
 import { invoiceApprovalSchema, type InvoiceMarginProof } from '../../shared/checkout-margin';
+import { checkoutCouponCommand, calculateCheckoutDiscount, type CheckoutDiscount } from '../../shared/checkout-discount';
+import { readCheckoutDiscount, sameCheckoutDiscount, consumeCheckoutDiscount } from './checkout-discount';
 
 // The model proposes identifiers and quantities only. Prices and authority come from SQL.
 export const checkoutSelectionSchema = z.array(z.object({
@@ -16,7 +18,8 @@ export const checkoutSelectionSchema = z.array(z.object({
 export type CheckoutSelection = z.infer<typeof checkoutSelectionSchema>;
 export type CheckoutIdentity = { merchantId: number; conversationId: number; incomingMessageId: number; customerPhone: string };
 type Line = { productId: number; variantId: number | null; quantity: number; name: string; price: number; productVersion: string; variantVersion: string | null };
-export type Snapshot = { version: 1; items: Line[]; totalMinor: number; currency: 'SAR'; pricing: 'catalog_subtotal_requires_billing_review'; digest: string };
+type CatalogSnapshot = { version: 1; items: Line[]; totalMinor: number; currency: 'SAR'; pricing: 'catalog_subtotal_requires_billing_review'; digest: string };
+export type Snapshot = CatalogSnapshot | (Omit<CatalogSnapshot,'version'> & {version:2;catalogSubtotalMinor:number;catalogDigest:string;discount:CheckoutDiscount});
 export type CheckoutResult =
   | { kind: 'quote'; quotationId: number; text: string; snapshot: Snapshot }
   | { kind: 'order'; quotationId: number; orderId: number; text: string; reused: boolean }
@@ -27,14 +30,26 @@ export async function assertCheckoutAgreementSchema() {
     columns: ['checkout_snapshot', 'source_message_id', 'consent_message_id', 'offer_expires_at', 'order_id',
       'external_provider', 'external_snapshot', 'execution_state', 'external_result', 'execution_attempt_id',
       'execution_started_at', 'external_order_key', 'external_reconciliation', 'projection_pending'],
-    uniqueIndexes: ['uq_quote_source', 'uq_quote_consent', 'uq_quote_order', 'uq_quote_external_order'] }]);
+    uniqueIndexes: ['uq_quote_source', 'uq_quote_consent', 'uq_quote_order', 'uq_quote_external_order'] },
+  { table:'orders',columns:['checkout_subtotal_minor','checkout_discount_minor'] },
+  { table:'checkout_discount_redemptions',columns:['merchant_id','order_id','quotation_id','coupon_id','actor_user_id','discount_code','subtotal_minor','discount_minor','total_minor','terms'],
+    uniqueIndexes:[{name:'uq_checkout_discount_order',columns:['order_id']}] }]);
 }
 
-const parseSnapshot = (value: unknown): Snapshot => typeof value === 'string' ? JSON.parse(value) : value as Snapshot;
+const parseSnapshot = (value: unknown): Snapshot => {
+  const snapshot:Snapshot=typeof value==='string'?JSON.parse(value):value as Snapshot;
+  if(!snapshot||![1,2].includes(snapshot.version))throw Error('Unsupported checkout snapshot');
+  if(snapshot.version===2) {
+    const expected=calculateCheckoutDiscount(snapshot.catalogSubtotalMinor,{type:snapshot.discount.type,value:snapshot.discount.value,minOrderAmount:snapshot.discount.minOrderAmount});
+    if(expected.amountMinor!==snapshot.discount.amountMinor||expected.totalMinor!==snapshot.totalMinor||expected.minimumMinor!==snapshot.discount.minimumMinor)throw Error('Discounted snapshot changed');
+  }
+  return snapshot;
+};
 const marker = (id: number) => `[Q-${id}]`;
 function quotationText(id: number, snapshot: Snapshot): string {
   return `ملخص طلبك ${marker(id)}\n\n${snapshot.items.map(i => `• ${i.name} × ${i.quantity} = ${formatMinorMoney(i.price * i.quantity)}`).join('\n')}\n\n`
-    + `قيمة المنتجات حسب الكتالوج: ${formatMinorMoney(snapshot.totalMinor)}.\n`
+    + `قيمة المنتجات حسب الكتالوج: ${formatMinorMoney(snapshot.version===2?snapshot.catalogSubtotalMinor:snapshot.totalMinor)}.\n`
+    + (snapshot.version===2?`خصم الكود ${snapshot.discount.code}: ${formatMinorMoney(snapshot.discount.amountMinor)}.\nقيمة المنتجات بعد الخصم: ${formatMinorMoney(snapshot.totalMinor)}.\nيُعاد التحقق من الكود عند اعتماد الفاتورة؛ لم يُحجز استخدامه بعد.\n`:'')
     + 'تحتاج الضرائب وأي رسوم توصيل إلى مراجعة قبل الدفع. هذا الملخص لا يحجز المخزون ولا يُثبت الدفع.\n'
     + 'هل توافق على تسجيل طلب بهذه المنتجات والكميات لمراجعة الفاتورة؟ رد بنعم للتأكيد، أو اذكر التعديل المطلوب.';
 }
@@ -77,7 +92,7 @@ export async function wasCheckoutOfferDelivered(connection: PoolConnection, inpu
     WHERE conversationId = ? AND direction = 'outgoing' AND id < ? ORDER BY id DESC LIMIT 1`, [input.conversationId, input.incomingMessageId]);
   return !(outgoing[0]?.id > sourceMessageId && (!outgoing[0].aiResponse || !String(outgoing[0].content).includes(offerMarker)));
 }
-async function readSnapshot(connection: PoolConnection, merchantId: number, selection: CheckoutSelection): Promise<Snapshot> {
+async function readSnapshot(connection: PoolConnection, merchantId: number, selection: CheckoutSelection): Promise<CatalogSnapshot> {
   const validated = checkoutSelectionSchema.parse(selection);
   const keys = validated.map(i => `${i.productId}:${i.variantId || 0}`);
   if (new Set(keys).size !== keys.length) throw new Error('Duplicate checkout item');
@@ -117,18 +132,56 @@ export async function prepareCheckoutQuote(input: CheckoutIdentity, selection: C
       const row = existing[0], snapshot = parseSnapshot(row.checkout_snapshot);
       return { kind: 'quote', quotationId: row.id, snapshot, text: quotationText(row.id, snapshot) };
     }
-    const snapshot = await readSnapshot(connection, input.merchantId, selection);
+    const [previous]=await connection.execute<any[]>(`SELECT * FROM sales_quotations WHERE merchant_id=? AND conversation_id=? AND customer_phone=?
+      AND checkout_snapshot IS NOT NULL ORDER BY id DESC LIMIT 1 FOR UPDATE`,[input.merchantId,input.conversationId,input.customerPhone]);
+    let snapshot:Snapshot = await readSnapshot(connection, input.merchantId, selection);
+    const prior=previous[0];
+    if(prior&&!prior.order_id&&!prior.external_provider&&['sent','viewed'].includes(prior.status)
+      &&await wasCheckoutOfferDelivered(connection,input,prior.source_message_id,marker(prior.id))) {
+      const old=parseSnapshot(prior.checkout_snapshot);
+      if(old.version===2) snapshot=await discountSnapshot(connection,input,snapshot,old.discount.code);
+    }
+    return persistCheckoutQuote(connection,input,source.customerName,snapshot);
+  });
+}
+async function discountSnapshot(connection:PoolConnection,input:CheckoutIdentity,catalog:CatalogSnapshot,code:string):Promise<Snapshot> {
+  const discount=await readCheckoutDiscount(connection,{merchantId:input.merchantId,customerPhone:input.customerPhone,code,subtotalMinor:catalog.totalMinor});
+  const body={...catalog,version:2 as const,catalogSubtotalMinor:catalog.totalMinor,catalogDigest:catalog.digest,discount,totalMinor:catalog.totalMinor-discount.amountMinor};
+  return {...body,digest:createHash('sha256').update(JSON.stringify(body)).digest('hex')};
+}
+async function persistCheckoutQuote(connection:PoolConnection,input:CheckoutIdentity,customerName:string,snapshot:Snapshot):Promise<CheckoutResult> {
     await connection.execute(`UPDATE sales_quotations SET status = 'expired' WHERE merchant_id = ? AND conversation_id = ?
       AND checkout_snapshot IS NOT NULL AND status IN ('sent', 'viewed')`, [input.merchantId, input.conversationId]);
     const [insert] = await connection.execute<any>(`INSERT INTO sales_quotations
       (merchant_id, customer_phone, customer_name, quotation_number, items, subtotal, tax_amount, total,
        currency, conversation_id, source_message_id, checkout_snapshot, offer_expires_at)
       VALUES (?, ?, ?, ?, ?, ?, 0, ?, 'SAR', ?, ?, ?, TIMESTAMPADD(HOUR, 24, UTC_TIMESTAMP(3)))`,
-    [input.merchantId, input.customerPhone, source.customerName, `CHAT-${input.merchantId}-${input.incomingMessageId}`,
+    [input.merchantId, input.customerPhone, customerName, `CHAT-${input.merchantId}-${input.incomingMessageId}`,
       JSON.stringify(snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name,
         quantity: i.quantity, unitPrice: i.price / 100, total: i.price * i.quantity / 100 }))),
-      snapshot.totalMinor / 100, snapshot.totalMinor / 100, input.conversationId, input.incomingMessageId, JSON.stringify(snapshot)]);
+      (snapshot.version===2?snapshot.catalogSubtotalMinor:snapshot.totalMinor) / 100, snapshot.totalMinor / 100, input.conversationId, input.incomingMessageId, JSON.stringify(snapshot)]);
     return { kind: 'quote', quotationId: insert.insertId, snapshot, text: quotationText(insert.insertId, snapshot) };
+}
+
+/** Revises an unaccepted, delivered offer; the command is reread from its owned incoming row. */
+export async function prepareCheckoutCouponQuote(input:CheckoutIdentity):Promise<CheckoutResult> {
+  return checkoutTransaction(async connection=>{
+    const source=await assertCheckoutIdentity(connection,input),command=checkoutCouponCommand(source.content);
+    if(command.kind==='none')throw Error('Explicit coupon command required');
+    const [quotes]=await connection.execute<any[]>(`SELECT *,offer_expires_at>UTC_TIMESTAMP(3) AS valid FROM sales_quotations
+      WHERE merchant_id=? AND conversation_id=? AND customer_phone=? AND checkout_snapshot IS NOT NULL ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [input.merchantId,input.conversationId,input.customerPhone]);
+    const quote=quotes[0];
+    if(quote?.source_message_id===input.incomingMessageId) {
+      const snapshot=parseSnapshot(quote.checkout_snapshot);return {kind:'quote',quotationId:quote.id,snapshot,text:quotationText(quote.id,snapshot)};
+    }
+    if(!quote||quote.order_id||quote.external_provider||!quote.valid||!['sent','viewed'].includes(quote.status)
+      ||!await wasCheckoutOfferDelivered(connection,input,quote.source_message_id,marker(quote.id)))return {kind:'clarify',
+        text:'أحتاج ملخص منتجات وكميات حاليًا لم يُسجل كطلب بعد. تغيير طلب مسجل يحتاج مراجعة؛ لن أعدّل مبلغه أو أكرر تسجيله.'};
+    const old=parseSnapshot(quote.checkout_snapshot),catalog=await readSnapshot(connection,input.merchantId,old.items.map(i=>({productId:i.productId,variantId:i.variantId,quantity:i.quantity})));
+    let snapshot:Snapshot=catalog;
+    if(command.kind==='apply') snapshot=await discountSnapshot(connection,input,catalog,command.code);
+    return persistCheckoutQuote(connection,input,source.customerName,snapshot);
   });
 }
 
@@ -153,20 +206,16 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
       kind: 'clarify', text: 'أحتاج موافقتك على آخر ملخص منتجات وكميات أُرسل لك قبل تسجيل الطلب.',
     };
     const old = parseSnapshot(quote.checkout_snapshot);
-    let fresh: Snapshot;
-    try { fresh = await readSnapshot(connection, input.merchantId, old.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity }))); }
+    try { await assertInvoiceCatalog(connection,input.merchantId,old,input.customerPhone); }
     catch {
       await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quotationId]);
-      return { kind: 'changed', text: 'تغير توفر أحد المنتجات أو خياراته. لم يُنشأ طلب؛ نحتاج ملخصاً محدثاً وموافقتك عليه.' };
+      return { kind: 'changed', text: 'تغيرت تفاصيل العرض أو توفر المنتج أو صلاحية الكود. لم يُنشأ طلب؛ نحتاج ملخصاً محدثاً وموافقتك عليه.' };
     }
-    if (fresh.digest !== old.digest) {
-      await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quotationId]);
-      return { kind: 'changed', text: 'تغيرت تفاصيل العرض منذ إرساله. لم يُنشأ طلب؛ سأحتاج موافقتك على ملخص محدث بالسعر الحالي.' };
-    }
-    const [order] = await connection.execute<any>(`INSERT INTO orders (merchantId, customerPhone, customerName, items, totalAmount, currency, status, notes, checkout_review_required)
-      VALUES (?, ?, ?, ?, ?, 'SAR', 'pending', ?, 1)`, [input.merchantId, input.customerPhone, source.customerName,
+    const [order] = await connection.execute<any>(`INSERT INTO orders (merchantId, customerPhone, customerName, items, totalAmount, currency, status, notes, checkout_review_required,discountCode,checkout_subtotal_minor,checkout_discount_minor)
+      VALUES (?, ?, ?, ?, ?, 'SAR', 'pending', ?, 1,?,?,?)`, [input.merchantId, input.customerPhone, source.customerName,
       JSON.stringify(old.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, quantity: i.quantity, price: i.price }))),
-      old.totalMinor, `Quotation ${marker(quotationId)}: catalog subtotal only; billing/tax/delivery review required before payment. Stock not reserved.`]);
+      old.totalMinor, `Quotation ${marker(quotationId)}: agreed product amount; billing/tax/delivery and coupon availability require review before payment. Stock not reserved.`,
+      old.version===2?old.discount.code:null,old.version===2?old.catalogSubtotalMinor:null,old.version===2?old.discount.amountMinor:null]);
     await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, order_id = ? WHERE id = ?`, [input.incomingMessageId, order.insertId, quotationId]);
     return { kind: 'order', quotationId, orderId: order.insertId, text: orderText(order.insertId), reused: false };
   });
@@ -186,11 +235,18 @@ export async function loadCheckoutInvoiceReview(connection: PoolConnection, merc
   requireMinor(order.totalAmount);
   const expectedItems = snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, quantity: i.quantity, price: i.price }));
   if (JSON.stringify(JSON.parse(order.items)) !== JSON.stringify(expectedItems)) throw new Error('Invoice items changed; new agreement required');
+  if(snapshot.version===2 ? order.discountCode!==snapshot.discount.code||order.checkout_subtotal_minor!==snapshot.catalogSubtotalMinor||order.checkout_discount_minor!==snapshot.discount.amountMinor
+    : order.discountCode!=null||order.checkout_subtotal_minor!=null||order.checkout_discount_minor!=null)throw Error('Invoice discount changed; new agreement required');
   return { quote, order, snapshot };
 }
-export async function assertInvoiceCatalog(connection: PoolConnection, merchantId: number, snapshot: Snapshot) {
+export async function assertInvoiceCatalog(connection: PoolConnection, merchantId: number, snapshot: Snapshot,customerPhone?:string) {
   const fresh = await readSnapshot(connection, merchantId, snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })));
-  if (fresh.digest !== snapshot.digest) throw new Error('Invoice catalogue changed; new agreement required');
+  if (fresh.digest !== (snapshot.version===2?snapshot.catalogDigest:snapshot.digest)) throw new Error('Invoice catalogue changed; new agreement required');
+  if(snapshot.version===2) {
+    if(fresh.totalMinor!==snapshot.catalogSubtotalMinor)throw Error('Invoice subtotal changed');
+    const discount=await readCheckoutDiscount(connection,{merchantId,customerPhone:customerPhone||'',code:snapshot.discount.code,subtotalMinor:fresh.totalMinor});
+    if(!sameCheckoutDiscount(discount,snapshot.discount))throw Error('Coupon terms changed');
+  }
 }
 
 /** Approve the already-consented amount. Extra charges require a new agreement. */
@@ -207,10 +263,12 @@ export async function approveCheckoutInvoice(input: {
     const policy = await readLockedMarginPolicy(connection, input.merchantId);
     const { quote, order, snapshot } = await loadCheckoutInvoiceReview(connection, input.merchantId, input.orderId, input.expectedAmountMinor);
     if (!order.checkout_review_required) return { approved: true, conversationId: quote.conversation_id };
-    await assertInvoiceCatalog(connection, input.merchantId, snapshot);
+    await assertInvoiceCatalog(connection, input.merchantId, snapshot,order.customerPhone);
     const { enforceCheckoutMargin } = await import('./checkout-margin');
     const margin = await enforceCheckoutMargin(connection, { merchantId: input.merchantId, orderId: input.orderId, snapshot, policy, proof: input.margin,
       actorUserId: input.actorUserId, authorizeMarginException: input.authorizeMarginException });
+    if(snapshot.version===2)await consumeCheckoutDiscount(connection,{merchantId:input.merchantId,orderId:input.orderId,quotationId:quote.id,
+      actorUserId:input.actorUserId,customerPhone:order.customerPhone,subtotalMinor:snapshot.catalogSubtotalMinor,totalMinor:snapshot.totalMinor,discount:snapshot.discount});
     const approvedSnapshot = { ...snapshot, billingApproval: { actorUserId: input.actorUserId,
       approvedAt: new Date().toISOString(), totalMinor: order.totalAmount, includesAllTaxesAndDelivery: true, margin } };
     await connection.execute('UPDATE sales_quotations SET checkout_snapshot = ? WHERE id = ?', [JSON.stringify(approvedSnapshot), quote.id]);
