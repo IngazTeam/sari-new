@@ -296,7 +296,7 @@ function buildMemoryDirectives(
       type: 'past_objection',
       value: 'price',
       priority: 'medium',
-      usageHint: 'ابدأ بالقيمة والمميزات قبل ما تذكر أي سعر',
+      usageHint: 'أجب عن السعر المطلوب مباشرة، ثم وضح القيمة بدليل معتمد؛ الاعتراض السابق استنتاج قابل للتصحيح',
     });
   }
 

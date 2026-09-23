@@ -4,6 +4,9 @@ import { resolve } from 'node:path';
 
 // Keep virtual-clock provider tests separate from real MySQL integration tests.
 const units = [
+  'server/ai/customer-memory.test.ts',
+  'server/ai/customer-memory-chat.test.ts',
+  'server/tests/adaptive-sales-engine.test.ts',
   'server/ai/sales-brain-decisions.test.ts', 'server/ai/sales-brain-learning.test.ts',
   'server/ai/review-sales-response.test.ts', 'server/ai/response-validator-failure.test.ts',
   'server/ai/transactional-truth.test.ts', 'server/ai/action-execution.test.ts',
@@ -19,6 +22,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/customer-memory.mysql.test.ts',
   'server/ai/interaction-jobs.mysql.test.ts', 'server/ai/proactive-followup.mysql.test.ts',
   'server/ai/review-sales-delivery.mysql.test.ts', 'server/ai/session-store.mysql.test.ts',
   'server/ai/verified-purchase-memory.mysql.test.ts',
@@ -38,7 +42,9 @@ function run(name, args) {
   if (result.error || result.status !== 0) process.exit(result.status || 1);
 }
 run('unit', units);
-if (process.argv.includes('--with-database')) run('database', ['--with-database', ...database]);
+// Files share one disposable database and global queues. A worker in one file may
+// legitimately claim another file's job; serialize files, retaining concurrency within tests.
+if (process.argv.includes('--with-database')) run('database', ['--with-database', '--no-file-parallelism', ...database]);
 else console.log('Database acceptance not run. Use --with-database and SARI_TEST_DATABASE_URL for a disposable loopback database.');
 if (process.argv.includes('--regression')) {
   const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));

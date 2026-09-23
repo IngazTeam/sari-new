@@ -140,9 +140,7 @@ export function buildCulturalPrompt(cultural: CulturalProfile): string {
       prompt += `- تحدث باللهجة السعودية: استخدم "ابغى، وش، كذا، حلو، ماشي، تمام، أبشر"\n`;
       prompt += `- الترحيب: "يا هلا والله!" أو "أهلاً وسهلاً فيك"\n`;
       prompt += `- المناداة: `;
-      if (cultural.childName) {
-        prompt += `نادِ العميل "أبو ${cultural.childName}" (ذكر اسم ابنه بنفسه)\n`;
-      } else if (cultural.preferredAddress) {
+      if (cultural.preferredAddress) {
         prompt += `نادِ العميل "${cultural.preferredAddress}"\n`;
       } else {
         prompt += `استخدم "أخوي" أو الاسم مباشرة\n`;
@@ -167,9 +165,7 @@ export function buildCulturalPrompt(cultural: CulturalProfile): string {
       prompt += `- تحدث باللهجة الخليجية: استخدم "شلونك، هلا، خوش، اللحين، شنو"\n`;
       prompt += `- الترحيب: "هلا والله!" أو "يا مرحبا!"\n`;
       prompt += `- المناداة: `;
-      if (cultural.childName) {
-        prompt += `"يا بو ${cultural.childName}"\n`;
-      } else if (cultural.preferredAddress) {
+      if (cultural.preferredAddress) {
         prompt += `"${cultural.preferredAddress}"\n`;
       } else {
         prompt += `"الغالي" أو الاسم\n`;
@@ -220,7 +216,7 @@ export function buildCulturalPrompt(cultural: CulturalProfile): string {
   prompt += `- لا تنادي العميل "أبو + اسمه"! هذا خطأ ثقافي فادح.\n`;
   prompt += `- "أبو محمد" تعني "والد محمد" — تُقال فقط إذا ابنه اسمه محمد.\n`;
   prompt += `- إذا العميل اسمه محمد، ناديه "محمد" أو "أخوي محمد".\n`;
-  prompt += `- استخدم "أبو فلان" فقط إذا العميل نفسه ذكر اسم ابنه في المحادثة.\n`;
+  prompt += `- استخدم الاسم أو اللقب الذي طلب العميل أن تناديه به؛ ذكر طفل لا يحدد جنس الوالد أو لقبه.\n`;
 
   return prompt;
 }
@@ -234,12 +230,9 @@ export function buildInitialCulturalProfile(
   storedChildName?: string | null
 ): CulturalProfile {
   const { dialect, confidence } = detectDialect(message);
-  const childName = storedChildName || extractChildName(message);
-  
-  let preferredAddress = customerName || '';
-  if (childName && (dialect === 'saudi' || dialect === 'gulf')) {
-    preferredAddress = `أبو ${childName}`;
-  }
+  // A mentioned child does not establish the customer's gender or preferred title.
+  const childName = null;
+  const preferredAddress = customerName || '';
 
   return {
     detectedDialect: dialect,

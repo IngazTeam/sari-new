@@ -277,21 +277,17 @@ assert(hasCriticalSignal('مرحبا كيف الحال') === false, 'مرحبا 
 section('6. Active Memory — الذاكرة النشطة');
 
 const ctx1 = buildProfileContext(returningCustomer);
-assert(ctx1.includes('ملف العميل'), 'has profile header');
-assert(ctx1.includes('أبو عبدالله'), 'includes nickname');
-assert(ctx1.includes('عميل وفي'), 'loyal → عميل وفي');
-assert(ctx1.includes('توجيه'), 'has active directive (not passive data)');
-assert(ctx1.includes('ابدأ بالقيمة'), 'price objection → value-first directive');
+assert(ctx1 === '', 'legacy unsourced preferences are quarantined');
 
 const ctx2 = buildProfileContext(vipCustomer);
-assert(ctx2.includes('VIP'), 'VIP label');
-assert(ctx2.includes('عميلنا المميز'), 'VIP → premium treatment directive');
+assert(!ctx2.includes('VIP'), 'unsourced VIP does not become a prompt claim');
+assert(!ctx2.includes('عميلنا المميز'), 'no treatment directive from unsourced VIP');
 assert(!ctx2.includes('5000'), 'VIP → raw number hidden (anti-creepy)');
-assert(ctx2.includes('عميل دائم'), 'VIP → "عميل دائم" instead of raw number');
+assert(!ctx2.includes('عميل دائم'), 'no loyalty assumption without source');
 
 const ctx3 = buildProfileContext(atRiskCustomer);
-assert(ctx3.includes('بخطر الخسارة'), 'at_risk label');
-assert(ctx3.includes('وحشتنا'), 'at_risk → warm welcome directive');
+assert(!ctx3.includes('بخطر الخسارة'), 'unsourced risk label is quarantined');
+assert(!ctx3.includes('وحشتنا'), 'no intimacy invented from unsourced risk');
 
 // ═══════════════════════════════════════════════════════════════
 // TEST 7: Momentum Rule

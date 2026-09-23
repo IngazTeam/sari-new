@@ -3196,6 +3196,7 @@ export const customerProfiles = mysqlTable("customer_profiles", {
 	lastObjection: varchar("last_objection", { length: 50 }),
 	memoryVersion: int("memory_version").notNull().default(0),
 	lastEnrichedMessageId: int("last_enriched_message_id"),
+	memoryForgetBeforeMessageId: int('memory_forget_before_message_id').default(0).notNull(),
 	verifiedPurchaseCount: int("verified_purchase_count").notNull().default(0),
 	verifiedSpendByCurrency: text("verified_spend_by_currency"),
 	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }).defaultNow().notNull(),
@@ -3206,6 +3207,22 @@ export const customerProfiles = mysqlTable("customer_profiles", {
 	index("idx_tier").on(table.merchantId, table.customerTier),
 	index("idx_last_seen").on(table.merchantId, table.lastSeenAt),
 ]);
+
+export const customerMemoryFacts = mysqlTable('customer_memory_facts', {
+	id: int().autoincrement().primaryKey(),
+	profileId: int('profile_id').notNull().references(() => customerProfiles.id, { onDelete: 'cascade' }),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	fieldKey: varchar('field_key', { length: 40 }).notNull(),
+	valueJson: json('value_json'),
+	sourceKind: mysqlEnum('source_kind', ['explicit', 'inferred']).notNull(),
+	sourceMessageId: int('source_message_id').notNull(),
+	conversationId: int('conversation_id').notNull(),
+	observedAt: datetime('observed_at', { mode: 'string', fsp: 3 }).notNull(),
+	expiresAt: datetime('expires_at', { mode: 'string', fsp: 3 }).notNull(),
+	deleted: tinyint().default(0).notNull(),
+	revision: int().default(1).notNull(),
+	updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex('uq_memory_profile_field').on(table.profileId, table.fieldKey), index('idx_memory_merchant').on(table.merchantId, table.profileId)]);
 
 // --- Knowledge Sections (Hierarchical Content Engine) ---
 export const knowledgeSections = mysqlTable("knowledge_sections", {

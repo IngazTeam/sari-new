@@ -13,6 +13,7 @@ import { formatProductPrice } from '../../shared/product-money';
 
 import { callGPT4, type ChatMessage } from './openai';
 import type { CustomerProfile } from '../db/customer-intelligence';
+import { readCustomerMemory, groundCustomerProfile } from './customer-memory';
 
 // ═══════════════════════════════════════════════════════════════
 // Intent Detection — What does the merchant want?
@@ -295,7 +296,7 @@ async function coachEscalationReply(params: {
     const { getOrCreateProfile, buildProfileContext } = await import('../db/customer-intelligence');
     const profile = await getOrCreateProfile(params.merchantId, customerPhone, customerName);
     if (profile) {
-      profileContext = buildCustomerBrief(profile);
+      profileContext = buildProfileContext(groundCustomerProfile(profile, await readCustomerMemory(params.merchantId, customerPhone)));
     }
   } catch { /* non-blocking */ }
 
@@ -1119,71 +1120,6 @@ export async function handleMerchantChat(params: {
 // Helpers
 // ═══════════════════════════════════════════════════════════════
 
-/** Build a brief customer analysis for the coaching prompt */
-function buildCustomerBrief(profile: CustomerProfile): string {
-  const lines: string[] = [];
-  
-  // Tier
-  const tierLabels: Record<string, string> = {
-    'new': '🆕 عميل جديد',
-    'returning': '🔄 عميل عائد',
-    'loyal': '⭐ عميل دائم',
-    'vip': '👑 عميل VIP',
-    'at_risk': '⚠️ عميل معرّض للخسارة',
-  };
-  lines.push(tierLabels[profile.customerTier] || '👤 عميل');
-
-  // Spending
-  if (profile.totalSpent > 0) {
-    lines.push(`💰 إجمالي المشتريات: ${profile.totalSpent.toLocaleString('ar-SA')} ر.س`);
-  }
-
-  // Conversations
-  if (profile.totalConversations > 0) {
-    lines.push(`💬 عدد المحادثات: ${profile.totalConversations}`);
-  }
-
-  // Purchase history
-  if (profile.purchaseHistory && profile.purchaseHistory.length > 0) {
-    lines.push(`🛒 آخر المشتريات: ${profile.purchaseHistory.slice(0, 3).join('، ')}`);
-  }
-
-  // Pain points
-  if (profile.painPoints && profile.painPoints.length > 0) {
-    lines.push(`😤 نقاط ألم: ${profile.painPoints.slice(0, 2).join('، ')}`);
-  }
-
-  // Sentiment
-  if (profile.sentimentAvg) {
-    const sentimentMap: Record<string, string> = {
-      'positive': '😊 إيجابي',
-      'negative': '😤 سلبي',
-      'neutral': '😐 محايد',
-      'frustrated': '😡 محبط',
-    };
-    lines.push(`📊 المزاج: ${sentimentMap[profile.sentimentAvg] || profile.sentimentAvg}`);
-  }
-
-  // Last objection
-  if (profile.lastObjection) {
-    const objMap: Record<string, string> = {
-      'price': '💲 اعتراض على السعر',
-      'delivery': '🚚 اعتراض على التوصيل',
-      'quality': '⚡ اعتراض على الجودة',
-    };
-    lines.push(objMap[profile.lastObjection] || `❗ اعتراض: ${profile.lastObjection}`);
-  }
-
-  // Preferences
-  if (profile.preferences) {
-    if (profile.preferences.priceConscious) lines.push('💡 حساس للسعر');
-    if (profile.preferences.prefersQuality) lines.push('💎 يفضل الجودة');
-  }
-
-  return lines.join('\n');
-}
-
-/** Extract suggested reply from coaching text — or fall back to original */
 function extractSuggestedReply(coaching: string, originalReply: string): string {
   // Normalize all fancy Unicode quotes to standard ASCII before matching
   const c = coaching

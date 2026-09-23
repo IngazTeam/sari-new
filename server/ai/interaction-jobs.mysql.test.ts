@@ -7,14 +7,17 @@ import { buildReplyPlan } from '../messaging/reply-plan';
 import { assertInteractionSchema, stageInteraction, finishInteractionDelivery, runInteractionJob } from './interaction-jobs';
 import { upsertDNA, getLearningEvidence, getDNAGeneration } from '../db/learning';
 import { getOrCreateProfile, updateProfile } from '../db/customer-intelligence';
+import { captureDirectCustomerMemory, readCustomerMemory } from './customer-memory';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
   let conversationId: number;
   let messageId: number;
   beforeEach(async () => {
-    llm.mockReset().mockResolvedValue(JSON.stringify({ preferences: { priceConscious: true }, painPoints: [],
-      interestTags: ['سماعات'], sentimentAvg: 'neutral', buyingStage: 'purchased', customerTierSuggestion: 'vip' }));
+    llm.mockReset().mockImplementation(async () => JSON.stringify({ facts: [
+      { field: 'priceConscious', value: true, sourceMessageId: messageId },
+      { field: 'interestTags', value: ['سماعات'], sourceMessageId: messageId },
+    ] }));
     fixture = await createDisposableMerchant('brain-events');
     await assertInteractionSchema();
     const pool = (await getPool())!;
@@ -48,8 +51,9 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     expect(llm).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(llm.mock.calls[0][0])).not.toContain('future secret');
     const profile = await getOrCreateProfile(fixture.merchantId, '966500000087');
-    expect(profile.preferences).toMatchObject({ priceConscious: true,
-      _enrichment: { kind: 'inferred', sourceMessageId: messageId, conversationId } });
+    expect((await readCustomerMemory(fixture.merchantId, '966500000087')).facts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'priceConscious', value: true, kind: 'inferred', sourceMessageId: messageId, conversationId }),
+    ]));
     expect(profile.lastEnrichedMessageId).toBe(messageId);
     expect(profile.preferences.buyingStage).not.toBe('purchased');
     expect(profile.customerTier).toBe('new');
@@ -61,7 +65,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     await fifthMessage();
     llm.mockImplementationOnce(async () => {
       await (await getPool())!.execute('UPDATE ai_interaction_jobs SET lease_until = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE merchant_id = ?', [fixture.merchantId]);
-      return JSON.stringify({ preferences: { priceConscious: true } });
+      return JSON.stringify({ facts: [{ field: 'priceConscious', value: true, sourceMessageId: messageId }] });
     });
     await runInteractionJob();
     expect((await getOrCreateProfile(fixture.merchantId, '966500000087')).preferences).toEqual({});
@@ -71,14 +75,17 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     await fifthMessage();
     llm.mockImplementationOnce(async () => {
       await updateProfile(fixture.merchantId, '966500000087', { preferences: { customPreference: 'customer correction' } });
-      return JSON.stringify({ preferences: { priceConscious: true } });
+      return JSON.stringify({ facts: [{ field: 'priceConscious', value: true, sourceMessageId: messageId }] });
     });
     await runInteractionJob();
     expect((await getOrCreateProfile(fixture.merchantId, '966500000087')).preferences).toEqual({ customPreference: 'customer correction' });
     await (await getPool())!.execute('UPDATE ai_interaction_jobs SET available_at = NOW() WHERE merchant_id = ?', [fixture.merchantId]);
     await runInteractionJob();
     expect((await getOrCreateProfile(fixture.merchantId, '966500000087')).preferences)
-      .toMatchObject({ customPreference: 'customer correction', priceConscious: true });
+      .toMatchObject({ customPreference: 'customer correction' });
+    expect((await readCustomerMemory(fixture.merchantId, '966500000087')).facts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'priceConscious', value: true }),
+    ]));
     expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id = ?', [fixture.merchantId]))[0].state).toBe('completed');
   });
 
@@ -93,6 +100,50 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
       .toEqual([expect.objectContaining({ state: 'completed' })]);
     expect(await rows('SELECT source_key, signal_type FROM sari_learning_signals WHERE merchant_id = ?', [fixture.merchantId]))
       .toEqual([expect.objectContaining({ source_key: `message:${messageId}`, signal_type: 'price_objection' })]);
+  });
+  it('does not resurrect deleted facts when deletion races with an in-flight model extraction', async () => {
+    await fifthMessage();
+    const oldSource = messageId;
+    llm.mockImplementationOnce(async () => {
+      const [deletion] = await (await getPool())!.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','احذف ذاكرة المبيعات الخاصة بي')", [conversationId]);
+      await captureDirectCustomerMemory({ merchantId: fixture.merchantId, customerPhone: '966500000087', conversationId, incomingMessageId: deletion.insertId });
+      return JSON.stringify({ facts: [{ field: 'priceConscious', value: true, sourceMessageId: oldSource }] });
+    });
+    await runInteractionJob();
+    expect((await readCustomerMemory(fixture.merchantId, '966500000087')).facts).toEqual([]);
+    await (await getPool())!.execute('UPDATE ai_interaction_jobs SET available_at=NOW() WHERE merchant_id=?', [fixture.merchantId]);
+    await runInteractionJob();
+    expect(llm).toHaveBeenCalledTimes(1);
+    expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id=?', [fixture.merchantId]))[0].state).toBe('completed');
+  });
+  it('keeps a direct customer correction when an older model job retries after a race', async () => {
+    await fifthMessage();
+    const old = messageId;
+    llm.mockImplementationOnce(async () => {
+      const [correction] = await (await getPool())!.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','السعر ليس أولويتي')", [conversationId]);
+      await captureDirectCustomerMemory({ merchantId: fixture.merchantId, customerPhone: '966500000087', conversationId, incomingMessageId: correction.insertId });
+      return JSON.stringify({ facts: [{ field: 'priceConscious', value: true, sourceMessageId: old }] });
+    });
+    await runInteractionJob();
+    await (await getPool())!.execute('UPDATE ai_interaction_jobs SET available_at=NOW() WHERE merchant_id=?', [fixture.merchantId]);
+    await runInteractionJob();
+    expect((await readCustomerMemory(fixture.merchantId, '966500000087')).facts.find(f => f.field === 'priceConscious'))
+      .toMatchObject({ value: false, kind: 'explicit' });
+    expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id=?', [fixture.merchantId]))[0].state).toBe('completed');
+  });
+  it.each(['payment', 'outgoing', 'inventedSource', 'prose'])('retries invalid model memory without changing the profile: %s', async attack => {
+    await fifthMessage();
+    const output = attack === 'payment' ? { facts: [{ field: 'buyingStage', value: 'purchased', sourceMessageId: messageId }] }
+      : { facts: [{ field: 'priceConscious', value: true, sourceMessageId: messageId + 99999 }] };
+    if (attack === 'outgoing') {
+      const [outgoing] = await (await getPool())!.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'outgoing','text','هو حساس للسعر')", [conversationId]);
+      output.facts[0].sourceMessageId = outgoing.insertId;
+    }
+    llm.mockResolvedValue(attack === 'prose' ? `Here is the answer: ${JSON.stringify({ facts: [] })}` : JSON.stringify(output));
+    await runInteractionJob();
+    expect((await readCustomerMemory(fixture.merchantId, '966500000087')).facts).toEqual([]);
+    expect((await getOrCreateProfile(fixture.merchantId, '966500000087')).lastEnrichedMessageId).toBeNull();
+    expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id=?', [fixture.merchantId]))[0].state).toBe('pending');
   });
   it('replays staging and processing without duplicate signals', async () => {
     const reply = plan();

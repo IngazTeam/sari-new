@@ -57,9 +57,10 @@ import type { SariPersonalitySetting } from '../../drizzle/schema';
 import { createSessionWithPersist, updateSessionWithPersist, getSessionWithFallback } from './session-store';
 import { getSession, detectIntent, detectTopicChange, type CustomerIntent } from './session-context';
 import { buildMissionBlock, missionToPrompt, hasCriticalSignal, type SalesPersona, type MissionBlock } from './strategist';
-import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
+import { getOrCreateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
+import { captureDirectCustomerMemory, readCustomerMemory, groundCustomerProfile } from './customer-memory';
 import { loadArsenal, selectPersuasion, recordStrategyUse, markStrategySuccess, buildCrossSellSuggestions } from './sales-arsenal';
-import { detectDialect, extractChildName, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
+import { detectDialect, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
 import { buildDirectivesPrompt } from '../db/ai-directives';
 import { containsUnverifiedActionClaim, UNVERIFIED_ACTION_FALLBACK } from './transactional-truth';
 import { buildDNAPrompt, captureConversationSignals } from './learning-engine';
@@ -1578,6 +1579,18 @@ export function chatWithSari(params: ChatWithSariParams): Promise<string> {
 }
 
 async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
+  // Customer corrections/deletion are local operations and must work even when the AI budget is exhausted.
+  let memoryHistoryCutoff = 0;
+  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+    try {
+      const memory = await captureDirectCustomerMemory({ merchantId: params.merchantId, conversationId: params.conversationId,
+        incomingMessageId: params.incomingMessageId, customerPhone: params.customerPhone });
+      memoryHistoryCutoff = memory.forgetBeforeMessageId;
+      if (memory.reply) return memory.reply;
+    } catch {
+      return 'تعذر التحقق من ذاكرة المحادثة الآن. حاول مجدداً أو اطلب المساعدة من فريق المتجر.';
+    }
+  }
   // The durable shared budget fails closed; exhaustion never starts a cheaper or full paid retry.
   try {
     const { getAiBudgetStatus } = await import('./budget-ledger');
@@ -1587,7 +1600,7 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
   } catch {
     return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
   }
-  const response = await _chatWithSariCore(params);
+  const response = await _chatWithSariCore(params, memoryHistoryCutoff);
 
   // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer
   try {
@@ -1622,7 +1635,7 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
 /**
  * Core chat implementation (internal — use chatWithSari wrapper)
  */
-async function _chatWithSariCore(params: ChatWithSariParams): Promise<string> {
+async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff = 0): Promise<string> {
   try {
     // Get merchant info
     const merchant = await getMerchantById(params.merchantId);
@@ -1643,7 +1656,7 @@ async function _chatWithSariCore(params: ChatWithSariParams): Promise<string> {
 
     if (params.conversationId) {
       const messages = (await getMessagesByConversationId(params.conversationId))
-        .filter(msg => !params.incomingMessageId || msg.id < params.incomingMessageId);
+        .filter(msg => msg.id > memoryHistoryCutoff && (!params.incomingMessageId || msg.id < params.incomingMessageId));
       if (messages.length > 0) {
         isFirstMessage = false;
         previousMessages = messages
@@ -1813,32 +1826,12 @@ async function _chatWithSariCore(params: ChatWithSariParams): Promise<string> {
     // --- Customer Profile (cross-conversation memory) ---
     let customerProfile: CustomerProfile | null = null;
     try {
-      customerProfile = await getOrCreateProfile(params.merchantId, params.customerPhone, params.customerName);
+      if (!params.isGroupMessage) {
+        const stored = await getOrCreateProfile(params.merchantId, params.customerPhone, params.customerName);
+        customerProfile = groundCustomerProfile(stored, await readCustomerMemory(params.merchantId, params.customerPhone));
+      }
     } catch (err) {
       console.warn('[chatWithSari] Customer profile load failed:', err);
-    }
-
-    // --- Track acquisition source for NEW customers ---
-    if (customerProfile && customerProfile.totalConversations <= 1 && !customerProfile.preferences?.acquisitionSource) {
-      const source = detectAcquisitionSource(params.message);
-      if (source) {
-        updateProfile(params.merchantId, params.customerPhone, {
-          preferences: { ...customerProfile.preferences, acquisitionSource: source },
-        }).catch(() => { });
-        customerProfile.preferences = { ...customerProfile.preferences, acquisitionSource: source };
-        console.log(`[chatWithSari] 📊 New customer source: ${source}`);
-      }
-    }
-
-    // --- Extract child name from message (for أبو فلان) ---
-    const mentionedChildName = extractChildName(params.message);
-    if (mentionedChildName && customerProfile) {
-      updateProfile(params.merchantId, params.customerPhone, {
-        childName: mentionedChildName,
-        nickname: `أبو ${mentionedChildName}`,
-      }).catch(() => { });
-      customerProfile.childName = mentionedChildName;
-      customerProfile.nickname = `أبو ${mentionedChildName}`;
     }
 
     // Conversation state is cached; business knowledge is fetched for each message.
@@ -2281,8 +2274,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     // --- Cultural Intelligence ---
     const culturalProfile = buildInitialCulturalProfile(
       params.message,
-      customerProfile?.displayName || params.customerName,
-      customerProfile?.childName || mentionedChildName
+      customerProfile?.displayName
     );
     const culturalPrompt = buildCulturalPrompt(culturalProfile);
 

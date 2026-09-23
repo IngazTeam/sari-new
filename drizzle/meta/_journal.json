@@ -463,6 +463,13 @@
       "when": 1790151000000,
       "tag": "0065_sales_sector_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "5",
+      "when": 1790151100000,
+      "tag": "0066_customer_memory_facts",
+      "breakpoints": true
     }
   ]
 }

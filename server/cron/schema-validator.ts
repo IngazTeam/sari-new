@@ -94,6 +94,9 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'merchant_onboarding_answers' },
   { table: 'session_contexts', columns: ['version'] }, { table: 'whatsapp_inbound_jobs', columns: ['lease_token', 'reply_plan_json', 'partition_key'] }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
   { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' }, { table: 'sari_escalation_queue' },
+  { table: 'customer_profiles', columns: ['memory_version', 'last_enriched_message_id', 'memory_forget_before_message_id'] },
+  { table: 'customer_memory_facts', columns: ['value_json', 'source_kind', 'source_message_id', 'expires_at', 'deleted'],
+    uniqueIndexes: [{ name: 'uq_memory_profile_field', columns: ['profile_id', 'field_key'] }] },
   { table: 'knowledge_sections', columns: ['embedding_content_hash', 'valid_until', 'provenance'] },
   { table: 'ai_sales_playbooks' }, { table: 'ai_sales_sector_settings', columns: ['playbook_id', 'revision', 'updated_by'] }, { table: 'knowledge_changelog' }, { table: 'sari_response_cache' },
   { table: 'sales_quotations', columns: ['checkout_snapshot', 'external_provider', 'external_snapshot', 'execution_state', 'external_result',
@@ -110,7 +113,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
 
 const IMPORTANT_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'merchant_knowledge_docs' }, { table: 'virtual_agents' },
-  { table: 'customer_profiles' }, { table: 'salla_connections' },
+  { table: 'salla_connections' },
 ] as const;
 
 /**

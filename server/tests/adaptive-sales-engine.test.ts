@@ -209,9 +209,10 @@ describe('Cultural Engine — Critical Rule: أبو فلان', () => {
     expect(profile.preferredAddress).not.toContain('أبو محمد');
   });
 
-  it('should use أبو + child name when child is mentioned', () => {
+  it('preserves the requested address without inferring a parental title', () => {
     const profile = buildInitialCulturalProfile('ابغى استفسر', 'محمد', 'عبدالله');
-    expect(profile.preferredAddress).toBe('أبو عبدالله');
+    expect(profile.preferredAddress).toBe('محمد');
+    expect(profile.childName).toBeNull();
   });
 
   it('should include cultural rule warning in prompt', () => {
@@ -389,7 +390,7 @@ describe('Customer Intelligence — Tier Classification', () => {
     expect(classifyTier(2, 5000)).toBe('vip');
   });
 
-  it('should build profile context string for GPT', () => {
+  it('only renders sourced memory and keeps historical profile claims out of the prompt', () => {
     const profile = {
       displayName: 'محمد',
       nickname: 'أبو عبدالله',
@@ -401,13 +402,15 @@ describe('Customer Intelligence — Tier Classification', () => {
       purchaseHistory: ['iPhone 15', 'AirPods'],
       childName: 'عبدالله',
     };
-    const context = buildProfileContext(profile);
+    expect(buildProfileContext(profile)).toBe('');
+    const context = buildProfileContext({ ...profile, memoryFacts: [{ field: 'preferredName', value: 'أبو عبدالله',
+      kind: 'explicit', sourceMessageId: 12, conversationId: 4, observedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 100000).toISOString(), revision: 1 }] });
     expect(context).toContain('أبو عبدالله');
-    expect(context).toContain('VIP');
-    expect(context).toContain('عميل دائم ومميز'); // spend is hidden for privacy
-    expect(context).toContain('يهتم بالسعر');
-    expect(context).toContain('التأخير');
-    expect(context).toContain('iPhone 15');
+    expect(context).toContain('"sourceMessageId":12');
+    expect(context).not.toContain('VIP');
+    expect(context).not.toContain('iPhone 15');
+    expect(context).not.toContain('التأخير');
   });
 });
 

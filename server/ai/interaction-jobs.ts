@@ -15,7 +15,8 @@ export async function assertInteractionSchema() {
     { table: 'ai_learning_evidence_links' },
     { table: 'ai_sales_playbooks' },
     { table: 'knowledge_sections', columns: ['embedding_content_hash', 'valid_until', 'provenance'] },
-    { table: 'customer_profiles', columns: ['memory_version', 'last_enriched_message_id'] },
+    { table: 'customer_profiles', columns: ['memory_version', 'last_enriched_message_id', 'memory_forget_before_message_id'] },
+    { table: 'customer_memory_facts', columns: ['value_json', 'source_message_id', 'expires_at', 'deleted'], uniqueIndexes: ['uq_memory_profile_field'] },
   ]);
 }
 
