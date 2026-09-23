@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
+import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
@@ -1477,6 +1478,7 @@ export const appRouter = router({
 
   // Conversations
   conversations: router({
+    ...escalationReconciliationProcedures,
     ...conversationHandoffProcedures,
     // Get all conversations for current merchant (with optional pipeline filters)
     list: permissionProcedure('conversations.read')

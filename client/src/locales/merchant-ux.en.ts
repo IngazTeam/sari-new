@@ -1,6 +1,16 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  relay: {
+    title: 'Escalated reply review', scope: 'Review the employee reply outcome. A review saves your note and repairs the conversation when a trusted receipt exists. It never sends a new message or assumes delivery.',
+    loading: 'Loading reply attempts…', loadFailed: 'Unable to load escalation records.', refresh: 'Refresh records', empty: 'No escalated reply attempts on this page.', older: 'Older attempts',
+    attempt: 'Reply attempt #{{id}}', by: 'Employee number ending in {{phone}}', evidence: 'View question and reply', question: 'Question — message #{{id}}', reply: 'Reserved reply text', lastReview: 'Latest review — user #{{id}}',
+    missing: 'No saved sending receipt', invalid: 'Receipt details do not match this attempt; review required', pending: 'Sending outcome is unresolved', deliveryFailed: 'Sending or delivery failure recorded',
+    accepted: 'Provider accepted the reply; delivery is unconfirmed', delivered: 'Provider confirmed delivery', read: 'Provider confirmed the reply was read',
+    recorded: 'The receipt is verified and the reply is recorded.', failedOutcome: 'Review saved with a failed outcome; no resend was attempted.', unresolved: 'Review saved; the outcome remains unresolved. Check WhatsApp history before any manual send.',
+    note: 'What did you review, and what happens next?', attestation: 'I reviewed the question, reply text and outcome. I understand that saving this review does not resend the message.',
+    saving: 'Checking and saving…', review: 'Check and save review', saveFailed: 'Evidence changed or saving failed. Refresh and review the records again.', readOnly: 'You can read these records. Saving a review requires reply permission.',
+  },
   handoff: {
     sourceTitle: 'Original message #{{id}}', sourceScope: 'Evidence from this conversation. Text alone does not prove payment or fulfilment.',
     sourceLoading: 'Loading message…', sourceUnavailable: 'The message is unavailable within your access and the current memory scope.', sourceRetry: 'Reload message',

@@ -110,26 +110,6 @@ export async function sendSourcedEscalationAlert(input: { merchantId: number; es
 export type RelayInput = { merchantId: number; instanceRecordId?: number; merchantPhone: string; quotedMessageId?: string; replyText: string };
 export type RelayResult = { handled: boolean; accepted: boolean; status: 'accepted' | 'unknown' | 'failed' | 'suppressed' | 'unavailable'; customerPhone?: string };
 
-async function projectAcceptedRelay(id: number, merchantId: number, receipt: string) {
-  return checkoutTransaction(async c => {
-    const [targets] = await c.execute<any[]>(`SELECT e.conversation_id FROM sales_escalation_relays r JOIN sari_escalation_queue e
-      ON e.id=r.escalation_id AND e.merchant_id=r.merchant_id WHERE r.id=? AND r.merchant_id=?`, [id, merchantId]);
-    if (!targets.length) throw new Error('Relay unavailable');
-    await c.execute('SELECT id FROM conversations WHERE id=? AND merchantId=? FOR UPDATE', [targets[0].conversation_id, merchantId]);
-    const [rows] = await c.execute<any[]>(`SELECT r.*,e.conversation_id,e.customer_phone,e.question FROM sales_escalation_relays r
-      JOIN sari_escalation_queue e ON e.id=r.escalation_id AND e.merchant_id=r.merchant_id WHERE r.id=? AND r.merchant_id=? FOR UPDATE`, [id, merchantId]);
-    const r = rows[0]; if (!r) throw new Error('Relay unavailable');
-    const [messages] = await c.execute<any[]>('SELECT id FROM messages WHERE conversationId=? AND externalId=?', [r.conversation_id, receipt]);
-    if (!messages.length) await c.execute(`INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,sender_type)
-      VALUES (?,'outgoing','text',?,?,1,'merchant')`, [r.conversation_id, r.reply_text, receipt]);
-    await c.execute("UPDATE sales_escalation_relays SET status='accepted',provider_message_id=? WHERE id=? AND merchant_id=?", [receipt, id, merchantId]);
-    await c.execute(`UPDATE sari_escalation_queue SET status='answered',merchant_answer=?,merchant_answered_at=UTC_TIMESTAMP()
-      WHERE id=? AND merchant_id=? AND status IN ('pending','notified')`, [r.reply_text, r.escalation_id, merchantId]);
-    if (!messages.length) await c.execute('UPDATE conversations SET lastMessageAt=UTC_TIMESTAMP() WHERE id=? AND merchantId=?', [r.conversation_id, merchantId]);
-    return r;
-  });
-}
-
 export async function relayEscalationReply(input: RelayInput): Promise<RelayResult> {
   const unavailable: RelayResult = { handled: false, accepted: false, status: 'unavailable' };
   if (![input.merchantId, input.instanceRecordId].every(positive) || !input.quotedMessageId || input.quotedMessageId.length > 255
@@ -190,11 +170,7 @@ export async function relayEscalationReply(input: RelayInput): Promise<RelayResu
     if (reserved.fresh) await pool.execute("UPDATE sales_escalation_relays SET status=? WHERE id=? AND merchant_id=? AND status='reserved'", [status, reserved.id, input.merchantId]);
     return { handled: true, accepted: false, status };
   }
-  const recorded = await projectAcceptedRelay(reserved.id, input.merchantId, result.providerMessageId);
-  try {
-    const { saveMerchantTeaching } = await import('../knowledge/merchant-teaching');
-    await saveMerchantTeaching({ merchantId: input.merchantId, question: recorded.question.slice(0, 500), answer: recorded.reply_text,
-      origin: 'escalation_reply', referenceId: guard.id });
-  } catch { /* Acceptance remains true; the teaching proposal can be reviewed separately. */ }
-  return { handled: true, accepted: true, status: 'accepted', customerPhone: reserved.customerPhone };
+  const { reconcileEscalationRelay } = await import('./escalation-reconciliation');
+  const recorded = await reconcileEscalationRelay(input.merchantId, reserved.id);
+  return { handled: true, accepted: recorded.outcome === 'accepted', status: recorded.outcome === 'accepted' ? 'accepted' : 'unknown', customerPhone: reserved.customerPhone };
 }

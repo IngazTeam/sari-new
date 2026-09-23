@@ -3866,9 +3866,23 @@ export const salesEscalationRelays = mysqlTable('sales_escalation_relays', {
   ownershipVersion: int('ownership_version').notNull(),
   status: mysqlEnum(['reserved', 'accepted', 'unknown', 'failed', 'suppressed']).notNull().default('reserved'),
   providerMessageId: varchar('provider_message_id', { length: 255 }),
+  reviewRevision: int('review_revision').notNull().default(0),
+  reconciledAt: timestamp('reconciled_at', { mode: 'string' }),
+  teachingRecordedAt: timestamp('teaching_recorded_at', { mode: 'string' }),
+  nextReconcileAt: timestamp('next_reconcile_at', { mode: 'string' }).defaultNow(),
+  lastReconcileError: varchar('last_reconcile_error', { length: 60 }),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow().onUpdateNow(),
-}, table => [uniqueIndex('uq_escalation_relay').on(table.merchantId, table.escalationId)]);
+}, table => [uniqueIndex('uq_escalation_relay').on(table.merchantId, table.escalationId), index('idx_relay_reconcile').on(table.nextReconcileAt, table.id)]);
+
+export const salesEscalationReviews = mysqlTable('sales_escalation_reviews', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  relayId: int('relay_id').notNull().references(() => salesEscalationRelays.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').notNull(), revision: int().notNull(), evidenceHash: char('evidence_hash', { length: 64 }).notNull(),
+  outcome: mysqlEnum(['accepted', 'failed', 'unresolved']).notNull(), note: varchar({ length: 1000 }).notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).notNull().defaultNow(),
+}, table => [uniqueIndex('uq_relay_review').on(table.merchantId, table.relayId, table.revision)]);
 
 export const mediaLibrary = mysqlTable("media_library", {
 	id: int().autoincrement().primaryKey(),

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T15:38:29.588Z",
+  "generatedAt": "2026-09-23T17:18:58.603Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "fixtureApi": true,
@@ -289,6 +289,86 @@
     {
       "width": 1440,
       "mode": "handoff_source_error_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "relay_review_ar",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "relay_review_ar",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "relay_review_ar",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "relay_review_ar",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_review_ar",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "relay_review_en",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "relay_review_en",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "relay_review_en",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "relay_review_en",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_review_en",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_viewer",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_mutation-error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "relay_pagination",
       "passed": true
     }
   ],

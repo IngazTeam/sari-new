@@ -10,6 +10,23 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   conversations: {
+    listEscalationRelays: { useQuery: (input: {beforeId?:number}) => {
+      const [retry,setRetry]=useState(false),[revision,setRevision]=useState(0);
+      const saved=(window as any).__relayInput;
+      const item={id:input.beforeId?4:5,revision,evidence:(revision?'b':'a').repeat(64),state:'pending',outcome:'unresolved',projected:false,sourceMessageId:81,
+        question:'سؤال عن الموعد <img src=x onerror=alert(1)> '+ 'long-question-'.repeat(45),reply:'موعد الخميس متاح. '+ 'تفاصيل '.repeat(100),authorPhone:'966500000082',
+        createdAt:'2026-09-23T10:00:00Z',receipt:null,lastReview:saved?{actorUserId:7,note:saved.note,outcome:'unresolved',at:'2026-09-23T11:00:00Z'}:null};
+      return {isLoading:mode==='loading'&&!retry,isError:mode==='error'&&!retry,isFetching:false,
+        data:{canManage:mode!=='viewer',items:mode==='empty'?[]:[item],nextCursor:input.beforeId?null:5},
+        refetch:async()=>{setRetry(true); if((window as any).__relayInput) setRevision(revision+1);},};
+    } },
+    reviewEscalationRelay: { useMutation:(options:{onSuccess:()=>void})=>{
+      const [state,setState]=useState('idle'),[attempts,setAttempts]=useState(0);
+      return {isPending:state==='pending',isError:state==='error',isSuccess:state==='success',data:{outcome:'unresolved'},reset:()=>setState('idle'),
+        mutate:(input:unknown)=>{setState('pending');setAttempts(attempts+1);setTimeout(()=>{
+          if(mode==='mutation-error'&&attempts===0)setState('error');else{(window as any).__relayInput=input;setState('success');options.onSuccess();}
+        },50);},};
+    } },
     getHandoffSource: { useQuery: (input: { messageId: number }) => {
       const [retry, setRetry] = useState(false);
       return { data: { id: input.messageId, role: 'customer', at: '2026-09-23T10:00:00Z', text: 'دليل كامل من رسالة أصلية. <img src=x onerror=alert(1)> ' + 'long-source-'.repeat(70) },

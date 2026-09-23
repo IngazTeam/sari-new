@@ -8,6 +8,7 @@ import ar from '../../../client/src/locales/ar.json';
 import en from '../../../client/src/locales/en.json';
 import { FollowupPolicySettings } from '../../../client/src/components/FollowupPolicySettings';
 import { ConversationHandoff } from '../../../client/src/components/ConversationHandoff';
+import { EscalationReconciliation } from '../../../client/src/components/EscalationReconciliation';
 import { LearningEvidenceCard } from '../../../client/src/components/LearningEvidenceCard';
 import { CheckoutInvoiceReview } from '../../../client/src/components/CheckoutInvoiceReview';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
@@ -21,6 +22,7 @@ async function render() {
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <div id="followup-fixture"><FollowupPolicySettings /></div>
     <div id="handoff-fixture"><ConversationHandoff conversationId={42} /></div>
+    <div id="relay-fixture"><EscalationReconciliation conversationId={42} /></div>
     <p id="conversation-message-81">رسالة العميل الأصلية</p><p id="conversation-message-82">رد الموظف الأصلي</p>
   </main>);
 }

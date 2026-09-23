@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn() }));
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn() }));
+vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
+  listEscalationRelays: mocks.relayList, reviewEscalationRelay: mocks.relayReview }));
 vi.mock('./ai/conversation-handoff', async original => ({ ...await original<typeof import('./ai/conversation-handoff')>(),
   conversationHandoffSummary: mocks.handoffRead, transitionConversationOwnership: mocks.handoffWrite, conversationHandoffSource: mocks.handoffSource }));
 vi.mock('./ai/followup-policy', async original => ({ ...await original<typeof import('./ai/followup-policy')>(),
@@ -26,8 +28,33 @@ beforeEach(() => {
   mocks.followupRead.mockResolvedValue({ revision: 0 }); mocks.followupWrite.mockResolvedValue({ revision: 1 });
   mocks.handoffRead.mockResolvedValue({ version: 0 }); mocks.handoffWrite.mockResolvedValue({ version: 1, changed: true });
   mocks.handoffSource.mockResolvedValue({ id: 81, text: 'fixture' });
+  mocks.relayList.mockResolvedValue({items:[],nextCursor:null}); mocks.relayReview.mockResolvedValue({outcome:'unresolved'});
 });
 describe('real app router team boundaries', () => {
+  const relayInput={conversationId:4,relayId:5,expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const,note:'راجع السجل'};
+  it('scopes relay records to membership, restricts writes, and records the authenticated reviewer',async () => {
+    expect(await caller().conversations.listEscalationRelays({conversationId:4,beforeId:8})).toMatchObject({canManage:false});
+    expect(mocks.relayList).toHaveBeenCalledWith(20,4,8);
+    await expect(caller().conversations.reviewEscalationRelay(relayInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    expect(mocks.relayReview).not.toHaveBeenCalled(); mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+    await caller().conversations.reviewEscalationRelay(relayInput);
+    expect(mocks.relayReview).toHaveBeenCalledWith({...relayInput,merchantId:20,actorUserId:7});
+  });
+  it.each([{merchantId:30},{actorUserId:1},{reviewed:false},{relayId:-1},{conversationId:'1 OR 1=1'},
+    {expectedRevision:-1},{evidence:'forged'},{note:' '},{note:'a'.repeat(1001)},{outcome:'accepted'},{providerMessageId:'invented'}])
+    ('rejects forged relay review context %j',async attack => {
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().conversations.reviewEscalationRelay({...relayInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      expect(mocks.relayReview).not.toHaveBeenCalled();
+    });
+  it('does not disclose private relay storage errors or allow membership-revoked reads',async () => {
+    mocks.relayList.mockRejectedValueOnce(new Error('private database detail'));
+    await expect(caller().conversations.listEscalationRelays({conversationId:4})).rejects.toMatchObject({code:'NOT_FOUND',message:'Escalation records unavailable'});
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3}); mocks.relayReview.mockRejectedValueOnce(new Error('private receipt details'));
+    const error=await caller().conversations.reviewEscalationRelay(relayInput).catch(error=>error);
+    expect(error.code).toBe('CONFLICT'); expect(error.message).not.toContain('private');
+    mocks.access.mockResolvedValue(null); await expect(caller().conversations.listEscalationRelays({conversationId:4})).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   it('looks up exact evidence with membership identity and hides unavailable sources', async () => {
     expect(await caller().conversations.getHandoffSource({ conversationId: 4, messageId: 81 })).toMatchObject({ id: 81 });
     expect(mocks.handoffSource).toHaveBeenCalledWith(20, 4, 81);

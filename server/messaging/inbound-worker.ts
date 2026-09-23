@@ -4,6 +4,8 @@ export async function startInboundWorker() {
   await assertInboundSchema();
   const { startInteractionWorker } = await import('../ai/interaction-jobs');
   const stopInteractions = await startInteractionWorker();
+  const { startEscalationReconciliationWorker } = await import('../ai/escalation-reconciliation');
+  const stopReconciliation = await startEscalationReconciliationWorker();
   let stopping = false;
   let active: Promise<void> | undefined;
   let nextRetentionAt = 0;
@@ -27,5 +29,5 @@ export async function startInboundWorker() {
   };
   const timer = setInterval(tick, 500);
   tick();
-  return async () => { stopping = true; clearInterval(timer); await active; await stopInteractions(); };
+  return async () => { stopping = true; clearInterval(timer); await active; await stopInteractions(); await stopReconciliation(); };
 }

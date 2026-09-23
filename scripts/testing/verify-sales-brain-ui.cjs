@@ -100,8 +100,11 @@ async function main() {
       assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.evaluate(() => document.body.innerText.includes('merchantUx.')), false);
+      await page.$eval('#followup-fixture', async node => {
+        await Promise.allSettled(node.getAnimations({ subtree: true }).map(animation => animation.finished));
+      });
       assert.ok(await page.$$eval('#followup-fixture input:not([type=checkbox]), #followup-fixture button',
-        inputs => inputs.every(input => input.getBoundingClientRect().height >= 44)));
+        inputs => inputs.every(input => input.getBoundingClientRect().height >= 44)), `Small followup control at ${width}/${lang}`);
       if (lang === 'ar' && [375, 1440].includes(width)) await (await page.$('#followup-fixture')).screenshot({ path: path.join(output, `followup-policy-${width}.png`) });
       await page.click('#followup-enabled'); await page.click('#followup-fixture button');
       await page.waitForFunction(() => window.__followupInput?.policy.enabled === false);
@@ -176,17 +179,58 @@ async function main() {
     assert.equal(await page.$('[role=dialog] [data-handoff-source]'), null);
     await page.click('[role=dialog] [role=alert] button'); await page.waitForSelector('[role=dialog] [data-handoff-source]');
     results.push({ width: 1440, mode: 'handoff_source_error_retry', passed: true });
+    for (const lang of ['ar','en']) for (const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900}); await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$eval('[data-relay-id="5"] button',b=>b.disabled),true);
+      await page.click('#relay-fixture summary');
+      assert.equal(await page.$('#relay-fixture img'),null);
+      await page.type('#relay-note-5','Reviewed receipt; outcome still unknown.');
+      assert.equal(await page.$eval('[data-relay-id="5"] button',b=>b.disabled),true);
+      await page.click('[data-relay-id="5"] input[type=checkbox]'); await page.click('[data-relay-id="5"] button');
+      await page.waitForSelector('[data-relay-review]');
+      assert.deepEqual(await page.evaluate(()=>window.__relayInput),{conversationId:42,relayId:5,expectedRevision:0,evidence:'a'.repeat(64),reviewed:true,note:'Reviewed receipt; outcome still unknown.'});
+      assert.equal(await page.$eval('[data-relay-id="5"] input[type=checkbox]',n=>n.checked),false);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.evaluate(()=>document.body.innerText.includes('merchantUx.')),false);
+      assert.ok((await page.$$eval('#relay-fixture button',buttons=>buttons.map(b=>b.getBoundingClientRect().height))).every(h=>h>=44));
+      if(lang==='ar'&&[375,1440].includes(width)) {
+        await page.click('#relay-fixture summary');
+        await page.$eval('#relay-fixture [data-relay-id]', node => { node.parentElement.scrollTop = 0; });
+        await (await page.$('#relay-fixture')).screenshot({path:path.join(output,`relay-review-${width}.png`)});
+      }
+      results.push({width,mode:`relay_review_${lang}`,passed:true});
+    }
+    for (const mode of ['viewer','empty','error','loading','mutation-error']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});
+      if(['viewer','empty'].includes(mode))assert.equal(await page.$('#relay-fixture textarea'),null);
+      if(mode==='loading')assert.ok(await page.$('#relay-fixture [role=status]'));
+      if(mode==='error'){await page.click('#relay-fixture [role=alert] button');await page.waitForSelector('#relay-note-5');}
+      if(mode==='mutation-error'){
+        await page.type('#relay-note-5','Review failed; refresh first.');await page.click('[data-relay-id="5"] input[type=checkbox]');await page.click('[data-relay-id="5"] button');
+        await page.waitForSelector('#relay-fixture [role=alert]');assert.equal(await page.$('[data-relay-review]'),null);
+        await page.click('#relay-fixture [role=alert] button');assert.equal(await page.$eval('[data-relay-id="5"] input[type=checkbox]',n=>n.checked),false);
+        await page.click('[data-relay-id="5"] input[type=checkbox]');await page.click('[data-relay-id="5"] button');await page.waitForSelector('[data-relay-review]');
+      }
+      results.push({width:1440,mode:`relay_${mode}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});
+    await page.click('#relay-fixture > section > div:last-child button:last-child');await page.waitForSelector('#relay-note-4');
+    await page.click('#relay-fixture > section > div:last-child button:first-child');await page.waitForSelector('#relay-note-5');
+    results.push({width:1440,mode:'relay_pagination',passed:true});
     assert.deepEqual(errors, []);
     const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ scenarios: results.length, screenshots: 7, errors }));
+    console.log(JSON.stringify({ scenarios: results.length, screenshots: 9, errors }));
   } catch (error) {
     const pages = await browser.pages(), page = pages.at(-1);
     if (page) {
       await page.screenshot({ path: path.join(dir, 'failure.png'), fullPage: true }).catch(() => {});
       const state = await page.evaluate(() => ({ url: location.href, text: document.querySelector('#followup-fixture')?.textContent,
         inputs: [...document.querySelectorAll('#followup-fixture input')].map(input => ({ id: input.id, value: input.value, checked: input.checked })),
+        controls: [...document.querySelectorAll('#followup-fixture input, #followup-fixture button')].map(node => ({
+          id: node.id, height: node.getBoundingClientRect().height, transform: getComputedStyle(node).transform,
+          minHeight: getComputedStyle(node).minHeight, transition: getComputedStyle(node).transition })),
         saved: window.__followupInput })).catch(() => null);
       console.error(JSON.stringify({ state, errors }));
     }

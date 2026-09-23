@@ -4,26 +4,33 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 const destination = resolve('docs/audits/sales-brain-implementation-2026-09-23');
+const sourceRootFlag = process.argv.indexOf('--source-root');
+if (sourceRootFlag >= 0 && !process.argv[sourceRootFlag + 1]) throw new Error('--source-root requires a tested source snapshot');
+const sourceRoot = sourceRootFlag < 0 ? process.cwd() : resolve(process.argv[sourceRootFlag + 1]);
 mkdirSync(destination, { recursive: true });
 const reports = ['unit', 'database', 'regression', 'legacy-sales', 'budget', 'security'].map(name => {
   const raw = JSON.parse(readFileSync(resolve(`.tmp/sales-brain-evidence/${name}.json`), 'utf8'));
   if (!raw.success || raw.numFailedTests || raw.numFailedTestSuites) throw new Error(`Acceptance report ${name} contains failures`);
   return { name, passed: raw.numPassedTests, failed: raw.numFailedTests, pending: raw.numPendingTests,
     startedAt: new Date(raw.startTime).toISOString(), tests: raw.testResults.flatMap(file => file.assertionResults.map(test => ({
-      file: file.name.replaceAll('\\', '/').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
+      file: file.name.replaceAll('\\', '/').replace(`${sourceRoot.replaceAll('\\', '/')}/`, '').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
       name: test.fullName, status: test.status, durationMs: test.duration,
     }))) };
 });
 const priorEvidence = JSON.parse(readFileSync(resolve(destination, 'evidence.json'), 'utf8'));
 const changedFiles = [...new Set([...Object.keys(priorEvidence.sourceGitBlobs ?? {}),
-  ...execFileSync('git', ['ls-files', '-m', '--others', '--exclude-standard'], { encoding: 'utf8', windowsHide: true })
+  ...execFileSync('git', ['diff', '--cached', '--name-only', '--diff-filter=ACMR'], { encoding: 'utf8', windowsHide: true })
     .trim().split(/\r?\n/).filter(file => /^(server|client|shared|drizzle|scripts|\.github)\//.test(file))])];
 const sourceHashes = Object.fromEntries(changedFiles.sort().map(file => [file,
-  createHash('sha256').update(readFileSync(file)).digest('hex')]));
+  createHash('sha256').update(readFileSync(resolve(sourceRoot, file))).digest('hex')]));
 // Git applies line-ending filters on Windows. Record filtered blob identities too,
 // so the final commit can be verified against these exact tested source files.
 const sourceGitBlobs = Object.fromEntries(changedFiles.map(file => [file,
-  execFileSync('git', ['hash-object', `--path=${file}`, file], { encoding: 'utf8', windowsHide: true }).trim()]));
+  execFileSync('git', ['hash-object', `--path=${file}`, resolve(sourceRoot, file)], { encoding: 'utf8', windowsHide: true }).trim()]));
+for (const [file, hash] of Object.entries(sourceGitBlobs)) {
+  const staged = execFileSync('git', ['rev-parse', `:${file}`], { encoding: 'utf8', windowsHide: true }).trim();
+  if (staged !== hash) throw new Error(`Tested source differs from staged commit: ${file}`);
+}
 const componentUi = JSON.parse(readFileSync(resolve(destination, 'ui/results.json'), 'utf8'));
 const reusedComponentUi = JSON.stringify(componentUi) === JSON.stringify(priorEvidence.componentUi);
 const uiSourceFiles = Object.keys(priorEvidence.sourceGitBlobs ?? {}).filter(file => /^(client|shared)\//.test(file)
@@ -52,12 +59,12 @@ const verification = Object.fromEntries(['build', 'types', 'translations', 'sche
 }));
 const evidence = { generatedAt: new Date().toISOString(),
   baselineHead: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim(),
-  capturedFrom: 'Working tree before commit; sourceGitBlobs verifies the committed source tree despite Windows line-ending conversion', node: process.version,
-  lockfileSha256: createHash('sha256').update(readFileSync('pnpm-lock.yaml')).digest('hex'), sourceHashes, sourceGitBlobs, reports,
+  capturedFrom: sourceRootFlag < 0 ? 'Staged source scope verified against working files before commit' : 'Independent source snapshot of the staged commit; unrelated working-tree edits excluded', node: process.version,
+  lockfileSha256: createHash('sha256').update(readFileSync(resolve(sourceRoot,'pnpm-lock.yaml'))).digest('hex'), sourceHashes, sourceGitBlobs, reports,
   productionChanged: false, realProviderQualityMeasured: false, businessLiftMeasured: false,
   externalNetwork: 'blocked by run-isolated.mjs in these tests',
   database: `local disposable MySQL 8.0; synthetic customers; migrations 0000 through ${JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')).entries.at(-1).tag}`,
-  sourceScope: 'Previous sales-brain source scope plus current changed source, including shared modules; all hashes recalculated from current files',
+  sourceScope: 'Previous sales-brain source scope plus explicitly staged source; every source blob verified against the index before writing evidence',
   securityScope: 'Local behavioral adversarial tests plus source contracts; not an independent authenticated production penetration assessment.',
   publicSurface: JSON.parse(readFileSync(resolve(destination, 'public-surface.json'), 'utf8')),
   testCountsMayOverlapAcrossReports: true,

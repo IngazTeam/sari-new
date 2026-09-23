@@ -553,6 +553,7 @@ export async function expireStaleEscalations(): Promise<number> {
     `UPDATE sari_escalation_queue 
      SET status = 'expired' 
      WHERE status IN ('pending', 'notified') AND expires_at < NOW()
+     AND NOT EXISTS (SELECT 1 FROM sales_escalation_relays r WHERE r.escalation_id=sari_escalation_queue.id AND r.merchant_id=sari_escalation_queue.merchant_id)
      LIMIT 500`
   );
   return (result as any).affectedRows || 0;
