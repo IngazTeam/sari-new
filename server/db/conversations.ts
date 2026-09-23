@@ -84,6 +84,10 @@ export async function getConversationsByMerchantId(merchantId: number): Promise<
 }
 
 export async function updateConversation(id: number, data: Partial<InsertConversation>): Promise<void> {
+    if (data.humanTakeover !== undefined) {
+        const { transitionConversationOwnership } = await import('../ai/conversation-handoff');
+        await transitionConversationOwnership(id, data); return;
+    }
     const db = await getDb();
     if (!db) return;
 
@@ -98,7 +102,7 @@ export async function createMessage(message: InsertMessage): Promise<Message | u
     const db = await getDb();
     if (!db) return undefined;
 
-    const result = await db.insert(messages).values(message);
+    const result = await db.insert(messages).values({ ...message, senderType: message.senderType || (message.direction === 'incoming' ? 'customer' : 'unknown') });
     const insertedId = Number(result[0].insertId);
 
     // Update conversation's lastMessageAt

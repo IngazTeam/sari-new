@@ -1,4 +1,5 @@
 import { trpc } from '@/lib/trpc';
+import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { isValidDealStage } from '@shared/const';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -374,7 +375,7 @@ export default function Conversations() {
         </Card>
 
         {/* Messages View */}
-        <Card className="lg:col-span-3 flex flex-col">
+        <Card className="lg:col-span-3 flex min-w-0 flex-col">
           {selectedConversation ? (
             <>
               <CardHeader className="pb-2">
@@ -417,6 +418,7 @@ export default function Conversations() {
                 </div>
               </CardHeader>
               <Separator />
+              <div className="p-4"><ConversationHandoff key={selectedConversation.id} conversationId={selectedConversation.id} /></div>
               <CardContent className="p-0 flex-1">
                 <ScrollArea className="h-[400px] p-4">
                   {messages && messages.length > 0 ? (
@@ -436,12 +438,13 @@ export default function Conversations() {
                         return (
                         <div
                           key={message.id}
+                          id={`conversation-message-${message.id}`}
                           className={`flex gap-3 ${message.direction === 'incoming' ? 'flex-row' : 'flex-row-reverse'
                             }`}
                         >
                           <Avatar className="h-8 w-8 flex-shrink-0">
                             <AvatarFallback>
-                              {message.direction === 'incoming' ? (
+                              {message.direction === 'incoming' || message.senderType === 'merchant' ? (
                                 <User className="h-4 w-4" />
                               ) : (
                                 <Bot className="h-4 w-4" />
@@ -449,7 +452,7 @@ export default function Conversations() {
                             </AvatarFallback>
                           </Avatar>
                           <div
-                            className={`flex-1 max-w-[70%] ${message.direction === 'incoming' ? 'items-start' : 'items-end'
+                            className={`min-w-0 flex-1 max-w-[70%] ${message.direction === 'incoming' ? 'items-start' : 'items-end'
                               }`}
                           >
                             <div
@@ -558,7 +561,8 @@ export default function Conversations() {
                               </span>
                               {message.direction === 'outgoing' && (
                                 <Badge variant="outline" className="text-xs">
-                                  {t('conversationsPage.sari')}
+                                  {message.senderType === 'merchant' ? t('merchantUx.handoff.employee')
+                                    : message.senderType === 'assistant' ? t('merchantUx.handoff.assistant') : t('merchantUx.handoff.unknown')}
                                 </Badge>
                               )}
                             </div>

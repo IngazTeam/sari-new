@@ -51,11 +51,12 @@ export async function checkoutTransaction<T>(run: (connection: PoolConnection) =
 }
 export async function assertCheckoutIdentity(connection: PoolConnection, input: CheckoutIdentity) {
   if (![input.merchantId, input.conversationId, input.incomingMessageId].every(n => Number.isSafeInteger(n) && n > 0)) throw new Error('Checkout identity invalid');
-  const [conversations] = await connection.execute<any[]>(`SELECT id, customerName,
-    (human_takeover = 1 AND (human_expires_at IS NULL OR human_expires_at > UTC_TIMESTAMP())) AS human_owned
+  const [conversations] = await connection.execute<any[]>(`SELECT id, customerName, automation_after_message_id,
+    (human_takeover = 1) AS human_owned
     FROM conversations WHERE id = ? AND merchantId = ? AND customerPhone = ? FOR UPDATE`,
   [input.conversationId, input.merchantId, input.customerPhone]);
   if (conversations.length !== 1 || conversations[0].human_owned) throw new Error('Checkout conversation authority unavailable');
+  if (input.incomingMessageId <= Number(conversations[0].automation_after_message_id || 0)) throw new Error('Checkout source predates human handoff');
   const [messages] = await connection.execute<any[]>(`SELECT id, content FROM messages
     WHERE id = ? AND conversationId = ? AND direction = 'incoming'`, [input.incomingMessageId, input.conversationId]);
   if (messages.length !== 1) throw new Error('Checkout source ownership mismatch');

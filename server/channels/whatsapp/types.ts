@@ -49,4 +49,5 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   retryFailed?: boolean;
   /** Server-owned claim required for sales_followup transport keys. */
   followUpGuard?: { id: number; token: string };
+  replyGuard?: { conversationId: number; version: number; incomingMessageId?: number };
 };

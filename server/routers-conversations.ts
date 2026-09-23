@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import {
@@ -21,6 +22,7 @@ import {
 } from './db';
 
 export const conversationsRouter = router({
+    ...conversationHandoffProcedures,
     // Get all conversations for current merchant (with optional pipeline filters)
     list: permissionProcedure('conversations.read')
         .input(z.object({
@@ -169,6 +171,11 @@ export const conversationsRouter = router({
                 waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
             }
 
+            // Claim ownership before the external send; failure leaves the bot paused for review.
+            const replySettings = await getBotSettings(merchant.id);
+            await updateConversation(input.conversationId, { humanTakeover: 1, humanTakeoverAt: new Date(),
+              humanExpiresAt: new Date(Date.now() + (replySettings.takeoverTimeoutMinutes || 15) * 60000) } as any);
+
             // Send via WhatsApp
             const { sendMessageWithCredentials } = await import('./whatsapp');
             const result = await sendMessageWithCredentials(
@@ -189,26 +196,11 @@ export const conversationsRouter = router({
             // Save to DB
             await createMessage({
                 conversationId: input.conversationId,
-                direction: 'outgoing',
+                direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
                 messageType: 'text',
                 content: input.message,
                 externalId: result.messageId || null,
             });
-
-            // ── FIX: Activate humanTakeover so bot stays silent ──
-            // Without this, the bot would reply immediately after the merchant's dashboard reply
-            try {
-                const botSettings = await getBotSettings(merchant.id);
-                const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
-                await updateConversation(input.conversationId, {
-                    humanTakeover: 1,
-                    humanTakeoverAt: new Date(),
-                    humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
-                } as any);
-                console.log(`[Dashboard] Human takeover activated on conv ${input.conversationId} for ${timeoutMin} min (merchant replied from dashboard)`);
-            } catch (takeoverErr) {
-                console.warn('[Dashboard] Failed to activate takeover:', takeoverErr);
-            }
 
             return { success: true, messageId: result.messageId };
         }),
@@ -404,4 +396,3 @@ export const conversationsRouter = router({
 });
 
 export type ConversationsRouter = typeof conversationsRouter;
-

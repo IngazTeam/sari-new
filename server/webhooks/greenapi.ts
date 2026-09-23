@@ -1,3 +1,4 @@
+import { transitionConversationOwnership } from '../ai/conversation-handoff';
 /**
  * Green API Webhook Handler
  * Receives incoming WhatsApp messages and processes them with Sari AI
@@ -577,42 +578,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           const convs = await getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
-            await updateConversation(conv.id, {
-              humanTakeover: 0,
-              humanExpiresAt: null,
-            } as any);
+            await transitionConversationOwnership(conv.id, { humanTakeover: 0, humanExpiresAt: null },
+              { merchantId: instance.merchantId, expectedVersion: conv.handoffVersion, reason: 'manual' });
             console.log(`[Takeover] "يسعدنا خدمتكم" — Sari resumed on conv ${conv.id}`);
 
-            // Context-aware resume: fetch last messages so Sari can understand the conversation
-            try {
-              const messages = await getMessagesByConversationId(conv.id);
-              const recentMsgs = messages.slice(-6); // Last 6 messages for context
-              // VULN-1 FIX: Sanitize + truncate each message to prevent prompt injection
-              const contextSummary = recentMsgs.map(m => {
-                const role = m.direction === 'incoming' ? 'العميل' : 'التاجر';
-                const safeContent = (m.content || '[media]')
-                  .substring(0, 300) // max 300 chars per message
-                  .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[...]')
-                  .replace(/\b(system|assistant|user)\s*:/gi, '[...]')
-                  .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[...]');
-                return `${role}: ${safeContent}`;
-              }).join('\n');
-
-              // Trigger an AI-aware first response on the next incoming message
-              // VULN-4 FIX: Cap total context to 2000 chars
-              const cappedContext = contextSummary.substring(0, 2000);
-
-              await updateConversation(conv.id, {
-                agentHistory: JSON.stringify({
-                  resumeContext: cappedContext,
-                  resumedAt: new Date().toISOString(),
-                  resumedBy: 'merchant_command',
-                }),
-              } as any);
-              console.log(`[Takeover] Stored ${recentMsgs.length} messages as resume context`);
-            } catch (ctxErr) {
-              console.warn('[Takeover] Failed to store resume context:', ctxErr);
-            }
           }
           return { success: true, message: 'Sari resumed with context' };
         }
@@ -800,7 +769,13 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           humanTakeoverAt: new Date(), // Reset on EVERY merchant message (sliding window)
           humanExpiresAt: new Date(Date.now() + TAKEOVER_DURATION_MS),
         } as any);
-        console.log(`[Takeover] Human took over conv ${conv.id} for 60 min (sliding window — resets on each merchant msg)`);
+        console.log(`[Takeover] Human took over conv ${conv.id} for 24 hours (sliding window — resets on each merchant msg)`);
+
+        if (outText && payload.idMessage) {
+          try { await createMessage({ conversationId: conv.id, direction: 'outgoing', senderType: 'merchant', messageType: 'text',
+            content: outText, externalId: payload.idMessage, isProcessed: 1 }); }
+          catch (error) { if (!(error instanceof DuplicateMessageError)) throw error; }
+        }
 
         // ── AUTO-RESOLVE ESCALATION: Merchant replied directly → cancel pending escalation ──
         // Without this, the cascading system sends "تصعيد عاجل" even after the merchant answered.
@@ -1343,24 +1318,20 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
 
     // ── Human Takeover Check ──
-    const allConvs = await getConversationsByMerchantId(instance.merchantId);
-    const currentConv = allConvs.find(c => c.id === conversationId);
-    if (currentConv && (currentConv as any).humanTakeover) {
-      const expiresAt = (currentConv as any).humanExpiresAt;
-      const takeoverAt = (currentConv as any).humanTakeoverAt;
-
-      // BUG FIX: Force-expire takeovers older than 24 hours (prevents permanent silence)
-      const takeoverAge = takeoverAt ? Date.now() - new Date(takeoverAt).getTime() : Infinity;
-      const { MAX_PERMANENT_TAKEOVER_MS: MAX_TAKEOVER_MS } = await import('../ai/takeover-constants');
-
-      if (takeoverAge > MAX_TAKEOVER_MS) {
-        // Takeover stuck for 24+ hours — auto-expire
-        await updateConversation(currentConv.id, {
-          humanTakeover: 0,
-          humanExpiresAt: null,
-        } as any);
-        console.log(`[Takeover] ⚠️ Force-expired stuck takeover on conv ${currentConv.id} (age: ${Math.round(takeoverAge / 3600000)}h)`);
-      } else if (!expiresAt || new Date(expiresAt) > new Date()) {
+    const { getConversationById: readOwnership } = await import('../db');
+    let currentConv = await readOwnership(conversationId);
+    if (!currentConv || currentConv.merchantId !== instance.merchantId) throw new Error('Conversation ownership unavailable');
+    if (currentConv.humanTakeover) {
+      let resumedHere = false;
+      try {
+        const transition = await transitionConversationOwnership(conversationId, { humanTakeover: 0 }, {
+          merchantId: instance.merchantId, expectedVersion: currentConv.handoffVersion, reason: 'expired' });
+        resumedHere = transition.changed;
+      } catch (error) { if ((error as Error).message !== 'Conversation ownership changed') throw error; }
+      currentConv = await readOwnership(conversationId);
+      if (!currentConv || currentConv.merchantId !== instance.merchantId) throw new Error('Conversation ownership unavailable');
+      if (currentConv.humanTakeover) {
+        const expiresAt = currentConv.humanExpiresAt, takeoverAge = currentConv.humanTakeoverAt ? Date.now() - new Date(currentConv.humanTakeoverAt).getTime() : 0;
         // Human is still active — Sari stays silent, just save incoming message
         console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'} (age: ${Math.round(takeoverAge / 60000)}min)`);
         // Extract media URLs for images/documents sent during takeover
@@ -1423,62 +1394,17 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         } catch { /* non-blocking */ }
 
         return { success: true, message: 'Human takeover active — Sari silent' };
-      } else {
-        // Takeover expired + customer sent new message → resume with FULL context
-        console.log(`[Takeover] Expired — building resume context from last 20 messages for conv ${currentConv.id}`);
-        
-        // 1. Read last 20 messages (including merchant's manual replies)
-        const allMessages = await getMessagesByConversationId(currentConv.id);
-        const last20 = allMessages.slice(-20);
-        
-        // 2. Build structured resume context with merchant activity summary
-        const resumeLines: string[] = [];
-        const merchantActions: string[] = [];
-        for (const msg of last20) {
-          const dir = (msg as any).direction;
-          const content = ((msg as any).content || '').substring(0, 300);
-          const sender = (msg as any).senderType;
-          if (!content || content === '[media]') continue;
-          
-          if (dir === 'incoming') {
-            resumeLines.push(`▸ العميل: "${content}"`);
-          } else if (sender === 'merchant' || sender === 'human') {
-            resumeLines.push(`▸ التاجر (يدوي): "${content}"`);
-            merchantActions.push(content.substring(0, 100));
-          } else {
-            resumeLines.push(`▸ البوت: "${content}"`);
-          }
-        }
-        
-        // Build AI-aware resume header
-        const merchantSummary = merchantActions.length > 0
-          ? `\n\n⚠️ **ملخص تدخل التاجر (صاحب المتجر):**\nالتاجر تدخّل ورد على العميل بـ ${merchantActions.length} رسالة:\n${merchantActions.slice(-5).map((a, i) => `${i+1}. "${a}"`).join('\n')}\n\n🚫 **قاعدة صارمة:** لا تكرر أي شيء قاله التاجر أعلاه. لا تناقض ما قاله. استأنف من حيث توقف.`
-          : '\n\nℹ️ لم يرد التاجر على العميل — أجب على آخر سؤال للعميل.';
-        const resumeContext = `📋 سياق الاستئناف — التاجر تدخّل يدوياً ثم عاد ساري للرد:${merchantSummary}\n\n${resumeLines.join('\n')}`;
-        
-        // 3. Save resume context to conversation for AI to read
-        await updateConversation(currentConv.id, {
-          humanTakeover: 0,
-          humanExpiresAt: null,
-          agentHistory: JSON.stringify({ resumeContext }),
-        } as any);
-        
-        // 4. Notify merchant that bot is resuming
+      }
+      if (resumedHere) {
         try {
           const { notifyNewMessage } = await import('../_core/notificationService');
-          await notifyNewMessage(
-            instance.merchantId,
-            'المساعد الذكي ▶️',
-            `العميل ***${customerPhone.slice(-4)} أرسل رسالة جديدة بعد انتهاء فترة التدخل. البوت يستأنف الرد بناءً على سياق المحادثة الكاملة.`
-          );
-        } catch { /* non-blocking */ }
-        
-        // 5. DON'T send "عدت لخدمتك" — fall through to normal AI processing
-        // The AI will read the resumeContext from agentHistory and respond naturally
-        console.log(`[Takeover] ✅ Resume context built (${resumeLines.length} messages, ${merchantActions.length} merchant replies). Falling through to AI processing.`);
+          await notifyNewMessage(instance.merchantId, 'المساعد الذكي ▶️',
+            `العميل ***${customerPhone.slice(-4)} أرسل رسالة جديدة بعد انتهاء فترة التدخل. المساعد يستأنف الرد من سياق المحادثة المحدّث.`);
+        } catch { /* Notification failure must not discard the new customer message. */ }
       }
     }
-    
+    const replyOwnershipVersion = currentConv.handoffVersion;
+
     // ── Welcome Message: Send to first-time customers ──
     let plannedWelcome: string | undefined;
     if (botSettings.welcomeMessage) {
@@ -1717,7 +1643,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     response = richReply.text;
     const replyPlan = buildReplyPlan({
       merchantId: instance.merchantId, instanceId: instance.id, providerAccount: instance.instanceId,
-      eventId: payload.idMessage, conversationId, incomingMessageId: incomingMsgId,
+      eventId: payload.idMessage, conversationId, incomingMessageId: incomingMsgId, ownershipVersion: replyOwnershipVersion,
       to: groupChatId || customerPhone, text: response, welcome: plannedWelcome, media: richReply.media,
     });
     const delivery = await dispatchReplyPlan(replyPlan, (botSettings.responseDelay ?? 2) * 1000);
@@ -1728,6 +1654,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       await createMessage({
         conversationId,
         direction: 'outgoing',
+        senderType: 'assistant',
         messageType: 'text',
         content: response,
         voiceUrl: null,

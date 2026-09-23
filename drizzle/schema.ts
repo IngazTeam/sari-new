@@ -233,6 +233,8 @@ export const conversations = mysqlTable("conversations", {
 	humanTakeover: tinyint("human_takeover").default(0).notNull(),
 	humanTakeoverAt: timestamp("human_takeover_at", { mode: 'string' }),
 	humanExpiresAt: timestamp("human_expires_at", { mode: 'string' }),
+	handoffVersion: int('handoff_version').default(0).notNull(),
+	automationAfterMessageId: int('automation_after_message_id').default(0).notNull(),
 	// Virtual Agent fields
 	currentAgentId: int("current_agent_id"),
 	agentHistory: text("agent_history"),
@@ -407,6 +409,7 @@ export const messages = mysqlTable("messages", {
 	id: int().autoincrement().primaryKey(),
 	conversationId: int().notNull().references(() => conversations.id, { onDelete: "cascade" }),
 	direction: mysqlEnum(['incoming', 'outgoing']).notNull(),
+	senderType: mysqlEnum('sender_type', ['customer', 'assistant', 'merchant', 'unknown']).default('unknown').notNull(),
 	messageType: mysqlEnum(['text', 'voice', 'image', 'document']).default('text').notNull(),
 	content: text().notNull(),
 	voiceUrl: varchar({ length: 500 }),

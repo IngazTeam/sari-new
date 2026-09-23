@@ -131,11 +131,56 @@ async function main() {
     assert.equal(await page.$('#followup-fixture [role=status]'), null);
     await page.click('#followup-fixture button'); await page.waitForSelector('#followup-fixture [role=status]');
     results.push({ width: 1440, mode: 'followup_failure_retry', passed: true });
+    for (const lang of ['ar', 'en']) for (const width of [320, 375, 390, 768, 1440]) {
+      await page.setViewport({ width, height: 900 }); await page.goto(`${origin}/?case=ready&lang=${lang}`, { waitUntil: 'networkidle0' });
+      await page.click('#handoff-fixture summary');
+      assert.equal(await page.$('#handoff-fixture img'), null);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.evaluate(() => document.body.innerText.includes('merchantUx.')), false);
+      await page.click('#handoff-fixture a[href="#conversation-message-81"]');
+      await page.waitForSelector('[role=dialog] [data-handoff-source="81"]');
+      await page.$eval('[role=dialog]', async node => { await Promise.all(node.getAnimations({ subtree: true }).map(animation => animation.finished)); });
+      assert.equal(await page.$('[role=dialog] img'), null);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.$eval('[role=dialog]', node => node.innerText.includes('merchantUx.')), false);
+      assert.equal(await page.$eval('[role=dialog]', node => node.innerText.includes('common.')), false);
+      assert.ok(await page.$$eval('[role=dialog] button', nodes => nodes.every(node => node.getBoundingClientRect().height >= 44)));
+      if (lang === 'ar' && width === 375) await page.screenshot({ path: path.join(output, 'handoff-source-375.png'), fullPage: false });
+      await page.keyboard.press('Escape'); await page.waitForSelector('[role=dialog]', { hidden: true });
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('href')), '#conversation-message-81');
+      await page.click('#handoff-fixture button'); await page.waitForSelector('#handoff-fixture [data-handoff-owner=human]');
+      assert.deepEqual(await page.evaluate(() => window.__handoffInput), { conversationId: 42, expectedVersion: 0, expectedLastMessageId: 82, reviewed: false, action: 'takeover' });
+      assert.equal(await page.$eval('#handoff-fixture button', b => b.disabled), true);
+      if (lang === 'ar' && [375, 1440].includes(width)) await (await page.$('#handoff-fixture')).screenshot({ path: path.join(output, `handoff-${width}.png`) });
+      await page.click('#handoff-fixture input[type=checkbox]'); await page.click('#handoff-fixture button');
+      await page.waitForSelector('#handoff-fixture [data-handoff-owner=bot]');
+      assert.deepEqual(await page.evaluate(() => window.__handoffInput), { conversationId: 42, expectedVersion: 1, expectedLastMessageId: 82, reviewed: true, action: 'resume' });
+      assert.ok(await page.$$eval('#handoff-fixture button, #handoff-fixture a', nodes => nodes.every(node => node.getBoundingClientRect().height >= 44)));
+      results.push({ width, lang, mode: 'handoff_source_takeover_review_resume', passed: true });
+    }
+    for (const mode of ['viewer', 'empty', 'error', 'mutation-error']) {
+      await page.goto(`${origin}/?case=${mode}`, { waitUntil: 'networkidle0' });
+      if (mode === 'viewer') assert.equal(await page.$('#handoff-fixture button'), null);
+      if (mode === 'empty') { await page.click('#handoff-fixture summary'); assert.equal(await page.$('#handoff-fixture a'), null); }
+      if (mode === 'error') { await page.click('#handoff-fixture button'); await page.waitForSelector('#handoff-fixture summary'); }
+      if (mode === 'mutation-error') {
+        await page.click('#handoff-fixture button'); await page.waitForSelector('#handoff-fixture [role=alert]');
+        assert.equal(await page.$('#handoff-fixture [data-handoff-owner=human]'), null);
+        await page.click('#handoff-fixture button'); await page.waitForSelector('#handoff-fixture [data-handoff-owner=human]');
+      }
+      results.push({ width: 1440, mode: `handoff_${mode}`, passed: true });
+    }
+    await page.goto(`${origin}/?case=source-error`, { waitUntil: 'networkidle0' });
+    await page.click('#handoff-fixture summary'); await page.click('#handoff-fixture a');
+    await page.waitForSelector('[role=dialog] [role=alert]');
+    assert.equal(await page.$('[role=dialog] [data-handoff-source]'), null);
+    await page.click('[role=dialog] [role=alert] button'); await page.waitForSelector('[role=dialog] [data-handoff-source]');
+    results.push({ width: 1440, mode: 'handoff_source_error_retry', passed: true });
     assert.deepEqual(errors, []);
     const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ scenarios: results.length, screenshots: 4, errors }));
+    console.log(JSON.stringify({ scenarios: results.length, screenshots: 7, errors }));
   } catch (error) {
     const pages = await browser.pages(), page = pages.at(-1);
     if (page) {

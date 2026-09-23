@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T14:41:52.429Z",
+  "generatedAt": "2026-09-23T15:38:29.588Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "fixtureApi": true,
@@ -204,6 +204,91 @@
     {
       "width": 1440,
       "mode": "followup_failure_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "handoff_source_takeover_review_resume",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "handoff_viewer",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "handoff_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "handoff_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "handoff_mutation-error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "handoff_source_error_retry",
       "passed": true
     }
   ],

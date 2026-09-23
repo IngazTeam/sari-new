@@ -864,21 +864,6 @@ async function handleDirectiveReply(params: {
       return { action: 'directive_reply_no_conv' };
     }
 
-    // Send to customer
-    await sendMessageWithCredentials(
-      params.instanceId, params.token, params.apiUrl,
-      lastConv.customerPhone, replyText
-    );
-
-    // Save message in DB
-    await createMessage({
-      conversationId: lastConv.id,
-      direction: 'outgoing',
-      messageType: 'text',
-      content: replyText,
-      externalId: null,
-    });
-
     // Activate takeover so bot doesn't reply on top
     const { TAKEOVER_DURATION_MS } = await import('./takeover-constants');
     await updateConversation(lastConv.id, {
@@ -886,6 +871,23 @@ async function handleDirectiveReply(params: {
       humanTakeoverAt: new Date(),
       humanExpiresAt: new Date(Date.now() + TAKEOVER_DURATION_MS),
     } as any);
+
+    // Send to customer
+    const deliveredReply = await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      lastConv.customerPhone, replyText
+    );
+
+    if (!deliveredReply.success) throw new Error('Merchant reply was not confirmed');
+
+    // Save message in DB
+    await createMessage({
+      conversationId: lastConv.id,
+      direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
+      messageType: 'text',
+      content: replyText,
+      externalId: deliveredReply.messageId || null,
+    });
 
     await sendMessageWithCredentials(
       params.instanceId, params.token, params.apiUrl,
@@ -918,32 +920,23 @@ async function handleDirectiveResume(params: {
   const { sendMessageWithCredentials } = await import('../whatsapp');
 
   try {
-    const { getConversationsByMerchantId, updateConversation, getMessagesByConversationId } = await import('../db');
+    const { getConversationsByMerchantId } = await import('../db');
     const convs = await getConversationsByMerchantId(params.merchantId);
     
     // Resume ALL conversations that have humanTakeover active
     let resumedCount = 0;
+    let changedCount = 0;
     for (const conv of convs) {
       if ((conv as any).humanTakeover) {
-        // Build resume context for AI
-        const messages = await getMessagesByConversationId(conv.id);
-        const recentMsgs = messages.slice(-6);
-        const contextSummary = recentMsgs.map(m => {
-          const role = m.direction === 'incoming' ? 'العميل' : 'التاجر';
-          const safeContent = (m.content || '[media]').substring(0, 300);
-          return `${role}: ${safeContent}`;
-        }).join('\n');
+        const { transitionConversationOwnership } = await import('./conversation-handoff');
+        const result = await transitionConversationOwnership(conv.id, { humanTakeover: 0 }, {
+          merchantId: params.merchantId, expectedVersion: conv.handoffVersion, reason: 'manual' }).catch(error => {
+            if (error.message === 'Conversation ownership changed') return { changed: false };
+            throw error;
+          });
+        if (result.changed) resumedCount++;
+        else changedCount++;
 
-        await updateConversation(conv.id, {
-          humanTakeover: 0,
-          humanExpiresAt: null,
-          agentHistory: JSON.stringify({
-            resumeContext: contextSummary.substring(0, 2000),
-            resumedAt: new Date().toISOString(),
-            resumedBy: 'merchant_directive',
-          }),
-        } as any);
-        resumedCount++;
       }
     }
 
@@ -951,14 +944,15 @@ async function handleDirectiveResume(params: {
       await sendMessageWithCredentials(
         params.instanceId, params.token, params.apiUrl,
         params.merchantPhone,
-        `✅ تم تفعيل الرد التلقائي على *${resumedCount}* محادثة.\n\nساري يستأنف من حيث توقفت 🚀`
+        `✅ تم تفعيل الرد التلقائي على *${resumedCount}* محادثة.\n\nساري يستأنف من حيث توقفت 🚀${changedCount ? `\nتغيّرت حالة ${changedCount} محادثة أثناء التنفيذ؛ راجعها قبل الاستئناف.` : ''}`
       );
       console.log(`[Directive] ▶️ Resumed ${resumedCount} conversation(s) for merchant ${params.merchantId}`);
     } else {
       await sendMessageWithCredentials(
         params.instanceId, params.token, params.apiUrl,
         params.merchantPhone,
-        '✅ الرد التلقائي مفعّل أصلاً على كل المحادثات. كل شي تمام! 👍'
+        changedCount ? 'تغيّرت حالة المحادثات أثناء التنفيذ. راجع حالة التدخل ثم أعد طلب الاستئناف.'
+          : '✅ الرد التلقائي مفعّل أصلاً على كل المحادثات. كل شي تمام! 👍'
       );
     }
     return { action: 'directive_resume_done' };

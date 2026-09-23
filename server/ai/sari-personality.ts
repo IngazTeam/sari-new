@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
 import { formatProductPrice } from '../../shared/product-money';
@@ -1668,6 +1669,9 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
       }
     }
 
+    const handoffContext = params.conversationId && !params.isGroupMessage
+      ? handoffPrompt(await conversationHandoffSummary(params.merchantId, params.conversationId, params.incomingMessageId, memoryHistoryCutoff)) : '';
+
     // ═══ DIAGNOSTIC LOG — Trace full pipeline for debugging ═══
     console.log(`[chatWithSari] 📊 DIAGNOSTIC: merchant=${params.merchantId}, conv=${params.conversationId || 'NONE'}, history=${previousMessages.length} msgs, isFirst=${isFirstMessage}, msg="${params.message.substring(0, 50)}"`);
 
@@ -1990,7 +1994,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
       // ── Virtual Agent override for FAST PATH ──
       // Without this, message #2+ would lose agent personality and revert to Sari
-      let resumePrompt = '';
+      systemPrompt += handoffContext;
       try {
         if (params.conversationId) {
           const { eq } = await import('drizzle-orm');
@@ -1998,36 +2002,6 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
           const convs = await getConversationsByMerchantId(params.merchantId);
           const thisConv = convs.find((c: any) => c.id === params.conversationId);
           const agentId = (thisConv as any)?.currentAgentId;
-
-          // ── Resume Context Injection (after Human Takeover) ──
-          // When the bot resumes after merchant intervention, inject the full conversation
-          // history so GPT understands what was discussed and doesn't repeat or contradict.
-          const agentHistoryStr = (thisConv as any)?.agentHistory;
-          if (agentHistoryStr) {
-            const agentHistory = JSON.parse(agentHistoryStr);
-            if (agentHistory.resumeContext) {
-              resumePrompt = `\n\n## 📋 ملف المحادثة — استئناف بعد تدخل بشري:
-التاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة في الفترة الأخيرة.
-هذا سجل آخر الرسائل بالترتيب:
----
-${sanitizeForPrompt(agentHistory.resumeContext)}
----
-
-⚠️ تعليمات حرجة للاستئناف:
-1. اقرأ السجل أعلاه بعناية — افهم ما سأل العميل وما أجاب التاجر
-2. لا تكرر أي معلومة قالها التاجر — العميل سمعها بالفعل
-3. لا تقل "عدت" أو "أنا هنا مجدداً" أو "مرحباً مرة ثانية" — تصرف كأنك تتابع المحادثة بشكل طبيعي
-4. أجب على الرسالة الحالية فقط مع مراعاة كل السياق أعلاه
-5. إذا التاجر أجاب سؤال العميل بالفعل → لا تعيد الإجابة. انتقل للموضوع التالي أو اسأل "تبي تعرف شي ثاني؟"
-`;
-
-              // Clear the resume context after first use
-              await updateConversation(params.conversationId, {
-                agentHistory: null,
-              } as any);
-              console.log(`[AI] Injected resume context (${agentHistory.resumeContext.length} chars) and cleared agentHistory`);
-            }
-          }
 
           if (agentId) {
             const agent = await getMerchantVirtualAgent(params.merchantId, agentId);
@@ -2375,7 +2349,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
     // Build system prompt: Mission Block FIRST, then personality + all engines
     let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + botSettingsOverridePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
-    let resumePrompt = ''; // Extracted so it survives agent personality rebuild
+    let resumePrompt = handoffContext; // Extracted so it survives agent personality rebuild
 
     // FIX-SENTIMENT: Inject sentiment-aware directives into FULL PATH
     const fullSentimentPrompt = buildSentimentPrompt(sentiment?.sentiment || null);
@@ -2397,28 +2371,6 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       systemPrompt += customerStateSummaryFull;
     }
 
-    // ── Resume Context Injection (after Human Takeover) ──
-    try {
-      if (params.conversationId) {
-        const convs = await getConversationsByMerchantId(params.merchantId);
-        const thisConv = convs.find((c: any) => c.id === params.conversationId);
-        const agentHistoryStr = (thisConv as any)?.agentHistory;
-        if (agentHistoryStr) {
-          const agentHistory = JSON.parse(agentHistoryStr);
-          if (agentHistory.resumeContext) {
-            resumePrompt = `\n\n## 📋 ملف المحادثة — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة.  هذا سجل آخر الرسائل بالترتيب:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. لا تقل عدت أو أنا هنا مجدداً. أجب على الرسالة الحالية فقط مع مراعاة السياق. إذا التاجر أجاب بالفعل → انتقل للموضوع التالي. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
-
-            // Clear the resume context after first use
-            await updateConversation(params.conversationId, {
-              agentHistory: null,
-            } as any);
-            console.log('[AI] FULL PATH: Injected resume context and cleared agentHistory');
-          }
-        }
-      }
-    } catch (resumeErr) {
-      console.warn('[AI] Failed to inject resume context:', resumeErr);
-    }
     let activeAgentName: string | null = null;
     try {
       const { eq } = await import('drizzle-orm');

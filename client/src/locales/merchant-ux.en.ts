@@ -1,6 +1,24 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  handoff: {
+    sourceTitle: 'Original message #{{id}}', sourceScope: 'Evidence from this conversation. Text alone does not prove payment or fulfilment.',
+    sourceLoading: 'Loading message…', sourceUnavailable: 'The message is unavailable within your access and the current memory scope.', sourceRetry: 'Reload message',
+    title: 'Conversation handoff', loading: 'Loading conversation summary…', loadFailed: 'Could not load the handoff summary.', refresh: 'Refresh summary',
+    customer: 'Customer', employee: 'Team member', assistant: 'Assistant', unknown: 'Reply source unknown', budget: 'Budget', needs: 'Needs and objections', objection: 'Latest objection',
+    objectionPrice: 'Price', objectionDelivery: 'Delivery', objectionQuality: 'Quality', objectionTrust: 'Trust',
+    humanOwner: 'A team member owns this conversation — automatic replies are paused', botOwner: 'The assistant replies to new messages',
+    scope: 'Review the latest messages and offer before replying or resuming. Taking over here lasts until you hand back to the assistant. Resuming sends no immediate message and does not replay old replies.',
+    evidence: 'Review needs, offers and conversation sources', noFacts: 'There is not enough sourced information; review the customer messages below.',
+    explicit: 'Customer statement', inferred: 'Inference requiring customer confirmation', source: 'Go to message #{{id}}', offers: 'Related offers',
+    noOffers: 'There is no sourced offer in this summary.', order: 'Recorded order #{{id}} — verify its status before confirming fulfilment or payment',
+    currentOffer: 'Current offer requiring review before agreement', reviewOffer: 'Previous offer requiring a fresh review; it is not purchase confirmation',
+    recent: 'Recent messages and their authors', noMessages: 'No messages are available within the summary scope.',
+    nextStep: 'Next step: review the latest customer request and team reply, then address the pending point. If the agreement is unclear, ask for clarification. Conversation text alone does not prove a discount, payment or fulfilment.',
+    reviewed: 'I reviewed the latest messages and offer, and want the assistant to resume on the next new message.', saving: 'Updating…', resume: 'Hand back to assistant',
+    takeover: 'Take over conversation', readOnly: 'Reply permission is required to change conversation ownership.',
+    failed: 'The update failed or the conversation changed. Refresh and review the summary before retrying.', saved: 'Conversation ownership updated.',
+  },
   followupPolicy: {
     title: 'Follow-up timing and limits', description: 'Choose when Sari follows up and the limit across all of a customer’s conversations with your business.',
     enabled: 'Enable sales follow-ups', disableHint: 'Turning this off stops automatic follow-ups and customer-requested appointments; replies to incoming messages remain available.',

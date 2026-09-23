@@ -477,6 +477,13 @@
       "when": 1790151200000,
       "tag": "0067_followup_policy_dispatch",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1790151300000,
+      "tag": "0068_conversation_handoff",
+      "breakpoints": true
     }
   ]
 }

@@ -62,6 +62,11 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  handoff: CopySection<readonly ['title', 'loading', 'loadFailed', 'refresh', 'customer', 'employee', 'assistant', 'unknown', 'budget', 'needs', 'objection',
+    'sourceTitle', 'sourceScope', 'sourceLoading', 'sourceUnavailable', 'sourceRetry',
+    'objectionPrice', 'objectionDelivery', 'objectionQuality', 'objectionTrust',
+    'humanOwner', 'botOwner', 'scope', 'evidence', 'noFacts', 'explicit', 'inferred', 'source', 'offers', 'noOffers', 'order', 'currentOffer', 'reviewOffer',
+    'recent', 'noMessages', 'nextStep', 'reviewed', 'saving', 'resume', 'takeover', 'readOnly', 'failed', 'saved']>;
   followupPolicy: CopySection<readonly ['title', 'description', 'enabled', 'disableHint', 'timezone', 'timezoneHint',
     'weeklyLimit', 'startHour', 'endHour', 'scope', 'invalid', 'loading', 'loadFailed', 'refresh', 'saving', 'save', 'readOnly', 'failed', 'saved']>;
   salesSector: CopySection<readonly ['title', 'description', 'general', 'training', 'recruitment', 'store', 'loading', 'loadFailed',

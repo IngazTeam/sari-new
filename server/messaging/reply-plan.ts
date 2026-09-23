@@ -10,12 +10,14 @@ export type ReplyPlan = {
   version: 1;
   conversationId: number;
   incomingMessageId?: number;
+  ownershipVersion?: number;
   effects: SendMerchantWhatsAppInput[];
 };
 
 export function buildReplyPlan(input: {
   merchantId: number; instanceId: number; providerAccount: string; eventId: string;
   conversationId: number; incomingMessageId?: number; to: string; text: string; welcome?: string;
+  ownershipVersion?: number;
   media?: Array<{ type: 'image' | 'document'; url: string; caption?: string; fileName?: string }>;
 }): ReplyPlan {
   const effects: SendMerchantWhatsAppInput[] = [];
@@ -42,7 +44,7 @@ export function buildReplyPlan(input: {
       mediaUrl: media.url, text: media.caption, fileName: media.fileName });
   }
   if (!effects.length) throw new Error('Empty reply plan');
-  return { version: 1, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, effects };
+  return { version: 1, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, ownershipVersion: input.ownershipVersion ?? 0, effects };
 }
 
 export async function humanOwnsConversation(merchantId: number, conversationId: number): Promise<boolean> {
@@ -64,6 +66,10 @@ export async function humanOwnsConversation(merchantId: number, conversationId: 
 export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'sent' | 'human_takeover'> {
   await persistInboundReplyPlan(plan);
   await stageInteraction(plan);
+  // Plans persisted before ownership versioning cannot prove that their context is still current.
+  if (!Number.isSafeInteger(plan.ownershipVersion) || plan.ownershipVersion! < 0) {
+    await finishInteractionDelivery(plan, false); return 'human_takeover';
+  }
   const delay = Math.max(0, Math.min(60_000, delayMs));
   if (delay) await new Promise(resolve => setTimeout(resolve, delay));
   for (const effect of plan.effects) {
@@ -73,7 +79,13 @@ export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'
       await finishInteractionDelivery(plan, false);
       return 'human_takeover';
     }
-    const result = await sendMerchantWhatsApp(effect);
+    const replyGuard = { conversationId: plan.conversationId, incomingMessageId: plan.incomingMessageId, version: plan.ownershipVersion ?? 0 };
+    const { canSendConversationReply } = await import('../ai/conversation-handoff');
+    if (!await canSendConversationReply((await getPool())!, effect.merchantId, replyGuard, effect.to)) {
+      await finishInteractionDelivery(plan, false); return 'human_takeover';
+    }
+    const result = await sendMerchantWhatsApp({ ...effect, replyGuard });
+    if (result.errorCode === 'conversation_superseded') { await finishInteractionDelivery(plan, false); return 'human_takeover'; }
     if (!result.accepted) throw new Error('Reply effect requires delivery review');
   }
   await finishInteractionDelivery(plan, true);

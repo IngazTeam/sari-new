@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { sallaShippingSchema } from '../shared/salla-order';
+import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
@@ -1476,6 +1477,7 @@ export const appRouter = router({
 
   // Conversations
   conversations: router({
+    ...conversationHandoffProcedures,
     // Get all conversations for current merchant (with optional pipeline filters)
     list: permissionProcedure('conversations.read')
       .input(z.object({
@@ -1623,6 +1625,11 @@ export const appRouter = router({
           waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
         }
 
+        // Claim ownership before the external send; failure leaves the bot paused for review.
+        const replySettings = await getBotSettings(merchant.id);
+        await updateConversation(input.conversationId, { humanTakeover: 1, humanTakeoverAt: new Date(),
+          humanExpiresAt: new Date(Date.now() + (replySettings.takeoverTimeoutMinutes || 15) * 60000) } as any);
+
         // Send via WhatsApp
         const { sendMessageWithCredentials } = await import('./whatsapp');
         const result = await sendMessageWithCredentials(
@@ -1644,26 +1651,11 @@ export const appRouter = router({
         const { createMessage } = await import('./db');
         await createMessage({
           conversationId: input.conversationId,
-          direction: 'outgoing',
+          direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
           messageType: 'text',
           content: input.message,
           externalId: result.messageId || null,
         });
-
-        // ── FIX: Activate humanTakeover so bot stays silent (parity with modular router) ──
-        try {
-          const { getBotSettings: getBSInline, updateConversation: updateConvInline } = await import('./db');
-          const bsInline = await getBSInline(merchant.id);
-          const timeoutMin = bsInline.takeoverTimeoutMinutes || 15;
-          await updateConvInline(input.conversationId, {
-            humanTakeover: 1,
-            humanTakeoverAt: new Date(),
-            humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
-          } as any);
-          console.log(`[Dashboard-Inline] Human takeover activated on conv ${input.conversationId} for ${timeoutMin} min`);
-        } catch (takeoverErr) {
-          console.warn('[Dashboard-Inline] Failed to activate takeover:', takeoverErr);
-        }
 
         return { success: true, messageId: result.messageId };
       }),
@@ -1724,6 +1716,10 @@ export const appRouter = router({
         };
         const fileName = `voice-message.${extensionByMime[input.mimeType]}`;
 
+        const voiceSettings = await getBotSettings(merchant.id);
+        await updateConversation(input.conversationId, { humanTakeover: 1, humanTakeoverAt: new Date(),
+          humanExpiresAt: new Date(Date.now() + (voiceSettings.takeoverTimeoutMinutes || 15) * 60000) } as any);
+
         const { sendFileWithCredentials } = await import('./whatsapp');
         const result = await sendFileWithCredentials(
           waInstanceId,
@@ -1746,7 +1742,7 @@ export const appRouter = router({
         try {
           const savedMessage = await createMessage({
             conversationId: input.conversationId,
-            direction: 'outgoing',
+            direction: 'outgoing', senderType: 'merchant',
             messageType: 'voice',
             content: `[رسالة صوتية — ${Math.round(input.duration)} ثانية]`,
             voiceUrl: audioUrl,
@@ -1756,13 +1752,6 @@ export const appRouter = router({
           });
           persisted = Boolean(savedMessage);
 
-          const botSettings = await getBotSettings(merchant.id);
-          const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
-          await updateConversation(input.conversationId, {
-            humanTakeover: 1,
-            humanTakeoverAt: new Date(),
-            humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
-          } as any);
         } catch (persistenceError) {
           persisted = false;
           console.error(`[Dashboard] Voice ${result.messageId} delivered but persistence failed:`, persistenceError);

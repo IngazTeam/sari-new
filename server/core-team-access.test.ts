@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn() }));
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn() }));
+vi.mock('./ai/conversation-handoff', async original => ({ ...await original<typeof import('./ai/conversation-handoff')>(),
+  conversationHandoffSummary: mocks.handoffRead, transitionConversationOwnership: mocks.handoffWrite, conversationHandoffSource: mocks.handoffSource }));
 vi.mock('./ai/followup-policy', async original => ({ ...await original<typeof import('./ai/followup-policy')>(),
   getFollowupPolicy: mocks.followupRead, updateFollowupPolicy: mocks.followupWrite }));
 vi.mock('./ai/zid-checkout-reconciliation', () => ({ listZidReconciliations: mocks.zidList, reconcileZidCheckout: mocks.zidReconcile }));
@@ -22,8 +24,46 @@ beforeEach(() => {
   mocks.zidList.mockResolvedValue({ items: [], nextCursor: null }); mocks.zidReconcile.mockResolvedValue({ verified: true });
   mocks.sectorRead.mockResolvedValue({ revision: 0, playbook: { id: 'general' } }); mocks.sectorWrite.mockResolvedValue({ revision: 1 });
   mocks.followupRead.mockResolvedValue({ revision: 0 }); mocks.followupWrite.mockResolvedValue({ revision: 1 });
+  mocks.handoffRead.mockResolvedValue({ version: 0 }); mocks.handoffWrite.mockResolvedValue({ version: 1, changed: true });
+  mocks.handoffSource.mockResolvedValue({ id: 81, text: 'fixture' });
 });
 describe('real app router team boundaries', () => {
+  it('looks up exact evidence with membership identity and hides unavailable sources', async () => {
+    expect(await caller().conversations.getHandoffSource({ conversationId: 4, messageId: 81 })).toMatchObject({ id: 81 });
+    expect(mocks.handoffSource).toHaveBeenCalledWith(20, 4, 81);
+    mocks.handoffSource.mockRejectedValueOnce(new Error('private source detail'));
+    await expect(caller().conversations.getHandoffSource({ conversationId: 4, messageId: 82 })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Conversation source unavailable' });
+  });
+  it.each([{ merchantId: 30 }, { messageId: "1 OR 1=1" }, { conversationId: -1 }])('rejects forged source lookup %j', async attack => {
+    await expect(caller().conversations.getHandoffSource({ conversationId: 4, messageId: 81, ...attack } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(mocks.handoffSource).not.toHaveBeenCalled();
+  });
+  const handoffInput = { conversationId: 4, expectedVersion: 0, expectedLastMessageId: 81, reviewed: false, action: 'takeover' as const };
+  it('scopes handoff reads to membership and allows only users with reply permission to change ownership', async () => {
+    expect(await caller().conversations.getHandoff({ conversationId: 4 })).toMatchObject({ canManage: false });
+    expect(mocks.handoffRead).toHaveBeenCalledWith(20, 4);
+    await expect(caller().conversations.setOwnership(handoffInput)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(mocks.handoffWrite).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    await caller().conversations.setOwnership(handoffInput);
+    expect(mocks.handoffWrite).toHaveBeenCalledWith(4, expect.objectContaining({ humanTakeover: 1 }),
+      { merchantId: 20, expectedVersion: 0, expectedLastMessageId: 81, reason: 'manual' });
+  });
+  it.each([{ merchantId: 30 }, { actorUserId: 1 }, { expectedVersion: -1 }, { expectedLastMessageId: -1 },
+    { action: 'resume', reviewed: false }, { conversationId: "1' OR 1=1" }, { action: 'force_resume' }])
+    ('rejects forged ownership context and unreviewed resume %j', async attack => {
+      mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+      await expect(caller().conversations.setOwnership({ ...handoffInput, ...attack } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+      expect(mocks.handoffWrite).not.toHaveBeenCalled();
+    });
+  it('hides foreign handoff evidence and private storage details', async () => {
+    mocks.handoffRead.mockRejectedValueOnce(new Error('private tenant data'));
+    await expect(caller().conversations.getHandoff({ conversationId: 80 })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Conversation unavailable' });
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    mocks.handoffWrite.mockRejectedValueOnce(new Error('private storage error'));
+    const error = await caller().conversations.setOwnership(handoffInput).catch(error => error);
+    expect(error.code).toBe('CONFLICT'); expect(error.message).not.toContain('private');
+  });
   const followupInput = { expectedRevision: 0, policy: { enabled: true, timeZone: 'Asia/Riyadh', startHour: 8, endHour: 23, weeklyLimit: 3 } };
   it('scopes follow-up settings to membership and requires bot settings permission for edits', async () => {
     expect(await caller().sariBrain.getFollowupPolicy()).toMatchObject({ canManage: false });

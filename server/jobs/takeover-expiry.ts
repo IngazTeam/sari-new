@@ -1,3 +1,4 @@
+import { transitionConversationOwnership } from '../ai/conversation-handoff';
 /**
  * Takeover Expiry Job
  * 
@@ -6,11 +7,11 @@
  * Handles TWO cases:
  * 
  * A) TIMED TAKEOVER (humanExpiresAt is set — from manual merchant reply)
- *    - When humanExpiresAt < NOW(): clear takeover + respond to pending messages
+ *    - When humanExpiresAt < NOW(): release ownership and notify the merchant.
  * 
  * B) PERMANENT TAKEOVER (humanExpiresAt is NULL — from "سأتولى المحادثة")
  *    - After 1 hour: Send reminder to merchant about waiting customers
- *    - After 24 hours: Force-expire + respond to pending messages
+ *    - After 24 hours: expire only if permanentSilence is not set.
  * 
  * This prevents:
  * 1. Customer sends message during takeover → saved but not processed
@@ -19,16 +20,15 @@
  * 4. Merchant forgets they activated permanent takeover
  * 
  * SECURITY NOTES:
- * - VULN-1 FIX: Mark message as processed BEFORE calling AI to prevent double-response race
+ * - Versioned transaction retires old pending messages without calling AI.
  * - VULN-2 FIX: Skip reminder if merchant phone matches any active takeover customer phone
- * - VULN-3 FIX: Mark message as processed even on AI failure
+ * - A fresh customer message is needed before the bot replies again.
  */
 
 import {
   getMerchantById,
   getPool,
   getWhatsAppInstancesByMerchantId,
-  updateConversation,
 } from '../db';
 
 let _isRunning = false;
@@ -55,7 +55,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     // CASE A: Timed takeovers that have expired
     // ═══════════════════════════════════════════════════════
     const expiredConvs = await pool.execute(
-      `SELECT c.id, c.merchantId, c.customerPhone, c.human_expires_at
+      `SELECT c.id, c.merchantId, c.customerPhone, c.human_expires_at, c.handoff_version
        FROM conversations c
        WHERE c.human_takeover = 1
          AND c.human_expires_at IS NOT NULL
@@ -74,7 +74,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     // ═══════════════════════════════════════════════════════
     const permanentConvs = await pool.execute(
       `SELECT c.id, c.merchantId, c.customerPhone, c.customerName,
-              c.human_takeover_at,
+              c.human_takeover_at, c.handoff_version,
               TIMESTAMPDIFF(MINUTE, c.human_takeover_at, NOW()) as age_minutes
        FROM conversations c
        WHERE c.human_takeover = 1
@@ -94,7 +94,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
           let isPermanentSilence = false;
           try {
             const [convData] = await pool.execute(
-              'SELECT agentHistory FROM conversations WHERE id = ? LIMIT 1', [conv.id]
+              'SELECT agent_history AS agentHistory FROM conversations WHERE id = ? LIMIT 1', [conv.id]
             );
             const ah = (convData as any[])?.[0]?.agentHistory;
             if (ah) {
@@ -150,72 +150,20 @@ async function runTakeoverExpiryCheck(): Promise<void> {
 }
 
 /**
- * Resume a conversation: clear takeover + process last pending message
- * 
- * VULN-1 FIX: Marks message as is_processed=1 BEFORE calling AI,
- * preventing double-response race between cron and webhook handler.
+ * Resume only the observed ownership version and retire its pending messages.
+ * Notify the merchant; the assistant waits for a new customer message.
  */
 async function resumeConversation(pool: any, conv: any, reason: string): Promise<void> {
   try {
-    // 1. Build resume context BEFORE clearing takeover
-    //    This context will be used when the customer sends a NEW message
-    let resumeContext = '';
-    try {
-      const [allMsgs] = await pool.execute(
-        `SELECT direction, content, senderType FROM messages
-         WHERE conversationId = ? ORDER BY createdAt DESC LIMIT 20`,
-        [conv.id],
-      );
-      const msgs = (allMsgs as any[]) || [];
-      const lines: string[] = [];
-      // Reverse to get chronological order
-      for (const msg of msgs.reverse()) {
-        const content = (msg.content || '').substring(0, 300);
-        if (!content || content === '[media]') continue;
-        if (msg.direction === 'incoming') {
-          lines.push(`▸ العميل: "${content}"`);
-        } else if (msg.senderType === 'merchant' || msg.senderType === 'human') {
-          lines.push(`▸ التاجر (يدوي): "${content}"`);
-        } else {
-          lines.push(`▸ البوت: "${content}"`);
-        }
-      }
-      resumeContext = lines.join('\n');
-    } catch { /* non-blocking */ }
+    // Capture pending evidence before the atomic resume; only the winning version notifies.
+    const [pendingBefore] = await pool.execute(
+      "SELECT id,content,createdAt FROM messages WHERE conversationId=? AND direction='incoming' AND isProcessed=0 ORDER BY id DESC", [conv.id]);
+    const transition = await transitionConversationOwnership(conv.id, { humanTakeover: 0 }, {
+      merchantId: conv.merchantId, expectedVersion: conv.handoff_version, reason: 'expired' });
+    if (!transition.changed) return;
 
-    // 2. Clear the takeover + store resume context for next customer message
-    await updateConversation(conv.id, {
-      humanTakeover: 0,
-      humanExpiresAt: null,
-      agentHistory: resumeContext ? JSON.stringify({ resumeContext }) : null,
-    } as any);
-
-    console.log(`[TakeoverExpiry] ✅ Auto-cleared takeover on conv ${conv.id} (reason: ${reason}, merchant: ${conv.merchantId})`);
-
-    // 3. Check for unprocessed incoming messages
-    const unprocessedMsgs = await pool.execute(
-      `SELECT id, content, createdAt
-       FROM messages
-       WHERE conversationId = ?
-         AND direction = 'incoming'
-         AND isProcessed = 0
-       ORDER BY createdAt DESC`,
-      [conv.id],
-    );
-
-    const pendingMsgs = (unprocessedMsgs as any)[0] as any[];
-    
-    // 4. Mark ALL pending messages as processed (prevent stale re-processing)
-    //    These messages were sent during merchant takeover — merchant likely handled them.
-    //    The bot should NOT respond to them without full context.
-    if (pendingMsgs && pendingMsgs.length > 0) {
-      const pendingIds = pendingMsgs.map((m: any) => m.id);
-      await pool.execute(
-        `UPDATE messages SET isProcessed = 1 WHERE id IN (${pendingIds.map(() => '?').join(',')})`,
-        pendingIds,
-      );
-      console.log(`[TakeoverExpiry] 📋 Marked ${pendingIds.length} stale message(s) as processed on conv ${conv.id} (NOT responding — waiting for new customer message)`);
-
+    const pendingMsgs = pendingBefore as any[];
+    if (pendingMsgs.length > 0) {
       // 5. Notify merchant about pending messages (instead of auto-responding)
       try {
         const { notifyNewMessage } = await import('../_core/notificationService');
@@ -263,7 +211,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
 
     // NOTE: We intentionally do NOT call chatWithSari here.
     // The bot will respond naturally when the customer sends a NEW message,
-    // using the resumeContext stored in agentHistory (built in step 1).
+    // using fresh, sourced handoff evidence from the database on every turn.
     // This prevents stale/context-free responses to old messages.
 
   } catch (convErr: any) {

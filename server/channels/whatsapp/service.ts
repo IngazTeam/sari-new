@@ -148,6 +148,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       return { accepted: false, duplicate: false, status: 'failed', errorCode: 'followup_suppressed' };
     }
   }
+  if (input.replyGuard) {
+    const { canSendConversationReply } = await import('../../ai/conversation-handoff');
+    if (!await canSendConversationReply(pool, input.merchantId, input.replyGuard, input.to)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='conversation_superseded',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: 'conversation_superseded' };
+    }
+  }
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,
