@@ -1,6 +1,18 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  offerReview: {
+    title: 'Discount delivery review', scope: 'Check the offer outcome before following up. Saving a review records your note and restores the message when a matching receipt exists. It does not resend the message or apply a discount to an order.',
+    loading: 'Loading discount attempts…', loadFailed: 'Unable to load discount records.', refresh: 'Refresh records', empty: 'No discount sharing attempts on this page.', older: 'Older attempts', latest: 'Back to latest', pages: 'Discount attempt pages',
+    attempt: 'Discount offer — message #{{id}}', missing: 'No saved sending receipt; review is required', invalid: 'Receipt details do not match this offer; do not assume success', pending: 'Sending outcome is unresolved', failed: 'The provider reported a sending or delivery failure',
+    sent: 'Provider accepted the message; delivery is unconfirmed', delivered: 'Provider confirmed delivery', read: 'Provider confirmed the message was read', cancelled: 'Attempt cancelled before sending began', reserved: 'Attempt reserved; sending has not started',
+    priorAcceptance: 'Provider acceptance was verified earlier. A later failure does not mean the message was never sent.', projectionConflict: 'The receipt is verified, but its reference conflicts with another recorded message. Review the conflict; the message will not be overwritten.',
+    projected: 'The offer text is recorded in this conversation.', projectionPending: 'The receipt is verified; the offer text needs to be restored to the conversation.',
+    evidence: 'Customer request and offer details', source: 'Customer request — message #{{id}}', sourceUnavailable: 'The source message is currently unavailable; no replacement text was inferred.', text: 'Offer text saved at sending time', textUnavailable: 'Sending text is unavailable for this attempt.', receipt: 'Receipt reference:', lastReview: 'Latest review — user #{{id}}',
+    recorded: 'Review saved; the receipt is verified and the message is recorded.', acceptedUnprojected: 'Review saved; provider acceptance is verified, but the history conflict still needs attention.', reviewFailed: 'Review saved with a failed outcome. No resend was attempted.', unresolved: 'Review saved; the outcome remains unresolved. Check WhatsApp history before any manual send.',
+    note: 'What did you review, and what happens next?', attestation: 'I reviewed the customer request, offer and sending outcome. Saving this review will not send a message or apply a discount.',
+    saving: 'Checking and saving…', save: 'Check and save review', saveFailed: 'Evidence changed or saving failed. Refresh and review the records again.', readOnly: 'You can read these records. Saving a review requires reply permission.',
+  },
   relay: {
     title: 'Escalated reply review', scope: 'Review the employee reply outcome. A review saves your note and repairs the conversation when a trusted receipt exists. It never sends a new message or assumes delivery.',
     loading: 'Loading reply attempts…', loadFailed: 'Unable to load escalation records.', refresh: 'Refresh records', empty: 'No escalated reply attempts on this page.', older: 'Older attempts',

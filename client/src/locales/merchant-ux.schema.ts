@@ -62,6 +62,10 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  offerReview: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','latest','pages','attempt',
+    'missing','invalid','pending','failed','sent','delivered','read','cancelled','reserved','priorAcceptance','projectionConflict','projected','projectionPending',
+    'evidence','source','sourceUnavailable','text','textUnavailable','receipt','lastReview','recorded','acceptedUnprojected','reviewFailed','unresolved',
+    'note','attestation','saving','save','saveFailed','readOnly']>;
   relay: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','attempt','by','evidence','question','reply','lastReview',
     'missing','invalid','pending','deliveryFailed','accepted','delivered','read','recorded','failedOutcome','unresolved','note','attestation','saving','review','saveFailed','readOnly']>;
   handoff: CopySection<readonly ['title', 'loading', 'loadFailed', 'refresh', 'customer', 'employee', 'assistant', 'unknown', 'budget', 'needs', 'objection',

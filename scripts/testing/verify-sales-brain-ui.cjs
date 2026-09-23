@@ -217,11 +217,76 @@ async function main() {
     await page.click('#relay-fixture > section > div:last-child button:last-child');await page.waitForSelector('#relay-note-4');
     await page.click('#relay-fixture > section > div:last-child button:first-child');await page.waitForSelector('#relay-note-5');
     results.push({width:1440,mode:'relay_pagination',passed:true});
+    const offerId='1c2e9491-2555-4fa3-a5e9-846efea99780';
+    const openOffer=async()=>{await page.click('#offer-fixture > details > summary');await page.waitForSelector('#offer-fixture > details > section');};
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]){
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.evaluate(()=>window.__offerReads||0),0);
+      await page.focus('#offer-fixture > details > summary');await page.keyboard.press('Enter');
+      await page.waitForSelector(`#offer-note-${offerId}`);assert.equal(await page.evaluate(()=>window.__offerReads),1);
+      assert.equal(await page.$eval('[data-offer-save]',b=>b.disabled),true);
+      await page.click('#offer-fixture [data-offer-details] summary');assert.equal(await page.$('#offer-fixture img'),null);
+      await page.type(`#offer-note-${offerId}`,'Reviewed receipt; <img src=x onerror=alert(1)> outcome unknown.');
+      assert.equal(await page.$eval('[data-offer-save]',b=>b.disabled),true);
+      await page.click('#offer-fixture input[type=checkbox]');await page.click('[data-offer-save]');
+      await page.waitForSelector('[data-offer-last-review]');await page.waitForSelector('[data-offer-saved]');
+      assert.deepEqual(await page.evaluate(()=>window.__offerInput),{conversationId:42,attemptId:offerId,expectedRevision:0,evidence:'a'.repeat(64),reviewed:true,note:'Reviewed receipt; <img src=x onerror=alert(1)> outcome unknown.'});
+      assert.equal(await page.$eval('#offer-fixture input[type=checkbox]',n=>n.checked),false);
+      assert.equal(await page.$eval(`#offer-note-${offerId}`,n=>n.value),'');assert.equal(await page.$('#offer-fixture img'),null);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.$eval('#offer-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      assert.ok(await page.$$eval('#offer-fixture button, #offer-fixture summary',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
+      if(lang==='ar'&&[375,1440].includes(width)){
+        await page.$eval('[data-offer-details]',n=>{n.open=false;});
+        await page.$eval('[data-offer-id]',n=>{n.parentElement.scrollTop=0;});
+        await (await page.$('#offer-fixture')).screenshot({path:path.join(output,`offer-review-${width}.png`)});
+      }
+      results.push({width,lang,mode:'offer_review_save_and_keyboard',passed:true});
+    }
+    for(const mode of ['viewer','empty','error','loading','mutation-error']){
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});await openOffer();
+      if(['viewer','empty'].includes(mode))assert.equal(await page.$('#offer-fixture textarea'),null);
+      if(mode==='loading')assert.ok(await page.$('#offer-fixture [role=status]'));
+      if(mode==='error'){await page.click('#offer-fixture [role=alert] button');await page.waitForSelector(`#offer-note-${offerId}`);}
+      if(mode==='mutation-error'){
+        await page.type(`#offer-note-${offerId}`,'Review failed; refresh and check again.');await page.click('#offer-fixture input[type=checkbox]');await page.click('[data-offer-save]');
+        await page.waitForSelector('#offer-fixture [role=alert]');assert.equal(await page.$('[data-offer-last-review]'),null);assert.equal(await page.$eval('[data-offer-save]',n=>n.disabled),true);
+        await page.click('#offer-fixture [role=alert] button');assert.equal(await page.$eval('#offer-fixture input[type=checkbox]',n=>n.checked),false);
+        await page.click('#offer-fixture input[type=checkbox]');await page.click('[data-offer-save]');await page.waitForSelector('[data-offer-last-review]');
+      }
+      results.push({width:1440,mode:`offer_${mode}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});await openOffer();
+    await page.click('[data-offer-older]');await page.waitForSelector('[data-offer-id="98a9f3db-a76c-4413-baff-558ad0b1d73b"]');
+    await page.click('[data-offer-refresh]');await page.waitForSelector(`[data-offer-id="${offerId}"]`);
+    results.push({width:1440,mode:'offer_pagination',passed:true});
+    await page.type(`#offer-note-${offerId}`,'Draft requiring refreshed evidence.');await page.click('#offer-fixture input[type=checkbox]');
+    await page.evaluate(()=>window.__changeOfferEvidence());await page.waitForFunction(()=>!document.querySelector('#offer-fixture input[type=checkbox]').checked);
+    assert.equal(await page.$eval('[data-offer-save]',n=>n.disabled),true);
+    assert.equal(await page.$eval(`#offer-note-${offerId}`,n=>n.value),'Draft requiring refreshed evidence.');
+    results.push({width:1440,mode:'offer_changed_evidence_invalidates_attestation',passed:true});
+    await page.goto(`${origin}/?case=offer-fetching`,{waitUntil:'networkidle0'});await openOffer();
+    assert.equal(await page.$eval('#offer-fixture input[type=checkbox]',n=>n.disabled),true);assert.equal(await page.$eval('[data-offer-save]',n=>n.disabled),true);
+    results.push({width:1440,mode:'offer_refresh_blocks_stale_submission',passed:true});
+    for(const mode of ['offer-failed','offer-read','offer-conflict','offer-source-missing']){
+      await page.setViewport({width:320,height:812});await page.goto(`${origin}/?case=${mode}&lang=en`,{waitUntil:'networkidle0'});
+      await openOffer();await page.click('#offer-fixture [data-offer-details] summary');
+      if(mode==='offer-failed')assert.ok((await page.$eval('#offer-fixture',n=>n.innerText)).includes('acceptance was verified earlier'));
+      if(mode==='offer-read')assert.equal(await page.$eval('[data-offer-state]',n=>n.dataset.offerState),'read');
+      if(mode==='offer-conflict')assert.ok(await page.$('[data-offer-projection=conflict]'));
+      if(mode==='offer-source-missing')assert.ok((await page.$eval('#offer-fixture',n=>n.innerText)).includes('source message is currently unavailable'));
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.$eval('#offer-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      results.push({width:320,mode,passed:true});
+    }
+    await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+    assert.equal(await page.$eval('#offer-fixture > details > summary svg',n=>getComputedStyle(n).transitionProperty),'none');
+    await page.emulateMediaFeatures([]);results.push({width:320,mode:'offer_reduced_motion',passed:true});
     assert.deepEqual(errors, []);
     const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ scenarios: results.length, screenshots: 9, errors }));
+    console.log(JSON.stringify({ scenarios: results.length, screenshots: 11, errors }));
   } catch (error) {
     const pages = await browser.pages(), page = pages.at(-1);
     if (page) {

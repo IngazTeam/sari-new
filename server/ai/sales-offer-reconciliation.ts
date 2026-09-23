@@ -4,20 +4,25 @@ import {
   privateSalesPhone,
   type SalesOfferIdentity,
 } from "./sales-offer-authority";
-import { salesDiscountMessage } from "./sales-offer-evidence";
+import {
+  inspectSalesOfferReceipt,
+  salesOfferProjectionConflict,
+  salesOfferEvidenceHash,
+  type SalesOfferReviewOutcome,
+} from "./sales-offer-receipt-proof";
 
-const parse = (v: any) => {
-  try {
-    return typeof v === "string" ? JSON.parse(v) : v;
-  } catch {
-    return null;
-  }
+export type SalesOfferReview = {
+  expectedRevision: number;
+  evidence: string;
+  actorUserId: number;
+  note: string;
 };
 
 /** Historical receipts are checked against frozen dispatch facts, not today's coupon validity. */
 export async function reconcileSalesOffer(
   input: SalesOfferIdentity,
-  attemptId: string
+  attemptId: string,
+  review?: SalesOfferReview
 ) {
   if (
     ![input.merchantId, input.conversationId, input.incomingMessageId].every(
@@ -53,64 +58,38 @@ export async function reconcileSalesOffer(
       [input.merchantId, `sales_offer:${input.merchantId}:${attemptId}`]
     );
     const d = deliveries[0],
-      request = parse(d?.request_json),
-      g = request?.salesOfferGuard,
-      stored = parse(r.evidence);
-    let textMatches = false;
-    try {
-      textMatches = Boolean(
-        stored && salesDiscountMessage(stored) === r.dispatch_text
+      proof = inspectSalesOfferReceipt(r, d);
+    const { accepted, receipt, valid, deliveryState } = proof;
+    const [messages] = receipt
+      ? await c.execute<any[]>(
+          "SELECT id,direction,content,sender_type FROM messages WHERE conversationId=? AND externalId=? ORDER BY id FOR UPDATE",
+          [r.conversation_id, receipt]
+        )
+      : [[]];
+    if (review) {
+      if (
+        privateSalesPhone(conversations[0]?.customerPhone) !== r.customer_phone
+      )
+        throw new Error("Sales offer review unavailable");
+      const [sources] = await c.execute<any[]>(
+        "SELECT id,direction,content FROM messages WHERE conversationId=? AND id=? FOR UPDATE",
+        [r.conversation_id, r.source_message_id]
       );
-    } catch {
-      /* corrupt evidence cannot confirm */
+      const evidence = salesOfferEvidenceHash(
+        r,
+        d,
+        conversations[0].customerPhone,
+        sources[0],
+        messages
+      );
+      if (
+        r.review_revision !== review.expectedRevision ||
+        evidence !== review.evidence
+      )
+        throw new Error("Sales offer review evidence changed");
     }
-    const valid = Boolean(
-      d &&
-      r.dispatch_started_at &&
-      ["dispatching", "unknown", "accepted"].includes(r.state) &&
-      r.instance_id &&
-      d.instance_id === r.instance_id &&
-      d.provider === r.provider &&
-      d.account === r.provider_account &&
-      d.account_provider === r.provider &&
-      d.account_merchant === r.merchant_id &&
-      [
-        "green_api",
-        "meta_cloud",
-        ...(process.env.NODE_ENV === "test" ? ["mock"] : []),
-      ].includes(d.provider) &&
-      d.direction === "outgoing" &&
-      request?.kind === "text" &&
-      textMatches &&
-      request?.text === r.dispatch_text &&
-      privateSalesPhone(request?.to) === r.customer_phone &&
-      g?.attemptId === r.id &&
-      g?.conversationId === r.conversation_id &&
-      g?.sourceMessageId === r.source_message_id
-    );
-    const receipt =
-      typeof d?.provider_message_id === "string" &&
-      /^[^\s<>\x00-\x1f]{1,255}$/.test(d.provider_message_id)
-        ? d.provider_message_id
-        : null;
-    // Later failed delivery does not erase an already verified provider acceptance.
-    const accepted = Boolean(
-      valid &&
-      receipt &&
-      (["sent", "delivered", "read"].includes(d.status) ||
-        (r.state === "accepted" && r.provider_message_id === receipt))
-    );
-    const deliveryState = !d
-      ? "missing"
-      : !valid
-        ? "invalid"
-        : d.status === "failed"
-          ? "failed"
-          : accepted
-            ? d.status
-            : "pending";
     let projected = false;
-    let error = accepted ? null : deliveryState;
+    let error: string | null = accepted ? null : deliveryState;
     if (accepted) {
       // Do not resurrect deleted conversations or put another customer's offer into a reassigned conversation.
       if (
@@ -118,48 +97,41 @@ export async function reconcileSalesOffer(
       )
         error = "conversation_unavailable";
       else {
-        const [messages] = await c.execute<any[]>(
-          "SELECT id,direction,content,sender_type FROM messages WHERE conversationId=? AND externalId=?",
-          [r.conversation_id, receipt]
-        );
-        if (
-          messages.some(
-            m =>
-              m.direction !== "outgoing" ||
-              m.content !== r.dispatch_text ||
-              m.sender_type !== "assistant"
-          )
-        )
-          throw new Error("Sales offer receipt projection conflict");
-        if (!messages.length) {
-          await c.execute(
-            `INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,aiResponse,sender_type,createdAt)
+        if (salesOfferProjectionConflict(r, messages)) {
+          if (!review)
+            throw new Error("Sales offer receipt projection conflict");
+          error = "projection_conflict";
+        } else {
+          if (!messages.length) {
+            await c.execute(
+              `INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,aiResponse,sender_type,createdAt)
             VALUES (?,'outgoing','text',?,?,1,?,'assistant',?)`,
-            [
-              r.conversation_id,
-              r.dispatch_text,
-              receipt,
-              r.dispatch_text,
-              r.dispatch_started_at,
-            ]
-          );
-          await c.execute(
-            "UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?",
-            [
-              r.dispatch_started_at,
-              r.dispatch_started_at,
-              r.conversation_id,
-              input.merchantId,
-            ]
-          );
+              [
+                r.conversation_id,
+                r.dispatch_text,
+                receipt,
+                r.dispatch_text,
+                r.dispatch_started_at,
+              ]
+            );
+            await c.execute(
+              "UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?",
+              [
+                r.dispatch_started_at,
+                r.dispatch_started_at,
+                r.conversation_id,
+                input.merchantId,
+              ]
+            );
+          }
+          projected = true;
         }
-        projected = true;
       }
     }
     await c.execute(
       `UPDATE sales_offer_attempts SET state=?,provider_message_id=?,
       reconciled_at=${accepted ? "COALESCE(reconciled_at,UTC_TIMESTAMP(3))" : "reconciled_at"},last_reconcile_error=?,
-      next_reconcile_at=${accepted || (valid && d.status === "failed") ? "NULL" : "TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3))"},updated_at=UTC_TIMESTAMP(3)
+      next_reconcile_at=${accepted || (valid && d.status === "failed") || !r.dispatch_started_at || !["dispatching", "unknown"].includes(r.state) ? "NULL" : "TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3))"},updated_at=UTC_TIMESTAMP(3)
       WHERE id=? AND merchant_id=?`,
       [
         accepted ? "accepted" : r.state,
@@ -169,7 +141,34 @@ export async function reconcileSalesOffer(
         input.merchantId,
       ]
     );
-    return { accepted, projected, deliveryState };
+    const outcome: SalesOfferReviewOutcome = accepted
+      ? projected
+        ? "recorded"
+        : "accepted_unprojected"
+      : valid && d.status === "failed"
+        ? "failed"
+        : "unresolved";
+    if (review) {
+      await c.execute(
+        `INSERT INTO sales_offer_reviews (merchant_id,attempt_id,actor_user_id,revision,evidence_hash,outcome,delivery_state,note)
+        VALUES (?,?,?,?,?,?,?,?)`,
+        [
+          input.merchantId,
+          attemptId,
+          review.actorUserId,
+          r.review_revision + 1,
+          review.evidence,
+          outcome,
+          deliveryState,
+          review.note,
+        ]
+      );
+      await c.execute(
+        "UPDATE sales_offer_attempts SET review_revision=review_revision+1 WHERE id=? AND merchant_id=?",
+        [attemptId, input.merchantId]
+      );
+    }
+    return { accepted, projected, deliveryState, outcome };
   });
 }
 

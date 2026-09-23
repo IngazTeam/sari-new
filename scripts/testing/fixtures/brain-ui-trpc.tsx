@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { defaultFollowupPolicy } from '../../../shared/followup-policy';
 import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sales-sector-playbooks';
 const parameters = new URL(location.href).searchParams;
@@ -10,6 +10,30 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   conversations: {
+    listSalesOfferAttempts:{useQuery:(input:{beforeSourceId?:number},options:{enabled:boolean})=>{
+      const [retry,setRetry]=useState(false),[revision,setRevision]=useState(0);
+      const id=input.beforeSourceId?'98a9f3db-a76c-4413-baff-558ad0b1d73b':'1c2e9491-2555-4fa3-a5e9-846efea99780';
+      useEffect(()=>{if(options.enabled)(window as any).__offerReads=((window as any).__offerReads||0)+1;},[options.enabled,input.beforeSourceId]);
+      useEffect(()=>{(window as any).__changeOfferEvidence=()=>setRevision(r=>r+1);},[]);
+      const saved=(window as any).__offerInput;
+      const state=mode==='offer-failed'?'failed':mode==='offer-read'?'read':mode==='offer-conflict'?'sent':'pending';
+      const accepted=['offer-failed','offer-read','offer-conflict'].includes(mode);
+      const item={id,revision,evidence:(revision?'b':'a').repeat(64),state,accepted,projected:accepted&&mode!=='offer-conflict',projectionConflict:mode==='offer-conflict',
+        attemptState:'unknown',sourceMessageId:input.beforeSourceId?71:81,sourceText:mode==='offer-source-missing'?null:'هل يوجد خصم؟ <img src=x onerror=alert(1)> '+ 'long-customer-request-'.repeat(45),
+        text:'كود الخصم المتاح: REVIEW10\nقيمة الخصم: 10%\n'+ 'شروط العرض المحفوظة '.repeat(55),createdAt:'2026-09-23T10:00:00Z',receipt:accepted?'receipt-'+'A'.repeat(240):null,
+        lastReview:saved?.attemptId===id?{actorUserId:7,note:saved.note,outcome:'unresolved',deliveryState:'pending',at:'2026-09-23T11:00:00Z'}:null};
+      return {isLoading:options.enabled&&mode==='loading'&&!retry,isError:options.enabled&&mode==='error'&&!retry,isFetching:mode==='offer-fetching',
+        data:options.enabled?{items:mode==='empty'?[]:[item],canManage:mode!=='viewer',nextCursor:input.beforeSourceId?null:81}:undefined,
+        refetch:async()=>{setRetry(true);if((window as any).__offerInput)setRevision(r=>r+1);},};
+    }},
+    reviewSalesOffer:{useMutation:(options:{onSuccess:(result:unknown)=>void})=>{
+      const [state,setState]=useState('idle'),[attempts,setAttempts]=useState(0);
+      return {isPending:state==='pending',isError:state==='error',reset:()=>setState('idle'),mutate:(input:unknown)=>{
+        setState('pending');setAttempts(attempts+1);setTimeout(()=>{
+          if(mode==='mutation-error'&&attempts===0)setState('error');else{(window as any).__offerInput=input;setState('success');options.onSuccess({outcome:'unresolved'});}
+        },75);
+      }};
+    }},
     listEscalationRelays: { useQuery: (input: {beforeId?:number}) => {
       const [retry,setRetry]=useState(false),[revision,setRevision]=useState(0);
       const saved=(window as any).__relayInput;

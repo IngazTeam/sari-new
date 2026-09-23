@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn() }));
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn() }));
+vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
+  listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
   listEscalationRelays: mocks.relayList, reviewEscalationRelay: mocks.relayReview }));
 vi.mock('./ai/conversation-handoff', async original => ({ ...await original<typeof import('./ai/conversation-handoff')>(),
@@ -29,8 +31,33 @@ beforeEach(() => {
   mocks.handoffRead.mockResolvedValue({ version: 0 }); mocks.handoffWrite.mockResolvedValue({ version: 1, changed: true });
   mocks.handoffSource.mockResolvedValue({ id: 81, text: 'fixture' });
   mocks.relayList.mockResolvedValue({items:[],nextCursor:null}); mocks.relayReview.mockResolvedValue({outcome:'unresolved'});
+  mocks.offerList.mockResolvedValue({items:[],nextCursor:null}); mocks.offerReview.mockResolvedValue({outcome:'unresolved'});
 });
 describe('real app router team boundaries', () => {
+  const offerInput={conversationId:4,attemptId:'1c2e9491-2555-4fa3-a5e9-846efea99780',expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const,note:'راجعت إيصال العرض'};
+  it('scopes offer records to membership, restricts review writes and records the authenticated actor',async()=>{
+    expect(await caller().conversations.listSalesOfferAttempts({conversationId:4,beforeSourceId:80})).toMatchObject({canManage:false});
+    expect(mocks.offerList).toHaveBeenCalledWith(20,4,80);
+    await expect(caller().conversations.reviewSalesOffer(offerInput)).rejects.toMatchObject({code:'FORBIDDEN'});expect(mocks.offerReview).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});await caller().conversations.reviewSalesOffer(offerInput);
+    expect(mocks.offerReview).toHaveBeenCalledWith({...offerInput,merchantId:20,actorUserId:7});
+  });
+  it.each([{merchantId:30},{actorUserId:1},{reviewed:false},{attemptId:'1 OR 1=1'},{conversationId:-1},{expectedRevision:-1},
+    {evidence:'invented'},{note:' '},{note:'a'.repeat(1001)},{providerMessageId:'invented'},{outcome:'recorded'},{customerPhone:'966500000001'}])
+    ('rejects forged offer review context %j',async attack=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().conversations.reviewSalesOffer({...offerInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.offerReview).not.toHaveBeenCalled();
+    });
+  it.each([{merchantId:30},{beforeSourceId:-1},{beforeSourceId:'1 OR 1=1'},{conversationId:0}])('rejects forged offer list context %j',async attack=>{
+    await expect(caller().conversations.listSalesOfferAttempts({conversationId:4,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.offerList).not.toHaveBeenCalled();
+  });
+  it('hides offer storage errors and rejects revoked membership',async()=>{
+    mocks.offerList.mockRejectedValueOnce(new Error('private detail'));
+    await expect(caller().conversations.listSalesOfferAttempts({conversationId:4})).rejects.toMatchObject({code:'NOT_FOUND',message:'Sales offer records unavailable'});
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});mocks.offerReview.mockRejectedValueOnce(new Error('private receipt'));
+    const failure=await caller().conversations.reviewSalesOffer(offerInput).catch(e=>e);expect(failure.code).toBe('CONFLICT');expect(failure.message).not.toContain('private');
+    mocks.access.mockResolvedValue(null);await expect(caller().conversations.listSalesOfferAttempts({conversationId:4})).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   const relayInput={conversationId:4,relayId:5,expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const,note:'راجع السجل'};
   it('scopes relay records to membership, restricts writes, and records the authenticated reviewer',async () => {
     expect(await caller().conversations.listEscalationRelays({conversationId:4,beforeId:8})).toMatchObject({canManage:false});

@@ -4020,6 +4020,7 @@ export const salesOfferAttempts = mysqlTable('sales_offer_attempts', {
   state: mysqlEnum(['issued', 'reserved', 'dispatching', 'accepted', 'unknown', 'cancelled']).notNull(),
   discountCodeId: int('discount_code_id').notNull(),
   evidence: json().notNull(),
+  reviewRevision: int('review_revision').notNull().default(0),
   instanceId: int('instance_id'),
   provider: varchar({ length: 20 }),
   providerAccount: varchar('provider_account', { length: 100 }),
@@ -4034,3 +4035,16 @@ export const salesOfferAttempts = mysqlTable('sales_offer_attempts', {
 }, table => [uniqueIndex('uq_offer_source').on(table.merchantId, table.sourceMessageId, table.kind),
   index('idx_offer_customer').on(table.merchantId, table.customerPhone, table.createdAt),
   index('idx_offer_reconciliation').on(table.nextReconcileAt, table.id)]);
+
+export const salesOfferReviews = mysqlTable('sales_offer_reviews', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  attemptId: varchar('attempt_id', { length: 36 }).notNull().references(() => salesOfferAttempts.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').notNull(),
+  revision: int().notNull(),
+  evidenceHash: char('evidence_hash', { length: 64 }).notNull(),
+  outcome: mysqlEnum(['recorded', 'accepted_unprojected', 'failed', 'unresolved']).notNull(),
+  deliveryState: varchar('delivery_state', { length: 20 }).notNull(),
+  note: varchar({ length: 1000 }).notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_offer_review').on(table.merchantId, table.attemptId, table.revision)]);

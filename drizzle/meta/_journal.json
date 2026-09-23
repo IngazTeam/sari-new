@@ -512,6 +512,13 @@
       "when": 1790151700000,
       "tag": "0072_sales_offer_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1790151800000,
+      "tag": "0073_sales_offer_reviews",
+      "breakpoints": true
     }
   ]
 }

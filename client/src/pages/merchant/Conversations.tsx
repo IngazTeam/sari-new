@@ -1,6 +1,7 @@
 import { trpc } from '@/lib/trpc';
 import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { EscalationReconciliation } from '@/components/EscalationReconciliation';
+import { SalesOfferReview } from '@/components/SalesOfferReview';
 import { isValidDealStage } from '@shared/const';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -421,6 +422,7 @@ export default function Conversations() {
               <Separator />
               <div className="p-4"><ConversationHandoff key={selectedConversation.id} conversationId={selectedConversation.id} /></div>
               <div className="px-4 pb-4"><EscalationReconciliation key={selectedConversation.id} conversationId={selectedConversation.id} /></div>
+              <div className="px-4 pb-4"><SalesOfferReview key={selectedConversation.id} conversationId={selectedConversation.id} /></div>
               <CardContent className="p-0 flex-1">
                 <ScrollArea className="h-[400px] p-4">
                   {messages && messages.length > 0 ? (
