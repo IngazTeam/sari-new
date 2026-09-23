@@ -128,7 +128,7 @@ export async function recordSalesOfferAttempt(
   );
   return id;
 }
-async function currentOffer(
+export async function currentOffer(
   connection: PoolConnection,
   input: SalesOfferIdentity,
   phone: string,
@@ -151,7 +151,7 @@ async function currentOffer(
     now,
   })[0];
 }
-function sameTerms(a: SalesDiscountEvidence, b: SalesDiscountEvidence) {
+export function sameOfferTerms(a: SalesDiscountEvidence, b: SalesDiscountEvidence) {
   return [
     "id",
     "merchantId",
@@ -181,7 +181,7 @@ export async function reserveSalesOfferShare(
       )
         return null;
       const offer = await currentOffer(connection, input, phone, expected.id);
-      if (!offer || !sameTerms(offer, expected)) return null;
+      if (!offer || !sameOfferTerms(offer, expected)) return null;
       const id = await recordSalesOfferAttempt(
         connection,
         input,
@@ -197,7 +197,8 @@ export async function reserveSalesOfferShare(
 /** Exactly one caller can begin transport. No lease expiry or automatic retry for a possibly sent attempt. */
 export async function beginSalesOfferDispatch(
   input: SalesOfferIdentity,
-  share: SalesOfferShare
+  share: SalesOfferShare,
+  instanceRecordId?: number
 ): Promise<boolean> {
   try {
     return await withSalesOfferAuthority(
@@ -239,8 +240,8 @@ export async function beginSalesOfferDispatch(
           databaseTimeEpoch(offer.checkedAt) -
             databaseTimeEpoch(attempt.created_at) >=
             120_000 ||
-          !sameTerms(offer, stored) ||
-          !sameTerms(stored, share.offer) ||
+          !sameOfferTerms(offer, stored) ||
+          !sameOfferTerms(stored, share.offer) ||
           share.text !== salesDiscountMessage(stored)
         ) {
           await connection.execute(
@@ -249,9 +250,20 @@ export async function beginSalesOfferDispatch(
           );
           return false;
         }
+        // Freeze the actual account before transport. Legacy unbound reservations cannot be confirmed.
+        const [accounts] = await connection.execute<any[]>(
+          `SELECT id,provider,instance_id FROM whatsapp_instances WHERE merchant_id=? AND status='active'
+          AND ${instanceRecordId === undefined ? 'is_primary=1' : 'id=?'} FOR UPDATE`,
+          instanceRecordId === undefined ? [input.merchantId] : [input.merchantId, instanceRecordId]
+        );
+        if (accounts.length !== 1 || !['green_api','meta_cloud', ...(process.env.NODE_ENV === 'test' ? ['mock'] : [])].includes(accounts[0].provider))
+          throw new Error('Sales offer account unavailable');
+        const account = accounts[0];
         await connection.execute(
-          "UPDATE sales_offer_attempts SET state='dispatching',updated_at=UTC_TIMESTAMP(3) WHERE id=?",
-          [share.id]
+          `UPDATE sales_offer_attempts SET state='dispatching',updated_at=UTC_TIMESTAMP(3),
+          instance_id=?,provider=?,provider_account=?,dispatch_text=?,dispatch_started_at=UTC_TIMESTAMP(3),
+          next_reconcile_at=TIMESTAMPADD(MINUTE,2,UTC_TIMESTAMP(3)) WHERE id=?`,
+          [account.id,account.provider,account.instance_id,share.text,share.id]
         );
         // Retain a full hour from dispatch start as well as consuming the slot at reservation.
         await connection.execute(
@@ -282,6 +294,12 @@ export async function finishSalesOfferDispatch(
   id: string,
   state: "accepted" | "unknown"
 ) {
+  if (state === 'accepted') {
+    const { reconcileSalesOffer } = await import('./sales-offer-reconciliation');
+    const result = await reconcileSalesOffer(input, id);
+    if (!result.accepted) throw new Error('Sales offer dispatch result requires review');
+    return;
+  }
   const pool = await getPool();
   if (!pool) throw new Error("Sales offer storage unavailable");
   const [result] = await pool.execute<any>(

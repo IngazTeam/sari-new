@@ -26,6 +26,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/sales-offer-reconciliation.mysql.test.ts',
   'server/ai/sales-offer-authority.mysql.test.ts',
   'server/ai/sales-offer-evidence.mysql.test.ts',
   'server/ai/escalation-reconciliation.mysql.test.ts',

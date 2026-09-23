@@ -4020,7 +4020,17 @@ export const salesOfferAttempts = mysqlTable('sales_offer_attempts', {
   state: mysqlEnum(['issued', 'reserved', 'dispatching', 'accepted', 'unknown', 'cancelled']).notNull(),
   discountCodeId: int('discount_code_id').notNull(),
   evidence: json().notNull(),
+  instanceId: int('instance_id'),
+  provider: varchar({ length: 20 }),
+  providerAccount: varchar('provider_account', { length: 100 }),
+  dispatchText: text('dispatch_text'),
+  dispatchStartedAt: datetime('dispatch_started_at', { mode: 'string', fsp: 3 }),
+  providerMessageId: varchar('provider_message_id', { length: 255 }),
+  reconciledAt: datetime('reconciled_at', { mode: 'string', fsp: 3 }),
+  nextReconcileAt: datetime('next_reconcile_at', { mode: 'string', fsp: 3 }),
+  lastReconcileError: varchar('last_reconcile_error', { length: 64 }),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_offer_source').on(table.merchantId, table.sourceMessageId, table.kind),
-  index('idx_offer_customer').on(table.merchantId, table.customerPhone, table.createdAt)]);
+  index('idx_offer_customer').on(table.merchantId, table.customerPhone, table.createdAt),
+  index('idx_offer_reconciliation').on(table.nextReconcileAt, table.id)]);

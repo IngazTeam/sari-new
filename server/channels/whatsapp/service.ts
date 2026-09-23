@@ -102,7 +102,8 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
        VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued', ?)`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
-          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard })]
+          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
+          salesOfferGuard: input.salesOfferGuard })]
     );
     reserved = true;
   } catch (error: any) {
@@ -139,6 +140,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
 
   const provider = getWhatsAppProvider(config.provider);
   if (execution) await execution.assertOwned();
+  if (input.idempotencyKey.startsWith('sales_offer:') || input.salesOfferGuard) {
+    const { canDispatchSalesOffer } = await import('../../ai/sales-offer-delivery');
+    if (!await canDispatchSalesOffer(input, config)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='sales_offer_suppressed',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId,input.idempotencyKey]);
+      return { accepted:false,duplicate:false,status:'failed',errorCode:'sales_offer_suppressed' };
+    }
+  }
   if (/^escalation_(?:alert|relay|exhaustion):/.test(input.idempotencyKey)) {
     const { canDispatchEscalation } = await import('../../ai/escalation-relay');
     if (!await canDispatchEscalation(pool, input)) {
@@ -164,6 +173,8 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       return { accepted: false, duplicate: false, status: 'failed', errorCode: 'conversation_superseded' };
     }
   }
+  // Authority checks may wait on SQL locks; an expired worker must not send afterwards.
+  if (execution) await execution.assertOwned();
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,

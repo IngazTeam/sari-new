@@ -1631,6 +1631,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerMessage: messageText || undefined,
             conversationId,
             incomingMessageId: incomingMsgId,
+            instanceRecordId: instance.id,
             sendMessage: async (phone, msg) => {
               const sent = await sendMessageWithCredentials(
                 instance.instanceId, instance.token,

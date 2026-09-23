@@ -11,6 +11,8 @@ import {
   vi,
 } from "vitest";
 import { getPool, closeDb } from "../db/connection";
+const transport = vi.hoisted(() => ({ send: vi.fn() }));
+vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => ({ send: transport.send }) }));
 import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
@@ -83,15 +85,21 @@ describe.skipIf(!process.env.DATABASE_URL)(
     const action = (
       request = input,
       send = vi.fn().mockResolvedValue(undefined)
-    ) =>
-      executeAction({
+    ) => {
+      transport.send.mockImplementation(async (_config, request) => {
+        await send(request.to,request.text);
+        return { accepted:true,outcome:'accepted',status:'sent',providerMessageId:`fixture-${crypto.randomUUID()}` };
+      });
+      return executeAction({
         ...request,
         action: { type: "offer_discount", reason: "fixture" },
         sendMessage: send,
       });
+    };
     beforeEach(async () => {
       owner = await createDisposableMerchant("offer-ledger");
       other = await createDisposableMerchant("other-ledger");
+      for (const fixture of [owner,other]) await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,?,'fixture','active',1)", [fixture.merchantId,`offer-${fixture.merchantId}`]);
       input = await request(owner.merchantId);
       await query(
         `INSERT INTO bot_settings (merchant_id,auto_discount_enabled,auto_discount_max_percent,auto_discount_expire_hours)
@@ -369,12 +377,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
         sql: any,
         values: any[]
       ) =>
-        String(sql).includes("UPDATE sales_offer_attempts SET state=?") &&
-        values[0] === "accepted"
+        String(sql).includes("UPDATE whatsapp_message_deliveries") &&
+        values[1] === "sent"
           ? Promise.reject(new Error("confirmation unavailable"))
           : (execute as any)(sql, values)) as any);
       await expect(action(input, send)).rejects.toThrow(
-        "confirmation unavailable"
+        "could not be persisted safely"
       );
       vi.restoreAllMocks();
       expect(
@@ -436,7 +444,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       const send = vi
         .fn()
         .mockRejectedValue(new Error("timeout after acceptance"));
-      await expect(action(input, send)).rejects.toThrow("timeout");
+      await expect(action(input, send)).rejects.toThrow("requires review");
       await closeDb();
       await action(input, send);
       expect(send).toHaveBeenCalledTimes(1);

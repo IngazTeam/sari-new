@@ -51,4 +51,5 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   followUpGuard?: { id: number; token: string };
   replyGuard?: { conversationId: number; version: number; incomingMessageId?: number };
   escalationGuard?: import('../../ai/escalation-relay').EscalationTransportGuard;
+  salesOfferGuard?: import('../../ai/sales-offer-delivery').SalesOfferTransportGuard;
 };

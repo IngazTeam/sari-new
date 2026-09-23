@@ -1,5 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const calls = vi.hoisted(() => ({ llm: vi.fn() }));
+const transport = vi.hoisted(() => ({ send: vi.fn() }));
+vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => ({ send: transport.send }) }));
 vi.mock('../_core/llm', () => ({ invokeLLM: calls.llm }));
 import { closeDb, getPool } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
@@ -33,6 +35,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', ()
     calls.llm.mockResolvedValue({ choices: [{ message: { content: 'fixture reply' } }] });
     owner = await createDisposableMerchant('offers');
     other = await createDisposableMerchant('other-offers');
+    await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,?,'fixture','active',1)", [owner.merchantId,`offer-${owner.merchantId}`]);
     phone = '966510' + String(++sequence).padStart(6, '0');
     otherPhone = '966520' + String(sequence).padStart(6, '0');
     const conv = await query('INSERT INTO conversations (merchantId,customerPhone) VALUES (?,?)', [
@@ -103,6 +106,10 @@ describe.skipIf(!process.env.DATABASE_URL)('sales offer truth on real MySQL', ()
   });
   it('checks actual customer ownership again at action execution and does not consume the code by sharing it', async () => {
     const send = vi.fn().mockResolvedValue(undefined);
+    transport.send.mockImplementation(async (_config,request) => {
+      await send(request.to,request.text);
+      return { accepted:true,outcome:'accepted',status:'sent',providerMessageId:`fixture-${crypto.randomUUID()}` };
+    });
     await executeAction({
       merchantId: owner.merchantId,
       customerPhone: phone,

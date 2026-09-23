@@ -1,5 +1,6 @@
 import { asksAboutDiscount, selectSalesDiscounts } from './sales-offer-evidence';
-import { reserveSalesOfferShare, beginSalesOfferDispatch, finishSalesOfferDispatch } from './sales-offer-authority';
+import { reserveSalesOfferShare } from './sales-offer-authority';
+import { dispatchSalesOffer } from './sales-offer-delivery';
 /**
  * Action Selector — Multi-Action Decision Engine
  * 
@@ -285,6 +286,7 @@ export async function executeAction(params: {
   customerMessage?: string;
   conversationId: number;
   incomingMessageId?: number;
+  instanceRecordId?: number;
   sendMessage: (phone: string, message: string) => Promise<void>;
 }): Promise<void> {
   const { action, merchantId, customerPhone, conversationId, sendMessage } = params;
@@ -351,15 +353,8 @@ export async function executeAction(params: {
         }
         if (offers.length) {
           const share = await reserveSalesOfferShare(identity, offers[0]);
-          if (!share || !await beginSalesOfferDispatch(identity, share)) break;
-          try {
-            await currentInboundExecution()?.assertOwned();
-            await sendMessage(share.phone, share.text);
-            await finishSalesOfferDispatch(identity, share.id, 'accepted');
-          } catch (error) {
-            await finishSalesOfferDispatch(identity, share.id, 'unknown').catch(() => {});
-            throw error;
-          }
+          if (!share) break;
+          await dispatchSalesOffer(identity, share, params.instanceRecordId);
           // An offer is not redemption. No uncertain attempt is automatically replayed.
         }
         break;
