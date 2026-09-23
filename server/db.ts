@@ -4150,37 +4150,9 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
     } as any;
   }
 
-  // Create default settings
-  const result = await db
-    .insert(botSettings)
-    .values({
-      merchantId,
-      autoReplyEnabled: 1,
-      workingHoursEnabled: 0,
-      workingHoursStart: '09:00',
-      workingHoursEnd: '18:00',
-      workingDays: '1,2,3,4,5', // Monday-Friday
-      welcomeMessage: 'مرحباً! أنا مساعدك الذكي. كيف أقدر أساعدك اليوم؟ 😊',
-      outOfHoursMessage: 'شكراً لتواصلك! نحن حالياً خارج أوقات العمل. سنرد عليك في أقرب وقت ممكن ⏰',
-      responseDelay: 2,
-      maxResponseLength: 200,
-      tone: 'friendly',
-      language: 'ar',
-    });
-
-  const insertId = Number((result[0] as any).insertId);
-  const newSettings = await db
-    .select()
-    .from(botSettings)
-    .where(eq(botSettings.id, insertId))
-    .limit(1);
-
-  const row = newSettings[0];
-  return {
-    ...row,
-    autoReplyEnabled: Boolean(row.autoReplyEnabled),
-    workingHoursEnabled: Boolean(row.workingHoursEnabled),
-  } as any;
+  const { ensureBotSettingsRow } = await import('./ai/discount-policy');
+  await ensureBotSettingsRow(merchantId);
+  return getBotSettings(merchantId);
 }
 
 /**
@@ -4190,6 +4162,8 @@ export async function updateBotSettings(
   merchantId: number,
   updates: Partial<InsertBotSettings>
 ): Promise<BotSettings> {
+  const { hasDiscountSettings } = await import('../shared/discount-policy');
+  if (hasDiscountSettings(updates)) throw new Error('Discount authority requires a reviewed, versioned policy update');
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
@@ -4203,9 +4177,6 @@ export async function updateBotSettings(
   }
   if (typeof dbUpdates.workingHoursEnabled === 'boolean') {
     dbUpdates.workingHoursEnabled = dbUpdates.workingHoursEnabled ? 1 : 0;
-  }
-  if (typeof dbUpdates.autoDiscountEnabled === 'boolean') {
-    dbUpdates.autoDiscountEnabled = dbUpdates.autoDiscountEnabled ? 1 : 0;
   }
   if (typeof dbUpdates.takeoverCommandsEnabled === 'boolean') {
     dbUpdates.takeoverCommandsEnabled = dbUpdates.takeoverCommandsEnabled ? 1 : 0;

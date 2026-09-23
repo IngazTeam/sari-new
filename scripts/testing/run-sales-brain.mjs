@@ -32,7 +32,7 @@ const database = [
   'server/ai/sales-offer-evidence.mysql.test.ts',
   'server/ai/escalation-reconciliation.mysql.test.ts',
   'server/ai/customer-memory.mysql.test.ts',
-  'server/ai/followup-policy.mysql.test.ts',
+  'server/ai/followup-policy.mysql.test.ts', 'server/ai/discount-policy.mysql.test.ts',
   'server/ai/conversation-handoff.mysql.test.ts',
   'server/ai/escalation-relay.mysql.test.ts',
   'server/ai/interaction-jobs.mysql.test.ts', 'server/ai/proactive-followup.mysql.test.ts',

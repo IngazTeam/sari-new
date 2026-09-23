@@ -115,9 +115,6 @@ describe('CG-02: BotSettings UI ↔ backend field sync', () => {
     'welcomeMessage',
     'responseDelay',
     'tone',
-    'autoDiscountEnabled',
-    'autoDiscountMaxPercent',
-    'autoDiscountExpireHours',
   ];
 
   for (const field of criticalFields) {

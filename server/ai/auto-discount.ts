@@ -1,6 +1,7 @@
 import { asksAboutDiscount, selectSalesDiscounts } from './sales-offer-evidence';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { isSalesRefusal } from './customer-decision';
+import { discountPolicyFromSettings, lockedDiscountSettings } from './discount-policy';
 /**
  * Auto-Discount Engine — Personalized Discount Code Generation
  * 
@@ -10,7 +11,7 @@ import { isSalesRefusal } from './customer-decision';
  * 3. Merchant has enabled auto-discount in bot_settings
  * 
  * The discount percentage escalates with objection strength:
- *   mild   → 5%   (first price complaint)
+ *   mild   → up to 5% (explicit discount request)
  *   strong → 10%  (repeated or emphatic complaint)
  *   final  → max% (customer threatening to leave)
  * 
@@ -132,16 +133,12 @@ export async function generateAutoDiscount(params: {
       conversationId: params.conversationId!, incomingMessageId: params.incomingMessageId! };
     return await withSalesOfferAuthority(identity, async ({ connection, phone, source, now, issueLimited }) => {
       if (issueLimited || await hasSalesOfferAttempt(connection, identity, 'issue')) return null; // 24h cooldown, across workers
-      const [settingsRows] = await connection.execute<any[]>(`SELECT auto_discount_enabled AS autoDiscountEnabled,
-        auto_discount_max_percent AS autoDiscountMaxPercent, auto_discount_expire_hours AS autoDiscountExpireHours
-        FROM bot_settings WHERE merchant_id=? FOR UPDATE`, [params.merchantId]);
-      if (settingsRows.length !== 1) return null; // Ambiguous policy is not authority to issue money.
-      const settings = settingsRows[0];
+      const settings = await lockedDiscountSettings(connection, params.merchantId);
       if (settings?.autoDiscountEnabled !== 1 && settings?.autoDiscountEnabled !== true) return null; // Feature disabled
-      const maxPercent = settings.autoDiscountMaxPercent ?? 15;
-      const expireHours = settings.autoDiscountExpireHours ?? 48;
-      if (!Number.isSafeInteger(maxPercent) || maxPercent < 1 || maxPercent > 50
-        || !Number.isSafeInteger(expireHours) || expireHours < 1 || expireHours > 168) return null;
+      // autoDiscountMaxPercent / autoDiscountExpireHours remain the sole merchant-authorized limits.
+      const policy = discountPolicyFromSettings(settings);
+      const { maxPercent, expireHours } = policy;
+      if (!Number.isSafeInteger(settings.autoDiscountRevision) || settings.autoDiscountRevision < 0) return null;
       const [existingCodes] = await connection.execute<any[]>(`SELECT *, customer_phone AS customerPhone FROM discount_codes
         WHERE merchantId=? AND is_auto_generated=1 FOR UPDATE`, [params.merchantId]);
       // Honour pre-migration issuance too, including exhausted/deactivated codes. Deletion after this release cannot reset the ledger.
@@ -163,7 +160,9 @@ export async function generateAutoDiscount(params: {
       [params.merchantId, code, percent, expiresAt.toISOString().slice(0,23).replace('T',' '), phone]);
       const offer = selectSalesDiscounts([{ ...payload, id: Number(inserted.insertId) }], { merchantId: params.merchantId, customerPhone: phone, now })[0];
       if (!offer) throw new Error('Generated sales offer failed validation');
-      await recordSalesOfferAttempt(connection, identity, phone, 'issue', offer);
+      const attemptId = await recordSalesOfferAttempt(connection, identity, phone, 'issue', offer);
+      await connection.execute(`UPDATE sales_offer_attempts SET issuance_authorization=? WHERE id=? AND merchant_id=?`,
+        [JSON.stringify({ settingsId: settings.id, revision: settings.autoDiscountRevision, policy }), attemptId, params.merchantId]);
       return { code, value: percent, type: 'percentage' as const, expiresAt };
     });
   } catch {

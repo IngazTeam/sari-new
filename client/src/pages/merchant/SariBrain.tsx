@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { LearningEvidenceCard } from '@/components/LearningEvidenceCard';
 import { SalesSectorSettings } from '@/components/SalesSectorSettings';
 import { FollowupPolicySettings } from '@/components/FollowupPolicySettings';
@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link, Loader2 } from 'lucide-react';
+import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, AlertCircle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
@@ -478,6 +478,7 @@ export default function SariBrain() {
       <LearningEvidenceCard showManageLink={false} />
       <SalesSectorSettings />
       <FollowupPolicySettings />
+      <DiscountPolicySettings />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

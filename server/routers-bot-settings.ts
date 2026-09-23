@@ -8,6 +8,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
+import { hasPermission } from './_core/permissions';
+import { discountPolicyUpdateSchema, hasDiscountSettings } from '../shared/discount-policy';
+import { getDiscountPolicy, updateDiscountPolicy } from './ai/discount-policy';
 import {
   getBotSettings,
   getConversationsByMerchantId,
@@ -19,6 +22,14 @@ import {
 } from './db';
 
 export const botSettingsRouter = router({
+    getDiscountPolicy: merchantProcedure.query(async ({ ctx }) => {
+        try { return { ...await getDiscountPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') }; }
+        catch { throw new TRPCError({ code: 'CONFLICT', message: 'Discount settings unavailable' }); }
+    }),
+    updateDiscountPolicy: permissionProcedure('bot_settings.manage').input(discountPolicyUpdateSchema).mutation(async ({ ctx, input }) => {
+        try { return await updateDiscountPolicy({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
+        catch { throw new TRPCError({ code: 'CONFLICT', message: 'Discount settings changed or unavailable; refresh and review again' }); }
+    }),
     // Get bot settings for current merchant
     get: merchantProcedure.query(async ({ ctx }) => {
         const merchant = await getMerchantById(ctx.merchantId);
@@ -56,10 +67,13 @@ export const botSettingsRouter = router({
             groupMode: z.enum(['disabled', 'mention_only', 'keyword_only', 'private_redirect']).optional(),
             groupKeywords: z.string().max(5000).optional(), // JSON string of keywords array
             groupRedirectMessage: z.string().max(500).optional(),
-            // Auto-Discount settings
+            customInstructions: z.string().max(10000).nullable().optional(),
+            // Legacy clients receive a validation error; monetary authority requires the versioned endpoint.
             autoDiscountEnabled: z.boolean().optional(),
-            autoDiscountMaxPercent: z.number().min(5).max(50).optional(),
-            autoDiscountExpireHours: z.number().min(1).max(168).optional(), // max 7 days
+            autoDiscountMaxPercent: z.number().int().min(1).max(50).optional(),
+            autoDiscountExpireHours: z.number().int().min(1).max(168).optional(),
+        }).strict().superRefine((input, context) => {
+            if (hasDiscountSettings(input)) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Use the reviewed discount policy settings' });
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantById(ctx.merchantId);

@@ -62,6 +62,7 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  discountPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","maxPercent","expireHours","scope","margin","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","historyScope","empty","change","before","after","terms","on","off"]>;
   offerReview: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','latest','pages','attempt',
     'missing','invalid','pending','failed','sent','delivered','read','cancelled','reserved','priorAcceptance','projectionConflict','projected','projectionPending',
     'evidence','source','sourceUnavailable','text','textUnavailable','receipt','lastReview','recorded','acceptedUnprojected','reviewFailed','unresolved',

@@ -6,7 +6,9 @@ vi.mock('./sales-offer-authority', () => ({
   withSalesOfferAuthority: async (input: any, run: any) => run({
     phone: input.customerPhone, source: 'ممكن خصم؟', now: Date.now(), issueLimited: false,
     connection: { execute: async (sql: string, values: any[]) => {
-      if (sql.includes('FROM bot_settings')) return [[await calls.settings()]];
+      if (sql.includes('FROM merchants')) return [[{ id: input.merchantId }]];
+      if (sql.includes('FROM bot_settings')) return [[{ id: 1, autoDiscountRevision: 0, ...await calls.settings() }]];
+      if (sql.includes('SET issuance_authorization')) return [{ affectedRows: 1 }];
       if (sql.includes('FROM discount_codes')) return [await calls.list()];
       if (sql.includes('INSERT INTO discount_codes')) {
         const result = await calls.create({ value: values[2] }); return [{ insertId: result.id }];

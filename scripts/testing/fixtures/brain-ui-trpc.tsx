@@ -9,6 +9,26 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
       evidence: [{ signalId: 7, relation: 'supporting', excerpt: 'السعر لا يناسب ميزانيتي، هل يوجد خيار أقل تكلفة؟' },
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
+  botSettings: {
+    getDiscountPolicy: { useQuery: () => {
+      const [revision,setRevision]=useState(0),[retry,setRetry]=useState(false);
+      const data=useMemo(()=>({policy:(window as any).__discountInput?.policy||{enabled:false,maxPercent:3,expireHours:24},revision,
+        evidence:(revision?'b':'a').repeat(64),canManage:mode!=='viewer',history:revision?[{revision,actorUserId:7,createdAt:'2026-09-23T10:00:00Z',
+          beforePolicy:{enabled:false,maxPercent:3,expireHours:24},afterPolicy:(window as any).__discountInput?.policy||{enabled:false,maxPercent:3,expireHours:24}}]:[]}),[revision]);
+      useEffect(()=>{(window as any).__discountChanged=()=>setRevision(r=>r+1);},[]);
+      return {data,isLoading:mode==='loading'&&!retry,isError:mode==='error'&&!retry,isFetching:false,
+        refetch:async()=>{setRetry(true);const next=(window as any).__discountInput?revision+1:revision;setRevision(next);
+          return {data:{...data,revision:next,evidence:(next?'b':'a').repeat(64)},isError:false};}};
+    } },
+    updateDiscountPolicy: {useMutation:(options:{onSuccess:(data:any)=>void})=>{
+      const [state,setState]=useState('idle'),[attempts,setAttempts]=useState(0);
+      return {isPending:state==='pending',isError:state==='error',isSuccess:state==='success',reset:()=>setState('idle'),
+        mutate:(input:any)=>{setState('pending');setAttempts(attempts+1);setTimeout(()=>{
+          if(mode==='mutation-error'&&attempts===0)setState('error');else{(window as any).__discountInput=input;setState('success');
+            options.onSuccess({policy:input.policy,revision:input.expectedRevision+1,evidence:'b'.repeat(64),history:[]});}
+        },50);}};
+    } },
+  },
   conversations: {
     listSalesOfferAttempts:{useQuery:(input:{beforeSourceId?:number},options:{enabled:boolean})=>{
       const [retry,setRetry]=useState(false),[revision,setRevision]=useState(0);

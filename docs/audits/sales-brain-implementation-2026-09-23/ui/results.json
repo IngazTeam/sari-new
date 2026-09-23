@@ -1,7 +1,22 @@
 {
-  "generatedAt": "2026-09-23T19:16:09.146Z",
+  "generatedAt": "2026-09-23T19:45:36.066Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
+  "screenshots": [
+    "discount-policy-1440.png",
+    "discount-policy-375.png",
+    "followup-policy-1440.png",
+    "followup-policy-375.png",
+    "handoff-1440.png",
+    "handoff-375.png",
+    "handoff-source-375.png",
+    "learning-invoice-1440.png",
+    "learning-invoice-375.png",
+    "offer-review-1440.png",
+    "offer-review-375.png",
+    "relay-review-1440.png",
+    "relay-review-375.png"
+  ],
   "fixtureApi": true,
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
@@ -124,6 +139,96 @@
     {
       "width": 1440,
       "mode": "zid_sector_failure_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "discount_policy_review_save_history_disable",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_invalid_values",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_viewer",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_stale_review_requires_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "discount_policy_failed_save_refresh_keyboard_review",
       "passed": true
     },
     {

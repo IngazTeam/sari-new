@@ -88,6 +88,62 @@ async function main() {
       assert.equal(await page.$eval(selector, input => input.value), '', `Field must stay empty while editing: ${selector}`);
       await page.type(selector, value);
     };
+    for (const lang of ['ar','en']) for (const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$eval('#discount-policy-save',b=>b.disabled),true);
+      await page.click('#discount-policy-enabled');await replace('#discount-policy-percent','1');
+      assert.equal(await page.$eval('#discount-policy-save',b=>b.disabled),true);
+      await page.click('#discount-policy-reviewed');await replace('#discount-policy-hours','12');
+      assert.equal(await page.$eval('#discount-policy-reviewed',b=>b.checked),false,'Policy edits revoke the previous review');
+      await page.click('#discount-policy-reviewed');await page.click('#discount-policy-save');
+      await page.waitForSelector('#discount-policy-fixture [role=status]');
+      assert.deepEqual(await page.evaluate(()=>window.__discountInput),{policy:{enabled:true,maxPercent:1,expireHours:12},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true});
+      assert.equal(await page.evaluate(()=>window.__unexpectedBotSubmit),undefined,'Policy buttons must not submit the parent bot settings form');
+      assert.equal(await page.$eval('#discount-policy-save',b=>b.disabled),true);
+      await page.click('#discount-policy-fixture summary');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.evaluate(()=>document.body.innerText.includes('merchantUx.')),false);
+      await page.$eval('#discount-policy-fixture',async node=>{await Promise.allSettled(node.getAnimations({subtree:true}).map(a=>a.finished));});
+      assert.ok(await page.$$eval('#discount-policy-fixture input:not([type=checkbox]), #discount-policy-fixture button, #discount-policy-fixture summary',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#discount-policy-fixture')).screenshot({path:path.join(output,`discount-policy-${width}.png`)});
+      await page.click('#discount-policy-enabled');await page.click('#discount-policy-reviewed');await page.click('#discount-policy-save');
+      await page.waitForFunction(()=>window.__discountInput?.policy.enabled===false);
+      assert.equal(await page.evaluate(()=>window.__discountInput.expectedRevision),1);
+      results.push({width,lang,mode:'discount_policy_review_save_history_disable',passed:true});
+    }
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});
+    for(const [selector,value] of [['#discount-policy-percent','0'],['#discount-policy-percent','51'],['#discount-policy-percent','1.5'],['#discount-policy-hours','169']]) {
+      await replace(selector,value);assert.equal(await page.$eval('#discount-policy-save',b=>b.disabled),true);
+    }
+    assert.equal(await page.evaluate(()=>window.__discountInput),undefined);
+    results.push({width:1440,mode:'discount_policy_invalid_values',passed:true});
+    for(const mode of ['loading','error','viewer']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$('#discount-policy-save'),null);
+      if(mode==='viewer')assert.ok(await page.$$eval('#discount-policy-fixture input',nodes=>nodes.every(n=>n.disabled)));
+      if(mode==='error'){await page.click('#discount-policy-fixture button');await page.waitForSelector('#discount-policy-save');}
+      results.push({width:1440,mode:`discount_policy_${mode}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});
+    await page.click('#discount-policy-enabled');await page.click('#discount-policy-reviewed');await page.evaluate(()=>window.__discountChanged());
+    await page.waitForSelector('#discount-policy-fixture [role=alert]');
+    assert.equal(await page.$eval('#discount-policy-reviewed',n=>n.checked),false);
+    assert.equal(await page.$eval('#discount-policy-enabled',n=>n.checked),true,'Preserve draft until explicit refresh');
+    assert.equal(await page.$eval('#discount-policy-save',n=>n.disabled),true);
+    await page.click('#discount-policy-fixture [role=alert] button');
+    assert.equal(await page.$eval('#discount-policy-enabled',n=>n.checked),false);
+    results.push({width:1440,mode:'discount_policy_stale_review_requires_refresh',passed:true});
+    await page.goto(`${origin}/?case=mutation-error`,{waitUntil:'networkidle0'});
+    await page.click('#discount-policy-enabled');await page.click('#discount-policy-reviewed');await page.click('#discount-policy-save');
+    await page.waitForSelector('#discount-policy-fixture [role=alert]');
+    assert.equal(await page.$eval('#discount-policy-enabled',n=>n.checked),true);
+    assert.equal(await page.$eval('#discount-policy-save',n=>n.disabled),true);assert.equal(await page.$('#discount-policy-fixture [role=status]'),null);
+    await page.click('#discount-policy-fixture [role=alert] button');await page.click('#discount-policy-enabled');
+    await page.focus('#discount-policy-reviewed');await page.keyboard.press('Space');await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'discount-policy-save');await page.keyboard.press('Enter');
+    await page.waitForSelector('#discount-policy-fixture [role=status]');
+    assert.equal(await page.evaluate(()=>window.__unexpectedBotSubmit),undefined);
+    results.push({width:1440,mode:'discount_policy_failed_save_refresh_keyboard_review',passed:true});
     for (const lang of ['ar', 'en']) for (const width of [320, 375, 390, 768, 1440]) {
       await page.setViewport({ width, height: 900 });
       await page.goto(`${origin}/?case=ready&lang=${lang}`, { waitUntil: 'networkidle0' });
@@ -283,10 +339,11 @@ async function main() {
     assert.equal(await page.$eval('#offer-fixture > details > summary svg',n=>getComputedStyle(n).transitionProperty),'none');
     await page.emulateMediaFeatures([]);results.push({width:320,mode:'offer_reduced_motion',passed:true});
     assert.deepEqual(errors, []);
-    const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
+    const screenshots = fs.readdirSync(output).filter(name => name.endsWith('.png')).sort();
+    const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true, screenshots,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ scenarios: results.length, screenshots: 11, errors }));
+    console.log(JSON.stringify({ scenarios: results.length, screenshots: screenshots.length, errors }));
   } catch (error) {
     const pages = await browser.pages(), page = pages.at(-1);
     if (page) {

@@ -1,6 +1,35 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  discountPolicy: {
+    "title": "Discount issuance authority",
+    "description": "Set whether Sari may issue a personal code and its limits. An explicit discount request is required; a price objection alone does not authorize a discount.",
+    "loading": "Loading discount authority…",
+    "loadFailed": "The policy could not be loaded or settings conflict. Authority cannot be changed until the record is resolved.",
+    "refresh": "Load current policy and review again",
+    "enabled": "Allow Sari to issue new discount codes",
+    "maxPercent": "Maximum discount (1–50%)",
+    "expireHours": "Code validity in hours (1–168)",
+    "scope": "At most one single-use code per customer within 24 hours. Changes apply to new codes; existing codes keep their terms and are not revoked when issuance is disabled.",
+    "margin": "These are issuance limits, not a profit-margin guarantee. Review your costs before authorizing; the discount is not automatically applied to an order or payment gateway.",
+    "current": "Currently authorized — revision {{revision}}:",
+    "invalid": "Enter a whole percentage from 1 to 50 and whole hours from 1 to 168.",
+    "reviewed": "I reviewed the discount limit and validity and authorize issuance within these terms. I understand existing codes remain unchanged.",
+    "saving": "Saving authority…",
+    "save": "Approve discount policy",
+    "readOnly": "Changing discount authority requires bot settings management permission.",
+    "failed": "The policy changed or saving could not be confirmed. Your draft is preserved; loading the current policy replaces it and requires another review.",
+    "saved": "Discount authority saved and the change recorded.",
+    "history": "Authority change history",
+    "historyScope": "The latest 10 recorded changes. Legacy settings are not attributed to a human approval that was never recorded.",
+    "empty": "No recorded changes yet. Current values come from legacy settings or defaults.",
+    "change": "Revision {{revision}} — user #{{actor}}",
+    "before": "Before:",
+    "after": "After:",
+    "terms": "{{state}} · up to {{percent}}% · valid for {{hours}} hours",
+    "on": "Issuance authorized",
+    "off": "Issuance disabled"
+},
   offerReview: {
     title: 'Discount delivery review', scope: 'Check the offer outcome before following up. Saving a review records your note and restores the message when a matching receipt exists. It does not resend the message or apply a discount to an order.',
     loading: 'Loading discount attempts…', loadFailed: 'Unable to load discount records.', refresh: 'Refresh records', empty: 'No discount sharing attempts on this page.', older: 'Older attempts', latest: 'Back to latest', pages: 'Discount attempt pages',

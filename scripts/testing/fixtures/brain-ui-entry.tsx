@@ -1,3 +1,4 @@
+import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import i18n from 'i18next';
@@ -21,6 +22,7 @@ async function render() {
   createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl space-y-6 p-4" dir={lng === 'ar' ? 'rtl' : 'ltr'}>
     <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
+    <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>
     <div id="followup-fixture"><FollowupPolicySettings /></div>
     <div id="handoff-fixture"><ConversationHandoff conversationId={42} /></div>
     <div id="relay-fixture"><EscalationReconciliation conversationId={42} /></div>

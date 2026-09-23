@@ -132,10 +132,11 @@ export const botSettings = mysqlTable("bot_settings", {
 	groupMode: mysqlEnum("group_mode", ['disabled', 'mention_only', 'keyword_only', 'private_redirect']).default('disabled').notNull(),
 	groupKeywords: text("group_keywords"),
 	groupRedirectMessage: text("group_redirect_message"),
-	// Auto-Discount settings — bot creates personalized codes when customer objects to price
+	// Auto-Discount authority — explicit customer request and reviewed merchant limits.
 	autoDiscountEnabled: tinyint("auto_discount_enabled").default(0).notNull(),
 	autoDiscountMaxPercent: int("auto_discount_max_percent").default(15),
 	autoDiscountExpireHours: int("auto_discount_expire_hours").default(48),
+	autoDiscountRevision: int("auto_discount_revision").default(0).notNull(),
 	// Custom Instructions — free-form merchant instructions injected directly into AI prompt
 	// Used for campaigns, special rules, sales scripts, etc.
 	customInstructions: text("custom_instructions"),
@@ -4020,6 +4021,7 @@ export const salesOfferAttempts = mysqlTable('sales_offer_attempts', {
   state: mysqlEnum(['issued', 'reserved', 'dispatching', 'accepted', 'unknown', 'cancelled']).notNull(),
   discountCodeId: int('discount_code_id').notNull(),
   evidence: json().notNull(),
+  issuanceAuthorization: json('issuance_authorization'),
   reviewRevision: int('review_revision').notNull().default(0),
   instanceId: int('instance_id'),
   provider: varchar({ length: 20 }),
@@ -4048,3 +4050,13 @@ export const salesOfferReviews = mysqlTable('sales_offer_reviews', {
   note: varchar({ length: 1000 }).notNull(),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_offer_review').on(table.merchantId, table.attemptId, table.revision)]);
+
+export const salesDiscountPolicyChanges = mysqlTable('sales_discount_policy_changes', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').notNull(),
+  revision: int().notNull(),
+  evidenceHash: char('evidence_hash', { length: 64 }).notNull(),
+  beforePolicy: json('before_policy').notNull(), afterPolicy: json('after_policy').notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_discount_policy_revision').on(table.merchantId, table.revision)]);

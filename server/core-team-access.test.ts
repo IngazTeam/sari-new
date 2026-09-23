@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn() }));
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
+vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
+  getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
@@ -14,6 +16,7 @@ vi.mock('./ai/sales-sector-settings', async original => ({ ...await original<typ
   getSalesSectorSettings: mocks.sectorRead, updateSalesSectorSettings: mocks.sectorWrite }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
+  updateBotSettings: mocks.botWrite,
   getMerchantById: mocks.merchant, getConversationsByMerchantId: mocks.conversations,
   getConversationCountByMerchantId: mocks.count, getConversationById: mocks.conversation, getMessagesByConversationId: mocks.messages,
 }));
@@ -32,8 +35,48 @@ beforeEach(() => {
   mocks.handoffSource.mockResolvedValue({ id: 81, text: 'fixture' });
   mocks.relayList.mockResolvedValue({items:[],nextCursor:null}); mocks.relayReview.mockResolvedValue({outcome:'unresolved'});
   mocks.offerList.mockResolvedValue({items:[],nextCursor:null}); mocks.offerReview.mockResolvedValue({outcome:'unresolved'});
+  mocks.discountRead.mockResolvedValue({revision:0}); mocks.discountWrite.mockResolvedValue({revision:1}); mocks.botWrite.mockResolvedValue({});
 });
 describe('real app router team boundaries', () => {
+  const discountInput={policy:{enabled:true,maxPercent:3,expireHours:24},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const};
+  it('scopes discount authority and requires settings permission, independently of sales supervision',async()=>{
+    expect(await caller().botSettings.getDiscountPolicy()).toMatchObject({canManage:false});expect(mocks.discountRead).toHaveBeenCalledWith(20);
+    for(const role of ['viewer','sales_supervisor']) {
+      mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});
+      await expect(caller().botSettings.updateDiscountPolicy(discountInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    }
+    expect(mocks.discountWrite).not.toHaveBeenCalled();
+    for(const role of ['owner','manager']) {
+      mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().botSettings.updateDiscountPolicy(discountInput);
+      expect(mocks.discountWrite).toHaveBeenLastCalledWith({...discountInput,merchantId:20,actorUserId:7});
+    }
+  });
+  it.each([{merchantId:30},{actorUserId:1},{expectedRevision:-1},{evidence:'forged'},{reviewed:false},
+    {policy:{...discountInput.policy,maxPercent:1.5}},{policy:{...discountInput.policy,maxPercent:0}},{policy:{...discountInput.policy,maxPercent:51}},
+    {policy:{...discountInput.policy,expireHours:169}},{policy:{...discountInput.policy,enabled:'true'}},{policy:{...discountInput.policy,margin:10}}])
+    ('rejects forged discount authority %j',async attack=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().botSettings.updateDiscountPolicy({...discountInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      expect(mocks.discountWrite).not.toHaveBeenCalled();
+    });
+  it.each([{autoDiscountEnabled:true},{autoDiscountMaxPercent:3},{autoDiscountExpireHours:24},{autoDiscountRevision:1},{merchantId:30}])
+    ('blocks bypass of discount review through legacy update %j',async attack=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().botSettings.update({autoReplyEnabled:true,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      expect(mocks.botWrite).not.toHaveBeenCalled();expect(mocks.discountWrite).not.toHaveBeenCalled();
+    });
+  it('keeps normal bot saves including custom instructions independent of discount authority',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+    const payload={autoReplyEnabled:true,customInstructions:'ابدأ بفهم احتياج العميل'};
+    await caller().botSettings.update(payload);expect(mocks.botWrite).toHaveBeenCalledWith(20,payload);expect(mocks.discountWrite).not.toHaveBeenCalled();
+  });
+  it('hides policy storage details and rejects revoked membership',async()=>{
+    mocks.discountRead.mockRejectedValueOnce(new Error('private detail'));
+    await expect(caller().botSettings.getDiscountPolicy()).rejects.toMatchObject({code:'CONFLICT',message:'Discount settings unavailable'});
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});mocks.discountWrite.mockRejectedValueOnce(new Error('private detail'));
+    const error=await caller().botSettings.updateDiscountPolicy(discountInput).catch(e=>e);expect(error.code).toBe('CONFLICT');expect(error.message).not.toContain('private');
+    mocks.access.mockResolvedValue(null);await expect(caller().botSettings.getDiscountPolicy()).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   const offerInput={conversationId:4,attemptId:'1c2e9491-2555-4fa3-a5e9-846efea99780',expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const,note:'راجعت إيصال العرض'};
   it('scopes offer records to membership, restricts review writes and records the authenticated actor',async()=>{
     expect(await caller().conversations.listSalesOfferAttempts({conversationId:4,beforeSourceId:80})).toMatchObject({canManage:false});
