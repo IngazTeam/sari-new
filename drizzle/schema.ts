@@ -4099,8 +4099,16 @@ export const orderCheckoutAttempts = mysqlTable('order_checkout_attempts', {
   requestId:char('request_id',{length:36}).notNull(),requestHash:char('request_hash',{length:64}).notNull(),
   providerReference:varchar('provider_reference',{length:100}).notNull(),amountMinor:int('amount_minor').notNull(),currency:char({length:3}).notNull(),
   state:varchar({length:20}).notNull().default('dispatching'),paymentId:int('payment_id'),failureCode:varchar('failure_code',{length:40}),
+  reviewRevision:int('review_revision').notNull().default(0),
   createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   activeOrderId:int('active_order_id').generatedAlwaysAs(sql`CASE WHEN state IN ('dispatching','unknown','created') THEN order_id ELSE NULL END`,{mode:'virtual'}),
 },table=>[uniqueIndex('uq_checkout_request').on(table.paymentLinkId,table.requestId),uniqueIndex('uq_checkout_active_order').on(table.activeOrderId),
   uniqueIndex('uq_checkout_provider_reference').on(table.providerReference)]);
+
+export const orderCheckoutReviews = mysqlTable('order_checkout_reviews', {
+  id:int().autoincrement().primaryKey(),attemptId:char('attempt_id',{length:36}).notNull().references(()=>orderCheckoutAttempts.id,{onDelete:'cascade'}),
+  revision:int().notNull(),actorUserId:int('actor_user_id').notNull(),chargeId:varchar('charge_id',{length:255}).notNull(),
+  outcome:varchar({length:20}).notNull(),reason:varchar({length:40}),providerStatus:varchar('provider_status',{length:32}),
+  proofHash:char('proof_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_checkout_review_revision').on(table.attemptId,table.revision)]);

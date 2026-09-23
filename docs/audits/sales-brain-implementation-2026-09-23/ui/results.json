@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T21:42:21.372Z",
+  "generatedAt": "2026-09-23T22:10:00.693Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -7,6 +7,8 @@
     "checkout-attempts-375.png",
     "checkout-discount-1440.png",
     "checkout-discount-375.png",
+    "checkout-reconciliation-1440.png",
+    "checkout-reconciliation-375.png",
     "discount-policy-1440.png",
     "discount-policy-375.png",
     "followup-policy-1440.png",
@@ -220,61 +222,131 @@
     {
       "width": 320,
       "lang": "ar",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 375,
       "lang": "ar",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 390,
       "lang": "ar",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 768,
       "lang": "ar",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 1440,
       "lang": "ar",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 320,
       "lang": "en",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 375,
       "lang": "en",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 390,
       "lang": "en",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 768,
       "lang": "en",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
       "passed": true
     },
     {
       "width": 1440,
       "lang": "en",
-      "mode": "checkout_attempts_states_read_only_refresh",
+      "mode": "checkout_attempts_states_and_refresh",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "checkout_reconcile_explicit_review_keyboard_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_reconcile_unverified_requires_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "checkout_reconcile_reconcile-error_requires_refresh",
       "passed": true
     },
     {

@@ -16,6 +16,11 @@ const inputSchema = z.object({ linkId:z.string().min(1).max(100), checkoutAttemp
   customerEmail:z.string().trim().email().max(255).optional() }).strict();
 type CheckoutInput = z.infer<typeof inputSchema>;
 const digest = (value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+export function checkoutRequestFingerprint(input:{merchantId:number;orderId:number;linkId:number;amount:number;currency:string;
+  customerName:string;customerPhone:string;customerEmail:string|null;description:string;metadata:unknown;secret:string;testMode:boolean}) {
+  const {secret,testMode,...identity}=input;
+  return digest({...identity,provider:digest(secret),testMode});
+}
 const unavailable = ()=>new Error('Order checkout requires review');
 
 async function transaction<T>(run:(connection:PoolConnection)=>Promise<T>):Promise<T> {
@@ -77,9 +82,9 @@ export async function createDurableOrderCheckout(raw:CheckoutInput):Promise<{pay
     const {order,link}=await lockedTarget(connection,input.linkId);
     if(order.merchantId!==scope[0].merchant_id)throw unavailable();
     if(!payable(order))throw unavailable();await assertLinkAvailable(connection,link);
-    const fingerprint=digest({merchantId:order.merchantId,orderId:order.id,linkId:link.id,amount:link.amount,currency:link.currency,
+    const fingerprint=checkoutRequestFingerprint({merchantId:order.merchantId,orderId:order.id,linkId:link.id,amount:link.amount,currency:link.currency,
       customerName:input.customerName,customerPhone:phoneNumber,customerEmail:input.customerEmail||null,
-      description:link.description||link.title,metadata:link.metadata,provider:digest(secret),testMode:!!settings.tapTestMode});
+      description:link.description||link.title,metadata:link.metadata,secret,testMode:!!settings.tapTestMode});
     const [attempts]=await connection.execute<any[]>(`SELECT * FROM order_checkout_attempts WHERE order_id=?
       AND (state IN ('dispatching','unknown','created') OR (payment_link_id=? AND request_id=?)) ORDER BY created_at,id FOR UPDATE`,
       [order.id,link.id,input.checkoutAttemptId]);
@@ -162,8 +167,10 @@ export async function getOrderCheckoutAttempts(merchantId:number,orderId:number)
   if(orders.length!==1)throw unavailable();
   const [rows]=await pool.execute<any[]>(`SELECT id,state,provider_reference,amount_minor,currency,payment_id,created_at,updated_at
     FROM order_checkout_attempts WHERE order_id=? AND merchant_id=? ORDER BY created_at DESC,id DESC LIMIT 10`,[orderId,merchantId]);
-  return rows.map(row=>({id:String(row.id),state:z.enum(['dispatching','unknown','created','failed']).parse(row.state),
+  const {readCheckoutReviewEvidence}=await import('./checkout-reconciliation');
+  return Promise.all(rows.map(async row=>({id:String(row.id),state:z.enum(['dispatching','unknown','created','failed']).parse(row.state),
     reference:z.string().regex(/^sari_pl_[0-9a-f]{64}$/).parse(row.provider_reference),amountMinor:requireMinor(row.amount_minor),currency:z.literal('SAR').parse(row.currency),
     paymentId:row.payment_id==null?null:Number(row.payment_id),
-    createdAt:new Date(databaseTimeEpoch(row.created_at)).toISOString(),updatedAt:new Date(databaseTimeEpoch(row.updated_at)).toISOString()}));
+    createdAt:new Date(databaseTimeEpoch(row.created_at)).toISOString(),updatedAt:new Date(databaseTimeEpoch(row.updated_at)).toISOString(),
+    ...await readCheckoutReviewEvidence(merchantId,orderId,row.id)})));
 }

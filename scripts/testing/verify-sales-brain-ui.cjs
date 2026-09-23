@@ -113,9 +113,35 @@ async function main() {
       assert.equal(await page.$eval('#checkout-attempts-fixture',n=>n.innerText.includes('merchantUx.')),false);
       assert.equal(await page.$('#checkout-attempts-fixture a'),null);
       assert.ok(await page.$eval('#checkout-attempts-fixture button',n=>n.getBoundingClientRect().height>=44));
-      await page.click('#checkout-attempts-fixture button');assert.equal(await page.evaluate(()=>window.__attemptRefreshed),true);
+      await page.click('#checkout-attempts-fixture [data-checkout-refresh]');assert.equal(await page.evaluate(()=>window.__attemptRefreshed),true);
       if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#checkout-attempts-fixture')).screenshot({path:path.join(output,`checkout-attempts-${width}.png`)});
-      results.push({width,lang,mode:'checkout_attempts_states_read_only_refresh',passed:true});
+      results.push({width,lang,mode:'checkout_attempts_states_and_refresh',passed:true});
+    }
+    const checkoutReview='#checkout-attempts-fixture [data-checkout-review]';
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=checkout-attempts-ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      await page.waitForSelector(checkoutReview);assert.equal((await page.$$(`${checkoutReview}`)).length,2);
+      assert.equal(await page.$eval(`${checkoutReview} button`,n=>n.disabled),true);
+      await page.type(`${checkoutReview} input[type=text],${checkoutReview} input:not([type])`,'chg_fixture_1');
+      assert.equal(await page.$eval(`${checkoutReview} button`,n=>n.disabled),true);
+      await page.click(`${checkoutReview} input[type=checkbox]`);await page.type(`${checkoutReview} input:not([type])`,'2');
+      assert.equal(await page.$eval(`${checkoutReview} input[type=checkbox]`,n=>n.checked),false);
+      await page.click(`${checkoutReview} input[type=checkbox]`);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.$eval('#checkout-attempts-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      await page.focus(`${checkoutReview} button`);await page.keyboard.press('Enter');await page.waitForSelector(`${checkoutReview} [role=status]`);
+      assert.deepEqual(await page.evaluate(()=>window.__checkoutReviewInput),{orderId:123,attemptId:'00000000-0000-4000-8000-000000000000',evidence:'a'.repeat(64),chargeId:'chg_fixture_12',reviewed:true});
+      assert.equal(await page.evaluate(()=>window.__checkoutReviewCount),1);assert.equal(await page.$eval(`${checkoutReview} button`,n=>n.disabled),true);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#checkout-attempts-fixture')).screenshot({path:path.join(output,`checkout-reconciliation-${width}.png`)});
+      await page.click('[data-checkout-refresh]');assert.equal(await page.$eval(`${checkoutReview} input:not([type])`,n=>n.value),'');
+      results.push({width,lang,mode:'checkout_reconcile_explicit_review_keyboard_single_submit',passed:true});
+    }
+    for(const state of ['unverified','reconcile-error']) {
+      await page.goto(`${origin}/?case=checkout-attempts-${state}`,{waitUntil:'networkidle0'});await page.waitForSelector(checkoutReview);
+      await page.type(`${checkoutReview} input:not([type])`,'chg_fixture_1');await page.click(`${checkoutReview} input[type=checkbox]`);await page.click(`${checkoutReview} button`);
+      await page.waitForSelector(`${checkoutReview} [role=alert]`);assert.equal(await page.$eval(`${checkoutReview} button`,n=>n.disabled),true);
+      assert.equal(await page.$eval('#checkout-attempts-fixture',n=>n.innerText.includes('private provider')),false);
+      results.push({width:1440,mode:`checkout_reconcile_${state}_requires_refresh`,passed:true});
     }
     for(const state of ['error','loading','empty']) {
       await page.goto(`${origin}/?case=checkout-attempts-${state}`,{waitUntil:'networkidle0'});

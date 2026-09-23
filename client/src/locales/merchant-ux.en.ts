@@ -2,6 +2,13 @@ import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
   checkoutAttempts: {
+    chargeId:"Charge ID from the Tap dashboard",
+    attest:"I reviewed the attempt reference and amount in Tap. Retrieve and reconcile this charge without creating a new checkout.",
+    reconcile:"Retrieve and reconcile charge",
+    reconciling:"Verifying charge…",
+    verified:"Tap identity verified and the resulting local state saved. Check the order payment status; verification alone does not mean the amount was collected.",
+    unverified:"The charge could not be verified. The attempt stays reserved; do not create a replacement payment. Review the charge ID and Tap account details.",
+    reconcileError:"Review failed or evidence changed. Refresh the record and review its state before trying again.",
     title:'Payment session attempts',loading:'Loading payment session history…',error:'Payment session history could not be loaded.',refresh:'Refresh payment history',
     dispatching:'Attempt started; outcome not yet recorded',unknown:'Attempt outcome needs review',created:'Session recorded; check the order payment status',failed:'Attempt closed after a verified failure or cancellation',
     scope:'The latest 10 attempts to start payment for this order. Creating a session does not establish payment. This history does not send a new payment request.',

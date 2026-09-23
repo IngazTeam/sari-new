@@ -3,7 +3,7 @@ const TAP_CHARGES_LIST_URL = 'https://api.tap.company/v2/charges/list';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 256 * 1024;
 
-export type TapClientFailure = 'invalid_credentials' | 'network' | 'timeout' | 'response_too_large' | 'invalid_json';
+export type TapClientFailure = 'invalid_credentials' | 'invalid_charge_id' | 'network' | 'timeout' | 'response_too_large' | 'invalid_json';
 
 export class TapClientError extends Error {
   constructor(public readonly failure: TapClientFailure) {
@@ -54,6 +54,7 @@ async function postTapJson(
   secretKey: string,
   payload: unknown,
   options: TapPostOptions = {},
+  method: 'POST' | 'GET' = 'POST',
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   if (!secretKey.trim()) throw new TapClientError('invalid_credentials');
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -64,13 +65,14 @@ async function postTapJson(
 
   try {
     const response = await fetchImpl(url, {
-      method: 'POST',
+      method,
+      redirect: 'error',
       headers: {
         Authorization: `Bearer ${secretKey}`,
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      ...(method === 'POST' ? { body: JSON.stringify(payload) } : {}),
       signal: controller.signal,
     });
     const text = await readBoundedResponse(response, maxResponseBytes);
@@ -98,6 +100,12 @@ export async function postTapCharge(
   options: TapPostOptions = {},
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   return postTapJson(TAP_CHARGES_URL, secretKey, payload, options);
+}
+
+/** Fixed-origin read only lookup. A missing charge never authorizes another POST. */
+export async function retrieveTapCharge(secretKey: string, chargeId: string, options: TapPostOptions = {}) {
+  if (!/^chg_[A-Za-z0-9_-]{6,250}$/.test(chargeId)) throw new TapClientError('invalid_charge_id');
+  return postTapJson(`${TAP_CHARGES_URL}/${chargeId}`, secretKey, undefined, options, 'GET');
 }
 
 /**

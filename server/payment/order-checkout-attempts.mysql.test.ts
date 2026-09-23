@@ -146,7 +146,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable local order checkout on MySQ
     await createDurableOrderCheckout(input);
     await expect(getOrderCheckoutAttempts(other.merchantId,orderId)).rejects.toThrow();
     const audit=await getOrderCheckoutAttempts(owner.merchantId,orderId);expect(audit).toHaveLength(1);expect(audit[0]).toMatchObject({state:'created',amountMinor:26998});
-    expect(Object.keys(audit[0]).sort()).toEqual(['id','state','reference','amountMinor','currency','paymentId','createdAt','updatedAt'].sort());
+    expect(Object.keys(audit[0]).sort()).toEqual(['id','state','reference','amountMinor','currency','paymentId','createdAt','updatedAt','evidence','canReview','reviewRevision','lastReview'].sort());
   });
   it('keeps unknown authority even if recording the unknown marker also fails',async()=>{
     const pool=(await getPool())!,original=pool.execute.bind(pool);

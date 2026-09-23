@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
+import { reconcileCheckoutSchema } from '../shared/checkout-reconciliation';
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
@@ -2549,6 +2550,11 @@ export const appRouter = router({
       const { getOrderCheckoutAttempts } = await import('./payment/order-checkout-attempts');
       try { return await getOrderCheckoutAttempts(ctx.merchantId,input.orderId); }
       catch { throw new TRPCError({code:'CONFLICT',message:'Checkout attempt evidence unavailable'}); }
+    }),
+    reconcileCheckoutAttempt: permissionProcedure('orders.manage').input(reconcileCheckoutSchema).mutation(async ({ctx,input}) => {
+      const {reconcileOrderCheckout}=await import('./payment/checkout-reconciliation');
+      try {return await reconcileOrderCheckout(ctx.merchantId,ctx.user.id,input);}
+      catch {throw new TRPCError({code:'CONFLICT',message:'Checkout reconciliation unavailable; refresh evidence before another review'});}
     }),
     getCheckoutMarginException: permissionProcedure('orders.manage').input(z.object({orderId:z.number().int().positive()}).strict()).query(async ({ctx,input}) => {
       const { getCheckoutMarginException } = await import('./ai/checkout-margin');

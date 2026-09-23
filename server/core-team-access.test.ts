@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
+  checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
   getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
@@ -9,6 +9,7 @@ vi.mock('./ai/checkout-margin', async original => ({...await original<typeof imp
 vi.mock('./ai/checkout-agreements', async original => ({...await original<typeof import('./ai/checkout-agreements')>(),approveCheckoutInvoice:mocks.invoiceApprove}));
 vi.mock('./payment/order-payment-link', async original => ({...await original<typeof import('./payment/order-payment-link')>(),issueCanonicalOrderPaymentLink:mocks.invoiceLink}));
 vi.mock('./payment/order-checkout-attempts',async original=>({...await original<typeof import('./payment/order-checkout-attempts')>(),getOrderCheckoutAttempts:mocks.checkoutAttempts}));
+vi.mock('./payment/checkout-reconciliation',async original=>({...await original<typeof import('./payment/checkout-reconciliation')>(),reconcileOrderCheckout:mocks.checkoutReconcile}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
@@ -48,6 +49,22 @@ beforeEach(() => {
   mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
+  const checkoutReview={orderId:10,attemptId:'00000000-0000-4000-8000-000000000001',chargeId:'chg_fixture_1',evidence:'a'.repeat(64),reviewed:true as const};
+  it.each(['owner','manager','sales_supervisor'])('derives Tap review tenant and actor from the %s session',async role=>{
+    mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().orders.reconcileCheckoutAttempt(checkoutReview);
+    expect(mocks.checkoutReconcile).toHaveBeenCalledWith(20,7,checkoutReview);
+  });
+  it('denies Tap reviews to a viewer and revoked membership',async()=>{
+    await expect(caller().orders.reconcileCheckoutAttempt(checkoutReview)).rejects.toMatchObject({code:'FORBIDDEN'});
+    mocks.access.mockResolvedValue(null);await expect(caller().orders.reconcileCheckoutAttempt(checkoutReview)).rejects.toMatchObject({code:'FORBIDDEN'});expect(mocks.checkoutReconcile).not.toHaveBeenCalled();
+  });
+  it.each([{merchantId:30},{actorUserId:30},{status:'CAPTURED'},{amount:1},{reviewed:false},{chargeId:'https://evil.test'}])('rejects injected Tap review authority %j',async patch=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});await expect(caller().orders.reconcileCheckoutAttempt({...checkoutReview,...patch} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.checkoutReconcile).not.toHaveBeenCalled();
+  });
+  it('redacts reconciliation provider and storage errors',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'owner',memberId:3});mocks.checkoutReconcile.mockRejectedValueOnce(Error('sk_live_private'));
+    await expect(caller().orders.reconcileCheckoutAttempt(checkoutReview)).rejects.toMatchObject({code:'CONFLICT',message:'Checkout reconciliation unavailable; refresh evidence before another review'});
+  });
   it('hides checkout attempts from a viewer and scopes reads to resolved membership',async()=>{
     await expect(caller().orders.getCheckoutAttempts({orderId:10})).rejects.toMatchObject({code:'FORBIDDEN'});expect(mocks.checkoutAttempts).not.toHaveBeenCalled();
     mocks.access.mockResolvedValue({merchantId:20,role:'sales_supervisor',memberId:3});await caller().orders.getCheckoutAttempts({orderId:10});
