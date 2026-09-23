@@ -9672,7 +9672,7 @@ export async function linkZidProductToSariProduct(
 /**
  * Save Zid order to database
  */
-export async function saveZidOrder(merchantId: number, orderData: any) {
+export async function saveZidOrder(merchantId: number, orderData: any, observedAt = new Date()) {
   const db = await getDb();
   if (!db) return null;
   const externalId = typeof orderData?.zidOrderId === 'string'
@@ -9713,7 +9713,7 @@ export async function saveZidOrder(merchantId: number, orderData: any) {
       products: items,
       created_at: orderData.orderDate,
       shipping: { method: { name: orderData.shippingMethod } },
-    });
+    }, observedAt);
     await upsertNormalizedOrdersFromZid(merchantId, [normalized]);
   }
 

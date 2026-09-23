@@ -449,6 +449,20 @@
       "when": 1790150800000,
       "tag": "0063_zid_checkout_agreements",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "5",
+      "when": 1790150900000,
+      "tag": "0064_zid_checkout_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "5",
+      "when": 1790151000000,
+      "tag": "0065_sales_sector_settings",
+      "breakpoints": true
     }
   ]
 }

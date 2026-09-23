@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn() }));
+const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn() }));
+vi.mock('./ai/zid-checkout-reconciliation', () => ({ listZidReconciliations: mocks.zidList, reconcileZidCheckout: mocks.zidReconcile }));
+vi.mock('./ai/sales-sector-settings', async original => ({ ...await original<typeof import('./ai/sales-sector-settings')>(),
+  getSalesSectorSettings: mocks.sectorRead, updateSalesSectorSettings: mocks.sectorWrite }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
   getMerchantById: mocks.merchant, getConversationsByMerchantId: mocks.conversations,
@@ -13,8 +17,37 @@ beforeEach(() => {
   mocks.merchant.mockResolvedValue({ id: 20 });
   mocks.conversations.mockResolvedValue([{ id: 4, merchantId: 20 }]);
   mocks.count.mockResolvedValue(1);
+  mocks.zidList.mockResolvedValue({ items: [], nextCursor: null }); mocks.zidReconcile.mockResolvedValue({ verified: true });
+  mocks.sectorRead.mockResolvedValue({ revision: 0, playbook: { id: 'general' } }); mocks.sectorWrite.mockResolvedValue({ revision: 1 });
 });
 describe('real app router team boundaries', () => {
+  it('scopes reconciliation reads to membership and forbids viewer writes', async () => {
+    expect(await caller().orders.listZidReconciliations()).toMatchObject({ canManage: false });
+    expect(mocks.zidList).toHaveBeenCalledWith(20, undefined);
+    await expect(caller().orders.reconcileZidCheckout({ quotationId: 1, orderId: 2, reviewed: true })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(mocks.zidReconcile).not.toHaveBeenCalled();
+  });
+  it('attributes reconciliation to the authenticated actor and rejects identity injection', async () => {
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    const input = { quotationId: 1, orderId: 2, reviewed: true as const };
+    await caller().orders.reconcileZidCheckout(input);
+    expect(mocks.zidReconcile).toHaveBeenCalledWith({ ...input, merchantId: 20, actorUserId: 7 });
+    for (const attack of [{ merchantId: 30 }, { actorUserId: 1 }, { reviewed: false }, { orderId: -1 }, { orderId: "1' OR 1=1" }]) {
+      await expect(caller().orders.reconcileZidCheckout({ ...input, ...attack } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    }
+    expect(mocks.zidReconcile).toHaveBeenCalledTimes(1);
+  });
+  it('requires bot settings permission for sales guide changes, independently of order permissions', async () => {
+    expect(await caller().sariBrain.getSalesSector()).toMatchObject({ canManage: false });
+    for (const role of ['viewer', 'sales_supervisor']) {
+      mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
+      await expect(caller().sariBrain.updateSalesSector({ playbookId: 'training', expectedRevision: 0 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+    expect(mocks.sectorWrite).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    await caller().sariBrain.updateSalesSector({ playbookId: 'training', expectedRevision: 0 });
+    expect(mocks.sectorWrite).toHaveBeenCalledWith({ merchantId: 20, actorUserId: 7, playbookId: 'training', expectedRevision: 0 });
+  });
   it('uses active membership for conversation reads and ignores a forged context tenant', async () => {
     const result = await caller().conversations.list();
     expect(result.items).toHaveLength(1);

@@ -50,6 +50,38 @@ async function main() {
     assert.equal(await page.$('#invoice-fixture [role="status"]'), null);
     await page.click('#invoice-fixture button'); await page.waitForSelector('#invoice-fixture [role="status"]');
     results.push({ width: 375, mode: 'invoice_failure_retry', passed: true });
+    for (const width of [320, 375, 390, 768, 1440]) {
+      await page.setViewport({ width, height: 900 });
+      await page.goto(`${origin}/?case=ready`, { waitUntil: 'networkidle0' });
+      assert.equal(await page.$eval('#zid-fixture button', b => b.disabled), true);
+      await page.type('#zid-order-55', '999');
+      assert.equal(await page.$eval('#zid-fixture button', b => b.disabled), true);
+      await page.click('#zid-fixture input[type=checkbox]'); await page.click('#zid-fixture button');
+      await page.waitForSelector('#zid-fixture [role=status]');
+      assert.deepEqual(await page.evaluate(() => window.__zidInput), { quotationId: 55, orderId: 999, reviewed: true });
+      await page.select('#sales-sector-select', 'training'); await page.click('#sector-fixture button');
+      await page.waitForSelector('#sector-fixture [role=status]');
+      assert.deepEqual(await page.evaluate(() => window.__sectorInput), { playbookId: 'training', expectedRevision: 0 });
+      await page.click('#sector-fixture summary');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.evaluate(() => document.body.innerText.includes('merchantUx.')), false);
+      results.push({ width, mode: 'zid_and_sector_save', passed: true });
+    }
+    await page.goto(`${origin}/?case=viewer`, { waitUntil: 'networkidle0' });
+    assert.equal(await page.$('#zid-order-55'), null); assert.equal(await page.$eval('#sales-sector-select', s => s.disabled), true);
+    results.push({ width: 1440, mode: 'viewer_no_mutation_controls', passed: true });
+    await page.goto(`${origin}/?case=empty`, { waitUntil: 'networkidle0' });
+    assert.equal(await page.$('#zid-order-55'), null);
+    results.push({ width: 1440, mode: 'zid_empty', passed: true });
+    await page.goto(`${origin}/?case=mutation-error`, { waitUntil: 'networkidle0' });
+    await page.type('#zid-order-55', '999'); await page.click('#zid-fixture input[type=checkbox]'); await page.click('#zid-fixture button');
+    await page.waitForSelector('#zid-fixture [role=alert]');
+    assert.equal(await page.$('#zid-fixture [role=status]'), null);
+    await page.click('#zid-fixture button'); await page.waitForSelector('#zid-fixture [role=status]');
+    await page.select('#sales-sector-select', 'recruitment'); await page.click('#sector-fixture button');
+    await page.waitForSelector('#sector-fixture [role=alert]'); assert.equal(await page.$('#sector-fixture [role=status]'), null);
+    await page.click('#sector-fixture button'); await page.waitForSelector('#sector-fixture [role=status]');
+    results.push({ width: 1440, mode: 'zid_sector_failure_retry', passed: true });
     assert.deepEqual(errors, []);
     const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };

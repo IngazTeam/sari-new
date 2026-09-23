@@ -31,13 +31,23 @@ describe('Zid extraction and provider boundary penetration cases', () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ order: { id: 1 } }) });
     const client = new ZidClient({ accessToken: 'fixture', managerToken: 'fixture', clientId: '', clientSecret: '', redirectUri: '', fetchImpl });
     const data = { customerName: 'Fixture', customerPhone: '966500000001', address: { line1: 'Fixture Street', city: 'Riyadh', countryCode: 'SA' },
-      products: [{ sku: 'SKU1', quantity: 2 }], shippingMethodId: 4, paymentMethodId: 5, isPaymentLink: true };
+      products: [{ sku: 'SKU1', quantity: 2 }], shippingMethodId: 4, paymentMethodId: 5, isPaymentLink: true,
+      checkoutReference: 'SARY-CHECKOUT:804b6513-4780-4fb4-9d90-7ac5f0fc846a' };
     await client.createOrderFromWhatsApp(data);
     const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
     expect(body.payment_link_configs).toBeUndefined();
+    expect(body.customer_comment).toBe(data.checkoutReference);
+    expect(body.products).toEqual(data.products);
     expect(body.payment_method).toMatchObject({ id: 5, payment_link_configs: { expiryDateTime: expect.any(String) } });
     fetchImpl.mockRejectedValue(new Error('timeout'));
     await expect(client.createOrderFromWhatsApp(data)).rejects.toThrow('timeout');
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+    fetchImpl.mockResolvedValue({ ok: true, json: async () => ({ order: { id: 1 } }) });
+    expect(await client.getOrderForReconciliation(1)).toEqual({ order: { id: 1 } });
+    expect(fetchImpl.mock.calls[2][0]).toMatch(/\/managers\/store\/orders\/1\/view$/);
+    expect(fetchImpl.mock.calls[2][1].body).toBeUndefined();
+    expect(fetchImpl.mock.calls[2][1].method ?? 'GET').toBe('GET');
+    for (const invalid of [-1, 1.1, Number.MAX_SAFE_INTEGER + 1]) await expect(client.getOrderForReconciliation(invalid)).rejects.toThrow('Invalid');
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 });

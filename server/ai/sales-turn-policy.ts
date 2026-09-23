@@ -1,5 +1,6 @@
 import { isSalesRefusal, isShortAffirmation, pendingDecisionFromQuestion } from './customer-decision';
 import type { CustomerIntent } from './session-context';
+import { buildSalesSectorGuidance, getSalesSectorPlaybook, type SalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
 
 export type SalesTurnGoal = 'respect_decline' | 'resolve_existing_order' | 'explain_requested_information'
   | 'confirm_agreement' | 'understand_objection' | 'compare_suitable_options' | 'answer_then_qualify';
@@ -28,7 +29,7 @@ const objectives: Record<SalesTurnGoal, string> = {
   answer_then_qualify: 'أجب عن السؤال المباشر أولاً. اربط الترشيح باحتياج ذكره العميل؛ إن لم تعرف احتياجه اسأل سؤالاً واحداً يغير الاختيار التالي، دون تكرار معلومات حُسمت.',
 };
 
-export function buildSalesTurnPolicy(input: Parameters<typeof decideSalesTurnGoal>[0]): string {
+export function buildSalesTurnPolicy(input: Parameters<typeof decideSalesTurnGoal>[0] & { sectorPlaybook?: SalesSectorPlaybook }): string {
   const goal = decideSalesTurnGoal(input);
   return `\n\n## سياسة البيع المشتركة v1 — هدف التفاعل وحدود الصلاحية
 ترتيب المرجعية عند تعارض تعليمات الأسلوب: حقائق النشاط وصلاحياته ونتائج أدواته، ثم قرار العميل والاتفاق الحالي، ثم هدف هذه الرسالة، ثم الشخصية، ثم اقتراحات الأسلوب المعتمدة.
@@ -40,5 +41,5 @@ export function buildSalesTurnPolicy(input: Parameters<typeof decideSalesTurnGoa
 - موافقة على الشرح ليست موافقة شراء. عرض محفوظ مع موافقة محددة ونتيجة أداة هما مرجع الإتمام، ولا تنفذ من نص محادثة وحده.
 - عند نقص المعرفة اطلب المعلومة المؤثرة أو استخدم التصعيد المتاح. لا تعد برد لاحق أو حجز أو اتصال إذا لم تُسجل له مهمة فعلية.
 - أجب بلغة العميل وطول يناسب السؤال. اختم بخطوة واحدة مفيدة إذا احتاجت المحادثة ذلك، دون إعادة الاستكشاف بعد اتفاق مكتمل.
-`;
+` + (['respect_decline', 'resolve_existing_order'].includes(goal) ? '' : buildSalesSectorGuidance(input.sectorPlaybook ?? getSalesSectorPlaybook('general')));
 }

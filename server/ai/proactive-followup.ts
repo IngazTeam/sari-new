@@ -24,12 +24,15 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import { isSalesRefusal } from './customer-decision';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
+import { hasActiveCampaignConsent, withCampaignOptOutNotice } from '../automation/campaign-guard';
+import { parseRequestedFollowupTime } from './requested-followup-time';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
 
 export type FollowUpType = 'hesitating' | 'abandoned_cart' | 'price_no_reply' | 'ghost' | 'post_interest' | 'action_selector'
+  | 'customer_requested'
   | 'recovery_price' | 'recovery_trust' | 'recovery_competitor' | 'recovery_delivery' | 'recovery_payment' | 'recovery_general';
 
 export interface FollowUpRecord {
@@ -51,6 +54,7 @@ export interface FollowUpRecord {
 // ═══════════════════════════════════════════════════════════════
 
 const FOLLOW_UP_TEMPLATES: Record<string, string[]> = {
+  customer_requested: ['مرحباً {name}، أتابع معك في الموعد الذي طلبته. هل يناسبك إكمال حديثنا السابق؟'],
   hesitating: [
     'مرحبا {name} 🙌 قدرت تفكر في الموضوع؟ لو عندك أي سؤال أنا هنا أساعدك',
     'هلا {name}! رجعت أتطمن عليك 😊 إذا تحتاج أي توضيح ثاني ترى أنا جاهز',
@@ -156,6 +160,7 @@ async function followUpContext(executor: Pick<Pool, 'execute'>, merchantId: numb
     (c.human_takeover = 1 AND (c.human_expires_at IS NULL OR c.human_expires_at > UTC_TIMESTAMP())) AS human_owned,
     COALESCE((SELECT MAX(m.id) FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming'), 0) AS incoming_id,
     (SELECT m.content FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS last_message
+    , (SELECT m.createdAt FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS source_created_at
     FROM conversations c WHERE c.id = ? AND c.merchantId = ? AND c.customerPhone = ?`,
   [conversationId, merchantId, phone]);
   return rows[0];
@@ -184,6 +189,7 @@ export async function scheduleFollowUp(params: {
   customDelayMs?: number;
   customMessage?: string;
   source?: string;
+  requestedSourceMessageId?: number;
 }): Promise<boolean> {
   const { merchantId, customerPhone, conversationId, followUpType, customerName } = params;
   let connection: Awaited<ReturnType<Pool['getConnection']>> | undefined;
@@ -191,12 +197,24 @@ export async function scheduleFollowUp(params: {
     await ensureTable();
     const pool = await getPool();
     if (!pool) return false;
+    // Interest or a past purchase is not permission for unsolicited sales follow-ups.
+    if (followUpType !== 'customer_requested' && !await hasActiveCampaignConsent(merchantId, customerPhone)) return false;
     connection = await pool.getConnection();
     await connection.beginTransaction();
     // Serialize the short scheduling transaction across this merchant, including different conversations.
     await connection.execute('SELECT id FROM merchants WHERE id = ? FOR UPDATE', [merchantId]);
     const context = await followUpContext(connection, merchantId, conversationId, customerPhone);
     if (suppressReason(context)) return false;
+    const requested = followUpType === 'customer_requested'
+      ? parseRequestedFollowupTime(context!.last_message || '', new Date(context!.source_created_at)) : null;
+    if (followUpType === 'customer_requested' && (requested?.kind !== 'requested' || params.requestedSourceMessageId !== Number(context!.incoming_id))) return false;
+    if (requested?.kind === 'requested') {
+      const [existing] = await connection.execute<RowDataPacket[]>(`SELECT id FROM sales_followups WHERE merchant_id=? AND conversation_id=?
+        AND anchor_message_id=? AND follow_up_type='customer_requested' AND cancelled_at IS NULL`, [merchantId, conversationId, context!.incoming_id]);
+      if (existing.length) { await connection.commit(); return true; }
+      await connection.execute(`UPDATE sales_followups SET cancelled_at=UTC_TIMESTAMP(), cancel_reason='customer_rescheduled'
+        WHERE merchant_id=? AND conversation_id=? AND customer_phone=? AND sent_at IS NULL AND cancelled_at IS NULL`, [merchantId, conversationId, customerPhone]);
+    }
 
     // Safety: Check weekly limit (max 3 per customer per week)
     const [weekRows] = await connection.execute(
@@ -228,12 +246,12 @@ export async function scheduleFollowUp(params: {
     const templates = FOLLOW_UP_TEMPLATES[followUpType] || FOLLOW_UP_TEMPLATES.action_selector;
     const template = templates[Math.floor(Math.random() * templates.length)];
     const name = customerName || 'عميلنا';
-    const messageText = params.customMessage || template.replace(/{name}/g, name);
+    const messageText = withCampaignOptOutNotice((followUpType !== 'customer_requested' && params.customMessage) || template.replace(/{name}/g, name));
 
     // Calculate scheduled time
     const delayMs = params.customDelayMs ?? FOLLOW_UP_DELAYS[followUpType] ?? FOLLOW_UP_DELAYS.action_selector;
     if (!Number.isFinite(delayMs) || delayMs < 0 || messageText.length > 4096) return false;
-    const scheduledAt = new Date(Date.now() + delayMs);
+    const scheduledAt = requested?.kind === 'requested' ? requested.at : new Date(Date.now() + delayMs);
 
     await connection.execute(
       `INSERT INTO sales_followups 
@@ -344,6 +362,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       try {
         const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
         const suppression = suppressReason(context)
+          || (fu.follow_up_type !== 'customer_requested' && !await hasActiveCampaignConsent(fu.merchant_id, fu.customer_phone) ? 'consent_unavailable' : undefined)
           || (fu.anchor_message_id === null ? 'context_unavailable' : Number(context?.incoming_id) > fu.anchor_message_id ? 'customer_replied' : undefined);
         if (suppression) {
           await pool.execute(
@@ -386,12 +405,13 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           continue;
         }
         const result = await sendMerchantWhatsApp({ merchantId: fu.merchant_id, to: fu.customer_phone,
-          kind: 'text', text: fu.message_text, idempotencyKey: `sales_followup:${fu.merchant_id}:${fu.id}` });
+          kind: 'text', text: fu.message_text, idempotencyKey: `sales_followup:${fu.merchant_id}:${fu.id}`,
+          followUpGuard: { id: fu.id, token: claimToken } });
         if (!result.accepted) {
           await pool.execute(`UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = ?
             WHERE id = ? AND processing_token = ?`,
-          [result.status === 'failed' ? 'delivery_failed' : 'delivery_review_required', fu.id, claimToken]);
-          errors++;
+          [result.errorCode === 'followup_suppressed' ? 'context_changed' : result.status === 'failed' ? 'delivery_failed' : 'delivery_review_required', fu.id, claimToken]);
+          if (result.errorCode === 'followup_suppressed') cancelled++; else errors++;
           continue;
         }
 

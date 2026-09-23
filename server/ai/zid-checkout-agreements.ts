@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
@@ -15,13 +15,14 @@ import { currentInboundExecution } from '../messaging/inbound-context';
 const optionSchema = z.object({ id: z.number().int().positive(), name: z.string().min(1), feesMinor: z.number().int().nonnegative() });
 type Options = { storeId: string; payment: z.infer<typeof optionSchema>; shipping: z.infer<typeof optionSchema> };
 type Item = { zidProductId: string; sku: string; name: string; quantity: number; priceMinor: number; version: string };
-type Snapshot = { version: 1; options: Options; selection: ParsedZidOrder; items: Item[]; subtotalMinor: number; digest: string };
+export type ZidCheckoutSnapshot = { version: 1; options: Options; selection: ParsedZidOrder; items: Item[]; subtotalMinor: number; digest: string };
+type Snapshot = ZidCheckoutSnapshot;
 const decode = <T>(value: unknown): T => typeof value === 'string' ? JSON.parse(value) : value as T;
 const marker = (id: number) => `[ZQ-${id}]`;
 const uncertain = 'طلب زد قيد التحقق من نتيجة التنفيذ. لن أعيد إنشاءه حتى تُراجع حالته في المتجر، لتجنب تكراره.';
 const changed = 'تغيرت تفاصيل الطلب أو انتهت صلاحية العرض. لم أنفذ هذا التأكيد؛ نحتاج ملخصاً محدثاً وموافقتك عليه.';
 
-async function provider(merchantId: number) {
+export async function zidCheckoutProvider(merchantId: number) {
   const settings = await dbZid.getZidSettings(merchantId);
   if (!settings?.isActive || !settings.accessToken || !settings.managerToken || !settings.storeId) throw new Error('Zid identity unavailable');
   return { storeId: String(settings.storeId), client: new ZidClient({ clientId: '', clientSecret: '', redirectUri: '',
@@ -74,19 +75,29 @@ function quoteText(id: number, s: Snapshot) {
     + '\nهل توافق على إنشاء الطلب بهذه التفاصيل لمراجعة فاتورته قبل الدفع؟ رد بنعم، أو اذكر التعديل المطلوب.';
 }
 
-const resultSchema = z.object({ id: z.number().int().positive(), code: z.string().min(1).max(100),
+export const zidCheckoutResultSchema = z.object({ id: z.number().int().positive().safe(), code: z.string().min(1).max(100),
   store_id: z.union([z.number().int().positive(), z.string().min(1)]), order_url: z.string().url(),
   order_total: z.union([z.string(), z.number()]), currency_code: z.literal('SAR'),
   customer: z.object({ mobile: z.string() }),
 });
-type Result = { id: number; code: string; url: string; totalMinor: number };
+export type ZidCheckoutResult = { id: number; code: string; url: string; totalMinor: number };
+type Result = ZidCheckoutResult;
+export function validateZidCheckoutResult(raw: unknown, storeId: string, customerPhone: string): Result {
+  const order = zidCheckoutResultSchema.parse(raw), url = new URL(order.order_url);
+  const digits = (value: string) => value.replace(/\D/g, '').replace(/^00/, '');
+  if (String(order.store_id) !== storeId || !/^\+?\d[\d\s-]{7,20}$/.test(order.customer.mobile)
+    || digits(order.customer.mobile) !== digits(customerPhone) || url.protocol !== 'https:' || url.username || url.password) {
+    throw new Error('Zid result identity mismatch');
+  }
+  return { id: order.id, code: order.code, url: url.href, totalMinor: majorToMinor(order.order_total) };
+}
 function resultText(result: Result) {
   return `تم إنشاء طلب زد #${result.code}.\nقيمة فاتورة زد: ${formatMinorMoney(result.totalMinor)}.`
     + `\nراجع المنتجات والضريبة والتوصيل قبل إتمام الدفع:\n${result.url}\nإنشاء الطلب لا يعني نجاح الدفع.`;
 }
 
 export async function prepareZidCheckout(input: CheckoutIdentity, raw: ParsedZidOrder): Promise<string> {
-  const providerContext = await provider(input.merchantId);
+  const providerContext = await zidCheckoutProvider(input.merchantId);
   const options = await optionsFor(providerContext.client, providerContext.storeId, raw.shippingMethodName);
   return checkoutTransaction(async connection => {
     const source = await assertCheckoutIdentity(connection, input);
@@ -135,7 +146,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     return { snapshot: decode<Snapshot>(quote.external_snapshot), sourceMessageId: quote.source_message_id };
   });
   if ('text' in initial) return initial.text!;
-  const providerContext = await provider(input.merchantId);
+  const providerContext = await zidCheckoutProvider(input.merchantId);
   const currentOptions = await optionsFor(providerContext.client, providerContext.storeId, initial.snapshot.selection.shippingMethodName);
   const claimed = await checkoutTransaction(async connection => {
     await assertCheckoutIdentity(connection, input);
@@ -153,29 +164,36 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
       await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quoteId]); return { text: changed };
     }
     await currentInboundExecution()?.assertOwned();
-    await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing'
-      WHERE id = ? AND execution_state = 'ready'`, [input.incomingMessageId, quoteId]);
-    return { snapshot: fresh };
+    const attemptId = randomUUID();
+    await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing',
+      execution_attempt_id = ?, execution_started_at = UTC_TIMESTAMP(3)
+      WHERE id = ? AND execution_state = 'ready'`, [input.incomingMessageId, attemptId, quoteId]);
+    return { snapshot: fresh, attemptId };
   });
   if ('text' in claimed) return claimed.text!;
   const pool = await getPool(); if (!pool) throw new Error('Zid checkout storage unavailable');
   try {
     await currentInboundExecution()?.assertOwned();
     const s = claimed.snapshot;
+    const observedAt = new Date(); // Do not overwrite a newer webhook while POST is in flight.
     const response = await providerContext.client.createOrderFromWhatsApp({ customerName: s.selection.customerName!, customerPhone: input.customerPhone,
+      checkoutReference: `SARY-CHECKOUT:${claimed.attemptId}`,
       address: s.selection.address!, products: s.items.map(p => ({ sku: p.sku, quantity: p.quantity })),
       paymentMethodId: s.options.payment.id, shippingMethodId: s.options.shipping.id, isPaymentLink: true });
-    const order = resultSchema.parse(response.order), url = new URL(order.order_url);
-    const digits = (value: string) => value.replace(/\D/g, '').replace(/^00/, '');
-    if (String(order.store_id) !== s.options.storeId || digits(order.customer.mobile) !== digits(input.customerPhone)
-      || url.protocol !== 'https:' || url.username || url.password) throw new Error('Zid result identity mismatch');
-    const result: Result = { id: order.id, code: order.code, url: url.href, totalMinor: majorToMinor(order.order_total) };
-    await pool.execute(`UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ?
-      WHERE id = ? AND merchant_id = ? AND execution_state = 'processing'`, [JSON.stringify(result), quoteId, input.merchantId]);
+    const result = validateZidCheckoutResult(response.order, s.options.storeId, input.customerPhone);
+    const [saved] = await pool.execute<any>(`UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ?,
+      external_order_key = ?, projection_pending = 1 WHERE id = ? AND merchant_id = ? AND execution_state = 'processing'
+      AND execution_attempt_id = ?`, [JSON.stringify(result), `${s.options.storeId}:${result.id}`, quoteId, input.merchantId, claimed.attemptId]);
+    if (saved.affectedRows !== 1) return uncertain; // A concurrent reconciliation owns the durable result.
     // The provider result is durable first. Local projection failure cannot trigger a second POST.
-    try { await saveZidOrder(input.merchantId, { zidOrderId: String(order.id), zidOrderNumber: order.code,
+    try { const projected = await saveZidOrder(input.merchantId, { zidOrderId: String(result.id), zidOrderNumber: result.code,
       customerName: s.selection.customerName, customerPhone: input.customerPhone, totalAmount: result.totalMinor / 100,
-      currency: 'SAR', status: 'pending', orderUrl: url.href, zidData: JSON.stringify(response.order) }); }
+      currency: 'SAR', status: response.order.order_status?.code ?? 'pending',
+      paymentStatus: (response.order as { payment_status?: string }).payment_status,
+      items: s.items.map(item => ({ id: item.zidProductId, sku: item.sku, name: item.name, quantity: item.quantity, price: item.priceMinor / 100 })),
+      orderUrl: result.url, zidData: JSON.stringify(response.order) }, observedAt);
+      if (!projected) throw new Error('Projection unavailable');
+      await pool.execute('UPDATE sales_quotations SET projection_pending = 0 WHERE id = ? AND merchant_id = ?', [quoteId, input.merchantId]); }
     catch { console.warn('[ZidCheckout] Order projection requires reconciliation', { merchantId: input.merchantId, quoteId }); }
     return resultText(result);
   } catch {

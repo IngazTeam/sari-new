@@ -13,6 +13,7 @@ const units = [
   'server/knowledge/retrieval.test.ts', 'server/knowledge/merchant-teaching.test.ts',
   'server/ai/response-critic-contract.test.ts',
   'server/ai/sales-turn-policy.test.ts',
+  'server/ai/requested-followup-time.test.ts',
   'server/automation/zid-order-from-chat.test.ts', 'server/automation/zid-order-contract.test.ts',
   'server/automation/zid-order-extraction.test.ts',
   'server/tests/chat-commerce-pentest.test.ts',
@@ -26,6 +27,7 @@ const database = [
   'server/ai/sales-playbook.mysql.test.ts',
   'server/knowledge/sales-knowledge.mysql.test.ts', 'server/knowledge/lifecycle.mysql.test.ts',
   'server/ai/zid-checkout-agreements.mysql.test.ts',
+  'server/ai/sales-sector-settings.mysql.test.ts',
   'server/messaging/inbound.mysql.test.ts', 'server/messaging/inbound-process.mysql.test.ts',
 ];
 const output = resolve('.tmp/sales-brain-evidence'); mkdirSync(output, { recursive: true });

@@ -62,6 +62,10 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  salesSector: CopySection<readonly ['title', 'description', 'general', 'training', 'recruitment', 'store', 'loading', 'loadFailed',
+    'refresh', 'select', 'scope', 'currentGuide', 'saving', 'save', 'readOnly', 'failed', 'saved']>;
+  zidReconciliation: CopySection<readonly ['title', 'description', 'projection', 'unknown', 'legacy', 'waiting', 'readOnly',
+    'orderId', 'attestation', 'checking', 'verify', 'failed', 'projectionRetry', 'verified', 'loading', 'loadFailed', 'refresh', 'empty', 'older']>;
   checkoutInvoice: CopySection<readonly ['title', 'description', 'attestation', 'approve', 'saving', 'approved', 'failed', 'link', 'noLink']>;
   serviceForm: CopySection<typeof serviceFormCopyKeys>;
   discounts: CopySection<typeof discountCopyKeys>;

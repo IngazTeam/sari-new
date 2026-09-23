@@ -1,6 +1,22 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  salesSector: {
+    title: 'Sales conversation guide', description: 'Choose guidance for discovery, recommendations and objections. The general guide supports other sectors and mixed businesses.',
+    general: 'General — all sectors', training: 'Training and education', recruitment: 'Recruitment services', store: 'Stores and products', loading: 'Loading sales guide…', loadFailed: 'Could not load the sales guide.',
+    refresh: 'Refresh settings', select: 'Business sales guide', scope: 'This guides future conversations. Prices, policies and availability still come from current business data. It does not change contracts or order permissions.',
+    currentGuide: 'View needs and guidance in the saved guide', saving: 'Saving…', save: 'Save sales guide', readOnly: 'A bot settings manager must change this guide.',
+    failed: 'Could not save, or another session changed the setting. Refresh, review your choice and save again.', saved: 'Sales guide saved for future replies.',
+  },
+  zidReconciliation: {
+    title: 'Zid orders needing verification', description: 'If the response was lost after order creation, review the customer, items and execution reference in Zid. Enter the order ID to verify and link the existing order. This does not create an order or message the customer.',
+    projection: 'The Zid order is confirmed; local synchronization is pending.', unknown: 'The execution outcome is unknown. Creating another order is blocked to prevent duplicates.',
+    legacy: 'This older attempt has no saved execution reference and requires an operational review.', waiting: 'Execution is still in progress. Refresh after two minutes if its result has not arrived.', readOnly: 'An order manager must complete verification.',
+    orderId: 'Zid order ID', attestation: 'I reviewed the customer, items and execution reference in Zid and want to verify and link the existing order.', checking: 'Verifying with Zid…', verify: 'Verify existing order',
+    failed: 'The match could not be verified. Check the order ID, customer, items and execution reference in Zid history. Creation was not retried.',
+    projectionRetry: 'The Zid order is verified, but local synchronization failed. Verify again to complete it without creating another order.', verified: 'Existing order verified and synchronized. This does not confirm payment.',
+    loading: 'Loading orders…', loadFailed: 'Could not load orders needing verification.', refresh: 'Refresh list', empty: 'No orders need verification on this page.', older: 'Older orders',
+  },
   checkoutInvoice: {
     title: 'Approve the conversation order invoice', description: 'The customer agreed to the items and quantities. Review tax and delivery before enabling payment. A higher total requires a new offer and customer consent.',
     attestation: 'I confirm that the displayed total is final and includes all taxes and delivery fees, with no additional charge to the customer.',

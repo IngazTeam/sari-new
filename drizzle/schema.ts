@@ -3273,6 +3273,14 @@ export const sariResponseCache = mysqlTable("sari_response_cache", {
 ]);
 
 // --- Sales Quotations ---
+export const aiSalesSectorSettings = mysqlTable('ai_sales_sector_settings', {
+	merchantId: int('merchant_id').primaryKey().references(() => merchants.id, { onDelete: 'cascade' }),
+	playbookId: varchar('playbook_id', { length: 64 }).notNull(),
+	revision: int('revision').default(1).notNull(),
+	updatedBy: int('updated_by').notNull(),
+	updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+});
+
 export const salesQuotations = mysqlTable("sales_quotations", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
@@ -3295,6 +3303,11 @@ export const salesQuotations = mysqlTable("sales_quotations", {
 	externalSnapshot: json("external_snapshot"),
 	executionState: mysqlEnum("execution_state", ['ready', 'processing', 'succeeded', 'unknown']),
 	externalResult: json("external_result"),
+	executionAttemptId: varchar("execution_attempt_id", { length: 36 }),
+	executionStartedAt: datetime("execution_started_at", { mode: 'string', fsp: 3 }),
+	externalOrderKey: varchar("external_order_key", { length: 140 }),
+	externalReconciliation: json("external_reconciliation"),
+	projectionPending: tinyint("projection_pending").default(0).notNull(),
 	offerVersion: int("offer_version").default(1).notNull(),
 	offerExpiresAt: datetime("offer_expires_at", { mode: 'string', fsp: 3 }),
 	orderId: int("order_id").references(() => orders.id, { onDelete: 'set null' }),
@@ -3305,6 +3318,8 @@ export const salesQuotations = mysqlTable("sales_quotations", {
 	uniqueIndex("uq_quote_source").on(table.merchantId, table.sourceMessageId),
 	uniqueIndex("uq_quote_consent").on(table.merchantId, table.consentMessageId),
 	uniqueIndex("uq_quote_order").on(table.orderId),
+	uniqueIndex("uq_quote_external_order").on(table.merchantId, table.externalProvider, table.externalOrderKey),
+	index("idx_quote_reconciliation").on(table.merchantId, table.externalProvider, table.executionState, table.id),
 	index("idx_quote_conversation").on(table.merchantId, table.conversationId, table.id),
 ]);
 

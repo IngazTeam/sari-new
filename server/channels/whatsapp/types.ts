@@ -47,4 +47,6 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   // Retries only rows whose provider call finished with an explicit failure.
   // A still-queued row is never resent because its provider outcome is unknown.
   retryFailed?: boolean;
+  /** Server-owned claim required for sales_followup transport keys. */
+  followUpGuard?: { id: number; token: string };
 };

@@ -26,6 +26,9 @@ import {
 import { removeKnowledgeSource, resetKnowledgeSources, KnowledgeSourceNotFoundError } from './knowledge/source-lifecycle';
 import { assertRuntimeSchema } from './db/schema-readiness';
 import { getIntegrationAudienceCount } from './integrations/audience-count';
+import { getSalesSectorSettings, updateSalesSectorSettings, salesSectorSelectionSchema } from './ai/sales-sector-settings';
+import { salesSectorPlaybooks } from '../shared/sales-sector-playbooks';
+import { hasPermission } from './_core/permissions';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -320,6 +323,16 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getSalesSector: merchantProcedure.query(async ({ ctx }) => ({
+    ...await getSalesSectorSettings(ctx.merchantId), available: salesSectorPlaybooks.map(p => ({ id: p.id, version: p.version })),
+    canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
+  })),
+  updateSalesSector: permissionProcedure('bot_settings.manage')
+    .input(z.object({ playbookId: salesSectorSelectionSchema, expectedRevision: z.number().int().nonnegative() }).strict())
+    .mutation(async ({ ctx, input }) => {
+      try { return await updateSalesSectorSettings({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
+      catch { throw new TRPCError({ code: 'CONFLICT', message: 'تغير إعداد دليل البيع؛ حدّث البيانات وأعد المحاولة.' }); }
+    }),
   // Get all knowledge sources for the merchant
   getSources: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);

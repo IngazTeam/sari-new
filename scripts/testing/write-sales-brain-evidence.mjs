@@ -14,8 +14,10 @@ const reports = ['unit', 'database', 'regression', 'legacy-sales', 'budget', 'se
       name: test.fullName, status: test.status, durationMs: test.duration,
     }))) };
 });
-const changedFiles = execFileSync('git', ['ls-files', '-m', '--others', '--exclude-standard'], { encoding: 'utf8', windowsHide: true })
-  .trim().split(/\r?\n/).filter(file => /^(server|client|drizzle|scripts|\.github)\//.test(file));
+const priorEvidence = JSON.parse(readFileSync(resolve(destination, 'evidence.json'), 'utf8'));
+const changedFiles = [...new Set([...Object.keys(priorEvidence.sourceGitBlobs ?? {}),
+  ...execFileSync('git', ['ls-files', '-m', '--others', '--exclude-standard'], { encoding: 'utf8', windowsHide: true })
+    .trim().split(/\r?\n/).filter(file => /^(server|client|shared|drizzle|scripts|\.github)\//.test(file))])];
 const sourceHashes = Object.fromEntries(changedFiles.sort().map(file => [file,
   createHash('sha256').update(readFileSync(file)).digest('hex')]));
 // Git applies line-ending filters on Windows. Record filtered blob identities too,
@@ -47,7 +49,8 @@ const evidence = { generatedAt: new Date().toISOString(),
   lockfileSha256: createHash('sha256').update(readFileSync('pnpm-lock.yaml')).digest('hex'), sourceHashes, sourceGitBlobs, reports,
   productionChanged: false, realProviderQualityMeasured: false, businessLiftMeasured: false,
   externalNetwork: 'blocked by run-isolated.mjs in these tests',
-  database: 'local disposable MySQL 8.0; synthetic customers; migrations 0000 through 0063',
+  database: `local disposable MySQL 8.0; synthetic customers; migrations 0000 through ${JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')).entries.at(-1).tag}`,
+  sourceScope: 'Previous sales-brain source scope plus current changed source, including shared modules; all hashes recalculated from current files',
   securityScope: 'Local behavioral adversarial tests plus source contracts; not an independent authenticated production penetration assessment.',
   publicSurface: JSON.parse(readFileSync(resolve(destination, 'public-surface.json'), 'utf8')),
   testCountsMayOverlapAcrossReports: true,

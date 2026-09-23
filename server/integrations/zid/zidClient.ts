@@ -96,6 +96,7 @@ interface ZidCreateOrderProduct {
 }
 
 interface ZidCreateOrderRequest {
+  customer_comment?: string;
   currency_code: string;
   created_by: 'partner' | 'customer' | 'admin';
   customer: ZidCreateOrderCustomer;
@@ -289,6 +290,12 @@ export class ZidClient {
     return this.makeRequest(`/managers/store/orders/${orderId}/view`);
   }
 
+  /** View Order returns an envelope; callers must validate the provider payload. */
+  async getOrderForReconciliation(orderId: number): Promise<unknown> {
+    if (!Number.isSafeInteger(orderId) || orderId <= 0) throw new Error('Invalid Zid order id');
+    return this.makeRequest(`/managers/store/orders/${orderId}/view`);
+  }
+
   /**
    * إنشاء طلب جديد (Draft Order)
    */
@@ -402,6 +409,7 @@ export class ZidClient {
    * دالة مساعدة لتحويل بيانات المحادثة إلى طلب Zid
    */
   async createOrderFromWhatsApp(params: {
+    checkoutReference?: string;
     customerName: string;
     customerPhone: string;
     customerEmail?: string;
@@ -424,6 +432,7 @@ export class ZidClient {
     
     // تحضير بيانات الطلب
     const orderRequest: ZidCreateOrderRequest = {
+      ...(params.checkoutReference ? { customer_comment: params.checkoutReference } : {}),
       currency_code: 'SAR',
       created_by: 'partner',
       customer: {

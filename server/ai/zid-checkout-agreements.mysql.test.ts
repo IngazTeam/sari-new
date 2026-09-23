@@ -5,12 +5,14 @@ import { stageInteraction, finishInteractionDelivery } from './interaction-jobs'
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { prepareZidCheckout, acceptZidCheckout, handleZidCheckout } from './zid-checkout-agreements';
 import type { CheckoutIdentity } from './checkout-agreements';
+import { listZidReconciliations, reconcileZidCheckout } from './zid-checkout-reconciliation';
 
-const mocks = vi.hoisted(() => ({ settings: vi.fn(), payments: vi.fn(), shipping: vi.fn(), create: vi.fn(), save: vi.fn() }));
+const mocks = vi.hoisted(() => ({ settings: vi.fn(), payments: vi.fn(), shipping: vi.fn(), create: vi.fn(), save: vi.fn(), view: vi.fn(), project: vi.fn() }));
 vi.mock('../db_zid', () => ({ default: { getZidSettings: mocks.settings } }));
-vi.mock('../db', () => ({ saveZidOrder: mocks.save, getZidProducts: vi.fn() }));
+vi.mock('../db', () => ({ saveZidOrder: mocks.save, getZidProducts: vi.fn(), upsertNormalizedOrdersFromZid: mocks.project }));
 vi.mock('../integrations/zid/zidClient', () => ({ ZidClient: class {
   getPaymentMethods = mocks.payments; getShippingMethods = mocks.shipping; createOrderFromWhatsApp = mocks.create;
+  getOrderForReconciliation = mocks.view;
 } }));
 
 describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL and transport', () => {
@@ -35,6 +37,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.payments.mockResolvedValue({ payment_methods: [payment] });
     mocks.shipping.mockResolvedValue({ shipping_methods: [shipping] });
     mocks.create.mockResolvedValue(response()); mocks.save.mockResolvedValue({ id: 1 });
+    mocks.project.mockResolvedValue({ sourceOrders: 1, projectedOrders: 1, acceptedOrders: 1 });
+    mocks.view.mockReset();
   });
   afterEach(async () => cleanupDisposableMerchants([fixture.userId]));
   afterAll(closeDb);
@@ -50,6 +54,90 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     await stageInteraction(reply); if (delivered) await finishInteractionDelivery(reply, true);
     return quote;
   }
+  async function unknown() {
+    const q = await offer(); mocks.create.mockRejectedValueOnce(new Error('lost response'));
+    await acceptZidCheckout(await incoming(), q.id);
+    const [saved] = await quotes();
+    const remote = { ...response(), order: { ...response().order, payment_status: 'pending',
+      products: [{ id: 'Z1', sku: 'SKU1', quantity: 2 }],
+      histories: [{ changed_by_details: { comment: `SARY-CHECKOUT:${saved.execution_attempt_id}` } }] } };
+    mocks.view.mockResolvedValue(remote);
+    return { q: saved, remote, input: { merchantId: fixture.merchantId, actorUserId: fixture.userId, quotationId: q.id, orderId: 999, reviewed: true as const } };
+  }
+  it('reconciles a lost remote response from GET evidence exactly once without another POST', async () => {
+    const { q, input } = await unknown();
+    expect(mocks.create.mock.calls[0][0].checkoutReference).toBe(`SARY-CHECKOUT:${q.execution_attempt_id}`);
+    const results = await Promise.all([reconcileZidCheckout(input), reconcileZidCheckout(input)]);
+    expect(results.every(r => r.verified && !r.projectionPending)).toBe(true);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    const [saved] = await quotes(); expect(saved.execution_state).toBe('succeeded');
+    const proof = typeof saved.external_reconciliation === 'string' ? JSON.parse(saved.external_reconciliation) : saved.external_reconciliation;
+    expect(proof.actorUserId).toBe(fixture.userId); expect(proof.evidenceHash).toMatch(/^[a-f0-9]{64}$/);
+    expect((await listZidReconciliations(fixture.merchantId)).items).toHaveLength(0);
+  });
+  it.each(['store', 'phone', 'masked phone', 'currency', 'url', 'amount', 'id', 'product', 'quantity', 'sku', 'duplicate', 'reference', 'missing reference'])
+    ('rejects reconciliation with mismatched %s and leaves the attempt unknown', async attack => {
+      const { input, remote } = await unknown(); const order: any = remote.order;
+      if (attack === 'store') order.store_id = 12;
+      if (attack === 'phone') order.customer.mobile = '966500999999';
+      if (attack === 'masked phone') order.customer.mobile = '***000086';
+      if (attack === 'currency') order.currency_code = 'USD';
+      if (attack === 'url') order.order_url = 'https://user:password@example.com/';
+      if (attack === 'amount') order.order_total = '-1';
+      if (attack === 'id') order.id = 998;
+      if (attack === 'product') order.products[0].id = 'foreign';
+      if (attack === 'quantity') order.products[0].quantity = 1;
+      if (attack === 'sku') order.products[0].sku = 'foreign';
+      if (attack === 'duplicate') order.products.push(order.products[0]);
+      if (attack === 'reference') order.histories[0].changed_by_details.comment += '-forged';
+      if (attack === 'missing reference') delete order.histories;
+      await expect(reconcileZidCheckout(input)).rejects.toThrow();
+      expect((await quotes())[0].execution_state).toBe('unknown'); expect(mocks.project).not.toHaveBeenCalled(); expect(mocks.create).toHaveBeenCalledTimes(1);
+    });
+  it('rejects foreign quotations before loading credentials or requesting the provider', async () => {
+    const { input } = await unknown(); mocks.settings.mockClear();
+    await expect(reconcileZidCheckout({ ...input, merchantId: fixture.merchantId + 9999999 })).rejects.toThrow();
+    expect(mocks.settings).not.toHaveBeenCalled(); expect(mocks.view).not.toHaveBeenCalled();
+    expect((await listZidReconciliations(fixture.merchantId + 9999999)).items).toEqual([]);
+  });
+  it('keeps legacy unknown attempts blocked without inventing a correlation', async () => {
+    const { q, input } = await unknown(); await query('UPDATE sales_quotations SET execution_attempt_id = NULL WHERE id = ?', [q.id]);
+    expect((await listZidReconciliations(fixture.merchantId)).items[0].canReview).toBe(false);
+    await expect(reconcileZidCheckout(input)).rejects.toThrow(); expect(mocks.view).not.toHaveBeenCalled();
+  });
+  it('waits for active attempts, then allows abandoned processing to reconcile', async () => {
+    const { q, input } = await unknown(); await query("UPDATE sales_quotations SET execution_state = 'processing' WHERE id = ?", [q.id]);
+    await expect(reconcileZidCheckout(input)).rejects.toThrow(); expect(mocks.view).not.toHaveBeenCalled();
+    await query('UPDATE sales_quotations SET execution_started_at = TIMESTAMPADD(MINUTE, -3, UTC_TIMESTAMP()) WHERE id = ?', [q.id]);
+    expect((await reconcileZidCheckout(input)).verified).toBe(true);
+  });
+  it('repairs failed projections and preserves provider payment status', async () => {
+    const { input, remote } = await unknown(); remote.order.payment_status = 'paid';
+    mocks.project.mockRejectedValueOnce(new Error('local outage'));
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+    expect((await listZidReconciliations(fixture.merchantId)).items[0]).toMatchObject({ state: 'succeeded', orderId: 999, projectionPending: true });
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(false);
+    expect(mocks.project.mock.calls.at(-1)?.[1][0].paymentStatus).toBe('paid'); expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it('does not report a unavailable DB projection as completed', async () => {
+    const { input } = await unknown(); mocks.project.mockResolvedValueOnce({ sourceOrders: 0, projectedOrders: 0, acceptedOrders: 0 });
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+  });
+  it('does not overwrite a different late result after a slow provider GET', async () => {
+    const { q, input, remote } = await unknown();
+    mocks.view.mockImplementationOnce(async () => {
+      await query("UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ? WHERE id = ?", [JSON.stringify({ id: 998 }), q.id]);
+      return remote;
+    });
+    await expect(reconcileZidCheckout(input)).rejects.toThrow('immutable'); expect(mocks.project).not.toHaveBeenCalled();
+  });
+  it('prevents the same external order from being bound to another saved agreement', async () => {
+    const { input, q } = await unknown();
+    await query(`INSERT INTO sales_quotations (merchant_id, quotation_number, items, subtotal, total, external_provider, external_order_key)
+      VALUES (?, 'OTHER', '[]', 1, 1, 'zid', '11:999')`, [fixture.merchantId]);
+    await expect(reconcileZidCheckout(input)).rejects.toThrow();
+    expect((await query('SELECT execution_state FROM sales_quotations WHERE id = ?', [q.id]))[0].execution_state).toBe('unknown');
+  });
   it('persists the displayed items, recipient, methods and provisional prices before any external write', async () => {
     const q = await offer(); expect(mocks.create).not.toHaveBeenCalled();
     expect(q).toMatchObject({ external_provider: 'zid', execution_state: 'ready', checkout_snapshot: null });
@@ -150,6 +238,15 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     const q = await offer(), consent = await incoming(); mocks.save.mockRejectedValue(new Error('local DB unavailable'));
     expect(await acceptZidCheckout(consent, q.id)).toContain('FIXTURE-999');
     expect(await acceptZidCheckout(consent, q.id)).toContain('FIXTURE-999'); expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect((await quotes())[0].projection_pending).toBe(1);
+  });
+  it('timestamps the initial projection before the remote POST and carries the saved cart', async () => {
+    const q = await offer(); let duringPost = 0;
+    mocks.create.mockImplementationOnce(async () => { duringPost = Date.now(); return response(); });
+    await acceptZidCheckout(await incoming(), q.id);
+    expect(mocks.save.mock.calls[0][2]).toBeInstanceOf(Date);
+    expect(mocks.save.mock.calls[0][2].getTime()).toBeLessThanOrEqual(duringPost);
+    expect(mocks.save.mock.calls[0][1].items).toEqual([{ id: 'Z1', sku: 'SKU1', name: 'سماعة', quantity: 2, price: 100 }]);
   });
   it('leaves an unrelated conversation question to the reply engine', async () => {
     expect(await handleZidCheckout({ ...identity, message: 'كم السعر؟' })).toBeNull(); expect(mocks.create).not.toHaveBeenCalled();

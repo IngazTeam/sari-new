@@ -42,6 +42,17 @@ describe('provider outcome classification', () => {
   }
 });
 describe('durable delivery boundaries', () => {
+  it('rechecks a sales follow-up after reserving delivery and never calls the provider when its context changed', async () => {
+    mocks.execute.mockResolvedValueOnce([{ affectedRows: 1 }]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([{ affectedRows: 1 }]);
+    const result = await sendMerchantWhatsApp({ ...input, idempotencyKey: 'sales_followup:20:42', followUpGuard: { id: 42, token: 'claim_fixture' } });
+    expect(result).toMatchObject({ accepted: false, errorCode: 'followup_suppressed' }); expect(mocks.post).not.toHaveBeenCalled();
+    expect(mocks.execute.mock.calls[1][0]).toContain('campaign_consent_state');
+    expect(mocks.execute.mock.calls[2][0]).toContain('followup_suppressed');
+  });
+  it('refuses sales follow-up keys that omit the internal claim guard', async () => {
+    expect(await sendMerchantWhatsApp({ ...input, idempotencyKey: 'sales_followup:20:42' })).toMatchObject({ accepted: false, errorCode: 'followup_suppressed' });
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
   it('persists network ambiguity as queued and prevents retries even when retryFailed is requested', async () => {
     mocks.post.mockRejectedValueOnce(new Error('accepted remotely, response lost'));
     await expect(sendMerchantWhatsApp(input)).resolves.toMatchObject({ accepted: false, status: 'queued' });

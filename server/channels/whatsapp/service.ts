@@ -139,6 +139,15 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
 
   const provider = getWhatsAppProvider(config.provider);
   if (execution) await execution.assertOwned();
+  if (input.idempotencyKey.startsWith('sales_followup:')) {
+    const { canDispatchSalesFollowup } = await import('../../ai/followup-send-guard');
+    if (!await canDispatchSalesFollowup(pool, input)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status = 'failed', error_code = 'followup_suppressed',
+        status_updated_at = NOW() WHERE idempotency_key = ? AND merchant_id = ? AND status = 'queued'`,
+      [input.idempotencyKey, input.merchantId]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: 'followup_suppressed' };
+    }
+  }
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,

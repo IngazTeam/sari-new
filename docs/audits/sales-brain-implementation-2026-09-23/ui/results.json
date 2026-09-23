@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T11:53:31.545Z",
+  "generatedAt": "2026-09-23T12:57:02.898Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "fixtureApi": true,
@@ -84,6 +84,46 @@
     {
       "width": 375,
       "mode": "invoice_failure_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "zid_and_sector_save",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "zid_and_sector_save",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "zid_and_sector_save",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "zid_and_sector_save",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "zid_and_sector_save",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "viewer_no_mutation_controls",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "zid_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "zid_sector_failure_retry",
       "passed": true
     }
   ],

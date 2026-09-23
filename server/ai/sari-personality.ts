@@ -46,6 +46,7 @@ import {
   updateConversation,
 } from '../db';
 import { buildSalesTurnPolicy } from './sales-turn-policy';
+import { getSalesSectorSettings } from './sales-sector-settings';
 import { relevantPassages } from '../knowledge/retrieval';
 import { buildRAGContext, findCachedResponse, cacheSuccessfulResponse } from './rag-engine';
 import { getBotSections } from '../db/knowledge';
@@ -1629,6 +1630,13 @@ async function _chatWithSariCore(params: ChatWithSariParams): Promise<string> {
       throw new Error('Merchant not found');
     }
 
+    if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+      const { handleRequestedFollowup } = await import('./requested-followup');
+      const requestedReply = await handleRequestedFollowup({ merchantId: params.merchantId, conversationId: params.conversationId,
+        incomingMessageId: params.incomingMessageId, customerPhone: params.customerPhone });
+      if (requestedReply) return requestedReply;
+    }
+
     // Get conversation history (last 20 messages for deep context understanding)
     let previousMessages: ChatMessage[] = [];
     let isFirstMessage = true;
@@ -1842,6 +1850,8 @@ async function _chatWithSariCore(params: ChatWithSariParams): Promise<string> {
     const earlyIntent = detectIntent(params.message, customerProfile?.totalConversations,
       (customerProfile?.preferences as any)?.buyingStage,
       typeof lastAssistantContent === 'string' ? lastAssistantContent : undefined);
+    // Fresh per interaction, shared by fast/full paths; never stored in session knowledge.
+    const sectorPlaybook = (await getSalesSectorSettings(params.merchantId)).playbook;
 
     // ENH-FIX: Update dealStage BEFORE any early return (cache, fast path, etc.)
     if (convId) {
@@ -2095,7 +2105,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         ]
         : sanitizeForPrompt(params.message.substring(0, 500));
 
-      systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent });
+      systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
         ...FEW_SHOT_EXAMPLES,
@@ -2544,7 +2554,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       : sanitizeForPrompt(params.message.substring(0, 500));
 
     // Prepare messages with few-shot examples for better quality
-    systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent });
+    systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...FEW_SHOT_EXAMPLES, // Add examples for better understanding

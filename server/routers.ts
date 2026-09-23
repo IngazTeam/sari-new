@@ -2535,6 +2535,22 @@ export const appRouter = router({
         };
       }),
 
+    listZidReconciliations: merchantProcedure
+      .input(z.object({ beforeId: z.number().int().positive().safe().optional() }).strict().optional())
+      .query(async ({ input, ctx }) => {
+        const { listZidReconciliations } = await import('./ai/zid-checkout-reconciliation');
+        const { hasPermission } = await import('./_core/permissions');
+        return { ...await listZidReconciliations(ctx.merchantId, input?.beforeId), canManage: hasPermission(ctx.merchantRole, 'orders.manage') };
+      }),
+
+    reconcileZidCheckout: permissionProcedure('orders.manage')
+      .input(z.object({ quotationId: z.number().int().positive().safe(), orderId: z.number().int().positive().safe(), reviewed: z.literal(true) }).strict())
+      .mutation(async ({ input, ctx }) => {
+        const { reconcileZidCheckout } = await import('./ai/zid-checkout-reconciliation');
+        try { return await reconcileZidCheckout({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
+        catch { throw new TRPCError({ code: 'CONFLICT', message: 'تعذر التحقق من تطابق الطلب والعميل ومرجع التنفيذ لدى زد. لم تُعد محاولة إنشائه.' }); }
+      }),
+
     approveCheckoutInvoice: permissionProcedure('orders.manage')
       .input(z.object({ orderId: z.number().int().positive(), expectedAmountMinor: z.number().int().nonnegative().max(2147483647),
         totalIsFinal: z.literal(true) }).strict())

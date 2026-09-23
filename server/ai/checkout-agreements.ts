@@ -24,8 +24,9 @@ export type CheckoutResult =
 export async function assertCheckoutAgreementSchema() {
   await assertRuntimeSchema('checkout agreements', [{ table: 'sales_quotations',
     columns: ['checkout_snapshot', 'source_message_id', 'consent_message_id', 'offer_expires_at', 'order_id',
-      'external_provider', 'external_snapshot', 'execution_state', 'external_result'],
-    uniqueIndexes: ['uq_quote_source', 'uq_quote_consent', 'uq_quote_order'] }]);
+      'external_provider', 'external_snapshot', 'execution_state', 'external_result', 'execution_attempt_id',
+      'execution_started_at', 'external_order_key', 'external_reconciliation', 'projection_pending'],
+    uniqueIndexes: ['uq_quote_source', 'uq_quote_consent', 'uq_quote_order', 'uq_quote_external_order'] }]);
 }
 
 const parseSnapshot = (value: unknown): Snapshot => typeof value === 'string' ? JSON.parse(value) : value as Snapshot;

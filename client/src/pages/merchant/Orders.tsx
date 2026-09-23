@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
+import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -157,6 +158,7 @@ export default function Orders() {
         </p>
       </div>
 
+      {merchant && <ZidCheckoutReconciliation />}
       {/* Stats Cards */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">

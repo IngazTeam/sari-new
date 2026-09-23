@@ -8,6 +8,7 @@ export async function assertInteractionSchema() {
   const { assertCheckoutAgreementSchema } = await import('./checkout-agreements');
   await assertCheckoutAgreementSchema();
   await assertRuntimeSchema('sales interaction events', [
+    { table: 'ai_sales_sector_settings', columns: ['playbook_id', 'revision', 'updated_by'] },
     { table: 'ai_interaction_jobs', uniqueIndexes: ['uq_ai_interaction_message'] },
     { table: 'sari_learning_signals', columns: ['source_key'], uniqueIndexes: ['uq_learning_source'] },
     { table: 'ai_learning_proposals' },
