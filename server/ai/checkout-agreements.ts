@@ -6,6 +6,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { requireMinor, verifiedProductMoney, formatMinorMoney } from '../../shared/product-money';
 import { isProductAvailableForSale } from './product-availability';
 import { isSalesRefusal, isShortAffirmation, normalizeCustomerText } from './customer-decision';
+import { invoiceApprovalSchema, type InvoiceMarginProof } from '../../shared/checkout-margin';
 
 // The model proposes identifiers and quantities only. Prices and authority come from SQL.
 export const checkoutSelectionSchema = z.array(z.object({
@@ -15,7 +16,7 @@ export const checkoutSelectionSchema = z.array(z.object({
 export type CheckoutSelection = z.infer<typeof checkoutSelectionSchema>;
 export type CheckoutIdentity = { merchantId: number; conversationId: number; incomingMessageId: number; customerPhone: string };
 type Line = { productId: number; variantId: number | null; quantity: number; name: string; price: number; productVersion: string; variantVersion: string | null };
-type Snapshot = { version: 1; items: Line[]; totalMinor: number; currency: 'SAR'; pricing: 'catalog_subtotal_requires_billing_review'; digest: string };
+export type Snapshot = { version: 1; items: Line[]; totalMinor: number; currency: 'SAR'; pricing: 'catalog_subtotal_requires_billing_review'; digest: string };
 export type CheckoutResult =
   | { kind: 'quote'; quotationId: number; text: string; snapshot: Snapshot }
   | { kind: 'order'; quotationId: number; orderId: number; text: string; reused: boolean }
@@ -171,28 +172,44 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
   });
 }
 
+/** Shared ownership and agreement checks for preview and approval; no caller-supplied prices. */
+export async function loadCheckoutInvoiceReview(connection: PoolConnection, merchantId: number, orderId: number, expectedAmountMinor?: number) {
+  z.number().int().positive().parse(merchantId); z.number().int().positive().parse(orderId);
+  const [quotes] = await connection.execute<any[]>(`SELECT * FROM sales_quotations
+    WHERE merchant_id = ? AND order_id = ? AND checkout_snapshot IS NOT NULL FOR UPDATE`, [merchantId, orderId]);
+  const quote = quotes[0]; if (quotes.length !== 1 || quote.status !== 'accepted' || !quote.consent_message_id || quote.external_provider) throw new Error('Invoice agreement unavailable');
+  const [orders] = await connection.execute<any[]>('SELECT * FROM orders WHERE id = ? AND merchantId = ? FOR UPDATE', [orderId, merchantId]);
+  const order = orders[0], snapshot = parseSnapshot(quote.checkout_snapshot);
+  if (!order || order.status !== 'pending' || order.payment_status !== 'unpaid' || order.currency !== 'SAR' || order.sallaOrderId
+    || (expectedAmountMinor !== undefined && order.totalAmount !== expectedAmountMinor) || snapshot.totalMinor !== order.totalAmount
+    || order.customerPhone !== quote.customer_phone) throw new Error('Invoice changed; new agreement required');
+  requireMinor(order.totalAmount);
+  const expectedItems = snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, quantity: i.quantity, price: i.price }));
+  if (JSON.stringify(JSON.parse(order.items)) !== JSON.stringify(expectedItems)) throw new Error('Invoice items changed; new agreement required');
+  return { quote, order, snapshot };
+}
+export async function assertInvoiceCatalog(connection: PoolConnection, merchantId: number, snapshot: Snapshot) {
+  const fresh = await readSnapshot(connection, merchantId, snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })));
+  if (fresh.digest !== snapshot.digest) throw new Error('Invoice catalogue changed; new agreement required');
+}
+
 /** Approve the already-consented amount. Extra charges require a new agreement. */
 export async function approveCheckoutInvoice(input: {
   merchantId: number; orderId: number; actorUserId: number; expectedAmountMinor: number; totalIsFinal: true;
+  margin?: InvoiceMarginProof;
 }): Promise<{ approved: true; conversationId: number }> {
   if (input.totalIsFinal !== true || !Number.isSafeInteger(input.actorUserId) || input.actorUserId <= 0) throw new Error('Invoice attestation required');
-  requireMinor(input.expectedAmountMinor);
+  invoiceApprovalSchema.parse({ orderId: input.orderId, expectedAmountMinor: input.expectedAmountMinor, totalIsFinal: input.totalIsFinal, margin: input.margin });
   return checkoutTransaction(async connection => {
-    const [quotes] = await connection.execute<any[]>(`SELECT * FROM sales_quotations
-      WHERE merchant_id = ? AND order_id = ? AND checkout_snapshot IS NOT NULL FOR UPDATE`, [input.merchantId, input.orderId]);
-    const quote = quotes[0]; if (!quote || quote.status !== 'accepted' || !quote.consent_message_id) throw new Error('Invoice agreement unavailable');
-    const [orders] = await connection.execute<any[]>('SELECT * FROM orders WHERE id = ? AND merchantId = ? FOR UPDATE', [input.orderId, input.merchantId]);
-    const order = orders[0]; const snapshot = parseSnapshot(quote.checkout_snapshot);
-    if (!order || order.status !== 'pending' || order.payment_status !== 'unpaid' || order.currency !== 'SAR'
-      || order.totalAmount !== input.expectedAmountMinor || snapshot.totalMinor !== order.totalAmount
-      || order.customerPhone !== quote.customer_phone) throw new Error('Invoice changed; new agreement required');
-    const expectedItems = snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, quantity: i.quantity, price: i.price }));
-    if (JSON.stringify(JSON.parse(order.items)) !== JSON.stringify(expectedItems)) throw new Error('Invoice items changed; new agreement required');
+    const { readLockedMarginPolicy } = await import('./checkout-margin-policy');
+    const policy = await readLockedMarginPolicy(connection, input.merchantId);
+    const { quote, order, snapshot } = await loadCheckoutInvoiceReview(connection, input.merchantId, input.orderId, input.expectedAmountMinor);
     if (!order.checkout_review_required) return { approved: true, conversationId: quote.conversation_id };
-    const fresh = await readSnapshot(connection, input.merchantId, snapshot.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })));
-    if (fresh.digest !== snapshot.digest) throw new Error('Invoice catalogue changed; new agreement required');
+    await assertInvoiceCatalog(connection, input.merchantId, snapshot);
+    const { enforceCheckoutMargin } = await import('./checkout-margin');
+    const margin = await enforceCheckoutMargin(connection, { merchantId: input.merchantId, orderId: input.orderId, snapshot, policy, proof: input.margin });
     const approvedSnapshot = { ...snapshot, billingApproval: { actorUserId: input.actorUserId,
-      approvedAt: new Date().toISOString(), totalMinor: order.totalAmount, includesAllTaxesAndDelivery: true } };
+      approvedAt: new Date().toISOString(), totalMinor: order.totalAmount, includesAllTaxesAndDelivery: true, margin } };
     await connection.execute('UPDATE sales_quotations SET checkout_snapshot = ? WHERE id = ?', [JSON.stringify(approvedSnapshot), quote.id]);
     await connection.execute('UPDATE orders SET checkout_review_required = 0, notes = ? WHERE id = ? AND merchantId = ?',
       [`Quotation ${marker(quote.id)}: final invoice approved at the customer-consented amount. Stock not reserved.`, order.id, input.merchantId]);

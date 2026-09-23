@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
+  marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
   getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
+vi.mock('./ai/checkout-margin-policy', async original => ({...await original<typeof import('./ai/checkout-margin-policy')>(),getMarginPolicy:mocks.marginRead,updateMarginPolicy:mocks.marginWrite}));
+vi.mock('./ai/checkout-margin', async original => ({...await original<typeof import('./ai/checkout-margin')>(),previewCheckoutMargin:mocks.marginPreview}));
+vi.mock('./ai/checkout-agreements', async original => ({...await original<typeof import('./ai/checkout-agreements')>(),approveCheckoutInvoice:mocks.invoiceApprove}));
+vi.mock('./payment/order-payment-link', async original => ({...await original<typeof import('./payment/order-payment-link')>(),issueCanonicalOrderPaymentLink:mocks.invoiceLink}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
@@ -36,8 +41,50 @@ beforeEach(() => {
   mocks.relayList.mockResolvedValue({items:[],nextCursor:null}); mocks.relayReview.mockResolvedValue({outcome:'unresolved'});
   mocks.offerList.mockResolvedValue({items:[],nextCursor:null}); mocks.offerReview.mockResolvedValue({outcome:'unresolved'});
   mocks.discountRead.mockResolvedValue({revision:0}); mocks.discountWrite.mockResolvedValue({revision:1}); mocks.botWrite.mockResolvedValue({});
+  mocks.marginRead.mockResolvedValue({revision:0});mocks.marginWrite.mockResolvedValue({revision:1});mocks.marginPreview.mockResolvedValue({status:'pass'});
+  mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
+  const marginPolicyInput={policy:{enabled:true,minPercent:30},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const};
+  const marginCosts={taxMinor:0,shippingCostMinor:0,otherCostMinor:0};
+  const invoiceInput={orderId:10,expectedAmountMinor:10000,totalIsFinal:true as const,margin:{costs:marginCosts,evidence:'b'.repeat(64),reviewedCosts:true as const}};
+  it('separates authority to set floors from authority to approve an individual invoice',async()=>{
+    expect(await caller().botSettings.getMarginPolicy()).toMatchObject({canManage:false});expect(mocks.marginRead).toHaveBeenCalledWith(20);
+    await expect(caller().botSettings.updateMarginPolicy(marginPolicyInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    await expect(caller().orders.previewCheckoutMargin({orderId:10,costs:marginCosts})).rejects.toMatchObject({code:'FORBIDDEN'});
+    await expect(caller().orders.approveCheckoutInvoice(invoiceInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    mocks.access.mockResolvedValue({merchantId:20,role:'sales_supervisor',memberId:3});
+    await expect(caller().botSettings.updateMarginPolicy(marginPolicyInput)).rejects.toMatchObject({code:'FORBIDDEN'});
+    await caller().orders.previewCheckoutMargin({orderId:10,costs:marginCosts});expect(mocks.marginPreview).toHaveBeenCalledWith({orderId:10,costs:marginCosts,merchantId:20});
+    await caller().orders.approveCheckoutInvoice(invoiceInput);expect(mocks.invoiceApprove).toHaveBeenCalledWith({...invoiceInput,merchantId:20,actorUserId:7});
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});await caller().botSettings.updateMarginPolicy(marginPolicyInput);
+    expect(mocks.marginWrite).toHaveBeenCalledWith({...marginPolicyInput,merchantId:20,actorUserId:7});
+  });
+  it.each([{merchantId:30},{actorUserId:1},{reviewed:false},{expectedRevision:-1},{evidence:'forged'},
+    {policy:{enabled:true,minPercent:-1}},{policy:{enabled:true,minPercent:101}},{policy:{enabled:true,minPercent:30.5}},{policy:{enabled:true,minPercent:30,override:true}}])
+    ('rejects forged margin policy %j',async attack=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().botSettings.updateMarginPolicy({...marginPolicyInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.marginWrite).not.toHaveBeenCalled();
+    });
+  it.each([{merchantId:30},{actorUserId:1},{orderId:-1},{totalIsFinal:false},
+    {margin:{...invoiceInput.margin,reviewedCosts:false}},{margin:{...invoiceInput.margin,evidence:'fake'}},
+    {margin:{...invoiceInput.margin,policy:{enabled:false}}},{margin:{...invoiceInput.margin,costs:{...marginCosts,productCostMinor:0}}},
+    {margin:{...invoiceInput.margin,costs:{...marginCosts,taxMinor:-1}}}])('rejects forged margin approval %j',async attack=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+      await expect(caller().orders.approveCheckoutInvoice({...invoiceInput,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      expect(mocks.invoiceApprove).not.toHaveBeenCalled();expect(mocks.invoiceLink).not.toHaveBeenCalled();
+    });
+  it.each([{merchantId:30},{orderId:-1},{costs:{...marginCosts,taxMinor:1.5}},{costs:{...marginCosts,otherCostMinor:'0'}}])('rejects forged preview %j',async attack=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
+    await expect(caller().orders.previewCheckoutMargin({orderId:10,costs:marginCosts,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.marginPreview).not.toHaveBeenCalled();
+  });
+  it('does not issue payment when margin approval fails and hides private error details',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});mocks.invoiceApprove.mockRejectedValueOnce(new Error('private costs'));
+    const error=await caller().orders.approveCheckoutInvoice(invoiceInput).catch(e=>e);expect(error.code).toBe('CONFLICT');expect(error.message).not.toContain('private');expect(mocks.invoiceLink).not.toHaveBeenCalled();
+    mocks.marginPreview.mockRejectedValueOnce(new Error('private cost'));await expect(caller().orders.previewCheckoutMargin({orderId:10,costs:marginCosts})).rejects.toMatchObject({code:'CONFLICT',message:'Invoice or cost evidence changed or unavailable'});
+    mocks.marginWrite.mockRejectedValueOnce(new Error('private details'));await expect(caller().botSettings.updateMarginPolicy(marginPolicyInput)).rejects.toMatchObject({code:'CONFLICT',message:'Margin policy changed or unavailable; refresh and review again'});
+    mocks.access.mockResolvedValue(null);await expect(caller().botSettings.getMarginPolicy()).rejects.toMatchObject({code:'FORBIDDEN'});
+  });
   const discountInput={policy:{enabled:true,maxPercent:3,expireHours:24},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true as const};
   it('scopes discount authority and requires settings permission, independently of sales supervision',async()=>{
     expect(await caller().botSettings.getDiscountPolicy()).toMatchObject({canManage:false});expect(mocks.discountRead).toHaveBeenCalledWith(20);

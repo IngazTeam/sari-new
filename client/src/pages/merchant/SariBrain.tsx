@@ -1,3 +1,4 @@
+import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { LearningEvidenceCard } from '@/components/LearningEvidenceCard';
 import { SalesSectorSettings } from '@/components/SalesSectorSettings';
@@ -479,6 +480,7 @@ export default function SariBrain() {
       <SalesSectorSettings />
       <FollowupPolicySettings />
       <DiscountPolicySettings />
+      <CheckoutMarginPolicySettings />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

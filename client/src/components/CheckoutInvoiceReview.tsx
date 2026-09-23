@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { CheckoutMarginReview, type MarginReviewState } from './CheckoutMarginReview';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -8,18 +9,21 @@ export function CheckoutInvoiceReview({ orderId, totalAmount, onApproved }: {
 }) {
   const { t } = useTranslation();
   const [attested, setAttested] = useState(false);
+  const [margin,setMargin]=useState<MarginReviewState>({ready:false,key:''});
+  useEffect(()=>{setAttested(false);},[orderId,totalAmount,margin.key]);
   const approve = trpc.orders.approveCheckoutInvoice.useMutation({ onSuccess: onApproved });
   return <section className="space-y-3 rounded-xl border border-amber-300 p-4" aria-labelledby={`invoice-review-${orderId}`}>
     <h3 id={`invoice-review-${orderId}`} className="font-semibold">{t('merchantUx.checkoutInvoice.title')}</h3>
     <p className="text-sm leading-relaxed text-muted-foreground">{t('merchantUx.checkoutInvoice.description')}</p>
     {!approve.isSuccess && <>
+      <CheckoutMarginReview orderId={orderId} totalAmount={totalAmount} onReady={setMargin} disabled={approve.isPending} />
       <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm leading-relaxed">
         <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={attested}
           onChange={event => setAttested(event.target.checked)} disabled={approve.isPending} />
-        <span>{t('merchantUx.checkoutInvoice.attestation')}</span>
+        <span>{margin.proof?t('merchantUx.invoiceMargin.attestation'):t('merchantUx.checkoutInvoice.attestation')}</span>
       </label>
-      <Button className="h-auto min-h-11 w-full whitespace-normal" disabled={!attested || approve.isPending}
-        onClick={() => approve.mutate({ orderId, expectedAmountMinor: totalAmount, totalIsFinal: true })}>
+      <Button type="button" data-invoice-approve className="h-auto min-h-11 w-full whitespace-normal" disabled={!attested || approve.isPending || !margin.ready}
+        onClick={() => approve.mutate({ orderId, expectedAmountMinor: totalAmount, totalIsFinal: true, ...(margin.proof?{margin:margin.proof}:{}) })}>
         {approve.isPending ? t('merchantUx.checkoutInvoice.saving') : t('merchantUx.checkoutInvoice.approve')}
       </Button>
     </>}

@@ -1,9 +1,7 @@
 import {
   createDiscountCode as createDiscountCodeRecord,
   getDiscountCodeByCode,
-  getOrderById,
   getOrdersByMerchantId,
-  incrementDiscountCodeUsage,
 } from '../db';
 import { randomInt } from 'node:crypto';
 
@@ -133,42 +131,15 @@ export async function validateDiscountCode(
 }
 
 /**
- * تطبيق كود الخصم على طلب
+ * @deprecated A coupon cannot revise an agreed invoice without a new scoped agreement.
+ * The old implementation consumed usage and claimed success without changing any order amount.
  */
 export async function applyDiscountCode(
   merchantId: number,
   code: string,
   orderId: number
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    // الحصول على الطلب
-    const order = await getOrderById(orderId);
-    if (!order) {
-      return { success: false, error: 'الطلب غير موجود' };
-    }
-
-    // التحقق من الكود
-    const validation = await validateDiscountCode(merchantId, code, order.totalAmount);
-
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
-
-    // TODO: تحديث الطلب بالخصم (سيتم تطبيقه عند إنشاء الطلب)
-
-    // زيادة عدد مرات استخدام الكود
-    const reserved = await incrementDiscountCodeUsage(merchantId, code);
-    if (!reserved) {
-      return { success: false, error: 'تعذر تطبيق الكود؛ قد يكون منتهياً أو استُخدم بالكامل' };
-    }
-
-    console.log(`[Discount System] Applied discount ${code} to order ${orderId}: ${validation.discount} SAR`);
-
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Discount System] Error applying discount code:', error);
-    return { success: false, error: error.message };
-  }
+  return { success: false, error: 'تطبيق خصم على هذا الطلب يحتاج عرضًا محدّثًا وموافقة العميل ومراجعة الفاتورة. لم يُطبق خصم ولم يُستهلك الكود.' };
 }
 
 /**

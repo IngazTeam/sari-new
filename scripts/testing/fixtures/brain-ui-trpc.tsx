@@ -10,6 +10,22 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   botSettings: {
+    getMarginPolicy:{useQuery:()=>{
+      const [revision,setRevision]=useState(0),[retry,setRetry]=useState(false);
+      useEffect(()=>{const changed=()=>setRevision(r=>r+1);window.addEventListener('margin-change',changed);(window as any).__changeMarginPolicy=()=>window.dispatchEvent(new Event('margin-change'));return()=>window.removeEventListener('margin-change',changed);},[]);
+      const data=useMemo(()=>({policy:(window as any).__marginPolicyInput?.policy||{enabled:mode.startsWith('margin-'),minPercent:30},revision,
+        evidence:(revision?'b':'a').repeat(64),canManage:mode!=='viewer',history:revision?[{revision,actorUserId:7,createdAt:'2026-09-23T10:00:00Z',
+          beforePolicy:{enabled:false,minPercent:30},afterPolicy:(window as any).__marginPolicyInput?.policy||{enabled:true,minPercent:30}}]:[]}),[revision]);
+      return {data,isLoading:mode==='loading'&&!retry,isError:mode==='error'&&!retry,isFetching:false,
+        refetch:async()=>{setRetry(true);const next=(window as any).__marginPolicyInput?revision+1:revision;setRevision(next);return{data:{...data,revision:next,evidence:(next?'b':'a').repeat(64)},isError:false};}};
+    }},
+    updateMarginPolicy:{useMutation:(options:{onSuccess:(data:any)=>void})=>{
+      const [state,setState]=useState('idle'),[attempts,setAttempts]=useState(0);
+      return {isPending:state==='pending',isSuccess:state==='success',isError:state==='error',reset:()=>setState('idle'),mutate:(input:any)=>{
+        setState('pending');setAttempts(attempts+1);setTimeout(()=>{if(mode==='mutation-error'&&attempts===0)setState('error');else{
+          (window as any).__marginPolicyInput=input;setState('success');options.onSuccess({policy:input.policy,revision:input.expectedRevision+1,evidence:'b'.repeat(64),history:[]});}},50);
+      }};
+    }},
     getDiscountPolicy: { useQuery: () => {
       const [revision,setRevision]=useState(0),[retry,setRetry]=useState(false);
       const data=useMemo(()=>({policy:(window as any).__discountInput?.policy||{enabled:false,maxPercent:3,expireHours:24},revision,
@@ -135,6 +151,20 @@ export const trpc = {
       isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry, refetch: async () => setRetry(true) };
   } } },
   orders: {
+    previewCheckoutMargin:{useQuery:(input:any)=>{
+      const [data,setData]=useState<any>(),[fetching,setFetching]=useState(false),[error,setError]=useState(false),[attempts,setAttempts]=useState(0);
+      return {data,isFetching:fetching,isError:error,refetch:async()=>{
+        setFetching(true);setError(false);setAttempts(attempts+1);(window as any).__marginPreviewInput=input;await new Promise(resolve=>setTimeout(resolve,50));
+        if(mode==='margin-failure'&&attempts===0){setFetching(false);setError(true);return{data:undefined,isError:true};}
+        const result={status:mode==='margin-missing'?'missing_cost':mode==='margin-below'?'below_floor':'pass',totalMinor:23000,
+          costs:input.costs,policy:{enabled:true,minPercent:30},policyRevision:0,evidence:'c'.repeat(64),productCostMinor:10000,
+          calculation:{netRevenueMinor:23000-input.costs.taxMinor,totalCostMinor:10000+input.costs.shippingCostMinor+input.costs.otherCostMinor,
+            profitMinor:13000-input.costs.taxMinor-input.costs.shippingCostMinor-input.costs.otherCostMinor,
+            marginBps:Math.floor((13000-input.costs.taxMinor-input.costs.shippingCostMinor-input.costs.otherCostMinor)*10000/(23000-input.costs.taxMinor)),passes:mode!=='margin-below'},
+          lines:[{productId:7,variantId:null,quantity:1,name:'منتج اختبار <img src=x onerror=alert(1)>',unitCostMinor:mode==='margin-missing'?null:10000}]};
+        setData(result);setFetching(false);return{data:result,isError:false};
+      }};
+    }},
     listZidReconciliations: { useQuery: () => {
       const [retry, setRetry] = useState(false), [done, setDone] = useState(false);
       return { isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry,

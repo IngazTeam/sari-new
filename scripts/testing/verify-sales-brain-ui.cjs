@@ -29,13 +29,13 @@ async function main() {
           rawKeys: document.body.innerText.includes('merchantUx.'), targets: [...document.querySelectorAll('button')].map(b => b.getBoundingClientRect().height) }));
         assert.equal(layout.overflow, false, `Horizontal overflow at ${width}/${mode}`); assert.equal(layout.rawKeys, false);
         assert.ok(layout.targets.every(height => height >= 44), `Small tap target at ${width}/${mode}: ${layout.targets}`);
-        assert.equal(await page.$eval('#invoice-fixture button', node => node.disabled), true);
+        assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]', node => node.disabled), true);
         if (mode === 'error') { await page.click('[role="alert"] button'); await page.waitForSelector('details'); }
         if (mode === 'ready') {
           await page.click('details summary');
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
           if ([375, 1440].includes(width)) await page.screenshot({ path: path.join(output, `learning-invoice-${width}.png`), fullPage: true });
-          await page.click('#invoice-fixture input'); await page.click('#invoice-fixture button');
+          await page.click('#invoice-fixture input'); await page.click('#invoice-fixture [data-invoice-approve]');
           await page.waitForSelector('#invoice-fixture [role="status"] a');
           assert.deepEqual(await page.evaluate(() => window.__invoiceInput), { orderId: 123, expectedAmountMinor: 23000, totalIsFinal: true });
           assert.equal(await page.evaluate(() => window.__approved), true);
@@ -45,10 +45,10 @@ async function main() {
     }
     await page.setViewport({ width: 375, height: 812 });
     await page.goto(`${origin}/?case=mutation-error`, { waitUntil: 'networkidle0' });
-    await page.click('#invoice-fixture input'); await page.click('#invoice-fixture button');
+    await page.click('#invoice-fixture input'); await page.click('#invoice-fixture [data-invoice-approve]');
     await page.waitForSelector('#invoice-fixture [role="alert"]');
     assert.equal(await page.$('#invoice-fixture [role="status"]'), null);
-    await page.click('#invoice-fixture button'); await page.waitForSelector('#invoice-fixture [role="status"]');
+    await page.click('#invoice-fixture [data-invoice-approve]'); await page.waitForSelector('#invoice-fixture [role="status"]');
     results.push({ width: 375, mode: 'invoice_failure_retry', passed: true });
     for (const width of [320, 375, 390, 768, 1440]) {
       await page.setViewport({ width, height: 900 });
@@ -88,6 +88,76 @@ async function main() {
       assert.equal(await page.$eval(selector, input => input.value), '', `Field must stay empty while editing: ${selector}`);
       await page.type(selector, value);
     };
+    const fillMargin = async()=>{
+      await page.type('#invoice-tax-123','٣٠');await page.type('#invoice-shipping-123','10');await page.type('#invoice-other-123','10');
+      await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');
+    };
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$eval('#margin-policy-save',n=>n.disabled),true);
+      await page.click('#margin-policy-enabled');await page.click('#margin-policy-reviewed');await replace('#margin-policy-percent','35');
+      assert.equal(await page.$eval('#margin-policy-reviewed',n=>n.checked),false);
+      assert.equal(await page.$eval('#margin-policy-save',n=>n.disabled),true);
+      await page.click('#margin-policy-reviewed');await page.click('#margin-policy-save');await page.waitForSelector('#margin-policy-fixture [role=status]');
+      assert.deepEqual(await page.evaluate(()=>window.__marginPolicyInput),{policy:{enabled:true,minPercent:35},expectedRevision:0,evidence:'a'.repeat(64),reviewed:true});
+      assert.equal(await page.evaluate(()=>window.__unexpectedMarginSubmit),undefined);
+      await page.click('#margin-policy-fixture summary');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#margin-policy-fixture')).screenshot({path:path.join(output,`margin-policy-${width}.png`)});
+      results.push({width,lang,mode:'margin_policy_review_and_save',passed:true});
+      await page.goto(`${origin}/?case=margin-ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      assert.equal(await page.$eval('#invoice-margin-preview-123',n=>n.disabled),true);await page.click('#invoice-fixture input[type=checkbox]');
+      assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+      await fillMargin();
+      assert.deepEqual(await page.evaluate(()=>window.__marginPreviewInput),{orderId:123,costs:{taxMinor:3000,shippingCostMinor:1000,otherCostMinor:1000}});
+      assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);
+      await page.click('#invoice-margin-123 summary');assert.equal(await page.$('#invoice-margin-123 img'),null);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.equal(await page.evaluate(()=>document.body.innerText.includes('merchantUx.')),false);
+      await page.$eval('#invoice-fixture',async node=>{await Promise.allSettled(node.getAnimations({subtree:true}).map(a=>a.finished));});
+      assert.ok(await page.$$eval('#invoice-fixture input:not([type=checkbox]),#invoice-fixture button',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#invoice-fixture')).screenshot({path:path.join(output,`invoice-margin-${width}.png`)});
+      await page.click('#invoice-fixture input[type=checkbox]');await replace('#invoice-other-123','11');
+      assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);
+      assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+      await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');
+      await page.click('#invoice-fixture input[type=checkbox]');await page.click('#invoice-fixture [data-invoice-approve]');
+      await page.waitForSelector('#invoice-fixture [role=status] a');
+      assert.deepEqual(await page.evaluate(()=>window.__invoiceInput),{orderId:123,expectedAmountMinor:23000,totalIsFinal:true,
+        margin:{costs:{taxMinor:3000,shippingCostMinor:1000,otherCostMinor:1100},evidence:'c'.repeat(64),reviewedCosts:true}});
+      results.push({width,lang,mode:'invoice_margin_preview_cost_edit_reapproval',passed:true});
+    }
+    for(const mode of ['viewer','loading','error']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});assert.equal(await page.$('#margin-policy-save'),null);
+      if(mode==='viewer')assert.ok(await page.$$eval('#margin-policy-fixture input',nodes=>nodes.every(n=>n.disabled)));
+      if(mode==='error'){await page.click('#margin-policy-fixture button');await page.waitForSelector('#margin-policy-save');}
+      results.push({width:1440,mode:`margin_policy_${mode}`,passed:true});
+    }
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});
+    for(const value of ['101','-1','1.5']){await replace('#margin-policy-percent',value);assert.equal(await page.$eval('#margin-policy-save',n=>n.disabled),true);}
+    assert.equal(await page.evaluate(()=>window.__marginPolicyInput),undefined);results.push({width:1440,mode:'margin_policy_invalid_floor',passed:true});
+    await page.goto(`${origin}/?case=ready`,{waitUntil:'networkidle0'});await page.click('#margin-policy-enabled');await page.click('#margin-policy-reviewed');await page.evaluate(()=>window.__changeMarginPolicy());
+    await page.waitForSelector('#margin-policy-fixture [role=alert]');assert.equal(await page.$eval('#margin-policy-reviewed',n=>n.checked),false);
+    assert.equal(await page.$eval('#margin-policy-enabled',n=>n.checked),true);await page.click('#margin-policy-fixture [role=alert] button');
+    assert.equal(await page.$eval('#margin-policy-enabled',n=>n.checked),false);results.push({width:1440,mode:'margin_policy_stale_draft_refresh',passed:true});
+    await page.goto(`${origin}/?case=mutation-error`,{waitUntil:'networkidle0'});await page.click('#margin-policy-enabled');await page.click('#margin-policy-reviewed');await page.click('#margin-policy-save');
+    await page.waitForSelector('#margin-policy-fixture [role=alert]');assert.equal(await page.$eval('#margin-policy-save',n=>n.disabled),true);
+    await page.click('#margin-policy-fixture [role=alert] button');await page.click('#margin-policy-enabled');await page.focus('#margin-policy-reviewed');await page.keyboard.press('Space');
+    await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.id),'margin-policy-save');await page.keyboard.press('Enter');await page.waitForSelector('#margin-policy-fixture [role=status]');
+    results.push({width:1440,mode:'margin_policy_failed_save_and_keyboard_review',passed:true});
+    for(const mode of ['margin-missing','margin-below']) {
+      await page.goto(`${origin}/?case=${mode}`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-fixture input[type=checkbox]');
+      assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);assert.equal(await page.evaluate(()=>window.__invoiceInput),undefined);
+      results.push({width:1440,mode:`invoice_${mode}_blocked`,passed:true});
+    }
+    await page.goto(`${origin}/?case=margin-ready`,{waitUntil:'networkidle0'});await fillMargin();await page.click('#invoice-fixture input[type=checkbox]');await page.evaluate(()=>window.__changeMarginPolicy());
+    await page.waitForFunction(()=>document.querySelector('#invoice-fixture [data-invoice-approve]').disabled);
+    assert.equal(await page.$eval('#invoice-fixture input[type=checkbox]',n=>n.checked),false);results.push({width:1440,mode:'invoice_policy_changed_after_preview',passed:true});
+    await page.goto(`${origin}/?case=margin-failure`,{waitUntil:'networkidle0'});
+    await page.type('#invoice-tax-123','0.001');await page.type('#invoice-shipping-123','0');await page.type('#invoice-other-123','0');
+    assert.equal(await page.$eval('#invoice-margin-preview-123',n=>n.disabled),true);await replace('#invoice-tax-123','0');await page.click('#invoice-margin-preview-123');
+    await page.waitForSelector('#invoice-margin-123 [role=alert]');assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),true);
+    await page.click('#invoice-margin-preview-123');await page.waitForSelector('#invoice-margin-123 [aria-live]');await page.click('#invoice-fixture input[type=checkbox]');
+    assert.equal(await page.$eval('#invoice-fixture [data-invoice-approve]',n=>n.disabled),false);results.push({width:1440,mode:'invoice_invalid_precision_and_preview_retry',passed:true});
     for (const lang of ['ar','en']) for (const width of [320,375,390,768,1440]) {
       await page.setViewport({width,height:900});await page.goto(`${origin}/?case=ready&lang=${lang}`,{waitUntil:'networkidle0'});
       assert.equal(await page.$eval('#discount-policy-save',b=>b.disabled),true);

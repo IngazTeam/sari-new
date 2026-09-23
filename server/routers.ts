@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
@@ -2544,9 +2545,13 @@ export const appRouter = router({
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'تعذر التحقق من تطابق الطلب والعميل ومرجع التنفيذ لدى زد. لم تُعد محاولة إنشائه.' }); }
       }),
 
+    previewCheckoutMargin: permissionProcedure('orders.manage').input(previewMarginSchema).query(async ({ctx,input}) => {
+      const { previewCheckoutMargin } = await import('./ai/checkout-margin');
+      try { return await previewCheckoutMargin({...input,merchantId:ctx.merchantId}); }
+      catch { throw new TRPCError({code:'CONFLICT',message:'Invoice or cost evidence changed or unavailable'}); }
+    }),
     approveCheckoutInvoice: permissionProcedure('orders.manage')
-      .input(z.object({ orderId: z.number().int().positive(), expectedAmountMinor: z.number().int().nonnegative().max(2147483647),
-        totalIsFinal: z.literal(true) }).strict())
+      .input(invoiceApprovalSchema)
       .mutation(async ({ input, ctx }) => {
         const { approveCheckoutInvoice } = await import('./ai/checkout-agreements');
         const { issueCanonicalOrderPaymentLink } = await import('./payment/order-payment-link');

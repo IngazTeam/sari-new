@@ -526,6 +526,13 @@
       "when": 1790151900000,
       "tag": "0074_sales_discount_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "5",
+      "when": 1790152000000,
+      "tag": "0075_checkout_margin",
+      "breakpoints": true
     }
   ]
 }

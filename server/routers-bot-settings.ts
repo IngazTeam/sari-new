@@ -11,6 +11,8 @@ import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { hasPermission } from './_core/permissions';
 import { discountPolicyUpdateSchema, hasDiscountSettings } from '../shared/discount-policy';
 import { getDiscountPolicy, updateDiscountPolicy } from './ai/discount-policy';
+import { marginPolicyUpdateSchema } from '../shared/checkout-margin';
+import { getMarginPolicy, updateMarginPolicy } from './ai/checkout-margin-policy';
 import {
   getBotSettings,
   getConversationsByMerchantId,
@@ -22,6 +24,14 @@ import {
 } from './db';
 
 export const botSettingsRouter = router({
+    getMarginPolicy: merchantProcedure.query(async ({ctx}) => {
+        try { return { ...await getMarginPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole,'bot_settings.manage') }; }
+        catch { throw new TRPCError({code:'CONFLICT',message:'Margin policy unavailable'}); }
+    }),
+    updateMarginPolicy: permissionProcedure('bot_settings.manage').input(marginPolicyUpdateSchema).mutation(async ({ctx,input}) => {
+        try { return await updateMarginPolicy({...input,merchantId:ctx.merchantId,actorUserId:ctx.user.id}); }
+        catch { throw new TRPCError({code:'CONFLICT',message:'Margin policy changed or unavailable; refresh and review again'}); }
+    }),
     getDiscountPolicy: merchantProcedure.query(async ({ ctx }) => {
         try { return { ...await getDiscountPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') }; }
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'Discount settings unavailable' }); }

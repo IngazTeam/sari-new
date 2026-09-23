@@ -1,3 +1,4 @@
+import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -725,6 +726,7 @@ export default function BotSettings() {
         </Card>
 
         <DiscountPolicySettings />
+      <CheckoutMarginPolicySettings />
 
         {/* Custom Instructions — Campaign & Sales Rules */}
         <Card>

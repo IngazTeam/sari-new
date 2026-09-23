@@ -4060,3 +4060,15 @@ export const salesDiscountPolicyChanges = mysqlTable('sales_discount_policy_chan
   beforePolicy: json('before_policy').notNull(), afterPolicy: json('after_policy').notNull(),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_discount_policy_revision').on(table.merchantId, table.revision)]);
+
+export const salesMarginPolicies = mysqlTable('sales_margin_policies', {
+  merchantId: int('merchant_id').primaryKey().references(() => merchants.id, { onDelete: 'cascade' }),
+  enabled: tinyint().notNull().default(0), minPercent: int('min_percent').notNull().default(0), revision: int().notNull().default(0),
+});
+export const salesMarginPolicyChanges = mysqlTable('sales_margin_policy_changes', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').notNull(), revision: int().notNull(), evidenceHash: char('evidence_hash', { length: 64 }).notNull(),
+  beforePolicy: json('before_policy').notNull(), afterPolicy: json('after_policy').notNull(),
+  createdAt: datetime('created_at', {mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_margin_policy_revision').on(table.merchantId,table.revision)]);

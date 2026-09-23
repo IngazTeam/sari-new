@@ -1,4 +1,5 @@
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
+import { CheckoutMarginPolicySettings } from '../../../client/src/components/CheckoutMarginPolicySettings';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import i18n from 'i18next';
@@ -23,6 +24,7 @@ async function render() {
     <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>
+    <form id="margin-policy-fixture" onSubmit={event=>{event.preventDefault();(window as any).__unexpectedMarginSubmit=true;}}><CheckoutMarginPolicySettings /></form>
     <div id="followup-fixture"><FollowupPolicySettings /></div>
     <div id="handoff-fixture"><ConversationHandoff conversationId={42} /></div>
     <div id="relay-fixture"><EscalationReconciliation conversationId={42} /></div>
