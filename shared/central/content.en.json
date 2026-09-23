@@ -1,0 +1,1961 @@
+{
+  "/solutions/sales": {
+    "kind": "marketing",
+    "label": "Sales solutions",
+    "title": "Meet their interest.\nMove the sale forward.",
+    "description": "Bring product questions, recommendations and order follow-up into one WhatsApp conversation. Give customers a clear next step and your team the context to help.",
+    "sectionTitle": "A better conversation at every sales step",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Answers that support a decision",
+        "text": "Use your product details, prices and availability to answer the question behind the question."
+      },
+      {
+        "icon": "bag",
+        "title": "Relevant recommendations",
+        "text": "Narrow the options around the customer’s needs instead of sending the entire catalogue."
+      },
+      {
+        "icon": "card",
+        "title": "An order ready for review",
+        "text": "Collect the items and required details, then let the customer review the order before proceeding."
+      },
+      {
+        "icon": "refresh",
+        "title": "Follow up with context",
+        "text": "Continue unfinished conversations while respecting communication preferences."
+      },
+      {
+        "icon": "users",
+        "title": "Your team stays involved",
+        "text": "Hand over negotiations and special requests with the conversation history available."
+      },
+      {
+        "icon": "chart",
+        "title": "Learn from real questions",
+        "text": "Review recurring questions and improve your information and buying journey."
+      }
+    ],
+    "steps": [
+      [
+        "Understand the question",
+        "Sary identifies what the customer needs and asks for missing details."
+      ],
+      [
+        "Help the decision",
+        "Present relevant options and information instead of the entire catalogue."
+      ],
+      [
+        "Take the next step",
+        "Continue to an order, payment or a teammate according to the conversation."
+      ]
+    ],
+    "faq": [
+      [
+        "Do I need to change how my store sells?",
+        "Add your products, prices and policies, then connect the channels and systems you use. You keep control of your sales rules."
+      ],
+      [
+        "What if a customer needs a teammate?",
+        "The conversation can move to your team for special questions or requests that require a human decision."
+      ],
+      [
+        "Can customers follow up on an order?",
+        "Available order status and updates can be retrieved through the connected system, helping the customer find the next step in the conversation."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/solutions/marketing": {
+    "kind": "marketing",
+    "label": "Marketing solutions",
+    "title": "A message with a purpose.\nA reason to come back.",
+    "description": "Plan WhatsApp campaigns around your audience, their consent and a clear next step. Follow replies from the same workspace as your customer conversations.",
+    "sectionTitle": "Make each campaign useful",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Choose a relevant audience",
+        "text": "Organise contacts around the campaign’s purpose and confirmed communication preferences."
+      },
+      {
+        "icon": "bag",
+        "title": "Write with context",
+        "text": "Explain the offer clearly, including its conditions and the next step."
+      },
+      {
+        "icon": "card",
+        "title": "Schedule your campaign",
+        "text": "Review the audience and timing before starting a supported campaign."
+      },
+      {
+        "icon": "refresh",
+        "title": "Respect opt-outs",
+        "text": "Keep consent and stop requests part of the campaign workflow."
+      },
+      {
+        "icon": "users",
+        "title": "Continue the conversation",
+        "text": "Respond to questions about the offer using your business information."
+      },
+      {
+        "icon": "chart",
+        "title": "Review delivery and replies",
+        "text": "Use available campaign results to improve the next message."
+      }
+    ],
+    "steps": [
+      [
+        "Choose the goal",
+        "A new offer, a repeat purchase or an update your customers need."
+      ],
+      [
+        "Prepare the audience and message",
+        "Select the appropriate list and write a clear message with one link or action."
+      ],
+      [
+        "Send and follow up",
+        "Review results and new conversations, then help interested customers continue."
+      ]
+    ],
+    "faq": [
+      [
+        "Should I send every campaign to all customers?",
+        "Choose the relevant audience for each campaign. Segmenting your lists helps you match content to customer interests."
+      ],
+      [
+        "Can customers reply to a campaign?",
+        "Yes. A WhatsApp message opens a conversation where customers can ask questions and follow up with Sary and your team."
+      ],
+      [
+        "How do I maintain communication quality?",
+        "Use audiences with valid consent, explain the reason for your message and make opting out easy."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/solutions/support": {
+    "kind": "marketing",
+    "label": "Customer support",
+    "title": "A clearer answer.\nA more human experience.",
+    "description": "Help customers find answers from your business knowledge and bring a teammate into the conversation when judgement or additional support is needed.",
+    "sectionTitle": "Support that keeps the context",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Reliable reference information",
+        "text": "Keep policies, opening hours and service details in one maintained knowledge source."
+      },
+      {
+        "icon": "bag",
+        "title": "Understand the question",
+        "text": "Ask for clarification when the request is incomplete."
+      },
+      {
+        "icon": "card",
+        "title": "Voice and text",
+        "text": "Let customers explain their request in the format they prefer."
+      },
+      {
+        "icon": "refresh",
+        "title": "Human handover",
+        "text": "Route sensitive or unusual requests to the team."
+      },
+      {
+        "icon": "users",
+        "title": "One conversation history",
+        "text": "Review what was already discussed before responding."
+      },
+      {
+        "icon": "chart",
+        "title": "Improve the knowledge base",
+        "text": "Turn repeated questions into clearer reference information."
+      }
+    ],
+    "steps": [
+      [
+        "Prepare your support knowledge",
+        "Add common questions, shipping and return policies, and opening hours."
+      ],
+      [
+        "Define the handover",
+        "Choose which questions Sary handles and which should move to your team."
+      ],
+      [
+        "Review and improve",
+        "Review conversations and keep adding the answers your customers need."
+      ]
+    ],
+    "faq": [
+      [
+        "Does this replace my support team?",
+        "Your team remains responsible for cases that need human attention. Sary helps with common questions and prepares the context for follow-up."
+      ],
+      [
+        "What if an answer is unavailable?",
+        "Sary asks for clarification or routes the conversation to your team according to your settings. You can update the knowledge to cover the question later."
+      ],
+      [
+        "Can I customise the reply style?",
+        "Adjust the business information, tone and instructions to match the way you serve your customers."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/product/ai-agent": {
+    "kind": "marketing",
+    "label": "Sary AI agent",
+    "title": "Understands the question.\nFinds the next step.",
+    "description": "Sary connects a customer’s words with your business knowledge. It understands text and voice messages and helps people find the product or service they need.",
+    "sectionTitle": "Intelligence that works your way",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Conversation context",
+        "text": "Connect questions and answers rather than treating each message as a fresh start."
+      },
+      {
+        "icon": "bag",
+        "title": "Arabic and English",
+        "text": "Respond in the language and tone that fit your customers and brand."
+      },
+      {
+        "icon": "card",
+        "title": "Voice requests",
+        "text": "Extract the request from voice messages and confirm details that need clarification."
+      },
+      {
+        "icon": "refresh",
+        "title": "Business knowledge",
+        "text": "Use the products, services, prices and policies you provide."
+      },
+      {
+        "icon": "users",
+        "title": "Clear instructions",
+        "text": "Define the tone, required details and situations that need your team."
+      },
+      {
+        "icon": "chart",
+        "title": "Team collaboration",
+        "text": "Let automation handle repeat questions while staff handle decisions."
+      }
+    ],
+    "steps": [
+      [
+        "Introduce your business",
+        "Add products, services, policies and frequently asked questions."
+      ],
+      [
+        "Choose its approach",
+        "Set your brand tone, the details to collect and the handover instructions."
+      ],
+      [
+        "Try your customers’ questions",
+        "Review replies and update the information before putting it to work."
+      ]
+    ],
+    "faq": [
+      [
+        "Do I have to write an answer for every question?",
+        "Provide the core information and instructions. Sary uses them to understand questions and compose replies, and you can keep improving that knowledge."
+      ],
+      [
+        "Are voice messages supported?",
+        "The conversation flow supports voice messages, with missing details clarified and confirmed in the conversation."
+      ],
+      [
+        "Can I review the replies?",
+        "You can review conversations and improve the business information and instructions to suit your work."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/product/chatbot": {
+    "kind": "marketing",
+    "label": "WhatsApp chatbot",
+    "title": "Every conversation.\nA little more helpful.",
+    "description": "Build a WhatsApp assistant around your information, your customer journeys and your team’s way of working.",
+    "sectionTitle": "Beyond fixed answers",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Understand the intent",
+        "text": "Identify what the customer wants and ask a useful follow-up question."
+      },
+      {
+        "icon": "bag",
+        "title": "Use your information",
+        "text": "Ground answers in maintained business knowledge."
+      },
+      {
+        "icon": "card",
+        "title": "Keep the context",
+        "text": "Continue the conversation without asking customers to start over."
+      },
+      {
+        "icon": "refresh",
+        "title": "Collect the essentials",
+        "text": "Gather the details needed for an order or a service request."
+      },
+      {
+        "icon": "users",
+        "title": "Hand over smoothly",
+        "text": "Bring a teammate into requests that need a person."
+      },
+      {
+        "icon": "chart",
+        "title": "Review and improve",
+        "text": "Test common questions and refine the assistant’s instructions."
+      }
+    ],
+    "steps": [
+      [
+        "Choose your main journeys",
+        "Start with your most common sales and support questions."
+      ],
+      [
+        "Add the information",
+        "Gather answers, services, products and instructions."
+      ],
+      [
+        "Open the conversation",
+        "Let customers ask in their own words and continue with Sary and your team."
+      ]
+    ],
+    "faq": [
+      [
+        "Is Sary limited to menus and buttons?",
+        "Customers can write naturally. Sary uses your business information to understand their requests."
+      ],
+      [
+        "Can my team step in?",
+        "Yes. Human follow-up remains part of the conversation for situations that need it."
+      ],
+      [
+        "How do I improve answers?",
+        "Review recurring questions, complete your business knowledge and adjust instructions when needed."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/product/whatsapp": {
+    "kind": "marketing",
+    "label": "WhatsApp workspace",
+    "title": "Close to your customers.\nConnected to your team.",
+    "description": "Bring WhatsApp conversations and follow-up into a shared workspace. Check channel availability and coordinate the next step with your staff.",
+    "sectionTitle": "One place for customer conversations",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Channel connection",
+        "text": "Follow the supported connection steps and verify channel status."
+      },
+      {
+        "icon": "bag",
+        "title": "Shared conversations",
+        "text": "Let your team review the customer context from one workspace."
+      },
+      {
+        "icon": "card",
+        "title": "Clear ownership",
+        "text": "Know which conversations Sary handles and which need a teammate."
+      },
+      {
+        "icon": "refresh",
+        "title": "Useful replies",
+        "text": "Answer from your current products, services and policies."
+      },
+      {
+        "icon": "users",
+        "title": "Order follow-up",
+        "text": "Review the available order information before replying."
+      },
+      {
+        "icon": "chart",
+        "title": "Connection visibility",
+        "text": "Check channel health before relying on an automated journey."
+      }
+    ],
+    "steps": [
+      [
+        "Choose the connection",
+        "Select WhatsApp, your store or training platform, and payment tools according to your needs."
+      ],
+      [
+        "Complete the setup",
+        "Follow the account instructions to add the connection and check its status."
+      ],
+      [
+        "Test a complete journey",
+        "Start with a product or service question and follow through to an order or enrolment."
+      ]
+    ],
+    "faq": [
+      [
+        "Which integrations are available?",
+        "The platform includes Salla, Zid, Byaan and Tap integrations alongside WhatsApp. Choose what your business needs and complete the relevant account setup."
+      ],
+      [
+        "Do I need every integration?",
+        "Connect only the tools you use. You can start with basic business knowledge and add connections later."
+      ],
+      [
+        "Where should I start if I use Byaan?",
+        "Contact the team with your training centre details and requirements to configure the appropriate Byaan connection."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/product/broadcasts": {
+    "kind": "marketing",
+    "label": "WhatsApp campaigns",
+    "title": "Reach with relevance.\nFollow up with care.",
+    "description": "Create campaigns for an appropriate audience, review their content and monitor available delivery and response information.",
+    "sectionTitle": "A considered campaign workflow",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Audience selection",
+        "text": "Choose contacts relevant to the campaign and its purpose."
+      },
+      {
+        "icon": "bag",
+        "title": "Consent first",
+        "text": "Use contacts with the necessary communication permissions."
+      },
+      {
+        "icon": "card",
+        "title": "Message review",
+        "text": "Check the offer, terms and destination before sending."
+      },
+      {
+        "icon": "refresh",
+        "title": "Scheduling",
+        "text": "Use the scheduling options supported by your account."
+      },
+      {
+        "icon": "users",
+        "title": "Connected replies",
+        "text": "Continue customer questions in the shared inbox."
+      },
+      {
+        "icon": "chart",
+        "title": "Campaign reporting",
+        "text": "Review available delivery and reply results without assuming every message was read."
+      }
+    ],
+    "steps": [
+      [
+        "Select your audience",
+        "Choose customers for whom the offer is relevant and who consent to receiving messages."
+      ],
+      [
+        "Write the message",
+        "One clear benefit, enough detail and an easy next step."
+      ],
+      [
+        "Launch and follow up",
+        "Review the campaign and new conversations, then continue with interested customers."
+      ]
+    ],
+    "faq": [
+      [
+        "Can I schedule a campaign?",
+        "You can set the sending time in campaign settings to fit your business plan."
+      ],
+      [
+        "What happens when a customer replies?",
+        "Their reply becomes part of a conversation Sary and your team can continue."
+      ],
+      [
+        "How do I make the message useful?",
+        "Choose a relevant audience, lead with the benefit and give the customer one clear next step."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/ai-whatsapp-sales-agent": {
+    "kind": "marketing",
+    "label": "AI sales agent for WhatsApp",
+    "title": "Your next sales conversation.\nWith Sary beside you.",
+    "description": "An AI sales agent for WhatsApp that answers from your catalogue, helps customers compare options and connects order follow-up with your team.",
+    "sectionTitle": "From the first question to the next action",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Product discovery",
+        "text": "Recommend relevant products using your catalogue information."
+      },
+      {
+        "icon": "bag",
+        "title": "Price and availability",
+        "text": "Use the current information supplied by your store or enabled integration."
+      },
+      {
+        "icon": "card",
+        "title": "Voice understanding",
+        "text": "Help customers describe their needs in their own words."
+      },
+      {
+        "icon": "refresh",
+        "title": "Order review",
+        "text": "Confirm required details before an order is submitted."
+      },
+      {
+        "icon": "users",
+        "title": "Human support",
+        "text": "Bring your staff into exceptions and important decisions."
+      },
+      {
+        "icon": "chart",
+        "title": "Connected tools",
+        "text": "Use the integrations enabled for your account."
+      }
+    ],
+    "steps": [
+      [
+        "Add business knowledge",
+        "Provide products, prices, services and sales policies."
+      ],
+      ["Connect your channel", "Set up WhatsApp and the integrations you use."],
+      [
+        "Start the conversation",
+        "Test customer scenarios and review results from your account."
+      ]
+    ],
+    "faq": [
+      [
+        "Does Sary understand Saudi Arabic?",
+        "Sary works with Arabic and Saudi dialect. You can guide its tone to suit your brand."
+      ],
+      [
+        "Can I use it with my current store?",
+        "Connect suitable tools, including Salla and Zid, and add your sales information to the account."
+      ],
+      [
+        "Can I try it before setting up my business?",
+        "Open the example conversation to explore the interaction, then create an account to add your own business knowledge."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/whatsapp-ordering-system": {
+    "kind": "marketing",
+    "label": "WhatsApp ordering system",
+    "title": "An easier order.\nFrom a familiar conversation.",
+    "description": "Help customers choose items, provide order details and review the next step through WhatsApp, using the tools enabled for your business.",
+    "sectionTitle": "Keep the order journey together",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Choose the item",
+        "text": "Share relevant product information and available options."
+      },
+      {
+        "icon": "bag",
+        "title": "Collect the details",
+        "text": "Ask for quantities and the information required by your workflow."
+      },
+      {
+        "icon": "card",
+        "title": "Review before submission",
+        "text": "Present a clear summary and resolve missing details."
+      },
+      {
+        "icon": "refresh",
+        "title": "Payment handoff",
+        "text": "Use the enabled payment provider when a payment link is available."
+      },
+      {
+        "icon": "users",
+        "title": "Order status",
+        "text": "Read available updates from the connected order system."
+      },
+      {
+        "icon": "chart",
+        "title": "Staff involvement",
+        "text": "Escalate exceptions instead of guessing the result."
+      }
+    ],
+    "steps": [
+      [
+        "The customer asks",
+        "A simple message identifies the product or service they want."
+      ],
+      [
+        "Sary organises the details",
+        "Collect missing information and show the customer a summary."
+      ],
+      [
+        "The customer continues",
+        "Review the order, then proceed to payment and confirmation."
+      ]
+    ],
+    "faq": [
+      [
+        "Can customers order with a voice message?",
+        "Customers can start with a voice message. Sary asks for missing details and confirms them in the conversation."
+      ],
+      [
+        "Can customers review an order?",
+        "The journey includes a summary of products, quantities and other details before proceeding."
+      ],
+      [
+        "How is payment confirmed?",
+        "The transaction result is shown after the platform receives the payment provider’s status for the linked order."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/whatsapp-booking-system": {
+    "kind": "marketing",
+    "label": "WhatsApp booking system",
+    "title": "Less back and forth.\nA clearer appointment.",
+    "description": "Explain services, collect booking preferences and guide customers through available appointment options, with your team ready to help.",
+    "sectionTitle": "A booking journey built around your service",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Explain the service",
+        "text": "Show the duration, requirements and information you provide."
+      },
+      {
+        "icon": "bag",
+        "title": "Understand preferences",
+        "text": "Ask for the service, preferred time and necessary details."
+      },
+      {
+        "icon": "card",
+        "title": "Check availability",
+        "text": "Use supported calendar information before confirming a time."
+      },
+      {
+        "icon": "refresh",
+        "title": "Review the booking",
+        "text": "Clarify the details and the next action."
+      },
+      {
+        "icon": "users",
+        "title": "Payment when required",
+        "text": "Use an enabled provider for deposits where supported."
+      },
+      {
+        "icon": "chart",
+        "title": "Changes and follow-up",
+        "text": "Route rescheduling and exceptions through your configured workflow."
+      }
+    ],
+    "steps": [
+      [
+        "Choose a service",
+        "Help the customer understand the service and its requirements."
+      ],
+      [
+        "Arrange the appointment",
+        "Collect the booking details and preferred option."
+      ],
+      [
+        "Follow up before the visit",
+        "Provide appointment details, reminders and the next step through the supported workflow."
+      ]
+    ],
+    "faq": [
+      [
+        "Does it support businesses with multiple services?",
+        "Organise services and their requirements so the booking journey follows the service the customer chooses."
+      ],
+      [
+        "Can I request a deposit?",
+        "The journey can include payment to confirm a booking according to your business policy and payment integration."
+      ],
+      [
+        "What about rescheduling?",
+        "Your business instructions explain changes and cancellations, with your team following up where needed."
+      ]
+    ],
+    "sector": "training"
+  },
+  "/ai-customer-service-whatsapp": {
+    "kind": "marketing",
+    "label": "AI customer service on WhatsApp",
+    "title": "Helpful answers.\nPeople when they matter.",
+    "description": "Answer common questions from your knowledge base, understand the request and hand the conversation to a person when the situation needs one.",
+    "sectionTitle": "Keep customers informed",
+    "sectionDescription": "Give customers useful information and your team room to focus.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Business information",
+        "text": "Answer questions about services, hours and policies."
+      },
+      {
+        "icon": "bag",
+        "title": "Useful clarification",
+        "text": "Ask for missing context instead of making assumptions."
+      },
+      {
+        "icon": "card",
+        "title": "Consistent tone",
+        "text": "Use the voice and boundaries you define."
+      },
+      {
+        "icon": "refresh",
+        "title": "Voice messages",
+        "text": "Support customers who prefer to explain by voice."
+      },
+      {
+        "icon": "users",
+        "title": "Team handover",
+        "text": "Keep a person available for decisions and exceptions."
+      },
+      {
+        "icon": "chart",
+        "title": "Ongoing improvement",
+        "text": "Review conversations and update unclear information."
+      }
+    ],
+    "steps": [
+      [
+        "The customer explains",
+        "They ask about an order or service they need help with."
+      ],
+      [
+        "Sary guides the next step",
+        "Provide information or collect the details needed for follow-up."
+      ],
+      [
+        "Continue the assistance",
+        "The customer completes the next step or the conversation moves to your team."
+      ]
+    ],
+    "faq": [
+      [
+        "Can a customer ask for a teammate?",
+        "Handover remains part of the support journey, especially for requests that need personal attention."
+      ],
+      [
+        "How does Sary learn our policies?",
+        "Add business information, questions and policies to your account, and keep them updated when they change."
+      ],
+      [
+        "Can we improve the reply style?",
+        "Review conversations, instructions and tone to keep the experience consistent with your brand."
+      ]
+    ],
+    "sector": "commerce"
+  },
+  "/solutions/clinics": {
+    "kind": "sector",
+    "label": "Clinics and medical centres",
+    "title": "Make appointments clearer.\nGive reception more room.",
+    "description": "Help people find clinic information and appointment steps on WhatsApp. Medical questions belong with qualified staff.",
+    "children": [
+      "/solutions/clinics/appointment-booking",
+      "/solutions/clinics/no-show-reminders",
+      "/solutions/clinics/patient-inquiries"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/clinics/appointment-booking": {
+    "kind": "service",
+    "label": "Clinic appointment booking",
+    "title": "An easier way to arrange\nyour next appointment.",
+    "description": "Explain specialties, collect appointment preferences and guide visitors to the booking process supported by your clinic.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Specialty and practitioner",
+        "text": "Help the visitor identify the appropriate clinic service."
+      },
+      {
+        "icon": "calendar",
+        "title": "Appointment preferences",
+        "text": "Collect the preferred time and confirm availability through your supported workflow."
+      },
+      {
+        "icon": "users",
+        "title": "Reception handover",
+        "text": "Bring staff into changes, exceptions and requests needing judgement."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/clinics"
+  },
+  "/solutions/clinics/no-show-reminders": {
+    "kind": "service",
+    "label": "Appointment reminders",
+    "title": "A reminder in time.\nA clearer schedule.",
+    "description": "Use appointment reminders to invite confirmation or a request to change the visit, giving reception useful context for follow-up.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Useful timing",
+        "text": "Configure reminders around the clinic’s workflow."
+      },
+      {
+        "icon": "calendar",
+        "title": "A clear response",
+        "text": "Let visitors confirm or request a change in the conversation."
+      },
+      {
+        "icon": "users",
+        "title": "Staff follow-up",
+        "text": "Review requests that need a person to update the schedule."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/clinics"
+  },
+  "/solutions/clinics/patient-inquiries": {
+    "kind": "service",
+    "label": "Patient enquiries",
+    "title": "Clinic information.\nWithout the waiting.",
+    "description": "Answer questions about opening hours, location, services and insurance from clinic information. Route medical questions to the appropriate team.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Clinic details",
+        "text": "Keep opening hours, directions and contact details current."
+      },
+      {
+        "icon": "calendar",
+        "title": "Insurance information",
+        "text": "Share the coverage information supplied by the clinic and ask staff to confirm exceptions."
+      },
+      {
+        "icon": "users",
+        "title": "Medical boundaries",
+        "text": "Do not use the assistant for diagnosis or clinical decisions."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/clinics"
+  },
+  "/solutions/restaurants": {
+    "kind": "sector",
+    "label": "Restaurants and cafés",
+    "title": "From a menu question.\nTo an order worth following.",
+    "description": "Bring menu questions, order details and follow-up into WhatsApp with the tools enabled for your restaurant.",
+    "children": [
+      "/solutions/restaurants/whatsapp-ordering",
+      "/solutions/restaurants/digital-menu-payment",
+      "/solutions/restaurants/delivery-repeat-orders"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/restaurants/whatsapp-ordering": {
+    "kind": "service",
+    "label": "Restaurant orders on WhatsApp",
+    "title": "Make ordering feel\nlike a conversation.",
+    "description": "Help guests choose from your menu, clarify their preferences and review the details before an order is submitted.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Current menu",
+        "text": "Use the dishes, prices and availability you provide."
+      },
+      {
+        "icon": "calendar",
+        "title": "Order preferences",
+        "text": "Collect quantities and instructions without promising unsupported changes."
+      },
+      {
+        "icon": "users",
+        "title": "Order review",
+        "text": "Show the details and confirm the next step."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/restaurants"
+  },
+  "/solutions/restaurants/digital-menu-payment": {
+    "kind": "service",
+    "label": "Digital menu and payment",
+    "title": "A clear menu.\nAn easier next step.",
+    "description": "Share menu details and guide customers to the payment step supported by your restaurant’s enabled provider.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Menu information",
+        "text": "Present relevant options and details."
+      },
+      {
+        "icon": "calendar",
+        "title": "Transparent totals",
+        "text": "Confirm the available price and charges before payment."
+      },
+      {
+        "icon": "users",
+        "title": "Payment follow-up",
+        "text": "Rely on the provider’s confirmed status rather than a chat claim."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/restaurants"
+  },
+  "/solutions/restaurants/delivery-repeat-orders": {
+    "kind": "service",
+    "label": "Delivery and repeat orders",
+    "title": "Keep the follow-up\nas good as the first reply.",
+    "description": "Answer delivery questions using your restaurant’s information and help returning guests find what they want.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Delivery information",
+        "text": "Explain the areas and terms supplied by the restaurant."
+      },
+      {
+        "icon": "calendar",
+        "title": "Available status",
+        "text": "Read the order updates provided by your connected tools."
+      },
+      {
+        "icon": "users",
+        "title": "A relevant return",
+        "text": "Continue the relationship while respecting communication preferences."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/restaurants"
+  },
+  "/solutions/salons": {
+    "kind": "sector",
+    "label": "Salons and beauty centres",
+    "title": "More time for your guests.\nLess time arranging it.",
+    "description": "Explain services, gather appointment preferences and coordinate follow-up with your salon team.",
+    "children": [
+      "/solutions/salons/appointment-booking",
+      "/solutions/salons/deposits-service-menu",
+      "/solutions/salons/loyalty-campaigns"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/salons/appointment-booking": {
+    "kind": "service",
+    "label": "Salon appointment booking",
+    "title": "A service they love.\nA time that fits.",
+    "description": "Help clients choose a service and share their appointment preferences through WhatsApp.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Service selection",
+        "text": "Explain the treatments and durations you provide."
+      },
+      {
+        "icon": "calendar",
+        "title": "Appointment preferences",
+        "text": "Collect the preferred specialist and time."
+      },
+      {
+        "icon": "users",
+        "title": "Team confirmation",
+        "text": "Check the supported schedule and let staff handle exceptions."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/salons"
+  },
+  "/solutions/salons/deposits-service-menu": {
+    "kind": "service",
+    "label": "Service menu and deposits",
+    "title": "Clear choices.\nClear booking terms.",
+    "description": "Present your service menu and deposit policy before the client proceeds to a supported payment step.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Service information",
+        "text": "Keep descriptions and prices current."
+      },
+      {
+        "icon": "calendar",
+        "title": "Booking policy",
+        "text": "Explain deposit and cancellation terms before proceeding."
+      },
+      {
+        "icon": "users",
+        "title": "Confirmed payment",
+        "text": "Use the enabled provider’s result to determine payment status."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/salons"
+  },
+  "/solutions/salons/loyalty-campaigns": {
+    "kind": "service",
+    "label": "Salon loyalty campaigns",
+    "title": "A thoughtful message.\nAnother reason to return.",
+    "description": "Plan relevant follow-up and offers for clients with the necessary communication permissions.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Audience and consent",
+        "text": "Review who should receive the message."
+      },
+      {
+        "icon": "calendar",
+        "title": "Relevant offers",
+        "text": "Explain the offer and its conditions clearly."
+      },
+      {
+        "icon": "users",
+        "title": "Connected replies",
+        "text": "Let the team follow up with context."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/salons"
+  },
+  "/solutions/training-centers": {
+    "kind": "sector",
+    "label": "Training centres",
+    "title": "From course interest.\nTo a confident next step.",
+    "description": "Connect course questions with enrolment guidance. Use your course information and assess Byaan integration for the workflows your centre needs.",
+    "children": [
+      "/solutions/training-centers/course-registration",
+      "/solutions/training-centers/class-reminders-certificates",
+      "/solutions/training-centers/course-marketing"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/training-centers/course-registration": {
+    "kind": "service",
+    "label": "Course registration",
+    "title": "The right course.\nA clearer enrolment journey.",
+    "description": "Explain course content, dates and requirements, then guide prospective learners through your registration process.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Course discovery",
+        "text": "Help learners compare available courses."
+      },
+      {
+        "icon": "calendar",
+        "title": "Requirements",
+        "text": "Explain prerequisites and the details needed to register."
+      },
+      {
+        "icon": "users",
+        "title": "Enrolment handoff",
+        "text": "Use the supported registration workflow and confirm the actual result."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/training-centers"
+  },
+  "/solutions/training-centers/class-reminders-certificates": {
+    "kind": "service",
+    "label": "Class reminders and certificates",
+    "title": "Keep learners informed.\nAt the right moment.",
+    "description": "Share class details and help learners understand certificate requirements using the information available to your centre.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Class details",
+        "text": "Keep time, venue and access information clear."
+      },
+      {
+        "icon": "calendar",
+        "title": "Reminder workflow",
+        "text": "Use the messaging tools enabled for your account."
+      },
+      {
+        "icon": "users",
+        "title": "Certificate enquiries",
+        "text": "Use available records and refer exceptions to staff."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/training-centers"
+  },
+  "/solutions/training-centers/course-marketing": {
+    "kind": "service",
+    "label": "Course marketing",
+    "title": "Useful courses.\nRelevant conversations.",
+    "description": "Introduce your courses to an appropriate audience and keep their questions connected to enrolment guidance.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Audience selection",
+        "text": "Work with an appropriate, consented audience."
+      },
+      {
+        "icon": "calendar",
+        "title": "Course information",
+        "text": "Explain outcomes, dates and requirements accurately."
+      },
+      {
+        "icon": "users",
+        "title": "Follow-up",
+        "text": "Continue questions and direct interested learners to the next step."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/training-centers"
+  },
+  "/solutions/real-estate": {
+    "kind": "sector",
+    "label": "Real estate",
+    "title": "Understand the need.\nMake the next viewing count.",
+    "description": "Collect property preferences, explain available listings and help your team follow up with qualified context.",
+    "children": [
+      "/solutions/real-estate/lead-qualification",
+      "/solutions/real-estate/property-catalog",
+      "/solutions/real-estate/viewing-followup"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/real-estate/lead-qualification": {
+    "kind": "service",
+    "label": "Property lead qualification",
+    "title": "Find out what matters.\nBefore the follow-up.",
+    "description": "Collect the customer’s area, budget and property preferences so your team can continue a focused conversation.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Location and type",
+        "text": "Ask what the customer is looking for."
+      },
+      {
+        "icon": "calendar",
+        "title": "Budget and priorities",
+        "text": "Gather helpful preferences without assuming eligibility."
+      },
+      {
+        "icon": "users",
+        "title": "Team context",
+        "text": "Pass the collected information to the appropriate teammate."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/real-estate"
+  },
+  "/solutions/real-estate/property-catalog": {
+    "kind": "service",
+    "label": "Property catalogue",
+    "title": "Relevant properties.\nClearer details.",
+    "description": "Help customers explore the listing information your business provides and ask your team to confirm time-sensitive details.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Listing information",
+        "text": "Keep descriptions and published prices current."
+      },
+      {
+        "icon": "calendar",
+        "title": "Relevant options",
+        "text": "Narrow options around expressed preferences."
+      },
+      {
+        "icon": "users",
+        "title": "Human confirmation",
+        "text": "Refer availability and contractual questions to your team."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/real-estate"
+  },
+  "/solutions/real-estate/viewing-followup": {
+    "kind": "service",
+    "label": "Viewings and follow-up",
+    "title": "A viewing with context.\nA follow-up that helps.",
+    "description": "Gather preferred viewing times and keep the conversation connected with your property team.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Viewing preferences",
+        "text": "Collect the property and preferred time."
+      },
+      {
+        "icon": "calendar",
+        "title": "Team coordination",
+        "text": "Confirm arrangements through your supported process."
+      },
+      {
+        "icon": "users",
+        "title": "Useful follow-up",
+        "text": "Respond to questions after the viewing without losing context."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/real-estate"
+  },
+  "/solutions/consultants": {
+    "kind": "sector",
+    "label": "Consultants and professional services",
+    "title": "More room for expertise.\nLess administrative back and forth.",
+    "description": "Explain your services, collect consultation preferences and help clients prepare for their next conversation with your team.",
+    "children": [
+      "/solutions/consultants/consultation-booking",
+      "/solutions/consultants/advance-payment",
+      "/solutions/consultants/client-followup"
+    ],
+    "features": [],
+    "steps": [],
+    "faq": []
+  },
+  "/solutions/consultants/consultation-booking": {
+    "kind": "service",
+    "label": "Consultation booking",
+    "title": "A clear request.\nA better first conversation.",
+    "description": "Help clients understand the service and provide the details needed to arrange a consultation.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Service scope",
+        "text": "Explain what is and is not included."
+      },
+      {
+        "icon": "calendar",
+        "title": "Request details",
+        "text": "Collect the information appropriate to your intake process."
+      },
+      {
+        "icon": "users",
+        "title": "Appointment handoff",
+        "text": "Use available scheduling tools and staff confirmation."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/consultants"
+  },
+  "/solutions/consultants/advance-payment": {
+    "kind": "service",
+    "label": "Consultation advance payment",
+    "title": "Clear terms.\nBefore the consultation.",
+    "description": "Explain your advance-payment policy and direct clients to a supported provider when payment is required.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Fee information",
+        "text": "State the available fee and payment terms clearly."
+      },
+      {
+        "icon": "calendar",
+        "title": "Secure provider handoff",
+        "text": "Use the enabled provider rather than collecting card details in chat."
+      },
+      {
+        "icon": "users",
+        "title": "Actual payment status",
+        "text": "Check the provider’s confirmed result before proceeding."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/consultants"
+  },
+  "/solutions/consultants/client-followup": {
+    "kind": "service",
+    "label": "Client follow-up",
+    "title": "Keep the context.\nContinue the relationship.",
+    "description": "Help clients find the next step while your team retains responsibility for professional advice and decisions.",
+    "sectionTitle": "Designed around your customer journey",
+    "sectionDescription": "Start with the information and tools your team already uses.",
+    "features": [
+      {
+        "icon": "messages",
+        "title": "Request context",
+        "text": "Keep relevant conversation details available."
+      },
+      {
+        "icon": "calendar",
+        "title": "Next actions",
+        "text": "Explain what information or action is needed."
+      },
+      {
+        "icon": "users",
+        "title": "Professional judgement",
+        "text": "Hand specialised advice and sensitive decisions to your team."
+      }
+    ],
+    "steps": [],
+    "faq": [
+      [
+        "How do we get started?",
+        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+      ],
+      [
+        "Can staff stay involved?",
+        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+      ]
+    ],
+    "parent": "/solutions/consultants"
+  },
+  "/resources/blog/measure-impact": {
+    "kind": "article",
+    "label": "Sales",
+    "title": "Bring WhatsApp conversations closer to a purchase",
+    "description": "The right information, a useful question and a clear next step make the buying journey easier.",
+    "sections": [
+      {
+        "title": "Start with the customer’s need",
+        "text": "A price question may really be a comparison between two options. Clarify the intended use or preference before making a recommendation."
+      },
+      {
+        "title": "Help them decide",
+        "text": "Keep price, availability, specifications and service policies in a clear reference. Link the answer to the customer’s interest."
+      },
+      {
+        "title": "Make the next step clear",
+        "text": "Explain whether the customer should choose an item, review an order or speak with the team. Avoid competing actions at the same moment."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/getting-started": {
+    "kind": "article",
+    "label": "Getting started",
+    "title": "Set up Sary around your business",
+    "description": "Organised information and a tested journey create a useful starting point.",
+    "sections": [
+      {
+        "title": "Start with accurate information",
+        "text": "Add your products, services, hours and policies. Decide which questions need your staff."
+      },
+      {
+        "title": "Test the entire journey",
+        "text": "Ask a realistic question, clarify missing details and check the resulting order or handover."
+      },
+      {
+        "title": "Keep improving",
+        "text": "Review recurring questions and update the reference information as your business changes."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/human-handoff": {
+    "kind": "article",
+    "label": "Customer support",
+    "title": "When should your team take over a conversation?",
+    "description": "A considered handover preserves context and gives customers the attention they need.",
+    "sections": [
+      {
+        "title": "Recognise the boundary",
+        "text": "Special requests, uncertainty and sensitive questions can require a teammate. Define these situations in your instructions."
+      },
+      {
+        "title": "Keep the context",
+        "text": "Make sure staff can see the request and the information already collected before replying."
+      },
+      {
+        "title": "Learn from handovers",
+        "text": "Use repeated handover reasons to improve knowledge while keeping judgement with the right person."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/training-byaan": {
+    "kind": "article",
+    "label": "Integrations",
+    "title": "From a course question to enrolment with Byaan",
+    "description": "Bring training information and enrolment guidance closer to your learners.",
+    "sections": [
+      {
+        "title": "Explain the course",
+        "text": "Provide accurate content, dates, fees and entry requirements before asking learners to proceed."
+      },
+      {
+        "title": "Assess the integration",
+        "text": "Review which Byaan data and workflows your account can use. Confirm records and supported actions rather than assuming access."
+      },
+      {
+        "title": "Confirm the result",
+        "text": "Review the actual registration or enquiry state and give the learner a clear next action."
+      }
+    ],
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/voice-messages": {
+    "kind": "article",
+    "label": "Customer experience",
+    "title": "One voice message. A clearer order.",
+    "description": "Let customers explain in their own words and confirm the details that matter.",
+    "sections": [
+      {
+        "title": "Understand before acting",
+        "text": "A voice message can include several items and preferences. Extract the request before deciding the next action."
+      },
+      {
+        "title": "Clarify missing details",
+        "text": "Confirm ambiguous quantities, names and delivery requirements instead of guessing."
+      },
+      {
+        "title": "Review the order",
+        "text": "Show a clear summary and use the confirmed system result to communicate progress."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/verified-case-study": {
+    "kind": "article",
+    "label": "Customer relationships",
+    "title": "The relationship continues after the first order",
+    "description": "Useful follow-up gives customers a clear reason to return.",
+    "sections": [
+      {
+        "title": "Make the follow-up relevant",
+        "text": "Start from the customer’s request and the information they need, rather than a generic message."
+      },
+      {
+        "title": "Respect preferences",
+        "text": "Use the necessary consent for marketing and keep opt-out requests part of the workflow."
+      },
+      {
+        "title": "Continue the context",
+        "text": "When the customer replies, let your team see the earlier conversation and order information."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/resources/blog/reading-reports": {
+    "kind": "article",
+    "label": "Business development",
+    "title": "What customer conversations reveal about your business",
+    "description": "Turn recurring questions and sticking points into better information and service.",
+    "sections": [
+      {
+        "title": "Look for repeated questions",
+        "text": "Unclear prices, missing specifications and uncertain delivery terms often appear in conversations."
+      },
+      {
+        "title": "Review the stopping points",
+        "text": "Find where customers need clarification or a teammate. Read the surrounding context before drawing conclusions."
+      },
+      {
+        "title": "Improve one step at a time",
+        "text": "Update the information or next action and review later conversations to see whether the change helped."
+      }
+    ],
+    "date": "2026-08-21",
+    "readTime": "5 min read",
+    "faq": [],
+    "parent": "/resources/blog"
+  },
+  "/docs/how-sari-works": {
+    "kind": "guide",
+    "label": "Getting started guide",
+    "title": "Set up Sary to work your way",
+    "description": "From your business information to the first customer conversation. Test the journey that matters before expanding usage.",
+    "sections": [
+      {
+        "title": "Introduce your business",
+        "text": "Add your business name, opening hours, services and communication instructions. Define the tone and the situations that need a person."
+      },
+      {
+        "title": "Add products and services",
+        "text": "Provide names, specifications, current prices and policies. Review the information available through your enabled integrations."
+      },
+      {
+        "title": "Connect your tools",
+        "text": "Check WhatsApp and the integrations relevant to your business, such as Salla, Zid, Byaan or Tap. Confirm what each connection supports."
+      },
+      {
+        "title": "Test and launch",
+        "text": "Try a realistic question and follow the journey to completion. Test missing details and staff handover, then improve the knowledge."
+      }
+    ],
+    "faq": [
+      [
+        "Do I need programming experience?",
+        "Start with your account settings, business information and supported integrations. Contact support if the workflow needs additional setup."
+      ],
+      [
+        "Can I start with one service?",
+        "Yes. Test one frequent customer journey, then expand as your information and team are ready."
+      ]
+    ]
+  },
+  "/docs/whatsapp-payment-guide": {
+    "kind": "guide",
+    "label": "WhatsApp payment guide",
+    "title": "A clearer payment journey on WhatsApp",
+    "description": "Keep the request, amount and confirmed payment result connected.",
+    "sections": [
+      {
+        "title": "Confirm the request",
+        "text": "Review the items or service and the details required for the order."
+      },
+      {
+        "title": "Explain the amount",
+        "text": "Show the current amount, currency and applicable charges before the customer proceeds."
+      },
+      {
+        "title": "Use the enabled provider",
+        "text": "Send the payment link produced by the supported provider. Do not collect card information in the chat."
+      },
+      {
+        "title": "Check the actual result",
+        "text": "Use the confirmed payment status and follow up on failed or cancelled attempts without claiming success."
+      }
+    ],
+    "faq": [
+      [
+        "Do I need programming experience?",
+        "Start with your account settings, business information and supported integrations. Contact support if the workflow needs additional setup."
+      ],
+      [
+        "Can I start with one service?",
+        "Yes. Test one frequent customer journey, then expand as your information and team are ready."
+      ]
+    ]
+  },
+  "/docs/ai-sales-guide": {
+    "kind": "guide",
+    "label": "AI sales guide",
+    "title": "Make the next sales step clear",
+    "description": "Use accurate information, useful questions and human judgement to build a better conversation.",
+    "sections": [
+      {
+        "title": "Understand the request",
+        "text": "Ask a short question when the need is incomplete."
+      },
+      {
+        "title": "Suggest relevant options",
+        "text": "Use your catalogue and avoid inventing availability or prices."
+      },
+      {
+        "title": "Review before action",
+        "text": "Confirm the details required for the order or booking."
+      },
+      {
+        "title": "Keep your team involved",
+        "text": "Bring a person into exceptions and important decisions."
+      }
+    ],
+    "faq": [
+      [
+        "Do I need programming experience?",
+        "Start with your account settings, business information and supported integrations. Contact support if the workflow needs additional setup."
+      ],
+      [
+        "Can I start with one service?",
+        "Yes. Test one frequent customer journey, then expand as your information and team are ready."
+      ]
+    ]
+  },
+  "/company/terms": {
+    "kind": "legal",
+    "label": "Terms of use",
+    "title": "A clear experience.\nFrom the first agreement.",
+    "description": "Terms governing Sary accounts, subscriptions and use of the platform.",
+    "version": "2026-08-21",
+    "sections": [
+      {
+        "title": "1. Acceptance of the terms",
+        "paragraphs": [
+          "By creating an account or using Sary, the account holder agrees to these terms and the privacy policy and confirms that they have the legal capacity and authority to contract on behalf of the business.",
+          "The required consent is presented separately during registration, and the document version and date are recorded. If you do not agree, do not create an account or use the service."
+        ]
+      },
+      {
+        "title": "2. The service and artificial intelligence",
+        "paragraphs": [
+          "Sary is a platform for sales and customer service through WhatsApp. It may include automated replies, products, orders, bookings, campaigns, analytics and external integrations.",
+          "AI outputs are probabilistic and may be inaccurate. Merchants must review settings, sensitive information, offers and prices. AI outputs must not be the sole basis for legal, financial or health decisions.",
+          "Parts of the service depend on WhatsApp and AI, communication and payment providers. Their availability and policy changes may affect the service."
+        ]
+      },
+      {
+        "title": "3. Accounts and security",
+        "paragraphs": [
+          "Users must provide accurate information, protect their password and devices, and notify us of suspected unauthorised access.",
+          "An account may be suspended for a security risk, abuse or breach, taking into account applicable rights and the circumstances.",
+          "Administrative accounts and store ownership carry significant permissions. The owner is responsible for managing team members and transferring ownership before requesting account deletion."
+        ]
+      },
+      {
+        "title": "4. Plans, prices and payment",
+        "paragraphs": [
+          "The price, currency, billing period and limits displayed on the pricing page or checkout at the time of purchase govern the order. Outdated prices or marketing materials are not a binding offer.",
+          "The payment gateway processes card information. Taxes or statutory charges may apply and will be displayed before payment confirmation where possible.",
+          "Recurring charges are not made automatically unless the user enables recurring renewal and provides valid payment authorisation in a flow explaining the amount, frequency and cancellation.",
+          "The refund policy displayed at purchase and mandatory statutory rights apply. These terms do not limit any right that cannot lawfully be waived."
+        ]
+      },
+      {
+        "title": "5. Acceptable use and messaging",
+        "paragraphs": [
+          "Unlawful or misleading content, impersonation, unauthorised access, unlawful data collection, spam and attempts to bypass rate limits or protections are prohibited.",
+          "Merchants must follow WhatsApp policies and electronic marketing requirements, obtain necessary permissions and provide a clear way to stop marketing messages.",
+          "Merchants are responsible for the content, offers, prices and consent associated with messages to their customers, and for the accuracy of product and service information supplied to the platform."
+        ]
+      },
+      {
+        "title": "6. Customer data and privacy",
+        "paragraphs": [
+          "The merchant determines the purposes of processing their customer data and ensures a lawful basis and appropriate notice. Sary processes the data to provide the service in accordance with the privacy policy.",
+          "Providers such as Green API, OpenAI, Tap and hosting services may be used as necessary to operate enabled integrations. Using them does not mean selling data.",
+          "The merchant must cooperate with Sary on data-subject requests and incidents and must not upload data they are not entitled to process."
+        ]
+      },
+      {
+        "title": "7. Intellectual property",
+        "paragraphs": [
+          "Rights in the platform, software and trademarks remain with Sary or its licensors. Users receive a limited, non-exclusive, non-transferable licence to use the service during their subscription.",
+          "The merchant retains their content and data and grants Sary only the permission needed to process it and operate the service under these terms and the privacy policy."
+        ]
+      },
+      {
+        "title": "8. Availability and support",
+        "paragraphs": [
+          "We aim for reliable operation but do not guarantee an uninterrupted or error-free service. Maintenance or restrictions may be necessary to protect security or comply with requirements.",
+          "A special service or support level applies only if expressly included in a written order or agreement."
+        ]
+      },
+      {
+        "title": "9. Liability",
+        "paragraphs": [
+          "To the extent permitted by law, we are not liable for indirect damage caused by misuse, inaccurate merchant data or an external provider outage beyond reasonable control.",
+          "Nothing excludes a liability or right that cannot lawfully be excluded or limited. Any permitted financial liability limit is determined under the agreement and fees paid for the service giving rise to the claim."
+        ]
+      },
+      {
+        "title": "10. Cancellation and termination",
+        "paragraphs": [
+          "Renewal or subscription cancellation is available under the account options and order terms. Its effect on the paid period and refunds follows the terms displayed at purchase and statutory rights.",
+          "Data subjects may request account deletion through the privacy centre. Limited encrypted financial records may be retained where necessary for accounting obligations or claims."
+        ]
+      },
+      {
+        "title": "11. Law, changes and contact",
+        "paragraphs": [
+          "These terms are governed by the laws of the Kingdom of Saudi Arabia, with jurisdiction determined by applicable legal rules.",
+          "We may update the terms when the service or law changes. We display the version and effective date and provide appropriate advance notice of material changes where required.",
+          "For enquiries, use the contact page. For data requests, use the privacy centre within your account."
+        ]
+      }
+    ]
+  },
+  "/company/privacy": {
+    "kind": "legal",
+    "label": "Privacy policy",
+    "title": "Your data deserves\na clear picture.",
+    "description": "How Sary processes personal data, your rights and how to contact us.",
+    "version": "2026-08-21",
+    "sections": [
+      {
+        "title": "1. Scope and roles",
+        "paragraphs": [
+          "This policy explains how Sary processes personal data when you use the website, merchant dashboard and WhatsApp sales services.",
+          "The merchant determines the purposes of processing customer data and remains responsible for a lawful basis and appropriate notice. Sary processes that data to provide the service according to the merchant’s settings and its legal obligations."
+        ]
+      },
+      {
+        "title": "2. Data we process",
+        "paragraphs": [
+          "Account and store information: name, email address, phone number, business name, account settings and consent records.",
+          "Operational data: products, orders, bookings, campaigns, usage logs, support records and security events.",
+          "Conversation and customer data connected by the merchant, which may include phone numbers, message content and media needed for replies and analytics.",
+          "Subscription and payment data such as amount, currency, status and reference identifiers. Sary does not store the full card number; the payment gateway processes card information under its own systems.",
+          "Technical data such as network address and browser type. We may retain one-way cryptographic fingerprints to evidence consent and limit abuse."
+        ]
+      },
+      {
+        "title": "3. Purposes and legal bases",
+        "paragraphs": [
+          "Creating the account, providing the service, subscription and support, processing payments and fulfilling contractual obligations.",
+          "Protecting the platform, preventing fraud, improving reliability and measuring performance based on legitimate interests without conflicting with data subjects’ rights.",
+          "Meeting accounting and regulatory requirements and responding to lawful requests.",
+          "Sending direct marketing only with separate consent, which can be withdrawn at any time through the privacy centre.",
+          "Forms identify information required to create an account or provide a service. Not providing it may prevent the relevant part of the service."
+        ]
+      },
+      {
+        "title": "4. Providers and transfers outside the Kingdom",
+        "paragraphs": [
+          "We may use providers for WhatsApp, AI, payments, hosting, email and monitoring, including Green API, OpenAI and Tap depending on the integrations the merchant enables.",
+          "We share what is necessary for the purpose and restrict access contractually and technically. Some processing may take place outside the Kingdom under applicable requirements and safeguards for personal-data transfers.",
+          "We do not sell personal data or share customer conversations with independent advertisers for their own marketing."
+        ]
+      },
+      {
+        "title": "5. Protection and security",
+        "paragraphs": [
+          "We use TLS in transit, strong password hashing, access controls, merchant data separation, security logs and secret-management procedures.",
+          "Sensitive secrets and financial records retained for legal reasons use authenticated encryption. We do not claim that every field or backup is encrypted in the same way.",
+          "No technology guarantees that all risks are eliminated. We review controls and handle incidents according to their nature and applicable notification obligations."
+        ]
+      },
+      {
+        "title": "6. Data-subject rights",
+        "paragraphs": [
+          "Applicable rights include being informed, access, receiving a copy in a clear and commonly used format, correction, requesting destruction, withdrawing consent and objection where applicable.",
+          "Account holders can download account data, manage marketing consent or submit a deletion request through the privacy centre. Identity verification may be required.",
+          "We record requests and work on them within 30 days after receiving a complete request. When necessary, the period may be extended by another 30 days with notice and reasons.",
+          "Requests concerning a merchant’s customer data generally start with the merchant as controller. Sary cooperates in carrying out a verified request."
+        ]
+      },
+      {
+        "title": "7. Deletion and retention",
+        "paragraphs": [
+          "We retain data for as long as necessary to operate the account or fulfil the purpose of collection, then delete or de-identify it under the retention schedule.",
+          "Once account deletion is confirmed, access, automated replies and the WhatsApp connection are stopped, and account and store data removal is scheduled. If automated processing fails, it may move to human review instead of incomplete deletion.",
+          "A minimum set of invoice and payment records may be retained in encrypted form for accounting obligations or legal claims and destroyed when the reason for retention ends.",
+          "Removal from backups may take until the scheduled replacement cycle. Backup use is restricted to recovery and security."
+        ]
+      },
+      {
+        "title": "8. Direct marketing and cookies",
+        "paragraphs": [
+          "Marketing-message consent is separate and optional. Withdrawing it does not affect essential service messages such as security and billing notices.",
+          "We use essential cookies for sessions, protection and preferences. If non-essential analytics are enabled, their options are presented as required by law."
+        ],
+        "id": "direct-marketing"
+      },
+      {
+        "title": "9. Complaints and contact",
+        "paragraphs": [
+          "Account requests can be submitted through the privacy centre. Use the contact page for enquiries, objections or complaints.",
+          "If a complaint is not resolved, the data subject may contact the competent data-protection authority in Saudi Arabia through its available official channels."
+        ]
+      },
+      {
+        "title": "10. Updates",
+        "paragraphs": [
+          "We may update this policy to reflect changes to the service or legal requirements. We display the version and effective date and request fresh consent when a consent-based purpose changes materially."
+        ]
+      }
+    ]
+  }
+}

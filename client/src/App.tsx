@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, useLocation } from "wouter";
+import { isCentralRoute } from "@shared/central/routes";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { IntegrationProvider } from "./hooks/useIntegration";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import TrackingScripts from "./components/TrackingScripts";
 
 // Loading component for lazy-loaded pages
@@ -220,7 +221,14 @@ const AdminMonitor = lazyLoad(() => import("./pages/admin/Monitor"));
 const PrivacyRequests = lazyLoad(() => import("./pages/admin/PrivacyRequests"));
 const AdminAiAnalytics = lazyLoad(() => import("./pages/admin/AiAnalytics"));
 
+function CentralDocumentNavigation() {
+  useEffect(() => { window.location.reload(); }, []);
+  return <PageLoader />;
+}
+
 function Router() {
+  const [path] = useLocation();
+  if (isCentralRoute(path)) return <CentralDocumentNavigation />;
   return (
     <Switch>
       <Route path={"/"} component={Home} />

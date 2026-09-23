@@ -1,3 +1,4 @@
+import { registerCentralLanding } from "./central-landing";
 /**
  * Production Static File Server
  * Serves pre-built Vite assets with proper caching headers.
@@ -14,6 +15,8 @@ export function serveStatic(app: Express, publicDirectory?: string) {
 
   // Enable Gzip compression for all responses
   app.use(compression());
+
+  registerCentralLanding(app, distPath);
 
   // Serve hashed assets with long-term cache (1 year)
   app.use(
@@ -55,7 +58,7 @@ export function serveStatic(app: Express, publicDirectory?: string) {
     }
 
     const status = decision.kind === 'known' ? 200 : 404;
-    if (status === 404) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (status === 404 || /^\/(?:merchant|admin|super-admin|subscribe|pay|payment|customer)(?:\/|$)/.test(decision.path)) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     return res.status(status).sendFile(path.join(distPath, "index.html"));
   });
 }

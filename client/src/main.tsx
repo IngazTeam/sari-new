@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
-import App from "./App";
-import "./index.css";
+import { isCentralRoute } from "@shared/central/routes";
+
 import { initializeI18n } from "./lib/i18n";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { selectedMerchantId } from './lib/merchant-selection';
@@ -102,6 +102,13 @@ const trpcClient = trpc.createClient({
 });
 
 async function bootstrapApplication() {
+  if (isCentralRoute(window.location.pathname)) {
+    const { bootstrapCentral } = await import("./central/bootstrap");
+    bootstrapCentral();
+    return;
+  }
+  await import("./index.css");
+  const { default: App } = await import("./App");
   await initializeI18n();
 
   createRoot(document.getElementById("root")!).render(

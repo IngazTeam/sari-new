@@ -1,3 +1,5 @@
+import { renderCentralDocument } from "../../shared/central/seo";
+import { getCentralPage, centralLanguage } from "../../shared/central/catalog";
 import { type Express } from "express";
 import fs from "fs";
 import { type Server } from "http";
@@ -79,7 +81,12 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
-      const page = await vite.transformIndexHtml(url, template);
+      const transformed = await vite.transformIndexHtml(url, template);
+      const language = centralLanguage(new URL(url, "http://localhost").search);
+      const central = getCentralPage(req.path, language);
+      if (central) res.setHeader("Content-Language", language);
+      if (central?.noindex) { res.setHeader("X-Robots-Tag", "noindex, nofollow"); res.setHeader("Referrer-Policy", "no-referrer"); }
+      const page = renderCentralDocument(transformed, url);
       res.status(res.locals.spaStatus || 200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);

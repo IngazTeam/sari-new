@@ -1,90 +1,21 @@
-# Robots.txt for Sari - AI Sales Agent for WhatsApp
-# https://sary.live
-
-# Default rules for all bots
+# Shared policy for crawlers. Account and transaction pages also emit noindex.
 User-agent: *
 Allow: /
-Allow: /pricing
-Allow: /solutions
-Allow: /resources
-Allow: /company
-Allow: /try-sari
-Allow: /blog
-
-# SEO Landing Pages - Money Pages
-Allow: /ai-whatsapp-sales-agent
-Allow: /whatsapp-ordering-system
-Allow: /whatsapp-booking-system
-Allow: /ai-customer-service-whatsapp
-Allow: /conversational-commerce-platform
-
-# SEO Vertical Industry Pages
-Allow: /solutions/clinics
-Allow: /solutions/restaurants
-Allow: /solutions/salons
-Allow: /solutions/training-centers
-Allow: /solutions/real-estate
-Allow: /solutions/consultants
-
-# SEO Knowledge Engine (Docs)
-Allow: /docs/how-sari-works
-Allow: /docs/whatsapp-payment-guide
-Allow: /docs/ai-sales-guide
-
-# Disallow private/admin areas
 Disallow: /admin/
 Disallow: /merchant/
+Disallow: /super-admin/
 Disallow: /api/
 Disallow: /auth/
-Disallow: /setup-wizard/
-Disallow: /super-admin/
 Disallow: /private/
-
-# Disallow query parameters that create duplicate content
-Disallow: /*?*sort=
-Disallow: /*?*filter=
-Disallow: /*?*page=
-
-# Google-specific rules
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 0
-
-# Bing-specific rules
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-# ─── AI Crawlers — ALLOW for AI visibility ───
-User-agent: GPTBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-User-agent: CCBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
+Disallow: /customer/
 
 User-agent: Bytespider
 Disallow: /
 
-# Block abusive scrapers (not AI services)
 User-agent: MJ12bot
 Disallow: /
 
 User-agent: DotBot
 Disallow: /
 
-# Sitemap location
 Sitemap: https://sary.live/sitemap.xml
-
-# Allow crawling of important static assets
-User-agent: *
-Allow: /assets/
-Allow: /images/

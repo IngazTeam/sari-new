@@ -1,3 +1,4 @@
+import { CENTRAL_ROUTE_PATHS } from "./central/routes";
 /**
  * Server-side policy for the client-side application routes.
  *
@@ -6,6 +7,7 @@
  * release test keeps this manifest in sync with <Route> declarations.
  */
 export const SPA_ROUTE_TEMPLATES = [
+  ...CENTRAL_ROUTE_PATHS,
   "/",
   "/login",
   "/signup",
@@ -214,17 +216,8 @@ export const SPA_ROUTE_TEMPLATES = [
 
 const CANONICAL_REDIRECTS: Readonly<Record<string, string>> = {
   '/register': '/signup',
-  '/solutions/sales': '/ai-whatsapp-sales-agent',
-  '/solutions/marketing': '/ai-whatsapp-sales-agent',
-  '/solutions/support': '/ai-customer-service-whatsapp',
-  '/product/ai-agent': '/ai-whatsapp-sales-agent',
-  '/product/chatbot': '/ai-customer-service-whatsapp',
-  '/product/whatsapp': '/ai-whatsapp-sales-agent',
-  '/product/broadcasts': '/ai-whatsapp-sales-agent',
-  '/company/contact': '/support',
   '/try-sari-enhanced': '/try-sari',
   '/conversational-commerce-platform': '/ai-whatsapp-sales-agent',
-  '/docs/ai-sales-guide': '/ai-whatsapp-sales-agent',
   '/merchant/whatsapp-setup': '/merchant/whatsapp',
   '/merchant/sari-personality': '/merchant/bot-settings',
   '/merchant/website-analysis': '/merchant/smart-analysis',
