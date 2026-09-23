@@ -147,6 +147,7 @@ export async function callGPT4(
     maxTokens?: number;
     noRetry?: boolean; // PEN-RES-03 FIX: Skip internal retry (used when caller already handles retry)
     merchantId?: number;
+    conversationId?: number | string;
     userId?: number | string;
     taskType?: string;
   }
@@ -168,6 +169,8 @@ export async function callGPT4(
     const explicitContext = options?.merchantId !== undefined
       ? {
           merchantId: options.merchantId,
+          conversationId: options.conversationId ?? (String(inheritedContext?.merchantId) === String(options.merchantId)
+            ? inheritedContext?.conversationId : undefined),
           userId: options.userId,
           taskType: options.taskType || 'sari.reply',
         }

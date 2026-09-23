@@ -17,6 +17,7 @@
  */
 
 import { getPool } from '../db';
+import { isSalesRefusal } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -67,6 +68,15 @@ export interface NBAResult {
 // ═══════════════════════════════════════════════════════════════
 
 export async function determineNextBestAction(ctx: NBAContext): Promise<NBAResult> {
+  if (ctx.intent === 'declined' || isSalesRefusal(ctx.customerMessage)) {
+    return { action: 'continue_conversation', confidence: 1, priority: 'critical',
+      reason: 'رفض العميل الحالي يلغي الاستعداد السابق',
+      promptInjection: '[قرار ملزم] العميل رفض أو تراجع. احترم قراره ولا تنشئ طلباً أو ترسل رابط دفع أو خصماً أو متابعة دون طلب جديد منه.' };
+  }
+  if (ctx.intent === 'post_purchase') {
+    return { action: 'continue_conversation', confidence: 1, priority: 'high',
+      reason: 'الرسالة تخص طلباً قائماً', promptInjection: 'عالج موضوع الطلب القائم باستخدام حالته الموثقة، ولا تعاود البيع أو تضغط للدفع.' };
+  }
   const rules = [
     // ── Priority 1: Payment Actions ──
     checkPaymentReady(ctx),

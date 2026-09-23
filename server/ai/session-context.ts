@@ -12,7 +12,10 @@
 // Types
 // ═══════════════════════════════════════════════════════════════
 
+import { isSalesRefusal, isShortAffirmation, normalizeCustomerText, pendingDecisionFromQuestion } from './customer-decision';
+
 export interface ConversationSession {
+  contextSchemaVersion?: number;
   version?: number;
   merchantId: number;
   conversationId: number;
@@ -35,6 +38,7 @@ export interface ConversationSession {
 }
 
 export type CustomerIntent = 
+  | 'declined'      // Current refusal overrides old buying-stage estimates.
   | 'browsing'       // Just looking around
   | 'inquiring'      // Asking about specific product/service
   | 'comparing'      // Comparing options/prices
@@ -143,6 +147,7 @@ export function getSession(merchantId: number, conversationId: number): Conversa
  * Create a new session after the first message pipeline completes.
  */
 export function createSession(data: {
+  contextSchemaVersion?: number;
   merchantId: number;
   conversationId: number;
   ragFacts: string;
@@ -161,6 +166,7 @@ export function createSession(data: {
   const now = Date.now();
   
   const session: ConversationSession = {
+    contextSchemaVersion: data.contextSchemaVersion,
     merchantId: data.merchantId,
     conversationId: data.conversationId,
     ragFacts: data.ragFacts,
@@ -302,19 +308,23 @@ export function detectIntent(
   message: string,
   customerTotalConversations?: number,
   profileBuyingStage?: string | null,
+  lastAssistantMessage?: string,
 ): CustomerIntent {
   // FIX-6 (P1): Normalize Arabic hamzas before matching.
   // Without this, 'أبغى أطلب' (hamza-alef) wouldn't match 'ابغى اطلب' (plain alef).
-  const msg = message.toLowerCase()
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/[ؤ]/g, 'و')
-    .replace(/[ئ]/g, 'ي')
-    .replace(/[ة]/g, 'ه');
+  const msg = normalizeCustomerText(message);
+  if (isSalesRefusal(message)) return 'declined';
+  // An existing-order issue takes precedence over price words or old profile data.
+  if (['طلبي', 'وين وصل', 'ما وصل', 'tracking', 'my order'].some(s => msg.includes(s))) return 'post_purchase';
+  if (isShortAffirmation(message)) {
+    const pending = pendingDecisionFromQuestion(lastAssistantMessage);
+    return pending === 'purchase' ? 'ready_to_buy' : pending === 'information' ? 'inquiring' : 'unknown';
+  }
   
   // Ready to buy — highest priority
   const buySignals = ['ابغى اطلب', 'ابي اطلب', 'ابي اشتري', 'ابغى اشتري', 'عايز اشتري', 'بدي اشتري',
     'اريد الشراء', 'كيف اطلب', 'طريقة الطلب', 'ابي اخذ', 'i want to buy',
-    'اطلب', 'احجز', 'ابغى احجز', 'تمام اطلب', 'اكمل الطلب', 'سجلني', 'كيف ادفع'];
+    'اطلب', 'احجز', 'ابغى احجز', 'تمام اطلب', 'اكمل الطلب', 'كمل الطلب', 'سجلني', 'كيف ادفع'];
   if (buySignals.some(s => msg.includes(s))) return 'ready_to_buy';
   
   // Hesitating — BEFORE objecting! "بفكر" is hesitation, not objection
@@ -377,7 +387,8 @@ export function detectIntent(
   // When keywords are ambiguous, use GPT-enriched buyingStage from profile
   if (profileBuyingStage) {
     const stageToIntent: Record<string, CustomerIntent> = {
-      'ready': 'ready_to_buy',
+      // An old profile estimate is not current purchase consent.
+      'ready': 'inquiring',
       'purchased': 'post_purchase',
       'comparing': 'comparing',
       'returning': 'returning',

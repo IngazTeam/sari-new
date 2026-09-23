@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-09-23T11:53:31.545Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "externalRequestsBlocked": true,
+  "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
+  "results": [
+    {
+      "width": 320,
+      "mode": "ready",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "loading",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "ready",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "ready",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "loading",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "ready",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "loading",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "ready",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "invoice_failure_retry",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

@@ -2455,20 +2455,17 @@ ${fencedContent}`,
 
     const learningDb = await import('./db/learning');
 
-    const [totalSignals, totalConversations, generation, signalDistribution, activeDNA] = await Promise.all([
+    const [totalSignals, totalConversations, generation, signalDistribution, activeDNA, learningEvidence] = await Promise.all([
       learningDb.getTotalSignals(merchant.id),
       learningDb.getTotalConversations(merchant.id),
       learningDb.getDNAGeneration(merchant.id),
       learningDb.getSignalDistribution(merchant.id, 30),
       learningDb.getActiveDNA(merchant.id),
+      learningDb.getLearningEvidence(merchant.id),
     ]);
 
-    // Calculate maturity level based on signals and generation
-    const maturityLevel = generation === 0 ? 'newborn'
-      : generation <= 2 ? 'learning'
-      : generation <= 5 ? 'growing'
-      : generation <= 10 ? 'experienced'
-      : 'expert';
+    // Analysis cycles and model confidence are not evidence of sales maturity.
+    const maturityLevel = learningEvidence.proposalCount > 0 ? 'review_required' : 'collecting_evidence';
 
     // Sanitize DNA for frontend (no BLOBs, whitelist fields)
     const dnaInsights = activeDNA.map((d: any) => ({
@@ -2487,6 +2484,8 @@ ${fencedContent}`,
       maturityLevel,
       signalDistribution,
       dnaInsights,
+      learningEvidence,
+      learningMode: 'proposals_only' as const,
     };
   }),
 

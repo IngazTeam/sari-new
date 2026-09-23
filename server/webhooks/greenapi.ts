@@ -372,6 +372,7 @@ async function processTextMessage(params: {
         message: params.messageText,
         imageUrl: params.imageUrl,
         conversationId: params.conversationId,
+        incomingMessageId: incomingMsg?.id,
         isGroupMessage: params.isGroupMessage,
       });
     }
@@ -385,25 +386,13 @@ async function processTextMessage(params: {
       console.error('[Webhook] Error extracting keywords:', error);
     }
     
-    // تطبيق A/B testing على الردود السريعة
-    let finalResponse = response;
-    try {
-      const abTestResult = await selectABTestVariant(params.merchantId, params.messageText);
-      if (abTestResult) {
-        finalResponse = abTestResult.text;
-        console.log(`[Webhook] Using A/B test variant: ${abTestResult.variant}`);
-        
-        // BUG-FIX: Record as impression (false), not success — conversion tracked later
-        await recordABTestResult(abTestResult.testId, abTestResult.variant, false);
-      }
-    } catch (error) {
-      console.error('[Webhook] Error applying A/B test:', error);
-    }
+    // A raw A/B template cannot replace a personalized, reviewed reply or an action result.
+    // Experiments must vary approved policy before generation and use verified outcome attribution.
     
     // NOTE: Outgoing message save + isProcessed update moved to AFTER WhatsApp send
     // (see caller in handleGreenApiWebhook — ensures we don't mark as processed before delivery)
     
-    return { response: finalResponse, incomingMsgId: incomingMsg?.id };
+    return { response, incomingMsgId: incomingMsg?.id };
   } catch (error: any) {
     console.error('[Webhook] Error processing text message:', error);
     throw error;
@@ -1768,11 +1757,25 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     const msgType = (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') ? 'voice' : (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') ? 'image' : 'text';
     logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: msgType as any, status: 'delivered', responseTimeMs: Date.now() - _deliveryStart, source: 'webhook' });
     
-    // === Action Selector: Decide supplementary actions (fire-and-forget) ===
+    // Supplementary actions are awaited. Orders are handled by saved agreement checkout before the main reply.
     try {
       const { selectAction, executeAction } = await import('../ai/action-selector');
       const { detectIntent } = await import('../ai/session-context');
-      const messageText = extractMessageText(payload) || '';
+      let messageText = extractMessageText(payload) || '';
+      const actionHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+      if (incomingMsgId) {
+        const historyPool = await getPool();
+        if (historyPool) {
+          const [historyRows] = await historyPool.execute<any[]>(`SELECT m.id, m.direction, m.content
+            FROM messages m JOIN conversations c ON c.id = m.conversationId
+            WHERE c.id = ? AND c.merchantId = ? AND m.id <= ? ORDER BY m.id DESC LIMIT 21`,
+          [conversationId, instance.merchantId, incomingMsgId]);
+          for (const row of historyRows.reverse()) {
+            if (Number(row.id) === incomingMsgId) messageText = row.content || messageText;
+            else actionHistory.push({ role: row.direction === 'incoming' ? 'user' : 'assistant', content: row.content || '' });
+          }
+        }
+      }
       
       // Load profile read-only (profile already created by chatWithSari earlier)
       let actionProfile: any = null;
@@ -1780,7 +1783,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const pool = await getPool();
         if (pool) {
           const [rows] = await pool.execute(
-            `SELECT customer_tier, total_conversations, purchase_count, preferences 
+             `SELECT customer_tier, total_conversations, purchase_history, preferences
              FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ? LIMIT 1`,
             [instance.merchantId, customerPhone]
           );
@@ -1789,7 +1792,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             actionProfile = {
               customerTier: row.customer_tier || 'new',
               totalConversations: row.total_conversations || 0,
-              purchaseCount: row.purchase_count || 0,
+              purchaseCount: Array.isArray(row.purchase_history) ? row.purchase_history.length
+                : (() => { try { return JSON.parse(row.purchase_history || '[]').length || 0; } catch { return 0; } })(),
               preferences: row.preferences ? (typeof row.preferences === 'string' ? JSON.parse(row.preferences) : row.preferences) : {},
             };
           }
@@ -1800,6 +1804,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         messageText,
         actionProfile?.totalConversations,
         actionProfile?.preferences?.buyingStage,
+        actionHistory.filter(m => m.role === 'assistant').at(-1)?.content,
       );
       
       await selectAction({
@@ -1812,6 +1817,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           totalConversations: actionProfile.totalConversations || 0,
           purchaseCount: actionProfile.purchaseCount || 0,
         } as Partial<CustomerProfile> : null,
+        conversationHistory: actionHistory,
       }).then(async (action) => {
         if (action.type !== 'text_only') {
           console.log(`[ActionSelector] 🎯 Action selected: ${action.type} (intent: ${realIntent})`);

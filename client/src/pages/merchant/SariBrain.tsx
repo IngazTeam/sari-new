@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { LearningEvidenceCard } from '@/components/LearningEvidenceCard';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -472,6 +473,7 @@ export default function SariBrain() {
       </div>
 
       {/* Stats Cards */}
+      <LearningEvidenceCard showManageLink={false} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

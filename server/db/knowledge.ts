@@ -7,6 +7,7 @@
  * Schema is provisioned by tracked migrations and verified by a read-only readiness gate.
  */
 
+import { sectionContentHash } from '../knowledge/retrieval';
 import { removeKnowledgeSections } from '../knowledge/source-lifecycle';
 import { withKnowledgeTransaction } from '../knowledge/transaction';
 import { getPool } from '../db';
@@ -42,6 +43,9 @@ export interface KnowledgeSection {
   sortOrder: number;
   merchantEdited: boolean;
   embedding: Buffer | null;
+  embeddingContentHash?: string | null;
+  validUntil?: Date | null;
+  provenance?: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +66,8 @@ export interface InsertKnowledgeSection {
   sortOrder?: number;
   merchantEdited?: boolean;
   embedding?: Buffer | null;
+  validUntil?: Date | null;
+  provenance?: Record<string, unknown> | null;
 }
 
 export interface KnowledgeChangelogEntry {
@@ -95,7 +101,7 @@ export interface CachedResponse {
 
 export async function ensureKnowledgeTables(): Promise<void> {
   await assertRuntimeSchema('knowledge engine', [
-    { table: 'knowledge_sections' },
+    { table: 'knowledge_sections', columns: ['embedding_content_hash', 'valid_until', 'provenance'] },
     { table: 'knowledge_changelog' },
     { table: 'sari_response_cache' },
     { table: 'sales_quotations' },
@@ -115,7 +121,7 @@ export async function getSectionsByMerchantId(merchantId: number): Promise<Knowl
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
      FROM knowledge_sections WHERE merchant_id = ? ORDER BY sort_order, created_at`,
     [merchantId]
   );
@@ -129,9 +135,10 @@ export async function getBotSections(merchantId: number): Promise<KnowledgeSecti
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
      FROM knowledge_sections 
      WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
+       AND inject_as <> 'none' AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP(3))
      ORDER BY inject_as, sort_order`,
     [merchantId]
   );
@@ -145,9 +152,10 @@ export async function getBotSectionsWithEmbedding(merchantId: number): Promise<K
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, created_at, updated_at
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, embedding_content_hash, valid_until, provenance, created_at, updated_at
      FROM knowledge_sections 
      WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
+       AND inject_as <> 'none' AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP(3))
      ORDER BY inject_as, sort_order`,
     [merchantId]
   );
@@ -161,7 +169,7 @@ export async function getPendingReviewSections(merchantId: number): Promise<Know
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
      FROM knowledge_sections WHERE merchant_id = ? AND status = 'pending_review' ORDER BY created_at DESC`,
     [merchantId]
   );
@@ -175,7 +183,7 @@ export async function getSectionById(sectionId: number, merchantId: number): Pro
   if (!pool) return null;
 
   const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
      FROM knowledge_sections WHERE id = ? AND merchant_id = ? LIMIT 1`,
     [sectionId, merchantId]
   );
@@ -192,8 +200,8 @@ export async function createSection(data: InsertKnowledgeSection): Promise<numbe
   const [result] = await pool.execute(
     `INSERT INTO knowledge_sections 
      (merchant_id, parent_id, section_type, title, content, summary, source, source_url, 
-      confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, valid_until, provenance)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.merchantId,
       data.parentId ?? null,
@@ -210,6 +218,8 @@ export async function createSection(data: InsertKnowledgeSection): Promise<numbe
       data.sortOrder ?? 0,
       data.merchantEdited ? 1 : 0,
       data.embedding ?? null,
+      data.validUntil ?? null,
+      data.provenance ? JSON.stringify(data.provenance) : null,
     ]
   );
   return (result as any).insertId;
@@ -242,7 +252,8 @@ export async function updateSection(
     injectAs: 'inject_as',
     sortOrder: 'sort_order',
     merchantEdited: 'merchant_edited',
-    embedding: 'embedding',
+    validUntil: 'valid_until',
+    provenance: 'provenance',
   };
 
   for (const [key, col] of Object.entries(fieldMap)) {
@@ -252,6 +263,8 @@ export async function updateSection(
       // Convert booleans to 0/1
       if (typeof val === 'boolean') {
         values.push(val ? 1 : 0);
+      } else if (key === 'provenance') {
+        values.push(val === null ? null : JSON.stringify(val));
       } else {
         values.push(val);
       }
@@ -259,12 +272,27 @@ export async function updateSection(
   }
 
   if (updates.length === 0) return;
+  if (['title', 'content', 'summary'].some(key => (data as any)[key] !== undefined)) {
+    updates.push('embedding = NULL', 'embedding_content_hash = NULL');
+  }
 
   values.push(sectionId, merchantId);
   await pool.execute(
     `UPDATE knowledge_sections SET ${updates.join(', ')} WHERE id = ? AND merchant_id = ?`,
     values
   );
+}
+
+/** Publish an embedding only for the exact text read before the network request. */
+export async function storeSectionEmbedding(section: KnowledgeSection, merchantId: number, embedding: Buffer): Promise<boolean> {
+  const pool = await getPool();
+  if (!pool) throw new Error('DB unavailable');
+  const [result] = await pool.execute<any>(
+    `UPDATE knowledge_sections SET embedding = ?, embedding_content_hash = ?
+     WHERE id = ? AND merchant_id = ? AND BINARY title = BINARY ? AND BINARY content = BINARY ?
+       AND BINARY summary <=> BINARY ?`,
+    [embedding, sectionContentHash(section), section.id, merchantId, section.title, section.content, section.summary ?? null]);
+  return result.affectedRows === 1;
 }
 
 /** Delete a section (cascades to children) */

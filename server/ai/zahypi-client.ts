@@ -44,6 +44,7 @@ export type ZahyPiRuntimeConfig = {
 
 export type ZahyPiRequestContext = {
   merchantId: number | string;
+  conversationId?: number | string;
   userId?: number | string;
   taskType: string;
 };
@@ -83,6 +84,8 @@ type ZahyPiToolCall = {
 };
 
 const requestContext = new AsyncLocalStorage<ZahyPiRequestContext>();
+// Private to an interaction: secrets never enter the prompt/context identity or database events.
+const interactionConfig = new AsyncLocalStorage<{ config?: Promise<ZahyPiRuntimeConfig> }>();
 
 class ZahyPiResponseValidationError extends Error {}
 
@@ -149,6 +152,19 @@ export async function resolveZahyPiRuntimeConfig(
   override?: Omit<ZahyPiRuntimeConfig, "source">,
 ): Promise<ZahyPiRuntimeConfig> {
   if (override) return { ...override, source: "override" };
+  const scope = interactionConfig.getStore();
+  if (scope) {
+    scope.config ??= loadRuntimeConfig().then(value => Object.freeze({ ...value,
+      ...(value.taskTypes ? { taskTypes: Object.freeze([...value.taskTypes]) } : {}) }));
+    const snapshot = await scope.config;
+    // An explicit global stop overrides the frozen provider choice.
+    const live = await loadRuntimeConfig();
+    return live.enabled ? snapshot : { ...snapshot, enabled: false };
+  }
+  return loadRuntimeConfig();
+}
+
+async function loadRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
   if (runtimeConfigCache && runtimeConfigCache.expiresAt > Date.now()) {
     return runtimeConfigCache.value;
   }
@@ -176,7 +192,11 @@ export function runWithZahyPiContext<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   assertValidContext(context);
-  return requestContext.run(context, operation);
+  const parent = requestContext.getStore();
+  const sameInteraction = parent && String(parent.merchantId) === String(context.merchantId)
+    && parent.conversationId === context.conversationId;
+  const scope = sameInteraction ? interactionConfig.getStore() || {} : {};
+  return requestContext.run(context, () => interactionConfig.run(scope, operation));
 }
 
 export function getOptionalZahyPiRequestContext(): ZahyPiRequestContext | undefined {
@@ -269,9 +289,10 @@ function assertValidContext(context: ZahyPiRequestContext): void {
   const merchantValid = isSafeContextIdentifier(context.merchantId);
   const userValid = context.userId === undefined
     || isSafeContextIdentifier(context.userId);
+  const conversationValid = context.conversationId === undefined || isSafeContextIdentifier(context.conversationId);
   const taskTypeValid = typeof context.taskType === "string"
     && /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(context.taskType.trim());
-  if (!merchantValid || !userValid || !taskTypeValid) {
+  if (!merchantValid || !userValid || !conversationValid || !taskTypeValid) {
     throw new Error("ZahyPi tenant context is required");
   }
 }
@@ -362,7 +383,10 @@ export function buildSariBusinessInput(
   operationId: string,
 ): Record<string, unknown> {
   const merchantId = String(context.merchantId).trim();
-  const conversationId = `merchant:${merchantId}`;
+  // Provider memory must never join different customers of the same tenant.
+  const conversationId = context.conversationId === undefined
+    ? `merchant:${merchantId}:operation:${operationId}`
+    : `merchant:${merchantId}:conversation:${String(context.conversationId).trim()}`;
   const latestUserText = finalUserText(messages);
   const base = { operationId, promptMessages: messages };
 

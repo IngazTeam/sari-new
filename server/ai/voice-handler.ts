@@ -81,6 +81,7 @@ export async function processVoiceMessage(params: {
       customerName: params.customerName,
       message: transcription,
       conversationId: params.conversationId,
+      incomingMessageId: placeholderMsg?.id,
     });
 
 

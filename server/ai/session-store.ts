@@ -91,11 +91,23 @@ async function mutateSession(merchantId: number, conversationId: number,
 }
 
 export async function createSessionWithPersist(data: Parameters<typeof createSession>[0], expectedVersion?: number): Promise<ConversationSession> {
-  if (!usesDatabase()) return createSession(data);
+  const rebuild = (current: ConversationSession | null) => {
+    const next = createSession(data);
+    if (current) {
+      next.messageCount = current.messageCount + 1;
+      next.createdAt = current.createdAt;
+      next.topicsDiscussed = [...current.topicsDiscussed];
+      next.persuasionUsed = [...current.persuasionUsed];
+      next.sentimentTrajectory = [...current.sentimentTrajectory, data.initialSentiment].slice(-10);
+      next.dealStage = current.dealStage;
+    }
+    return restoreSession(next);
+  };
+  if (!usesDatabase()) return rebuild(getSession(data.merchantId, data.conversationId));
   return (await mutateSession(data.merchantId, data.conversationId, current => {
     // A racing initial build cannot overwrite an already active context.
     if (current && expectedVersion === undefined) return current;
-    return createSession(data);
+    return rebuild(current);
   }, expectedVersion))!;
 }
 

@@ -19,9 +19,11 @@
  * on the same `agent_history` TEXT field.
  */
 
-import { getPool, getWhatsAppInstancesByMerchantId } from '../db';
+import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
-import { sendMessageWithCredentials } from '../whatsapp';
+import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
+import { isSalesRefusal } from './customer-decision';
+import type { Pool, RowDataPacket } from 'mysql2/promise';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -55,16 +57,16 @@ const FOLLOW_UP_TEMPLATES: Record<string, string[]> = {
     '{name} 👋 بس حبيت أتأكد ما فاتك شي — لو تحتاج مساعدة أنا موجود',
   ],
   abandoned_cart: [
-    'مرحبا {name}! لاحظت إن سلتك لسه موجودة 🛒 تحتاج مساعدة تكمل الطلب؟',
-    '{name} 👋 طلبك لسه محجوز — تبي أساعدك تكمله؟',
+    'مرحبا {name}! تحتاج مساعدة بخصوص المنتجات اللي كنت مهتماً بها؟',
+    '{name} 👋 تحتاج مساعدة في تفاصيل الطلب اللي ناقشناه؟',
   ],
   price_no_reply: [
     'هلا {name}! أرسلت لك السعر قبل — هل في شي ثاني تحتاج تعرفه؟ 😊',
     '{name} 🙌 لو السعر مناسب تبي أحجز لك؟ ولو عندك استفسار أنا هنا',
   ],
   ghost: [
-    'مرحبا {name}! وحشتنا 😊 عندنا عروض جديدة لو تبي تشوفها',
-    'هلا {name}! كيف الحال؟ عندنا جديد ممكن يعجبك 🎉',
+    'مرحبا {name}! هل ما زلت تبحث عن الحل اللي ناقشناه؟ أقدر أوضح لك الخيارات.',
+    'هلا {name}! حبيت أتابع استفسارك السابق، تحتاج توضيحاً إضافياً؟',
   ],
   post_interest: [
     '{name} 😊 حبيت أتأكد إنك لقيت اللي تبيه — تحتاج مساعدة ثانية؟',
@@ -76,28 +78,28 @@ const FOLLOW_UP_TEMPLATES: Record<string, string[]> = {
   ],
   // ═══════ P2: Loss-Reason Recovery Templates ═══════
   recovery_price: [
-    '{name} 😊 حبيت أخبرك إن عندنا عروض جديدة ممكن تناسب ميزانيتك — تبي أعرض عليك؟',
-    'هلا {name}! وصلتنا باقات بأسعار مخفضة 🎉 تحب أرسل لك التفاصيل؟',
+    '{name}، لو تحب نراجع الخيارات حسب ميزانيتك، أقدر أوضح لك الفروق.',
+    'هلا {name}! هل تحتاج توضيح ما يشمله السعر قبل اتخاذ قرارك؟',
   ],
   recovery_trust: [
-    '{name} 👋 حبيت أشارك معك تجربة بعض عملائنا — كثير منهم كانوا مترددين زيك وصاروا عملاء دائمين 🤝',
-    'هلا {name}! لو تحب تشوف تقييمات العملاء أو تجرب قبل لا تشتري، أنا جاهز أساعدك 😊',
+    '{name}، هل بقيت نقطة تحتاج تتأكد منها قبل القرار؟ أراجع لك المعلومات المتاحة.',
+    'هلا {name}! أقدر أوضح لك السياسات وتفاصيل الخدمة إذا احتجت.',
   ],
   recovery_competitor: [
-    '{name} 😊 عندنا ميزات حصرية ما تلقاها عند غيرنا — تبي أوضح لك؟',
+    '{name}، ما أهم نقطة بالنسبة لك في المقارنة؟ أقدر أوضح لك تفاصيل خيارنا.',
     'هلا {name}! حبيت أقارن لك بالضبط وش الفرق بيننا وبين البدائل الثانية — عندك دقيقتين؟ 🤝',
   ],
   recovery_delivery: [
-    '{name} 👋 حبيت أخبرك إن عندنا خيارات توصيل جديدة ممكن تناسبك! 🚚',
-    'هلا {name}! تم تحسين خدمة التوصيل عندنا — تبي أشرح لك الخيارات المتاحة؟ 😊',
+    '{name}، لو ما زال عندك استفسار عن التوصيل أقدر أتحقق من الخيارات لمنطقتك.',
+    'هلا {name}! هل تحتاج نراجع تفاصيل التوصيل قبل إكمال الطلب؟',
   ],
   recovery_payment: [
     '{name} 😊 لاحظت إن الدفع ما اكتمل — لو واجهت مشكلة تقنية أنا أقدر أساعدك',
     'هلا {name}! لو تحتاج رابط دفع جديد أو طريقة دفع بديلة، أنا جاهز أساعدك 💳',
   ],
   recovery_general: [
-    '{name} 👋 وحشتنا! عندنا جديد ممكن يعجبك — تبي أعرض عليك؟ 😊',
-    'هلا {name}! كيف الحال؟ حبيت أتطمن عليك وأخبرك بآخر عروضنا 🎉',
+    '{name}، أتابع معك بخصوص استفسارك السابق. هل تحتاج معلومة إضافية؟',
+    'هلا {name}! هل ما زال الموضوع مناسباً لك أم تفضل نوقف المتابعة؟',
   ],
 };
 
@@ -127,9 +129,9 @@ function getNextAllowedSendTime(): Date {
   const saudiOffset = 3 * 60 * 60 * 1000;
   const saudiNow = new Date(now.getTime() + saudiOffset);
   const target = new Date(saudiNow);
-  target.setHours(QUIET_HOUR_END, 0, 0, 0);
+  target.setUTCHours(QUIET_HOUR_END, 0, 0, 0);
   if (target <= saudiNow) {
-    target.setDate(target.getDate() + 1);
+    target.setUTCDate(target.getUTCDate() + 1);
   }
   return new Date(target.getTime() - saudiOffset);
 }
@@ -140,7 +142,7 @@ function getNextAllowedSendTime(): Date {
 
 async function ensureTable(): Promise<void> {
   await assertRuntimeSchema('proactive follow-ups', [
-    { table: 'sales_followups', columns: ['processing_token'] },
+    { table: 'sales_followups', columns: ['processing_token', 'anchor_message_id', 'claimed_at'] },
     { table: 'conversations', columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at'] },
   ]);
 }
@@ -148,6 +150,23 @@ async function ensureTable(): Promise<void> {
 // ═══════════════════════════════════════════════════════════════
 // Public API
 // ═══════════════════════════════════════════════════════════════
+
+async function followUpContext(executor: Pick<Pool, 'execute'>, merchantId: number, conversationId: number, phone: string) {
+  const [rows] = await executor.execute<RowDataPacket[]>(`SELECT c.deal_stage,
+    (c.human_takeover = 1 AND (c.human_expires_at IS NULL OR c.human_expires_at > UTC_TIMESTAMP())) AS human_owned,
+    COALESCE((SELECT MAX(m.id) FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming'), 0) AS incoming_id,
+    (SELECT m.content FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS last_message
+    FROM conversations c WHERE c.id = ? AND c.merchantId = ? AND c.customerPhone = ?`,
+  [conversationId, merchantId, phone]);
+  return rows[0];
+}
+
+function suppressReason(context: RowDataPacket | undefined): string | undefined {
+  if (!context || !context.incoming_id) return 'context_unavailable';
+  if (context.human_owned) return 'human_takeover';
+  if (['paid', 'purchased'].includes(context.deal_stage)) return 'purchase_completed';
+  if (context.deal_stage === 'lost' || isSalesRefusal(context.last_message || '')) return 'customer_declined';
+}
 
 /**
  * Schedule a follow-up message for a customer (DB-persisted).
@@ -167,17 +186,23 @@ export async function scheduleFollowUp(params: {
   source?: string;
 }): Promise<boolean> {
   const { merchantId, customerPhone, conversationId, followUpType, customerName } = params;
-
+  let connection: Awaited<ReturnType<Pool['getConnection']>> | undefined;
   try {
     await ensureTable();
     const pool = await getPool();
     if (!pool) return false;
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    // Serialize the short scheduling transaction across this merchant, including different conversations.
+    await connection.execute('SELECT id FROM merchants WHERE id = ? FOR UPDATE', [merchantId]);
+    const context = await followUpContext(connection, merchantId, conversationId, customerPhone);
+    if (suppressReason(context)) return false;
 
     // Safety: Check weekly limit (max 3 per customer per week)
-    const [weekRows] = await pool.execute(
+    const [weekRows] = await connection.execute(
       `SELECT COUNT(*) as cnt FROM sales_followups 
        WHERE merchant_id = ? AND customer_phone = ? 
-       AND sent_at IS NOT NULL
+       AND cancelled_at IS NULL
        AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
       [merchantId, customerPhone]
     );
@@ -187,7 +212,7 @@ export async function scheduleFollowUp(params: {
     }
 
     // Safety: Only 1 active per conversation
-    const [existRows] = await pool.execute(
+    const [existRows] = await connection.execute(
       `SELECT id FROM sales_followups 
        WHERE merchant_id = ? AND customer_phone = ? AND conversation_id = ?
        AND sent_at IS NULL AND cancelled_at IS NULL
@@ -206,21 +231,25 @@ export async function scheduleFollowUp(params: {
     const messageText = params.customMessage || template.replace(/{name}/g, name);
 
     // Calculate scheduled time
-    const delayMs = params.customDelayMs || FOLLOW_UP_DELAYS[followUpType] || FOLLOW_UP_DELAYS.action_selector;
+    const delayMs = params.customDelayMs ?? FOLLOW_UP_DELAYS[followUpType] ?? FOLLOW_UP_DELAYS.action_selector;
+    if (!Number.isFinite(delayMs) || delayMs < 0 || messageText.length > 4096) return false;
     const scheduledAt = new Date(Date.now() + delayMs);
 
-    await pool.execute(
+    await connection.execute(
       `INSERT INTO sales_followups 
-       (merchant_id, conversation_id, customer_phone, follow_up_type, scheduled_at, message_text, customer_name, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, params.source || 'proactive']
+       (merchant_id, conversation_id, customer_phone, follow_up_type, scheduled_at, message_text, customer_name, source, anchor_message_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, params.source || 'proactive', context!.incoming_id]
     );
+    await connection.commit();
 
     console.log(`[FollowUp] Scheduled ${followUpType} for ***${customerPhone.slice(-4)} at ${scheduledAt.toISOString()} (source: ${params.source || 'proactive'})`);
     return true;
   } catch (err: any) {
     console.warn(`[FollowUp] Schedule failed: ${err.message}`);
     return false;
+  } finally {
+    if (connection) { await connection.rollback(); connection.release(); }
   }
 }
 
@@ -283,11 +312,17 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       return { sent, cancelled, errors };
     }
 
+    // Reclaim only expired claims. Transport deduplication uses the same follow-up ID on replay.
+    await pool.execute(`UPDATE sales_followups SET processing_token = NULL, claimed_at = NULL
+      WHERE sent_at IS NULL AND cancelled_at IS NULL AND processing_token IS NOT NULL
+      AND (claimed_at IS NULL OR claimed_at < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 10 MINUTE))`);
+    await pool.execute(`UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = 'expired'
+      WHERE sent_at IS NULL AND cancelled_at IS NULL AND scheduled_at < DATE_SUB(NOW(), INTERVAL 7 DAY)`);
     // Find due follow-ups — CLAIM-LOCK: atomic UPDATE to prevent double-send
     // when multiple cron intervals overlap (cronJobs 15min + followup-reminders 5min)
     const claimToken = `claim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     await pool.execute(
-      `UPDATE sales_followups SET processing_token = ?
+      `UPDATE sales_followups SET processing_token = ?, claimed_at = UTC_TIMESTAMP(3)
        WHERE sent_at IS NULL AND cancelled_at IS NULL AND processing_token IS NULL
        AND scheduled_at <= NOW()
        LIMIT 20`,
@@ -296,7 +331,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     const [rows] = await pool.execute(
       `SELECT f.id, f.merchant_id, f.conversation_id, f.customer_phone, 
-              f.follow_up_type, f.message_text, f.customer_name
+              f.follow_up_type, f.message_text, f.customer_name, f.anchor_message_id
        FROM sales_followups f
        WHERE f.processing_token = ?`,
       [claimToken]
@@ -307,16 +342,13 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     for (const fu of followUps) {
       try {
-        // Check humanTakeover
-        const [convRows] = await pool.execute(
-          `SELECT human_takeover FROM conversations 
-           WHERE id = ? AND merchantId = ? LIMIT 1`,
-          [fu.conversation_id, fu.merchant_id]
-        );
-        if ((convRows as any[])[0]?.human_takeover) {
+        const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
+        const suppression = suppressReason(context)
+          || (fu.anchor_message_id === null ? 'context_unavailable' : Number(context?.incoming_id) > fu.anchor_message_id ? 'customer_replied' : undefined);
+        if (suppression) {
           await pool.execute(
-            `UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = 'human_takeover' WHERE id = ?`,
-            [fu.id]
+            `UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = ? WHERE id = ? AND processing_token = ?`,
+            [suppression, fu.id, claimToken]
           );
           cancelled++;
           continue;
@@ -339,26 +371,34 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           continue;
         }
 
-        // Send the message
-        const instances = await getWhatsAppInstancesByMerchantId(fu.merchant_id);
-        const activeInstance = (instances as any[]).find((i: any) => i.status === 'active');
-
-        if (!activeInstance?.instanceId) {
-          throw new Error('No active WhatsApp instance');
+        // Recheck ownership and the anchor in the final DB read before the external send.
+        const [eligible] = await pool.execute<RowDataPacket[]>(`SELECT f.id FROM sales_followups f
+          JOIN conversations c ON c.id = f.conversation_id AND c.merchantId = f.merchant_id
+          WHERE f.id = ? AND f.processing_token = ? AND f.cancelled_at IS NULL AND f.sent_at IS NULL
+          AND c.deal_stage NOT IN ('paid', 'purchased', 'lost')
+          AND NOT (c.human_takeover = 1 AND (c.human_expires_at IS NULL OR c.human_expires_at > UTC_TIMESTAMP()))
+          AND NOT EXISTS (SELECT 1 FROM messages m WHERE m.conversationId = c.id
+            AND m.direction = 'incoming' AND m.id > f.anchor_message_id)`, [fu.id, claimToken]);
+        if (!eligible.length) {
+          await pool.execute(`UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = 'context_changed'
+            WHERE id = ? AND processing_token = ? AND sent_at IS NULL`, [fu.id, claimToken]);
+          cancelled++;
+          continue;
         }
-
-        await sendMessageWithCredentials(
-          activeInstance.instanceId,
-          activeInstance.token,
-          activeInstance.apiUrl || 'https://api.green-api.com',
-          fu.customer_phone,
-          fu.message_text
-        );
+        const result = await sendMerchantWhatsApp({ merchantId: fu.merchant_id, to: fu.customer_phone,
+          kind: 'text', text: fu.message_text, idempotencyKey: `sales_followup:${fu.merchant_id}:${fu.id}` });
+        if (!result.accepted) {
+          await pool.execute(`UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = ?
+            WHERE id = ? AND processing_token = ?`,
+          [result.status === 'failed' ? 'delivery_failed' : 'delivery_review_required', fu.id, claimToken]);
+          errors++;
+          continue;
+        }
 
         // Mark as sent
         await pool.execute(
-          `UPDATE sales_followups SET sent_at = NOW() WHERE id = ?`,
-          [fu.id]
+          `UPDATE sales_followups SET sent_at = NOW() WHERE id = ? AND processing_token = ?`,
+          [fu.id, claimToken]
         );
 
         sent++;
@@ -373,7 +413,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
     await pool.execute(
       `UPDATE sales_followups SET processing_token = NULL
        WHERE processing_token IS NOT NULL AND sent_at IS NULL AND cancelled_at IS NULL
-       AND scheduled_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)`
+       AND claimed_at < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 10 MINUTE)`
     ).catch(() => {});
 
     // Cleanup: Cancel follow-ups older than 7 days that were never sent

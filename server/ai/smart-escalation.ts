@@ -28,7 +28,7 @@ import {
   getEscalationsNeedingCascade,
   type EscalationItem,
 } from '../db/learning';
-import { cacheSuccessfulResponse } from './rag-engine';
+import { saveMerchantTeaching } from '../knowledge/merchant-teaching';
 import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
 import { z } from 'zod';
@@ -511,12 +511,9 @@ export async function handleMerchantEscalationReply(params: {
 
       // Cache this Q&A for future reuse — the bot learns permanently
       try {
-        await cacheSuccessfulResponse(
-          params.merchantId,
-          resolved.question,
-          safeReplyText
-        );
-        console.log(`[Escalation] 🧬 Q&A cached for future use (sanitized)`);
+        await saveMerchantTeaching({ merchantId: params.merchantId, question: resolved.question.slice(0, 500),
+          answer: safeReplyText, origin: 'escalation_reply', referenceId: resolved.id });
+        console.log(`[Escalation] 🧬 Customer-specific correction saved for merchant review`);
       } catch { /* cache is optional */ }
     }
 

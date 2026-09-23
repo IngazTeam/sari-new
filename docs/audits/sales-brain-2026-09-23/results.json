@@ -1,0 +1,122 @@
+{
+  "date": "2026-09-23",
+  "scope": "Actual module/AST-fragment probes with mocked I/O; no provider quality evaluation, database integration test or production traffic.",
+  "results": [
+    {
+      "id": "intent",
+      "message": "أبغى أطلب سماعة",
+      "observed": "ready_to_buy"
+    },
+    {
+      "id": "intent",
+      "message": "لا أريد الشراء الآن",
+      "observed": "ready_to_buy"
+    },
+    {
+      "id": "intent",
+      "message": "لا تحجز لي الآن",
+      "observed": "unknown"
+    },
+    {
+      "id": "intent",
+      "message": "كنت أبي أشتري لكن غيرت رأيي",
+      "observed": "ready_to_buy"
+    },
+    {
+      "id": "intent",
+      "message": "طلبي تأخر والسعر غالي",
+      "observed": "objecting"
+    },
+    {
+      "id": "intent",
+      "message": "نعم",
+      "observed": "unknown"
+    },
+    {
+      "id": "intent",
+      "message": "تمام كمل الطلب",
+      "observed": "unknown"
+    },
+    {
+      "id": "refusal_to_sales_decision",
+      "message": "لا أريد الشراء الآن",
+      "decision": {
+        "action": "send_payment_link",
+        "confidence": 0.95,
+        "reason": "العميل جاهز للشراء ولم يُرسل له رابط دفع",
+        "promptInjection": "[تعليمات مبيعات] العميل جاهز للشراء! أرسل له رابط الدفع مباشرة مع رسالة حماسية قصيرة. لا تسأل أسئلة إضافية.",
+        "priority": "critical"
+      }
+    },
+    {
+      "id": "no_product_value_in_nba_context",
+      "sourceHasValueAssignment": false
+    },
+    {
+      "id": "action_prefilter",
+      "message": "نعم",
+      "observed": "text_only",
+      "llmCalled": false
+    },
+    {
+      "id": "action_prefilter",
+      "message": "تمام كمل الطلب",
+      "observed": "text_only",
+      "llmCalled": false
+    },
+    {
+      "id": "action_prefilter",
+      "message": "أريد الشراء",
+      "observed": "text_only",
+      "llmCalled": false
+    },
+    {
+      "id": "action_prefilter",
+      "message": "أبغى أطلب سماعة",
+      "observed": "confirm_order",
+      "llmCalled": true
+    },
+    {
+      "id": "fast_path_learning_hooks",
+      "captureConversationSignals": false,
+      "enrichCustomerProfile": false,
+      "returnsBeforeFullPath": true
+    },
+    {
+      "id": "fast_path_critic",
+      "finalResponse": "original",
+      "warnings": [
+        "[chatWithSari] Critic failed (non-blocking): Cannot access 'productsToShow' before initialization"
+      ]
+    },
+    {
+      "id": "fast_path_validator",
+      "finalResponse": "original",
+      "warnings": [
+        "[chatWithSari] Validator failed (non-blocking): Cannot access 'productsToShow' before initialization"
+      ]
+    },
+    {
+      "id": "conversation_count_on_repeated_profile_load",
+      "before": 1,
+      "afterTwoLoads": 3
+    },
+    {
+      "id": "strong_price_objection_learning",
+      "message": "غالي وما يستاهل",
+      "capturedSignals": 0
+    },
+    {
+      "id": "weekly_learning_schema_contract",
+      "queryUsesSignalValue": true,
+      "schemaContainsSignalValue": false,
+      "filters": "signal_type IN ('objection', 'hesitation')"
+    },
+    {
+      "id": "personalized_response_cache",
+      "saved": 1,
+      "foundByMerchantAndQuestionOnly": true,
+      "response": "أهلاً أحمد، سعر العرض الخاص بحسابك 230 ريال، بناءً على اشتراكك السابق."
+    }
+  ]
+}

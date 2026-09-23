@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -400,6 +401,8 @@ export default function Orders() {
               </div>
 
               {/* Status & Tracking */}
+              {Boolean(selectedOrder.checkoutReviewRequired) && <CheckoutInvoiceReview key={selectedOrder.id}
+                orderId={selectedOrder.id} totalAmount={selectedOrder.totalAmount} onApproved={() => { void refetch(); }} />}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm text-muted-foreground">{t('ordersPage.statusLabel')}:</span>

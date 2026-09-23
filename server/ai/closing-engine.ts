@@ -15,6 +15,7 @@
 
 import type { CustomerIntent, ConversationSession } from './session-context';
 import type { CustomerProfile } from '../db/customer-intelligence';
+import { isSalesRefusal, isShortAffirmation, pendingDecisionFromQuestion } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -61,7 +62,7 @@ function detectClosingSignals(
   isGoldenHour: boolean,
 ): ClosingSignals {
   const msg = message.toLowerCase();
-  const allMessages = previousMessages.map(m => 
+  const allMessages = previousMessages.filter(m => m.role === 'user').map(m =>
     typeof m.content === 'string' ? m.content.toLowerCase() : ''
   );
 
@@ -76,7 +77,8 @@ function detectClosingSignals(
   // Positive signals after objection phase
   const positiveAfterObjection = (
     (session?.customerIntent === 'objecting' || session?.persuasionUsed?.includes('proactive_discount')) &&
-    /تمام|أوك|ok|ماشي|طيب|خلاص|أبي|أبغى|يلا/.test(msg)
+    isShortAffirmation(message) &&
+    pendingDecisionFromQuestion(previousMessages.filter(m => m.role === 'assistant').at(-1)?.content) === 'purchase'
   );
 
   // Product selection signals
@@ -119,7 +121,7 @@ export function buildClosingDirective(params: {
   const { message, intent, previousMessages, session, customerProfile, hasAbandonedCart, isGoldenHour } = params;
 
   // Don't try to close in these states
-  if (intent === 'post_purchase' || intent === 'browsing') {
+  if (intent === 'declined' || isSalesRefusal(message) || intent === 'post_purchase' || intent === 'browsing') {
     return { mode: 'none', confidence: 0, prompt: '' };
   }
 
@@ -133,7 +135,7 @@ export function buildClosingDirective(params: {
   );
 
   // ── 1. DIRECT CLOSE: Customer already wants to buy ──
-  if (intent === 'ready_to_buy' || signals.paymentMentioned) {
+  if (intent === 'ready_to_buy') {
     return {
       mode: 'direct_close',
       confidence: 95,
@@ -145,10 +147,10 @@ export function buildClosingDirective(params: {
   // ── 2. ASSUMPTIVE CLOSE: Positive after objection ──
   if (signals.positiveAfterObjection) {
     return {
-      mode: 'assumptive_close',
+      mode: 'soft_close',
       confidence: 85,
       prompt: buildAssumptiveClosePrompt(),
-      suggestedCTA: 'خلني أجهز طلبك...',
+      suggestedCTA: 'نراجع تفاصيل طلبك؟',
     };
   }
 
@@ -165,10 +167,10 @@ export function buildClosingDirective(params: {
   // ── 4. URGENCY CLOSE: Golden hour + high momentum + price asked 2+ times ──
   if (signals.isGoldenHour && signals.highMomentum && signals.priceInquiryCount >= 2) {
     return {
-      mode: 'urgency_close',
+      mode: 'soft_close',
       confidence: 80,
-      prompt: buildUrgencyClosePrompt(),
-      suggestedCTA: 'الطلب عليه ضغط — تبي أحجز لك قبل ينتهي؟',
+      prompt: buildSoftClosePrompt(),
+      suggestedCTA: 'تحب نراجع التفاصيل ونكمل؟',
     };
   }
 
@@ -203,19 +205,18 @@ function buildDirectClosePrompt(): string {
 ## 🎯 إغلاق مباشر — العميل جاهز:
 - العميل أبدى رغبة واضحة بالشراء/الحجز
 - اطلب منه الخطوة التالية مباشرة: "أرسل لك رابط الطلب؟" أو "كم القطع؟"
-- لا تشرح مميزات — وقت الشرح انتهى
-- كن واثق وسلس: "تمام، خلني أجهز لك..."
-- ⚠️ لا تسأل "هل تبغى تشتري؟" — افترض الشراء
+- راجع الخيار والكمية والسعر النهائي وما ينقص الاتفاق
+- نفذ فقط الاتفاق الذي وافق عليه العميل؛ تغير السعر أو الخيارات يحتاج تأكيداً جديداً
+- لا تقل إن الطلب أو الدفع نجح قبل وجود نتيجة مؤكدة من الأداة
 `;
 }
 
 function buildAssumptiveClosePrompt(): string {
   return `
-## 🤝 إغلاق افتراضي — العميل وافق بعد اعتراض:
-- العميل قال "تمام/أوك/ماشي" بعد ما كان معترض → هذا موافقة!
-- لا تسأل مرة ثانية — انتقل للخطوة التالية
-- "تمام! خلني أجهز طلبك..." أو "حلو! أحجز لك الآن؟"
-- ⚠️ أي تأخير هنا قد يفقدك العميل
+## 🤝 تأكيد الخطوة المتفق عليها:
+- الموافقة تخص سؤال التأكيد السابق فقط؛ لا توسعها إلى خصم أو منتج أو كمية جديدة
+- راجع تفاصيل الاتفاق الناقصة قبل التنفيذ
+- لا تدّع إنشاء طلب أو حجز حتى تعيد الأداة نتيجة نجاح مؤكدة
 `;
 }
 
@@ -223,9 +224,9 @@ function buildSoftClosePrompt(): string {
   return `
 ## 💬 إغلاق ناعم — العميل مهتم لكن لم يلتزم:
 - العميل اختار منتج أو سأل عن السعر أكثر من مرة = اهتمام حقيقي
-- اسأل سؤال يفترض الشراء: "تبي أحجز لك؟" أو "أرسل لك التفاصيل؟"
+- اقترح خطوة مناسبة للاهتمام: "تحب نراجع الخيارات؟" أو "أرسل لك التفاصيل؟"
 - لا تضغط — اجعله يشعر بالسيطرة
-- استخدم "بدون التزام": "تبي أحجز لك مبدئياً بدون التزام؟"
+- لا تعد بحجز مجاني أو تجربة أو ندرة إلا إذا كانت سياسة معتمدة موثقة في السياق
 `;
 }
 
@@ -233,8 +234,8 @@ function buildUrgencyClosePrompt(): string {
   return `
 ## ⏰ إغلاق عاجل — وقت ذهبي + اهتمام عالي:
 - العميل في وقت ذهبي للشراء ومهتم جداً
-- استخدم ندرة طبيعية: "الطلب عليه ضغط" أو "باقي كمية محدودة"
-- ⚠️ لا تكذب — استخدم فقط ندرة حقيقية أو ضمنية
+- لا تستنتج ندرة من الوقت أو كثرة الرسائل؛ يلزم مصدر مخزون أو عرض مؤرخ
+- لا تستخدم ضغطاً زمنياً دون موعد انتهاء معتمد
 - اقترح خطوة فورية: "تبي أحجز لك قبل ينتهي؟"
 `;
 }

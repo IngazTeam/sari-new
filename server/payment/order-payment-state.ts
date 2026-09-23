@@ -1,5 +1,6 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { projectTapPurchaseMemory } from '../ai/verified-purchase-memory';
 import {
   planTapWebhookTransition,
   type StoredTapPaymentStatus,
@@ -117,6 +118,8 @@ export async function applyTapOrderPaymentState(input: {
   await assertRuntimeSchema('Tap order payment state', [
     { table: 'orders', columns: ['payment_status'] },
     { table: 'order_payments', columns: ['last_webhook_status', 'last_webhook_at'] },
+    { table: 'ai_purchase_outcomes', uniqueIndexes: ['uq_purchase_outcome'] },
+    { table: 'customer_profiles', columns: ['memory_version', 'verified_purchase_count', 'verified_spend_by_currency'] },
   ], { cacheSuccess: false });
 
   const pool = await getPool();
@@ -126,6 +129,10 @@ export async function applyTapOrderPaymentState(input: {
   let connectionReusable = true;
 
   try {
+    // Each customer projection is locked after the target/payment. Fresh committed reads
+    // then include other orders that settled while this transaction waited for that lock.
+    // Financial identity and competing-payment checks still use explicit row locks below.
+    await connection.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
     await connection.beginTransaction();
     inTransaction = true;
 
@@ -202,6 +209,9 @@ export async function applyTapOrderPaymentState(input: {
 
     const transition = planTapWebhookTransition(payment.status, input.providerStatus);
     if (transition.kind !== 'transition') {
+      if (transition.kind === 'noop' && (payment.status === 'captured' || payment.status === 'refunded')) {
+        await projectTapPurchaseMemory(connection, { merchantId: payment.merchant_id, paymentId: payment.id, conversationId: metadata.conversationId });
+      }
       await connection.commit();
       inTransaction = false;
       return {
@@ -216,14 +226,14 @@ export async function applyTapOrderPaymentState(input: {
     if (nextStatus === 'captured' || nextStatus === 'refunded') {
       const [settledRows] = target.kind === 'order'
         ? await connection.execute(
-          `SELECT id FROM order_payments
+          `SELECT id FROM order_payments FORCE INDEX (order_payments_order_id_idx)
             WHERE merchant_id = ? AND order_id = ? AND id <> ?
               AND status IN ('captured', 'refunded')
             LIMIT 1 FOR UPDATE`,
           [payment.merchant_id, target.id, payment.id],
         )
         : await connection.execute(
-          `SELECT id FROM order_payments
+          `SELECT id FROM order_payments FORCE INDEX (order_payments_booking_id_idx)
             WHERE merchant_id = ? AND booking_id = ? AND id <> ?
               AND status IN ('captured', 'refunded')
             LIMIT 1 FOR UPDATE`,
@@ -328,6 +338,9 @@ export async function applyTapOrderPaymentState(input: {
       }
     }
 
+    if (nextStatus === 'captured' || nextStatus === 'refunded') {
+      await projectTapPurchaseMemory(connection, { merchantId: payment.merchant_id, paymentId: payment.id, conversationId: metadata.conversationId });
+    }
     try {
       await connection.commit();
       inTransaction = false;

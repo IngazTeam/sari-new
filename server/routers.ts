@@ -2535,6 +2535,24 @@ export const appRouter = router({
         };
       }),
 
+    approveCheckoutInvoice: permissionProcedure('orders.manage')
+      .input(z.object({ orderId: z.number().int().positive(), expectedAmountMinor: z.number().int().nonnegative().max(2147483647),
+        totalIsFinal: z.literal(true) }).strict())
+      .mutation(async ({ input, ctx }) => {
+        const { approveCheckoutInvoice } = await import('./ai/checkout-agreements');
+        const { issueCanonicalOrderPaymentLink } = await import('./payment/order-payment-link');
+        let approval;
+        try {
+          approval = await approveCheckoutInvoice({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id });
+        } catch {
+          throw new TRPCError({ code: 'CONFLICT', message: 'تعذر اعتماد الفاتورة؛ تحقق من حالة الطلب والكميات والأسعار وموافقة العميل.' });
+        }
+        // Local link only. No charge or WhatsApp message is sent by this mutation.
+        const link = await issueCanonicalOrderPaymentLink({ merchantId: ctx.merchantId, orderId: input.orderId,
+          requestedAmountInHalalas: input.expectedAmountMinor, conversationId: approval.conversationId });
+        return { approved: true, paymentUrl: link.issued ? link.paymentUrl : null };
+      }),
+
     // Update order status
     updateStatus: permissionProcedure('orders.manage')
       .input(z.object({

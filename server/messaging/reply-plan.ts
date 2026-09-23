@@ -4,6 +4,7 @@ import type { SendMerchantWhatsAppInput } from '../channels/whatsapp/types';
 import { persistInboundReplyPlan } from './inbound-jobs';
 import { currentInboundExecution } from './inbound-context';
 import { getPool } from '../db/connection';
+import { stageInteraction, finishInteractionDelivery } from '../ai/interaction-jobs';
 
 export type ReplyPlan = {
   version: 1;
@@ -62,14 +63,19 @@ export async function humanOwnsConversation(merchantId: number, conversationId: 
 
 export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'sent' | 'human_takeover'> {
   await persistInboundReplyPlan(plan);
+  await stageInteraction(plan);
   const delay = Math.max(0, Math.min(60_000, delayMs));
   if (delay) await new Promise(resolve => setTimeout(resolve, delay));
   for (const effect of plan.effects) {
     const context = currentInboundExecution();
     if (context) await context.assertOwned();
-    if (await humanOwnsConversation(effect.merchantId, plan.conversationId)) return 'human_takeover';
+    if (await humanOwnsConversation(effect.merchantId, plan.conversationId)) {
+      await finishInteractionDelivery(plan, false);
+      return 'human_takeover';
+    }
     const result = await sendMerchantWhatsApp(effect);
     if (!result.accepted) throw new Error('Reply effect requires delivery review');
   }
+  await finishInteractionDelivery(plan, true);
   return 'sent';
 }

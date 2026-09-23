@@ -234,11 +234,11 @@ async function coachEscalationReply(params: {
       );
       // Cache Q&A for future learning
       try {
-        const { cacheSuccessfulResponse } = await import('./rag-engine');
+        const { saveMerchantTeaching } = await import('../knowledge/merchant-teaching');
         const { getActiveEscalationForMerchant } = await import('../db/learning');
         const esc = await getActiveEscalationForMerchant(params.merchantId);
         if (esc) {
-          await cacheSuccessfulResponse(params.merchantId, (esc as any).question || '', pending.suggestedReply);
+          await saveMerchantTeaching({ merchantId: params.merchantId, question: String((esc as any).question || '').slice(0, 500), answer: pending.suggestedReply.slice(0, 2000), origin: 'escalation_reply', referenceId: esc.id });
           const { resolveEscalation } = await import('../db/learning');
           await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.suggestedReply });
         }
@@ -258,12 +258,12 @@ async function coachEscalationReply(params: {
       );
       // Cache and resolve
       try {
-        const { cacheSuccessfulResponse } = await import('./rag-engine');
+        const { saveMerchantTeaching } = await import('../knowledge/merchant-teaching');
         const { resolveEscalation } = await import('../db/learning');
         const { getActiveEscalationForMerchant } = await import('../db/learning');
         const esc = await getActiveEscalationForMerchant(params.merchantId);
         if (esc) {
-          await cacheSuccessfulResponse(params.merchantId, (esc as any).question || '', pending.originalReply);
+          await saveMerchantTeaching({ merchantId: params.merchantId, question: String((esc as any).question || '').slice(0, 500), answer: pending.originalReply.slice(0, 2000), origin: 'escalation_reply', referenceId: esc.id });
           await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.originalReply });
         }
       } catch { /* non-blocking */ }

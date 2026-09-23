@@ -47,6 +47,15 @@ afterEach(() => {
 });
 
 describe("callGPT4 ZahyPi routing", () => {
+  it('preserves conversation scope only for the same merchant', async () => {
+    resolveZahyPiRuntimeConfig.mockResolvedValue({ enabled: true, provider: 'zahypi' });
+    getOptionalZahyPiRequestContext.mockReturnValue({ merchantId: 77, conversationId: 901, taskType: 'sari.reply' });
+    requestZahyPiChat.mockResolvedValue({ content: 'synthetic', model: 'test' });
+    await callGPT4([{ role: 'user', content: 'hello' }], { merchantId: 77 });
+    expect(requestZahyPiChat.mock.calls[0][2]).toMatchObject({ merchantId: 77, conversationId: 901 });
+    await callGPT4([{ role: 'user', content: 'hello' }], { merchantId: 78 });
+    expect(requestZahyPiChat.mock.calls[1][2].conversationId).toBeUndefined();
+  });
   it("fails closed before calling either provider when AI is disabled", async () => {
     resolveZahyPiRuntimeConfig.mockResolvedValue({
       enabled: false,

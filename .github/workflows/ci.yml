@@ -50,6 +50,8 @@ jobs:
         run: pnpm test:remediation
       - name: Security regression contracts
         run: pnpm test:pentest
+      - name: Isolated sales brain decision and provider contracts
+        run: node scripts/testing/run-sales-brain.mjs
       - name: Validate the database schema history
         run: pnpm db:check
         env:
@@ -94,6 +96,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Apply migrations to a disposable database
         run: pnpm db:migrate
+      - name: Sales agreements, durable memory, learning evidence and concurrency
+        run: node scripts/testing/run-sales-brain.mjs --with-database
+        env:
+          SARI_TEST_DATABASE_URL: ${{ env.DATABASE_URL }}
       - name: Run database integration contracts
         run: >-
           pnpm vitest run

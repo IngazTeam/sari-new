@@ -7,16 +7,17 @@
  * 
  * Criteria:
  * 1. Answered the specific question (متى→date, كم→price)
- * 2. Saudi dialect (no formal Arabic)
- * 3. No cross-selling (only answer what was asked)
+ * 2. Language and tone appropriate to the customer
+ * 3. Relevant recommendations after answering the primary need; respect refusal
  * 4. No marketing preamble
- * 5. Short and direct (2-4 lines)
- * 6. No contact info leaked
+ * 5. Clear enough for the decision, without repetition
+ * 6. Verified operational claims
  * 7. Context-aware (didn't ignore previous questions)
  * 8. Quoted-reply awareness (understood [رد على رسالة: ...] context)
  */
 
 import { callGPT4 } from './openai';
+import { z } from 'zod';
 
 // ════════════════════════════════════════════════
 // P3: Cost Guard — Daily critique limit per merchant
@@ -63,11 +64,16 @@ function incrementCritiqueBudget(merchantId: number): void {
 // ════════════════════════════════════════════════
 
 export interface CritiqueResult {
+  assessed?: boolean;
   passed: boolean;
   failures: string[];
   suggestions: string;
-  score: number; // 0-7
+  score: number; // 0-8; ignored when assessed=false
 }
+
+const critiqueSchema = z.object({ passed: z.boolean(), failures: z.array(z.string().max(500)).max(8),
+  suggestions: z.string().max(2000), score: z.number().int().min(0).max(8) }).strict();
+const notAssessed = (): CritiqueResult => ({ assessed: false, passed: false, failures: [], suggestions: '', score: 0 });
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -81,11 +87,11 @@ interface ChatMessage {
 const CRITIQUE_PROMPT = `أنت مراجع جودة لردود مبيعات واتساب. قيّم الرد التالي على 8 معايير:
 
 1. **جاوب السؤال**: إذا سأل "متى" هل أعطاه تاريخ؟ إذا سأل "كم" هل أعطاه سعر؟ إذا سأل عن شي محدد هل جاوب عليه بالضبط؟
-2. **لهجة سعودية**: هل استخدم "هل تود"، "إذا كنت"، "لدينا"، "يمكنك"، "أفهم وجهة نظرك"، "المتاحة تشمل"؟ هذي فصحى ممنوعة. المطلوب: "تبي"، "عندنا"، "تقدر"، "أبغى".
-3. **بدون كروس سيلينج**: إذا العميل سأل عن منتج محدد، هل اقترح الرد منتجات أخرى ما سأل عنها؟
+2. **لغة ملائمة**: هل يحترم لغة العميل والنبرة المتسقة في الحوار دون فرض لهجة أو لغة أخرى؟ الفصحى ليست خطأً بحد ذاتها.
+3. **ترشيح ملائم**: هل أجاب عن الاحتياج الأساسي؟ يسمح ببديل أو إضافة مرتبطة باحتياج واضح، دون تشتيت أو ضغط بعد رفض.
 4. **بدون ديباجة**: هل بدأ بمدح عام ("هذي الدورة مهمة جداً في المجال")؟ أو كلام تسويقي فاضي ("استثمار في مستقبلك")؟
-5. **قصير ومباشر**: هل الرد أطول من 4 أسطر بدون ضرورة؟
-6. **بدون بيانات تواصل**: هل تسرب إيميل أو رقم هاتف أو رابط؟
+5. **واضح وكافٍ**: هل المعلومات اللازمة لاتخاذ القرار والخطوة التالية واضحة دون تكرار؟ لا تحدد طولاً ثابتاً لشرح أو مقارنة مطلوبة.
+6. **حقيقة التنفيذ**: هل ادعى خصماً أو إنشاء طلب أو دفعاً دون مرجع مؤكد؟ الروابط المعتمدة ليست خطأً لمجرد كونها روابط.
 7. **سياق المحادثة**: هل تجاهل سؤال سابق ما اتجاوب عليه؟
 8. **فهم الردود المقتبسة**: إذا رسالة العميل تبدأ بـ [رد على رسالة: "..."] هل فهم الرد أن العميل يشير للرسالة المقتبسة؟ مثلاً [رد على رسالة: "BLS بـ 230"] + "اريد" = يبي BLS. هل الرد فهم هذا؟
 
@@ -110,18 +116,19 @@ export async function critiqueResponse(params: {
   customerMessage: string;
   conversationHistory: ChatMessage[];
   merchantId?: number;
+  productNames?: string[];
 }): Promise<CritiqueResult> {
   const { response, customerMessage, conversationHistory, merchantId } = params;
 
   // P3 Cost Guard: Skip for trivial messages
   if (customerMessage.trim().length < 10 || response.trim().length < 20) {
-    return { passed: true, failures: [], suggestions: '', score: 7 };
+    return notAssessed();
   }
 
   // P3 Cost Guard: Daily limit per merchant
   if (merchantId && !hasCritiqueBudget(merchantId)) {
     console.log(`[Critic] Daily limit reached for merchant ${merchantId} (${DAILY_CRITIQUE_LIMIT}/day) — skipping`);
-    return { passed: true, failures: [], suggestions: '', score: 7 };
+    return notAssessed();
   }
 
   // Track usage
@@ -139,6 +146,9 @@ ${recentHistory}
 
 ## رسالة العميل الأخيرة:
 ${customerMessage}
+
+## منتجات وأسعار مرجعية حالية (لا تفترض تفاصيل أخرى):
+${params.productNames?.slice(0, 50).join('\n') || 'لا توجد قائمة موثقة في هذا التقييم'}
 
 ## الرد المراد تقييمه:
 ${response}
@@ -158,20 +168,16 @@ ${response}
     // Parse JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { passed: true, failures: [], suggestions: '', score: 7 };
+      return notAssessed();
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    return {
-      passed: parsed.passed ?? true,
-      failures: Array.isArray(parsed.failures) ? parsed.failures : [],
-      suggestions: parsed.suggestions || '',
-      score: typeof parsed.score === 'number' ? parsed.score : 7,
-    };
+    const parsed = critiqueSchema.safeParse(JSON.parse(jsonMatch[0]));
+    if (!parsed.success || (parsed.data.passed && parsed.data.failures.length > 0)) return notAssessed();
+    return { ...parsed.data, assessed: true };
   } catch (err) {
-    // Critic failure = pass-through (never block the response)
-    console.warn('[Critic] Critique failed (pass-through):', (err as Error).message);
-    return { passed: true, failures: [], suggestions: '', score: 7 };
+    // The independent validator still runs; an unavailable assessment is not a pass.
+    console.warn('[Critic] Assessment unavailable:', (err as Error).message);
+    return notAssessed();
   }
 }
 
@@ -197,11 +203,11 @@ export async function fixResponse(params: {
     { role: 'system', content: `أنت موظف مبيعات سعودي محترف. أعد صياغة الرد التالي بناء على الملاحظات.
 
 القواعد:
-- لهجة سعودية فقط (تبي، عندنا، تقدر، أيوا)
+- حافظ على لغة العميل والنبرة المتسقة في المحادثة
 - أجب على السؤال بالضبط — لا كلام زائد
-- لا تقترح منتجات ما سأل عنها العميل
+- يمكن عرض بديل مرتبط باحتياج واضح، مع احترام الميزانية والرفض
 - لا ديباجة تسويقية — ابدأ بالإجابة مباشرة
-- 2-4 أسطر كحد أقصى
+- استخدم الطول اللازم لشرح واضح بلا حشو أو تكرار
 - لا تشارك أي إيميل أو رقم هاتف
 - **🔴 ممنوع تقول "ما عندنا" أو "لا يوجد" إذا المنتج موجود في القائمة أدناه!**
 - **مطابقة ذكية**: "ACLS" = "دعم الحياة القلبية المتقدمة (ACLS)" — ابحث بالاسم العربي والإنجليزي
@@ -237,7 +243,7 @@ ${critique.suggestions}
     });
 
     if (fixed && fixed.length > 10) {
-      console.log(`[Critic] ✅ Response fixed (score: ${critique.score}/7 → rewritten)`);
+      console.log(`[Critic] Response rewritten after assessment: ${critique.score}/8`);
       return fixed;
     }
   } catch (err) {
@@ -252,9 +258,10 @@ ${critique.suggestions}
 // Telemetry
 // ════════════════════════════════════════════════
 
-let _critiqueStats = { total: 0, passed: 0, fixed: 0 };
+let _critiqueStats = { total: 0, passed: 0, fixed: 0, notAssessed: 0 };
 
 export function recordCritique(result: CritiqueResult, wasFixed: boolean): void {
+  if (result.assessed === false) { _critiqueStats.notAssessed++; return; }
   _critiqueStats.total++;
   if (result.passed) _critiqueStats.passed++;
   if (wasFixed) _critiqueStats.fixed++;
@@ -269,5 +276,5 @@ setInterval(() => {
   if (_critiqueStats.total > 0) {
     console.log(`[Critic] 📊 Hourly stats: ${_critiqueStats.total} total, ${_critiqueStats.passed} passed (${Math.round((_critiqueStats.passed / _critiqueStats.total) * 100)}%), ${_critiqueStats.fixed} fixed`);
   }
-  _critiqueStats = { total: 0, passed: 0, fixed: 0 };
+  _critiqueStats = { total: 0, passed: 0, fixed: 0, notAssessed: 0 };
 }, 3600_000);

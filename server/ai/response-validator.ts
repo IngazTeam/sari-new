@@ -21,6 +21,20 @@
 import { callGPT4, type ChatMessage } from './openai';
 import type { CustomerIntent } from './session-context';
 import { containsUnverifiedActionClaim } from './transactional-truth';
+import { UNVERIFIED_ACTION_FALLBACK } from './transactional-truth';
+import { isSalesRefusal } from './customer-decision';
+
+export function unverifiedDetailsFallback(customerMessage: string): string {
+  return /[\u0600-\u06ff]/.test(customerMessage)
+    ? 'أحتاج أتحقق من هذه التفاصيل قبل تأكيدها لك. ما النقطة التي تود التأكد منها؟'
+    : 'I need to verify these details before confirming them. Which detail would you like to check?';
+}
+
+export function refusalAcknowledgement(customerMessage: string): string {
+  return /[\u0600-\u06ff]/.test(customerMessage)
+    ? 'حاضر، أحترم قرارك. لن أكمل إجراءات شراء أو أرسل متابعة بيعية.'
+    : 'Understood. I will not proceed with a purchase or send sales follow-ups.';
+}
 
 // SEC-VAL-01: Reuse existing sanitizer to prevent prompt injection through validator
 const INJECTION_PATTERNS = [
@@ -71,6 +85,7 @@ export type ValidationRule =
   | 'empty_response'          // Bot gave a non-answer ("أنا هنا لمساعدتك")
   | 'identity_leak'           // Bot mentioned "ساري"/"Sari" instead of merchant name
   | 'unverified_action'       // Bot claimed an order/booking/handoff without a persisted result
+  | 'validation_unavailable'
   | 'too_long';               // Response exceeds reasonable WhatsApp length
 
 // ═══════════════════════════════════════════════════════════════
@@ -82,7 +97,7 @@ export type ValidationRule =
  * Catches obvious violations without any API cost.
  * Returns violations array (empty = no issues found).
  */
-function fastPreCheck(
+export function fastPreCheck(
   response: string,
   customerMessage: string,
   lastBotMessage?: string,
@@ -258,6 +273,10 @@ export async function validateResponse(params: {
 }): Promise<ValidationResult> {
   const startTime = Date.now();
   const { response, customerMessage, intent, productNames, lastBotMessage, confirmedActionId } = params;
+  if (intent === 'declined' || isSalesRefusal(customerMessage)) return {
+    passed: false, violations: [{ rule: 'inappropriate_cta', severity: 'critical', description: 'Explicit refusal overrides sales text' }],
+    correctedResponse: refusalAcknowledgement(customerMessage), validationTimeMs: Date.now() - startTime,
+  };
 
   // ── Phase 1: Fast pre-check (0ms, no API) ──
   const fastViolations = fastPreCheck(response, customerMessage, lastBotMessage, confirmedActionId);
@@ -297,16 +316,18 @@ export async function validateResponse(params: {
       return {
         passed: false,
         violations: fastViolations,
-        correctedResponse: corrected,
+        correctedResponse: fastPreCheck(corrected, customerMessage, undefined, confirmedActionId).some(v => v.severity === 'critical')
+          ? unverifiedDetailsFallback(customerMessage) : corrected,
         validationTimeMs: Date.now() - startTime,
       };
     } catch (err) {
       // If GPT correction fails, return surgical fix if available, otherwise original
-      console.warn('[Validator] Correction failed, using surgical fix:', (err as Error).message);
+      console.warn('[Validator] Correction unavailable; returning unconfirmed details');
       return {
         passed: false,
         violations: fastViolations,
-        correctedResponse: hasContactLeak ? surgicallyFixed : undefined,
+        correctedResponse: fastViolations.some(v => v.rule === 'unverified_action')
+          ? UNVERIFIED_ACTION_FALLBACK : unverifiedDetailsFallback(customerMessage),
         validationTimeMs: Date.now() - startTime,
       };
     }
@@ -345,7 +366,8 @@ export async function validateResponse(params: {
       return {
         passed: false,
         violations: allViolations,
-        correctedResponse: corrected,
+        correctedResponse: fastPreCheck(corrected, customerMessage, undefined, confirmedActionId).some(v => v.severity === 'critical')
+          ? unverifiedDetailsFallback(customerMessage) : corrected,
         validationTimeMs: Date.now() - startTime,
       };
     }
@@ -357,11 +379,11 @@ export async function validateResponse(params: {
     };
 
   } catch (err) {
-    // GPT check failed — send original response (non-blocking)
-    console.warn('[Validator] GPT deep check failed, passing response:', (err as Error).message);
+    console.warn('[Validator] Quality review unavailable; details remain unconfirmed');
     return {
-      passed: true,
-      violations: fastViolations,
+      passed: false,
+      violations: [...fastViolations, { rule: 'validation_unavailable', severity: 'critical', description: 'Quality review unavailable' }],
+      correctedResponse: unverifiedDetailsFallback(customerMessage),
       validationTimeMs: Date.now() - startTime,
     };
   }
@@ -426,18 +448,17 @@ ${productList}
   const jsonStr = result.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
   const jsonStart = jsonStr.indexOf('{');
   const jsonEnd = jsonStr.lastIndexOf('}');
-  if (jsonStart === -1 || jsonEnd === -1) return [];
+  if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid validator response');
 
   // SEC-VAL-03: Defensive JSON parsing
   let parsed: any;
   try {
     parsed = JSON.parse(jsonStr.substring(jsonStart, jsonEnd + 1));
   } catch {
-    console.warn('[Validator] GPT returned invalid JSON, skipping deep check');
-    return [];
+    throw new Error('Invalid validator JSON');
   }
   
-  if (!parsed || !Array.isArray(parsed.violations)) return [];
+  if (!parsed || !Array.isArray(parsed.violations)) throw new Error('Invalid validator contract');
 
   // Validate and normalize violations
   const validRules: Set<string> = new Set([

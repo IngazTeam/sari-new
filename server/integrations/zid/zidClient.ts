@@ -109,9 +109,7 @@ interface ZidCreateOrderRequest {
   };
   payment_method: {
     id: number;
-  };
-  payment_link_configs?: {
-    expiryDateTime: string;
+    payment_link_configs?: { expiryDateTime: string };
   };
 }
 
@@ -467,7 +465,7 @@ export class ZidClient {
     if (params.isPaymentLink) {
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 7); // صلاحية 7 أيام
-      orderRequest.payment_link_configs = {
+      orderRequest.payment_method.payment_link_configs = {
         expiryDateTime: expiryDate.toISOString(),
       };
     }

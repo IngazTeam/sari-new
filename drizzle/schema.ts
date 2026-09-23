@@ -523,6 +523,7 @@ export const orders = mysqlTable("orders", {
 	paymentUrl: text(),
 	trackingNumber: varchar({ length: 100 }),
 	notes: text(),
+	checkoutReviewRequired: tinyint('checkout_review_required').default(0).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	isGift: tinyint().default(0).notNull(),
@@ -3193,6 +3194,10 @@ export const customerProfiles = mysqlTable("customer_profiles", {
 	sentimentAvg: varchar("sentiment_avg", { length: 20 }).default('neutral'),
 	customerTier: varchar("customer_tier", { length: 20 }).default('new'),
 	lastObjection: varchar("last_objection", { length: 50 }),
+	memoryVersion: int("memory_version").notNull().default(0),
+	lastEnrichedMessageId: int("last_enriched_message_id"),
+	verifiedPurchaseCount: int("verified_purchase_count").notNull().default(0),
+	verifiedSpendByCurrency: text("verified_spend_by_currency"),
 	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
@@ -3223,6 +3228,9 @@ export const knowledgeSections = mysqlTable("knowledge_sections", {
 	sortOrder: int("sort_order").default(0).notNull(),
 	merchantEdited: tinyint("merchant_edited").default(0).notNull(),
 	embedding: text(), // BLOB in DB, text placeholder in schema
+	embeddingContentHash: varchar("embedding_content_hash", { length: 64 }),
+	validUntil: datetime("valid_until", { mode: "string", fsp: 3 }),
+	provenance: json("provenance"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, (table) => [
@@ -3280,10 +3288,24 @@ export const salesQuotations = mysqlTable("sales_quotations", {
 	validUntil: date("valid_until", { mode: 'string' }),
 	pdfUrl: varchar("pdf_url", { length: 500 }),
 	conversationId: int("conversation_id"),
+	sourceMessageId: int("source_message_id"),
+	consentMessageId: int("consent_message_id"),
+	checkoutSnapshot: json("checkout_snapshot"),
+	externalProvider: varchar("external_provider", { length: 20 }),
+	externalSnapshot: json("external_snapshot"),
+	executionState: mysqlEnum("execution_state", ['ready', 'processing', 'succeeded', 'unknown']),
+	externalResult: json("external_result"),
+	offerVersion: int("offer_version").default(1).notNull(),
+	offerExpiresAt: datetime("offer_expires_at", { mode: 'string', fsp: 3 }),
+	orderId: int("order_id").references(() => orders.id, { onDelete: 'set null' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_merchant").on(table.merchantId, table.createdAt),
 	index("idx_status").on(table.merchantId, table.status),
+	uniqueIndex("uq_quote_source").on(table.merchantId, table.sourceMessageId),
+	uniqueIndex("uq_quote_consent").on(table.merchantId, table.consentMessageId),
+	uniqueIndex("uq_quote_order").on(table.orderId),
+	index("idx_quote_conversation").on(table.merchantId, table.conversationId, table.id),
 ]);
 
 // --- Sales Targets ---
@@ -3405,6 +3427,8 @@ export const salesFollowups = mysqlTable("sales_followups", {
 	source: varchar({ length: 30 }).default('proactive').notNull(), // proactive, action_selector
 	// P0-FIX: claim-lock token for atomic follow-up processing (prevents double-send)
 	processingToken: varchar("processing_token", { length: 60 }),
+	anchorMessageId: int("anchor_message_id"),
+	claimedAt: datetime("claimed_at", { mode: 'string', fsp: 3 }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_followup_merchant_phone").on(table.merchantId, table.customerPhone),
@@ -3728,12 +3752,14 @@ export const sariLearningSignals = mysqlTable("sari_learning_signals", {
 	customerMessage: text("customer_message"),
 	merchantCorrection: text("merchant_correction"),
 	contextSummary: text("context_summary"),
+	sourceKey: varchar("source_key", { length: 160 }),
 	analyzed: tinyint().default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, table => [
 	index("idx_learning_signal_merchant_type").on(table.merchantId, table.signalType),
 	index("idx_learning_signal_merchant_date").on(table.merchantId, table.createdAt),
 	index("idx_learning_signal_unanalyzed").on(table.merchantId, table.analyzed),
+	uniqueIndex("uq_learning_source").on(table.merchantId, table.sourceKey, table.signalType),
 ]);
 
 export const sariBehavioralDna = mysqlTable("sari_behavioral_dna", {
@@ -3834,3 +3860,64 @@ export const sariActivityLog = mysqlTable("sari_activity_log", {
 	details: text(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, table => [index("idx_sari_activity_merchant_date").on(table.merchantId, table.createdAt)]);
+
+export const aiInteractionJobs = mysqlTable('ai_interaction_jobs', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  conversationId: int('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  incomingMessageId: int('incoming_message_id').notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  replyText: text('reply_text').notNull(),
+  state: varchar({ length: 24 }).default('waiting_delivery').notNull(),
+  attempts: int().default(0).notNull(),
+  leaseToken: varchar('lease_token', { length: 64 }),
+  leaseUntil: datetime('lease_until', { mode: 'string', fsp: 3 }),
+  availableAt: datetime('available_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+  lastError: varchar('last_error', { length: 80 }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+  completedAt: datetime('completed_at', { mode: 'string', fsp: 3 }),
+}, table => [
+  uniqueIndex('uq_ai_interaction_message').on(table.merchantId, table.incomingMessageId),
+  index('idx_ai_interaction_due').on(table.state, table.availableAt, table.leaseUntil),
+]);
+
+export const aiLearningProposals = mysqlTable('ai_learning_proposals', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  generation: int().notNull(),
+  dimension: varchar({ length: 30 }).notNull(),
+  insight: text().notNull(),
+  contentHash: varchar('content_hash', { length: 64 }).notNull(),
+  evidenceCount: int('evidence_count').default(0).notNull(),
+  confidence: decimal({ precision: 3, scale: 2 }).notNull(),
+  status: varchar({ length: 24 }).default('proposed').notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex('uq_ai_learning_proposal').on(table.merchantId, table.dimension, table.contentHash)]);
+
+export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  profileId: int('profile_id').notNull().references(() => customerProfiles.id, { onDelete: 'cascade' }),
+  paymentId: int('payment_id').notNull().references(() => orderPayments.id, { onDelete: 'cascade' }),
+  conversationId: int('conversation_id').references(() => conversations.id, { onDelete: 'set null' }),
+  outcomeType: varchar('outcome_type', { length: 30 }).notNull(),
+  schemaVersion: int('schema_version').notNull().default(1),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_purchase_outcome').on(table.merchantId, table.paymentId, table.outcomeType)]);
+
+export const aiLearningEvidenceLinks = mysqlTable('ai_learning_evidence_links', {
+  proposalId: bigint('proposal_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningProposals.id, { onDelete: 'cascade' }),
+  signalId: int('signal_id').notNull().references(() => sariLearningSignals.id, { onDelete: 'cascade' }),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  relation: varchar('relation', { length: 16 }).notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [primaryKey({ columns: [table.proposalId, table.signalId, table.relation] }),
+  index('idx_evidence_merchant').on(table.merchantId, table.proposalId)]);
+
+// Descriptive observations only; publication is not strategy approval.
+export const aiSalesPlaybooks = mysqlTable("ai_sales_playbooks", {
+  merchantId: int("merchant_id").primaryKey().references(() => merchants.id, { onDelete: "cascade" }),
+  dailyAnalysis: json("daily_analysis"), weeklyAnalysis: json("weekly_analysis"),
+  dailyUpdatedAt: datetime("daily_updated_at", { mode: "string", fsp: 3 }),
+  weeklyUpdatedAt: datetime("weekly_updated_at", { mode: "string", fsp: 3 }),
+  revision: bigint("revision", { mode: "number", unsigned: true }).notNull().default(1),
+});

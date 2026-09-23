@@ -8,6 +8,7 @@
 
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
+import { createHash } from 'node:crypto';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -16,6 +17,7 @@ import { assertRuntimeSchema } from './schema-readiness';
 export type SignalType =
   | 'positive_feedback'     // العميل شكر أو أثنى
   | 'purchase_completed'    // العميل اشترى
+  | 'purchase_refunded'
   | 'question_repeated'     // العميل كرر سؤاله
   | 'customer_left'         // العميل غادر بدون رد
   | 'escalation_requested'  // العميل طلب بشري
@@ -71,6 +73,8 @@ export async function ensureLearningTables(): Promise<void> {
   await assertRuntimeSchema('adaptive learning', [
     { table: 'sari_learning_signals' },
     { table: 'sari_behavioral_dna' },
+    { table: 'ai_learning_proposals' },
+    { table: 'ai_learning_evidence_links' },
     { table: 'sari_escalation_queue' },
     { table: 'merchants', columns: ['escalation_phones', 'emergency_phone'] },
   ]);
@@ -90,10 +94,12 @@ export async function captureSignal(data: {
   customerMessage?: string;
   merchantCorrection?: string;
   contextSummary?: string;
+  sourceKey?: string;
+  strict?: boolean;
 }): Promise<void> {
   await ensureLearningTables();
   const pool = await getPool();
-  if (!pool) return;
+  if (!pool) { if (data.strict) throw new Error('Learning storage unavailable'); return; }
 
   // Daily cap: max 500 signals per merchant per day
   try {
@@ -109,8 +115,9 @@ export async function captureSignal(data: {
     await pool.execute(
       `INSERT INTO sari_learning_signals 
        (merchant_id, conversation_id, signal_type, signal_weight,
-        bot_message, customer_message, merchant_correction, context_summary)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        bot_message, customer_message, merchant_correction, context_summary, source_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
       [
         data.merchantId,
         data.conversationId,
@@ -120,10 +127,12 @@ export async function captureSignal(data: {
         data.customerMessage?.substring(0, 2000) ?? null,
         data.merchantCorrection?.substring(0, 2000) ?? null,
         data.contextSummary?.substring(0, 500) ?? null,
+        data.sourceKey?.substring(0, 160) ?? null,
       ]
     );
   } catch (e: any) {
     console.error('[Learning] captureSignal failed:', e.message);
+    if (data.strict) throw e;
   }
 }
 
@@ -227,10 +236,51 @@ export async function getDNAGeneration(merchantId: number): Promise<number> {
   if (!pool) return 0;
 
   const [rows] = await pool.execute(
-    `SELECT MAX(generation) as gen FROM sari_behavioral_dna WHERE merchant_id = ?`,
-    [merchantId]
+    `SELECT MAX(generation) AS gen FROM (
+      SELECT generation FROM sari_behavioral_dna WHERE merchant_id = ?
+      UNION ALL SELECT generation FROM ai_learning_proposals WHERE merchant_id = ?
+    ) generations`,
+    [merchantId, merchantId]
   );
   return (rows as any[])[0]?.gen || 0;
+}
+
+export async function getLearningEvidence(merchantId: number) {
+  const pool = await getPool();
+  if (!pool) throw new Error('Learning evidence unavailable');
+  const [proposals] = await pool.execute<any[]>(`SELECT p.id, p.dimension, p.insight,
+    (SELECT COUNT(DISTINCT s.conversation_id) FROM ai_learning_evidence_links e
+      JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
+      WHERE e.proposal_id = p.id AND e.merchant_id = p.merchant_id) AS evidence_count
+    FROM ai_learning_proposals p WHERE p.merchant_id = ?
+    AND p.status = 'proposed' ORDER BY p.id DESC LIMIT 20`, [merchantId]);
+  const evidenceByProposal = new Map<number, Array<{ signalId: number; conversationId: number; relation: string; type: string; excerpt: string }>>();
+  if (proposals.length) {
+    const [evidence] = await pool.execute<any[]>(`SELECT * FROM (SELECT e.proposal_id, e.signal_id, e.relation, s.conversation_id,
+      s.signal_type, LEFT(COALESCE(s.customer_message, s.context_summary, ''), 500) AS excerpt,
+      ROW_NUMBER() OVER (PARTITION BY e.proposal_id ORDER BY e.signal_id DESC) AS sample_rank
+      FROM ai_learning_evidence_links e JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
+      WHERE e.merchant_id = ? AND e.proposal_id IN (${proposals.map(() => '?').join(',')})) samples
+      WHERE sample_rank <= 20 ORDER BY proposal_id DESC, signal_id DESC`,
+    [merchantId, ...proposals.map(p => p.id)]);
+    for (const row of evidence) {
+      const list = evidenceByProposal.get(Number(row.proposal_id)) || [];
+      if (list.length < 20) list.push({ signalId: Number(row.signal_id), conversationId: Number(row.conversation_id),
+        relation: String(row.relation), type: String(row.signal_type), excerpt: String(row.excerpt) });
+      evidenceByProposal.set(Number(row.proposal_id), list);
+    }
+  }
+  const [counts] = await pool.execute<any[]>(`SELECT COUNT(*) AS count FROM ai_learning_proposals
+    WHERE merchant_id = ? AND status = 'proposed'`, [merchantId]);
+  const [outcomes] = await pool.execute<any[]>(`SELECT
+    COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_completed' AND p.status = 'captured' THEN e.payment_id END) AS purchases,
+    COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_refunded' AND p.status = 'refunded' THEN e.payment_id END) AS refunds
+    FROM ai_purchase_outcomes e JOIN order_payments p ON p.id = e.payment_id AND p.merchant_id = e.merchant_id
+    WHERE e.merchant_id = ?`, [merchantId]);
+  return { proposalCount: Number(counts[0]?.count || 0), verifiedPurchases: Number(outcomes[0]?.purchases || 0),
+    verifiedRefunds: Number(outcomes[0]?.refunds || 0), source: 'tap' as const,
+    proposals: proposals.map(row => ({ id: Number(row.id), dimension: String(row.dimension), insight: String(row.insight),
+      evidenceCount: Number(row.evidence_count), evidence: evidenceByProposal.get(Number(row.id)) || [], status: 'proposed' as const })) };
 }
 
 /** Upsert a DNA dimension (create or evolve) */
@@ -247,31 +297,13 @@ export async function upsertDNA(data: {
   const pool = await getPool();
   if (!pool) return;
 
-  try {
-    await pool.execute(
-      `INSERT INTO sari_behavioral_dna 
-       (merchant_id, generation, dimension, insight, evidence_count, confidence, auto_applied, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-       ON DUPLICATE KEY UPDATE
-         generation = VALUES(generation),
-         insight = VALUES(insight),
-         evidence_count = evidence_count + VALUES(evidence_count),
-         confidence = VALUES(confidence),
-         auto_applied = VALUES(auto_applied),
-         is_active = 1`,
-      [
-        data.merchantId,
-        data.generation,
-        data.dimension,
-        data.insight.substring(0, 5000),
-        data.evidenceCount,
-        data.confidence,
-        data.autoApplied ? 1 : 0,
-      ]
-    );
-  } catch (e: any) {
-    console.error('[Learning] upsertDNA failed:', e.message);
-  }
+  // Even a legacy caller passing autoApplied=true can only propose. Publication requires
+  // a separate versioned evaluation/experiment/approval workflow, not this boolean.
+  await pool.execute(`INSERT INTO ai_learning_proposals
+    (merchant_id, generation, dimension, insight, content_hash, evidence_count, confidence)
+    VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+  [data.merchantId, data.generation, data.dimension, data.insight.substring(0, 5000),
+    createHash('sha256').update(data.insight).digest('hex'), data.evidenceCount, data.confidence]);
 }
 
 /** Get total conversations for a merchant (for maturity calculation) */

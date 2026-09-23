@@ -206,6 +206,7 @@ export function selectPersuasion(
   lastSentiment: string,
   usedTactics: string[]
 ): PersuasionPlan {
+  if (intent === 'declined' || intent === 'post_purchase') return { strategy: 'none', prompt: '' };
   // Defensive: normalize parameters to prevent undefined.length crashes
   // (e.g., when ConversationSession is accidentally passed as arsenal)
   if (!arsenal || typeof arsenal !== 'object') return { strategy: 'none', prompt: '' };

@@ -54,11 +54,20 @@ export const actionCopyKeys = [
 
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;
 
+export const learningEvidenceCopyKeys = [
+  'title', 'description', 'proposalsOnly', 'conversations', 'signals', 'proposals', 'verifiedPurchases',
+  'verifiedRefunds', 'scope', 'pendingReview', 'empty', 'evidenceCount', 'modelHypothesis',
+  'legacyActive', 'legacyReview', 'manageKnowledge', 'loadFailed', 'retry', 'loading', 'more',
+  'sources', 'supporting', 'contrary', 'observed', 'evidenceEmpty',
+] as const;
+
 export type MerchantUxCopy = {
+  checkoutInvoice: CopySection<readonly ['title', 'description', 'attestation', 'approve', 'saving', 'approved', 'failed', 'link', 'noLink']>;
   serviceForm: CopySection<typeof serviceFormCopyKeys>;
   discounts: CopySection<typeof discountCopyKeys>;
   comparePlans: CopySection<typeof comparePlanCopyKeys>;
   actions: CopySection<typeof actionCopyKeys>;
+  learningEvidence: CopySection<typeof learningEvidenceCopyKeys>;
 };
 
 export function flattenMerchantUxKeys(copy: MerchantUxCopy): string[] {

@@ -49,6 +49,14 @@ describe.skipIf(!process.env.DATABASE_URL)('authoritative conversation sessions'
     await expect(createSessionWithPersist({ ...input(), contextPrompt: 'stale' }, original.version)).rejects.toThrow('changed');
     expect((await getSessionWithFallback(fixture.merchantId, conversationId))?.contextPrompt).toBe('context');
   });
+  it('rebuilds business context without resetting dialogue history or the message count', async () => {
+    await createSessionWithPersist(input());
+    const previous = await updateSessionWithPersist(fixture.merchantId, conversationId, { topic: 'delivery', persuasionTactic: 'trust' });
+    const rebuilt = await createSessionWithPersist({ ...input(), contextPrompt: 'fresh facts only', contextSchemaVersion: 2 }, previous!.version);
+    expect(rebuilt).toMatchObject({ messageCount: 3, topicsDiscussed: ['delivery'], persuasionUsed: ['trust'], contextSchemaVersion: 2,
+      contextPrompt: 'fresh facts only', createdAt: previous!.createdAt });
+    expect((await getSessionWithFallback(fixture.merchantId, conversationId))?.messageCount).toBe(3);
+  });
   it('invalidates every worker view and prevents resurrecting a stale rebuild', async () => {
     const original = await createSessionWithPersist(input());
     await invalidateMerchantSessions(fixture.merchantId);

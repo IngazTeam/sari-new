@@ -31,7 +31,6 @@ import {
 // ═══════════════════════════════════════════════════════════════
 
 const ANALYSIS_THRESHOLD = 50;      // Analyze every 50 new signals
-const AUTO_APPLY_CONFIDENCE = 0.80; // Auto-apply DNA with ≥80% confidence
 const ANALYSIS_MODEL = 'gpt-4o-mini';
 const MAX_INSIGHT_LENGTH = 500;      // PEN-LEARN-03: Cap insight length
 
@@ -129,7 +128,10 @@ export async function captureConversationSignals(params: {
   conversationId: number;
   customerMessage: string;
   botResponse: string;
+  previousBotResponse?: string;
   contextSummary?: string;
+  sourceKey?: string;
+  strict?: boolean;
 }): Promise<void> {
   try {
     const { merchantId, conversationId, customerMessage, botResponse } = params;
@@ -145,7 +147,9 @@ export async function captureConversationSignals(params: {
       /scam/i, /fraud/i, /worst/i, /hate/i, /terrible/i,
     ];
     const isAngryMsg = ANGER_PATTERNS.some(p => p.test(customerMessage));
-    if (isAngryMsg) {
+    const hasActionableSignal = SIGNAL_PATTERNS.some(pattern =>
+      pattern.type !== 'positive_feedback' && pattern.patterns.some(p => p.test(msgLower)));
+    if (isAngryMsg && !hasActionableSignal) {
       console.log(`[Learning] ⚠️ Anger filter: skipping signal from angry message (merchant ${merchantId})`);
       return; // Don't capture anger as a learning signal
     }
@@ -159,9 +163,12 @@ export async function captureConversationSignals(params: {
           conversationId,
           signalType: pattern.type,
           signalWeight: pattern.weight,
-          botMessage: botResponse.substring(0, 500),
+          // The incoming feedback preceded the current reply; it cannot be evidence for it.
+          botMessage: params.previousBotResponse?.substring(0, 500),
           customerMessage: customerMessage.substring(0, 500),
           contextSummary: params.contextSummary,
+          sourceKey: params.sourceKey,
+          strict: params.strict,
         });
         // Don't break — a message can trigger multiple signals
       }
@@ -177,6 +184,8 @@ export async function captureConversationSignals(params: {
         botMessage: botResponse.substring(0, 500),
         customerMessage: customerMessage.substring(0, 500),
         contextSummary: params.contextSummary,
+        sourceKey: params.sourceKey,
+        strict: params.strict,
       });
     }
 
@@ -191,6 +200,7 @@ export async function captureConversationSignals(params: {
   } catch (err: any) {
     // Non-blocking — learning failures should never break the bot
     console.warn('[Learning] Signal capture failed:', err.message);
+    if (params.strict) throw err;
   }
 }
 
@@ -236,7 +246,7 @@ export async function captureOutcomeSignal(params: {
         conversationId: params.conversationId,
         signalType: 'long_conversation',
         signalWeight: 0.8,
-        contextSummary: `محادثة ناجحة: ${params.messageCount} رسائل`,
+        contextSummary: `محادثة طويلة: ${params.messageCount} رسائل؛ لا تثبت نجاحاً أو شراء`,
       });
     } else if (params.messageCount <= 2 && !params.wasEscalated) {
       await captureSignal({
@@ -244,7 +254,7 @@ export async function captureOutcomeSignal(params: {
         conversationId: params.conversationId,
         signalType: 'quick_resolution',
         signalWeight: 0.6,
-        contextSummary: `حل سريع: ${params.messageCount} رسائل`,
+        contextSummary: `محادثة قصيرة: ${params.messageCount} رسائل؛ حل المشكلة غير مؤكد`,
       });
     }
   } catch (err: any) {
@@ -283,7 +293,8 @@ export async function triggerPatternAnalysis(merchantId: number): Promise<void> 
     const currentGeneration = await getDNAGeneration(merchantId);
 
     // Group signals by type for the analysis prompt
-    const signalGroups = groupSignalsByType(signals);
+    const analysisSignals = selectSignalsForAnalysis(signals);
+    const signalGroups = groupSignalsByType(analysisSignals);
 
     // Build analysis prompt
     const systemPrompt = `أنت محلل سلوك مبيعات خبير. مهمتك تحليل إشارات سلوكية من محادثات بوت مبيعات واستخراج أنماط قابلة للتطبيق.
@@ -293,6 +304,7 @@ export async function triggerPatternAnalysis(merchantId: number): Promise<void> 
 - اكتب الاكتشاف (insight): جملة عملية واضحة يمكن للبوت تطبيقها
 - حدد نسبة الثقة (confidence): 0.50-0.99 بناءً على قوة الأدلة
 - اكتب الدليل (evidence): جملة تشرح لماذا هذا الاكتشاف صحيح
+- أرفق supporting_signal_ids وcontrary_signal_ids من أرقام الأدلة المعروضة فقط. إن لم يوجد دليل مؤيد أو معارض فأرسل مصفوفة فارغة؛ لا تخترع مرجعاً.
 
 قواعد مهمة:
 1. الاكتشافات يجب أن تكون **عملية ومحددة** — ليست نصائح عامة
@@ -307,7 +319,7 @@ export async function triggerPatternAnalysis(merchantId: number): Promise<void> 
     const userPrompt = `الحمض النووي الحالي (الجيل ${currentGeneration}):
 ${currentDNAText}
 
-الإشارات الجديدة (${signals.length} إشارة):
+الإشارات المعروضة (${analysisSignals.length} إشارة):
 ${formatSignalsForPrompt(signalGroups)}
 
 استخرج تحديثات الحمض النووي بصيغة JSON:
@@ -356,7 +368,7 @@ ${formatSignalsForPrompt(signalGroups)}
     // Apply updates to DNA
     if (analysis.updates && Array.isArray(analysis.updates)) {
       for (const update of analysis.updates) {
-        if (!update.dimension || !update.insight) continue;
+        if (!update.dimension || typeof update.insight !== 'string' || !update.insight.trim()) continue;
 
         // PEN-LEARN-02: Validate dimension against whitelist
         if (!VALID_DIMENSIONS.includes(update.dimension as DNADimension)) {
@@ -364,8 +376,9 @@ ${formatSignalsForPrompt(signalGroups)}
           continue;
         }
 
-        const confidence = Math.min(0.99, Math.max(0.50, update.confidence || 0.60));
-        const autoApply = confidence >= AUTO_APPLY_CONFIDENCE;
+        const confidence = Number.isFinite(Number(update.confidence)) ? Math.min(0.99, Math.max(0.50, Number(update.confidence))) : 0.60;
+        // Model confidence is not outcome evidence. New insights require review/evaluation.
+        const autoApply = false;
 
         // PEN-LEARN-01+03: Sanitize and cap insight before storage
         const safeInsight = sanitizeDNAText(update.insight);
@@ -379,6 +392,10 @@ ${formatSignalsForPrompt(signalGroups)}
           confidence,
           autoApplied: autoApply,
         });
+        const { attachLearningEvidence } = await import('./learning-evidence');
+        await attachLearningEvidence({ merchantId, dimension: update.dimension, insight: safeInsight,
+          observedSignalIds: analysisSignals.map(signal => signal.id), supportingSignalIds: update.supporting_signal_ids,
+          contrarySignalIds: update.contrary_signal_ids });
 
         console.log(`[Learning] DNA ${autoApply ? '✅ auto-applied' : '⏳ pending review'}: ${update.dimension} (${confidence})`);
       }
@@ -398,12 +415,15 @@ ${formatSignalsForPrompt(signalGroups)}
         insight: safeGaps.join('\n• '),
         evidenceCount: safeGaps.length,
         confidence: 0.90,
-        autoApplied: true,
+        autoApplied: false,
       });
+      const { attachLearningEvidence } = await import('./learning-evidence');
+      await attachLearningEvidence({ merchantId, dimension: 'knowledge_gaps', insight: safeGaps.join('\n• '),
+        observedSignalIds: analysisSignals.map(signal => signal.id) });
     }
 
     // Mark signals as analyzed
-    const signalIds = signals.map(s => s.id);
+    const signalIds = analysisSignals.map(s => s.id);
     await markSignalsAnalyzed(merchantId, signalIds);
 
     console.log(`[Learning] 🧬 Evolution complete: Generation ${newGeneration}, ${analysis.updates?.length || 0} updates, ${signals.length} signals analyzed`);
@@ -411,10 +431,10 @@ ${formatSignalsForPrompt(signalGroups)}
     // === Learning Milestone Notifications ===
     try {
       const milestones: Record<number, string> = {
-        1: '🧒 ساري بدأ يتعلم! أول أنماط مبيعات مكتشفة من محادثاتك — شاهد التفاصيل في لوحة التحكم',
-        3: '📚 ساري ينمو! تعلم 3 أنماط جديدة عن أسلوب عملائك في الشراء',
-        5: '💪 ساري أصبح محترف! يفهم أسلوب عملائك بثقة عالية ويطبق ما تعلمه تلقائياً',
-        10: '🏆 ساري خبير مبيعات! الجيل 10 — أتقن كل أبعاد البيع الذكي لعملائك',
+        1: 'اكتملت أول دورة تحليل. راجع مقترحات المبيعات ومصادرها في لوحة المخ.',
+        3: 'اكتملت ثلاث دورات تحليل. عدد الدورات لا يثبت تحسن المبيعات؛ راجع الأدلة والمقترحات.',
+        5: 'اكتملت 5 دورات تحليل. راجع المقترحات وأدلتها قبل اعتمادها؛ عدد الدورات لا يقيس نجاح المبيعات.',
+        10: 'اكتملت 10 دورات تحليل. قيّم أثر السياسات المعتمدة على نتائج الصفقات من لوحة المبيعات.',
       };
 
       const milestoneMessage = milestones[newGeneration];
@@ -448,87 +468,12 @@ ${formatSignalsForPrompt(signalGroups)}
 // 3. Build DNA Prompt — Convert DNA to System Prompt Injection
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Build a prompt section from the merchant's behavioral DNA.
- * This gets injected into the system prompt alongside RAG context.
- * Only includes high-confidence, auto-applied DNA.
- */
-export async function buildDNAPrompt(merchantId: number): Promise<string> {
-  const dna = await getActiveDNA(merchantId);
-  if (dna.length === 0) return '';
-
-  // Only inject auto-applied DNA or high-confidence DNA
-  const applicableDNA = dna.filter(d =>
-    (d as any).auto_applied || (d as any).confidence >= AUTO_APPLY_CONFIDENCE
-  );
-
-  if (applicableDNA.length === 0) return '';
-
-  const generation = await getDNAGeneration(merchantId);
-
-  let prompt = `\n\n## 🧬 ذكاء مبيعات مُتعلَّم (الجيل ${generation}) — تعلمته من محادثات سابقة مع عملاء هذا التاجر:\n`;
-
-  // Group by category for readability
-  const behavioral = applicableDNA.filter(d =>
-    ['greeting_style', 'tone_preference', 'closing_technique', 'objection_handling', 'upsell_timing'].includes(d.dimension)
-  );
-
-  const knowledge = applicableDNA.filter(d =>
-    ['product_emphasis', 'winning_patterns', 'losing_patterns'].includes(d.dimension)
-  );
-
-  const gaps = applicableDNA.filter(d => d.dimension === 'knowledge_gaps');
-  const pains = applicableDNA.filter(d => d.dimension === 'pain_points');
-
-  if (behavioral.length > 0) {
-    prompt += `\n### أسلوب البيع المثالي لعملاء هذا التاجر:\n`;
-    for (const dnaItem of behavioral) {
-      const label = DNA_LABELS[dnaItem.dimension] || dnaItem.dimension;
-      // PEN-LEARN-01: Sanitize before injection into system prompt
-      prompt += `- **${label}**: ${sanitizeDNAText(dnaItem.insight)}\n`;
-    }
-  }
-
-  if (knowledge.length > 0) {
-    prompt += `\n### أنماط مُكتشفة:\n`;
-    for (const dnaItem of knowledge) {
-      const label = DNA_LABELS[dnaItem.dimension] || dnaItem.dimension;
-      prompt += `- **${label}**: ${sanitizeDNAText(dnaItem.insight)}\n`;
-    }
-  }
-
-  if (pains.length > 0) {
-    prompt += `\n### تجنب هذه النقاط — تُزعج عملاء هذا التاجر:\n`;
-    for (const dnaItem of pains) {
-      prompt += `- ${sanitizeDNAText(dnaItem.insight)}\n`;
-    }
-  }
-
-  if (gaps.length > 0) {
-    prompt += `\n### ⚠️ فجوات معرفية — إذا سُئلت عنها اعتذر بلطف واقترح التواصل المباشر:\n`;
-    for (const dnaItem of gaps) {
-      prompt += `- ${sanitizeDNAText(dnaItem.insight)}\n`;
-    }
-  }
-
-  prompt += `\n⚠️ طبّق هذه الاكتشافات بطبيعية — لا تذكرها للعميل صراحةً.\n`;
-
-  return prompt;
+/** Historical active flags/model confidence do not prove policy approval. Keep the
+ * records visible for review, but do not inject them into customer conversations.
+ * Explicit merchant teaching is served through approved knowledge sections instead. */
+export async function buildDNAPrompt(_merchantId: number): Promise<string> {
+  return '';
 }
-
-/** Human-readable labels for DNA dimensions */
-const DNA_LABELS: Record<string, string> = {
-  greeting_style: 'أسلوب الترحيب',
-  objection_handling: 'معالجة الاعتراضات',
-  closing_technique: 'إغلاق البيع',
-  tone_preference: 'اللهجة المفضلة',
-  product_emphasis: 'المنتجات الأهم',
-  upsell_timing: 'توقيت البيع الإضافي',
-  knowledge_gaps: 'فجوات معرفية',
-  pain_points: 'نقاط الألم',
-  winning_patterns: 'أنماط ناجحة',
-  losing_patterns: 'أنماط فاشلة',
-};
 
 // ═══════════════════════════════════════════════════════════════
 // Helpers
@@ -546,20 +491,25 @@ function groupSignalsByType(
   return groups;
 }
 
+export function selectSignalsForAnalysis(signals: LearningSignal[]): LearningSignal[] {
+  return Object.values(groupSignalsByType(signals)).flatMap(group => group.slice(0, 5));
+}
+
 function formatSignalsForPrompt(
   groups: Record<string, LearningSignal[]>
 ): string {
   const SIGNAL_LABELS: Record<string, string> = {
     positive_feedback: 'ردود إيجابية من العملاء',
     purchase_completed: 'عمليات شراء مكتملة',
+    purchase_refunded: 'عمليات شراء مستردة؛ تخصم من النجاح البيعي',
     question_repeated: 'أسئلة مكررة (البوت لم يفهم)',
     customer_left: 'العميل غادر بدون رد',
     escalation_requested: 'طلبات تحويل لبشري',
     price_objection: 'اعتراضات على السعر',
     knowledge_gap: 'فجوات معرفية',
     merchant_correction: 'تصحيحات من التاجر',
-    long_conversation: 'محادثات ناجحة طويلة',
-    quick_resolution: 'حلول سريعة',
+    long_conversation: 'محادثات طويلة دون استنتاج نجاح',
+    quick_resolution: 'محادثات قصيرة دون استنتاج حل',
   };
 
   const lines: string[] = [];
@@ -570,13 +520,16 @@ function formatSignalsForPrompt(
 
     // Show up to 5 examples per type
     for (const signal of signals.slice(0, 5)) {
+      lines.push(`  رقم الدليل: ${signal.id}`);
       const bot = (signal as any).bot_message || signal.botMessage || '';
       const customer = (signal as any).customer_message || signal.customerMessage || '';
       const correction = (signal as any).merchant_correction || signal.merchantCorrection || '';
+      const context = (signal as any).context_summary || signal.contextSummary || '';
 
       if (bot) lines.push(`  البوت: "${bot.substring(0, 150)}"`);
       if (customer) lines.push(`  العميل: "${customer.substring(0, 150)}"`);
       if (correction) lines.push(`  تصحيح التاجر: "${correction.substring(0, 150)}"`);
+      if (context) lines.push(`  سياق ومصدر الحدث: "${sanitizeDNAText(context).substring(0, 300)}"`);
       lines.push('  ---');
     }
   }

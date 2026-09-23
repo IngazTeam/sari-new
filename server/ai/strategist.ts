@@ -15,6 +15,7 @@ import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence'
 import type { PersuasionStrategy } from './sales-arsenal';
 import { getBestStrategy, isGoldenHour } from './sales-conductor';
 import type { ClosingDirective } from './closing-engine';
+import { isSalesRefusal } from './customer-decision';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -166,6 +167,7 @@ function analyzeObjection(message: string): ObjectionAnalysis {
 // ═══════════════════════════════════════════════════════════════
 
 function selectCTALevel(intent: CustomerIntent, lastSentiment?: string): CTALevel {
+  if (intent === 'declined' || intent === 'post_purchase') return 'none';
   if (lastSentiment === 'angry' || lastSentiment === 'frustrated') return 'empathy';
 
   switch (intent) {
@@ -176,7 +178,6 @@ function selectCTALevel(intent: CustomerIntent, lastSentiment?: string): CTALeve
     case 'objecting':     return 'value_framing';
     case 'ready_to_buy':  return 'direct_cta';
     case 'returning':     return 'upsell_natural';
-    case 'post_purchase': return 'none';
     default:              return 'open_question';
   }
 }
@@ -192,6 +193,7 @@ function selectStrategy(
   persona?: SalesPersona,
   merchantId?: number,
 ): MissionBlock['primaryStrategy'] {
+  if (intent === 'declined' || intent === 'post_purchase') return 'none';
   // ── Data-driven: Check Conductor playbook first ──
   if (merchantId) {
     const conductorStrategy = getBestStrategy(merchantId, intent);
@@ -234,7 +236,7 @@ function selectStrategy(
     // Price — only discount if high intensity AND persona allows
     if (objection.type === 'price') {
       if (persona === 'premium_consultative') return 'value_comparison'; // Never discount
-      if (objection.intensity === 'high') return 'proactive_discount';
+      if (objection.intensity === 'high') return 'value_comparison';
       return 'value_comparison'; // Value first!
     }
   }
@@ -336,6 +338,15 @@ function buildRules(
   const mustInclude: string[] = [];
   const avoid: string[] = [];
 
+  if (intent === 'declined') return {
+    mustInclude: ['احترم الرفض وأكد توقف البيع والمتابعة دون سؤال ضاغط'],
+    avoid: ['لا تعرض خصماً أو رابط دفع أو بديلاً بعد الرفض', 'لا تنفذ طلباً أو حجزاً دون موافقة جديدة واضحة'],
+  };
+  if (intent === 'post_purchase') return {
+    mustInclude: ['عالج مشكلة الطلب القائم بالرجوع إلى حالته المؤكدة'],
+    avoid: ['لا تحول الشكوى إلى بيع إضافي', 'لا تدّع استرداداً أو تعويضاً دون نتيجة تنفيذ مؤكدة'],
+  };
+
   // Global: Conversation Momentum Rule
   avoid.push('لا تنهي الرد بدون زخم — كل رد يجب أن يدفع المحادثة للأمام');
   avoid.push('ممنوع الرد بـ "نعم" أو "لا" فقط');
@@ -370,10 +381,10 @@ function buildRules(
 
   // Strategy-specific
   if (strategy === 'social_proof') {
-    mustInclude.push('استخدم دليل اجتماعي: "أغلب عملائنا" أو "الأكثر طلباً"');
+    mustInclude.push('استخدم تقييمات أو نتائج عملاء معتمدة فقط إن وجدت؛ وإلا وضح ميزة موثقة');
   }
   if (strategy === 'trust_building') {
-    mustInclude.push('اذكر الاعتماد/الشهادات/الضمان');
+    mustInclude.push('أجب عن سبب القلق بحقيقة موثقة؛ لا تذكر شهادة أو ضماناً غائباً عن المصادر');
   }
   if (strategy === 'value_comparison') {
     mustInclude.push('قارن القيمة المضافة — لا تذكر المنافسين بالاسم');
@@ -425,14 +436,15 @@ function getTimingContext(merchantId?: number): string | undefined {
 
 function determineNextGoal(intent: CustomerIntent): string {
   switch (intent) {
+    case 'declined':      return 'احترام الرفض وإيقاف البيع والمتابعة';
     case 'browsing':      return 'browsing → inquiring';
     case 'inquiring':     return 'inquiring → comparing أو ready_to_buy';
     case 'comparing':     return 'comparing → ready_to_buy';
     case 'hesitating':    return 'hesitating → ready_to_buy';
     case 'objecting':     return 'objecting → hesitating أو ready_to_buy';
-    case 'ready_to_buy':  return 'إتمام البيع + upsell';
+    case 'ready_to_buy':  return 'تثبيت تفاصيل الاتفاق وتنفيذه بعد الموافقة';
     case 'returning':     return 'returning → inquiring أو ready_to_buy';
-    case 'post_purchase': return 'دعم + upsell طبيعي';
+    case 'post_purchase': return 'حل استفسار أو مشكلة الطلب القائم';
     default:              return 'اكتشاف الاحتياج';
   }
 }
@@ -444,6 +456,9 @@ function determineNextGoal(intent: CustomerIntent): string {
  */
 function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis): string[] {
   switch (intent) {
+    case 'declined':
+    case 'post_purchase':
+      return [];
     case 'browsing':
       return [
         'الرسالة الجاية: اسأل عن احتياجه المحدد ("إيش تبي بالضبط؟")',
@@ -461,14 +476,14 @@ function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis)
       ];
     case 'hesitating':
       return [
-        'الرسالة الجاية: قدم دليل اجتماعي أو ضمان',
-        'بعدها: اقترح خطوة سهلة بدون التزام ("بدون التزام تقدر تجرب")',
+        'الرسالة الجاية: عالج سبب التردد بمعلومة معتمدة',
+        'بعدها: اقترح توضيحاً أو مقارنة تناسب ما لم يحسمه العميل',
       ];
     case 'objecting':
       if (objection?.type === 'price') {
         return [
           'الرسالة الجاية: أبرز القيمة مقابل السعر',
-          'بعدها: إذا لسه معترض — اعرض بديل أقل سعراً أو خصم بسيط',
+          'بعدها: اعرض بديلاً موثقاً يناسب الميزانية إذا رغب؛ لا تختلق خصماً',
         ];
       }
       return [
@@ -477,18 +492,13 @@ function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis)
       ];
     case 'ready_to_buy':
       return [
-        'الرسالة الجاية: أكمل الطلب/الحجز فوراً',
-        'بعدها: اقترح منتج مكمل (cross-sell خفيف)',
+        'الرسالة الجاية: ثبت الكميات والخيارات والسعر والموافقة قبل التنفيذ',
+        'بعدها: أبلغ نتيجة التنفيذ الفعلية والخطوة المتبقية إن وجدت',
       ];
     case 'returning':
       return [
         'الرسالة الجاية: اسأل عن تجربته مع المنتج السابق',
         'بعدها: اقترح منتج مكمل أو ترقية',
-      ];
-    case 'post_purchase':
-      return [
-        'الرسالة الجاية: ساعده في استفساره',
-        'بعدها: إذا أبدى رضا — اقترح منتج جديد بلطف',
       ];
     default:
       return [
@@ -515,7 +525,8 @@ export function buildMissionBlock(params: {
   merchantId?: number;
   closingHint?: ClosingDirective;
 }): MissionBlock {
-  const { message, intent, lastSentiment, customerProfile, salesPersona, merchantId } = params;
+  const { message, lastSentiment, customerProfile, salesPersona, merchantId } = params;
+  const intent = isSalesRefusal(message) ? 'declined' : params.intent;
   const persona = salesPersona || 'balanced';
 
   // Analyze hesitation/objection if relevant
@@ -544,8 +555,8 @@ export function buildMissionBlock(params: {
     nextGoal: determineNextGoal(intent),
     nextTwoMoves: planNextTwoMoves(intent, objection),
     memoryDirectives,
-    timingContext: getTimingContext(merchantId),
-    closingHint: params.closingHint,
+    timingContext: intent === 'declined' || intent === 'post_purchase' ? undefined : getTimingContext(merchantId),
+    closingHint: intent === 'declined' || intent === 'post_purchase' ? undefined : params.closingHint,
   };
 }
 
@@ -554,6 +565,7 @@ export function buildMissionBlock(params: {
 // ═══════════════════════════════════════════════════════════════
 
 const STATE_LABELS: Record<string, string> = {
+  declined: 'رفض البيع أو طلب إيقافه',
   browsing: 'يتصفح',
   inquiring: 'يسأل عن منتج',
   comparing: 'يقارن خيارات',
@@ -570,7 +582,7 @@ const STRATEGY_LABELS: Record<string, string> = {
   need_discovery: 'اكتشاف احتياج بأسئلة ذكية',
   value_first: 'إبراز القيمة قبل السعر',
   trust_building: 'بناء ثقة بالاعتماد والشهادات',
-  social_proof: 'دليل اجتماعي — "أغلب عملائنا..."',
+  social_proof: 'دليل اجتماعي معتمد إن توفر',
   value_comparison: 'مقارنة القيمة المضافة',
   friction_removal: 'إزالة العوائق والتردد',
   smooth_closing: 'إتمام البيع بسلاسة',
@@ -613,9 +625,9 @@ export function missionToPrompt(mission: MissionBlock): string {
       late_night: 'وقت متأخر — رد خفيف وقصير',
       friday_morning: 'جمعة صباح — لا تضغط',
       friday_golden_hour: 'جمعة بعد العصر — وقت ذهبي',
-      post_salary: 'بداية الشهر — العميل مرتاح مالياً',
+      post_salary: 'بداية الشهر؛ لا تستنتج ميزانية العميل من التاريخ',
       end_of_month: 'نهاية الشهر — ركز على القيمة',
-      conductor_golden_hour: '🔥 وقت ذهبي (مبني على بيانات المبيعات) — اضغط أكثر!',
+      conductor_golden_hour: 'وقت تفاعل معتاد؛ لا يغير الموافقة ولا يبرر الندرة أو الضغط',
     };
     parts.push(`- التوقيت: ${timingLabels[mission.timingContext] || mission.timingContext}`);
   }

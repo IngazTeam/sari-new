@@ -14,10 +14,28 @@ import {
   requestZahyPiCompletion,
   requestZahyPiJobCompletion,
   runWithZahyPiContext,
+  buildSariBusinessInput,
 } from "./zahypi-client";
-import { SARI_TASK_CATALOG } from "./task-catalog";
+import { SARI_TASK_CATALOG, resolveSariTaskType } from "./task-catalog";
 
 const ORIGINAL_ENV = { ...process.env };
+
+describe('provider conversation memory isolation', () => {
+  const contract = resolveSariTaskType('sari.reply');
+  const messages = [{ role: 'user' as const, content: 'synthetic' }];
+  it('separates customers inside a merchant and merchants sharing a conversation number', () => {
+    const scope = (merchantId: number, conversationId: number) => buildSariBusinessInput(contract, messages,
+      { merchantId, conversationId, taskType: 'sari.reply' }, 'op-1').conversationId;
+    expect(scope(1, 10)).toBe('merchant:1:conversation:10');
+    expect(new Set([scope(1, 10), scope(1, 11), scope(2, 10)]).size).toBe(3);
+  });
+  it('uses operation isolation for tasks lacking a conversation and rejects malformed scope', () => {
+    const context = { merchantId: 1, taskType: 'sari.reply' };
+    expect(buildSariBusinessInput(contract, messages, context, 'op-1').conversationId)
+      .not.toBe(buildSariBusinessInput(contract, messages, context, 'op-2').conversationId);
+    expect(() => runWithZahyPiContext({ ...context, conversationId: 'another:merchant' }, () => true)).toThrow();
+  });
+});
 
 afterEach(() => {
   vi.useRealTimers();

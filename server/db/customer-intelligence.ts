@@ -26,6 +26,10 @@ export interface CustomerProfile {
   sentimentAvg: string;              // overall sentiment
   customerTier: CustomerTier;
   lastObjection: string | null;      // "price" | "delivery" | "quality"
+  memoryVersion?: number;
+  lastEnrichedMessageId?: number | null;
+  verifiedPurchaseCount?: number;
+  verifiedSpendByCurrency?: Record<string, number>;
   lastSeenAt: Date;
   createdAt: Date;
 }
@@ -71,26 +75,28 @@ export async function getOrCreateProfile(
 
   const existing = (rows as any[])[0];
   if (existing) {
-    // Update last seen + increment conversations
+    // Reading a profile is not a new conversation. Refresh the count from its source.
     await pool.execute(
-      `UPDATE customer_profiles SET last_seen_at = NOW(), total_conversations = total_conversations + 1
-       WHERE id = ?`,
-      [existing.id]
+      `UPDATE customer_profiles SET last_seen_at = NOW(), total_conversations =
+        (SELECT COUNT(*) FROM conversations WHERE merchantId = ? AND customerPhone = ?)
+       WHERE id = ? AND merchant_id = ?`,
+      [merchantId, customerPhone, existing.id, merchantId]
     );
-    return mapRow(existing);
+    const [updated] = await pool.execute(
+      'SELECT * FROM customer_profiles WHERE id = ? AND merchant_id = ?', [existing.id, merchantId]);
+    return mapRow((updated as any[])[0] || existing);
   }
 
   // Create new profile
+  const [counts] = await pool.execute('SELECT COUNT(*) AS count FROM conversations WHERE merchantId = ? AND customerPhone = ?', [merchantId, customerPhone]);
   const [result] = await pool.execute(
     `INSERT INTO customer_profiles (merchant_id, customer_phone, display_name, total_conversations)
-     VALUES (?, ?, ?, 1)`,
-    [merchantId, customerPhone, customerName || null]
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(customer_profiles.id)`,
+    [merchantId, customerPhone, customerName || null, Number((counts as any[])[0].count)]
   );
-
-  return {
-    ...buildDefaultProfile(merchantId, customerPhone, customerName),
-    id: (result as any).insertId,
-  };
+  const [created] = await pool.execute('SELECT * FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ?', [merchantId, customerPhone]);
+  return mapRow((created as any[])[0]);
 }
 
 /**
@@ -102,10 +108,11 @@ export async function updateProfile(
   updates: Partial<Pick<CustomerProfile, 
     'displayName' | 'nickname' | 'childName' | 'preferences' | 'painPoints' | 
     'sentimentAvg' | 'lastObjection' | 'customerTier'
-  >>
-): Promise<void> {
+  >>,
+  guard?: { expectedVersion: number; sourceMessageId: number; jobId: number; leaseToken: string },
+): Promise<boolean> {
   const pool = await getPool();
-  if (!pool) return;
+  if (!pool) return false;
 
   const setClauses: string[] = [];
   const values: any[] = [];
@@ -119,13 +126,19 @@ export async function updateProfile(
   if (updates.lastObjection !== undefined) { setClauses.push('last_objection = ?'); values.push(updates.lastObjection); }
   if (updates.customerTier !== undefined) { setClauses.push('customer_tier = ?'); values.push(updates.customerTier); }
 
-  if (setClauses.length === 0) return;
-
+  if (setClauses.length === 0) return true;
+  setClauses.push('memory_version = memory_version + 1');
+  if (guard) { setClauses.push('last_enriched_message_id = ?'); values.push(guard.sourceMessageId); }
   values.push(merchantId, customerPhone);
-  await pool.execute(
-    `UPDATE customer_profiles SET ${setClauses.join(', ')} WHERE merchant_id = ? AND customer_phone = ?`,
+  const conditions = guard ? ` AND memory_version = ? AND COALESCE(last_enriched_message_id, 0) < ?
+    AND EXISTS (SELECT 1 FROM ai_interaction_jobs j WHERE j.id = ? AND j.merchant_id = customer_profiles.merchant_id
+      AND j.incoming_message_id = ? AND j.state = 'processing' AND j.lease_token = ? AND j.lease_until > UTC_TIMESTAMP(3))` : '';
+  if (guard) values.push(guard.expectedVersion, guard.sourceMessageId, guard.jobId, guard.sourceMessageId, guard.leaseToken);
+  const [updated] = await pool.execute(
+    `UPDATE customer_profiles SET ${setClauses.join(', ')} WHERE merchant_id = ? AND customer_phone = ?${conditions}`,
     values
   );
+  return (updated as any).affectedRows === 1;
 }
 
 /**
@@ -158,7 +171,7 @@ export async function recordPurchase(
   const newTier = classifyTier(history.length, newTotal);
 
   await pool.execute(
-    `UPDATE customer_profiles SET purchase_history = ?, total_spent = ?, customer_tier = ?
+    `UPDATE customer_profiles SET purchase_history = ?, total_spent = ?, customer_tier = ?, memory_version = memory_version + 1
      WHERE merchant_id = ? AND customer_phone = ?`,
     [JSON.stringify(history), newTotal, newTier, merchantId, customerPhone]
   );
@@ -195,6 +208,12 @@ function sanitizeProfileData(text: string): string {
 
 export function buildProfileContext(profile: CustomerProfile): string {
   const parts: string[] = [];
+  const memorySource = profile.preferences?._enrichment;
+  if (memorySource?.expiresAt && new Date(memorySource.expiresAt).getTime() <= Date.now()) {
+    profile = { ...profile, preferences: {}, painPoints: [], lastObjection: null };
+  } else if (Object.keys(profile.preferences || {}).length || profile.painPoints?.length || profile.lastObjection) {
+    parts.push('التفضيلات والاعتراضات التالية تحليل احتمالي من محادثات سابقة؛ تصريح العميل الحالي يتقدم عليها ولا تثبت دفعاً أو موافقة');
+  }
   
   // Name/nickname
   const name = profile.nickname ? sanitizeProfileData(profile.nickname) : (profile.displayName ? sanitizeProfileData(profile.displayName) : null);
@@ -256,9 +275,9 @@ export function buildProfileContext(profile: CustomerProfile): string {
   if (profile.lastObjection) {
     const objDirectives: Record<string, string> = {
       price: '📌 توجيه: ابدأ بالقيمة والمميزات قبل ما تذكر أي سعر — العميل سبق اعترض على السعر',
-      delivery: '📌 توجيه: أكد سرعة التوصيل وسهولة التتبع — العميل اشتكى من التوصيل سابقاً',
-      quality: '📌 توجيه: ركز على الضمان والاعتماد — العميل سأل عن الجودة سابقاً',
-      trust: '📌 توجيه: استخدم دليل اجتماعي وشهادات العملاء — العميل شكك في الموثوقية سابقاً',
+      delivery: '📌 توجيه: تحقق من خيارات وموعد التوصيل الفعليين قبل الوعد؛ سبق أن سأل العميل عن التوصيل',
+      quality: '📌 توجيه: وضح الجودة بضمان أو مواصفة معتمدين فقط إن توفرا',
+      trust: '📌 توجيه: أجب عن سبب القلق بمصدر معتمد؛ لا تخترع شهادات أو تقييمات',
     };
     parts.push(objDirectives[profile.lastObjection] || `⚠️ ${sanitizeProfileData(profile.lastObjection)}`);
   }
@@ -302,6 +321,8 @@ function buildDefaultProfile(merchantId: number, phone: string, name?: string): 
     purchaseHistory: [],
     totalSpent: 0,
     totalConversations: 1,
+    memoryVersion: 0,
+    lastEnrichedMessageId: null,
     sentimentAvg: 'neutral',
     customerTier: 'new',
     lastObjection: null,
@@ -326,6 +347,10 @@ function mapRow(row: any): CustomerProfile {
     sentimentAvg: row.sentiment_avg || 'neutral',
     customerTier: (row.customer_tier as CustomerTier) || 'new',
     lastObjection: row.last_objection,
+    memoryVersion: Number(row.memory_version || 0),
+    lastEnrichedMessageId: row.last_enriched_message_id || null,
+    verifiedPurchaseCount: Number(row.verified_purchase_count || 0),
+    verifiedSpendByCurrency: safeJsonParse(row.verified_spend_by_currency, {}),
     lastSeenAt: new Date(row.last_seen_at),
     createdAt: new Date(row.created_at),
   };

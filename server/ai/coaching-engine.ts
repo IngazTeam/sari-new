@@ -26,7 +26,7 @@ import {
   type CoachingQuestion,
 } from '../db/coaching';
 import { captureSignal } from '../db/learning';
-import { cacheSuccessfulResponse } from './rag-engine';
+import { saveMerchantTeaching } from '../knowledge/merchant-teaching';
 import { sanitizeDNAText } from './learning-engine';
 
 // Re-export for consumers that import from coaching-engine
@@ -123,12 +123,12 @@ export async function handleTeachCommand(
   const safeAnswer = sanitizeDNAText(answer).substring(0, 2000);
   const safeQuestion = sanitizeDNAText(question).substring(0, 500);
 
-  // Store in RAG cache as merchant-approved knowledge (high confidence)
-  let cachedInRAG = false;
+  // Persist first; never acknowledge a disabled cache or a failed write as learning.
   try {
-    await cacheSuccessfulResponse(merchantId, safeQuestion, safeAnswer);
-    cachedInRAG = true;
-  } catch { /* cache is optional */ }
+    await saveMerchantTeaching({ merchantId, question: safeQuestion, answer: safeAnswer, origin: 'teach_command' });
+  } catch {
+    return { handled: true, response: 'تعذر حفظ المعلومة الآن. لم يتم اعتمادها؛ حاول مرة أخرى.' };
+  }
 
   // Record as merchant_correction signal (weight 3.0 — highest)
   await captureSignal({
@@ -139,7 +139,7 @@ export async function handleTeachCommand(
     customerMessage: safeQuestion,
     merchantCorrection: safeAnswer,
     contextSummary: 'تعليم مباشر من التاجر عبر #علم_ساري',
-  });
+  }).catch(() => undefined);
 
   console.log(`[Coaching] 📝 #علم_ساري: merchant ${merchantId} taught: "${safeQuestion.substring(0, 50)}..."`);
 
@@ -148,22 +148,13 @@ export async function handleTeachCommand(
     ? `\n❓ *السؤال:* "${safeQuestion.substring(0, 150)}"\n💬 *الجواب:* "${safeAnswer.substring(0, 150)}"`
     : `\n📝 *المعلومة:* "${safeAnswer.substring(0, 200)}"`;
 
-  const storageLayers = [
-    cachedInRAG ? '✅ قاعدة المعرفة الذكية (RAG)' : null,
-    '✅ محرك التعلم (وزن 3.0 — أعلى أولوية)',
-  ].filter(Boolean).join('\n');
-
   return {
     handled: true,
-    response: `🧠 *تم حفظ المعلومة بنجاح!*
+    response: `تم حفظ المعلومة في معرفة النشاط.
 ${structuredFeedback}
 
-━━━━━━━━━━━━━━━
-📦 *تم الحفظ في:*
-${storageLayers}
-
-💡 من الحين إذا سأل عميل سؤال مشابه — البوت بيستخدم جوابك تلقائياً.
-📊 _استخدمت ${usedToday}/10 تعليمات اليوم_`,
+سيستخدمها ساري عندما تناسب السؤال، مع الرجوع للكتالوج الحالي في السعر والتوفر. يمكنك تعديلها أو حذفها من صفحة المعرفة.
+استخدمت ${usedToday}/10 تعليمات اليوم.`,
   };
 }
 
@@ -390,11 +381,9 @@ export async function handleCoachingReply(
       const safeCorrection = correction
         .replace(/https?:\/\/[^\s]+/g, '[رابط]')
         .replace(/\[.*?\]\(.*?\)/g, '[رابط]');  // COACH-03 FIX: Strip markdown links too
-      cacheSuccessfulResponse(
-        merchantId,
-        currentQ.customerQuestion || '',
-        safeCorrection
-      ).catch(() => {});
+      await saveMerchantTeaching({ merchantId, question: (currentQ.customerQuestion || (currentQ as any).customer_question || '').slice(0, 500),
+        answer: safeCorrection, origin: 'coaching_correction', referenceId: currentQ.id });
+      replyMsg = 'تم حفظ التصحيح للمراجعة في المعرفة؛ لن يعمم على العملاء قبل اعتماده.';
 
       // Signal: merchant_correction (weight 3.0 — highest)
       captureSignal({

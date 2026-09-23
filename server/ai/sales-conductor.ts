@@ -16,6 +16,7 @@
  */
 
 import { getAllMerchants, getPool } from '../db';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types — MerchantPlaybook
@@ -49,8 +50,10 @@ export interface GoldenHour {
 
 export interface TopObjection {
   objection: string;
-  bestStrategy: string;
-  winRate: number;
+  bestStrategy: string | null;
+  winRate: number | null;
+  frequency: number;
+  independentConversations: number;
 }
 
 export interface MerchantPlaybook {
@@ -65,16 +68,45 @@ export interface MerchantPlaybook {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// In-Memory Playbook Cache
+// Durable descriptive analysis
 // ═══════════════════════════════════════════════════════════════
 
-const playbookCache = new Map<number, MerchantPlaybook>();
+
+
 
 /**
- * Get the playbook for a merchant. Returns cached version or empty default.
+ * Get the playbook for a merchant. Reads the persisted version shared by all workers.
  */
-export function getPlaybook(merchantId: number): MerchantPlaybook {
-  return playbookCache.get(merchantId) || createEmptyPlaybook(merchantId);
+export async function getPlaybook(merchantId: number): Promise<MerchantPlaybook> {
+  const pool = await getPool();
+  if (!pool) throw new Error('DB unavailable');
+  await assertRuntimeSchema('sales playbook', [{ table: 'ai_sales_playbooks' }]);
+  const [rows] = await pool.execute<any[]>('SELECT * FROM ai_sales_playbooks WHERE merchant_id = ?', [merchantId]);
+  const row = rows[0], result = createEmptyPlaybook(merchantId);
+  if (!row) return result;
+  const parse = (value: unknown) => typeof value === 'string' ? JSON.parse(value) : value;
+  const daily = parse(row.daily_analysis) as any, weekly = parse(row.weekly_analysis) as any;
+  if (daily?.schemaVersion === 1) {
+    result.strategyWeights = daily.strategyWeights || [];
+    result.goldenHours = daily.goldenHours || [];
+    result.lastDailyUpdate = new Date(row.daily_updated_at);
+  }
+  if (weekly?.schemaVersion === 1) {
+    result.topObjections = weekly.topObjections || [];
+    result.lastWeeklyUpdate = new Date(row.weekly_updated_at);
+  }
+  return result;
+}
+
+async function saveAnalysis(merchantId: number, kind: 'daily' | 'weekly', payload: unknown): Promise<void> {
+  const pool = await getPool();
+  if (!pool) throw new Error('DB unavailable');
+  await assertRuntimeSchema('sales playbook', [{ table: 'ai_sales_playbooks' }]);
+  // Each job replaces only its own section. Concurrent daily/weekly workers cannot erase each other.
+  await pool.execute(`INSERT INTO ai_sales_playbooks (merchant_id, ${kind}_analysis, ${kind}_updated_at)
+    VALUES (?, ?, UTC_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE
+    ${kind}_analysis=VALUES(${kind}_analysis), ${kind}_updated_at=VALUES(${kind}_updated_at), revision=revision+1`,
+    [merchantId, JSON.stringify(payload)]);
 }
 
 function createEmptyPlaybook(merchantId: number): MerchantPlaybook {
@@ -107,7 +139,7 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
   const pool = await getPool();
   if (!pool) return;
 
-  const playbook = getPlaybook(merchantId);
+  const playbook = createEmptyPlaybook(merchantId);
 
   try {
     // 1. Analyze strategy success rates from sari_strategy_metrics
@@ -154,7 +186,8 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
     }));
 
     playbook.lastDailyUpdate = new Date();
-    playbookCache.set(merchantId, playbook);
+    await saveAnalysis(merchantId, 'daily', { schemaVersion: 1, measurement: 'descriptive_legacy_association',
+      windowDays: { strategy: 7, hours: 30 }, strategyWeights: playbook.strategyWeights, goldenHours: playbook.goldenHours });
 
     console.log(`[Conductor] Daily analysis complete for merchant ${merchantId}: ${playbook.strategyWeights.length} strategies analyzed`);
   } catch (err) {
@@ -174,31 +207,31 @@ export async function runWeeklyAnalysis(merchantId: number): Promise<void> {
   const pool = await getPool();
   if (!pool) return;
 
-  const playbook = getPlaybook(merchantId);
+  const playbook = createEmptyPlaybook(merchantId);
 
   try {
     // 1. Top objection patterns from learning signals
     const [objRows] = await pool.execute(
-      `SELECT signal_type, signal_value,
-              COUNT(*) as frequency
+      `SELECT signal_type, COUNT(*) as frequency, COUNT(DISTINCT conversation_id) as independent_conversations
        FROM sari_learning_signals
        WHERE merchant_id = ?
-         AND signal_type IN ('objection', 'hesitation')
+          AND signal_type IN ('price_objection', 'customer_left')
          AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-       GROUP BY signal_type, signal_value
+        GROUP BY signal_type
        ORDER BY frequency DESC
        LIMIT 10`,
       [merchantId]
     );
 
     playbook.topObjections = ((objRows as any[]) || []).map((row: any) => ({
-      objection: row.signal_value || row.signal_type,
-      bestStrategy: 'value_comparison', // Will be refined as data grows
-      winRate: 0,
+      objection: row.signal_type,
+      bestStrategy: null, winRate: null, // No winning strategy/rate without a measured policy experiment.
+      frequency: Number(row.frequency), independentConversations: Number(row.independent_conversations),
     }));
 
     playbook.lastWeeklyUpdate = new Date();
-    playbookCache.set(merchantId, playbook);
+    await saveAnalysis(merchantId, 'weekly', { schemaVersion: 1, measurement: 'observed_objections', windowDays: 30,
+      topObjections: playbook.topObjections });
 
     console.log(`[Conductor] Weekly analysis complete for merchant ${merchantId}: ${playbook.topObjections.length} objection patterns found`);
   } catch (err) {
@@ -215,37 +248,23 @@ export async function runWeeklyAnalysis(merchantId: number): Promise<void> {
  * Returns null if no data available (fall back to default logic).
  */
 export function getBestStrategy(merchantId: number, intent: string): string | null {
-  const playbook = playbookCache.get(merchantId);
-  if (!playbook || playbook.strategyWeights.length === 0) return null;
-
-  // Find strategy with highest success rate for this intent (or 'all')
-  const candidates = playbook.strategyWeights
-    .filter(sw => sw.intent === intent || sw.intent === 'all')
-    .filter(sw => sw.sampleSize >= 5) // Need minimum data
-    .sort((a, b) => b.successRate - a.successRate);
-
-  return candidates.length > 0 ? candidates[0].strategy : null;
+  // Descriptive associations are never promoted to sales policy without an approved release.
+  return null;
 }
 
 /**
  * Check if current time is a golden hour for this merchant.
  */
 export function isGoldenHour(merchantId: number): boolean {
-  const playbook = playbookCache.get(merchantId);
-  if (!playbook || playbook.goldenHours.length === 0) return false;
-
-  const now = new Date();
-  return playbook.goldenHours.some(gh => 
-    gh.day === now.getDay() && gh.hour === now.getHours() && gh.conversionRate > 0.15
-  );
+  // A time-of-day correlation from three messages is not permission to press for a sale.
+  return false;
 }
 
 /**
  * Get winning phrases for prompt injection.
  */
 export function getWinningPhrases(merchantId: number): WinningPhrase[] {
-  const playbook = playbookCache.get(merchantId);
-  return playbook?.winningPhrases || [];
+  return [];
 }
 
 // ═══════════════════════════════════════════════════════════════

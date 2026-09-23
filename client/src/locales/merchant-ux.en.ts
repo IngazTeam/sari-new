@@ -1,6 +1,27 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  checkoutInvoice: {
+    title: 'Approve the conversation order invoice', description: 'The customer agreed to the items and quantities. Review tax and delivery before enabling payment. A higher total requires a new offer and customer consent.',
+    attestation: 'I confirm that the displayed total is final and includes all taxes and delivery fees, with no additional charge to the customer.',
+    approve: 'Approve total and prepare payment link', saving: 'Approving…', approved: 'Invoice approved at the agreed total',
+    failed: 'The invoice could not be approved. Refresh the order and verify prices and availability before retrying.', link: 'Open payment link',
+    noLink: 'Invoice approved. A payment link is currently unavailable; review the payment gateway settings.',
+  },
+  learningEvidence: {
+    title: 'Brain learning and sales outcomes',
+    description: 'Review proposed improvements and verified sales outcomes before changing reply policy.',
+    proposalsOnly: 'New proposals are not applied automatically', conversations: 'Conversations', signals: 'Behavioral signals',
+    proposals: 'Proposals awaiting review', verifiedPurchases: 'Verified payments', verifiedRefunds: 'Verified refunds',
+    scope: 'Payment and refund figures come from Tap since outcome tracking was enabled. They do not measure conversion or persuasion quality.',
+    pendingReview: 'Latest proposals for review', empty: 'No proposals are awaiting review.',
+    evidenceCount: 'Stored sources from {{count}} distinct conversations', modelHypothesis: 'A hypothesis requiring validation and an experiment. Evidence labels are model suggestions, not proof of impact.',
+    sources: 'Sample proposal sources', supporting: 'Suggested supporting evidence', contrary: 'Suggested contrary evidence', observed: 'Observed in analysis batch',
+    evidenceEmpty: 'No stored source links for this proposal. Document evidence before evaluating it.',
+    legacyActive: 'Historical instructions retained for review', legacyReview: 'These were active in an earlier release. Current replies exclude them until evaluation and approval.',
+    manageKnowledge: 'Manage brain knowledge', loadFailed: 'Learning evidence could not be loaded. Verified figures are unavailable.',
+    retry: 'Try again', loading: 'Loading learning evidence…', more: 'View proposal and evidence',
+  },
   serviceForm: {
     created: 'Service created successfully', updated: 'Service updated successfully',
     createFailed: 'Could not create the service: {{message}}', updateFailed: 'Could not update the service: {{message}}',

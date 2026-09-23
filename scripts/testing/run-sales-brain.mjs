@@ -1,0 +1,60 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Keep virtual-clock provider tests separate from real MySQL integration tests.
+const units = [
+  'server/ai/sales-brain-decisions.test.ts', 'server/ai/sales-brain-learning.test.ts',
+  'server/ai/review-sales-response.test.ts', 'server/ai/response-validator-failure.test.ts',
+  'server/ai/transactional-truth.test.ts', 'server/ai/action-execution.test.ts',
+  'server/ai/zahypi-client.test.ts', 'server/ai/openai-zahypi.test.ts',
+  'server/tap-order-payment-effects-pentest.test.ts',
+  'server/ai/provider-interaction.test.ts', 'server/ai/checkout-conversation.test.ts',
+  'server/knowledge/retrieval.test.ts', 'server/knowledge/merchant-teaching.test.ts',
+  'server/ai/response-critic-contract.test.ts',
+  'server/ai/sales-turn-policy.test.ts',
+  'server/automation/zid-order-from-chat.test.ts', 'server/automation/zid-order-contract.test.ts',
+  'server/automation/zid-order-extraction.test.ts',
+  'server/tests/chat-commerce-pentest.test.ts',
+];
+const database = [
+  'server/ai/interaction-jobs.mysql.test.ts', 'server/ai/proactive-followup.mysql.test.ts',
+  'server/ai/review-sales-delivery.mysql.test.ts', 'server/ai/session-store.mysql.test.ts',
+  'server/ai/verified-purchase-memory.mysql.test.ts',
+  'server/ai/checkout-agreements.mysql.test.ts',
+  'server/ai/learning-evidence.mysql.test.ts',
+  'server/ai/sales-playbook.mysql.test.ts',
+  'server/knowledge/sales-knowledge.mysql.test.ts', 'server/knowledge/lifecycle.mysql.test.ts',
+  'server/ai/zid-checkout-agreements.mysql.test.ts',
+  'server/messaging/inbound.mysql.test.ts', 'server/messaging/inbound-process.mysql.test.ts',
+];
+const output = resolve('.tmp/sales-brain-evidence'); mkdirSync(output, { recursive: true });
+function run(name, args) {
+  const result = spawnSync(process.execPath, [resolve('scripts/testing/run-isolated.mjs'), ...args,
+    '--reporter=default', '--reporter=json', `--outputFile.json=${resolve(output, `${name}.json`)}`],
+  { stdio: 'inherit', windowsHide: true });
+  if (result.error || result.status !== 0) process.exit(result.status || 1);
+}
+run('unit', units);
+if (process.argv.includes('--with-database')) run('database', ['--with-database', ...database]);
+else console.log('Database acceptance not run. Use --with-database and SARI_TEST_DATABASE_URL for a disposable loopback database.');
+if (process.argv.includes('--regression')) {
+  const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
+  const files = [...new Set(['test:remediation', 'pretest:release', 'test:zahypi'].flatMap(name =>
+    pkg.scripts[name].split(/\s+/).filter(value => value.endsWith('.test.ts'))))];
+  files.push('server/merchant-semantic-i18n-pentest.test.ts', 'server/customer-profile-canonical-pentest.test.ts',
+    'server/sales-conversion-pentest.test.ts', 'server/tap-payment-idempotency-pentest.test.ts', 'server/tap-payment-ownership-pentest.test.ts',
+    'server/coaching-bugfix-pentest.test.ts', 'server/context-intelligence-pentest.test.ts');
+  run('regression', files);
+  run('legacy-sales', ['server/sales-hardening-pentest.test.ts', 'server/sales-engine-pentest.test.ts', 'server/conversation-order-payment-link-pentest.test.ts']);
+  if (process.argv.includes('--with-database')) run('budget', ['--with-database', 'server/aiBudgetLedger.mysql.test.ts']);
+}
+if (process.argv.includes('--security')) {
+  const walk = directory => readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory()
+    ? walk(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
+  const files = walk('server').filter(file => /-pentest\.test\.ts$/.test(file));
+  run('security', [...new Set([...files, 'server/core-team-access.test.ts', 'server/merchant-access.test.ts',
+    'server/products-access.test.ts', 'server/ai-settings-budget-access.test.ts', 'server/security/download-media.test.ts',
+    'server/whatsapp-delivery-safety.test.ts', 'server/ai/budget-boundaries.test.ts', 'server/messaging/ingress.test.ts',
+    'server/integrations/zahypi-connector/routes.test.ts', 'server/ai/task-validation.test.ts'])].sort());
+}
