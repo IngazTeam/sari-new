@@ -62,6 +62,8 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  followupPolicy: CopySection<readonly ['title', 'description', 'enabled', 'disableHint', 'timezone', 'timezoneHint',
+    'weeklyLimit', 'startHour', 'endHour', 'scope', 'invalid', 'loading', 'loadFailed', 'refresh', 'saving', 'save', 'readOnly', 'failed', 'saved']>;
   salesSector: CopySection<readonly ['title', 'description', 'general', 'training', 'recruitment', 'store', 'loading', 'loadFailed',
     'refresh', 'select', 'scope', 'currentGuide', 'saving', 'save', 'readOnly', 'failed', 'saved']>;
   zidReconciliation: CopySection<readonly ['title', 'description', 'projection', 'unknown', 'legacy', 'waiting', 'readOnly',

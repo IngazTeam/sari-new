@@ -1,19 +1,19 @@
 import { isSalesRefusal, normalizeCustomerText } from './customer-decision';
+import { defaultFollowupPolicy, isFollowupTimeAllowed, resolveZonedWallTime, zonedWallTime, type FollowupPolicy } from '../../shared/followup-policy';
 
-const OFFSET = 3 * 60 * 60 * 1000; // Follow-up policy currently uses Asia/Riyadh.
 const dayMs = 24 * 60 * 60 * 1000;
 export type RequestedFollowupTime = { kind: 'requested'; at: Date } | { kind: 'clarify' } | null;
 
 /** Conservative date parser: incomplete/ambiguous dates request clarification.
  * Relative dates use the persisted incoming-message time, never the retry time. */
-export function parseRequestedFollowupTime(message: string, sourceTime: Date, now = new Date()): RequestedFollowupTime {
+export function parseRequestedFollowupTime(message: string, sourceTime: Date, now = new Date(), policy: FollowupPolicy = defaultFollowupPolicy): RequestedFollowupTime {
   const text = normalizeCustomerText(message).replace(/[٠-٩۰-۹]/g, char => String('٠١٢٣٤٥٦٧٨٩'.includes(char)
     ? '٠١٢٣٤٥٦٧٨٩'.indexOf(char) : '۰۱۲۳۴۵۶۷۸۹'.indexOf(char)));
   if (isSalesRefusal(message) || !/^(?:لو سمحت\s+)?(?:ذكرني|كلمني|تواصل معي|تابع معي|remind me|contact me)(?=\s|$)/.test(text)) return null;
-  return parseTime(text, sourceTime, now);
+  return parseTime(text, sourceTime, now, policy);
 }
 
-function parseTime(text: string, sourceTime: Date, now: Date): RequestedFollowupTime {
+function parseTime(text: string, sourceTime: Date, now: Date, policy: FollowupPolicy): RequestedFollowupTime {
   if (!Number.isFinite(sourceTime.getTime()) || !Number.isFinite(now.getTime()) || text.length > 500
     || /(?:^|\s)(?:او|or|اذا|لا|ليس|مو|if|unless|maybe)(?=\s|$)|بتوقيت|utc|gmt|دبي|cairo|dubai|[?؟]/.test(text)) return { kind: 'clarify' };
   const times = Array.from(text.matchAll(/(?:الساعه|ساعه|at)\s*(\d{1,2})(?::(\d{2}))?\s*(صباحا?|مساء(?:ا)?|ص|م|am|pm)?(?=\s|[.!،]|$)/g));
@@ -23,7 +23,7 @@ function parseTime(text: string, sourceTime: Date, now: Date): RequestedFollowup
   let hour = Number(time[1]); const minute = Number(time[2] || 0);
   if (minute > 59 || hour > 23 || (time[3] && (hour < 1 || hour > 12))) return { kind: 'clarify' };
   if (time[3]) { hour %= 12; if (/^(?:م|مساء|pm)/.test(time[3])) hour += 12; }
-  const localSource = new Date(sourceTime.getTime() + OFFSET);
+  const localSource = zonedWallTime(sourceTime, policy.timeZone);
   let local = new Date(Date.UTC(localSource.getUTCFullYear(), localSource.getUTCMonth(), localSource.getUTCDate(), hour, minute));
   const explicitDate = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
   if (explicitDate) {
@@ -40,9 +40,11 @@ function parseTime(text: string, sourceTime: Date, now: Date): RequestedFollowup
     if (delta === 0 && local <= localSource) delta = 7;
     local = new Date(local.getTime() + delta * dayMs);
   }
-  const at = new Date(local.getTime() - OFFSET);
+  const candidates = resolveZonedWallTime(local, policy.timeZone);
+  if (candidates.length !== 1) return { kind: 'clarify' };
+  const at = candidates[0];
   if (at <= now || at.getTime() - now.getTime() > 90 * dayMs || at <= sourceTime) return { kind: 'clarify' };
   // Don't silently shift a requested night-time appointment to the next morning.
-  if (hour < 8 || hour >= 23) return { kind: 'clarify' };
+  if (!isFollowupTimeAllowed(policy, at)) return { kind: 'clarify' };
   return { kind: 'requested', at };
 }

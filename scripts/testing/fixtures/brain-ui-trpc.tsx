@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { defaultFollowupPolicy } from '../../../shared/followup-policy';
 import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sales-sector-playbooks';
 const parameters = new URL(location.href).searchParams;
 const mode = parameters.get('case') || 'ready';
@@ -9,6 +10,21 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   sariBrain: {
+    getFollowupPolicy: { useQuery: () => {
+      const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
+      const data = useMemo(() => ({ policy: (window as any).__followupInput?.policy || defaultFollowupPolicy,
+        revision, canManage: mode !== 'viewer' }), [revision]);
+      return { data, isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry,
+        refetch: async () => { setRetry(true); setRevision(revision + 1); } };
+    } },
+    updateFollowupPolicy: { useMutation: (options: { onSuccess: () => void }) => {
+      const [state, setState] = useState('idle'), [attempts, setAttempts] = useState(0);
+      return { isPending: state === 'pending', isError: state === 'error', isSuccess: state === 'success', reset: () => setState('idle'),
+        mutate: (input: unknown) => { setState('pending'); setAttempts(attempts + 1);
+          setTimeout(() => { if (mode === 'mutation-error' && attempts === 0) setState('error'); else {
+            (window as any).__followupInput = input; setState('success'); options.onSuccess(); } }, 50);
+        } };
+    } },
     getSalesSector: { useQuery: () => {
       const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
       return { isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry,

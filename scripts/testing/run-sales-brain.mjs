@@ -17,12 +17,14 @@ const units = [
   'server/ai/response-critic-contract.test.ts',
   'server/ai/sales-turn-policy.test.ts',
   'server/ai/requested-followup-time.test.ts',
+  'server/ai/followup-policy.test.ts',
   'server/automation/zid-order-from-chat.test.ts', 'server/automation/zid-order-contract.test.ts',
   'server/automation/zid-order-extraction.test.ts',
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
   'server/ai/customer-memory.mysql.test.ts',
+  'server/ai/followup-policy.mysql.test.ts',
   'server/ai/interaction-jobs.mysql.test.ts', 'server/ai/proactive-followup.mysql.test.ts',
   'server/ai/review-sales-delivery.mysql.test.ts', 'server/ai/session-store.mysql.test.ts',
   'server/ai/verified-purchase-memory.mysql.test.ts',

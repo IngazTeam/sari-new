@@ -26,6 +26,9 @@ import { isSalesRefusal } from './customer-decision';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { hasActiveCampaignConsent, withCampaignOptOutNotice } from '../automation/campaign-guard';
 import { parseRequestedFollowupTime } from './requested-followup-time';
+import { getFollowupPolicy } from './followup-policy';
+import { isFollowupTimeAllowed, nextFollowupSendTime } from '../../shared/followup-policy';
+import { followupPhoneForms } from './followup-send-guard';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -117,36 +120,15 @@ const FOLLOW_UP_DELAYS: Record<string, number> = {
   action_selector: 4 * 60 * 60 * 1000,   // 4 hours (default for action-selector)
 };
 
-// Quiet hours: 11 PM - 8 AM Saudi time (UTC+3)
-const QUIET_HOUR_START = 23; // 11 PM
-const QUIET_HOUR_END = 8;    // 8 AM
-const MAX_WEEKLY_PER_CUSTOMER = 3;
-
-function isQuietHours(): boolean {
-  const now = new Date();
-  const saudiHour = (now.getUTCHours() + 3) % 24;
-  return saudiHour >= QUIET_HOUR_START || saudiHour < QUIET_HOUR_END;
-}
-
-function getNextAllowedSendTime(): Date {
-  const now = new Date();
-  const saudiOffset = 3 * 60 * 60 * 1000;
-  const saudiNow = new Date(now.getTime() + saudiOffset);
-  const target = new Date(saudiNow);
-  target.setUTCHours(QUIET_HOUR_END, 0, 0, 0);
-  if (target <= saudiNow) {
-    target.setUTCDate(target.getUTCDate() + 1);
-  }
-  return new Date(target.getTime() - saudiOffset);
-}
-
 // ═══════════════════════════════════════════════════════════════
 // DB Table Auto-Create
 // ═══════════════════════════════════════════════════════════════
 
 async function ensureTable(): Promise<void> {
   await assertRuntimeSchema('proactive follow-ups', [
-    { table: 'sales_followups', columns: ['processing_token', 'anchor_message_id', 'claimed_at'] },
+    { table: 'sales_followups', columns: ['processing_token', 'anchor_message_id', 'claimed_at', 'schedule_timezone'] },
+    { table: 'sales_followup_policies', columns: ['revision', 'enabled', 'time_zone', 'weekly_limit'] },
+    { table: 'sales_followup_dispatches', columns: ['customer_phone', 'admitted_at', 'state'] },
     { table: 'conversations', columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at'] },
   ]);
 }
@@ -203,10 +185,14 @@ export async function scheduleFollowUp(params: {
     await connection.beginTransaction();
     // Serialize the short scheduling transaction across this merchant, including different conversations.
     await connection.execute('SELECT id FROM merchants WHERE id = ? FOR UPDATE', [merchantId]);
+    const { policy } = await getFollowupPolicy(merchantId, connection);
+    if (!policy.enabled) return false;
+    const phoneForms = followupPhoneForms(customerPhone);
+    if (!phoneForms.length) return false;
     const context = await followUpContext(connection, merchantId, conversationId, customerPhone);
     if (suppressReason(context)) return false;
     const requested = followUpType === 'customer_requested'
-      ? parseRequestedFollowupTime(context!.last_message || '', new Date(context!.source_created_at)) : null;
+      ? parseRequestedFollowupTime(context!.last_message || '', new Date(context!.source_created_at), new Date(), policy) : null;
     if (followUpType === 'customer_requested' && (requested?.kind !== 'requested' || params.requestedSourceMessageId !== Number(context!.incoming_id))) return false;
     if (requested?.kind === 'requested') {
       const [existing] = await connection.execute<RowDataPacket[]>(`SELECT id FROM sales_followups WHERE merchant_id=? AND conversation_id=?
@@ -219,12 +205,12 @@ export async function scheduleFollowUp(params: {
     // Safety: Check weekly limit (max 3 per customer per week)
     const [weekRows] = await connection.execute(
       `SELECT COUNT(*) as cnt FROM sales_followups 
-       WHERE merchant_id = ? AND customer_phone = ? 
+       WHERE merchant_id = ? AND customer_phone IN (${phoneForms.map(() => '?').join(',')})
        AND cancelled_at IS NULL
-       AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
-      [merchantId, customerPhone]
+       AND (sent_at IS NULL OR sent_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY))`,
+      [merchantId, ...phoneForms]
     );
-    if ((weekRows as any[])[0]?.cnt >= MAX_WEEKLY_PER_CUSTOMER) {
+    if ((weekRows as any[])[0]?.cnt >= policy.weeklyLimit) {
       console.log(`[FollowUp] Weekly limit reached for ***${customerPhone.slice(-4)} — skipping`);
       return false;
     }
@@ -251,13 +237,14 @@ export async function scheduleFollowUp(params: {
     // Calculate scheduled time
     const delayMs = params.customDelayMs ?? FOLLOW_UP_DELAYS[followUpType] ?? FOLLOW_UP_DELAYS.action_selector;
     if (!Number.isFinite(delayMs) || delayMs < 0 || messageText.length > 4096) return false;
-    const scheduledAt = requested?.kind === 'requested' ? requested.at : new Date(Date.now() + delayMs);
+    const scheduledAt = requested?.kind === 'requested' ? requested.at : nextFollowupSendTime(policy, new Date(Date.now() + delayMs));
+    if (!scheduledAt) return false;
 
     await connection.execute(
       `INSERT INTO sales_followups 
-       (merchant_id, conversation_id, customer_phone, follow_up_type, scheduled_at, message_text, customer_name, source, anchor_message_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, params.source || 'proactive', context!.incoming_id]
+       (merchant_id, conversation_id, customer_phone, follow_up_type, scheduled_at, message_text, customer_name, source, anchor_message_id, schedule_timezone)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, params.source || 'proactive', context!.incoming_id, policy.timeZone]
     );
     await connection.commit();
 
@@ -279,13 +266,15 @@ export async function cancelFollowUps(merchantId: number, customerPhone: string)
     await ensureTable();
     const pool = await getPool();
     if (!pool) return 0;
+    const phoneForms = followupPhoneForms(customerPhone);
+    if (!phoneForms.length) return 0;
 
     const [result] = await pool.execute(
       `UPDATE sales_followups 
        SET cancelled_at = NOW(), cancel_reason = 'customer_replied'
-       WHERE merchant_id = ? AND customer_phone = ?
+       WHERE merchant_id = ? AND customer_phone IN (${phoneForms.map(() => '?').join(',')})
        AND sent_at IS NULL AND cancelled_at IS NULL`,
-      [merchantId, customerPhone]
+      [merchantId, ...phoneForms]
     );
 
     const cancelled = (result as any).affectedRows || 0;
@@ -312,23 +301,6 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
     await ensureTable();
     const pool = await getPool();
     if (!pool) return { sent, cancelled, errors };
-
-    // Don't send during quiet hours — reschedule to morning
-    if (isQuietHours()) {
-      const nextSend = getNextAllowedSendTime();
-      const [rescheduleResult] = await pool.execute(
-        `UPDATE sales_followups 
-         SET scheduled_at = ?
-         WHERE sent_at IS NULL AND cancelled_at IS NULL
-         AND scheduled_at <= NOW()`,
-        [nextSend]
-      );
-      const rescheduled = (rescheduleResult as any).affectedRows || 0;
-      if (rescheduled > 0) {
-        console.log(`[FollowUp] Rescheduled ${rescheduled} follow-ups to ${nextSend.toISOString()} (quiet hours)`);
-      }
-      return { sent, cancelled, errors };
-    }
 
     // Reclaim only expired claims. Transport deduplication uses the same follow-up ID on replay.
     await pool.execute(`UPDATE sales_followups SET processing_token = NULL, claimed_at = NULL
@@ -360,6 +332,23 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     for (const fu of followUps) {
       try {
+        const { policy } = await getFollowupPolicy(fu.merchant_id);
+        if (!policy.enabled) {
+          await pool.execute("UPDATE sales_followups SET cancelled_at=UTC_TIMESTAMP(),cancel_reason='policy_disabled' WHERE id=? AND processing_token=?", [fu.id, claimToken]);
+          cancelled++; continue;
+        }
+        if (!isFollowupTimeAllowed(policy)) {
+          if (fu.follow_up_type === 'customer_requested') {
+            // A requested appointment is an absolute instant. Never move it silently after a policy change.
+            await pool.execute("UPDATE sales_followups SET cancelled_at=UTC_TIMESTAMP(),cancel_reason='requested_outside_hours' WHERE id=? AND processing_token=?", [fu.id, claimToken]);
+            cancelled++;
+          } else {
+            const next = nextFollowupSendTime(policy);
+            if (!next) throw new Error('Follow-up send window unavailable');
+            await pool.execute('UPDATE sales_followups SET scheduled_at=?,processing_token=NULL,claimed_at=NULL WHERE id=? AND processing_token=?', [next, fu.id, claimToken]);
+          }
+          continue;
+        }
         const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
         const suppression = suppressReason(context)
           || (fu.follow_up_type !== 'customer_requested' && !await hasActiveCampaignConsent(fu.merchant_id, fu.customer_phone) ? 'consent_unavailable' : undefined)
@@ -368,23 +357,6 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           await pool.execute(
             `UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = ? WHERE id = ? AND processing_token = ?`,
             [suppression, fu.id, claimToken]
-          );
-          cancelled++;
-          continue;
-        }
-
-        // Re-check weekly limit at send time
-        const [weekCheck] = await pool.execute(
-          `SELECT COUNT(*) as cnt FROM sales_followups 
-           WHERE merchant_id = ? AND customer_phone = ?
-           AND sent_at IS NOT NULL
-           AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
-          [fu.merchant_id, fu.customer_phone]
-        );
-        if ((weekCheck as any[])[0]?.cnt >= MAX_WEEKLY_PER_CUSTOMER) {
-          await pool.execute(
-            `UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = 'weekly_limit' WHERE id = ?`,
-            [fu.id]
           );
           cancelled++;
           continue;

@@ -1,6 +1,16 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  followupPolicy: {
+    title: 'Follow-up timing and limits', description: 'Choose when Sari follows up and the limit across all of a customer’s conversations with your business.',
+    enabled: 'Enable sales follow-ups', disableHint: 'Turning this off stops automatic follow-ups and customer-requested appointments; replies to incoming messages remain available.',
+    timezone: 'Follow-up time zone', timezoneHint: 'Choose a suggestion or enter a valid zone such as Asia/Riyadh. Daylight saving time is handled automatically.',
+    weeklyLimit: 'Limit per customer over 7 days (1–3)', startHour: 'Start hour — from 0 to 23', endHour: 'End hour — exclusive (1–24)',
+    scope: 'The limit includes requested appointments and unresolved dispatch reservations. Marketing follow-ups require consent. Automatic follow-ups outside the window are deferred; requested appointments are never silently moved after a settings change.',
+    invalid: 'Check the time zone, set the start before the end, and choose a limit from 1 to 3.', loading: 'Loading follow-up policy…', loadFailed: 'Could not load follow-up settings.',
+    refresh: 'Refresh settings', saving: 'Saving…', save: 'Save follow-up policy', readOnly: 'Bot settings permission is required to change this policy.',
+    failed: 'Could not save, or someone changed the settings. Refresh, review the values and save again.', saved: 'Follow-up policy saved. Settings are checked before dispatch.',
+  },
   salesSector: {
     title: 'Sales conversation guide', description: 'Choose guidance for discovery, recommendations and objections. The general guide supports other sectors and mixed businesses.',
     general: 'General — all sectors', training: 'Training and education', recruitment: 'Recruitment services', store: 'Stores and products', loading: 'Loading sales guide…', loadFailed: 'Could not load the sales guide.',

@@ -182,6 +182,13 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     throw new WhatsAppDeliveryStateError();
   }
   if (execution && !accepted) execution.uncertainEffect = true;
+  if (input.idempotencyKey.startsWith('sales_followup:') && input.followUpGuard) {
+    const { settleSalesFollowupDispatch } = await import('../../ai/followup-send-guard');
+    // A settlement failure leaves the durable reservation counted; never free an uncertain slot.
+    await settleSalesFollowupDispatch(pool, input.merchantId, input.followUpGuard.id,
+      accepted ? 'accepted' : !unknown && result.outcome === 'rejected' ? 'rejected' : 'unknown')
+      .catch(() => console.warn('[FollowUp] Dispatch reservation retained for reconciliation'));
+  }
   return {
     accepted,
     duplicate: false,

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn() }));
+  zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn() }));
+vi.mock('./ai/followup-policy', async original => ({ ...await original<typeof import('./ai/followup-policy')>(),
+  getFollowupPolicy: mocks.followupRead, updateFollowupPolicy: mocks.followupWrite }));
 vi.mock('./ai/zid-checkout-reconciliation', () => ({ listZidReconciliations: mocks.zidList, reconcileZidCheckout: mocks.zidReconcile }));
 vi.mock('./ai/sales-sector-settings', async original => ({ ...await original<typeof import('./ai/sales-sector-settings')>(),
   getSalesSectorSettings: mocks.sectorRead, updateSalesSectorSettings: mocks.sectorWrite }));
@@ -19,8 +21,36 @@ beforeEach(() => {
   mocks.count.mockResolvedValue(1);
   mocks.zidList.mockResolvedValue({ items: [], nextCursor: null }); mocks.zidReconcile.mockResolvedValue({ verified: true });
   mocks.sectorRead.mockResolvedValue({ revision: 0, playbook: { id: 'general' } }); mocks.sectorWrite.mockResolvedValue({ revision: 1 });
+  mocks.followupRead.mockResolvedValue({ revision: 0 }); mocks.followupWrite.mockResolvedValue({ revision: 1 });
 });
 describe('real app router team boundaries', () => {
+  const followupInput = { expectedRevision: 0, policy: { enabled: true, timeZone: 'Asia/Riyadh', startHour: 8, endHour: 23, weeklyLimit: 3 } };
+  it('scopes follow-up settings to membership and requires bot settings permission for edits', async () => {
+    expect(await caller().sariBrain.getFollowupPolicy()).toMatchObject({ canManage: false });
+    expect(mocks.followupRead).toHaveBeenCalledWith(20);
+    for (const role of ['viewer', 'sales_supervisor']) {
+      mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
+      await expect(caller().sariBrain.updateFollowupPolicy(followupInput)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+    expect(mocks.followupWrite).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    await caller().sariBrain.updateFollowupPolicy(followupInput);
+    expect(mocks.followupWrite).toHaveBeenCalledWith({ ...followupInput, merchantId: 20, actorUserId: 7 });
+  });
+  it.each([{ merchantId: 30 }, { actorUserId: 1 }, { expectedRevision: -1 },
+    { policy: { ...followupInput.policy, weeklyLimit: 999 } }, { policy: { ...followupInput.policy, timeZone: "UTC'; DROP TABLE merchants; --" } },
+    { policy: { ...followupInput.policy, enabled: 'true' } }, { policy: { ...followupInput.policy, extra: 'forged' } }])
+    ('rejects follow-up identity substitution and unsafe policy payloads %j', async attack => {
+      mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+      await expect(caller().sariBrain.updateFollowupPolicy({ ...followupInput, ...attack } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+      expect(mocks.followupWrite).not.toHaveBeenCalled();
+    });
+  it('returns a safe follow-up conflict without leaking storage errors', async () => {
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
+    mocks.followupWrite.mockRejectedValueOnce(new Error('private fixture connection details'));
+    const error = await caller().sariBrain.updateFollowupPolicy(followupInput).catch(error => error);
+    expect(error.code).toBe('CONFLICT'); expect(error.message).not.toContain('private fixture');
+  });
   it('scopes reconciliation reads to membership and forbids viewer writes', async () => {
     expect(await caller().orders.listZidReconciliations()).toMatchObject({ canManage: false });
     expect(mocks.zidList).toHaveBeenCalledWith(20, undefined);

@@ -3461,6 +3461,7 @@ export const salesFollowups = mysqlTable("sales_followups", {
 	processingToken: varchar("processing_token", { length: 60 }),
 	anchorMessageId: int("anchor_message_id"),
 	claimedAt: datetime("claimed_at", { mode: 'string', fsp: 3 }),
+	scheduleTimezone: varchar('schedule_timezone', { length: 64 }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_followup_merchant_phone").on(table.merchantId, table.customerPhone),
@@ -3469,6 +3470,21 @@ export const salesFollowups = mysqlTable("sales_followups", {
 ]);
 
 export type SalesFollowup = InferSelectModel<typeof salesFollowups>;
+export const salesFollowupPolicies = mysqlTable('sales_followup_policies', {
+	merchantId: int('merchant_id').primaryKey().references(() => merchants.id, { onDelete: 'cascade' }),
+	enabled: tinyint().default(1).notNull(), timeZone: varchar('time_zone', { length: 64 }).notNull(),
+	startHour: int('start_hour').default(8).notNull(), endHour: int('end_hour').default(23).notNull(), weeklyLimit: int('weekly_limit').default(3).notNull(),
+	revision: int().default(1).notNull(), updatedBy: int('updated_by').notNull(),
+	updatedAt: datetime('updated_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+});
+// Retain quota after conversation/follow-up deletion; only merchant deletion removes the ledger.
+export const salesFollowupDispatches = mysqlTable('sales_followup_dispatches', {
+	followupId: int('followup_id').primaryKey(), merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	customerPhone: varchar('customer_phone', { length: 50 }).notNull(),
+	admittedAt: datetime('admitted_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+	state: mysqlEnum(['reserved', 'accepted', 'unknown', 'released']).default('reserved').notNull(),
+	settledAt: datetime('settled_at', { mode: 'string', fsp: 3 }),
+}, table => [index('idx_followup_dispatch_quota').on(table.merchantId, table.customerPhone, table.admittedAt)]);
 export type InsertSalesFollowup = InferInsertModel<typeof salesFollowups>;
 
 // ═══════════════════════════════════════════════════════════════

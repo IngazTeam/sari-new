@@ -29,6 +29,7 @@ import { getIntegrationAudienceCount } from './integrations/audience-count';
 import { getSalesSectorSettings, updateSalesSectorSettings, salesSectorSelectionSchema } from './ai/sales-sector-settings';
 import { salesSectorPlaybooks } from '../shared/sales-sector-playbooks';
 import { hasPermission } from './_core/permissions';
+import { getFollowupPolicy, updateFollowupPolicy, followupPolicyUpdateSchema } from './ai/followup-policy';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -323,6 +324,14 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getFollowupPolicy: merchantProcedure.query(async ({ ctx }) => ({
+    ...await getFollowupPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
+  })),
+  updateFollowupPolicy: permissionProcedure('bot_settings.manage').input(followupPolicyUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+      try { return await updateFollowupPolicy({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
+      catch { throw new TRPCError({ code: 'CONFLICT', message: 'تغير إعداد المتابعة؛ حدّث البيانات وأعد المحاولة.' }); }
+    }),
   getSalesSector: merchantProcedure.query(async ({ ctx }) => ({
     ...await getSalesSectorSettings(ctx.merchantId), available: salesSectorPlaybooks.map(p => ({ id: p.id, version: p.version })),
     canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),

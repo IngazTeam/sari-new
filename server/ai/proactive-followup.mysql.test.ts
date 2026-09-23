@@ -3,7 +3,9 @@ const transport = vi.hoisted(() => vi.fn());
 vi.mock('../channels/whatsapp/service', () => ({ sendMerchantWhatsApp: transport }));
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
-import { scheduleFollowUp, runFollowUps } from './proactive-followup';
+import { scheduleFollowUp, runFollowUps, cancelFollowUps } from './proactive-followup';
+import { updateFollowupPolicy } from './followup-policy';
+import { defaultFollowupPolicy } from '../../shared/followup-policy';
 import { canDispatchSalesFollowup } from './followup-send-guard';
 import { handleRequestedFollowup } from './requested-followup';
 
@@ -139,6 +141,54 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     expect((await runFollowUps()).sent).toBe(0); expect(transport).not.toHaveBeenCalled();
     const scheduled = new Date((await state()).scheduled_at);
     expect(scheduled.toISOString()).toBe('2026-09-24T05:00:00.000Z');
+  });
+  const policy = (patch: Partial<typeof defaultFollowupPolicy>, expectedRevision = 0) => updateFollowupPolicy({
+    merchantId: fixture.merchantId, actorUserId: fixture.userId, expectedRevision, policy: { ...defaultFollowupPolicy, ...patch } });
+  it('cancels due jobs and declines new appointments when the merchant disables follow-ups', async () => {
+    await schedule(); await due(); await policy({ enabled: false });
+    expect(await schedule()).toBe(false);
+    expect(await runFollowUps()).toMatchObject({ sent: 0, cancelled: 1 });
+    expect((await state()).cancel_reason).toBe('policy_disabled'); expect(transport).not.toHaveBeenCalled();
+    await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء' WHERE conversationId=?", [conversationId]);
+    const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
+    expect(await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id }))
+      .toContain('المتابعات متوقفة');
+  });
+  it('defers automatic messages to the configured local window and releases the claim', async () => {
+    await policy({ timeZone: 'America/New_York', startHour: 10, endHour: 18 });
+    await schedule(); await due();
+    expect((await runFollowUps()).sent).toBe(0);
+    const saved = await state(); expect(new Date(saved.scheduled_at).toISOString()).toBe('2026-09-23T14:00:00.000Z');
+    expect(saved.processing_token).toBeNull(); expect(saved.claimed_at).toBeNull(); expect(transport).not.toHaveBeenCalled();
+  });
+  it('stores the requested timezone and preserves the acknowledgment on replay after a timezone edit', async () => {
+    await policy({ timeZone: 'Europe/London' });
+    await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء',createdAt='2026-09-23 09:00:00' WHERE conversationId=?", [conversationId]);
+    const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
+    const input = { merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id };
+    const ack = await handleRequestedFollowup(input);
+    expect(ack).toContain('Europe/London');
+    expect(new Date((await state()).scheduled_at).toISOString()).toBe('2026-09-24T16:00:00.000Z');
+    expect((await state()).schedule_timezone).toBe('Europe/London');
+    await policy({ timeZone: 'Asia/Dubai' }, 1); expect(await handleRequestedFollowup(input)).toBe(ack);
+  });
+  it('cancels a requested appointment outside a newly changed window without silently rescheduling it', async () => {
+    await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء',createdAt='2026-09-23 09:00:00' WHERE conversationId=?", [conversationId]);
+    const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
+    await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id });
+    await due(); const original = new Date((await state()).scheduled_at).getTime();
+    await policy({ startHour: 14, endHour: 20 });
+    expect((await runFollowUps()).cancelled).toBe(1);
+    expect((await state()).cancel_reason).toBe('requested_outside_hours');
+    expect(new Date((await state()).scheduled_at).getTime()).toBe(original); expect(transport).not.toHaveBeenCalled();
+  });
+  it('applies a lower scheduling limit across conversations and cancels using equivalent phone numbers', async () => {
+    await policy({ weeklyLimit: 1 }); expect(await schedule()).toBe(true);
+    const other = await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')", [fixture.merchantId, phone]);
+    await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','مهتم')", [other.insertId]);
+    expect(await scheduleFollowUp({ merchantId: fixture.merchantId, conversationId: other.insertId, customerPhone: phone, followUpType: 'ghost' })).toBe(false);
+    expect(await cancelFollowUps(fixture.merchantId, '0500000086')).toBe(1);
+    expect((await state()).cancel_reason).toBe('customer_replied');
   });
   it.each(['new reply', 'withdrawal', 'takeover', 'wrong phone', 'wrong merchant', 'wrong token', 'expired claim', 'cancelled', 'quiet hours', 'missing guard'])
     ('fences %s in the last transport read after an earlier successful eligibility check', async change => {

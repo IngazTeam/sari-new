@@ -82,11 +82,70 @@ async function main() {
     await page.waitForSelector('#sector-fixture [role=alert]'); assert.equal(await page.$('#sector-fixture [role=status]'), null);
     await page.click('#sector-fixture button'); await page.waitForSelector('#sector-fixture [role=status]');
     results.push({ width: 1440, mode: 'zid_sector_failure_retry', passed: true });
+    const replace = async (selector, value) => {
+      await page.click(selector); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      assert.equal(await page.$eval(selector, input => input.value), '', `Field must stay empty while editing: ${selector}`);
+      await page.type(selector, value);
+    };
+    for (const lang of ['ar', 'en']) for (const width of [320, 375, 390, 768, 1440]) {
+      await page.setViewport({ width, height: 900 });
+      await page.goto(`${origin}/?case=ready&lang=${lang}`, { waitUntil: 'networkidle0' });
+      assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
+      await replace('#followup-timezone', 'Europe/London'); await replace('#followup-weekly-limit', '2');
+      await replace('#followup-start-hour', '10'); await replace('#followup-end-hour', '18');
+      await page.click('#followup-fixture button'); await page.waitForSelector('#followup-fixture [role=status]');
+      assert.deepEqual(await page.evaluate(() => window.__followupInput), { expectedRevision: 0,
+        policy: { enabled: true, timeZone: 'Europe/London', weeklyLimit: 2, startHour: 10, endHour: 18 } });
+      assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.evaluate(() => document.body.innerText.includes('merchantUx.')), false);
+      assert.ok(await page.$$eval('#followup-fixture input:not([type=checkbox]), #followup-fixture button',
+        inputs => inputs.every(input => input.getBoundingClientRect().height >= 44)));
+      if (lang === 'ar' && [375, 1440].includes(width)) await (await page.$('#followup-fixture')).screenshot({ path: path.join(output, `followup-policy-${width}.png`) });
+      await page.click('#followup-enabled'); await page.click('#followup-fixture button');
+      await page.waitForFunction(() => window.__followupInput?.policy.enabled === false);
+      assert.equal(await page.evaluate(() => window.__followupInput.expectedRevision), 1);
+      results.push({ width, lang, mode: 'followup_save_and_disable', passed: true });
+    }
+    await page.goto(`${origin}/?case=ready`, { waitUntil: 'networkidle0' });
+    await replace('#followup-timezone', 'Invalid/Zone');
+    await page.waitForSelector('#followup-fixture [role=alert]');
+    assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
+    await replace('#followup-timezone', 'Asia/Riyadh'); await replace('#followup-weekly-limit', '9');
+    assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
+    await replace('#followup-weekly-limit', '2'); await replace('#followup-start-hour', '23');
+    assert.equal(await page.$eval('#followup-fixture button', b => b.disabled), true);
+    assert.equal(await page.evaluate(() => window.__followupInput), undefined);
+    results.push({ width: 1440, mode: 'followup_invalid_policy_no_mutation', passed: true });
+    await page.goto(`${origin}/?case=viewer`, { waitUntil: 'networkidle0' });
+    assert.equal(await page.$('#followup-fixture button'), null);
+    assert.ok(await page.$$eval('#followup-fixture input', inputs => inputs.every(input => input.disabled)));
+    results.push({ width: 1440, mode: 'followup_viewer_read_only', passed: true });
+    await page.goto(`${origin}/?case=error`, { waitUntil: 'networkidle0' });
+    await page.click('#followup-fixture [role=alert] button'); await page.waitForSelector('#followup-timezone');
+    results.push({ width: 1440, mode: 'followup_load_retry', passed: true });
+    await page.goto(`${origin}/?case=mutation-error`, { waitUntil: 'networkidle0' });
+    await replace('#followup-weekly-limit', '1'); await page.click('#followup-fixture button');
+    await page.waitForSelector('#followup-fixture [role=alert]');
+    assert.equal(await page.$('#followup-fixture [role=status]'), null);
+    await page.click('#followup-fixture button'); await page.waitForSelector('#followup-fixture [role=status]');
+    results.push({ width: 1440, mode: 'followup_failure_retry', passed: true });
     assert.deepEqual(errors, []);
     const report = { generatedAt: new Date().toISOString(), browser: await browser.version(), actualComponents: true,
       fixtureApi: true, externalRequestsBlocked: true, scope: 'component UI only, not authenticated production journeys or physical iPhone/Safari', results, errors };
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ scenarios: results.length, screenshots: 2, errors }));
+    console.log(JSON.stringify({ scenarios: results.length, screenshots: 4, errors }));
+  } catch (error) {
+    const pages = await browser.pages(), page = pages.at(-1);
+    if (page) {
+      await page.screenshot({ path: path.join(dir, 'failure.png'), fullPage: true }).catch(() => {});
+      const state = await page.evaluate(() => ({ url: location.href, text: document.querySelector('#followup-fixture')?.textContent,
+        inputs: [...document.querySelectorAll('#followup-fixture input')].map(input => ({ id: input.id, value: input.value, checked: input.checked })),
+        saved: window.__followupInput })).catch(() => null);
+      console.error(JSON.stringify({ state, errors }));
+    }
+    throw error;
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1; });
