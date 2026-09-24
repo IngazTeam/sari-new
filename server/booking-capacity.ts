@@ -14,7 +14,7 @@ const positive = (value: number) =>
 const unavailable = () => new Error("Booking capacity unavailable");
 type QueryConnection = Pick<PoolConnection, "execute">;
 
-/** Cross-process serialization for the bookings ledger. No provider/network work inside. */
+/** Cross-process serialization for both appointment ledgers. No network work inside. */
 export async function withBookingCapacityTransaction<T>(
   merchantId: number,
   run: (connection: PoolConnection) => Promise<T>
@@ -102,10 +102,12 @@ export async function hasBookingConflict(
   connection: QueryConnection,
   merchantId: number,
   raw: BookingSchedule,
-  excludeBookingId?: number
+  excludeBookingId?: number,
+  excludeAppointmentId?: number
 ) {
   positive(merchantId);
   if (excludeBookingId !== undefined) positive(excludeBookingId);
+  if (excludeAppointmentId !== undefined) positive(excludeAppointmentId);
   const input = bookingScheduleSchema.parse(raw);
   const [rows] = await connection.execute<any[]>(
     `SELECT id FROM bookings WHERE merchant_id=? AND booking_date=?
@@ -125,7 +127,29 @@ export async function hasBookingConflict(
       excludeBookingId ?? null,
     ]
   );
-  return rows.length > 0;
+  if (rows.length > 0) return true;
+  // IDs belong to different ledgers. Never apply a booking exclusion to appointments.
+  const [appointments] = await connection.execute<any[]>(
+    `SELECT id FROM appointments WHERE merchant_id=?
+    AND appointment_date>=? AND appointment_date<DATE_ADD(?, INTERVAL 1 DAY)
+    AND status IN ('pending','confirmed') AND start_time<? AND end_time>?
+    AND ((? IS NOT NULL AND staff_id=?) OR (service_id=? AND (? IS NULL OR staff_id IS NULL)))
+    AND (? IS NULL OR id<>?) LIMIT 1`,
+    [
+      merchantId,
+      input.bookingDate,
+      input.bookingDate,
+      input.endTime,
+      input.startTime,
+      input.staffId ?? null,
+      input.staffId ?? null,
+      input.serviceId,
+      input.staffId ?? null,
+      excludeAppointmentId ?? null,
+      excludeAppointmentId ?? null,
+    ]
+  );
+  return appointments.length > 0;
 }
 
 export async function createAtomicBooking(

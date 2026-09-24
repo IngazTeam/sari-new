@@ -603,6 +603,13 @@
       "when": 1790812800000,
       "tag": "0085_booking_capacity_locks",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "5",
+      "when": 1790899200000,
+      "tag": "0086_appointment_calendar_sync",
+      "breakpoints": true
     }
   ]
 }

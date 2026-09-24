@@ -3,6 +3,7 @@ import {
   withBookingCapacityTransaction,
 } from "../../booking-capacity";
 import { closeDb } from "../../db/connection";
+import { reserveAppointment } from "../../appointment-booking";
 const [mode, json] = process.argv.slice(2),
   input = JSON.parse(json);
 process.send?.({ phase: "ready" });
@@ -27,7 +28,10 @@ process.once("message", async () => {
           );
         }
       );
-    else {
+    else if (mode === "appointment") {
+      const result = await reserveAppointment(input);
+      process.send?.({ phase: "done", ok: true, id: result.appointmentId });
+    } else {
       const id = await createAtomicBooking(input);
       process.send?.({ phase: "done", ok: true, id });
     }

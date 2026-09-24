@@ -6345,11 +6345,9 @@ export async function deleteGoogleIntegration(id: number) {
 
 // ==================== Appointments ====================
 
-export async function createAppointment(appointment: InsertAppointment) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(appointments).values(appointment);
-  return (result as any).insertId;
+export async function createAppointment(appointment: import('../shared/appointment-creation').AppointmentCreationInput) {
+  const { reserveAppointment } = await import('./appointment-booking');
+  return (await reserveAppointment(appointment)).appointmentId;
 }
 
 export async function getAppointmentById(id: number) {
@@ -6369,9 +6367,12 @@ export async function getAppointmentsByMerchant(merchantId: number, status?: str
     conditions.push(eq(appointments.status, status as any));
   }
 
-  return db.select().from(appointments)
+  const rows = await db.select().from(appointments)
     .where(and(...conditions))
     .orderBy(desc(appointments.appointmentDate));
+  // Only the sync state is public; authorization bindings stay server-side.
+  return rows.map(({ calendarIdentityHash: _identity, calendarIntegrationId: _integration,
+    calendarTargetId: _target, ...appointment }) => appointment);
 }
 
 export async function getAppointmentsByCustomer(merchantId: number, customerPhone: string) {
@@ -6434,37 +6435,10 @@ export async function getAppointmentsByDate(merchantId: number, date: string) {
     .orderBy(appointments.startTime);
 }
 
-export async function updateAppointment(id: number, data: Partial<InsertAppointment>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments).set(data).where(eq(appointments.id, id));
-}
-
-export async function cancelAppointment(id: number, reason?: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments)
-    .set({
-      status: 'cancelled',
-      cancellationReason: reason
-    })
-    .where(eq(appointments.id, id));
-}
-
-export async function completeAppointment(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments)
-    .set({ status: 'completed' })
-    .where(eq(appointments.id, id));
-}
-
-export async function markNoShow(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments)
-    .set({ status: 'no_show' })
-    .where(eq(appointments.id, id));
+// All capacity-changing appointment writes must use the shared calendar transaction.
+export async function cancelAppointment(merchantId: number, appointmentId: number, reason?: string) {
+  const { cancelCalendarAppointment } = await import('./appointment-calendar');
+  return cancelCalendarAppointment(merchantId, { appointmentId, reason });
 }
 
 export async function getUpcomingAppointments(merchantId: number, limit: number = 10) {
@@ -6518,53 +6492,6 @@ export async function markReminderSent(id: number, type: '24h' | '1h') {
   await db.update(appointments)
     .set(updateData)
     .where(eq(appointments.id, id));
-}
-
-// Check for conflicting appointments
-export async function checkAppointmentConflict(
-  merchantId: number,
-  date: string,
-  startTime: string,
-  endTime: string,
-  staffId?: number,
-  excludeAppointmentId?: number
-): Promise<boolean> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  let conditions = [
-    eq(appointments.merchantId, merchantId),
-    eq(appointments.appointmentDate, date),
-    ne(appointments.status, 'cancelled'),
-  ];
-
-  if (staffId) {
-    conditions.push(eq(appointments.staffId, staffId));
-  }
-
-  if (excludeAppointmentId) {
-    conditions.push(ne(appointments.id, excludeAppointmentId));
-  }
-
-  const existingAppointments = await db.select().from(appointments)
-    .where(and(...conditions));
-
-  // Check for time overlap
-  for (const apt of existingAppointments) {
-    const aptStart = apt.startTime;
-    const aptEnd = apt.endTime;
-
-    // Check if there's any overlap
-    if (
-      (startTime >= aptStart && startTime < aptEnd) ||
-      (endTime > aptStart && endTime <= aptEnd) ||
-      (startTime <= aptStart && endTime >= aptEnd)
-    ) {
-      return true; // Conflict found
-    }
-  }
-
-  return false; // No conflict
 }
 
 // Get appointment statistics
@@ -7115,6 +7042,11 @@ export async function getAvailableTimeSlots(
     sql`${bookingTimeSlots.currentBookings} < ${bookingTimeSlots.maxBookings}`,
     sql`(${bookingTimeSlots.staffId} IS NULL OR EXISTS (SELECT 1 FROM staff_members s
       WHERE s.id=${bookingTimeSlots.staffId} AND s.merchant_id=${bookingTimeSlots.merchantId} AND s.is_active=1))`,
+    sql`NOT EXISTS (SELECT 1 FROM appointments a WHERE a.merchant_id=${bookingTimeSlots.merchantId}
+      AND a.appointment_date>=${bookingTimeSlots.slotDate} AND a.appointment_date<DATE_ADD(${bookingTimeSlots.slotDate}, INTERVAL 1 DAY)
+      AND a.status IN ('pending','confirmed') AND a.start_time<${bookingTimeSlots.endTime} AND a.end_time>${bookingTimeSlots.startTime}
+      AND ((${bookingTimeSlots.staffId} IS NOT NULL AND a.staff_id=${bookingTimeSlots.staffId})
+        OR (a.service_id=${bookingTimeSlots.serviceId} AND (${bookingTimeSlots.staffId} IS NULL OR a.staff_id IS NULL))))`,
     // Stored slot counters are only a conservative prefilter. Current reservations are authoritative.
     sql`NOT EXISTS (SELECT 1 FROM bookings b WHERE b.merchant_id=${bookingTimeSlots.merchantId}
       AND b.booking_date=${bookingTimeSlots.slotDate} AND b.status IN ('pending','confirmed','in_progress')

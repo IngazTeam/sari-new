@@ -1597,13 +1597,17 @@ export const appointments = mysqlTable("appointments", {
 	endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
 	status: mysqlEnum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).default('pending').notNull(),
 	googleEventId: varchar("google_event_id", { length: 255 }),
+	calendarSyncState: mysqlEnum("calendar_sync_state", ['none','creating','create_unknown','synced','cancelling','cancel_unknown','cancelled','legacy']).default('none').notNull(),
+	calendarIntegrationId: int("calendar_integration_id"),
+	calendarTargetId: varchar("calendar_target_id", { length: 255 }),
+	calendarIdentityHash: char("calendar_identity_hash", { length: 64 }),
 	reminder24hSent: tinyint("reminder_24h_sent").default(0).notNull(),
 	reminder1hSent: tinyint("reminder_1h_sent").default(0).notNull(),
 	notes: text(),
 	cancellationReason: text("cancellation_reason"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+}, table => [index("idx_appointment_capacity").on(table.merchantId, table.appointmentDate, table.status)]);
 
 export const serviceReviews = mysqlTable("service_reviews", {
 	id: int().autoincrement().notNull().primaryKey(),
