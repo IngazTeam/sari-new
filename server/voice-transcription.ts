@@ -6,10 +6,11 @@
 
 import axios from 'axios';
 import FormData from 'form-data';
-import { ENV } from './_core/env';
+import { AUXILIARY_AI_ROUTES } from '../shared/ai-capabilities';
+import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from './ai/auxiliary-routing';
 import { downloadPublicMedia } from './security/download-media';
 import { withAiBudget } from './ai/budget-ledger';
-import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from './ai/zahypi-client';
+import { getOptionalZahyPiRequestContext } from './ai/zahypi-client';
 
 /**
  * Download voice message file from Green API
@@ -33,16 +34,16 @@ export async function transcribeVoiceMessage(
   const startTime = Date.now();
   
   try {
-    if (!(await resolveZahyPiRuntimeConfig()).enabled) throw new Error('AI services are disabled');
+    const route = await resolveAuxiliaryAiRoute('transcription');
     console.log('[Voice] Starting transcription:', { language });
     
     // Download the voice file
     const audioBuffer = await downloadVoiceFile(fileUrl);
     console.log('[Voice] Downloaded file, size:', audioBuffer.length, 'bytes');
     
-    // Check file size (max 25MB for Whisper API)
-    if (audioBuffer.length === 0 || audioBuffer.length > 25 * 1024 * 1024) {
-      throw new Error('الملف الصوتي كبير جداً (الحد الأقصى 25 ميجابايت)');
+    // All Sari transcription entry points use the same 16MB application bound.
+    if (audioBuffer.length === 0 || audioBuffer.length > AUXILIARY_AI_ROUTES.transcription.maxFileBytes) {
+      throw new Error('حجم الملف الصوتي غير صالح');
     }
     
     // Create form data for Whisper API
@@ -51,26 +52,28 @@ export async function transcribeVoiceMessage(
       filename: 'voice.ogg',
       contentType: 'audio/ogg',
     });
-    formData.append('model', 'whisper-1');
+    formData.append('model', route.model);
     formData.append('language', language);
     formData.append('response_format', 'json');
     
     // Call OpenAI Whisper API
     const response = await withAiBudget({ merchantId: merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
-      provider: 'openai', model: 'whisper-1', taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
-    }, attempt => axios.post(
+      provider: route.provider, model: route.model, taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
+    }, async attempt => {
+      await assertAuxiliaryAiRouteCurrent(route);
+      return axios.post(
       'https://api.openai.com/v1/audio/transcriptions',
       formData,
       {
         headers: {
           ...formData.getHeaders(),
-          'Authorization': `Bearer ${ENV.openaiApiKey}`,
+          'Authorization': `Bearer ${route.apiKey}`,
           'X-Client-Request-Id': attempt.requestId,
         },
         timeout: 60000, // 60 seconds
         maxRedirects: 0,
       }
-    ), () => undefined);
+    ); }, () => undefined);
     
     const duration = Date.now() - startTime;
     const text = response.data?.text;

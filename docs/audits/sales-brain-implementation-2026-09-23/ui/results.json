@@ -1,8 +1,10 @@
 {
-  "generatedAt": "2026-09-24T15:03:33.518Z",
+  "generatedAt": "2026-09-24T15:37:51.781Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
+    "ai-capabilities-1440.png",
+    "ai-capabilities-375.png",
     "booking-calendar-1440.png",
     "booking-calendar-375.png",
     "booking-cancel-notice-1440.png",
@@ -62,6 +64,150 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "ai_capabilities_mixed_explicit_routing_refresh_keyboard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_disabled",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_missing",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_unreadable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_openai",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "ai_capabilities_xss",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_disabled",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_missing",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_unreadable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_openai",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "ai_capabilities_xss",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

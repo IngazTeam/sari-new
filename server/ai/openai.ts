@@ -12,6 +12,8 @@ import {
   resolveZahyPiRuntimeConfig,
 } from './zahypi-client';
 import { AiBudgetError, withAiBudget, promptBudgetShape } from './budget-ledger';
+import { AUXILIARY_AI_ROUTES } from '../../shared/ai-capabilities';
+import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from './auxiliary-routing';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -371,17 +373,15 @@ export async function transcribeAudio(
     merchantId?: number;
   }
 ): Promise<string> {
-  const model = options?.model || 'whisper-1';
+  const route = await resolveAuxiliaryAiRoute('transcription', options?.model);
+  const model = route.model;
   const language = options?.language || 'ar'; // Arabic by default
-  if (!(await resolveZahyPiRuntimeConfig()).enabled) throw new Error('AI services are disabled by an administrator');
-  if (!audioBuffer.length || audioBuffer.length > 16 * 1024 * 1024) throw new Error('Invalid audio size');
-  const { getOpenAiApiKey } = await import('../db_ai_settings');
-  const apiKey = await getOpenAiApiKey();
-  if (!apiKey) throw new Error('OpenAI API key is not configured');
+  if (!audioBuffer.length || audioBuffer.length > AUXILIARY_AI_ROUTES.transcription.maxFileBytes) throw new Error('Invalid audio size');
 
   return withAiBudget({ merchantId: options?.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
     provider: 'openai', model, taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0 }, async attempt => {
   try {
+    await assertAuxiliaryAiRouteCurrent(route);
     const formData = new FormData();
     
     // Create a Blob from the buffer
@@ -392,41 +392,28 @@ export async function transcribeAudio(
       formData.append('language', language);
     }
 
-    // PEN-RES-04 FIX: 30s timeout for audio transcription
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-    let response: globalThis.Response;
-    try {
-      response = await fetch(`${OPENAI_API_URL}/audio/transcriptions`, {
+    // Keep the deadline active while reading the response body as well as headers.
+    const response = await fetch(`${OPENAI_API_URL}/audio/transcriptions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${route.apiKey}`,
           'X-Client-Request-Id': attempt.requestId,
         },
         body: formData,
-        signal: controller.signal,
+        signal: AbortSignal.timeout(30_000),
+        redirect: 'error',
       });
-    } catch (fetchErr: any) {
-      clearTimeout(timeoutId);
-      if (fetchErr.name === 'AbortError') {
-        throw new Error('Whisper transcription timeout after 30s');
-      }
-      throw fetchErr;
-    }
-
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`OpenAI Whisper Error: ${error.error?.message || response.statusText}`);
+      void response.body?.cancel().catch(() => undefined);
+      throw new Error(`Transcription provider status ${response.status}`);
     }
 
     const data: TranscriptionResponse = await response.json();
+    if (typeof data.text !== 'string' || !data.text.trim()) throw new Error('Invalid transcription response');
     return data.text;
   } catch (error: any) {
-    console.error('Error transcribing audio:', error);
-    throw new Error(`Failed to transcribe audio: ${error.message}`);
+    console.error('Error transcribing audio');
+    throw new Error('Failed to transcribe audio');
   }
   }, () => undefined); // Hold the configured per-file maximum until billed duration is reconciled.
 }

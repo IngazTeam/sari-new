@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   budget: vi.fn(),
   config: vi.fn(),
   post: vi.fn(),
+  key: vi.fn(),
 }));
 vi.mock("axios", () => ({ default: { post: mocks.post } }));
 vi.mock("./security/download-media", () => ({
@@ -14,13 +15,12 @@ vi.mock("./ai/zahypi-client", () => ({
   resolveZahyPiRuntimeConfig: mocks.config,
   getOptionalZahyPiRequestContext: () => undefined,
 }));
-vi.mock("./_core/env", () => ({
-  ENV: { openaiApiKey: "synthetic-test-token" },
-}));
+vi.mock("./db_ai_settings", () => ({ getOpenAiApiKey: mocks.key }));
 import { transcribeVoiceMessage } from "./voice-transcription";
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.config.mockResolvedValue({ enabled: true });
+  mocks.key.mockResolvedValue("synthetic-test-token");
   mocks.download.mockResolvedValue({
     data: Buffer.from("synthetic audio fixture"),
   });
@@ -79,7 +79,7 @@ describe("production voice transcription (isolated transport)", () => {
     ).rejects.toThrow();
     expect(mocks.post).not.toHaveBeenCalled();
   });
-  it.each([0, 25 * 1024 * 1024 + 1])(
+  it.each([0, 16 * 1024 * 1024 + 1])(
     "rejects audio of %s bytes before spending",
     async length => {
       mocks.download.mockResolvedValue({ data: Buffer.alloc(length) });

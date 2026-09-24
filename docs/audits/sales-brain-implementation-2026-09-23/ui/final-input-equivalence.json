@@ -1,14 +1,15 @@
 {
-  "scope": "Fresh Chromium component verification: 618 passing scenarios, 54 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the first booking confirmation UI",
+  "scope": "Fresh Chromium component verification: 642 passing scenarios, 56 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the AI capability routing UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T15:04:33.874Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-confirm-notice",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-confirm-notice",
+  "verifiedAt": "2026-09-24T15:38:39.169Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-ai-capabilities",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-ai-capabilities",
   "inputs": {
-    "fixture": "5945eedece92af31e894371248e444aa451bb7abfa5945b598d26468cb01152c",
-    "report": "60f6c99496f950443d61bf6d4a15acd3ed6104debb88e46af9bc2446c9e54ea5",
+    "fixture": "0345b3898874415db3e03f9a9470ccf786a2d1f31a9e12245adfa475816366c4",
+    "report": "8d49874f6661f3d57b3543716411fd6a083e75cb6584c1f48c35edb37964c9ea",
     "verifiers": {
-      "scripts/testing/verify-sales-brain-ui.cjs": "32eb01324ff19a7103ce4136dca1f2db83f5946a3ec8fe227d477d7b1e138769",
+      "scripts/testing/verify-sales-brain-ui.cjs": "4ead9337e95b468f3b74aa8bc7747d752b7692e5981ac33f547b2c340b90c84a",
+      "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
       "scripts/testing/verify-booking-calendar-ui.cjs": "b84f8309bb480a21c0e2b64fcd7bcdf347f7d8fa84eb1441ef37aa8ce7eca761",

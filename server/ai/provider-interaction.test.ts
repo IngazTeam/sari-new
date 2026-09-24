@@ -8,6 +8,23 @@ const runtime = (provider: 'openai' | 'zahypi', generation: number, enabled = tr
 });
 afterEach(() => { config.mockReset(); clearZahyPiRuntimeConfigCache(); });
 describe('one provider configuration per sales interaction', () => {
+  it('observes a stop saved by another process without waiting for the runtime cache', async () => {
+    config.mockResolvedValue(runtime('zahypi', 1));
+    await runWithZahyPiContext(context, async () => {
+      await resolveZahyPiRuntimeConfig();
+      config.mockResolvedValue(runtime('openai', 2, false));
+      expect((await resolveZahyPiRuntimeConfig()).enabled).toBe(true);
+      expect(await resolveZahyPiRuntimeConfig(undefined, { refresh: true })).toMatchObject({ enabled: false, provider: 'zahypi', generation: 1 });
+    });
+  });
+  it('fresh checks keep an active interaction on its original text provider', async () => {
+    config.mockResolvedValue(runtime('zahypi', 1));
+    await runWithZahyPiContext(context, async () => {
+      await resolveZahyPiRuntimeConfig(); config.mockResolvedValue(runtime('openai', 2));
+      expect(await resolveZahyPiRuntimeConfig(undefined, { refresh: true })).toMatchObject({ provider: 'zahypi', generation: 1 });
+    });
+    expect(await resolveZahyPiRuntimeConfig()).toMatchObject({ provider: 'openai', generation: 2 });
+  });
   it('keeps the selected provider throughout nested reply, critique and extraction after an admin switch', async () => {
     config.mockResolvedValue(runtime('zahypi', 1));
     await runWithZahyPiContext(context, async () => {

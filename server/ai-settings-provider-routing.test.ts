@@ -102,6 +102,8 @@ describe("AI settings provider control", () => {
     expect(settings.hasZahyPiKey).toBe(true);
     expect(settings.zahyPiApiKey).toBe("****cret");
     expect(settings.zahyPiProjectId).toBe("sari");
+    expect(settings.capabilityManifest).toMatchObject({ mode: "openai", enabled: true });
+    expect(settings.capabilityManifest.rows.every(row => row.provider === "openai" && row.state === "configured")).toBe(true);
   });
 
   it("opens recovery settings for an admin when both stored credentials are unreadable", async () => {
@@ -120,6 +122,18 @@ describe("AI settings provider control", () => {
     });
     expect(JSON.stringify(settings)).not.toContain("private-");
     expect(clientMock.resolveRuntime).not.toHaveBeenCalled();
+    expect(settings.capabilityManifest).toMatchObject({ mode: "mixed", enabled: true });
+    expect(settings.capabilityManifest.rows.map(row => [row.provider, row.state])).toEqual([
+      ["zahypi", "unreadable"], ["zahypi", "unreadable"], ["openai", "unreadable"], ["openai", "unreadable"],
+    ]);
+  });
+
+  it.each([null, "user", "merchant", "staff"])("denies capability metadata to %s before reading credentials", async role => {
+    const caller = aiSettingsRouter.createCaller({ user: role ? { id: 77, role } : null, req: {}, res: {} } as any);
+    await expect(caller.getSettings()).rejects.toMatchObject({ code: role ? "FORBIDDEN" : "UNAUTHORIZED" });
+    expect(databaseMock.getOpenAiApiKey).not.toHaveBeenCalled();
+    expect(databaseMock.getZahyPiRuntimeConfig).not.toHaveBeenCalled();
+    expect(databaseMock.getAiSettings).not.toHaveBeenCalled();
   });
 
   it("saves replacement keys without reading the unreadable old credentials", async () => {

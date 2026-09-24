@@ -25,10 +25,11 @@
  * });
  * ```
  */
-import { ENV } from "./env";
+import { AUXILIARY_AI_ROUTES } from '../../shared/ai-capabilities';
+import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from '../ai/auxiliary-routing';
 import { downloadPublicMedia } from '../security/download-media';
 import { withAiBudget } from '../ai/budget-ledger';
-import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from '../ai/zahypi-client';
+import { getOptionalZahyPiRequestContext } from '../ai/zahypi-client';
 
 export type TranscribeOptions = {
   merchantId?: number;
@@ -78,17 +79,7 @@ export async function transcribeAudio(
   options: TranscribeOptions
 ): Promise<TranscriptionResponse | TranscriptionError> {
   try {
-    if (!(await resolveZahyPiRuntimeConfig()).enabled) return { error: 'AI services are disabled', code: 'SERVICE_ERROR' };
-    // Step 1: Get API key from DB (fallback to env)
-    const { getOpenAiApiKey } = await import("../db_ai_settings");
-    const apiKey = await getOpenAiApiKey();
-    if (!apiKey) {
-      return {
-        error: "OpenAI API key is not configured",
-        code: "SERVICE_ERROR",
-        details: "Set your OpenAI API key in Admin > AI Settings"
-      };
-    }
+    const route = await resolveAuxiliaryAiRoute('transcription');
 
     // Step 2: Download audio from URL
     let audioBuffer: Buffer;
@@ -100,18 +91,19 @@ export async function transcribeAudio(
       
       // Check file size (16MB limit)
       const sizeMB = audioBuffer.length / (1024 * 1024);
-      if (sizeMB > 16) {
+      if (audioBuffer.length > AUXILIARY_AI_ROUTES.transcription.maxFileBytes) {
         return {
           error: "Audio file exceeds maximum size limit",
           code: "FILE_TOO_LARGE",
           details: `File size is ${sizeMB.toFixed(2)}MB, maximum allowed is 16MB`
         };
       }
+      if (!audioBuffer.length) return { error: "Audio file is empty", code: "INVALID_FORMAT" };
     } catch (error) {
       return {
         error: "Failed to fetch audio file",
         code: "SERVICE_ERROR",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: "Audio download was not completed"
       };
     }
 
@@ -123,7 +115,7 @@ export async function transcribeAudio(
     const audioBlob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
     formData.append("file", audioBlob, filename);
     
-    formData.append("model", "whisper-1");
+    formData.append("model", route.model);
     formData.append("response_format", "verbose_json");
     
     // Add prompt - use custom prompt if provided, otherwise generate based on language
@@ -133,23 +125,26 @@ export async function transcribeAudio(
         : "Transcribe the user's voice to text"
     );
     formData.append("prompt", prompt);
+    if (options.language) formData.append("language", options.language);
 
     // Step 4: Call OpenAI Whisper API directly
     const startTime = Date.now();
     const fullUrl = "https://api.openai.com/v1/audio/transcriptions";
 
     const whisperResponse = await withAiBudget({ merchantId: options.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
-      provider: 'openai', model: 'whisper-1', taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
+      provider: route.provider, model: route.model, taskType: 'voice.transcription', inputTokens: 0, maxOutputTokens: 0,
     }, async attempt => {
+    await assertAuxiliaryAiRouteCurrent(route);
     const response = await fetch(fullUrl, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${apiKey}`,
+        authorization: `Bearer ${route.apiKey}`,
         'X-Client-Request-Id': attempt.requestId,
         "Accept-Encoding": "identity",
       },
       body: formData,
       signal: AbortSignal.timeout(30_000),
+      redirect: 'error',
     });
 
     if (!response.ok) {
@@ -162,7 +157,7 @@ export async function transcribeAudio(
     }, () => undefined);
     
     // Validate response structure
-    if (!whisperResponse.text || typeof whisperResponse.text !== 'string') {
+    if (typeof whisperResponse.text !== 'string' || !whisperResponse.text.trim()) {
       return {
         error: "Invalid transcription response",
         code: "SERVICE_ERROR",
@@ -174,7 +169,7 @@ export async function transcribeAudio(
     try {
       const { logAiUsage, estimateWhisperCost } = await import("../db_ai_settings");
       const durationSec = Math.round(whisperResponse.duration || 0);
-      logAiUsage({
+      void logAiUsage({
         merchantId: options.merchantId ?? null,
         requestType: "whisper",
         model: "whisper-1",
@@ -184,7 +179,7 @@ export async function transcribeAudio(
         audioDurationSec: durationSec,
         estimatedCost: String(estimateWhisperCost(durationSec)),
         durationMs: Date.now() - startTime,
-      });
+      }).catch(() => undefined);
     } catch { /* ignore logging failures */ }
 
     return whisperResponse;
@@ -194,7 +189,7 @@ export async function transcribeAudio(
     return {
       error: "Voice transcription failed",
       code: "SERVICE_ERROR",
-      details: error instanceof Error ? error.message : "An unexpected error occurred"
+      details: "The transcription service is unavailable"
     };
   }
 }

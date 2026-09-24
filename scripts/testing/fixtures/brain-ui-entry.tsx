@@ -1,4 +1,6 @@
 import { BookingReschedule } from '../../../client/src/components/BookingReschedule';
+import { AiCapabilityCard } from '../../../client/src/components/admin/AiCapabilityCard';
+import { buildAiCapabilityManifest } from '../../../shared/ai-capabilities';
 import { BookingCalendarSync } from '../../../client/src/components/BookingCalendarSync';
 import { BookingCancellation } from '../../../client/src/components/BookingCancellation';
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
@@ -29,6 +31,12 @@ import { CheckoutDiscountRelease } from '../../../client/src/components/Checkout
 import { CheckoutDiscountBreakdown } from '../../../client/src/components/CheckoutDiscountBreakdown';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
+function AiCapabilitiesFixture(){
+  const mode=new URL(location.href).searchParams.get('case')||'';
+  const [failed,setFailed]=useState(mode==='ai-capabilities-error'),[refreshing,setRefreshing]=useState(false);
+  const manifest=buildAiCapabilityManifest({enabled:mode!=='ai-capabilities-disabled',textProvider:mode==='ai-capabilities-openai'?'openai':'zahypi',textModel:mode==='ai-capabilities-xss'?'<img src=x onerror=window.__capabilityXss=1>'+('long-model/'.repeat(12)):'fixture-text-model',openaiCredential:mode==='ai-capabilities-missing'?'missing':mode==='ai-capabilities-unreadable'?'unreadable':'configured',zahypiCredential:'configured'});
+  return <AiCapabilityCard manifest={manifest} loading={mode==='ai-capabilities-loading'} failed={failed} refreshing={refreshing} onRefresh={()=>{setRefreshing(true);(window as any).__capabilityRefreshCount=((window as any).__capabilityRefreshCount||0)+1;setTimeout(()=>{setRefreshing(false);setFailed(false);},500);}}/>;
+}
 function BookingOperationsFixture(){
   const mode=new URL(location.href).searchParams.get('case')||'';
   const initial:BookingStatus=mode.startsWith('booking-ops-calendar-')?'confirmed':mode==='booking-ops-cancelled'?'cancelled':mode==='booking-ops-completed'?'completed':mode==='booking-ops-no-show'?'no_show':mode==='booking-ops-paid'?'confirmed':'pending';
@@ -44,6 +52,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('ai-capabilities-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-4xl p-3"><AiCapabilitiesFixture/></main>);return;}
   if(mode.startsWith('booking-reschedule-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingReschedule bookingId={321} onChanged={async()=>{if(mode==='booking-reschedule-parent-error')throw Error('private parent failure');(window as any).__rescheduleParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('booking-cancellation-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCancellation bookingId={321} onChanged={async()=>{if(mode==='booking-cancellation-parent-error')throw Error('private parent failure');(window as any).__cancellationParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('booking-calendar-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCalendarSync bookingId={321} onChanged={async()=>{if(mode==='booking-calendar-parent-error')throw Error('private parent failure');(window as any).__bookingCalendarParentRefreshed=true;}} /></main>); return; }

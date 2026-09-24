@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AiBudgetCard } from '@/components/admin/AiBudgetCard';
+import { AiCapabilityCard } from '@/components/admin/AiCapabilityCard';
 
 export default function AISettings() {
   const { t } = useTranslation();
@@ -38,7 +39,7 @@ export default function AISettings() {
   const [aiEnabled, setAiEnabled] = useState(true);
 
   // Queries
-  const { data: settings, refetch: refetchSettings } = trpc.aiSettings.getSettings.useQuery();
+  const { data: settings, refetch: refetchSettings, isLoading: settingsLoading, isFetching: settingsFetching, error: settingsError } = trpc.aiSettings.getSettings.useQuery();
   const { data: monthStats } = trpc.aiSettings.getUsageStats.useQuery({ period: "month" });
   const { data: todayStats } = trpc.aiSettings.getUsageStats.useQuery({ period: "today" });
   const { data: dailyUsage } = trpc.aiSettings.getDailyUsage.useQuery({ days: 30 });
@@ -178,6 +179,7 @@ export default function AISettings() {
       </div>
 
       <AiBudgetCard />
+      <AiCapabilityCard manifest={settings?.capabilityManifest} loading={settingsLoading} refreshing={settingsFetching} failed={!!settingsError} onRefresh={() => { void refetchSettings(); }} />
       {(settings?.openaiCredentialStatus === "unreadable" || settings?.zahyPiCredentialStatus === "unreadable") && (
         <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
           <p className="font-medium">{t('aISettings.credentialRecoveryTitle')}</p>

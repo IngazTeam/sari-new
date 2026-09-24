@@ -1,6 +1,29 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  aiCapabilities: {
+  "title": "AI capability routing",
+  "scope": "Saved settings used at runtime. Changing the form selection only takes effect after saving.",
+  "refresh": "Refresh capability status",
+  "loading": "Reading saved settings…",
+  "failed": "Settings could not be verified. Refresh before relying on this status.",
+  "mixed": "Mixed mode: ZahyPi for text, OpenAI for transcription and embeddings.",
+  "openai": "Current routes use OpenAI for text, transcription and embeddings.",
+  "budget": "Every paid call requires a valid price card and a reservation against the shared platform cap. A configured key does not confirm connectivity or available budget.",
+  "text": "Reply generation",
+  "structured": "Structured extraction",
+  "transcription": "Voice message transcription",
+  "embedding": "Semantic knowledge search",
+  "configured": "Key configured; connectivity not tested here",
+  "missing": "Blocked: key missing",
+  "unreadable": "Blocked: stored key unreadable",
+  "disabled": "Disabled by administrator",
+  "textScope": "The model shown is the saved default. Some tasks select another model within the same provider; there is no automatic switch to another provider.",
+  "structuredScope": "Task contracts and local validation apply where implemented by the route. Text success does not certify every schema or tool.",
+  "transcriptionScope": "Sari accepts up to 16 MB per file. An OpenAI key is required even with ZahyPi selected; unavailable voice processing asks the customer to send text.",
+  "embeddingScope": "The model is fixed to preserve vector compatibility. When unavailable, knowledge retrieval continues with lexical search without creating new vectors.",
+  "certification": "This describes implemented Sari routes, not live certification of every model. ZahyPi audio and embeddings are not implemented here; its model context limits and quality still require independent verification."
+},
   calendarReview: {
   "title": "Review calendar synchronization",
   "refresh": "Refresh appointment evidence",

@@ -150,6 +150,7 @@ function environmentRuntimeConfig(): ZahyPiRuntimeConfig {
 
 export async function resolveZahyPiRuntimeConfig(
   override?: Omit<ZahyPiRuntimeConfig, "source">,
+  options: { refresh?: boolean } = {},
 ): Promise<ZahyPiRuntimeConfig> {
   if (override) return { ...override, source: "override" };
   const scope = interactionConfig.getStore();
@@ -158,14 +159,14 @@ export async function resolveZahyPiRuntimeConfig(
       ...(value.taskTypes ? { taskTypes: Object.freeze([...value.taskTypes]) } : {}) }));
     const snapshot = await scope.config;
     // An explicit global stop overrides the frozen provider choice.
-    const live = await loadRuntimeConfig();
+    const live = await loadRuntimeConfig(options.refresh);
     return live.enabled ? snapshot : { ...snapshot, enabled: false };
   }
-  return loadRuntimeConfig();
+  return loadRuntimeConfig(options.refresh);
 }
 
-async function loadRuntimeConfig(): Promise<ZahyPiRuntimeConfig> {
-  if (runtimeConfigCache && runtimeConfigCache.expiresAt > Date.now()) {
+async function loadRuntimeConfig(refresh = false): Promise<ZahyPiRuntimeConfig> {
+  if (!refresh && runtimeConfigCache && runtimeConfigCache.expiresAt > Date.now()) {
     return runtimeConfigCache.value;
   }
 

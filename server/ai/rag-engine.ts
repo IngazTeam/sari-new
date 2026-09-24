@@ -23,14 +23,16 @@ import {
   type CachedResponse,
 } from '../db/knowledge';
 import { withAiBudget } from './budget-ledger';
-import { getOptionalZahyPiRequestContext, resolveZahyPiRuntimeConfig } from './zahypi-client';
+import { getOptionalZahyPiRequestContext } from './zahypi-client';
+import { AUXILIARY_AI_ROUTES } from '../../shared/ai-capabilities';
+import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from './auxiliary-routing';
 
 // ═══════════════════════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════════════════════
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-const EMBEDDING_DIMENSIONS = 1536;
+const EMBEDDING_MODEL = AUXILIARY_AI_ROUTES.embedding.model;
+const EMBEDDING_DIMENSIONS = AUXILIARY_AI_ROUTES.embedding.dimensions;
 const CACHE_SIMILARITY_THRESHOLD = 0.92;  // 92% match → use cached response
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -44,27 +46,21 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
  */
 export async function generateEmbedding(text: string, merchantId?: number): Promise<Float32Array | null> {
   try {
-    if (!(await resolveZahyPiRuntimeConfig()).enabled) return null;
-    const { getOpenAiApiKey } = await import('../db_ai_settings');
-    const apiKey = await getOpenAiApiKey();
-
-    if (!apiKey) {
-      console.warn('[RAG] No OpenAI API key configured');
-      return null;
-    }
+    const route = await resolveAuxiliaryAiRoute('embedding');
 
     // Truncate to avoid token limits (8191 tokens max for this model)
-    const truncatedText = text.substring(0, 30000);
+    const truncatedText = text.substring(0, AUXILIARY_AI_ROUTES.embedding.maxInputCharacters);
 
     const data = await withAiBudget({ merchantId: merchantId ?? getOptionalZahyPiRequestContext()?.merchantId,
       provider: 'openai', model: EMBEDDING_MODEL, taskType: 'knowledge.embedding',
       inputTokens: Buffer.byteLength(truncatedText, 'utf8'), maxOutputTokens: 0,
     }, async attempt => {
+    await assertAuxiliaryAiRouteCurrent(route);
     const response = await fetch(`${OPENAI_API_URL}/embeddings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${route.apiKey}`,
         'X-Client-Request-Id': attempt.requestId,
       },
       body: JSON.stringify({
@@ -73,6 +69,7 @@ export async function generateEmbedding(text: string, merchantId?: number): Prom
         dimensions: EMBEDDING_DIMENSIONS,
       }),
       signal: AbortSignal.timeout(30_000),
+      redirect: 'error',
     });
 
     if (!response.ok) {
@@ -91,7 +88,7 @@ export async function generateEmbedding(text: string, merchantId?: number): Prom
 
     return new Float32Array(vector);
   } catch (e: any) {
-    console.error('[RAG] generateEmbedding failed:', e.message);
+    console.error('[RAG] generateEmbedding failed');
     return null;
   }
 }

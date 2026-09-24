@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { buildAiCapabilityManifest } from "../shared/ai-capabilities";
 import { protectedProcedure, router } from "./_core/trpc";
 import { aiPriceCardInput, readAiBudgetAdmin, saveAiPriceCard, aiReconciliationInput, reconcileAiReservation } from './ai/budget-admin';
 import {
@@ -103,6 +104,13 @@ export const aiSettingsRouter = router({
       // Explicit response DTO: never spread the database record because it
       // also contains the Google service-account private key.
       model: settings?.model || "gpt-4o-mini",
+      capabilityManifest: buildAiCapabilityManifest({
+        enabled: zahyPiConfig.enabled,
+        textProvider: zahyPiConfig.provider,
+        textModel: usesZahyPi ? zahyPiConfig.model : settings?.model || "gpt-4o-mini",
+        openaiCredential: openAiCredential.status,
+        zahypiCredential: zahyPiCredential.status,
+      }),
       whisperModel: settings?.whisperModel || "whisper-1",
       isActive: settings?.isActive ?? true,
       monthlyBudgetLimit: settings?.monthlyBudgetLimit ?? null,
