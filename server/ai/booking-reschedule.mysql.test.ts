@@ -51,6 +51,18 @@ import {
   finishInteractionDelivery,
 } from "./interaction-jobs";
 import { buildReplyPlan } from "../messaging/reply-plan";
+const transport = vi.hoisted(() => ({ send: vi.fn() }));
+vi.mock("../channels/whatsapp/providers", () => ({
+  getWhatsAppProvider: () => ({ send: transport.send }),
+}));
+import { enqueueInbound } from "../messaging/inbound-jobs";
+import {
+  dispatchBookingNotice,
+  reconcileBookingNotice,
+  runBookingNotificationBatch,
+  bookingNoticeKey,
+} from "../booking-reschedule-notification";
+import { updateWhatsAppDeliveryStatus } from "../channels/whatsapp/service";
 import type { CheckoutIdentity } from "./checkout-agreements";
 import { getBookingCancellationReview } from "../booking-cancellation";
 import {
@@ -940,6 +952,581 @@ describe.skipIf(!process.env.DATABASE_URL)(
         )
       ).rejects.toThrow();
       expect(provider.move).not.toHaveBeenCalled();
+    });
+    describe("durable customer notification after moving", () => {
+      let account: string, instanceId: number;
+      const notices = () =>
+        q(
+          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? ORDER BY id",
+          [owner.merchantId]
+        );
+      const send = async () =>
+        dispatchBookingNotice(owner.merchantId, (await notices()).at(-1).id);
+      const receipt = async (status = "read") => {
+        const n = (await notices()).at(-1);
+        return updateWhatsAppDeliveryStatus({
+          provider: "green_api",
+          providerAccount: account,
+          providerMessageId: n.provider_message_id,
+          status: status as any,
+        });
+      };
+      async function prepareNotice() {
+        const { consent } = await pending();
+        account = randomUUID();
+        instanceId = (
+          await q(
+            "INSERT INTO whatsapp_instances (merchant_id,instance_id,token,provider,api_url,status,is_primary) VALUES (?,?,'fixture','green_api','https://api.green-api.com','active',1)",
+            [owner.merchantId, account]
+          )
+        ).insertId;
+        const { id } = await enqueueInbound({
+          source: "webhook",
+          payload: {
+            typeWebhook: "incomingMessageReceived",
+            instanceData: { idInstance: account },
+            idMessage: randomUUID(),
+            timestamp: Math.floor(Date.now() / 1000),
+            senderData: { chatId: `${phone}@c.us` },
+            messageData: {
+              typeMessage: "textMessage",
+              textMessageData: { textMessage: "نعم" },
+            },
+          },
+        });
+        const job = (
+          await q("SELECT event_key FROM whatsapp_inbound_jobs WHERE id=?", [
+            id,
+          ])
+        )[0];
+        await q("UPDATE messages SET externalId=? WHERE id=?", [
+          `inbound:v1:${job.event_key}`,
+          consent.incomingMessageId,
+        ]);
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET status='completed' WHERE id=?",
+          [id]
+        );
+        return consent;
+      }
+      beforeEach(() =>
+        transport.send.mockReset().mockImplementation(async () => ({
+          accepted: true,
+          outcome: "accepted",
+          status: "sent",
+          providerMessageId: randomUUID(),
+        }))
+      );
+      it("waits for the consent reply job to finish before sending the later outcome", async () => {
+        await prepareNotice();
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET status='running' WHERE merchant_id=?",
+          [owner.merchantId]
+        );
+        await moveRun();
+        await send();
+        expect((await notices())[0].state).toBe("pending");
+        expect(transport.send).not.toHaveBeenCalled();
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET status='completed' WHERE merchant_id=?",
+          [owner.merchantId]
+        );
+        await send();
+        expect((await notices())[0].state).toBe("accepted");
+      });
+      it.each(["review", "dismissed"])(
+        "does not overtake a consent reply in %s",
+        async state => {
+          await prepareNotice();
+          await q(
+            "UPDATE whatsapp_inbound_jobs SET status=? WHERE merchant_id=?",
+            [state, owner.merchantId]
+          );
+          await moveRun();
+          await send();
+          expect((await notices())[0].state).toBe("suppressed");
+          expect(transport.send).not.toHaveBeenCalled();
+        }
+      );
+      it("atomically queues one notification only after a verified move and replays without duplicates", async () => {
+        await prepareNotice();
+        expect(await notices()).toHaveLength(0);
+        const input = await moveCommand();
+        await rescheduleBookingCalendar(owner.merchantId, owner.userId, input);
+        expect(await notices()).toHaveLength(1);
+        expect((await notices())[0].state).toBe("pending");
+        expect((await read())?.notification?.state).toBe("pending");
+        await rescheduleBookingCalendar(owner.merchantId, owner.userId, input);
+        expect(await notices()).toHaveLength(1);
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it.each(["abandon", "unknown"])(
+        "does not enqueue after %s",
+        async mode => {
+          await prepareNotice();
+          if (mode === "unknown")
+            provider.move.mockRejectedValueOnce(Error("lost"));
+          await moveRun(mode === "abandon" ? "abandon" : "move");
+          expect(await notices()).toHaveLength(0);
+        }
+      );
+      it("enqueues when GET recovery proves the move, without replaying PATCH", async () => {
+        await prepareNotice();
+        let result: any;
+        const actual = provider.move.getMockImplementation()!;
+        provider.move.mockImplementationOnce(async (...args: any[]) => {
+          result = await actual(...args);
+          throw Error("lost");
+        });
+        await moveRun();
+        expect(await notices()).toHaveLength(0);
+        provider.get.mockResolvedValueOnce(result);
+        await moveRun("verify");
+        expect(await notices()).toHaveLength(1);
+        expect(provider.move).toHaveBeenCalledTimes(1);
+      });
+      it("rolls back local completion if transactional notification insertion fails", async () => {
+        await prepareNotice();
+        const pool = (await getPool())!,
+          get = pool.getConnection.bind(pool);
+        let fail = true;
+        const spy = vi
+          .spyOn(pool, "getConnection")
+          .mockImplementation(async () => {
+            const c = await get();
+            const exec = c.execute.bind(c);
+            c.execute = ((sql: any, args: any) => {
+              if (
+                fail &&
+                String(sql).startsWith(
+                  "INSERT INTO booking_reschedule_notifications"
+                )
+              ) {
+                fail = false;
+                return Promise.reject(Error("notice storage lost"));
+              }
+              return exec(sql, args);
+            }) as any;
+            const release = c.release.bind(c);
+            c.release = () => {
+              c.execute = exec as any;
+              c.release = release;
+              release();
+            };
+            return c;
+          });
+        await expect(moveRun()).rejects.toThrow();
+        spy.mockRestore();
+        expect((await moves())[0].state).toBe("moving");
+        expect((await bookings())[0].start_time).toBe("10:00");
+        expect(await notices()).toHaveLength(0);
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("records missing source channel for review without failing the actual move", async () => {
+        await pending();
+        await moveRun();
+        expect((await notices())[0].state).toBe("manual_review");
+        await send();
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("sends through the original account once across concurrent workers and projects exactly once", async () => {
+        await prepareNotice();
+        await moveRun();
+        await Promise.all(Array.from({ length: 8 }, () => send()));
+        const n = (await notices())[0];
+        expect(n.state).toBe("accepted");
+        expect(n.delivery_state).toBe("sent");
+        expect(n.projection_message_id).toBeTruthy();
+        expect(transport.send).toHaveBeenCalledTimes(1);
+        expect(transport.send.mock.calls[0][0].instanceId).toBe(account);
+        expect(transport.send.mock.calls[0][1].text).toContain("تم نقل حجزك");
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await notices())[0].projection_message_id).toBe(
+          n.projection_message_id
+        );
+        expect(
+          await q("SELECT id FROM messages WHERE externalId=?", [
+            `booking-notice:v1:${owner.merchantId}:${n.id}`,
+          ])
+        ).toHaveLength(1);
+      });
+      it("tracks delivery and reading separately, without another provider call", async () => {
+        await prepareNotice();
+        await moveRun();
+        await send();
+        const n = (await notices())[0];
+        expect((await read())?.notification?.delivery).toBe("sent");
+        await receipt("delivered");
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await read())?.notification?.delivery).toBe("delivered");
+        await receipt();
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await read())?.notification?.delivery).toBe("read");
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("does not erase acceptance when a later failure receipt arrives", async () => {
+        await prepareNotice();
+        await moveRun();
+        await send();
+        await receipt("failed");
+        const n = (await notices())[0];
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await notices())[0]).toMatchObject({
+          state: "accepted",
+          delivery_state: "failed",
+          provider_message_id: n.provider_message_id,
+        });
+        await send();
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it.each([
+        "human",
+        "new-message",
+        "withdrawn",
+        "changed-booking",
+        "changed-phone",
+        "inactive-account",
+        "changed-account",
+        "inactive-merchant",
+        "old-consent",
+        "tampered-text",
+        "tampered-snapshot",
+        "changed-consent",
+        "changed-agreement",
+        "expired-slot",
+      ])("suppresses %s before sending", async mode => {
+        const consent = await prepareNotice();
+        await moveRun();
+        if (mode === "human")
+          await q("UPDATE conversations SET human_takeover=1 WHERE id=?", [
+            source.conversationId,
+          ]);
+        if (mode === "new-message") await incoming("لدي تعديل");
+        if (mode === "withdrawn")
+          await q(
+            "INSERT INTO campaign_consent_state (merchant_id,customer_phone,status,consent_version,source,evidence_digest,last_decided_at) VALUES (?,?,'withdrawn','v1','test',?,UTC_TIMESTAMP(3))",
+            [owner.merchantId, phone, "a".repeat(64)]
+          );
+        if (mode === "changed-booking")
+          await q("UPDATE bookings SET status='cancelled' WHERE id=?", [
+            bookingId,
+          ]);
+        if (mode === "changed-phone")
+          await q(
+            "UPDATE conversations SET customerPhone='966500000090' WHERE id=?",
+            [source.conversationId]
+          );
+        if (mode === "inactive-account")
+          await q(
+            "UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?",
+            [instanceId]
+          );
+        if (mode === "changed-account")
+          await q("UPDATE whatsapp_instances SET instance_id=? WHERE id=?", [
+            randomUUID(),
+            instanceId,
+          ]);
+        if (mode === "inactive-merchant")
+          await q("UPDATE merchants SET status='suspended' WHERE id=?", [
+            owner.merchantId,
+          ]);
+        if (mode === "old-consent")
+          await q(
+            "UPDATE messages SET createdAt=TIMESTAMPADD(HOUR,-25,UTC_TIMESTAMP()) WHERE id=?",
+            [consent.incomingMessageId]
+          );
+        if (mode === "tampered-text")
+          await q(
+            "UPDATE booking_reschedule_notifications SET dispatch_text='forged' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (mode === "tampered-snapshot")
+          await q(
+            "UPDATE booking_reschedule_notifications SET snapshot=JSON_SET(snapshot,'$.phone','966500000090') WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (mode === "changed-consent")
+          await q("UPDATE messages SET content='لا أوافق' WHERE id=?", [
+            consent.incomingMessageId,
+          ]);
+        if (mode === "changed-agreement")
+          await q(
+            "UPDATE conversation_booking_agreements SET state='expired' WHERE id=?",
+            [(await bookings())[0].customer_agreement_id]
+          );
+        if (mode === "expired-slot")
+          await q("UPDATE bookings SET booking_date='2020-01-01' WHERE id=?", [
+            bookingId,
+          ]);
+        await send();
+        expect((await notices())[0].state).toBe("suppressed");
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("rechecks authority after delivery reservation and stops a new reply during account loading", async () => {
+        await prepareNotice();
+        await moveRun();
+        const pool = (await getPool())!,
+          execute = pool.execute.bind(pool);
+        let changed = false;
+        const spy = vi.spyOn(pool, "execute").mockImplementation((async (
+          sql: any,
+          args: any
+        ) => {
+          const result = await execute(sql, args);
+          if (
+            !changed &&
+            String(sql).includes("INSERT INTO whatsapp_message_deliveries")
+          ) {
+            changed = true;
+            await incoming("لا ترسل الآن");
+          }
+          return result;
+        }) as any);
+        await send();
+        spy.mockRestore();
+        expect(transport.send).not.toHaveBeenCalled();
+        expect((await notices())[0].state).toBe("failed");
+      });
+      it.each(["throw", "missing-id", "rejected"])(
+        "never retries %s transport outcomes",
+        async mode => {
+          await prepareNotice();
+          await moveRun();
+          if (mode === "throw")
+            transport.send.mockRejectedValueOnce(Error("network lost"));
+          else
+            transport.send.mockResolvedValueOnce(
+              mode === "missing-id"
+                ? { accepted: true, status: "sent" }
+                : {
+                    accepted: false,
+                    status: "failed",
+                    outcome: "rejected",
+                    errorCode: "http_400",
+                  }
+            );
+          await send();
+          await send();
+          const n = (await notices())[0];
+          await reconcileBookingNotice(owner.merchantId, n.id);
+          expect((await notices())[0].state).toBe(
+            mode === "rejected" ? "failed" : "unknown"
+          );
+          expect((await notices())[0].projection_message_id).toBeNull();
+          expect(transport.send).toHaveBeenCalledTimes(1);
+        }
+      );
+      it("recovers accepted delivery after local projection fails, without resending", async () => {
+        await prepareNotice();
+        await moveRun();
+        const pool = (await getPool())!,
+          get = pool.getConnection.bind(pool);
+        let failed = false;
+        const spy = vi
+          .spyOn(pool, "getConnection")
+          .mockImplementation(async () => {
+            const c = await get(),
+              exec = c.execute.bind(c),
+              release = c.release.bind(c);
+            c.execute = ((sql: any, args: any) => {
+              if (!failed && String(sql).includes("INSERT INTO messages")) {
+                failed = true;
+                return Promise.reject(Error("projection failure"));
+              }
+              return exec(sql, args);
+            }) as any;
+            c.release = () => {
+              c.execute = exec as any;
+              c.release = release;
+              release();
+            };
+            return c;
+          });
+        await expect(send()).rejects.toThrow();
+        spy.mockRestore();
+        const n = (await notices())[0];
+        expect(n.state).toBe("dispatching");
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await notices())[0].state).toBe("accepted");
+        expect((await notices())[0].projection_message_id).toBeTruthy();
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it.each(["text", "recipient", "account", "guard", "receipt"])(
+        "rejects mismatched %s receipt evidence",
+        async mode => {
+          await prepareNotice();
+          await moveRun();
+          transport.send.mockRejectedValueOnce(Error("lost"));
+          await send();
+          const n = (await notices())[0];
+          await q(
+            "UPDATE whatsapp_message_deliveries SET status='sent',provider_message_id='synthetic-receipt' WHERE merchant_id=? AND idempotency_key=?",
+            [owner.merchantId, bookingNoticeKey(owner.merchantId, n.id)]
+          );
+          if (mode === "text")
+            await q(
+              "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.text','forged') WHERE merchant_id=?",
+              [owner.merchantId]
+            );
+          if (mode === "recipient")
+            await q(
+              "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.to','966500000090') WHERE merchant_id=?",
+              [owner.merchantId]
+            );
+          if (mode === "account")
+            await q("UPDATE whatsapp_instances SET instance_id=? WHERE id=?", [
+              randomUUID(),
+              instanceId,
+            ]);
+          if (mode === "guard")
+            await q(
+              "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.bookingNoticeGuard.token','forged') WHERE merchant_id=?",
+              [owner.merchantId]
+            );
+          if (mode === "receipt")
+            await q(
+              "UPDATE whatsapp_message_deliveries SET provider_message_id='<bad>' WHERE merchant_id=?",
+              [owner.merchantId]
+            );
+          await reconcileBookingNotice(owner.merchantId, n.id);
+          expect((await notices())[0].accepted_at).toBeNull();
+          expect((await notices())[0].projection_message_id).toBeNull();
+          expect(transport.send).toHaveBeenCalledTimes(1);
+        }
+      );
+      it("recovers an expired claim only by reading receipts, never resending", async () => {
+        await prepareNotice();
+        await moveRun();
+        await q(
+          "UPDATE booking_reschedule_notifications SET state='dispatching',claim_token=?,dispatch_started_at=TIMESTAMPADD(MINUTE,-3,UTC_TIMESTAMP(3)),next_check_at=UTC_TIMESTAMP(3) WHERE merchant_id=?",
+          [randomUUID(), owner.merchantId]
+        );
+        await runBookingNotificationBatch();
+        expect((await notices())[0].state).toBe("unknown");
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("does not let another tenant dispatch or reconcile a leaked notification id", async () => {
+        await prepareNotice();
+        await moveRun();
+        const n = (await notices())[0];
+        await dispatchBookingNotice(other.merchantId, n.id);
+        await expect(
+          reconcileBookingNotice(other.merchantId, n.id)
+        ).rejects.toThrow();
+        expect((await notices())[0].state).toBe("pending");
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("does not replay a dispatch whose claim commit acknowledgement was lost", async () => {
+        await prepareNotice();
+        await moveRun();
+        const pool = (await getPool())!,
+          get = pool.getConnection.bind(pool);
+        let failed = false;
+        const spy = vi.spyOn(pool, "getConnection").mockImplementation(
+          async () =>
+            new Proxy(await get(), {
+              get(target, key) {
+                if (key === "commit")
+                  return async () => {
+                    await target.commit();
+                    if (!failed) {
+                      failed = true;
+                      throw Error("commit ack lost");
+                    }
+                  };
+                const value = Reflect.get(target, key);
+                return typeof value === "function" ? value.bind(target) : value;
+              },
+            })
+        );
+        await expect(send()).rejects.toThrow();
+        spy.mockRestore();
+        expect((await notices())[0].state).toBe("dispatching");
+        await send();
+        await reconcileBookingNotice(owner.merchantId, (await notices())[0].id);
+        expect((await notices())[0].state).toBe("unknown");
+        expect(transport.send).not.toHaveBeenCalled();
+      });
+      it("keeps the original account when another account becomes primary", async () => {
+        await prepareNotice();
+        await moveRun();
+        await q("UPDATE whatsapp_instances SET is_primary=0 WHERE id=?", [
+          instanceId,
+        ]);
+        await q(
+          "INSERT INTO whatsapp_instances (merchant_id,instance_id,token,provider,api_url,status,is_primary) VALUES (?,?,'fixture','green_api','https://api.green-api.com','active',1)",
+          [owner.merchantId, randomUUID()]
+        );
+        await send();
+        expect(transport.send.mock.calls[0][0].instanceId).toBe(account);
+        expect((await notices())[0].state).toBe("accepted");
+      });
+      it("preserves accepted evidence without writing history into a reassigned conversation", async () => {
+        await prepareNotice();
+        await moveRun();
+        transport.send.mockImplementationOnce(async () => {
+          await q(
+            "UPDATE conversations SET customerPhone='966500000090' WHERE id=?",
+            [source.conversationId]
+          );
+          return {
+            accepted: true,
+            outcome: "accepted",
+            status: "sent",
+            providerMessageId: randomUUID(),
+          };
+        });
+        await send();
+        expect((await notices())[0]).toMatchObject({
+          state: "accepted",
+          last_error: "conversation_unavailable",
+          projection_message_id: null,
+        });
+        expect((await read())?.notification?.projected).toBe(false);
+      });
+      it("does not claim a reassigned conversation still contains the notification", async () => {
+        await prepareNotice();
+        await moveRun();
+        await send();
+        const n = (await notices())[0];
+        expect(n.projection_message_id).toBeTruthy();
+        await q(
+          "UPDATE conversations SET customerPhone='966500000090' WHERE id=?",
+          [source.conversationId]
+        );
+        await reconcileBookingNotice(owner.merchantId, n.id);
+        expect((await notices())[0]).toMatchObject({
+          state: "accepted",
+          projection_message_id: null,
+          last_error: "conversation_unavailable",
+        });
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("retains the stored message if projection encounters conflicting history", async () => {
+        await prepareNotice();
+        await moveRun();
+        const n = (await notices())[0];
+        await q(
+          "INSERT INTO messages (conversationId,direction,messageType,content,externalId) VALUES (?,'outgoing','text','conflicting',?)",
+          [
+            source.conversationId,
+            `booking-notice:v1:${owner.merchantId}:${n.id}`,
+          ]
+        );
+        await send();
+        expect((await notices())[0]).toMatchObject({
+          state: "accepted",
+          last_error: "projection_conflict",
+          projection_message_id: null,
+        });
+        expect(
+          (
+            await q("SELECT content FROM messages WHERE externalId=?", [
+              `booking-notice:v1:${owner.merchantId}:${n.id}`,
+            ])
+          )[0].content
+        ).toBe("conflicting");
+      });
     });
   }
 );

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T11:59:42.170Z",
+  "generatedAt": "2026-09-24T12:27:22.152Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -13,6 +13,8 @@
     "booking-consent-375.png",
     "booking-link-renewal-1440.png",
     "booking-link-renewal-375.png",
+    "booking-notice-1440.png",
+    "booking-notice-375.png",
     "booking-operations-1440.png",
     "booking-operations-375.png",
     "booking-reschedule-1440.png",
@@ -609,6 +611,227 @@
     {
       "width": 375,
       "mode": "booking_reschedule_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "booking_notice_untrusted_text_inert",
       "passed": true
     },
     {

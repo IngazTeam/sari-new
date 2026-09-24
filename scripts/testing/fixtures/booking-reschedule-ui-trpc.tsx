@@ -26,6 +26,9 @@ export const bookingRescheduleFixture = {
           "inFlight",
         ].find(x => mode === `booking-reschedule-${x}`) || null;
       const xss = mode === "booking-reschedule-xss";
+      const notice = mode.startsWith("booking-reschedule-notice-")
+        ? mode.slice("booking-reschedule-notice-".length)
+        : null;
       const source = {
         id: 81,
         text: xss
@@ -37,7 +40,7 @@ export const bookingRescheduleFixture = {
       const data: BookingRescheduleReview = {
         state: saved
           ? saved
-          : mode === "booking-reschedule-applied"
+          : mode === "booking-reschedule-applied" || notice
             ? "applied"
             : unknown
               ? "move_unknown"
@@ -47,6 +50,7 @@ export const bookingRescheduleFixture = {
         evidence: (revision ? "b" : "a").repeat(64),
         canMove:
           active &&
+          !notice &&
           !saved &&
           !unknown &&
           !blocker &&
@@ -65,6 +69,7 @@ export const bookingRescheduleFixture = {
           : "ملخص نقل موعد الاستشارة من الساعة 10 إلى 12 بتوقيت الرياض. لم يثبت النقل بعد.",
         canAbandon:
           active &&
+          !notice &&
           !saved &&
           !unknown &&
           !blocker &&
@@ -80,6 +85,23 @@ export const bookingRescheduleFixture = {
                 },
               ]
             : [],
+        notification: notice
+          ? {
+              state: ["sent", "delivered", "read", "xss"].includes(notice)
+                ? "accepted"
+                : notice,
+              delivery: ["sent", "delivered", "read"].includes(notice)
+                ? notice
+                : "none",
+              projected: notice !== "sent",
+              acceptedAt: notice === "sent" ? source.at : null,
+              text:
+                notice === "xss"
+                  ? '<img src=x onerror="window.__noticeXss=1">' +
+                    "long-text-".repeat(60)
+                  : "تم نقل حجزك #321 وتأكيد الموعد الجديد لدى النشاط.\n2026-10-01، من 12:00 إلى 13:00 بتوقيت الرياض.",
+            }
+          : null,
       };
       return {
         data: active && mode !== "booking-reschedule-empty" ? data : null,

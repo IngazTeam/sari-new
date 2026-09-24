@@ -52,6 +52,21 @@ export function BookingReschedule({
     verify: t("merchantUx.bookingReschedule.verify"),
     abandon: t("merchantUx.bookingReschedule.abandon"),
   };
+  const notificationStates: Record<string, string> = {
+    pending: t("merchantUx.bookingReschedule.noticePending"),
+    dispatching: t("merchantUx.bookingReschedule.noticeDispatching"),
+    accepted: t("merchantUx.bookingReschedule.noticeAccepted"),
+    unknown: t("merchantUx.bookingReschedule.noticeUnknown"),
+    failed: t("merchantUx.bookingReschedule.noticeFailed"),
+    suppressed: t("merchantUx.bookingReschedule.noticeSuppressed"),
+    manual_review: t("merchantUx.bookingReschedule.noticeManual"),
+  };
+  const deliveryStates: Record<string, string> = {
+    sent: t("merchantUx.bookingReschedule.noticeSent"),
+    delivered: t("merchantUx.bookingReschedule.noticeDelivered"),
+    read: t("merchantUx.bookingReschedule.noticeRead"),
+    failed: t("merchantUx.bookingReschedule.noticeDeliveryFailed"),
+  };
   const disabled =
     busy ||
     submitted ||
@@ -125,6 +140,47 @@ export function BookingReschedule({
               {states[query.data.state] ||
                 t("merchantUx.bookingReschedule.unknown")}
             </p>
+            {query.data.notification && (
+              <div
+                data-booking-notification
+                className="min-w-0 space-y-2 rounded border p-3"
+              >
+                <h4 className="font-medium">
+                  {t("merchantUx.bookingReschedule.noticeTitle")}
+                </h4>
+                <p role="status">
+                  {notificationStates[query.data.notification.state] ||
+                    notificationStates.unknown}
+                </p>
+                <p>
+                  {deliveryStates[query.data.notification.delivery] ||
+                    t("merchantUx.bookingReschedule.noticeUnverified")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("merchantUx.bookingReschedule.noticeScope")}
+                </p>
+                {query.data.notification.acceptedAt && (
+                  <time dateTime={query.data.notification.acceptedAt}>
+                    {format(query.data.notification.acceptedAt)}
+                  </time>
+                )}
+                {query.data.notification.state === "accepted" &&
+                  !query.data.notification.projected && (
+                    <p>{t("merchantUx.bookingReschedule.noticeProjection")}</p>
+                  )}
+                <details>
+                  <summary className="flex min-h-11 cursor-pointer items-center">
+                    {t("merchantUx.bookingReschedule.noticeText")}
+                  </summary>
+                  <p
+                    dir="auto"
+                    className="whitespace-pre-wrap [overflow-wrap:anywhere]"
+                  >
+                    {query.data.notification.text}
+                  </p>
+                </details>
+              </div>
+            )}
             <div className="grid min-w-0 gap-2 sm:grid-cols-2">
               {[
                 ["before", t("merchantUx.bookingReschedule.before")],

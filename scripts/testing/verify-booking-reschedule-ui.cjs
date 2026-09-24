@@ -39,4 +39,21 @@ module.exports=async function(page,origin,output,results){
  await page.setViewport({width:375,height:812});await visit('xss');await page.click('[data-booking-reschedule] details:last-of-type summary');
  assert.equal(await page.$('[data-booking-reschedule] img'),null);assert.equal(await page.evaluate(()=>window.__rescheduleXss),undefined);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  results.push({width:375,mode:'booking_reschedule_untrusted_text_inert',passed:true});
+ for(const width of [375,1440])for(const lang of ['ar','en'])for(const state of ['pending','dispatching','sent','delivered','read','unknown','failed','suppressed','manual_review']){
+  await page.setViewport({width,height:812});await visit(`notice-${state}`,lang);await page.waitForSelector('[data-booking-notification]');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.equal(await page.$eval('[data-booking-notification]',n=>n.innerText.includes('merchantUx.')),false);
+  assert.equal(await page.$$eval('[data-reschedule-action]',ns=>ns.length),0);
+  const value=await page.$eval('[data-booking-notification]',n=>n.innerText);
+  if(state==='sent')assert.ok(value.includes(lang==='ar'?'لا يثبت وصول':'does not prove delivery'));
+  if(state==='read')assert.ok(value.includes(lang==='ar'?'بقراءة الرسالة':'message read'));
+  if(state==='unknown')assert.ok(value.includes(lang==='ar'?'لا إعادة إرسال':'no automatic resend'));
+  await page.click('[data-booking-notification] summary');
+  if(state==='sent'&&lang==='ar')await(await page.$('[data-booking-reschedule]')).screenshot({path:path.join(output,`booking-notice-${width}.png`)});
+  await page.click('[data-reschedule-refresh]');assert.equal(await page.evaluate(()=>window.__rescheduleCalls),undefined);
+  results.push({width,lang,mode:`booking_notice_${state}_truthful_no_resend`,passed:true});
+ }
+ await page.setViewport({width:320,height:812});await visit('notice-xss');await page.click('[data-booking-notification] summary');
+ assert.equal(await page.$('[data-booking-notification] img'),null);assert.equal(await page.evaluate(()=>window.__noticeXss),undefined);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);results.push({width:320,mode:'booking_notice_untrusted_text_inert',passed:true});
 };

@@ -1,0 +1,23 @@
+CREATE TABLE booking_reschedule_notifications (
+ id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ merchant_id INT NOT NULL,
+ reschedule_id INT NOT NULL,
+ booking_reference INT NOT NULL,
+ snapshot JSON NOT NULL,
+ snapshot_hash CHAR(64) NOT NULL,
+ dispatch_text TEXT NOT NULL,
+ state VARCHAR(24) NOT NULL DEFAULT 'pending',
+ claim_token CHAR(36) NULL,
+ dispatch_started_at DATETIME(3) NULL,
+ accepted_at DATETIME(3) NULL,
+ provider_message_id VARCHAR(255) NULL,
+ delivery_state VARCHAR(24) NOT NULL DEFAULT 'none',
+ projection_message_id INT NULL,
+ last_error VARCHAR(40) NULL,
+ next_check_at DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+ UNIQUE KEY uq_booking_notice_move (merchant_id,reschedule_id),
+ KEY idx_booking_notice_due (state,next_check_at,id),
+ CONSTRAINT fk_booking_notice_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE
+);

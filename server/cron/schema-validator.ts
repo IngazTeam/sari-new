@@ -15,6 +15,8 @@ import { WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS } from '../channels/whatsapp/schem
 
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
+  { table: 'booking_reschedule_notifications', columns: ['reschedule_id', 'snapshot_hash', 'claim_token', 'dispatch_started_at', 'delivery_state', 'next_check_at'],
+    uniqueIndexes: [{ name: 'uq_booking_notice_move', columns: ['merchant_id', 'reschedule_id'] }] },
   { table: 'ai_budget_policies', columns: ['scope_key', 'version', 'daily_limit_micro_usd', 'enabled'] },
   { table: 'ai_price_cards', columns: ['provider', 'model', 'version', 'input_micro_usd_per_million', 'output_micro_usd_per_million', 'flat_micro_usd', 'max_input_tokens', 'enabled'] },
   { table: 'ai_budget_periods', columns: ['scope_key', 'period_start', 'limit_micro_usd', 'reserved_micro_usd', 'spent_micro_usd'] },

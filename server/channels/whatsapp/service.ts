@@ -103,7 +103,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
           fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
-          salesOfferGuard: input.salesOfferGuard })]
+          salesOfferGuard: input.salesOfferGuard, bookingNoticeGuard: input.bookingNoticeGuard })]
     );
     reserved = true;
   } catch (error: any) {
@@ -140,6 +140,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
 
   const provider = getWhatsAppProvider(config.provider);
   if (execution) await execution.assertOwned();
+  if (input.idempotencyKey.startsWith('booking_notice:') || input.bookingNoticeGuard) {
+    const { canDispatchBookingNotice } = await import('../../booking-reschedule-notification');
+    if (!await canDispatchBookingNotice(input, config)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='booking_notice_suppressed',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId,input.idempotencyKey]);
+      return {accepted:false,duplicate:false,status:'failed',errorCode:'booking_notice_suppressed'};
+    }
+  }
   if (input.idempotencyKey.startsWith('sales_offer:') || input.salesOfferGuard) {
     const { canDispatchSalesOffer } = await import('../../ai/sales-offer-delivery');
     if (!await canDispatchSalesOffer(input, config)) {

@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-09-24T12:24:53.186Z",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "sqlSha256": "bf1546cc03b90845cead6216f899715ed419f1528db985fe1b767055dbaf6609",
+      "uniqueMerchantRescheduleVerified": true,
+      "distinctMovesRetainHistory": true,
+      "noBookingConversationOrMoveCascade": true,
+      "dispatchIsNotPresumed": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "sqlSha256": "bf1546cc03b90845cead6216f899715ed419f1528db985fe1b767055dbaf6609",
+      "uniqueMerchantRescheduleVerified": true,
+      "distinctMovesRetainHistory": true,
+      "noBookingConversationOrMoveCascade": true,
+      "dispatchIsNotPresumed": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    }
+  ]
+}

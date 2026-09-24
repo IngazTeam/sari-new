@@ -26,6 +26,7 @@ import {
   bookingCalendarProof,
 } from "./booking-reschedule-state";
 import { databaseTimeEpoch } from "./db/time";
+import { enqueueBookingRescheduleNotice, readBookingNoticeReview } from "./booking-reschedule-notification";
 
 const fail = () =>
   Error("Booking reschedule requires refreshed verified evidence");
@@ -237,6 +238,7 @@ export async function getBookingRescheduleReview(
         reason: row.reason,
         at: iso(row.created_at),
       })),
+      notification: await readBookingNoticeReview(c, merchantId, g.move.id),
     };
   });
 }
@@ -542,6 +544,7 @@ export async function rescheduleBookingCalendar(
       "UPDATE booking_calendar_reschedules SET state=?,failure_code=?,revision=revision+1 WHERE id=?",
       [state, failure, g.move.id]
     );
+    if (!failure) await enqueueBookingRescheduleNotice(c, merchantId, g.move.id);
     await audit(c, merchantId, actor, input, requestHash, state, failure, {
       evidence: g.evidence,
       proof,

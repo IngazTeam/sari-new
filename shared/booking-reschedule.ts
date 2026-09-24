@@ -18,4 +18,11 @@ export type BookingRescheduleReview = {
   offerText: string;
   consent: { id: number; text: string; at: string } | null;
   history: { action: string; outcome: string; reason: string; at: string }[];
+  notification?: {
+    state: string;
+    delivery: string;
+    projected: boolean;
+    text: string;
+    acceptedAt: string | null;
+  } | null;
 };
