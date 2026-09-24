@@ -52,6 +52,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/learning-analysis-jobs.mysql.test.ts',
   'server/ai/learning-analysis.mysql.test.ts',
   'server/appointment-reminders.mysql.test.ts',
   'server/ai/booking-reschedule.mysql.test.ts',

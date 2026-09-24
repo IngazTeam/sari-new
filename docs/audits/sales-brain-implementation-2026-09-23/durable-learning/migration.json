@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-09-24T17:52:31.304Z",
+  "database": "sari_learning_jobs_fresh_test",
+  "scope": "Fresh local chain 0000–0099, synthetic source/proposal seeded, actual updater applies 0100, then rerun is a no-op. No existing database overwritten.",
+  "migrations": 101,
+  "expected": 101,
+  "previousSourcesPreserved": true,
+  "retroactiveJobs": 0,
+  "globalDailyMicroUsd": "100000000",
+  "primaryKey": true,
+  "foreignKeyCascade": true,
+  "stateConstraint": true,
+  "migrationSha256": "a58ae547593fb788b41388f286075e6cabd360c5cb37477759c79d32ac2635ea",
+  "passed": true
+}

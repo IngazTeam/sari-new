@@ -36,6 +36,9 @@ export function parseLearningAnalysis(response: string, observedIds: number[]): 
   const result = learningAnalysisSchema.parse(JSON.parse(text));
   learningEvidenceIds(observedIds);
   for (const item of result.updates) learningEvidenceIds(observedIds, item.supporting_signal_ids, item.contrary_signal_ids);
+  const identities = result.updates.map(item => `${item.dimension}:${sanitizeLearningText(item.insight).trim()}`);
+  if (result.knowledge_gaps.length) identities.push(`knowledge_gaps:${result.knowledge_gaps.map(text=>sanitizeLearningText(text).trim()).join('\n• ')}`);
+  if (new Set(identities).size !== identities.length) throw Error('Duplicate learning proposal');
   return result;
 }
 
