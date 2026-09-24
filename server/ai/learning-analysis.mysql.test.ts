@@ -17,7 +17,7 @@ vi.mock('./learning-analysis-jobs',async original=>{
 vi.mock('./openai',()=>({ callGPT4:async(messages:any,options:any)=>{
   await options.lifecycle.beforeDispatch({});
   const response=await provider.call(messages,options);
-  await options.lifecycle.afterResponse(response,{});
+  await options.lifecycle.afterResponse(response,{reservationKey:'a'.repeat(64)});
   return response;
 } }));
 vi.mock('../_core/notificationService', () => ({ sendNotification: provider.notify }));

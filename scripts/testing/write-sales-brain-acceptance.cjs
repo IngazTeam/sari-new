@@ -518,6 +518,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبارات المسارين الفعليين مع نقل مصطنع تشمل أعطال commit قبل وبعد الربط والحفظ والتسوية والتنافس والهوية المزورة؛ لا اتصال مدفوع.','docs/SARI_SALES_BRAIN_PROVIDER_HANDOFF_2026-09-24.md'],
  B065:[entries.B065[0]+' ترحيل 0102 يضيف مرجع محاولة فريدًا يقبل NULL ويحفظ حالات التحليل وردوده القديمة دون تخمين هوية سابقة؛ يلزم تطبيقه قبل تحديث العمال.','drizzle/0102_learning_provider_attempt.sql'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' إعادة حفظ الرد نفسه بعد فقد إقرار commit تتحقق من البصمة ولا تعيد جدولة المهمة أو تغيير حجز عامل الاستعادة؛ لا كتابة على ملكية بديلة.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B043:[entries.B043[0]+' إعادة الحفظ تعيد فحص المصدر وصحة الرد المحفوظ، وتتعرف على نتيجة سبق إسقاطها دون تكرار الأدلة أو المقترحات.','server/ai/learning-analysis-jobs.ts'],
+ B050:[entries.B050[0]+' إعادة الحفظ المحلي محدودة بثلاث محاولات وتسعة رموز أعطال SQL/اتصال مؤقتة، بانتظار 100 ثم 300 مللي ثانية خارج القفل. لا إعادة HTTP أو تساهل مع تضارب الرد والهوية.','server/ai/learning-response-handoff-pentest.test.ts'],
+ B064:[entries.B064[0]+' اختبار مهلة قفل MySQL فعلية، وفقد إقرار الحفظ وتغير المصدر والمالك وتنافس عامل الاستعادة؛ بقاء الرد في ذاكرة العملية شرط لإعادة الحفظ.','docs/SARI_SALES_BRAIN_RESPONSE_SAVE_RETRY_2026-09-24.md'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

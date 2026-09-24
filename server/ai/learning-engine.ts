@@ -13,6 +13,7 @@
 
 import { callGPT4, type ChatMessage } from './openai';
 import { resumeLearningAnalysis, claimLearningAnalysis, dispatchLearningAnalysis, bindLearningProviderAttempt, storeLearningResponse, recordLearningProviderFailure } from './learning-analysis-jobs';
+import { saveLearningProviderResponse } from './learning-response-handoff';
 import { snapshotLearningSignals, sanitizeLearningText } from './learning-analysis-contract';
 import {
   captureSignal,
@@ -343,7 +344,7 @@ ${formatSignalsForPrompt(signalGroups)}
             lifecycle: {
               beforeDispatch: attempt => bindLearningProviderAttempt(job.claim, attempt),
               afterResponse: async (response, attempt) => {
-                saved.analysis = await storeLearningResponse(job.claim, response, attempt);
+                saved.analysis = await saveLearningProviderResponse(job.claim, response, attempt);
               },
             },
           });

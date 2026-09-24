@@ -138,13 +138,24 @@ export async function bindLearningProviderAttempt(claim: LearningAnalysisClaim, 
 }
 export async function storeLearningResponse(claim: LearningAnalysisClaim, response: string, attempt?: AiBudgetAttempt): Promise<LearningAnalysis | null> {
   return transaction(claim.merchantId,async(c,row)=>{
-    if (!matches(row,claim) || !['dispatched','uncertain'].includes(row!.state)) return null;
+    if (!matches(row,claim) || !['dispatched','uncertain','responded','applied'].includes(row!.state)) return null;
     // Pre-migration jobs may have no link. A linked job may only accept its bound attempt.
     if (attempt || row!.ai_reservation_key) {
       if (!attempt || row!.ai_reservation_key !== attempt.reservationKey) throw Error('Learning response attempt mismatch');
       await assertAttempt(c,claim,attempt,false);
     }
     const ids = decode(row!.source_ids) as number[];
+    if (row!.state === 'responded' || row!.state === 'applied') {
+      // A lost COMMIT acknowledgement must not overwrite or schedule the same result again.
+      // Check the supplied payload even after projection has cleared response_json.
+      let analysis: LearningAnalysis;
+      try { analysis = parseLearningAnalysis(response,ids); }
+      catch { throw Error('Learning response replay mismatch'); }
+      if (learningResponseHash(analysis) !== row!.response_hash) throw Error('Learning response replay mismatch');
+      if (row!.state === 'applied') return analysis;
+      const restored = await recover(c,row!);
+      return restored.status === 'responded' ? restored.analysis : null;
+    }
     if (!await currentSnapshot(c,claim.merchantId,ids,claim.digest)) { await terminal(c,claim.merchantId,'stale','source_changed'); return null; }
     let analysis: LearningAnalysis;
     try { analysis = parseLearningAnalysis(response,ids); }

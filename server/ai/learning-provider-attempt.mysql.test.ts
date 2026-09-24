@@ -10,6 +10,7 @@ import { getLearningAnalysisStatus, runLearningRecoveryBatch } from './learning-
 import { clearZahyPiRuntimeConfigCache } from './zahypi-client';
 import { resolveSariTaskType } from './task-catalog';
 import { triggerPatternAnalysis } from './learning-engine';
+import { saveLearningProviderResponse } from './learning-response-handoff';
 
 const config=vi.hoisted(()=>({provider:'openai',model:'',notify:vi.fn()}));
 vi.mock('../db_ai_settings',()=>({
@@ -95,6 +96,20 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     const result=await runLearningRecoveryBatch();expect(result.applied).toBe(1);
     expect((await job()).state).toBe('applied');expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(1);
   }
+  async function responseFault(mode:'before'|'after',failures:number,code='ECONNRESET',afterCommit?:()=>Promise<void>){
+    const stats={saves:0,failed:0,released:0},pool=(await getPool())!,get=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();let saving=false;return new Proxy(c,{get(t,k){
+      if(k==='execute')return async(...args:any[])=>{if(String(args[0]).includes("SET state='responded'")){saving=true;stats.saves++;}return(t.execute as any)(...args);};
+      if(k==='commit')return async()=>{
+        const fail=saving&&stats.failed<failures;
+        if(fail&&mode==='before'){stats.failed++;throw Object.assign(Error('private SQL fixture'),{code});}
+        await t.commit();
+        if(fail&&mode==='after'){stats.failed++;await afterCommit?.();throw Object.assign(Error('private SQL fixture'),{code});}
+      };
+      if(k==='release')return()=>{if(saving)stats.released++;t.release();};
+      const value=(t as any)[k];return typeof value==='function'?value.bind(t):value;
+    }})as any;});return stats;
+  }
   for(const provider of ['openai','zahypi'])describe(provider,()=>{
     it('links the exact request before HTTP and projects the saved result',async()=>{
       config.provider=provider;const fetch=transport();expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('applied');
@@ -120,6 +135,24 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
       config.provider=provider;const fetch=transport('{}');await triggerPatternAnalysis(owner.merchantId);
       expect((await job()).state).toBe('invalid');expect((await ledger())[0].state).toBe('settled');
       expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);expect(fetch).toHaveBeenCalledTimes(1);
+    });
+    it.each([1,2])('saves the returned response after %i transient precommit failures without another provider call',async failures=>{
+      config.provider=provider;const fetch=transport(),stats=await responseFault('before',failures,'ER_LOCK_DEADLOCK');
+      expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('applied');
+      expect(stats).toEqual({saves:failures+1,failed:failures,released:failures+1});expect(fetch).toHaveBeenCalledTimes(1);
+      expect(await ledger()).toHaveLength(1);expect((await ledger())[0].state).toBe('settled');
+      expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(1);expect(config.notify).toHaveBeenCalledTimes(1);
+    });
+    it('acknowledges an already-committed response after a transient lost acknowledgement',async()=>{
+      config.provider=provider;const fetch=transport(),stats=await responseFault('after',1);
+      expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('applied');
+      expect(stats.saves).toBe(1);expect(fetch).toHaveBeenCalledTimes(1);expect((await ledger())[0].state).toBe('settled');expect(config.notify).toHaveBeenCalledTimes(1);
+    });
+    it('stops after three failed local saves and does not authorize another model request',async()=>{
+      config.provider=provider;const fetch=transport(),stats=await responseFault('before',100,'ETIMEDOUT');
+      expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('failed');expect(stats.saves).toBe(3);expect(stats.released).toBe(3);
+      expect((await job()).state).toBe('uncertain');expect((await job()).response_json).toBeNull();expect((await ledger())[0].state).toBe('unknown');
+      expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('blocked');expect(fetch).toHaveBeenCalledTimes(1);
     });
   });
   it.each(['scopeKey','requestId','model','provider','taskType','reservationKey'] as const)('rejects forged attempt %s before binding',async field=>{
@@ -189,5 +222,81 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     await recordLearningProviderFailure(c,Error('synthetic timeout'));
     expect(save).not.toHaveBeenCalled();expect((await job()).state).toBe('uncertain');expect((await ledger())[0].state).toBe('unknown');
     expect((await resumeLearningAnalysis(owner.merchantId)).status).toBe('blocked');
+  });
+  it.each(['responded','applied'])('acknowledges an identical normalized response in %s without changing job metadata',async state=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);const result=await storeLearningResponse(c,response(),a);
+    if(state==='applied')await recover();
+    const before=await job();
+    expect(await saveLearningProviderResponse(c,'```json\n'+JSON.stringify(JSON.parse(response()),null,2)+'\n```',a)).toEqual(result);
+    expect(await job()).toEqual(before);
+  });
+  it.each(['responded','applied'])('rejects a different result in %s and preserves the accepted response',async state=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await storeLearningResponse(c,response(),a);if(state==='applied')await recover();
+    const before=await job(),changed=JSON.parse(response());changed.updates[0].insight='A different result';
+    await expect(saveLearningProviderResponse(c,JSON.stringify(changed),a)).rejects.toThrow('storage not confirmed');expect(await job()).toEqual(before);
+    await expect(saveLearningProviderResponse(c,'invalid private payload',a)).rejects.toThrow('storage not confirmed');expect(await job()).toEqual(before);
+  });
+  it.each(['requestId','scopeKey','model','reservationKey'])('does not bypass attempt %s validation on a saved response',async field=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await storeLearningResponse(c,response(),a);const before=await job();
+    await expect(saveLearningProviderResponse(c,response(),{...a,[field]:field==='reservationKey'?'b'.repeat(64):'forged'})).rejects.toThrow('storage not confirmed');expect(await job()).toEqual(before);
+  });
+  it('does not turn a stale owner into an acknowledgement of a replacement job',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await storeLearningResponse(c,response(),a);
+    await query('UPDATE ai_learning_analysis_jobs SET claim_token=? WHERE merchant_id=?',[randomUUID(),owner.merchantId]);const before=await job();
+    expect(await saveLearningProviderResponse(c,response(),a)).toBeNull();expect(await job()).toEqual(before);
+  });
+  it('invalidates source changes between a committed save and its retry',async()=>{
+    const fetch=transport();await responseFault('after',1,'ECONNRESET',async()=>{
+      await query('UPDATE sari_learning_signals SET customer_message=? WHERE merchant_id=?',['Updated source',owner.merchantId]);
+    });
+    expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('failed');expect((await job()).state).toBe('stale');
+    expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);expect(fetch).toHaveBeenCalledTimes(1);expect((await ledger())[0].state).toBe('settled');
+  });
+  it('does not overwrite a new claim installed during the retry wait',async()=>{
+    const fetch=transport(),token=randomUUID();await responseFault('after',1,'ECONNRESET',async()=>{
+      await query('UPDATE ai_learning_analysis_jobs SET claim_token=? WHERE merchant_id=?',[token,owner.merchantId]);
+    });
+    expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('failed');expect((await job()).claim_token).toBe(token);
+    expect((await job()).state).toBe('responded');expect(fetch).toHaveBeenCalledTimes(1);expect(config.notify).not.toHaveBeenCalled();
+  });
+  it('does not repeat projection or notification when the recovery worker wins before the retry',async()=>{
+    const fetch=transport();await responseFault('after',1,'ECONNRESET',recover);
+    expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('not_applied');
+    expect(fetch).toHaveBeenCalledTimes(1);expect((await job()).state).toBe('applied');expect((await ledger())[0].state).toBe('settled');
+    expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(1);expect(config.notify).not.toHaveBeenCalled();
+  });
+  it('rejects a corrupted saved payload instead of acknowledging it by its stored hash alone',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await storeLearningResponse(c,response(),a);
+    await query('UPDATE ai_learning_analysis_jobs SET response_json=? WHERE merchant_id=?',['{}',owner.merchantId]);
+    expect(await saveLearningProviderResponse(c,response(),a)).toBeNull();expect((await job()).state).toBe('invalid');
+  });
+  it('keeps an active recovery lease and schedule unchanged on duplicate acknowledgement',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await storeLearningResponse(c,response(),a);
+    await query(`UPDATE ai_learning_analysis_jobs SET recovery_token=?,recovery_lease_until=TIMESTAMPADD(MINUTE,3,UTC_TIMESTAMP(3)),
+      recovery_next_at=TIMESTAMPADD(MINUTE,3,UTC_TIMESTAMP(3)),recovery_attempts=2,recovery_last_error='projection_unavailable' WHERE merchant_id=?`,[randomUUID(),owner.merchantId]);
+    const before=await job();expect(await saveLearningProviderResponse(c,response(),a)).not.toBeNull();expect(await job()).toEqual(before);
+  });
+  it('allows concurrent identical saves without changing a previously scheduled response',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);const results=await Promise.all(Array.from({length:5},()=>saveLearningProviderResponse(c,response(),a)));
+    expect(results.every(r=>r!==null)).toBe(true);expect((await job()).state).toBe('responded');
+    expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);await recover();
+  });
+  it('recovers from a real MySQL lock wait timeout after the competing transaction releases',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);
+    const pool=(await getPool())!,get=pool.getConnection.bind(pool),blocker=await get();let held=true,observed=0;
+    await blocker.beginTransaction();await blocker.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[owner.merchantId]);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const connection=await get();return new Proxy(connection,{get(t,k){
+      if(k==='execute')return async(...args:any[])=>{
+        if(!String(args[0]).includes('SELECT id FROM merchants WHERE id=? FOR UPDATE'))return(t.execute as any)(...args);
+        const [[previous]]=await t.query<any[]>('SELECT @@SESSION.innodb_lock_wait_timeout AS timeout');
+        await t.query('SET SESSION innodb_lock_wait_timeout=1');
+        try{return await(t.execute as any)(...args);}
+        catch(error){if((error as any).code==='ER_LOCK_WAIT_TIMEOUT'){observed++;await blocker.rollback();held=false;}throw error;}
+        finally{await t.query('SET SESSION innodb_lock_wait_timeout=?',[previous.timeout]);}
+      };
+      const value=(t as any)[k];return typeof value==='function'?value.bind(t):value;
+    }})as any;});
+    try{expect(await saveLearningProviderResponse(c,response(),a)).not.toBeNull();expect(observed).toBe(1);expect((await job()).state).toBe('responded');}
+    finally{if(held)await blocker.rollback();blocker.release();}
   });
 });
