@@ -19,6 +19,8 @@ import { renderCentralHead } from "../../../shared/central/seo";
 import { resolveSupportLeadContext } from "../../../shared/support-lead";
 import { icon } from "../../../shared/central/icons";
 import { safeCheckoutReturn, wireTransactions } from "./transactions";
+import { wireSignupFields } from './signup-fields';
+import { readSignupFieldErrors } from '@shared/signup-validation';
 
 export function bootstrapCentral() {
   const lang = centralLanguage(location.search),
@@ -51,7 +53,7 @@ export function bootstrapCentral() {
     if (!document.querySelector(`link[href^="/central/${file}.css"]`)) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = `/central/${file}.css?v=${file === "identity" ? "20260924-2" : "20260923-2"}`;
+      link.href = `/central/${file}.css?v=${file === "identity" ? "20260924-3" : "20260923-2"}`;
       document.head.append(link);
     }
   const $ = <T extends Element = HTMLElement>(s: string) =>
@@ -347,23 +349,9 @@ export function bootstrapCentral() {
     first?.focus();
   };
   $("[data-signup-next]")?.addEventListener("click", () => {
-    if (auth?.reportValidity()) {
-      if (
-        !input("name")!.value.trim() ||
-        !input("businessName")!.value.trim()
-      ) {
-        message(
-          localizedText(
-            "اكتب الاسم واسم النشاط للمتابعة.",
-            "Enter your name and business name to continue."
-          ),
-          true
-        );
-        return;
-      }
-      signupStep(2);
-    }
+    if (signupFields?.validate(1)) signupStep(2);
   });
+  const signupFields = auth?.dataset.action === 'signup' ? wireSignupFields(auth, lang, signupStep) : null;
   $("[data-signup-back]")?.addEventListener("click", () => signupStep(1));
   const busy = (form: HTMLFormElement, on: boolean) => {
     form.dataset.busy = String(on);
@@ -371,6 +359,11 @@ export function bootstrapCentral() {
       .querySelectorAll<HTMLButtonElement>("button")
       .forEach(b => (b.disabled = on));
     form.setAttribute("aria-busy", String(on));
+    if (form.dataset.action === 'signup') {
+      form.querySelectorAll<HTMLInputElement>('input').forEach(control => {
+        control.disabled = on || !!control.closest<HTMLElement>('[data-signup-step]')?.hidden;
+      });
+    }
   };
   auth?.addEventListener("submit", async ev => {
     ev.preventDefault();
@@ -385,7 +378,8 @@ export function bootstrapCentral() {
     }
     const value = (name: string) => input(name)?.value || "";
     const password = value(action === "reset" ? "newPassword" : "password");
-    if (action === "signup" || action === "reset") {
+    if (action === 'signup' && !signupFields!.validate()) return;
+    if (action === "reset") {
       if (
         password.length < 8 ||
         password.length > 128 ||
@@ -514,7 +508,12 @@ export function bootstrapCentral() {
         auth.innerHTML = `<div class="inline-notice success" role="status"><p>${localizedText("تم تغيير كلمة المرور. سجّل دخولك بكلمتك الجديدة.", "Your password has been changed. Sign in with your new password.")}</p><a class="button green" href="${href("/login")}">${localizedText("تسجيل الدخول", "Sign in")}</a></div>`;
       }
     } catch (err) {
-      message(failure(err), true);
+      const fields = action === 'signup' && err instanceof TRPCClientError
+        ? readSignupFieldErrors(err.data?.signupFieldErrors) : {};
+      if (signupFields && Object.keys(fields).length) {
+        busy(auth, false);
+        signupFields.applyErrors(fields);
+      } else message(failure(err), true);
     } finally {
       busy(auth, false);
     }

@@ -14,6 +14,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { readSignupFieldErrors, signupErrorText, signupFields, validateSignup, type SignupField, type SignupFieldErrors } from '@shared/signup-validation';
 
 type SignupErrorField = 'password' | 'confirmPassword' | 'phone' | 'legal' | 'form';
 
@@ -23,7 +24,7 @@ type SignupError = {
 };
 
 export default function SignUp() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   // Read query params for prefill (from SignupPromptDialog) and Byaan integration
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,6 +43,7 @@ export default function SignUp() {
     phone: prefillPhone,
   });
   const [error, setError] = useState<SignupError | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
   const errorRef = useRef<HTMLDivElement>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -53,6 +55,22 @@ export default function SignUp() {
     setError({ field, message });
     window.requestAnimationFrame(() => errorRef.current?.focus());
   };
+  const showFieldErrors = (errors: SignupFieldErrors) => {
+    setError(null);
+    setFieldErrors(errors);
+    const first = signupFields.find(field => errors[field]);
+    if (first) window.requestAnimationFrame(() => document.getElementById(first)?.focus());
+  };
+  const clearField = (field: SignupField) => setFieldErrors(previous => {
+    const next = { ...previous };
+    delete next[field];
+    return next;
+  });
+  const fieldError = (field: SignupField) => fieldErrors[field] ? (
+    <p id={`${field}-error`} className="text-sm text-destructive" role="status">
+      {signupErrorText(fieldErrors[field]!, i18n.language)}
+    </p>
+  ) : null;
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data: any) => {
@@ -70,6 +88,11 @@ export default function SignUp() {
       }
     },
     onError: (mutationError: any) => {
+      const fields = readSignupFieldErrors(mutationError?.data?.signupFieldErrors);
+      if (Object.keys(fields).length) {
+        showFieldErrors(fields);
+        return;
+      }
       showError(
         'form',
         mutationError?.data?.code === 'TOO_MANY_REQUESTS'
@@ -81,38 +104,12 @@ export default function SignUp() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (signupMutation.isPending) return;
     setError(null);
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      showError('confirmPassword', t('authUx.signup.passwordMismatch'));
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      showError('password', t('authUx.signup.passwordMinimumError'));
-      return;
-    }
-
-    if (!/[A-Z]/.test(formData.password)) {
-      showError('password', t('authUx.signup.passwordUppercaseError'));
-      return;
-    }
-
-    if (!/[0-9]/.test(formData.password)) {
-      showError('password', t('authUx.signup.passwordNumberError'));
-      return;
-    }
-
-    if (!formData.phone) {
-      showError('phone', t('authUx.signup.phoneRequiredError'));
-      return;
-    }
-
-    if (!acceptedTerms || !acceptedPrivacy) {
-      showError('legal', t('authUx.signup.legalRequiredError'));
-      return;
-    }
+    const errors = validateSignup({ ...formData, acceptedTerms, acceptedPrivacy, marketingConsent });
+    showFieldErrors(errors);
+    if (Object.keys(errors).length) return;
 
     signupMutation.mutate({
       name: formData.name,
@@ -131,7 +128,8 @@ export default function SignUp() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    if (error?.field === e.target.name) setError(null);
+    clearField(e.target.name as SignupField);
+    if (e.target.name === 'password') clearField('confirmPassword');
   };
 
   const passwordRequirements = [
@@ -157,7 +155,7 @@ export default function SignUp() {
               {t('authUx.signup.requiredFieldsHint')}
             </p>
           </CardHeader>
-          <form onSubmit={handleSubmit} aria-describedby="signup-required-hint">
+          <form noValidate onSubmit={handleSubmit} aria-describedby="signup-required-hint">
             <CardContent className="space-y-4">
               {error && (
                 <div ref={errorRef} id="signup-error" tabIndex={-1} className="focus:outline-none">
@@ -182,6 +180,8 @@ export default function SignUp() {
                   <Input
                     id="name"
                     name="name"
+                    aria-invalid={!!fieldErrors.name}
+                    aria-describedby={fieldErrors.name ? 'name-error' : undefined}
                     type="text"
                     placeholder={t('authUx.signup.namePlaceholder')}
                     value={formData.name}
@@ -193,6 +193,7 @@ export default function SignUp() {
                     disabled={signupMutation.isPending}
                   />
                 </div>
+                {fieldError('name')}
               </div>
 
               <div className="space-y-2">
@@ -202,6 +203,8 @@ export default function SignUp() {
                   <Input
                     id="email"
                     name="email"
+                    aria-invalid={!!fieldErrors.email}
+                    aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                     type="email"
                     placeholder={t('authUx.signup.emailPlaceholder')}
                     value={formData.email}
@@ -213,6 +216,7 @@ export default function SignUp() {
                     disabled={signupMutation.isPending}
                   />
                 </div>
+                {fieldError('email')}
               </div>
 
               <div className="space-y-2">
@@ -222,6 +226,8 @@ export default function SignUp() {
                   <Input
                     id="businessName"
                     name="businessName"
+                    aria-invalid={!!fieldErrors.businessName}
+                    aria-describedby={fieldErrors.businessName ? 'businessName-error' : undefined}
                     type="text"
                     placeholder={t('authUx.signup.businessNamePlaceholder')}
                     value={formData.businessName}
@@ -233,6 +239,7 @@ export default function SignUp() {
                     disabled={signupMutation.isPending}
                   />
                 </div>
+                {fieldError('businessName')}
               </div>
 
               <div className="space-y-2">
@@ -243,15 +250,16 @@ export default function SignUp() {
                   value={formData.phone}
                   onChange={(val) => {
                     setFormData(prev => ({ ...prev, phone: val }));
-                    if (error?.field === 'phone') setError(null);
+                    clearField('phone');
                   }}
                   autoComplete="tel-national"
-                  ariaDescribedBy={error?.field === 'phone' ? 'phone-hint signup-error' : 'phone-hint'}
-                  ariaInvalid={error?.field === 'phone'}
-                  error={error?.field === 'phone'}
+                  ariaDescribedBy={fieldErrors.phone ? 'phone-hint phone-error' : 'phone-hint'}
+                  ariaInvalid={!!fieldErrors.phone}
+                  error={!!fieldErrors.phone}
                   required
                   disabled={signupMutation.isPending}
                 />
+                {fieldError('phone')}
                 <p id="phone-hint" className="text-xs text-muted-foreground">
                   {t('authUx.signup.phoneHint')}
                 </p>
@@ -274,9 +282,9 @@ export default function SignUp() {
                     autoComplete="new-password"
                     className="ps-10 pe-10"
                     disabled={signupMutation.isPending}
-                    aria-invalid={error?.field === 'password'}
-                    aria-describedby={error?.field === 'password'
-                      ? 'password-requirements signup-error'
+                    aria-invalid={!!fieldErrors.password}
+                    aria-describedby={fieldErrors.password
+                      ? 'password-requirements password-error'
                       : 'password-requirements'}
                   />
                   <button
@@ -294,6 +302,7 @@ export default function SignUp() {
                       : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
+                {fieldError('password')}
                 <ul
                   id="password-requirements"
                   className="text-xs space-y-1 mt-1"
@@ -331,8 +340,8 @@ export default function SignUp() {
                     autoComplete="new-password"
                     className="ps-10 pe-10"
                     disabled={signupMutation.isPending}
-                    aria-invalid={error?.field === 'confirmPassword'}
-                    aria-describedby={error?.field === 'confirmPassword' ? 'signup-error' : undefined}
+                    aria-invalid={!!fieldErrors.confirmPassword}
+                    aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
                   />
                   <button
                     type="button"
@@ -349,11 +358,11 @@ export default function SignUp() {
                       : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
+                {fieldError('confirmPassword')}
               </div>
 
               <fieldset
                 className="space-y-3 rounded-lg border p-4 text-sm"
-                aria-describedby={error?.field === 'legal' ? 'signup-error' : undefined}
               >
                 <legend className="px-1 text-sm font-medium">
                   {t('authUx.signup.legalGroupLabel')}
@@ -364,10 +373,12 @@ export default function SignUp() {
                     checked={acceptedTerms}
                     onCheckedChange={(value) => {
                       setAcceptedTerms(value === true);
-                      if (error?.field === 'legal') setError(null);
+                      clearField('acceptedTerms');
                     }}
                     aria-required="true"
-                    aria-invalid={error?.field === 'legal'}
+                    aria-invalid={!!fieldErrors.acceptedTerms}
+                    aria-describedby={fieldErrors.acceptedTerms ? 'acceptedTerms-error' : undefined}
+                    disabled={signupMutation.isPending}
                   />
                   <Label htmlFor="acceptedTerms" className="font-normal leading-5">
                     {t('authUx.signup.termsPrefix')}{' '}
@@ -382,16 +393,19 @@ export default function SignUp() {
                     </Link>
                   </Label>
                 </div>
+                {fieldError('acceptedTerms')}
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id="acceptedPrivacy"
                     checked={acceptedPrivacy}
                     onCheckedChange={(value) => {
                       setAcceptedPrivacy(value === true);
-                      if (error?.field === 'legal') setError(null);
+                      clearField('acceptedPrivacy');
                     }}
                     aria-required="true"
-                    aria-invalid={error?.field === 'legal'}
+                    aria-invalid={!!fieldErrors.acceptedPrivacy}
+                    aria-describedby={fieldErrors.acceptedPrivacy ? 'acceptedPrivacy-error' : undefined}
+                    disabled={signupMutation.isPending}
                   />
                   <Label htmlFor="acceptedPrivacy" className="font-normal leading-5">
                     {t('authUx.signup.privacyPrefix')}{' '}
@@ -406,6 +420,7 @@ export default function SignUp() {
                     </Link>
                   </Label>
                 </div>
+                {fieldError('acceptedPrivacy')}
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id="marketingConsent"

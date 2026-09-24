@@ -11,6 +11,8 @@ import { getPool } from '../db';
 import { encryptSecret, isEncryptedSecret } from '../security/secrets';
 import { privacyHash } from './privacy-hash';
 import { assertWhatsAppPrimarySchemaReady } from '../channels/whatsapp/schema-readiness';
+import { normalizeSignupPhone, type SignupFieldErrors } from '@shared/signup-validation';
+import { SignupConflictError } from './signup-errors';
 
 type ConsentType = 'terms' | 'privacy' | 'marketing';
 export type AdminAccountDeletionReason =
@@ -221,14 +223,44 @@ export async function registerMerchantAccount(input: {
   const merchantStatus = input.merchantStatus || 'pending';
   const platformType = input.platformType || null;
   const integrationSource = (input.integrationSource || 'none').trim().slice(0, 20);
+  const signupPhone = normalizeSignupPhone(input.phone);
+  // Signup requests for the same normalized number share a connection-scoped
+  // lock, including across workers. Provisioning keeps its existing contract.
+  const phoneLock = `signup-phone:${crypto.createHash('sha256').update(signupPhone).digest('hex').slice(0, 48)}`;
+  let phoneLockHeld = false;
 
   try {
+    if (registrationSource === 'signup') {
+      const [locks] = await connection.execute<RowDataPacket[]>('SELECT GET_LOCK(?, 10) AS acquired', [phoneLock]);
+      if (Number(locks[0]?.acquired) !== 1) throw new Error('SIGNUP_BUSY');
+      phoneLockHeld = true;
+    }
     await connection.beginTransaction();
     const [existing] = await connection.execute<RowDataPacket[]>(
-      'SELECT id FROM users WHERE email = ? LIMIT 1 FOR UPDATE',
+      // The unique email index arbitrates signup races; avoid gap locks for
+      // new emails while a separate lock already protects the phone check.
+      registrationSource === 'signup'
+        ? 'SELECT id FROM users WHERE email = ? LIMIT 1'
+        : 'SELECT id FROM users WHERE email = ? LIMIT 1 FOR UPDATE',
       [email],
     );
-    if (existing[0]) throw new Error('EMAIL_ALREADY_REGISTERED');
+    if (registrationSource === 'signup') {
+      const errors: SignupFieldErrors = {};
+      if (existing[0]) errors.email = 'emailUsed';
+      // Match legacy formatted numbers as well as new canonical values.
+      const [phones] = await connection.execute<RowDataPacket[]>(
+        `SELECT id FROM (
+           SELECT id, REGEXP_REPLACE(phone, '[+ ()-]', '') AS digits FROM merchants
+         ) AS numbers
+         WHERE CASE
+           WHEN digits REGEXP '^05[0-9]{8}$' THEN CONCAT('966', SUBSTRING(digits, 2))
+           WHEN digits LIKE '00%' THEN SUBSTRING(digits, 3)
+           ELSE digits END = ? LIMIT 1`,
+        [signupPhone],
+      );
+      if (phones[0]) errors.phone = 'phoneUsed';
+      if (Object.keys(errors).length) throw new SignupConflictError(errors);
+    } else if (existing[0]) throw new Error('EMAIL_ALREADY_REGISTERED');
 
     const now = new Date();
     const trialEndsAt = plusDays(now, 7);
@@ -263,7 +295,7 @@ export async function registerMerchantAccount(input: {
       [
         userId,
         input.businessName.trim(),
-        input.phone.trim(),
+        registrationSource === 'signup' ? signupPhone : input.phone.trim(),
         merchantStatus,
         platformType,
         integrationSource,
@@ -351,10 +383,17 @@ export async function registerMerchantAccount(input: {
       if (duplicateKey.includes('merchants_platform_provision_unique')) {
         throw new Error('PROVISION_IDEMPOTENCY_CONFLICT');
       }
+      if (registrationSource === 'signup' && duplicateKey.includes('users_email_unique')) {
+        throw new SignupConflictError({ email: 'emailUsed' });
+      }
       throw new Error('EMAIL_ALREADY_REGISTERED');
     }
     throw error;
   } finally {
+    if (phoneLockHeld) {
+      try { await connection.execute('SELECT RELEASE_LOCK(?)', [phoneLock]); }
+      catch { connection.destroy(); }
+    }
     connection.release();
   }
 }

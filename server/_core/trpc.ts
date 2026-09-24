@@ -1,6 +1,7 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import { signupErrorDetails } from '../accounts/signup-errors';
 import type { TrpcContext } from "./context";
 import type { Permission, MerchantRole } from "./permissions";
 import { resolveMerchantAccess } from '../accounts/merchant-access';
@@ -9,6 +10,9 @@ import { parseMerchantSelection, withMerchantRequest } from '../accounts/merchan
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error, path }) {
+    return { ...shape, data: { ...shape.data, signupFieldErrors: signupErrorDetails(path, error.code, error.cause) } };
+  },
 });
 
 export const router = t.router;

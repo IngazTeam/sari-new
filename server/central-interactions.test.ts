@@ -76,7 +76,7 @@ describe("central production interactions", () => {
     d.querySelector("form")!.dispatchEvent(
       new dom.window.Event("submit", { bubbles: true, cancelable: true })
     );
-    expect(d.querySelector("#form-feedback")!.textContent).toContain(
+    expect(d.querySelector("#confirmPassword-error")!.textContent).toContain(
       "do not match"
     );
     expect(fetchMock).not.toHaveBeenCalled();

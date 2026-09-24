@@ -306,6 +306,8 @@ import {
   toPublicSubscriptionPaymentStatus,
 } from '@shared/subscription-payment-status';
 import { registerMerchantAccount } from './accounts/lifecycle';
+import { SignupConflictError } from './accounts/signup-errors';
+import { signupSchema } from '@shared/signup-validation';
 import {
   consumePasswordResetTokenAndUpdatePassword,
   reservePasswordResetAttempt,
@@ -506,18 +508,7 @@ export const appRouter = router({
 
     // Sign up with email and password
     signup: publicProcedure
-      .input(z.object({
-        name: z.string().trim().min(2).max(120),
-        email: z.string().trim().email().max(320).transform(value => value.toLowerCase()),
-        password: z.string().min(8).max(128)
-          .regex(/[A-Z]/, 'Password must contain an uppercase letter')
-          .regex(/[0-9]/, 'Password must contain a number'),
-        businessName: z.string().trim().min(2).max(255),
-        phone: z.string().trim().min(9).max(20).regex(/^\+?[0-9]+$/, 'Invalid phone number'),
-        acceptedTerms: z.literal(true),
-        acceptedPrivacy: z.literal(true),
-        marketingConsent: z.boolean().default(false),
-      }))
+      .input(signupSchema)
       .mutation(async ({ input, ctx }) => {
         // SECURITY: Rate limit signup attempts (3 per hour per IP)
         const { checkRateLimit } = await import('./_core/rateLimiter');
@@ -547,8 +538,8 @@ export const appRouter = router({
               : null,
           });
         } catch (error) {
-          if (error instanceof Error && error.message === 'EMAIL_ALREADY_REGISTERED') {
-            throw new TRPCError({ code: 'CONFLICT', message: 'تعذر إنشاء الحساب بهذه البيانات' });
+          if (error instanceof SignupConflictError) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تعذر إنشاء الحساب بهذه البيانات', cause: error });
           }
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إنشاء الحساب' });
         }

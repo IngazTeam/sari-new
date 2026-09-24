@@ -83,3 +83,18 @@
 @media (max-width: 350px) {
   .central-site .integration-grid { grid-template-columns: 1fr; }
 }
+
+.central-site #central-auth .signup-field-error {
+  color: #a52725;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: -8px 0 18px;
+  overflow-wrap: anywhere;
+}
+.central-site #central-auth input[aria-invalid="true"] {
+  border-color: #b52c29;
+  outline-color: #b52c29;
+}
+.central-site #central-auth input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgb(181 44 41 / 14%);
+}
