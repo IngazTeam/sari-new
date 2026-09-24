@@ -26,6 +26,8 @@ export async function startInboundWorker() {
     const { startLearningRecoveryWorker } = await import('../ai/learning-analysis-recovery');
     const stopLearningRecovery = await startLearningRecoveryWorker();
     stops.push(stopLearningRecovery);
+    const { startLearningProviderRecoveryWorker } = await import('../ai/learning-provider-recovery');
+    stops.push(await startLearningProviderRecoveryWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

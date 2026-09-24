@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { resolveSariTaskType, type SariTaskContract } from "./task-catalog";
 import { assertSariTaskPayload } from "./task-validation";
+import { parseProviderJobReceipt, providerRouteFingerprint, type AiProviderJobReceipt } from './provider-job-receipt';
 
 export type ZahyPiMessage = {
   role: "system" | "user" | "assistant";
@@ -789,12 +790,19 @@ export async function requestZahyPiJobCompletion(
   }
 
   return withAiBudget({ merchantId: resolvedContext.merchantId, provider: 'zahypi', model: runtimeConfig.model,
-    taskType: contract.taskType, requestId: traceId, ...promptBudgetShape(requestPayload), maxOutputTokens: Number(maxTokens) }, async () => {
+    taskType: contract.taskType, requestId: traceId, ...promptBudgetShape(requestPayload), maxOutputTokens: Number(maxTokens) }, async (attempt) => {
   try {
     let job = await requestJson(`${baseUrl}/jobs`, { method: "POST", body: requestBody });
     const jobId = job.job_id;
     if (typeof jobId !== "string" || !UUID_PATTERN.test(jobId)) {
       throw new ZahyPiResponseValidationError("ZahyPi governed job ID is invalid");
+    }
+    if (lifecycle?.afterJobAccepted) {
+      try {
+        await lifecycle.afterJobAccepted(parseProviderJobReceipt({ version: 1, provider: 'zahypi', jobId,
+          traceId, projectId, tenantId, taskType: contract.taskType,
+          configFingerprint: providerRouteFingerprint({ ...runtimeConfig, baseUrl }) }), attempt);
+      } catch { throw new AiBudgetError('budget_unavailable'); }
     }
     while (["queued", "running", "retry_wait"].includes(String(job.status))) {
       if (Date.now() + JOB_POLL_INTERVAL_MS >= deadline) {
@@ -837,6 +845,7 @@ export async function requestZahyPiChat(
     max_tokens: options.maxTokens ?? 1_000,
   }, context, options.timeoutMs, options.maxAttempts, runtimeConfig, options.lifecycle && {
     beforeDispatch: attempt => options.lifecycle!.beforeDispatch(attempt),
+    afterJobAccepted: options.lifecycle.afterJobAccepted,
     afterResponse: async (completion, attempt) => {
       const content = completion.choices[0]?.message.content;
       if (typeof content !== 'string' || !content.trim()) throw new AiBudgetError('invalid_usage');
@@ -853,6 +862,36 @@ export async function requestZahyPiChat(
     model: body.model,
     usage: body.usage,
   };
+}
+
+/** A single read of an already accepted learning job. Never submits, retries or reserves usage. */
+export async function retrieveZahyPiLearningJob(value: AiProviderJobReceipt): Promise<ZahyPiCompletionResponse | null> {
+  const receipt = parseProviderJobReceipt(value);
+  // Bypass the interaction snapshot and cache: the current administrator selection is authoritative.
+  const config = await loadRuntimeConfig(true);
+  if (!config.enabled || config.provider !== 'zahypi') throw Error('Learning provider recovery unavailable');
+  const baseUrl = validateZahyPiBaseUrl(config.baseUrl);
+  if (providerRouteFingerprint({ ...config, baseUrl }) !== receipt.configFingerprint
+    || config.projectId !== receipt.projectId || config.source === 'override'
+    || (config.source === 'connector' && config.taskTypes && !config.taskTypes.includes(receipt.taskType))) {
+    throw Error('Learning provider recovery unavailable');
+  }
+  const key = config.apiKey.trim();
+  if (!key) throw Error('Learning provider recovery unavailable');
+  assertSafeApiKey(key);
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const response = await fetch(`${baseUrl}/jobs/${receipt.jobId}`, { method: 'GET', redirect: 'error', signal: controller.signal,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${key}`, 'X-ZahyPi-Project': receipt.projectId,
+        'X-ZahyPi-Tenant': receipt.tenantId, 'X-Trace-Id': receipt.traceId, 'X-Task-Type': receipt.taskType,
+        'X-Data-Classification': 'red', 'X-External-Processing': 'deny' } });
+    if (!response.ok) { void response.body?.cancel().catch(() => undefined); throw Error('Learning provider recovery unavailable'); }
+    const job = recordValue(await readBoundedJsonResponse(response));
+    if (!job || job.job_id !== receipt.jobId) throw Error('Learning provider recovery unavailable');
+    if (['queued', 'running', 'retry_wait'].includes(String(job.status))) return null;
+    return completionFromGovernedJob(job, receipt);
+  } catch { throw Error('Learning provider recovery unavailable'); }
+  finally { clearTimeout(timer); }
 }
 
 export async function requestZahyPiCompletion(

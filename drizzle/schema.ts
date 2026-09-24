@@ -4252,6 +4252,7 @@ export const appointmentReminders = mysqlTable("appointment_reminders", {
 },t=>[uniqueIndex("uq_appointment_reminder_source").on(t.merchantId,t.sourceMessageId),uniqueIndex("uq_appointment_reminder_terms").on(t.merchantId,t.appointmentReference,t.hoursBefore,t.termsHash),index("idx_appointment_reminder_due").on(t.state,t.nextCheckAt,t.id),check("chk_appointment_reminder_hours",sql`${t.hoursBefore} IN (1,24)`),check("chk_appointment_reminder_window",sql`${t.expiresAt}>${t.dueAt}`)]);
 
 export const learningAnalysisJobs = mysqlTable('ai_learning_analysis_jobs', {
+ providerReceipt:json('provider_receipt'),
  aiReservationKey:char('ai_reservation_key',{length:64}),
  merchantId:int('merchant_id').notNull().primaryKey().references(()=>merchants.id,{onDelete:'cascade'}),
  sourceDigest:char('source_digest',{length:64}).notNull(),sourceIds:json('source_ids').notNull(),claimToken:char('claim_token',{length:36}).notNull(),

@@ -524,6 +524,14 @@ Object.assign(entries, {
  B050:[entries.B050[0]+' إعادة الحفظ المحلي محدودة بثلاث محاولات وتسعة رموز أعطال SQL/اتصال مؤقتة، بانتظار 100 ثم 300 مللي ثانية خارج القفل. لا إعادة HTTP أو تساهل مع تضارب الرد والهوية.','server/ai/learning-response-handoff-pentest.test.ts'],
  B064:[entries.B064[0]+' اختبار مهلة قفل MySQL فعلية، وفقد إقرار الحفظ وتغير المصدر والمالك وتنافس عامل الاستعادة؛ بقاء الرد في ذاكرة العملية شرط لإعادة الحفظ.','docs/SARI_SALES_BRAIN_RESPONSE_SAVE_RETRY_2026-09-24.md'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' حفظ إيصال قبول ZahyPi قبل polling، واسترجاع المهمة الأصلية بعد توقف العامل بواسطة GET فقط؛ حجز SQL مشترك يمنع تضاعف الاسترجاع أو الكتابة بحجز منتهي. لا استرجاع لطلب لم يُحفظ معرّفه.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B048:[entries.B048[0]+' الاسترجاع يقرأ إعداد السوبر أدمن مباشرة ويشترط تفعيل ZahyPi وتطابق بصمة المسار والنموذج وإصدار الموصل؛ تغيير المزوّد يوقف القراءة. لا أسرار داخل إيصال المهمة.','server/ai/provider-job-retrieval-pentest.test.ts'],
+ B050:[entries.B050[0]+' GET واحد بمهلة 20 ثانية وحد استجابة 1MiB دون redirects؛ هوية المهمة والمتجر والتتبع والعقد والمخرجات تُفحص. العامل يؤجل الحالة المعلقة أو الخطأ ولا يعيد POST.','server/ai/learning-provider-recovery.ts'],
+ B051:[entries.B051[0]+' المسار الجديد يستعيد الاستهلاك الموثق من نتيجة ZahyPi ويسوي الحجز الأصلي بعد الحفظ؛ فشل التسوية يبقي المبلغ محجوزًا ويحتاج التسوية المالية القائمة، ولا يضيع النتيجة المحفوظة.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبار الاسترجاع من SQL في عمليات Node مستقلة مع هوية مزورة، تغيير المصدر والمزوّد، توقف العامل وفقد إقرار commit؛ لا قياس جودة نموذج حي.','docs/SARI_SALES_BRAIN_ACCEPTED_JOB_RECOVERY_2026-09-24.md'],
+ B065:[entries.B065[0]+' ترحيل 0103 يضيف إيصال قبول JSON اختياريًا، دون backfill أو تغيير الحالات السابقة. مطلوب قبل تشغيل العمال الجدد.','drizzle/0103_learning_provider_receipt.sql'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

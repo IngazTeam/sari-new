@@ -722,6 +722,13 @@
       "when": 1792281600000,
       "tag": "0102_learning_provider_attempt",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1792368000000,
+      "tag": "0103_learning_provider_receipt",
+      "breakpoints": true
     }
   ]
 }

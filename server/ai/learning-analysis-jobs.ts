@@ -3,13 +3,14 @@ import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { AiBudgetError, type AiBudgetAttempt } from './budget-ledger';
+import { parseProviderJobReceipt, type AiProviderJobReceipt } from './provider-job-receipt';
 import { learningEvidenceIds, parseLearningAnalysis, snapshotLearningSignals,
   type LearningAnalysis, type LearningAnalysisSnapshot } from './learning-analysis-contract';
 
 export type LearningAnalysisClaim = { merchantId: number; token: string; digest: string; recoveryToken?: string };
 type Row = { merchant_id: number; source_digest: string; source_ids: unknown; claim_token: string;
   state: string; lease_valid: number; response_json: unknown; response_hash: string | null; recovery_token: string | null; recovery_valid: number;
-  ai_reservation_key: string | null };
+  ai_reservation_key: string | null; provider_receipt: unknown };
 type ClaimResult = { status: 'claimed'; claim: LearningAnalysisClaim }
   | { status: 'responded'; claim: LearningAnalysisClaim; snapshot: LearningAnalysisSnapshot; analysis: LearningAnalysis }
   | { status: 'blocked' | 'idle' | 'stale' };
@@ -21,7 +22,7 @@ function claimOf(row: Row): LearningAnalysisClaim { return { merchantId: row.mer
 async function transaction<T>(merchantId: number, work: (c: PoolConnection, row?: Row) => Promise<T>): Promise<T> {
   identity(merchantId);
   await assertRuntimeSchema('durable learning analysis', [{ table: 'ai_learning_analysis_jobs',
-    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at','ai_reservation_key'],
+    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at','ai_reservation_key','provider_receipt'],
     uniqueIndexes: [{ name:'PRIMARY',columns:['merchant_id'] }, {name:'uq_learning_ai_reservation',columns:['ai_reservation_key']}] }]);
   const pool = await getPool(); if (!pool) throw Error('Learning job storage unavailable');
   const c = await pool.getConnection();
@@ -94,7 +95,7 @@ export async function claimLearningAnalysis(snapshot: LearningAnalysisSnapshot):
       VALUES (?,?,?,?,'reserved',TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3)))
       ON DUPLICATE KEY UPDATE source_digest=VALUES(source_digest),source_ids=VALUES(source_ids),claim_token=VALUES(claim_token),
       state='reserved',lease_until=VALUES(lease_until),response_json=NULL,response_hash=NULL,failure_code=NULL,generation=NULL,
-      proposal_count=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_attempts=0,recovery_last_error=NULL,recovered_at=NULL,ai_reservation_key=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
+      proposal_count=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_attempts=0,recovery_last_error=NULL,recovered_at=NULL,ai_reservation_key=NULL,provider_receipt=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
     return { status:'claimed', claim:{merchantId:snapshot.merchantId,token,digest:snapshot.digest} };
   });
 }
@@ -139,6 +140,7 @@ export async function bindLearningProviderAttempt(claim: LearningAnalysisClaim, 
 export async function storeLearningResponse(claim: LearningAnalysisClaim, response: string, attempt?: AiBudgetAttempt): Promise<LearningAnalysis | null> {
   return transaction(claim.merchantId,async(c,row)=>{
     if (!matches(row,claim) || !['dispatched','uncertain','responded','applied'].includes(row!.state)) return null;
+    if (claim.recoveryToken && (row!.recovery_token !== claim.recoveryToken || !row!.recovery_valid)) return null;
     // Pre-migration jobs may have no link. A linked job may only accept its bound attempt.
     if (attempt || row!.ai_reservation_key) {
       if (!attempt || row!.ai_reservation_key !== attempt.reservationKey) throw Error('Learning response attempt mismatch');
@@ -163,6 +165,45 @@ export async function storeLearningResponse(claim: LearningAnalysisClaim, respon
     await c.execute(`UPDATE ai_learning_analysis_jobs SET state='responded',response_json=?,response_hash=?,failure_code=NULL,recovery_next_at=TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3))
       WHERE merchant_id=?`,[JSON.stringify(analysis),learningResponseHash(analysis),claim.merchantId]);
     return analysis;
+  });
+}
+function checkReceipt(receipt: AiProviderJobReceipt, attempt: AiBudgetAttempt) {
+  if (attempt.provider !== 'zahypi' || receipt.traceId !== attempt.requestId || receipt.tenantId !== attempt.scopeKey
+    || receipt.taskType !== attempt.taskType) throw Error('Learning provider receipt mismatch');
+}
+/** Persist acceptance before polling. An existing receipt may only acknowledge the same identity. */
+export async function storeLearningProviderReceipt(claim: LearningAnalysisClaim, value: AiProviderJobReceipt, attempt: AiBudgetAttempt) {
+  const receipt = parseProviderJobReceipt(value);
+  checkReceipt(receipt, attempt);
+  await transaction(claim.merchantId, async(c,row) => {
+    if (!matches(row,claim) || !['dispatched','uncertain'].includes(row!.state)
+      || row!.ai_reservation_key !== attempt.reservationKey) throw Error('Learning receipt not authorized');
+    await assertAttempt(c,claim,attempt,false);
+    if (!await currentSnapshot(c,claim.merchantId,decode(row!.source_ids),claim.digest)) throw Error('Learning source changed');
+    if (row!.provider_receipt !== null) {
+      if (JSON.stringify(parseProviderJobReceipt(decode(row!.provider_receipt))) !== JSON.stringify(receipt)) throw Error('Learning receipt changed');
+      return;
+    }
+    await c.execute(`UPDATE ai_learning_analysis_jobs SET provider_receipt=?,recovery_next_at=TIMESTAMPADD(SECOND,180,UTC_TIMESTAMP(3))
+      WHERE merchant_id=?`, [JSON.stringify(receipt),claim.merchantId]);
+  });
+}
+/** Reconstruct authority from SQL after a restart; never trust a caller-supplied receipt or budget identity. */
+export async function loadLearningProviderRecovery(claim: LearningAnalysisClaim) {
+  return transaction(claim.merchantId, async(c,row) => {
+    if (!claim.recoveryToken || !matches(row,claim) || !['dispatched','uncertain'].includes(row!.state)
+      || row!.recovery_token !== claim.recoveryToken || !row!.recovery_valid || !row!.ai_reservation_key || !row!.provider_receipt) return null;
+    if (!await currentSnapshot(c,claim.merchantId,decode(row!.source_ids),claim.digest)) {
+      await terminal(c,claim.merchantId,'stale','source_changed'); return null;
+    }
+    const [reservations] = await c.execute<any[]>(`SELECT request_id,scope_key,provider,model,task_type
+      FROM ai_usage_reservations WHERE reservation_key=?`, [row!.ai_reservation_key]);
+    const r = reservations[0]; if (!r) throw Error('Learning recovery attempt missing');
+    const attempt: AiBudgetAttempt = Object.freeze({ reservationKey:row!.ai_reservation_key,requestId:r.request_id,
+      scopeKey:r.scope_key,provider:r.provider,model:r.model,taskType:r.task_type });
+    await assertAttempt(c,claim,attempt,false);
+    const receipt = parseProviderJobReceipt(decode(row!.provider_receipt)); checkReceipt(receipt,attempt);
+    return { receipt,attempt };
   });
 }
 export async function markLearningDispatchUncertain(claim: LearningAnalysisClaim) {

@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { AiBudgetError, reserveAiBudget, withAiBudget, type AiBudgetAttempt } from './budget-ledger';
 import { bindLearningProviderAttempt, claimLearningAnalysis, dispatchLearningAnalysis, recordLearningProviderFailure,
-  resumeLearningAnalysis, storeLearningResponse } from './learning-analysis-jobs';
+  resumeLearningAnalysis, storeLearningResponse, storeLearningProviderReceipt, loadLearningProviderRecovery } from './learning-analysis-jobs';
+import { claimLearningProviderRecoveries, recoverLearningProviderResult, runLearningProviderRecoveryBatch } from './learning-provider-recovery';
 import { snapshotLearningSignals } from './learning-analysis-contract';
 import { getLearningAnalysisStatus, runLearningRecoveryBatch } from './learning-analysis-recovery';
 import { clearZahyPiRuntimeConfigCache } from './zahypi-client';
@@ -12,10 +14,10 @@ import { resolveSariTaskType } from './task-catalog';
 import { triggerPatternAnalysis } from './learning-engine';
 import { saveLearningProviderResponse } from './learning-response-handoff';
 
-const config=vi.hoisted(()=>({provider:'openai',model:'',notify:vi.fn()}));
+const config=vi.hoisted(()=>({provider:'openai',model:'',notify:vi.fn(),enabled:true}));
 vi.mock('../db_ai_settings',()=>({
   getOpenAiApiKey:async()=> 'synthetic-key', logAiUsage:async()=>{},estimateCost:()=>0,
-  getZahyPiRuntimeConfig:async()=>({enabled:true,provider:config.provider,model:config.model,
+  getZahyPiRuntimeConfig:async()=>({enabled:config.enabled,provider:config.provider,model:config.model,
     apiKey:'synthetic-key',baseUrl:'https://api.zahypi.test/v1',projectId:'sari',source:'database'}),
 }));
 vi.mock('../_core/notificationService',()=>({sendNotification:config.notify}));
@@ -30,7 +32,7 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     supporting_signal_ids:references.slice(0,3),contrary_signal_ids:[]}],knowledge_gaps:[]});
   const request=()=>({merchantId:owner.merchantId,provider:'openai',model:'gpt-4o-mini',taskType:'sari.learning.pattern_analysis',inputTokens:1,maxOutputTokens:1});
   beforeEach(async()=>{
-    config.provider='openai';config.model=`learning-fixture-${randomUUID()}`;config.notify.mockReset();
+    config.provider='openai';config.enabled=true;config.model=`learning-fixture-${randomUUID()}`;config.notify.mockReset();
     clearZahyPiRuntimeConfigCache();vi.stubEnv('ZAHYPI_ALLOWED_ORIGINS','https://api.zahypi.test');
     owner=await createDisposableMerchant('provider-link');ids=[];
     const sub=await query(`INSERT INTO merchant_subscriptions (merchant_id,status,billing_cycle,start_date,end_date,trial_ends_at)
@@ -76,12 +78,13 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
         usage:{prompt_tokens:3,completion_tokens:2,total_tokens:5},structured_output:{...contract.sampleOutput,traceId:id,applicationResponse:content??response(references)}});
     });vi.stubGlobal('fetch',fetchMock);return fetchMock;
   }
-  function fault(mode:'bind before'|'bind after'|'save before'|'save after'|'settle before'|'settle after'){
+  function fault(mode:'bind before'|'bind after'|'save before'|'save after'|'settle before'|'settle after'|'receipt before'|'receipt after'){
     return (async()=>{
       const pool=(await getPool())!,get=pool.getConnection.bind(pool);
       vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();let phase='';return new Proxy(c,{get(t,k){
         if(k==='execute')return async(...args:any[])=>{const sql=String(args[0]);
           if(sql.includes('SET ai_reservation_key='))phase='bind';
+          if(sql.includes('SET provider_receipt='))phase='receipt';
           if(sql.includes("SET state='responded'"))phase='save';
           if(sql.includes("SET state = 'settled'"))phase='settle';
           return (t.execute as any)(...args);
@@ -96,6 +99,111 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     const result=await runLearningRecoveryBatch();expect(result.applied).toBe(1);
     expect((await job()).state).toBe('applied');expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(1);
   }
+  const dueProvider=()=>query('UPDATE ai_learning_analysis_jobs SET recovery_next_at=UTC_TIMESTAMP(3) WHERE merchant_id=?',[owner.merchantId]);
+  it.each(['before','after'] as const)('does not repeat POST or poll when receipt commit fails %s acknowledgement',async when=>{
+    config.provider='zahypi';const fetch=vi.fn(async()=>Response.json({job_id:randomUUID(),status:'queued'}));vi.stubGlobal('fetch',fetch);await fault(`receipt ${when}`);
+    expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('failed');expect(fetch).toHaveBeenCalledOnce();
+    expect((await job()).provider_receipt!==null).toBe(when==='after');expect((await ledger())[0].state).toBe('unknown');
+  });
+  async function accepted(){
+    config.provider='zahypi';let headers:Record<string,string>={};
+    const fetch=vi.fn(async(_url:any,init:any)=>{
+      if(init.method==='POST') {headers=init.headers;return Response.json({job_id:'11111111-1111-4111-8111-111111111111',status:'queued'});}
+      expect((await job()).provider_receipt).not.toBeNull();throw Error('Synthetic worker interruption after acceptance');
+    });vi.stubGlobal('fetch',fetch);
+    expect((await triggerPatternAnalysis(owner.merchantId)).status).toBe('failed');
+    const stored=await job();expect(stored.state).toBe('uncertain');expect(stored.provider_receipt).not.toBeNull();
+    const contract=resolveSariTaskType('sari.learning.pattern_analysis');
+    const completed={job_id:'11111111-1111-4111-8111-111111111111',status:'completed',project_id:'sari',tenant_id:headers['X-ZahyPi-Tenant'],
+      task_type:contract.taskType,trace_id:headers['X-Trace-Id'],run_manifest_id:'22222222-2222-4222-8222-222222222222',route:config.model,
+      usage:{prompt_tokens:3,completion_tokens:2,total_tokens:5},structured_output:{...contract.sampleOutput,traceId:headers['X-Trace-Id'],applicationResponse:response(typeof stored.source_ids==='string'?JSON.parse(stored.source_ids):stored.source_ids)}};
+    fetch.mockImplementation(async(_url:any,init:any)=>{expect(init.method).toBe('GET');return Response.json(completed);});
+    fetch.mockClear();return{fetch,completed};
+  }
+  it('recovers an accepted result from durable receipt, settles the original reservation and projects without notifications',async()=>{
+    const {fetch}=await accepted();expect(await claimLearningProviderRecoveries()).toHaveLength(0);await dueProvider();
+    expect((await runLearningProviderRecoveryBatch()).saved).toBe(1);expect(fetch).toHaveBeenCalledOnce();expect(await ledger()).toHaveLength(1);expect((await ledger())[0].state).toBe('settled');
+    expect((await job()).state).toBe('responded');await recover();expect(config.notify).not.toHaveBeenCalled();expect((await runLearningProviderRecoveryBatch()).claimed).toBe(0);
+  });
+  it('recovers a process death that left dispatch and budget both reserved',async()=>{
+    const {fetch}=await accepted();await query("UPDATE ai_learning_analysis_jobs SET state='dispatched' WHERE merchant_id=?",[owner.merchantId]);
+    await query("UPDATE ai_usage_reservations SET state='reserved' WHERE scope_key=?",[`merchant:${owner.merchantId}`]);await dueProvider();
+    expect((await runLearningProviderRecoveryBatch()).saved).toBe(1);expect(fetch).toHaveBeenCalledOnce();expect((await ledger())[0].state).toBe('settled');
+  });
+  it('reconstructs receipt authority in a fresh Node process after competing processes claim it',async()=>{
+    await accepted();await dueProvider();
+    const script=`import {assertDisposableDatabase} from './server/tests/helpers/disposable-merchant.ts';assertDisposableDatabase();const {claimLearningProviderRecoveries}=await import('./server/ai/learning-provider-recovery.ts');const {loadLearningProviderRecovery}=await import('./server/ai/learning-analysis-jobs.ts');const {closeDb}=await import('./server/db/connection.ts');try{const claims=await claimLearningProviderRecoveries();const recovered=[];for(const claim of claims)recovered.push({claim,authority:await loadLearningProviderRecovery(claim)});console.log('RESULT:'+JSON.stringify(recovered));}finally{await closeDb();}`;
+    const worker=()=>new Promise<any[]>((resolve,reject)=>{const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',script],{env:process.env,windowsHide:true});let out='';child.stdout.on('data',b=>out+=b);child.on('error',reject);child.on('exit',code=>{const line=out.split(/\r?\n/).find(s=>s.startsWith('RESULT:'));if(code!==0||!line)return reject(Error('Independent recovery fixture failed'));resolve(JSON.parse(line.slice(7)));});});
+    const rows=(await Promise.all([worker(),worker(),worker()])).flat();expect(rows).toHaveLength(1);
+    expect(rows[0].authority.attempt.reservationKey).toBe((await job()).ai_reservation_key);expect(rows[0].authority.receipt.tenantId).toBe(`merchant:${owner.merchantId}`);
+    expect(await recoverLearningProviderResult(rows[0].claim)).toBe('saved');
+  },20000);
+  it('allows only one lease among five concurrent workers',async()=>{
+    const {fetch}=await accepted();await dueProvider();const results=await Promise.all(Array.from({length:5},()=>runLearningProviderRecoveryBatch()));
+    expect(results.reduce((n,r)=>n+r.claimed,0)).toBe(1);expect(results.reduce((n,r)=>n+r.saved,0)).toBe(1);expect(fetch).toHaveBeenCalledOnce();
+  });
+  it.each(['queued','http failure','invalid identity','malformed result'])('defers %s and preserves held funds without re-POST',async mode=>{
+    const {fetch,completed}=await accepted();await dueProvider();
+    if(mode==='queued')completed.status='running';if(mode==='invalid identity')completed.tenant_id='merchant:999999';
+    if(mode==='malformed result')completed.structured_output.applicationResponse='invalid';
+    if(mode==='http failure')fetch.mockResolvedValue(new Response('private failure',{status:503}));
+    const result=await runLearningProviderRecoveryBatch();expect(result.saved).toBe(0);expect((await ledger())[0].state).toBe('unknown');expect(fetch).toHaveBeenCalledOnce();
+    expect((await runLearningProviderRecoveryBatch()).claimed).toBe(0);expect(await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);
+  });
+  it.each(['disabled','provider changed','source changed','budget missing','forged tenant','forged trace','replaced claim','expired lease'])('blocks %s before any retrieval',async mode=>{
+    const {fetch}=await accepted();await dueProvider();const [c]=await claimLearningProviderRecoveries();
+    if(mode==='disabled')config.enabled=false;if(mode==='provider changed')config.provider='openai';
+    if(mode==='source changed')await query('UPDATE sari_learning_signals SET customer_message=? WHERE merchant_id=?',['changed',owner.merchantId]);
+    if(mode==='budget missing')await query('UPDATE ai_learning_analysis_jobs SET ai_reservation_key=? WHERE merchant_id=?',['b'.repeat(64),owner.merchantId]);
+    if(mode==='forged tenant'||mode==='forged trace')await query('UPDATE ai_learning_analysis_jobs SET provider_receipt=JSON_SET(provider_receipt,?,?) WHERE merchant_id=?',[mode==='forged tenant'?'$.tenantId':'$.traceId',mode==='forged tenant'?'merchant:999999':randomUUID(),owner.merchantId]);
+    if(mode==='replaced claim')await query('UPDATE ai_learning_analysis_jobs SET claim_token=? WHERE merchant_id=?',[randomUUID(),owner.merchantId]);
+    if(mode==='expired lease')await query('UPDATE ai_learning_analysis_jobs SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE merchant_id=?',[owner.merchantId]);
+    expect(await recoverLearningProviderResult(c)).not.toBe('saved');expect(fetch).not.toHaveBeenCalled();expect((await ledger())[0].state).toBe('unknown');
+  });
+  it.each(['claim replaced','lease expired','source changed'])('fences a %s while GET is in flight',async mode=>{
+    const {fetch,completed}=await accepted();await dueProvider();const [c]=await claimLearningProviderRecoveries();const nextAt=(await job()).recovery_next_at;
+    fetch.mockImplementation(async()=>{
+      if(mode==='claim replaced')await query('UPDATE ai_learning_analysis_jobs SET claim_token=? WHERE merchant_id=?',[randomUUID(),owner.merchantId]);
+      if(mode==='lease expired')await query('UPDATE ai_learning_analysis_jobs SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE merchant_id=?',[owner.merchantId]);
+      if(mode==='source changed')await query('UPDATE sari_learning_signals SET customer_message=? WHERE merchant_id=?',['changed',owner.merchantId]);
+      return Response.json(completed);
+    });expect(await recoverLearningProviderResult(c)).toBe('skipped');expect((await ledger())[0].state).toBe('unknown');
+    expect((await job()).response_json).toBeNull();if(mode==='lease expired')expect((await job()).recovery_next_at).toEqual(nextAt);
+  });
+  it('retains the recovered response through a settlement outage',async()=>{
+    const {fetch}=await accepted();await dueProvider();await fault('settle before');expect((await runLearningProviderRecoveryBatch()).saved).toBe(1);
+    expect((await job()).state).toBe('responded');expect((await ledger())[0].state).toBe('unknown');expect(fetch).toHaveBeenCalledOnce();vi.restoreAllMocks();await recover();
+  });
+  it('recovers a lost response-save acknowledgement after GET without reading or generating again',async()=>{
+    const {fetch}=await accepted();await dueProvider();await responseFault('after',1,'ECONNRESET');
+    expect((await runLearningProviderRecoveryBatch()).saved).toBe(1);expect(fetch).toHaveBeenCalledOnce();expect((await ledger())[0].state).toBe('settled');
+    vi.restoreAllMocks();await recover();expect(config.notify).not.toHaveBeenCalled();
+  });
+  it('keeps a new recovery lease intact when an old worker returns late',async()=>{
+    const {fetch,completed}=await accepted();await dueProvider();const [old]=await claimLearningProviderRecoveries();let next:any;
+    fetch.mockImplementation(async()=>{
+      await query('UPDATE ai_learning_analysis_jobs SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)),recovery_next_at=UTC_TIMESTAMP(3) WHERE merchant_id=?',[owner.merchantId]);
+      [next]=await claimLearningProviderRecoveries();return Response.json(completed);
+    });expect(await recoverLearningProviderResult(old)).toBe('skipped');expect((await job()).recovery_token).toBe(next.recoveryToken);
+    fetch.mockResolvedValue(Response.json(completed));expect(await recoverLearningProviderResult(next)).toBe('saved');
+  });
+  it('clears a completed receipt when a different source snapshot obtains a new claim',async()=>{
+    await accepted();await dueProvider();await runLearningProviderRecoveryBatch();await recover();
+    await query('UPDATE sari_learning_signals SET customer_message=?,analyzed=0 WHERE merchant_id=?',['New source snapshot',owner.merchantId]);
+    await claim();expect((await job()).provider_receipt).toBeNull();expect((await job()).ai_reservation_key).toBeNull();
+  });
+  it('acknowledges an identical acceptance and rejects a replacement provider job ID',async()=>{
+    await accepted();await dueProvider();const [c]=await claimLearningProviderRecoveries(),a=await loadLearningProviderRecovery(c);expect(a).not.toBeNull();
+    const before=await job();await storeLearningProviderReceipt(c,a!.receipt,a!.attempt);expect(await job()).toEqual(before);
+    await expect(storeLearningProviderReceipt(c,{...a!.receipt,jobId:randomUUID()},a!.attempt)).rejects.toThrow('receipt changed');expect(await job()).toEqual(before);
+  });
+  it('does not authorize retrieval for unreceipted OpenAI or legacy unknown work',async()=>{
+    const c=await claim(),a=await attempt();await bindLearningProviderAttempt(c,a);await recordLearningProviderFailure(c,Error('unknown'));await dueProvider();
+    const fetch=vi.fn();vi.stubGlobal('fetch',fetch);expect(await claimLearningProviderRecoveries()).toHaveLength(0);expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([0,6,1.5,NaN])('rejects invalid recovery batch size %s',async limit=>{
+    await expect(claimLearningProviderRecoveries(limit)).rejects.toThrow('batch');
+  });
   async function responseFault(mode:'before'|'after',failures:number,code='ECONNRESET',afterCommit?:()=>Promise<void>){
     const stats={saves:0,failed:0,released:0},pool=(await getPool())!,get=pool.getConnection.bind(pool);
     vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();let saving=false;return new Proxy(c,{get(t,k){

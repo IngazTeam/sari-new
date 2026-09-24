@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { getPool } from '../db/connection';
+import type { AiProviderJobReceipt } from './provider-job-receipt';
 
 export class AiBudgetError extends Error {
   constructor(readonly code: 'identity_required' | 'policy_required' | 'price_required' | 'budget_exceeded'
@@ -20,6 +21,7 @@ export type AiBudgetAttempt = Readonly<Pick<Reservation, 'reservationKey' | 'req
 export type AiBudgetLifecycle<T> = {
   beforeDispatch(attempt: AiBudgetAttempt): Promise<void>;
   afterResponse(result: T, attempt: AiBudgetAttempt): Promise<void>;
+  afterJobAccepted?(receipt: AiProviderJobReceipt, attempt: AiBudgetAttempt): Promise<void>;
 };
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -158,7 +160,7 @@ export async function markAiBudgetUnknown(reservation: Reservation): Promise<voi
     [reservation.reservationKey, reservation.scopeKey]);
 }
 
-export async function settleAiBudget(reservation: Reservation, usage: { prompt_tokens: number; completion_tokens: number },
+export async function settleAiBudget(reservation: Pick<Reservation, 'reservationKey' | 'scopeKey'> & Partial<Reservation>, usage: { prompt_tokens: number; completion_tokens: number },
   evidence?: { billedMicroUsd: number; reference: string; actorId: number }): Promise<void> {
   if (evidence && (!Number.isSafeInteger(evidence.actorId) || evidence.actorId <= 0 || evidence.reference.trim().length < 8 || evidence.reference.length > 160)) {
     throw new AiBudgetError('invalid_usage');
@@ -218,7 +220,7 @@ export async function getAiBudgetStatus(identity: Identity) {
     percentUsed: Math.min(100, Math.max(Math.floor(used * 100 / limit), Math.floor(globalUsed * 100 / globalLimit))) };
 }
 
-export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt: { requestId: string }) => Promise<T>, usageOf: (result: T) => { prompt_tokens: number; completion_tokens: number } | undefined,
+export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt: AiBudgetAttempt) => Promise<T>, usageOf: (result: T) => { prompt_tokens: number; completion_tokens: number } | undefined,
   lifecycle?: AiBudgetLifecycle<T>): Promise<T> {
   // Snapshot metadata before awaiting storage; callbacks never share a mutable authority object.
   input = { ...input };
@@ -235,7 +237,7 @@ export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt:
       try { await lifecycle.beforeDispatch(attempt); }
       catch { throw new AiBudgetError('budget_unavailable'); }
     }
-    const result = await operation({ requestId: reservation.requestId });
+    const result = await operation(attempt);
     providerCompleted = true;
     if (lifecycle) {
       try { await lifecycle.afterResponse(result, attempt); }
