@@ -1,0 +1,254 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/Users/ingaz/Herd/sari[39m
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #0
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #0
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 0 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #1
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #1
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 0 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #2
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #2
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 0 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #3
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #3
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 3 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #4
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+stderr | server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #4
+[Learning] Failed to parse analysis response
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #5
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #5
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #5
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #6
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #6
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #6
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #7
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+stderr | server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #7
+[Learning] Pattern analysis failed: analysis.knowledge_gaps.slice is not a function
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #7
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #8
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #8
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #8
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #9
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #9
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #9
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #10
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #10
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.99)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #10
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #11
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+stderr | server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #11
+[Learning] ⚠️ Invalid dimension rejected: set_discount
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mleaves source signals and proposals unchanged for invalid result #11
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2msends only the exact prompt sample to one atomic persistence operation
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2msends only the exact prompt sample to one atomic persistence operation
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2msends only the exact prompt sample to one atomic persistence operation
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mdoes not fall back to partial writes after atomic persistence fails
+[22m[39m[Learning] 🔬 Starting pattern analysis for merchant 3
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mdoes not fall back to partial writes after atomic persistence fails
+[22m[39m[Learning] DNA ⏳ pending review: objection_handling (0.7)
+
+[90mstdout[2m | server/ai/learning-analysis-pentest.test.ts[2m > [22m[2mpattern analysis validates the complete response before mutation[2m > [22m[2mdoes not fall back to partial writes after atomic persistence fails
+[22m[39m[Learning] 🧬 Evolution complete: Generation 11, 1 updates, 12 signals analyzed
+
+ [31m❯[39m server/ai/learning-analysis-pentest.test.ts [2m([22m[2m35 tests[22m[2m | [22m[31m13 failed[39m[2m)[22m[32m 31[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #0[39m[32m 6[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #1[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #2[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #3[39m[32m 1[2mms[22m[39m
+     [32m✓[39m leaves source signals and proposals unchanged for invalid result #4[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #5[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #6[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #7[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #8[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #9[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #10[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m leaves source signals and proposals unchanged for invalid result #11[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m sends only the exact prompt sample to one atomic persistence operation[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not fall back to partial writes after atomic persistence fails[39m[32m 1[2mms[22m[39m
+     [32m✓[39m accepts plain JSON and a single complete fence[32m 3[2mms[22m[39m
+     [32m✓[39m accepts an explicit no-pattern result without inventing a proposal[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence 0[32m 1[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence 1[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence -0.1[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence 2[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence null[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence true[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid model confidence "0.7"[32m 0[2mms[22m[39m
+     [32m✓[39m rejects extra field[32m 0[2mms[22m[39m
+     [32m✓[39m rejects oversized response[32m 0[2mms[22m[39m
+     [32m✓[39m rejects too many updates[32m 0[2mms[22m[39m
+     [32m✓[39m rejects too many gaps[32m 0[2mms[22m[39m
+     [32m✓[39m rejects empty insight[32m 0[2mms[22m[39m
+     [32m✓[39m rejects missing references[32m 0[2mms[22m[39m
+     [32m✓[39m rejects negative reference[32m 0[2mms[22m[39m
+     [32m✓[39m rejects fractional reference[32m 0[2mms[22m[39m
+     [32m✓[39m normalizes raw SQL and typed sources to the same fingerprint[32m 3[2mms[22m[39m
+     [32m✓[39m rejects an invalid source snapshot: merchant[32m 0[2mms[22m[39m
+     [32m✓[39m rejects an invalid source snapshot: duplicate[32m 0[2mms[22m[39m
+     [32m✓[39m rejects an invalid source snapshot: empty[32m 0[2mms[22m[39m
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #0
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #1
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #2
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #3
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #5
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #6
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #8
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #9
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #10
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #11
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      3,
+      Array [
+        1,
+        2,
+        3,
+        4,
+        5,
+      ],
+    ]
+
+
+Number of calls: 1
+
+ ❯ server/ai/learning-analysis-pentest.test.ts:33:74
+     31|     mocks.llm.mockResolvedValue(response);
+     32|     await triggerPatternAnalysis(3);
+     33|     expect(mocks.persist).not.toHaveBeenCalled(); expect(mocks.mark).n…
+       |                                                                          ^
+     34|   });
+     35|   it('sends only the exact prompt sample to one atomic persistence ope…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > leaves source signals and proposals unchanged for invalid result #7
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "autoApplied": false,
+        "confidence": 0.7,
+        "dimension": "objection_handling",
+        "evidenceCount": 1,
+        "generation": 11,
+        "insight": "Explain the relevant benefit before a discount",
+        "merchantId": 3,
+      },
+    ]
+
+
+Number of calls: 1
+
+ ❯ server/ai/learning-analysis-pentest.test.ts:33:119
+     31|     mocks.llm.mockResolvedValue(response);
+     32|     await triggerPatternAnalysis(3);
+     33|     expect(mocks.persist).not.toHaveBeenCalled(); expect(mocks.mark).n…
+       |                                                                                                                       ^
+     34|   });
+     35|   it('sends only the exact prompt sample to one atomic persistence ope…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > sends only the exact prompt sample to one atomic persistence operation
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ server/ai/learning-analysis-pentest.test.ts:37:27
+     35|   it('sends only the exact prompt sample to one atomic persistence ope…
+     36|     await triggerPatternAnalysis(3);
+     37|     expect(mocks.persist).toHaveBeenCalledTimes(1);
+       |                           ^
+     38|     expect(mocks.persist.mock.calls[0][0].signals.map((s: any) => s.id…
+     39|     expect(mocks.mark).not.toHaveBeenCalled(); expect(mocks.upsert).no…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  server/ai/learning-analysis-pentest.test.ts > pattern analysis validates the complete response before mutation > does not fall back to partial writes after atomic persistence fails
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ server/ai/learning-analysis-pentest.test.ts:45:27
+     43|     mocks.persist.mockRejectedValueOnce(Error('commit acknowledgement …
+     44|     await triggerPatternAnalysis(3);
+     45|     expect(mocks.persist).toHaveBeenCalledTimes(1); expect(mocks.mark)…
+       |                           ^
+     46|   });
+     47| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m13 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (35)[39m
+[2m   Start at [22m 20:08:04
+[2m   Duration [22m 388ms[2m (transform 61ms, setup 0ms, import 152ms, tests 31ms, environment 0ms)[22m

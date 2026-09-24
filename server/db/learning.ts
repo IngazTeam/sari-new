@@ -97,6 +97,7 @@ export async function captureSignal(data: {
   sourceKey?: string;
   strict?: boolean;
 }): Promise<void> {
+  if (![data.merchantId, data.conversationId].every(value => Number.isSafeInteger(value) && value > 0)) throw Error('Invalid learning signal identity');
   await ensureLearningTables();
   const pool = await getPool();
   if (!pool) { if (data.strict) throw new Error('Learning storage unavailable'); return; }
@@ -112,12 +113,13 @@ export async function captureSignal(data: {
   } catch { /* continue */ }
 
   try {
-    await pool.execute(
+    const [insert] = await pool.execute<any>(
       `INSERT INTO sari_learning_signals 
        (merchant_id, conversation_id, signal_type, signal_weight,
         bot_message, customer_message, merchant_correction, context_summary, source_key)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? FROM conversations
+       WHERE id = ? AND merchantId = ?
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(sari_learning_signals.id)`,
       [
         data.merchantId,
         data.conversationId,
@@ -128,8 +130,10 @@ export async function captureSignal(data: {
         data.merchantCorrection?.substring(0, 2000) ?? null,
         data.contextSummary?.substring(0, 500) ?? null,
         data.sourceKey?.substring(0, 160) ?? null,
+        data.conversationId, data.merchantId,
       ]
     );
+    if (insert.affectedRows === 0 && !insert.insertId && data.strict) throw Error('Learning conversation ownership mismatch');
   } catch (e: any) {
     console.error('[Learning] captureSignal failed:', e.message);
     if (data.strict) throw e;
@@ -147,9 +151,10 @@ export async function getUnanalyzedSignals(
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
   const [rows] = await pool.execute(
-    `SELECT * FROM sari_learning_signals 
-     WHERE merchant_id = ? AND analyzed = 0
-     ORDER BY created_at DESC LIMIT ${safeLimit}`,
+    `SELECT s.* FROM sari_learning_signals s
+     JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
+     WHERE s.merchant_id = ? AND s.analyzed = 0
+     ORDER BY s.created_at DESC, s.id DESC LIMIT ${safeLimit}`,
     [merchantId]
   );
   return rows as LearningSignal[];
@@ -179,8 +184,9 @@ export async function countUnanalyzedSignals(merchantId: number): Promise<number
   if (!pool) return 0;
 
   const [rows] = await pool.execute(
-    `SELECT COUNT(*) as cnt FROM sari_learning_signals 
-     WHERE merchant_id = ? AND analyzed = 0`,
+    `SELECT COUNT(*) as cnt FROM sari_learning_signals s
+     JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
+     WHERE s.merchant_id = ? AND s.analyzed = 0`,
     [merchantId]
   );
   return (rows as any[])[0]?.cnt || 0;
@@ -251,6 +257,7 @@ export async function getLearningEvidence(merchantId: number) {
   const [proposals] = await pool.execute<any[]>(`SELECT p.id, p.dimension, p.insight,
     (SELECT COUNT(DISTINCT s.conversation_id) FROM ai_learning_evidence_links e
       JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
+      JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
       WHERE e.proposal_id = p.id AND e.merchant_id = p.merchant_id) AS evidence_count
     FROM ai_learning_proposals p WHERE p.merchant_id = ?
     AND p.status = 'proposed' ORDER BY p.id DESC LIMIT 20`, [merchantId]);
@@ -260,6 +267,7 @@ export async function getLearningEvidence(merchantId: number) {
       s.signal_type, LEFT(COALESCE(s.customer_message, s.context_summary, ''), 500) AS excerpt,
       ROW_NUMBER() OVER (PARTITION BY e.proposal_id ORDER BY e.signal_id DESC) AS sample_rank
       FROM ai_learning_evidence_links e JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
+      JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
       WHERE e.merchant_id = ? AND e.proposal_id IN (${proposals.map(() => '?').join(',')})) samples
       WHERE sample_rank <= 20 ORDER BY proposal_id DESC, signal_id DESC`,
     [merchantId, ...proposals.map(p => p.id)]);

@@ -475,6 +475,16 @@ Object.assign(entries, {
  B059:[entries.B059[0]+' مجموعة قرار مصطنعة تشمل 84 حالة معلّمة حرجة من أصل 93، لا تعادل المحادثات الـ300 أو مجموعة قبول مستقلة.','scripts/testing/fixtures/sales-decision-corpus.v1.json'],
  B064:[entries.B064[0]+' حُفظت تقارير قبل/بعد وفرق 42 حالة دون تراجع مع إثبات بصمات الكود السابق والنهائي؛ ليست أرقام تحويل أو جودة نموذج.','docs/audits/sales-brain-implementation-2026-09-23/decisions/comparison.json'],
 });
+Object.assign(entries, {
+ B012:[entries.B012[0]+' نتائج تحليل التعلم تبقى proposed حتى مع ثقة عالية، ولا يُحفظ جزء من نتيجة غير صالحة أو يُعاد إحياء مقترح متقاعد.','server/ai/learning-analysis.ts'],
+ B013:[entries.B013[0]+' عقد runtime صارم لنتيجة تحليل الإشارات: JSON كامل، حدود للحجم والأبعاد والثقة والمراجع، وسبب صريح لغياب النمط. لا استخراج متسامح لكائن من نص حر ولا تحويل ثقة نصية إلى رقم.','server/ai/learning-analysis-contract.ts'],
+ B016:[entries.B016[0]+' تحليل الإشارات يلتقط بصمة قبل النموذج ويعيد فحصها مع ملكية المحادثة داخل معاملة. تنافس ثلاث عمليات مستقلة وفقد إقرار commit لا يكرران الحفظ؛ منع تكرار الاستدعاء المدفوع بين العمال لم ينفذ.','server/ai/learning-analysis.mysql.test.ts'],
+ B042:[entries.B042[0]+' لا تُربط نتيجة التحليل بمصدر تبدل أو حذف أثناء انتظار النموذج؛ تُعلّم العينة المعروضة وحدها بعد حفظ كل المقترحات والأدلة. لا يغلق إسناد الأثر التجاري.','server/ai/learning-analysis.ts'],
+ B043:[entries.B043[0]+' صار حفظ المقترحات وروابط الأدلة والعداد وتعليم المصادر ذريًا، ومنع تصنيف المصدر نفسه مؤيدًا ومعارضًا عند الإعادة أو التزامن. عزل المحادثة يُفحص عند الإدخال والتحليل والعرض، دون حذف السجلات القديمة.','server/ai/learning-analysis.mysql.test.ts'],
+ B044:[entries.B044[0]+' النتيجة الناقصة أو المرجع المزور أو فشل الحفظ لا يترك مقترحًا جزئيًا؛ schema يرفض حقول التفعيل والإجراء. ما زال تقييم/تجربة/اعتماد/تراجع السياسة مفتوحًا.','server/ai/learning-analysis-pentest.test.ts'],
+ B063:[entries.B063[0]+' أضيف فحص محلي لحقن النتيجة ومراجعها، والتغيير أثناء النموذج، والتصنيف المتعارض، وrollback وفقد إقرار commit وعزل النشاط وثلاث عمليات مستقلة. لا مزوّد أو إنتاج حي.','server/ai/learning-analysis.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبارات ربط التحليل وSQL مثبتة على نسخة مصادر مستقلة؛ لا نسخ للنص المرفوض في سجلات أخطاء التحليل.','docs/SARI_SALES_BRAIN_ATOMIC_LEARNING_2026-09-24.md'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

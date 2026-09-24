@@ -1,0 +1,10 @@
+{
+  "baselineHead": "fe36951c0f90cd76727592c75ae26290d9259876",
+  "learningEngineBlob": "bf4562ce5b52b4091c16586116b51c130ff55b65",
+  "logFile": "baseline-local.txt",
+  "logDigestEncoding": "UTF-8 with LF newlines",
+  "logSha256": "850502f79e964d328de0ef862ec52ae9d7dc9b3b3f48a2ca44207413097e5580",
+  "scope": "Local regression reproduction before wiring the atomic persistence path. Mocked model and persistence boundaries; 13 failed / 22 passed. Two further tests were added later. Not a frozen independent evaluation corpus or measurement of real model quality.",
+  "liveProviderCalls": false,
+  "logNormalization": "CRLF converted to LF and trailing blank lines removed; test output content preserved."
+}
