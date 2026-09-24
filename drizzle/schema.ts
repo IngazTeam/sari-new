@@ -1601,6 +1601,8 @@ export const appointments = mysqlTable("appointments", {
 	calendarIntegrationId: int("calendar_integration_id"),
 	calendarTargetId: varchar("calendar_target_id", { length: 255 }),
 	calendarIdentityHash: char("calendar_identity_hash", { length: 64 }),
+	calendarEventReference: varchar("calendar_event_reference", { length: 40 }),
+	calendarReviewRevision: int("calendar_review_revision").default(0).notNull(),
 	reminder24hSent: tinyint("reminder_24h_sent").default(0).notNull(),
 	reminder1hSent: tinyint("reminder_1h_sent").default(0).notNull(),
 	notes: text(),
@@ -1608,6 +1610,18 @@ export const appointments = mysqlTable("appointments", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [index("idx_appointment_capacity").on(table.merchantId, table.appointmentDate, table.status)]);
+
+export const appointmentCalendarReviews = mysqlTable("appointment_calendar_reviews", {
+  id: int().autoincrement().primaryKey(), merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  appointmentReference: int("appointment_reference").notNull(), actorUserId: int("actor_user_id").notNull(),
+  requestId: char("request_id", { length: 36 }).notNull(), requestHash: char("request_hash", { length: 64 }).notNull(), revision: int().notNull(),
+  action: varchar({ length: 30 }).notNull(), eventId: varchar("event_id", { length: 255 }).notNull(), outcome: varchar({ length: 30 }).notNull(),
+  failureCode: varchar("failure_code", { length: 40 }), operatorReason: varchar("operator_reason", { length: 500 }).notNull(),
+  manualBinding: tinyint("manual_binding").default(0).notNull(), proofHash: char("proof_hash", { length: 64 }).notNull(),
+  beforeState: json("before_state").notNull(), afterState: json("after_state").notNull(),
+  createdAt: datetime("created_at", { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex("uq_appointment_review_request").on(table.merchantId,table.requestId),
+  uniqueIndex("uq_appointment_review_revision").on(table.merchantId,table.appointmentReference,table.revision)]);
 
 export const serviceReviews = mysqlTable("service_reviews", {
 	id: int().autoincrement().notNull().primaryKey(),

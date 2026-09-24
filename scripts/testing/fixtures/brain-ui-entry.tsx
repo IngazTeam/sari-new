@@ -1,4 +1,6 @@
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
+import CalendarPage from '../../../client/src/pages/CalendarPage';
+import { AppointmentSyncReview } from '../../../client/src/components/AppointmentSyncReview';
 import { CheckoutMarginPolicySettings } from '../../../client/src/components/CheckoutMarginPolicySettings';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -39,6 +41,8 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('calendar-page-')) { createRoot(document.getElementById('root')!).render(<CalendarPage />); return; }
+  if(mode.startsWith('calendar-review-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><AppointmentSyncReview appointmentId={501} onChanged={async()=>{if(mode==='calendar-review-parent-error')throw Error('private parent failure');(window as any).__calendarParentRefreshed=true;}} /></main>); return; }
   createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl space-y-6 p-4" dir={lng === 'ar' ? 'rtl' : 'ltr'}>
     <LearningEvidenceCard /><div id="invoice-fixture"><CheckoutInvoiceReview orderId={123} totalAmount={23000} onApproved={() => { (window as any).__approved = true; }}
       discount={mode.startsWith('discounted-')?{code:'SAVE_'+'X'.repeat(45),subtotalMinor:25000,discountMinor:mode==='discounted-invalid'?1000:2000}:undefined} /></div>

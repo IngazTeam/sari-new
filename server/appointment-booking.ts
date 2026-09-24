@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   scopedAppointmentCreationSchema,
   type AppointmentCreationInput,
@@ -63,6 +63,8 @@ export async function assertAppointmentSchema() {
           "calendar_integration_id",
           "calendar_target_id",
           "calendar_identity_hash",
+          "calendar_event_reference",
+          "calendar_review_revision",
         ],
       },
     ],
@@ -144,10 +146,13 @@ export async function reserveAppointment(
         };
       }
     }
+    const eventReference = target
+      ? `sariappt${randomBytes(16).toString("hex")}`
+      : null;
     const [insert] = await connection.execute<any>(
       `INSERT INTO appointments (merchant_id,customer_phone,customer_name,service_id,staff_id,appointment_date,start_time,end_time,status,notes,
-        calendar_sync_state,calendar_integration_id,calendar_target_id,calendar_identity_hash)
-       VALUES (?,?,?,?,?,?,?,?,'confirmed',?,?,?,?,?)`,
+        calendar_sync_state,calendar_integration_id,calendar_target_id,calendar_identity_hash,calendar_event_reference)
+       VALUES (?,?,?,?,?,?,?,?,'confirmed',?,?,?,?,?,?)`,
       [
         input.merchantId,
         input.customerPhone,
@@ -162,6 +167,7 @@ export async function reserveAppointment(
         target?.integrationId ?? null,
         target?.calendarId ?? null,
         target?.identity ?? null,
+        eventReference,
       ]
     );
     const appointmentId = Number(insert.insertId);
@@ -172,6 +178,7 @@ export async function reserveAppointment(
       endTime,
       staff,
       target,
+      eventReference,
       service: {
         id: Number(service.id),
         merchantId: Number(service.merchant_id),
@@ -193,7 +200,11 @@ export async function createConfirmedAppointment(input: {
   staffId?: number;
 }): Promise<ConfirmedAppointment> {
   const { date, ...fields } = input;
-  const { target: _target, ...appointment } = await reserveAppointment({
+  const {
+    target: _target,
+    eventReference: _reference,
+    ...appointment
+  } = await reserveAppointment({
     ...fields,
     appointmentDate: date,
     notes: "تم الحجز عبر WhatsApp Bot",

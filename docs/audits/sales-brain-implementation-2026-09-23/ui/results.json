@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T06:00:15.811Z",
+  "generatedAt": "2026-09-24T07:37:45.789Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -9,6 +9,10 @@
     "booking-link-renewal-375.png",
     "booking-operations-1440.png",
     "booking-operations-375.png",
+    "calendar-page-1440.png",
+    "calendar-page-375.png",
+    "calendar-review-1440.png",
+    "calendar-review-375.png",
     "checkout-attempts-1440.png",
     "checkout-attempts-375.png",
     "checkout-discount-1440.png",
@@ -42,6 +46,231 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "calendar_review_attestation_evidence_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_legacy",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_cancel",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_unverified",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_write-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_refresh-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_parent-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_legacy-denied",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_waiting",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_target",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_complete",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_review_xss",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "calendar_page_dates_and_explicit_cancellation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_viewer",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_disconnected",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_empty",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_truncated",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "calendar_page_write-error",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

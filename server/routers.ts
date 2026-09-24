@@ -1,3 +1,4 @@
+import { calendarReconciliationProcedures } from './routers-calendar-reconciliation';
 import { calendarAppointmentProcedures } from './routers-calendar-appointments';
 import { bookingCreationProcedure } from './routers-booking-creation';
 import { bookingOperationProcedures } from './routers-booking-operations';
@@ -5828,30 +5829,7 @@ export const appRouter = router({
 
     ...calendarAppointmentProcedures,
 
-    // List appointments
-    listAppointments: protectedProcedure
-      .input(z.object({
-        status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        const appointments = await getAppointmentsByMerchant(merchant.id, input.status);
-
-        // Filter by date range if provided
-        let filtered = appointments;
-        if (input.startDate) {
-          filtered = filtered.filter(a => a.appointmentDate >= input.startDate!);
-        }
-        if (input.endDate) {
-          filtered = filtered.filter(a => a.appointmentDate <= input.endDate!);
-        }
-
-        return { appointments: filtered };
-      }),
+    ...calendarReconciliationProcedures,
 
     // Get appointment statistics
     getStats: protectedProcedure
@@ -5881,19 +5859,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // Get integration status
-    getStatus: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const integration = await getGoogleIntegration(merchant.id, 'calendar');
-
-      return {
-        connected: !!integration && integration.isActive === 1,
-        calendarId: integration?.calendarId,
-        lastSync: integration?.lastSync,
-      };
-    }),
   }),
 
   // Staff Members Management

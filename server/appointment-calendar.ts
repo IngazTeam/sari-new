@@ -39,6 +39,8 @@ export async function bookCalendarAppointment(raw: AppointmentCreationInput) {
       credentials,
       target.calendarId,
       {
+        id: reservation.eventReference!,
+        privateProperties: { sariAppointment: reservation.eventReference! },
         summary: `${reservation.service.name} - ${input.customerName || ""}`,
         description: `Customer: ${input.customerName || ""}\nPhone: ${input.customerPhone}\nService: ${reservation.service.name}${input.notes ? `\nNotes: ${input.notes}` : ""}`,
         start: new Date(`${input.appointmentDate}T${input.startTime}:00+03:00`),
@@ -47,7 +49,7 @@ export async function bookCalendarAppointment(raw: AppointmentCreationInput) {
         ),
       }
     );
-    if (typeof event.id !== "string" || !event.id || event.id.length > 255)
+    if (typeof event.id !== "string" || event.id !== reservation.eventReference)
       throw Error("CALENDAR_EVENT_ACK_MISSING");
     eventId = event.id;
   } catch {

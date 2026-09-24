@@ -610,6 +610,13 @@
       "when": 1790899200000,
       "tag": "0086_appointment_calendar_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "5",
+      "when": 1790985600000,
+      "tag": "0087_appointment_calendar_reviews",
+      "breakpoints": true
     }
   ]
 }

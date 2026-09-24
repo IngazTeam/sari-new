@@ -6372,7 +6372,7 @@ export async function getAppointmentsByMerchant(merchantId: number, status?: str
     .orderBy(desc(appointments.appointmentDate));
   // Only the sync state is public; authorization bindings stay server-side.
   return rows.map(({ calendarIdentityHash: _identity, calendarIntegrationId: _integration,
-    calendarTargetId: _target, ...appointment }) => appointment);
+    calendarTargetId: _target, calendarEventReference: _reference, ...appointment }) => appointment);
 }
 
 export async function getAppointmentsByCustomer(merchantId: number, customerPhone: string) {

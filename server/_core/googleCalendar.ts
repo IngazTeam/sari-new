@@ -163,6 +163,8 @@ export async function createCalendarEvent(
   credentials: any,
   calendarId: string,
   eventData: {
+    id?: string;
+    privateProperties?: Record<string, string>;
     summary: string;
     description?: string;
     start: Date;
@@ -177,6 +179,8 @@ export async function createCalendarEvent(
   const calendar = await createCalendarClient(credentials);
 
   const event = {
+    id: eventData.id,
+    extendedProperties: eventData.privateProperties ? { private: eventData.privateProperties } : undefined,
     summary: eventData.summary,
     description: eventData.description,
     start: {
@@ -278,7 +282,7 @@ export async function getCalendarEvent(
   const response = await calendar.events.get({
     calendarId: calendarId,
     eventId: eventId,
-  });
+  }, { timeout: 15000, retry: false });
 
   return response.data;
 }

@@ -128,7 +128,9 @@ describe.skipIf(!process.env.DATABASE_URL)(
       secondStaffId = await staff(owner.merchantId);
       foreignStaffId = await staff(other.merchantId);
       provider.refresh.mockImplementation(async credentials => credentials);
-      provider.create.mockResolvedValue({ id: "synthetic-event" });
+      provider.create.mockImplementation(
+        async (_credentials, _calendar, event) => ({ id: event.id })
+      );
       provider.remove.mockResolvedValue(true);
     });
     afterEach(async () => {
@@ -368,7 +370,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
           await createAtomicBooking(
             booking({ startTime: "11:00", endTime: "12:00" })
           );
-          return { id: "synthetic-event" };
+          return { id: (await rows())[0].calendar_event_reference };
         }
       );
       const result = await bookCalendarAppointment(input());
@@ -377,7 +379,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         /synthetic-access|synthetic-refresh|identity|credentials/
       );
       expect((await rows())[0]).toMatchObject({
-        google_event_id: "synthetic-event",
+        google_event_id: expect.stringMatching(/^sariappt[0-9a-f]{32}$/),
         calendar_sync_state: "synced",
       });
       const listed = await db.getAppointmentsByMerchant(owner.merchantId);
@@ -419,7 +421,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       provider.create.mockImplementationOnce(async () => {
         await expect(cancel((await rows())[0].id)).rejects.toThrow();
         await expect(createAtomicBooking(booking())).rejects.toThrow();
-        return { id: "synthetic-event" };
+        return { id: (await rows())[0].calendar_event_reference };
       });
       await bookCalendarAppointment(input());
       expect(provider.remove).not.toHaveBeenCalled();
@@ -442,7 +444,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(provider.remove).toHaveBeenCalledExactlyOnceWith(
         expect.anything(),
         "primary",
-        "synthetic-event"
+        expect.stringMatching(/^sariappt[0-9a-f]{32}$/)
       );
       expect((await rows())[0]).toMatchObject({
         status: "cancelled",

@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-09-24T07:32:11.899Z",
+  "scope": "Local disposable MySQL schema metadata and temporary-table migration checks; no production changes",
+  "migration": "0087_appointment_calendar_reviews",
+  "rawSqlSha256": "b349d30d81cbbe35f84a898b135d1acef01e4c1ab153a27f8ac617b70a02f3f7",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "journalMatched": true,
+      "requestAndRevisionUnique": true,
+      "auditSurvivesAppointmentDeletion": true,
+      "legacyReferencesRemainUnknown": true,
+      "legacyStatusPreserved": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "journalMatched": true,
+      "requestAndRevisionUnique": true,
+      "auditSurvivesAppointmentDeletion": true,
+      "legacyReferencesRemainUnknown": true,
+      "legacyStatusPreserved": true
+    }
+  ]
+}

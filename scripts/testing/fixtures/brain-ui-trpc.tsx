@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { calendarFixture } from './calendar-ui-trpc';
 import { defaultFollowupPolicy } from '../../../shared/followup-policy';
 import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sales-sector-playbooks';
 const parameters = new URL(location.href).searchParams;
@@ -9,6 +10,7 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
       evidence: [{ signalId: 7, relation: 'supporting', excerpt: 'السعر لا يناسب ميزانيتي، هل يوجد خيار أقل تكلفة؟' },
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
+  calendar: calendarFixture,
   bookings: {
     getOperationHistory:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[version,setVersion]=useState(0);
