@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
 import { reconcileCheckoutSchema } from '../shared/checkout-reconciliation';
 import { reconcileBookingCheckoutSchema } from '../shared/booking-checkout-reconciliation';
+import { bookingPaymentLinkRenewalSchema } from '../shared/booking-payment-link-renewal';
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
@@ -6617,6 +6618,16 @@ export const appRouter = router({
   // Bookings Management
   // ============================================
   bookings: router({
+    getPaymentLinkRenewal: permissionProcedure('orders.manage').input(z.object({bookingId:z.number().int().positive().safe()}).strict()).query(async({ctx,input})=>{
+      const {getBookingPaymentLinkRenewal}=await import('./payment/booking-payment-link-renewal');
+      try{return await getBookingPaymentLinkRenewal(ctx.merchantId,input.bookingId);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Booking payment link renewal evidence unavailable'});}
+    }),
+    renewPaymentLink: permissionProcedure('orders.manage').input(bookingPaymentLinkRenewalSchema).mutation(async({ctx,input})=>{
+      const {renewBookingPaymentLink}=await import('./payment/booking-payment-link-renewal');
+      try{return await renewBookingPaymentLink(ctx.merchantId,ctx.user.id,input);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Booking payment link renewal unavailable; refresh evidence before another review'});}
+    }),
     getCheckoutAttempts: permissionProcedure('orders.manage').input(z.object({bookingId:z.number().int().positive().safe()}).strict()).query(async({ctx,input})=>{
       const {getBookingCheckoutAttempts}=await import('./payment/booking-checkout-reconciliation');
       try{return await getBookingCheckoutAttempts(ctx.merchantId,input.bookingId);}

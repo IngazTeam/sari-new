@@ -1,0 +1,9 @@
+{
+  "scope": "Protected sales-brain component fixture, verifier and loaded stylesheets are byte-identical after central landing update 146e52f",
+  "fixture": "7c1fbbcd4b3e2721437c8e35abdf872a64b40ddbb3cd007922bd0d64511f9145",
+  "verifier": "6c94c014f0498eba7d8757d93d03944bb614e9c8f6741a42d97035067228b460",
+  "styles": {
+    "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
+    "index-CbI9ppih.css": "4201a68245ba4509ad222913b912f9b534331172baa63a4b07ef09f923ea31f4"
+  }
+}

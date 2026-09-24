@@ -42,6 +42,7 @@ import { ar } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
 import { BookingCheckoutAttempts } from '@/components/BookingCheckoutAttempts';
+import { BookingPaymentLinkRenewal } from '@/components/BookingPaymentLinkRenewal';
 
 // Default form state for new booking
 const defaultNewBooking = {
@@ -622,7 +623,9 @@ export default function BookingsManagement() {
                                   <p className="text-sm font-medium mb-1">{t('merchantUx.bookingCheckout.paymentStatus')}</p>
                                   <p className="text-sm">{t(selectedBooking.paymentStatus==='paid'?'merchantUx.bookingCheckout.paid':selectedBooking.paymentStatus==='refunded'?'merchantUx.bookingCheckout.refunded':'merchantUx.bookingCheckout.unpaid')}</p>
                                 </div>
+                                <BookingPaymentLinkRenewal key={`booking-renewal-${selectedBooking.id}`} bookingId={selectedBooking.id} />
                                 <BookingCheckoutAttempts key={`booking-checkout-${selectedBooking.id}`} bookingId={selectedBooking.id} onReviewed={async()=>{
+                                  await utils.bookings.getPaymentLinkRenewal.invalidate({bookingId:selectedBooking.id});
                                   const bookingId=selectedBooking.id;const fresh=await utils.bookings.getById.fetch({bookingId});
                                   setSelectedBooking((current:any)=>current?.id===bookingId?fresh.booking:current);
                                   await Promise.all([refetch(),utils.bookings.getStats.invalidate()]);

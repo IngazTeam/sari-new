@@ -10,6 +10,24 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   bookings: {
+    getPaymentLinkRenewal:{useQuery:()=>{
+      const [recovered,setRecovered]=useState(false),[revision,setRevision]=useState(0),[saved,setSaved]=useState(false);
+      useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('renewal-evidence-change',changed);(window as any).__changeRenewalEvidence=()=>window.dispatchEvent(new Event('renewal-evidence-change'));return()=>window.removeEventListener('renewal-evidence-change',changed);},[]);
+      const blocker=['booking','legacy','identity','link','payment'].find(value=>mode===`booking-renewal-${value}`)??null;
+      const audit=saved||['booking-renewal-audit','booking-renewal-xss'].includes(mode)?{actorUserId:7,reason:mode==='booking-renewal-xss'?'<img src=x onerror="window.__renewalXss=1">'+ 'x'.repeat(450):'Customer requested another day to pay',
+        priorExpiresAt:'2026-09-23T00:00:00Z',renewedExpiresAt:'2026-09-25T00:00:00Z',at:'2026-09-24T00:00:00Z'}:null;
+      const data=mode.startsWith('booking-renewal-')&&mode!=='booking-renewal-empty'?{state:blocker||saved?'blocked':'eligible',blocker:saved?'link':blocker,evidence:(revision?'b':'a').repeat(64),expiresAt:saved?'2026-09-25T00:00:00Z':'2026-09-23T00:00:00Z',audit}:null;
+      return {data,isLoading:mode==='booking-renewal-loading',isError:mode==='booking-renewal-error'&&!recovered,isFetching:mode==='booking-renewal-fetching',
+        refetch:async()=>{setRecovered(true);if(mode==='booking-renewal-refresh-error')return {isError:true};
+          if((window as any).__renewalSuccess&&!['booking-renewal-stale-response'].includes(mode))setSaved(true);return {isError:false};}};
+    }},
+    renewPaymentLink:{useMutation:()=>{
+      const [isPending,setPending]=useState(false);return {isPending,mutateAsync:async(input:any)=>{
+        setPending(true);(window as any).__renewalInput=input;(window as any).__renewalCount=((window as any).__renewalCount||0)+1;
+        await new Promise(r=>setTimeout(r,300));setPending(false);if(mode==='booking-renewal-write-error')throw Error('private financial record');
+        (window as any).__renewalSuccess=true;return {renewed:true,alreadyRenewed:false,expiresAt:'2026-09-25T00:00:00Z'};
+      }};
+    }},
     getCheckoutAttempts:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[revision,setRevision]=useState(0);
       useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('booking-evidence-change',changed);(window as any).__changeBookingEvidence=()=>window.dispatchEvent(new Event('booking-evidence-change'));return()=>window.removeEventListener('booking-evidence-change',changed);},[]);

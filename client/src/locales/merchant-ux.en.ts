@@ -8,6 +8,16 @@ const merchantUxEn: MerchantUxCopy = {
     review:'Match this attempt reference against the Tap dashboard before starting another payment. A lost response or expired session does not prove payment failure.',
     paymentStatus:'Booking payment status',unpaid:'Unpaid',paid:'Paid',refunded:'Refunded',
   },
+  bookingRenewal: {
+    title:'Renew booking payment link',scope:'Extend the same link for 24 hours from renewal, at the same amount. This creates no charge and sends no customer message. Available only after the link expires, with no collection or unresolved payment attempt.',
+    loading:'Checking the booking link…',failed:'Renewal could not be confirmed. Refresh the record to check the result before trying again.',refresh:'Refresh link record',
+    reason:'Reason for renewal (10–500 characters)',attest:'I reviewed the booking and payment attempts and want to make the same link available for another day.',saving:'Renewing…',renew:'Renew link for one day',
+    saved:'The renewal was recorded. Check the expiry date and renewal history.',booking:'Only pending or confirmed unpaid bookings can be renewed.',
+    legacy:'This legacy link has no protected payment-attempt history and requires operational review before reopening.',identity:'The booking or link details need to be matched before renewal.',
+    link:'The link must have expired and must not be disabled. An active unexpired link does not need renewal yet.',
+    payment:'Collection history, an unresolved payment attempt or mismatched records prevent renewal. Review payment attempts first.',
+    expiry:'Link expires:',audit:'Latest recorded renewal',actor:'Staff member #{{id}}',before:'Previous expiry:',after:'Expiry after renewal:',
+  },
   discountRelease: {
     title:"Release coupon use",
     scope:"Release one use for a local order cancelled before collection, after verifying all payment attempts ended. This does not refund money or change the invoice amount, and closes this order’s payment links.",

@@ -5,10 +5,16 @@ async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
   await esbuild.build({ entryPoints: [path.resolve('scripts/testing/fixtures/brain-ui-entry.tsx')], outfile: path.join(dir, 'fixture.js'), bundle: true, platform: 'browser', jsx: 'automatic',
     define: { 'process.env.NODE_ENV': '"development"' }, alias: { '@/lib/trpc': path.resolve('scripts/testing/fixtures/brain-ui-trpc.tsx'), '@': path.resolve('client/src') } });
-  const publicDir = path.resolve('dist/public'), css = fs.readdirSync(path.join(publicDir, 'assets')).find(name => name.endsWith('.css'));
+  const publicDir = path.resolve('dist/public');
+  // main.tsx loads index.css before App. A split App stylesheet can sort first;
+  // selecting the first CSS asset would omit Tailwind and test an unstyled page.
+  const styles = fs.readdirSync(path.join(publicDir, 'assets')).filter(name => /^(?:index|App)-[\w-]+\.css$/.test(name))
+    .sort((a, b) => Number(b.startsWith('index-')) - Number(a.startsWith('index-')) || a.localeCompare(b));
+  assert.equal(styles.filter(name => name.startsWith('index-')).length, 1, 'Build must contain exactly one global index stylesheet');
+  const styleLinks = styles.map(name => `<link rel="stylesheet" href="/assets/${name}">`).join('');
   const server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
-    if (pathname === '/') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/assets/${css}"><body><div id="root"></div><script src="/fixture.js"></script></body></html>`); }
+    if (pathname === '/') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${styleLinks}<body><div id="root"></div><script src="/fixture.js"></script></body></html>`); }
     const file = pathname === '/fixture.js' ? path.join(dir, 'fixture.js') : path.resolve(publicDir, '.' + pathname);
     if (file !== path.join(dir, 'fixture.js') && !file.startsWith(publicDir + path.sep)) { res.writeHead(403).end(); return; }
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404).end(); return; }
@@ -20,6 +26,46 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    const renewalForm='[data-booking-link-renewal-form]';
+    for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
+      await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});
+      await page.goto(`${origin}/?case=booking-renewal-ready&lang=${lang}`,{waitUntil:'networkidle0'});await page.waitForSelector(renewalForm);
+      const layout=await page.$eval('#booking-renewal-fixture',node=>({overflow:document.documentElement.scrollWidth>innerWidth,rawKeys:node.innerText.includes('merchantUx.'),buttons:[...node.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)}));
+      assert.equal(layout.overflow,false);assert.equal(layout.rawKeys,false);assert.ok(layout.buttons.every(h=>h>=44));
+      assert.equal(await page.$eval('[data-booking-link-renew]',n=>n.disabled),true);
+      await page.type(`${renewalForm} textarea`,'Customer requested another day');await page.focus(`${renewalForm} input`);await page.keyboard.press('Space');
+      await page.evaluate(()=>window.__changeRenewalEvidence());await page.waitForFunction(()=>document.querySelector('[data-booking-link-renewal-form] textarea').value==='');
+      assert.equal(await page.$eval(`${renewalForm} input`,n=>n.checked),false);
+      await page.type(`${renewalForm} textarea`,'Customer requested another day');await page.click(`${renewalForm} input`);
+      await page.type(`${renewalForm} textarea`,' to pay');assert.equal(await page.$eval(`${renewalForm} input`,n=>n.checked),false);await page.click(`${renewalForm} input`);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#booking-renewal-fixture')).screenshot({path:path.join(output,`booking-link-renewal-${width}.png`)});
+      await page.click('[data-booking-link-renew]');
+      assert.equal(await page.$eval('[data-booking-link-renewal-refresh]',n=>n.disabled),true);
+      await page.waitForSelector('[data-booking-link-renewal-audit]');await page.waitForFunction(()=>window.__renewalParentRefreshed===true);
+      assert.equal(await page.$(renewalForm),null);assert.equal(await page.evaluate(()=>window.__renewalCount),1);
+      assert.deepEqual(await page.evaluate(()=>window.__renewalInput),{bookingId:321,evidence:'b'.repeat(64),reason:'Customer requested another day to pay',reviewed:true});
+      results.push({width,lang,mode:'booking_renewal_evidence_attestation_single_submit_audit',passed:true});
+    }
+    for(const state of ['booking','legacy','identity','link','payment','fetching','empty','loading','error','audit','xss']){
+      await page.setViewport({width:375,height:812});await page.goto(`${origin}/?case=booking-renewal-${state}`,{waitUntil:'networkidle0'});
+      if(['booking','legacy','identity','link','payment','empty'].includes(state))assert.equal(await page.$(renewalForm),null);
+      if(state==='fetching')assert.equal(await page.$eval(`${renewalForm} textarea`,n=>n.disabled),true);
+      if(state==='loading')await page.waitForSelector('#booking-renewal-fixture [role=status]');
+      if(state==='error'){await page.waitForSelector('#booking-renewal-fixture [role=alert]');await page.click('#booking-renewal-fixture button');await page.waitForSelector(renewalForm);}
+      if(['audit','xss'].includes(state))await page.waitForSelector('[data-booking-link-renewal-audit]');
+      if(state==='xss'){assert.equal(await page.$('#booking-renewal-fixture img'),null);assert.equal(await page.evaluate(()=>window.__renewalXss),undefined);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+      results.push({width:375,mode:`booking_renewal_${state}`,passed:true});
+    }
+    for(const state of ['write-error','refresh-error','stale-response']){
+      await page.goto(`${origin}/?case=booking-renewal-${state}`,{waitUntil:'networkidle0'});await page.waitForSelector(renewalForm);
+      await page.type(`${renewalForm} textarea`,'Customer requested another day');await page.click(`${renewalForm} input`);await page.click('[data-booking-link-renew]');
+      await page.waitForFunction(()=>window.__renewalCount===1&&!document.querySelector('[data-booking-link-renewal-refresh]').disabled);
+      if(state==='refresh-error')assert.equal(await page.$(renewalForm),null);
+      else assert.equal(await page.$eval('[data-booking-link-renew]',n=>n.disabled),true);
+      if(state!=='stale-response')await page.waitForSelector('#booking-renewal-fixture [role=alert]');
+      assert.equal(await page.$eval('#booking-renewal-fixture',n=>n.innerText.includes('private financial')),false);
+      results.push({width:375,mode:`booking_renewal_${state}_requires_fresh_read`,passed:true});
+    }
     const bookingReview='[data-booking-checkout-review]';
     for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
       await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});

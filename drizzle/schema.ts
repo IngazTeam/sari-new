@@ -4145,3 +4145,12 @@ export const bookingCheckoutReviews = mysqlTable('booking_checkout_reviews', {
   outcome:varchar({length:20}).notNull(),reason:varchar({length:40}),providerStatus:varchar('provider_status',{length:32}),
   proofHash:char('proof_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[uniqueIndex('uq_booking_checkout_review_revision').on(table.attemptId,table.revision)]);
+
+export const bookingPaymentLinkRenewals = mysqlTable('booking_payment_link_renewals', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  bookingId:int('booking_id').notNull().references(()=>bookings.id,{onDelete:'cascade'}),
+  paymentLinkId:int('payment_link_id').notNull().references(()=>paymentLinks.id,{onDelete:'cascade'}),
+  actorUserId:int('actor_user_id').notNull(),reason:varchar({length:500}).notNull(),
+  priorExpiresAt:datetime('prior_expires_at',{mode:'string',fsp:3}).notNull(),renewedExpiresAt:datetime('renewed_expires_at',{mode:'string',fsp:3}).notNull(),
+  evidenceHash:char('evidence_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_booking_link_renewal_evidence').on(table.paymentLinkId,table.evidenceHash),index('idx_booking_link_renewal_booking').on(table.bookingId,table.id)]);

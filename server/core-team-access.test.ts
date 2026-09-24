@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
+  bookingRenewalRead:vi.fn(),bookingRenewalWrite:vi.fn(),
   bookingCheckoutRead:vi.fn(),bookingCheckoutReview:vi.fn(),couponReleaseRead:vi.fn(),couponReleaseWrite:vi.fn(),checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
@@ -11,6 +12,7 @@ vi.mock('./payment/order-payment-link', async original => ({...await original<ty
 vi.mock('./payment/order-checkout-attempts',async original=>({...await original<typeof import('./payment/order-checkout-attempts')>(),getOrderCheckoutAttempts:mocks.checkoutAttempts}));
 vi.mock('./payment/checkout-reconciliation',async original=>({...await original<typeof import('./payment/checkout-reconciliation')>(),reconcileOrderCheckout:mocks.checkoutReconcile}));
 vi.mock('./payment/booking-checkout-reconciliation',async original=>({...await original<typeof import('./payment/booking-checkout-reconciliation')>(),getBookingCheckoutAttempts:mocks.bookingCheckoutRead,reconcileBookingCheckout:mocks.bookingCheckoutReview}));
+vi.mock('./payment/booking-payment-link-renewal',async original=>({...await original<typeof import('./payment/booking-payment-link-renewal')>(),getBookingPaymentLinkRenewal:mocks.bookingRenewalRead,renewBookingPaymentLink:mocks.bookingRenewalWrite}));
 vi.mock('./ai/checkout-discount-release',async original=>({...await original<typeof import('./ai/checkout-discount-release')>(),getCheckoutDiscountRelease:mocks.couponReleaseRead,releaseCheckoutDiscount:mocks.couponReleaseWrite}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
@@ -51,6 +53,29 @@ beforeEach(() => {
   mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
+  const bookingRenewal={bookingId:10,evidence:'a'.repeat(64),reason:'Customer requested another day',reviewed:true as const};
+  it.each(['owner','manager','sales_supervisor'])('scopes booking link renewal to the %s membership and session actor',async role=>{
+    mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().bookings.getPaymentLinkRenewal({bookingId:10});await caller().bookings.renewPaymentLink(bookingRenewal);
+    expect(mocks.bookingRenewalRead).toHaveBeenCalledWith(20,10);expect(mocks.bookingRenewalWrite).toHaveBeenCalledWith(20,7,bookingRenewal);
+  });
+  it.each(['viewer',null])('denies booking renewal for %s access',async role=>{
+    mocks.access.mockResolvedValue(role?{merchantId:20,role,memberId:3}:null);
+    await expect(caller().bookings.getPaymentLinkRenewal({bookingId:10})).rejects.toMatchObject({code:'FORBIDDEN'});
+    await expect(caller().bookings.renewPaymentLink(bookingRenewal)).rejects.toMatchObject({code:'FORBIDDEN'});
+    expect(mocks.bookingRenewalRead).not.toHaveBeenCalled();expect(mocks.bookingRenewalWrite).not.toHaveBeenCalled();
+  });
+  it.each([{merchantId:99},{actorUserId:99},{paymentLinkId:99},{expiresAt:'2099-01-01'},{amount:1},{bookingId:1.2},{reason:'short'},{reason:'x'.repeat(501)},{evidence:''},{reviewed:false}])
+    ('rejects injected booking link renewal authority %j',async patch=>{
+      mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});await expect(caller().bookings.renewPaymentLink({...bookingRenewal,...patch} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      expect(mocks.bookingRenewalWrite).not.toHaveBeenCalled();
+    });
+  it('redacts booking link renewal errors and rejects injected read scope',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'owner',memberId:3});
+    await expect(caller().bookings.getPaymentLinkRenewal({bookingId:10,merchantId:99} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+    mocks.bookingRenewalRead.mockRejectedValueOnce(Error('private sql'));mocks.bookingRenewalWrite.mockRejectedValueOnce(Error('private payment record'));
+    await expect(caller().bookings.getPaymentLinkRenewal({bookingId:10})).rejects.toMatchObject({code:'CONFLICT',message:'Booking payment link renewal evidence unavailable'});
+    await expect(caller().bookings.renewPaymentLink(bookingRenewal)).rejects.toMatchObject({code:'CONFLICT',message:'Booking payment link renewal unavailable; refresh evidence before another review'});
+  });
   const bookingReview={bookingId:10,attemptId:'00000000-0000-4000-8000-000000000001',chargeId:'chg_fixture_1',evidence:'a'.repeat(64),reviewed:true as const};
   it.each(['owner','manager','sales_supervisor'])('scopes booking payment evidence and review to the %s membership',async role=>{
     mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().bookings.getCheckoutAttempts({bookingId:10});await caller().bookings.reconcileCheckoutAttempt(bookingReview);

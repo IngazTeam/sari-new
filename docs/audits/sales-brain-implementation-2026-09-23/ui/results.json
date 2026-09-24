@@ -1,10 +1,12 @@
 {
-  "generatedAt": "2026-09-24T04:44:10.929Z",
+  "generatedAt": "2026-09-24T05:26:02.324Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
     "booking-checkout-review-1440.png",
     "booking-checkout-review-375.png",
+    "booking-link-renewal-1440.png",
+    "booking-link-renewal-375.png",
     "checkout-attempts-1440.png",
     "checkout-attempts-375.png",
     "checkout-discount-1440.png",
@@ -38,6 +40,136 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_renewal_evidence_attestation_single_submit_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_booking",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_legacy",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_identity",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_link",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_payment",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_empty",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_xss",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_write-error_requires_fresh_read",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_refresh-error_requires_fresh_read",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_renewal_stale-response_requires_fresh_read",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",
