@@ -1,6 +1,7 @@
 {
-  "scope": "Fresh complete component UI run on the independent staged snapshot; no prior UI result reused",
-  "snapshot": ".tmp/brain-booking-operations",
+  "scope": "Reused 291 component UI scenarios after byte-equivalence verification of fixture bundle, verifier and all loaded stylesheets; backend capacity changes do not alter these inputs",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-operations",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-capacity",
   "fixture": "bb27a7c6ee6141cefe1fe311d08def8b19d54dac849080c353d76ff20d4f7b5f",
   "verifier": "25b3c3b5b352d5d070914a6f0cc7bb7cfc34e7a51bc6766347f1983356dd30d3",
   "styles": {

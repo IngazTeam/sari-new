@@ -1,6 +1,6 @@
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import {
-  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, notInArray, type InferSelectModel, type InferInsertModel
+  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
 import { hashSessionId } from './_core/session-security';
 import { buildUsageMetric } from './usage-metrics';
@@ -6888,47 +6888,9 @@ export async function getPackageServices(packageId: number) {
 // Bookings Functions
 // ============================================
 
-export async function createBooking(data: {
-  merchantId: number;
-  serviceId: number;
-  customerPhone: string;
-  customerName?: string;
-  customerEmail?: string;
-  staffId?: number;
-  bookingDate: string;
-  startTime: string;
-  endTime: string;
-  durationMinutes: number;
-  basePrice: number;
-  discountAmount?: number;
-  finalPrice: number;
-  notes?: string;
-  bookingSource?: 'whatsapp' | 'website' | 'phone' | 'walk_in';
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(bookings).values({
-    merchantId: data.merchantId,
-    serviceId: data.serviceId,
-    customerPhone: data.customerPhone,
-    customerName: data.customerName,
-    customerEmail: data.customerEmail,
-    staffId: data.staffId,
-    bookingDate: data.bookingDate as any,
-    startTime: data.startTime,
-    endTime: data.endTime,
-    durationMinutes: data.durationMinutes,
-    status: 'pending',
-    paymentStatus: 'unpaid',
-    basePrice: data.basePrice,
-    discountAmount: data.discountAmount || 0,
-    finalPrice: data.finalPrice,
-    notes: data.notes,
-    bookingSource: data.bookingSource || 'whatsapp',
-  });
-
-  return Number((result as any)[0].insertId);
+export async function createBooking(data:import('../shared/booking-creation').CreateScopedBookingInput) {
+  const {createAtomicBooking}=await import('./booking-capacity');
+  return createAtomicBooking(data);
 }
 
 export async function getBookingById(id: number) {
@@ -7062,36 +7024,9 @@ export async function getBookingStats(merchantId: number, filters?: {
   };
 }
 
-export async function checkBookingConflict(
-  serviceId: number,
-  staffId: number | null,
-  bookingDate: string,
-  startTime: string,
-  endTime: string,
-  excludeBookingId?: number
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const conditions = [
-    eq(bookings.serviceId, serviceId),
-    eq(bookings.bookingDate, bookingDate as any),
-    sql`${bookings.status} IN ('pending', 'confirmed', 'in_progress')`,
-    sql`(
-      (${bookings.startTime} < ${endTime} AND ${bookings.endTime} > ${startTime})
-    )`
-  ];
-
-  if (staffId) {
-    conditions.push(eq(bookings.staffId, staffId));
-  }
-
-  if (excludeBookingId) {
-    conditions.push(sql`${bookings.id} != ${excludeBookingId}`);
-  }
-
-  const conflicts = await db.select().from(bookings).where(and(...conditions));
-  return conflicts.length > 0;
+export async function checkBookingConflict(serviceId:number,staffId:number|null,bookingDate:string,startTime:string,endTime:string,excludeBookingId?:number) {
+  const {checkBookingCapacity}=await import('./booking-capacity');
+  return checkBookingCapacity({serviceId,staffId:staffId??undefined,bookingDate,startTime,endTime},excludeBookingId);
 }
 
 export async function markBookingReminderSent(bookingId: number, type: '24h' | '1h') {
@@ -7168,16 +7103,34 @@ export async function getAvailableTimeSlots(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const service=await getServiceById(serviceId);
+  if(!service||service.isActive!==1)return [];
+
   const conditions = [
     eq(bookingTimeSlots.serviceId, serviceId),
+    eq(bookingTimeSlots.merchantId,service.merchantId),
     eq(bookingTimeSlots.slotDate, date as any),
     eq(bookingTimeSlots.isAvailable, 1),
     eq(bookingTimeSlots.isBlocked, 0),
-    sql`${bookingTimeSlots.currentBookings} < ${bookingTimeSlots.maxBookings}`
+    sql`${bookingTimeSlots.currentBookings} < ${bookingTimeSlots.maxBookings}`,
+    sql`(${bookingTimeSlots.staffId} IS NULL OR EXISTS (SELECT 1 FROM staff_members s
+      WHERE s.id=${bookingTimeSlots.staffId} AND s.merchant_id=${bookingTimeSlots.merchantId} AND s.is_active=1))`,
+    // Stored slot counters are only a conservative prefilter. Current reservations are authoritative.
+    sql`NOT EXISTS (SELECT 1 FROM bookings b WHERE b.merchant_id=${bookingTimeSlots.merchantId}
+      AND b.booking_date=${bookingTimeSlots.slotDate} AND b.status IN ('pending','confirmed','in_progress')
+      AND b.start_time<${bookingTimeSlots.endTime} AND b.end_time>${bookingTimeSlots.startTime}
+      AND ((${bookingTimeSlots.staffId} IS NOT NULL AND b.staff_id=${bookingTimeSlots.staffId})
+        OR (b.service_id=${bookingTimeSlots.serviceId} AND (${bookingTimeSlots.staffId} IS NULL OR b.staff_id IS NULL))))`
   ];
 
   if (staffId) {
     conditions.push(eq(bookingTimeSlots.staffId, staffId));
+  }
+
+  if(service.staffIds){
+    let assigned:unknown;try{assigned=JSON.parse(service.staffIds);}catch{return [];}
+    if(!Array.isArray(assigned)||assigned.some(id=>!Number.isSafeInteger(id)||id<=0))return [];
+    if(assigned.length)conditions.push(or(isNull(bookingTimeSlots.staffId),inArray(bookingTimeSlots.staffId,assigned))!);
   }
 
   return await db.select().from(bookingTimeSlots)

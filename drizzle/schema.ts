@@ -4162,3 +4162,7 @@ export const bookingOperationAudits = mysqlTable('booking_operation_audits', {
   beforeState:json('before_state').notNull(),afterState:json('after_state'),changedFields:json('changed_fields').notNull(),
   createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[uniqueIndex('uq_booking_operation_request').on(table.merchantId,table.requestId),index('idx_booking_operation_history').on(table.merchantId,table.bookingReference,table.id)]);
+
+export const bookingCapacityLocks = mysqlTable("booking_capacity_locks", {
+  merchantId: int("merchant_id").notNull().primaryKey().references(() => merchants.id, { onDelete: "cascade" }),
+});

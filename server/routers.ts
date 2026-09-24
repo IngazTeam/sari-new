@@ -1,3 +1,4 @@
+import { bookingCreationProcedure } from './routers-booking-creation';
 import { bookingOperationProcedures } from './routers-booking-operations';
 import { COOKIE_NAME } from "@shared/const";
 import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
@@ -6639,59 +6640,7 @@ export const appRouter = router({
       try{return await reconcileBookingCheckout(ctx.merchantId,ctx.user.id,input);}
       catch{throw new TRPCError({code:'CONFLICT',message:'Booking checkout reconciliation unavailable; refresh evidence before another review'});}
     }),
-    // Create a new booking
-    create: protectedProcedure
-      .input(z.object({
-        serviceId: z.number(),
-        customerPhone: z.string().min(8).max(20).regex(/^\+?\d+$/, 'Invalid phone format'),
-        customerName: z.string().max(255).optional(),
-        customerEmail: z.string().email().optional(),
-        staffId: z.number().optional(),
-        bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
-        startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
-        endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
-        durationMinutes: z.number().min(1).max(1440),
-        basePrice: z.number().min(0),
-        discountAmount: z.number().min(0).optional(),
-        finalPrice: z.number().min(0),
-        notes: z.string().max(2000).optional(),
-        bookingSource: z.enum(['whatsapp', 'website', 'phone', 'walk_in']).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // PEN-BK-01: Verify service belongs to this merchant
-        const service = await getServiceById(input.serviceId);
-        if (!service || service.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
-        }
-
-        // Check for conflicts
-        const hasConflict = await checkBookingConflict(
-          input.serviceId,
-          input.staffId || null,
-          input.bookingDate,
-          input.startTime,
-          input.endTime
-        );
-
-        if (hasConflict) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'This time slot is already booked'
-          });
-        }
-
-        const bookingId = await createBooking({
-          merchantId: merchant.id,
-          ...input,
-        });
-
-        return { success: true, bookingId };
-      }),
+    create: bookingCreationProcedure,
 
     // Get booking by ID
     getById: protectedProcedure

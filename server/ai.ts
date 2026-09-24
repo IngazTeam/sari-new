@@ -791,7 +791,7 @@ export async function createBookingFromChat(params: {
   try {
     // الحصول على معلومات الخدمة
     const service = await getServiceById(params.serviceId);
-    if (!service) {
+    if (!service || service.merchantId !== params.merchantId || service.isActive !== 1) {
       return { success: false, message: 'الخدمة غير موجودة' };
     }
 
@@ -800,19 +800,6 @@ export async function createBookingFromChat(params: {
     const endMinutes = minutes + params.durationMinutes;
     const endHours = hours + Math.floor(endMinutes / 60);
     const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
-
-    // التحقق من عدم وجود تعارض
-    const hasConflict = await checkBookingConflict(
-      params.serviceId,
-      null,
-      params.bookingDate,
-      params.startTime,
-      endTime
-    );
-
-    if (hasConflict) {
-      return { success: false, message: 'عذراً، هذا الموعد محجوز بالفعل. يرجى اختيار وقت آخر.' };
-    }
 
     // إنشاء الحجز
     const bookingId = await createBooking({
@@ -830,73 +817,11 @@ export async function createBookingFromChat(params: {
       bookingSource: 'whatsapp',
     });
 
-    // إنشاء رابط دفع Tap للحجز
-    let paymentUrl: string | undefined;
-    try {
-      // @ts-ignore
-      const dbPayments = await import('../db_payments');
-      // const { createPaymentLink } = await import('../_core/tapPayments');
-
-      // TODO: إعادة تفعيل بعد إصلاح createPaymentLink
-      /*
-      const paymentLink = await createPaymentLink({
-        merchantId: params.merchantId,
-        amount: service.basePrice || 0,
-        currency: 'SAR',
-        customerName: params.customerName || 'عميل',
-        customerPhone: params.customerPhone,
-        description: `حجز ${service.name} - ${params.bookingDate}`,
-        metadata: {
-          bookingId: bookingId?.toString() || '',
-          serviceId: params.serviceId.toString(),
-          type: 'booking'
-        }
-      });
-
-      if (paymentLink && paymentLink.url) {
-        paymentUrl = paymentLink.url;
-        
-        // حفظ رابط الدفع
-        await dbPayments.createPaymentLink({
-          merchantId: params.merchantId,
-          bookingId,
-          amount: service.basePrice || 0,
-          currency: 'SAR',
-          tapChargeId: paymentLink.id,
-          paymentUrl: paymentLink.url,
-          status: 'active',
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        });
-
-        // إرسال رابط الدفع عبر واتساب
-        const paymentMessage = `💳 *رابط الدفع جاهز!*
-
-📅 *الحجز:* ${service.name}
-📆 *التاريخ:* ${params.bookingDate}
-⏰ *الوقت:* ${params.startTime} - ${endTime}
-💰 *المبلغ:* ${service.basePrice} ريال
-
-🔒 *لإتمام الدفع:*
-${paymentUrl}
-
-✅ الدفع مؤمن عبر Tap Payments
-⏰ الرابط صالح لمدة 24 ساعة
-
-شكراً لثقتك! 🌟`;
-        
-        // TODO: إرسال رسالة الدفع عبر واتساب
-        console.log('[AI] Payment link created for booking:', paymentUrl);
-      }
-      */
-    } catch (error) {
-      console.error('[AI] Error creating payment link for booking:', error);
-    }
-
     return {
       success: true,
       bookingId,
-      paymentUrl,
-      message: `تم تأكيد حجزك بنجاح! 🎉\n\nالخدمة: ${service.name}\nالتاريخ: ${params.bookingDate}\nالوقت: ${params.startTime} - ${endTime}\nالمدة: ${params.durationMinutes} دقيقة\n\nسنرسل لك تذكير قبل الموعد. شكراً لك! 💚`
+
+      message: `تم تسجيل طلب حجزك وهو بانتظار التأكيد.\n\nالخدمة: ${service.name}\nالتاريخ: ${params.bookingDate}\nالوقت: ${params.startTime} - ${endTime}\nالمدة: ${params.durationMinutes} دقيقة\n\nطلبك بانتظار مراجعة النشاط.`
     };
 
   } catch (error) {
@@ -908,44 +833,14 @@ ${paymentUrl}
 /**
  * Generate available time slots message
  */
-export async function generateAvailableSlotsMessage(
-  serviceId: number,
-  date: string
-): Promise<string> {
+export async function generateAvailableSlotsMessage(serviceId:number,date:string):Promise<string> {
   try {
-    const service = await getServiceById(serviceId);
-    if (!service) return 'عذراً، الخدمة غير متاحة.';
-
-    // الحصول على الحجوزات الموجودة في هذا اليوم
-    const existingBookings = await getBookingsByService(serviceId, {
-      startDate: date,
-      endDate: date,
-      status: 'confirmed'
-    });
-
-    // توليد الأوقات المتاحة (من 9 صباحاً إلى 5 مساءً)
-    const availableSlots: string[] = [];
-    for (let hour = 9; hour < 17; hour++) {
-      const timeSlot = `${String(hour).padStart(2, '0')}:00`;
-      
-      // التحقق من عدم وجود تعارض
-      const hasConflict = existingBookings.some((booking: any) => {
-        return booking.startTime <= timeSlot && booking.endTime > timeSlot;
-      });
-
-      if (!hasConflict) {
-        availableSlots.push(timeSlot);
-      }
-    }
-
-    if (availableSlots.length === 0) {
-      return `عذراً، لا توجد أوقات متاحة في ${date}. يرجى اختيار يوم آخر.`;
-    }
-
-    return `الأوقات المتاحة في ${date}:\n\n${availableSlots.map((slot, i) => `${i + 1}. ${slot}`).join('\n')}\n\nيرجى اختيار الوقت المناسب لك.`;
-
-  } catch (error) {
-    console.error('[AI] Error generating available slots:', error);
-    return 'حدث خطأ أثناء جلب الأوقات المتاحة.';
-  }
+    const service=await getServiceById(serviceId);
+    if(!service||service.isActive!==1)return 'عذراً، الخدمة غير متاحة.';
+    const {getAvailableTimeSlots}=await import('./db');
+    const slots=await getAvailableTimeSlots(serviceId,date);
+    const times=Array.from(new Set(slots.map(slot=>slot.startTime)));
+    if(!times.length)return 'لا توجد مواعيد معروضة حاليًا لهذا اليوم. يرجى التواصل مع النشاط لاختيار موعد.';
+    return 'المواعيد المعروضة في '+date+':\n\n'+times.map((slot,index)=>String(index+1)+'. '+slot).join('\n')+'\n\nالتوافر يُتحقق منه عند تسجيل طلب الحجز.';
+  } catch { return 'حدث خطأ أثناء جلب الأوقات المتاحة.'; }
 }

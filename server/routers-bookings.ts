@@ -1,3 +1,4 @@
+import { bookingCreationProcedure } from './routers-booking-creation';
 import { bookingOperationProcedures } from './routers-booking-operations';
 /**
  * Bookings Router Module
@@ -25,52 +26,7 @@ import {
 } from './db';
 
 export const bookingsRouter = router({
-    // Create a new booking
-    create: protectedProcedure
-        .input(z.object({
-            serviceId: z.number(),
-            customerPhone: z.string(),
-            customerName: z.string().optional(),
-            customerEmail: z.string().email().optional(),
-            staffId: z.number().optional(),
-            bookingDate: z.string(),
-            startTime: z.string(),
-            endTime: z.string(),
-            durationMinutes: z.number(),
-            basePrice: z.number(),
-            discountAmount: z.number().optional(),
-            finalPrice: z.number(),
-            notes: z.string().optional(),
-            bookingSource: z.enum(['whatsapp', 'website', 'phone', 'walk_in']).optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const hasConflict = await checkBookingConflict(
-                input.serviceId,
-                input.staffId || null,
-                input.bookingDate,
-                input.startTime,
-                input.endTime
-            );
-
-            if (hasConflict) {
-                throw new TRPCError({
-                    code: 'CONFLICT',
-                    message: 'This time slot is already booked'
-                });
-            }
-
-            const bookingId = await createBooking({
-                merchantId: merchant.id,
-                ...input,
-            });
-
-            return { success: true, bookingId };
-        }),
+    create: bookingCreationProcedure,
 
     // Get booking by ID
     getById: protectedProcedure

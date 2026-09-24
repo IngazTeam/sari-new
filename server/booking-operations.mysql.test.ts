@@ -84,7 +84,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         expectedCurrency: "SAR",
       });
     };
-    const create = () =>
+    const create = (patch: Record<string, unknown> = {}) =>
       db.createBooking({
         merchantId: owner.merchantId,
         serviceId,
@@ -95,6 +95,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         durationMinutes: 60,
         basePrice: 30000,
         finalPrice: 30000,
+        ...patch,
       });
     beforeEach(async () => {
       owner = await createDisposableMerchant("booking-operation");
@@ -687,7 +688,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         );
       if (kind === "inactive_service") await db.deleteService(serviceId);
       if (kind === "conflict") {
-        const otherId = await create();
+        const otherId = await create({ startTime: "12:00", endTime: "13:00" });
         await query(
           "UPDATE bookings SET start_time='12:00',end_time='13:00' WHERE id=?",
           [otherId]
@@ -746,7 +747,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     it("rejects reusing a mutation key against another booking without modifying either record", async () => {
       const request = input({ status: "confirmed" });
       await updateBookingOperation(owner.merchantId, owner.userId, request);
-      const anotherId = await create();
+      const anotherId = await create({ bookingDate: "2026-12-21" });
       await expect(
         updateBookingOperation(owner.merchantId, owner.userId, {
           ...request,

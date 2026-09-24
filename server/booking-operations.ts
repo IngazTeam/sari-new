@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
-import type { PoolConnection } from "mysql2/promise";
+import {
+  withBookingCapacityTransaction,
+  validateBookingStaff,
+  hasBookingConflict,
+} from "./booking-capacity";
 import { z } from "zod";
 import { getPool } from "./db/connection";
 import { assertRuntimeSchema } from "./db/schema-readiness";
@@ -70,34 +74,6 @@ async function schemaReady() {
     { cacheSuccess: false }
   );
 }
-async function transaction<T>(run: (connection: PoolConnection) => Promise<T>) {
-  const pool = await getPool();
-  if (!pool) throw unavailable();
-  const connection = await pool.getConnection();
-  let reusable = true,
-    committing = false;
-  try {
-    await connection.query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
-    await connection.beginTransaction();
-    const result = await run(connection);
-    committing = true;
-    await connection.commit();
-    return result;
-  } catch (error) {
-    if (committing) reusable = false;
-    else
-      try {
-        await connection.rollback();
-      } catch {
-        reusable = false;
-      }
-    throw error;
-  } finally {
-    if (reusable) connection.release();
-    else connection.destroy();
-  }
-}
-
 async function execute(
   merchantId: number,
   actorUserId: number,
@@ -110,7 +86,7 @@ async function execute(
   const requestHash = createHash("sha256")
     .update(JSON.stringify({ merchantId, actorUserId, operation, input }))
     .digest("hex");
-  return transaction(async connection => {
+  return withBookingCapacityTransaction(merchantId, async connection => {
     const [bookings] = await connection.execute<any[]>(
       "SELECT * FROM bookings WHERE id=? AND merchant_id=? FOR UPDATE",
       [input.bookingId, merchantId]
@@ -216,27 +192,12 @@ async function execute(
         )
           throw unavailable();
         const staffId = patch.staffId ?? booking.staff_id;
-        if (staffId != null) {
-          const [staff] = await connection.execute<any[]>(
-            "SELECT id FROM staff_members WHERE id=? AND merchant_id=? AND is_active=1 FOR SHARE",
-            [staffId, merchantId]
-          );
-          if (staff.length !== 1) throw unavailable();
-          if (services[0].staff_ids) {
-            let assigned: unknown;
-            try {
-              assigned = JSON.parse(services[0].staff_ids);
-            } catch {
-              throw unavailable();
-            }
-            if (
-              !Array.isArray(assigned) ||
-              assigned.some(id => !Number.isSafeInteger(id)) ||
-              (assigned.length && !assigned.includes(staffId))
-            )
-              throw unavailable();
-          }
-        }
+        await validateBookingStaff(
+          connection,
+          merchantId,
+          services[0],
+          staffId
+        );
         const date = patch.bookingDate ?? day(booking.booking_date),
           start = patch.startTime ?? booking.start_time,
           end = patch.endTime ?? booking.end_time;
@@ -245,23 +206,21 @@ async function execute(
           booking.duration_minutes < 1
         )
           throw unavailable();
-        // Service lock serializes these edits. Legacy creation still needs its own capacity transaction.
-        const [conflicts] = await connection.execute<any[]>(
-          `SELECT id FROM bookings WHERE merchant_id=? AND id<>? AND booking_date=?
-          AND status IN ('pending','confirmed','in_progress') AND start_time<? AND end_time>?
-          AND (service_id=? OR (? IS NOT NULL AND staff_id=?)) LIMIT 1`,
-          [
+        if (
+          await hasBookingConflict(
+            connection,
             merchantId,
-            booking.id,
-            date,
-            end,
-            start,
-            booking.service_id,
-            staffId,
-            staffId,
-          ]
-        );
-        if (conflicts.length) throw unavailable();
+            {
+              serviceId: booking.service_id,
+              staffId: staffId ?? undefined,
+              bookingDate: date,
+              startTime: start,
+              endTime: end,
+            },
+            booking.id
+          )
+        )
+          throw unavailable();
       }
       const columns: Record<string, string> = {
         status: "status",
