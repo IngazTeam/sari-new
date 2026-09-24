@@ -2,13 +2,14 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
-import { AiBudgetError } from './budget-ledger';
+import { AiBudgetError, type AiBudgetAttempt } from './budget-ledger';
 import { learningEvidenceIds, parseLearningAnalysis, snapshotLearningSignals,
   type LearningAnalysis, type LearningAnalysisSnapshot } from './learning-analysis-contract';
 
 export type LearningAnalysisClaim = { merchantId: number; token: string; digest: string; recoveryToken?: string };
 type Row = { merchant_id: number; source_digest: string; source_ids: unknown; claim_token: string;
-  state: string; lease_valid: number; response_json: unknown; response_hash: string | null; recovery_token: string | null; recovery_valid: number };
+  state: string; lease_valid: number; response_json: unknown; response_hash: string | null; recovery_token: string | null; recovery_valid: number;
+  ai_reservation_key: string | null };
 type ClaimResult = { status: 'claimed'; claim: LearningAnalysisClaim }
   | { status: 'responded'; claim: LearningAnalysisClaim; snapshot: LearningAnalysisSnapshot; analysis: LearningAnalysis }
   | { status: 'blocked' | 'idle' | 'stale' };
@@ -20,8 +21,8 @@ function claimOf(row: Row): LearningAnalysisClaim { return { merchantId: row.mer
 async function transaction<T>(merchantId: number, work: (c: PoolConnection, row?: Row) => Promise<T>): Promise<T> {
   identity(merchantId);
   await assertRuntimeSchema('durable learning analysis', [{ table: 'ai_learning_analysis_jobs',
-    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at'],
-    uniqueIndexes: [{ name:'PRIMARY',columns:['merchant_id'] }] }]);
+    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at','ai_reservation_key'],
+    uniqueIndexes: [{ name:'PRIMARY',columns:['merchant_id'] }, {name:'uq_learning_ai_reservation',columns:['ai_reservation_key']}] }]);
   const pool = await getPool(); if (!pool) throw Error('Learning job storage unavailable');
   const c = await pool.getConnection();
   try {
@@ -93,7 +94,7 @@ export async function claimLearningAnalysis(snapshot: LearningAnalysisSnapshot):
       VALUES (?,?,?,?,'reserved',TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3)))
       ON DUPLICATE KEY UPDATE source_digest=VALUES(source_digest),source_ids=VALUES(source_ids),claim_token=VALUES(claim_token),
       state='reserved',lease_until=VALUES(lease_until),response_json=NULL,response_hash=NULL,failure_code=NULL,generation=NULL,
-      proposal_count=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_attempts=0,recovery_last_error=NULL,recovered_at=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
+      proposal_count=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_attempts=0,recovery_last_error=NULL,recovered_at=NULL,ai_reservation_key=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
     return { status:'claimed', claim:{merchantId:snapshot.merchantId,token,digest:snapshot.digest} };
   });
 }
@@ -111,9 +112,38 @@ export async function dispatchLearningAnalysis(claim: LearningAnalysisClaim): Pr
     return true;
   });
 }
-export async function storeLearningResponse(claim: LearningAnalysisClaim, response: string): Promise<LearningAnalysis | null> {
+async function assertAttempt(c: PoolConnection, claim: LearningAnalysisClaim, attempt: AiBudgetAttempt, beforeDispatch: boolean) {
+  if (!attempt || !/^[a-f0-9]{64}$/.test(attempt.reservationKey) || attempt.scopeKey !== `merchant:${claim.merchantId}`
+    || !['openai','zahypi'].includes(attempt.provider)
+    || attempt.taskType !== (attempt.provider === 'zahypi' ? 'sari.learning.pattern-analysis' : 'sari.learning.pattern_analysis')) {
+    throw Error('Learning provider attempt mismatch');
+  }
+  const [rows] = await c.execute<any[]>(`SELECT request_id,scope_key,provider,model,task_type,state
+    FROM ai_usage_reservations WHERE reservation_key=? FOR SHARE`, [attempt.reservationKey]);
+  const row = rows[0];
+  if (!row || row.request_id !== attempt.requestId || row.scope_key !== attempt.scopeKey || row.provider !== attempt.provider
+    || row.model !== attempt.model || row.task_type !== attempt.taskType
+    || !(beforeDispatch ? ['reserved'] : ['reserved','unknown','settled']).includes(row.state)) {
+    throw Error('Learning provider attempt mismatch');
+  }
+}
+/** Called after budget admission and committed before any provider transport. */
+export async function bindLearningProviderAttempt(claim: LearningAnalysisClaim, attempt: AiBudgetAttempt): Promise<void> {
+  await transaction(claim.merchantId,async(c,row)=>{
+    if (!matches(row,claim) || row!.state !== 'dispatched' || row!.ai_reservation_key) throw Error('Learning dispatch not available');
+    await assertAttempt(c,claim,attempt,true);
+    if (!await currentSnapshot(c,claim.merchantId,decode(row!.source_ids),claim.digest)) throw Error('Learning source changed');
+    await c.execute('UPDATE ai_learning_analysis_jobs SET ai_reservation_key=? WHERE merchant_id=?', [attempt.reservationKey,claim.merchantId]);
+  });
+}
+export async function storeLearningResponse(claim: LearningAnalysisClaim, response: string, attempt?: AiBudgetAttempt): Promise<LearningAnalysis | null> {
   return transaction(claim.merchantId,async(c,row)=>{
     if (!matches(row,claim) || !['dispatched','uncertain'].includes(row!.state)) return null;
+    // Pre-migration jobs may have no link. A linked job may only accept its bound attempt.
+    if (attempt || row!.ai_reservation_key) {
+      if (!attempt || row!.ai_reservation_key !== attempt.reservationKey) throw Error('Learning response attempt mismatch');
+      await assertAttempt(c,claim,attempt,false);
+    }
     const ids = decode(row!.source_ids) as number[];
     if (!await currentSnapshot(c,claim.merchantId,ids,claim.digest)) { await terminal(c,claim.merchantId,'stale','source_changed'); return null; }
     let analysis: LearningAnalysis;
@@ -137,7 +167,7 @@ export async function recordLearningProviderFailure(claim: LearningAnalysisClaim
     await markLearningDispatchUncertain(claim); return;
   }
   await transaction(claim.merchantId,async(c,row)=>{
-    if (matches(row,claim) && row!.state === 'dispatched') await c.execute(`UPDATE ai_learning_analysis_jobs
+    if (matches(row,claim) && row!.state === 'dispatched' && !row!.ai_reservation_key) await c.execute(`UPDATE ai_learning_analysis_jobs
       SET state='reserved',claim_token=?,lease_until=TIMESTAMPADD(SECOND,300,UTC_TIMESTAMP(3)),failure_code='budget_admission_denied'
       WHERE merchant_id=?`,[randomUUID(),claim.merchantId]);
   });

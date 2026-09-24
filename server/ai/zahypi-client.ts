@@ -1,4 +1,4 @@
-import { withAiBudget, promptBudgetShape } from './budget-ledger';
+import { AiBudgetError, withAiBudget, promptBudgetShape, type AiBudgetLifecycle } from './budget-ledger';
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
@@ -23,6 +23,7 @@ export type ZahyPiChatResult = {
 };
 
 type ChatOptions = {
+  lifecycle?: AiBudgetLifecycle<string>;
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
@@ -677,7 +678,9 @@ export async function requestZahyPiJobCompletion(
   requestedTimeoutMs = 30_000,
   requestedMaxAttempts = 3,
   runtimeConfigOverride?: Omit<ZahyPiRuntimeConfig, "source">,
+  lifecycle?: AiBudgetLifecycle<ZahyPiCompletionResponse>,
 ): Promise<ZahyPiCompletionResponse> {
+  if (lifecycle && requestedMaxAttempts !== 1) throw new AiBudgetError('invalid_usage');
   const resolvedContext = context ?? getZahyPiRequestContext();
   assertValidContext(resolvedContext);
   const contract = resolveSariTaskType(resolvedContext.taskType.trim());
@@ -819,7 +822,7 @@ export async function requestZahyPiJobCompletion(
     }
     throw error;
   }
-  }, completion => completion.usage);
+  }, completion => completion.usage, lifecycle);
 }
 
 export async function requestZahyPiChat(
@@ -832,7 +835,14 @@ export async function requestZahyPiChat(
     messages,
     temperature: options.temperature ?? 0.7,
     max_tokens: options.maxTokens ?? 1_000,
-  }, context, options.timeoutMs, options.maxAttempts, runtimeConfig);
+  }, context, options.timeoutMs, options.maxAttempts, runtimeConfig, options.lifecycle && {
+    beforeDispatch: attempt => options.lifecycle!.beforeDispatch(attempt),
+    afterResponse: async (completion, attempt) => {
+      const content = completion.choices[0]?.message.content;
+      if (typeof content !== 'string' || !content.trim()) throw new AiBudgetError('invalid_usage');
+      await options.lifecycle!.afterResponse(content.trim(), attempt);
+    },
+  });
   const content = body.choices[0]?.message.content;
   if (typeof content !== "string" || !content.trim()) {
     throw new Error("ZahyPi returned an empty response");

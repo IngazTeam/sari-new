@@ -7,7 +7,19 @@ import { persistLearningAnalysis } from './learning-analysis';
 import { snapshotLearningSignals, type LearningAnalysis } from './learning-analysis-contract';
 import { attachLearningEvidence } from './learning-evidence';
 const provider = vi.hoisted(() => ({ call: vi.fn(), notify: vi.fn(), digest: vi.fn() }));
-vi.mock('./openai', () => ({ callGPT4: provider.call }));
+// Projection tests isolate provider admission; learning-provider-attempt.mysql.test.ts
+// exercises the real adapters, budget ledger and durable handoff together.
+vi.mock('./learning-analysis-jobs',async original=>{
+  const actual=await original<typeof import('./learning-analysis-jobs')>();
+  return {...actual,bindLearningProviderAttempt:async()=>{},
+    storeLearningResponse:(claim:any,response:string)=>actual.storeLearningResponse(claim,response)};
+});
+vi.mock('./openai',()=>({ callGPT4:async(messages:any,options:any)=>{
+  await options.lifecycle.beforeDispatch({});
+  const response=await provider.call(messages,options);
+  await options.lifecycle.afterResponse(response,{});
+  return response;
+} }));
 vi.mock('../_core/notificationService', () => ({ sendNotification: provider.notify }));
 vi.mock('./smart-escalation', () => ({ sendKnowledgeGapDigest: provider.digest }));
 import { triggerPatternAnalysis } from './learning-engine';

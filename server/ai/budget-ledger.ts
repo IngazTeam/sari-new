@@ -14,6 +14,13 @@ type Price = { version: string; input_micro_usd_per_million: number; output_micr
 type Reservation = { reservationKey: string; requestId: string; scopeKey: string; period: string; created: boolean };
 export type BudgetRequest = { merchantId: Identity; provider: string; model: string; taskType: string;
   requestId?: string; inputTokens: number; maxOutputTokens: number; hasExternalMedia?: boolean };
+export type AiBudgetAttempt = Readonly<Pick<Reservation, 'reservationKey' | 'requestId' | 'scopeKey'>
+  & Pick<BudgetRequest, 'provider' | 'model' | 'taskType'>>;
+/** Internal durable handoff hooks; neither hook authorizes another provider attempt. */
+export type AiBudgetLifecycle<T> = {
+  beforeDispatch(attempt: AiBudgetAttempt): Promise<void>;
+  afterResponse(result: T, attempt: AiBudgetAttempt): Promise<void>;
+};
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function integer(value: unknown): number {
@@ -211,15 +218,29 @@ export async function getAiBudgetStatus(identity: Identity) {
     percentUsed: Math.min(100, Math.max(Math.floor(used * 100 / limit), Math.floor(globalUsed * 100 / globalLimit))) };
 }
 
-export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt: { requestId: string }) => Promise<T>, usageOf: (result: T) => { prompt_tokens: number; completion_tokens: number } | undefined): Promise<T> {
+export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt: { requestId: string }) => Promise<T>, usageOf: (result: T) => { prompt_tokens: number; completion_tokens: number } | undefined,
+  lifecycle?: AiBudgetLifecycle<T>): Promise<T> {
+  // Snapshot metadata before awaiting storage; callbacks never share a mutable authority object.
+  input = { ...input };
+  const route = { provider: input.provider, model: input.model, taskType: input.taskType };
   let reservation: Reservation;
   try { reservation = await reserveAiBudget(input); }
   catch (error) { if (error instanceof AiBudgetError) throw error; throw new AiBudgetError('budget_unavailable'); }
   if (!reservation.created) throw new AiBudgetError('duplicate_request');
+  const attempt: AiBudgetAttempt = Object.freeze({ reservationKey: reservation.reservationKey,
+    requestId: reservation.requestId, scopeKey: reservation.scopeKey, ...route });
   let providerCompleted = false;
   try {
+    if (lifecycle) {
+      try { await lifecycle.beforeDispatch(attempt); }
+      catch { throw new AiBudgetError('budget_unavailable'); }
+    }
     const result = await operation({ requestId: reservation.requestId });
     providerCompleted = true;
+    if (lifecycle) {
+      try { await lifecycle.afterResponse(result, attempt); }
+      catch { throw new AiBudgetError('budget_unavailable'); }
+    }
     const usage = usageOf(result);
     if (usage) await settleAiBudget(reservation, usage);
     else await markAiBudgetUnknown(reservation);

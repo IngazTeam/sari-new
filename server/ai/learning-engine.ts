@@ -12,7 +12,7 @@
  */
 
 import { callGPT4, type ChatMessage } from './openai';
-import { resumeLearningAnalysis, claimLearningAnalysis, dispatchLearningAnalysis, storeLearningResponse, recordLearningProviderFailure } from './learning-analysis-jobs';
+import { resumeLearningAnalysis, claimLearningAnalysis, dispatchLearningAnalysis, bindLearningProviderAttempt, storeLearningResponse, recordLearningProviderFailure } from './learning-analysis-jobs';
 import { snapshotLearningSignals, sanitizeLearningText } from './learning-analysis-contract';
 import {
   captureSignal,
@@ -335,18 +335,24 @@ ${formatSignalsForPrompt(signalGroups)}
         analyzedCount = job.snapshot.signals.length;
       } else if (job.status === 'claimed') {
         if (!await dispatchLearningAnalysis(job.claim)) return {status:'blocked',signalCount:snapshot.signals.length};
-        let response: string;
+        const saved: { analysis: Awaited<ReturnType<typeof storeLearningResponse>> } = { analysis: null };
         try {
-          response = await callGPT4(messages, {
+          await callGPT4(messages, {
             merchantId, taskType: 'sari.learning.pattern_analysis', model: ANALYSIS_MODEL,
             temperature: 0.3, maxTokens: 2000, noRetry: true,
+            lifecycle: {
+              beforeDispatch: attempt => bindLearningProviderAttempt(job.claim, attempt),
+              afterResponse: async (response, attempt) => {
+                saved.analysis = await storeLearningResponse(job.claim, response, attempt);
+              },
+            },
           });
         } catch (error) {
           await recordLearningProviderFailure(job.claim,error);
           throw error;
         }
-        // Save a validated response before proposal projection, so a retry only repeats local SQL.
-        const analysis = await storeLearningResponse(job.claim,response);
+        // The adapter saved the response before budget settlement. Recovery only repeats local SQL.
+        const analysis = saved.analysis;
         if (!analysis) throw Error('Learning response rejected or source changed');
         persisted = await persistLearningAnalysis(snapshot,analysis,job.claim);
         analyzedCount = snapshot.signals.length;

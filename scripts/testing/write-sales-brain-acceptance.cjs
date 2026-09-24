@@ -509,6 +509,15 @@ Object.assign(entries, {
  B063:[entries.B063[0]+' اختبارات مدخلات وهوية متعارضة وملكية محادثة متغيرة وردود أخطاء منقحة، وسباق آخر خانة بين ثمانية طلبات وثلاث عمليات مستقلة.','server/ai/learning-signal-capture-pentest.test.ts'],
  B064:[entries.B064[0]+' حفظ الدفعة والحد اليومي في معاملة واحدة؛ فشل العد يغلق الإدخال، وفقد إقرار الحفظ يستعاد بالهوية دون تكرار. لا تغيير مخطط أو واجهة في هذه الدفعة.','docs/SARI_SALES_BRAIN_SIGNAL_ADMISSION_2026-09-24.md'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' ربط التحليل بمحاولة ميزانية بعينها قبل النقل، مع رفض التبديل والعمال المتنافسين وحفظ النتيجة قبل تسوية التكلفة.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B043:[entries.B043[0]+' فشل تسوية التكلفة لا يُسقط رد التحليل المحفوظ؛ عامل الاستعادة يكمل المقترحات محليًا دون نموذج أو إشعار جديد.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B049:[entries.B049[0]+' محاولة تحليل التعلم مربوطة بسجل التكلفة بهوية النشاط والمزوّد والنموذج والمهمة ومعرف الطلب، مع احترام اسم المهمة المعتمد في ZahyPi.','server/ai/learning-analysis-jobs.ts'],
+ B050:[entries.B050[0]+' واجهة الحفظ المتين تشترط محاولة واحدة وتعزل أخطاء الحفظ عن إعادة الاتصال أو fallback؛ الرد المفقود قبل الحفظ يبقى غير محسوم.','server/ai/provider-lifecycle-pentest.test.ts'],
+ B051:[entries.B051[0]+' تبقى تكلفة المحاولة محجوزة عند فشل الربط أو الحفظ أو التسوية؛ الاسترجاع المحلي للنتيجة لا يسوّي الفاتورة ولا يطلق الميزانية.','server/ai/learning-provider-attempt.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبارات المسارين الفعليين مع نقل مصطنع تشمل أعطال commit قبل وبعد الربط والحفظ والتسوية والتنافس والهوية المزورة؛ لا اتصال مدفوع.','docs/SARI_SALES_BRAIN_PROVIDER_HANDOFF_2026-09-24.md'],
+ B065:[entries.B065[0]+' ترحيل 0102 يضيف مرجع محاولة فريدًا يقبل NULL ويحفظ حالات التحليل وردوده القديمة دون تخمين هوية سابقة؛ يلزم تطبيقه قبل تحديث العمال.','drizzle/0102_learning_provider_attempt.sql'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

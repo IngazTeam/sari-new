@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-09-24T19:30:42.602Z",
+  "database": "sari_provider_handoff_fresh_test",
+  "scope": "Fresh local chain 0000–0101; all seven synthetic job states, source rows and proposals seeded; actual updater applies 0102; rerun is a no-op. Existing databases not overwritten.",
+  "migrations": 103,
+  "expected": 103,
+  "previousSourcesPreserved": true,
+  "allPreviousJobFieldsPreserved": true,
+  "legacyLinksRemainNull": true,
+  "rerunUnchanged": true,
+  "duplicateReservationRejected": true,
+  "globalDailyMicroUsd": "100000000",
+  "primaryKey": true,
+  "foreignKeyCascade": true,
+  "stateConstraint": true,
+  "uniqueReservationIndex": true,
+  "migrationSha256": "ac23f3324356792c61722892dd341a4a336fa5f05bb4c399af8488ac350b27ea",
+  "passed": true
+}

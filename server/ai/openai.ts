@@ -11,7 +11,7 @@ import {
   requestZahyPiChat,
   resolveZahyPiRuntimeConfig,
 } from './zahypi-client';
-import { AiBudgetError, withAiBudget, promptBudgetShape } from './budget-ledger';
+import { AiBudgetError, withAiBudget, promptBudgetShape, type AiBudgetLifecycle } from './budget-ledger';
 import { AUXILIARY_AI_ROUTES } from '../../shared/ai-capabilities';
 import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from './auxiliary-routing';
 
@@ -148,12 +148,14 @@ export async function callGPT4(
     temperature?: number;
     maxTokens?: number;
     noRetry?: boolean; // PEN-RES-03 FIX: Skip internal retry (used when caller already handles retry)
+    lifecycle?: AiBudgetLifecycle<string>;
     merchantId?: number;
     conversationId?: number | string;
     userId?: number | string;
     taskType?: string;
   }
 ): Promise<string> {
+  if (options?.lifecycle && options.noRetry !== true) throw new AiBudgetError('invalid_usage');
   const startedAt = Date.now();
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
@@ -186,6 +188,7 @@ export async function callGPT4(
         temperature,
         timeoutMs: 25_000,
         maxAttempts: options?.noRetry ? 1 : 3,
+        ...(options?.lifecycle ? { lifecycle: options.lifecycle } : {}),
       },
       explicitContext ?? inheritedContext,
     );
@@ -222,7 +225,7 @@ export async function callGPT4(
 
   // Attempt 1: Primary model
   try {
-    const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000, budgetIdentity, budgetTask);
+    const result = await fetchWithTimeout(apiKey, messages, primaryModel, temperature, maxTokens, 25_000, budgetIdentity, budgetTask, options?.lifecycle);
     circuitBreaker.recordSuccess();
     return result;
   } catch (err1: any) {
@@ -286,6 +289,7 @@ async function fetchWithTimeout(
   timeoutMs: number,
   merchantId: number | string | undefined,
   taskType: string,
+  lifecycle?: AiBudgetLifecycle<string>,
 ): Promise<string> {
   const completion = await withAiBudget({ merchantId, provider: 'openai', model, taskType,
     ...promptBudgetShape(messages), maxOutputTokens: maxTokens }, async attempt => {
@@ -350,7 +354,10 @@ async function fetchWithTimeout(
     }
     throw error;
   }
-  }, data => data.usage);
+  }, data => data.usage, lifecycle && {
+    beforeDispatch: attempt => lifecycle.beforeDispatch(attempt),
+    afterResponse: (data, attempt) => lifecycle.afterResponse(data.choices[0].message.content, attempt),
+  });
   return completion.choices[0].message.content;
 }
 

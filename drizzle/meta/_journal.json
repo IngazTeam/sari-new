@@ -715,6 +715,13 @@
       "when": 1792195200000,
       "tag": "0101_learning_analysis_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1792281600000,
+      "tag": "0102_learning_provider_attempt",
+      "breakpoints": true
     }
   ]
 }
