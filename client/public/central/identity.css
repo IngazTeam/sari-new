@@ -1,0 +1,85 @@
+/* Sary's portrait and the original, locally hosted integration brand assets. */
+.central-site .hero-copy { min-width: 0; }
+.central-site[dir="ltr"] .hero h1 { white-space: normal; }
+.central-site .director-visual .portrait-frame picture img { object-position: center top; }
+.central-site .director-visual .float-badge { top: 30px; }
+.central-site .director-visual .director-note {
+  width: 224px;
+  right: -20px;
+  bottom: 100px;
+  padding: 15px 18px;
+  border-radius: 18px;
+}
+.central-site .director-note .order-top { font-size: 10px; gap: 7px; }
+.central-site .director-note .order-top svg { width: 17px; height: 17px; color: var(--green); }
+.central-site .director-note > b { font-size: 15px; padding: 7px 0 0; line-height: 1.65; }
+.central-site .director-visual .visual-footnote { position: absolute; top: 100%; width: 100%; margin-top: 10px; }
+.central-site[dir="ltr"] .director-visual .portrait-caption > span:last-child { direction: ltr; text-align: left; font-size: 17px; }
+.central-site .integrations-section {
+  scroll-margin-top: 100px;
+  margin-block: 75px 85px;
+  padding-block: 44px 24px;
+  border-block: 1px solid var(--line);
+}
+.central-site .integrations-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 30px; }
+.central-site .integrations-heading .eyebrow { margin-bottom: 13px; }
+.central-site .integrations-heading h2 { font-size: clamp(26px, 3vw, 38px); font-weight: 400; line-height: 1.45; margin: 0; }
+.central-site .integrations-heading > p { max-width: 405px; color: var(--muted); font-size: 13px; line-height: 1.9; margin: 0 0 5px; }
+.central-site .integration-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 0; }
+.central-site .integration-grid > li { min-width: 0; }
+.central-site .integration-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+  height: 148px;
+  padding: 22px 10px 19px;
+  background: #fff;
+  border: 1px solid #e1e7df;
+  border-radius: 17px;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.central-site .integration-card:hover { border-color: #b4c7a7; box-shadow: 0 8px 22px #153d3109; transform: translateY(-3px); }
+.central-site .integration-card:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }
+.central-site .integration-logo { display: flex; height: 52px; width: 100%; align-items: center; justify-content: center; gap: 8px; direction: ltr; }
+.central-site .integration-logo img { display: block; object-fit: contain; width: 118px; height: 48px; }
+.central-site .integration-logo.symbol img { width: 34px; height: 34px; flex: 0 0 34px; }
+.central-site .integration-logo.symbol b { font: 500 13px/1.35 Arial, sans-serif; color: #283c32; text-align: start; max-width: 89px; }
+.central-site .integration-logo.analytics img { width: 154px; height: 57px; }
+.central-site .integration-logo:has(img[src$="byaan.png"]) { width: 118px; height: 52px; overflow: hidden; }
+.central-site .integration-logo img[src$="byaan.png"] { width: 170px; height: auto; max-width: none; flex-shrink: 0; }
+.central-site .integration-logo img[src$="zid.svg"] { width: 90px; height: 43px; }
+.central-site .integration-logo img[src$="zahy.png"] { width: 96px; height: 48px; }
+.central-site .integration-purpose { color: #657469; font-size: 10px; line-height: 1.5; }
+.central-site .integration-arrow { position: absolute; top: 11px; inset-inline-end: 10px; width: 13px; height: 13px; color: #87948a; opacity: 0; transition: opacity .2s; }
+.central-site .integration-card:is(:hover, :focus-visible) .integration-arrow { opacity: 1; }
+.central-site .integrations-note { font-size: 10px; line-height: 1.9; color: #68776d; margin: 20px 0 0; text-align: center; }
+@media (max-width: 1000px) {
+  .central-site .integration-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .central-site .integration-card { height: 133px; }
+  .central-site .integrations-heading { gap: 25px; }
+}
+@media (max-width: 700px) {
+  .central-site .integrations-section { width: calc(100% - 24px); margin-block: 65px 45px; padding-top: 32px; }
+  .central-site .integrations-heading { display: block; margin-bottom: 25px; }
+  .central-site .integrations-heading > p { font-size: 12px; margin-top: 15px; }
+  .central-site .integration-grid { gap: 9px; }
+  .central-site .integration-card { padding-inline: 0; height: 124px; gap: 12px; border-radius: 13px; }
+  .central-site .integration-purpose { font-size: 9px; }
+  .central-site .integration-logo.symbol { gap: 7px; }
+  .central-site .integration-logo.symbol img { width: 29px; height: 29px; flex-basis: 29px; }
+  .central-site .integration-logo.symbol b { font-size: 12px; max-width: 86px; }
+  .central-site .integration-arrow { opacity: 1; width: 11px; height: 11px; top: 9px; inset-inline-end: 8px; }
+  .central-site .director-visual .director-note { width: 180px; right: -8px; bottom: 81px; padding: 11px 13px; }
+  .central-site .director-note > b { font-size: 12px; }
+  .central-site .director-note .order-top { font-size: 8px; }
+  .central-site .director-visual .portrait-caption { bottom: 20px; }
+  .central-site[dir="ltr"] .director-visual .portrait-caption > span:last-child { font-size: 14px; }
+}
+@media (max-width: 350px) {
+  .central-site .integration-grid { grid-template-columns: 1fr; }
+}

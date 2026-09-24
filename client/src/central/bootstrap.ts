@@ -47,11 +47,11 @@ export function bootstrapCentral() {
       renderCentralHead(location.pathname, lang)
     );
   }
-  for (const file of ["central", "refinements"])
+  for (const file of ["central", "refinements", "identity"])
     if (!document.querySelector(`link[href^="/central/${file}.css"]`)) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = `/central/${file}.css?v=20260923-2`;
+      link.href = `/central/${file}.css?v=${file === "identity" ? "20260924-2" : "20260923-2"}`;
       document.head.append(link);
     }
   const $ = <T extends Element = HTMLElement>(s: string) =>

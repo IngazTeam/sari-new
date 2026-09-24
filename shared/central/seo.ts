@@ -195,7 +195,7 @@ export function renderCentralDocument(
     )
     .replace(
       "</head>",
-      `${renderCentralHead(url.pathname, lang)}<link rel="stylesheet" href="/central/central.css?v=20260923-2"><link rel="stylesheet" href="/central/refinements.css?v=20260923-2"></head>`
+      `${renderCentralHead(url.pathname, lang)}<link rel="stylesheet" href="/central/central.css?v=20260923-2"><link rel="stylesheet" href="/central/refinements.css?v=20260923-2"><link rel="stylesheet" href="/central/identity.css?v=20260924-2"></head>`
     )
     .replace(
       '<div id="root"></div>',
