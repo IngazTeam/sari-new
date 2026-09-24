@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-09-24T13:55:44.870Z",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "sqlSha256": "67f89de9feecef331b436f735836df30e8d9ec6911228de4d5b2cba37c384e06",
+      "legacySnapshotStateClaimAndReceiptPreserved": true,
+      "legacyKindDefaultsToReschedule": true,
+      "uniqueMerchantCancellationVerified": true,
+      "equalMoveAndCancellationIdsAreIndependent": true,
+      "invalidReferenceCombinationsRejected": 5,
+      "noBackfillOrProductionChanges": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "sqlSha256": "67f89de9feecef331b436f735836df30e8d9ec6911228de4d5b2cba37c384e06",
+      "legacySnapshotStateClaimAndReceiptPreserved": true,
+      "legacyKindDefaultsToReschedule": true,
+      "uniqueMerchantCancellationVerified": true,
+      "equalMoveAndCancellationIdsAreIndependent": true,
+      "invalidReferenceCombinationsRejected": 5,
+      "noBackfillOrProductionChanges": true
+    }
+  ]
+}

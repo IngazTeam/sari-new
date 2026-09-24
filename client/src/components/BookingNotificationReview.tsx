@@ -20,7 +20,7 @@ export function BookingNotificationReview({
   deliveries: Record<string, string>;
 }) {
   const { t, i18n } = useTranslation();
-  const mutation = trpc.bookings.reviewRescheduleNotification.useMutation({
+  const mutation = trpc.bookings.reviewBookingNotification.useMutation({
     retry: false,
   });
   const [reason, setReason] = useState(""),

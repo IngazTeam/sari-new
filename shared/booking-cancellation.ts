@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { bookingCalendarActionSchema } from "./booking-calendar";
+import type { BookingNoticeReview } from "./booking-reschedule";
 
 export const bookingCancellationActionSchema =
   bookingCalendarActionSchema.extend({
@@ -23,4 +24,5 @@ export type BookingCancellationReview = {
   request: { id: number; text: string; at: string } | null;
   originalRequest: { id: number; text: string; at: string } | null;
   history: { action: string; outcome: string; reason: string; at: string }[];
+  notification?: BookingNoticeReview | null;
 };

@@ -25,6 +25,9 @@ export const bookingCancellationFixture = {
           "booking",
           "inFlight",
         ].find(x => mode === `booking-cancellation-${x}`) || null;
+      const notice = mode.startsWith("booking-cancellation-notice-")
+        ? mode.slice("booking-cancellation-notice-".length)
+        : null;
       const xss = mode === "booking-cancellation-xss";
       const source = {
         id: 81,
@@ -36,7 +39,7 @@ export const bookingCancellationFixture = {
       };
       const data: BookingCancellationReview = {
         state:
-          saved || mode === "booking-cancellation-cancelled"
+          saved || notice || mode === "booking-cancellation-cancelled"
             ? "cancelled"
             : unknown
               ? "cancel_unknown"
@@ -47,6 +50,7 @@ export const bookingCancellationFixture = {
         canCancel:
           active &&
           !saved &&
+          !notice &&
           !unknown &&
           !blocker &&
           mode !== "booking-cancellation-cancelled",
@@ -60,6 +64,53 @@ export const bookingCancellationFixture = {
         },
         request: blocker === "request" ? null : source,
         originalRequest: unknown ? source : null,
+        notification: notice
+          ? {
+              id: 49,
+              kind: "cancellation",
+              evidence: (revision ? "d" : "c").repeat(64),
+              canReview: !["pending", "dispatching"].includes(notice),
+              state: ["sent", "delivered", "read", "xss"].includes(notice)
+                ? "accepted"
+                : notice,
+              delivery: ["sent", "delivered", "read"].includes(notice)
+                ? notice
+                : "unverified",
+              projected: !!(window as any).__noticeSaved || notice !== "sent",
+              receipt: notice === "sent" ? "cancel-receipt-49" : null,
+              dispatchAt: source.at,
+              acceptedAt: notice === "sent" ? source.at : null,
+              issue:
+                notice === "unknown"
+                  ? "receipt_unverified"
+                  : notice === "suppressed"
+                    ? "context_changed"
+                    : notice === "manual_review"
+                      ? "source_channel_missing"
+                      : null,
+              text:
+                notice === "xss"
+                  ? '<img src=x onerror="window.__noticeXss=1">' +
+                    "text-".repeat(100)
+                  : "تم إلغاء حجزك #321 لدى النشاط بناءً على طلبك. الموعد الملغى: 2026-10-01، من 10:00 إلى 11:00 بتوقيت الرياض.",
+              history:
+                (window as any).__noticeSaved || notice === "xss"
+                  ? [
+                      {
+                        actorUserId: 7,
+                        reason:
+                          notice === "xss"
+                            ? '<img src=x onerror="window.__noticeXss=1">'
+                            : "Reviewed cancellation receipt",
+                        state: "accepted",
+                        delivery: "sent",
+                        projected: true,
+                        at: source.at,
+                      },
+                    ]
+                  : [],
+            }
+          : null,
         history:
           saved || xss
             ? [
@@ -82,7 +133,10 @@ export const bookingCancellationFixture = {
           setRevision(n => n + 1);
           return {
             data,
-            isError: mode === "booking-cancellation-refresh-error",
+            isError: [
+              "booking-cancellation-refresh-error",
+              "booking-cancellation-notice-refresh-error",
+            ].includes(mode),
           };
         },
       };

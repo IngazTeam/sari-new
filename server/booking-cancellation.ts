@@ -17,6 +17,11 @@ import {
 } from "./booking-calendar";
 import { withBookingCapacityTransaction } from "./booking-capacity";
 import { databaseTimeEpoch } from "./db/time";
+import {
+  assertBookingNotificationSchema,
+  enqueueBookingCancellationNotice,
+} from "./booking-reschedule-notification";
+import { readBookingNoticeReview } from "./booking-notification-review";
 
 const fail = () =>
   Error("Booking cancellation requires fresh verified evidence");
@@ -164,6 +169,7 @@ export async function getBookingCancellationReview(
   positive(merchantId);
   positive(bookingId);
   await assertBookingAgreementSchema();
+  await assertBookingNotificationSchema();
   return withBookingCapacityTransaction(merchantId, async c => {
     const g = await graph(c, merchantId, bookingId);
     if (!g.link) return null;
@@ -191,6 +197,14 @@ export async function getBookingCancellationReview(
         reason: row.reason,
         at: iso(row.created_at),
       })),
+      notification: g.cancellation
+        ? await readBookingNoticeReview(
+            c,
+            merchantId,
+            g.cancellation.id,
+            "cancellation"
+          )
+        : null,
     };
   });
 }
@@ -229,6 +243,7 @@ export async function cancelBookingCalendar(
   positive(actorUserId);
   const input = bookingCancellationActionSchema.parse(raw);
   await assertBookingAgreementSchema();
+  await assertBookingNotificationSchema();
   const requestHash = hash({ merchantId, actorUserId, input });
   const first = await withBookingCapacityTransaction(merchantId, async c => {
     const replay = await prior(c, merchantId, input.requestId, requestHash);
@@ -367,6 +382,7 @@ export async function cancelBookingCalendar(
         "UPDATE bookings SET status='cancelled',cancelled_by='customer',cancelled_at=UTC_TIMESTAMP(),cancellation_reason=? WHERE id=? AND merchant_id=?",
         [input.reason, input.bookingId, merchantId]
       );
+      await enqueueBookingCancellationNotice(c, merchantId, cancellation.id);
       await c.execute(
         "INSERT INTO booking_operation_audits (merchant_id,booking_reference,actor_user_id,request_id,request_hash,operation,before_state,after_state,changed_fields) VALUES (?,?,?,?,?,'update',?,?,?)",
         [

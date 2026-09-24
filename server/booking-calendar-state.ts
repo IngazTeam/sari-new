@@ -6,7 +6,7 @@ export async function assertBookingCalendarSchema() {
   await assertRuntimeSchema(
     "booking calendar dispatch",
     [
-      { table: "booking_reschedule_notifications", columns: ["reschedule_id", "snapshot", "snapshot_hash", "dispatch_text", "state", "claim_token", "delivery_state", "projection_message_id", "next_check_at"],
+      { table: "booking_reschedule_notifications", columns: ["kind", "cancellation_id", "reschedule_id", "snapshot", "snapshot_hash", "dispatch_text", "state", "claim_token", "delivery_state", "projection_message_id", "next_check_at"],
         uniqueIndexes: [{ name: "uq_booking_notice_move", columns: ["merchant_id", "reschedule_id"] }] },
       {
         table: "booking_calendar_reschedules",

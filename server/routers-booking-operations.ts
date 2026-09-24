@@ -31,23 +31,26 @@ import {
   rescheduleBookingCalendar,
 } from "./booking-reschedule";
 
+const reviewNotificationProcedure = permissionProcedure("orders.manage")
+  .input(bookingNotificationReviewSchema)
+  .mutation(async ({ ctx, input }) => {
+    try {
+      return await reviewBookingNotification(
+        ctx.merchantId,
+        ctx.user.id,
+        input
+      );
+    } catch {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Notification review requires refreshed evidence",
+      });
+    }
+  });
+
 export const bookingOperationProcedures = {
-  reviewRescheduleNotification: permissionProcedure("orders.manage")
-    .input(bookingNotificationReviewSchema)
-    .mutation(async ({ ctx, input }) => {
-      try {
-        return await reviewBookingNotification(
-          ctx.merchantId,
-          ctx.user.id,
-          input
-        );
-      } catch {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Notification review requires refreshed evidence",
-        });
-      }
-    }),
+  reviewBookingNotification: reviewNotificationProcedure,
+  reviewRescheduleNotification: reviewNotificationProcedure,
   getRescheduleReview: permissionProcedure("orders.manage")
     .input(bookingCalendarIdSchema)
     .query(async ({ ctx, input }) => {

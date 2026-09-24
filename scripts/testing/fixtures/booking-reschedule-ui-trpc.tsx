@@ -88,6 +88,7 @@ export const bookingRescheduleFixture = {
         notification: notice
           ? {
               id: 47,
+              kind: "reschedule",
               evidence: (revision ? "d" : "c").repeat(64),
               canReview: !["pending", "dispatching"].includes(notice),
               receipt: notice === "sent" ? "provider-message-47" : null,
@@ -157,7 +158,12 @@ export const bookingRescheduleFixture = {
         (window as any).__noticeCalls =
           ((window as any).__noticeCalls || 0) + 1;
         await new Promise(resolve => setTimeout(resolve, 200));
-        if (mode === "booking-reschedule-notice-write-error")
+        if (
+          [
+            "booking-reschedule-notice-write-error",
+            "booking-cancellation-notice-write-error",
+          ].includes(mode)
+        )
           throw Error("private receipt credential");
         (window as any).__noticeSaved = true;
         return { state: "accepted", replayed: false };

@@ -18,6 +18,7 @@ export const trpc = {
   bookings: {
     getRescheduleReview: bookingRescheduleFixture.query,
     rescheduleCalendar: bookingRescheduleFixture.mutation,
+    reviewBookingNotification: bookingRescheduleFixture.noticeMutation,
     reviewRescheduleNotification: bookingRescheduleFixture.noticeMutation,
     getCancellationReview: bookingCancellationFixture.query,
     cancelCalendar: bookingCancellationFixture.mutation,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { BookingNotification } from "./BookingNotification";
 
 export function BookingCancellation({
   bookingId,
@@ -122,6 +123,18 @@ export function BookingCancellation({
               </bdi>{" "}
               · {t("merchantUx.bookingCancellation.timezone")}
             </p>
+            {query.data.notification && (
+              <BookingNotification
+                bookingId={bookingId}
+                notice={query.data.notification}
+                fetching={query.isFetching}
+                refresh={async () => {
+                  const fresh = await query.refetch();
+                  if (fresh.isError) throw Error("refresh");
+                  await onChanged();
+                }}
+              />
+            )}
             <p role="status" data-cancellation-state>
               {states[query.data.state] ||
                 t("merchantUx.bookingCancellation.unknown")}

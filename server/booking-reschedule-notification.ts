@@ -57,6 +57,8 @@ export async function assertBookingNotificationSchema() {
       {
         table: "booking_reschedule_notifications",
         columns: [
+          "kind",
+          "cancellation_id",
           "reschedule_id",
           "snapshot",
           "snapshot_hash",
@@ -72,6 +74,17 @@ export async function assertBookingNotificationSchema() {
             name: "uq_booking_notice_move",
             columns: ["merchant_id", "reschedule_id"],
           },
+          {
+            name: "uq_booking_notice_cancel",
+            columns: ["merchant_id", "cancellation_id"],
+          },
+        ],
+        checkConstraints: [
+          {
+            name: "chk_booking_notice_kind",
+            expression:
+              "(kind='reschedule' AND reschedule_id IS NOT NULL AND cancellation_id IS NULL) OR (kind='cancellation' AND cancellation_id IS NOT NULL AND reschedule_id IS NULL)",
+          },
         ],
       },
     ],
@@ -79,14 +92,22 @@ export async function assertBookingNotificationSchema() {
   );
 }
 const message = (s: any) =>
-  `تم نقل حجزك #${s.bookingId} وتأكيد الموعد الجديد لدى النشاط.\nالموعد الجديد: ${s.after.bookingDate}، من ${s.after.startTime} إلى ${s.after.endTime} بتوقيت الرياض.\nالموعد السابق ${s.before.booking_date}، من ${s.before.start_time} إلى ${s.before.end_time} لم يعد موعد هذا الحجز.\nاحتفظ برقم الحجز عند التواصل معنا.`;
+  s.version === 2
+    ? `تم إلغاء حجزك #${s.bookingId} لدى النشاط بناءً على طلبك.\nالموعد الملغى: ${s.commitment.payload.date}، من ${s.commitment.payload.startTime} إلى ${s.commitment.payload.endTime} بتوقيت الرياض.\nهذا الموعد لم يعد قائمًا. احتفظ برقم الحجز عند التواصل معنا.`
+    : `تم نقل حجزك #${s.bookingId} وتأكيد الموعد الجديد لدى النشاط.\nالموعد الجديد: ${s.after.bookingDate}، من ${s.after.startTime} إلى ${s.after.endTime} بتوقيت الرياض.\nالموعد السابق ${s.before.booking_date}، من ${s.before.start_time} إلى ${s.before.end_time} لم يعد موعد هذا الحجز.\nاحتفظ برقم الحجز عند التواصل معنا.`;
 function intact(r: any, s: any): boolean {
   try {
     return (
-      s?.version === 1 &&
+      ((s?.version === 1 &&
+        r.kind === "reschedule" &&
+        r.cancellation_id === null &&
+        s.moveId === r.reschedule_id) ||
+        (s?.version === 2 &&
+          r.kind === "cancellation" &&
+          r.reschedule_id === null &&
+          s.cancellationId === r.cancellation_id)) &&
       hash(s) === r.snapshot_hash &&
       s.merchantId === r.merchant_id &&
-      s.moveId === r.reschedule_id &&
       s.bookingId === r.booking_reference &&
       privateSalesPhone(s.phone) === s.phone &&
       r.dispatch_text === message(s)
@@ -94,6 +115,40 @@ function intact(r: any, s: any): boolean {
   } catch {
     return false;
   }
+}
+
+async function sourceChannel(
+  c: PoolConnection,
+  merchantId: number,
+  externalId: string | null,
+  phone: string | null
+) {
+  const [accounts] = await c.execute<any[]>(
+    `SELECT j.id AS source_job_id,j.payload_json,i.id,i.provider,i.instance_id,i.phone_number_id,i.provider_account_id
+    FROM whatsapp_inbound_jobs j JOIN whatsapp_instances i ON i.id=j.instance_id AND i.merchant_id=j.merchant_id
+    WHERE j.merchant_id=? AND CONCAT('inbound:v1:',j.event_key)=? LIMIT 2`,
+    [merchantId, externalId]
+  );
+  const account = accounts.length === 1 ? accounts[0] : null,
+    envelope = parse(account?.payload_json);
+  const channel =
+    account &&
+    envelope?.sourceProvider === account.provider &&
+    String(envelope?.instanceData?.idInstance) === account.instance_id &&
+    /@(?:c\.us|s\.whatsapp\.net)$/.test(envelope?.senderData?.chatId || "") &&
+    privateSalesPhone(
+      String(envelope.senderData.chatId).replace("@s.whatsapp.net", "@c.us")
+    ) === phone
+      ? {
+          id: account.id,
+          sourceJobId: account.source_job_id,
+          provider: account.provider,
+          account: account.instance_id,
+          phoneNumberId: account.phone_number_id,
+          providerAccountId: account.provider_account_id,
+        }
+      : null;
+  return channel;
 }
 
 /** Caller owns the successful move transaction. No send or best-effort enqueue here. */
@@ -114,32 +169,8 @@ export async function enqueueBookingRescheduleNotice(
     saved = parse(r?.snapshot);
   if (!r || hash(saved) !== r.snapshot_hash)
     throw Error("Notification commitment unavailable");
-  const [accounts] = await c.execute<any[]>(
-    `SELECT j.id AS source_job_id,j.payload_json,i.id,i.provider,i.instance_id,i.phone_number_id,i.provider_account_id
-    FROM whatsapp_inbound_jobs j JOIN whatsapp_instances i ON i.id=j.instance_id AND i.merchant_id=j.merchant_id
-    WHERE j.merchant_id=? AND CONCAT('inbound:v1:',j.event_key)=? LIMIT 2`,
-    [merchantId, r.externalId]
-  );
-  const account = accounts.length === 1 ? accounts[0] : null,
-    envelope = parse(account?.payload_json);
   const phone = privateSalesPhone(r.customer_phone);
-  const channel =
-    account &&
-    envelope?.sourceProvider === account.provider &&
-    String(envelope?.instanceData?.idInstance) === account.instance_id &&
-    /@(?:c\.us|s\.whatsapp\.net)$/.test(envelope?.senderData?.chatId || "") &&
-    privateSalesPhone(
-      String(envelope.senderData.chatId).replace("@s.whatsapp.net", "@c.us")
-    ) === phone
-      ? {
-          id: account.id,
-          sourceJobId: account.source_job_id,
-          provider: account.provider,
-          account: account.instance_id,
-          phoneNumberId: account.phone_number_id,
-          providerAccountId: account.provider_account_id,
-        }
-      : null;
+  const channel = await sourceChannel(c, merchantId, r.externalId, phone);
   const snapshot = {
     version: 1,
     merchantId,
@@ -155,21 +186,77 @@ export async function enqueueBookingRescheduleNotice(
     before: saved.before,
     after: saved.after,
   };
+  await storeNotice(c, snapshot);
+}
+
+async function storeNotice(c: PoolConnection, s: any) {
+  const kind = s.version === 1 ? "reschedule" : "cancellation";
   await c.execute(
-    `INSERT INTO booking_reschedule_notifications (merchant_id,reschedule_id,booking_reference,snapshot,snapshot_hash,dispatch_text,state,last_error,next_check_at)
-    VALUES (?,?,?,?,?,?,?, ?,IF(?=1,UTC_TIMESTAMP(3),NULL))`,
+    `INSERT INTO booking_reschedule_notifications (merchant_id,kind,reschedule_id,cancellation_id,booking_reference,snapshot,snapshot_hash,dispatch_text,state,last_error,next_check_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,IF(?=1,UTC_TIMESTAMP(3),NULL))`,
     [
-      merchantId,
-      moveId,
-      r.booking_reference,
-      JSON.stringify(snapshot),
-      hash(snapshot),
-      message(snapshot),
-      channel && phone ? "pending" : "manual_review",
-      channel && phone ? null : "source_channel_missing",
-      channel && phone ? 1 : 0,
+      s.merchantId,
+      kind,
+      s.moveId ?? null,
+      s.cancellationId ?? null,
+      s.bookingId,
+      JSON.stringify(s),
+      hash(s),
+      message(s),
+      s.channel && s.phone ? "pending" : "manual_review",
+      s.channel && s.phone ? null : "source_channel_missing",
+      s.channel && s.phone ? 1 : 0,
     ]
   );
+}
+
+/** Enqueue only within the verified cancellation's local completion transaction. */
+export async function enqueueBookingCancellationNotice(
+  c: PoolConnection,
+  merchantId: number,
+  cancellationId: number
+) {
+  const [rows] = await c.execute<any[]>(
+    `SELECT r.*,a.id AS agreement_id,a.conversation_id,a.customer_phone,a.snapshot_hash AS agreement_hash,c.handoff_version
+    FROM booking_calendar_cancellations r JOIN bookings b ON b.id=r.booking_reference AND b.merchant_id=r.merchant_id AND b.status='cancelled'
+    JOIN conversation_booking_agreements a ON a.id=b.customer_agreement_id AND a.merchant_id=b.merchant_id AND a.booking_reference=b.id AND a.state='accepted'
+    JOIN conversations c ON c.id=a.conversation_id AND c.merchantId=a.merchant_id AND c.customerPhone=b.customer_phone
+    WHERE r.id=? AND r.merchant_id=? AND r.state='cancelled'`,
+    [cancellationId, merchantId]
+  );
+  const r = rows[0],
+    saved = parse(r?.snapshot);
+  if (
+    !r ||
+    hash(saved) !== r.snapshot_hash ||
+    saved?.commitment?.booking?.id !== r.booking_reference ||
+    saved.commitment.booking.merchantId !== merchantId
+  )
+    throw Error("Cancellation notification commitment unavailable");
+  const [messages] = await c.execute<any[]>(
+    "SELECT content,externalId FROM messages WHERE id=? AND conversationId=? AND direction='incoming'",
+    [saved.request.id, r.conversation_id]
+  );
+  if (messages.length !== 1 || messages[0].content !== saved.request.text)
+    throw Error("Cancellation source unavailable");
+  const phone = privateSalesPhone(r.customer_phone),
+    channel = await sourceChannel(c, merchantId, messages[0].externalId, phone);
+  await storeNotice(c, {
+    version: 2,
+    merchantId,
+    cancellationId,
+    bookingId: r.booking_reference,
+    agreementId: r.agreement_id,
+    agreementHash: r.agreement_hash,
+    conversationId: r.conversation_id,
+    sourceId: saved.request.id,
+    sourceHash: hash(saved.request.text),
+    phone,
+    handoffVersion: r.handoff_version,
+    channel,
+    cancellationHash: r.snapshot_hash,
+    commitment: saved.commitment,
+  });
 }
 
 async function read(c: PoolConnection, merchantId: number, id: number) {
@@ -218,17 +305,27 @@ async function eligible(c: PoolConnection, r: any, s: any): Promise<boolean> {
   if ((await sourceState(c, s)) !== "ready") return false;
   const [rows] = await c.execute<any[]>(
     `SELECT c.customerPhone,c.human_takeover,c.handoff_version,c.automation_after_message_id,
-    m.content,m.createdAt,UTC_TIMESTAMP(3) AS now,b.customer_phone,b.customer_agreement_id,b.booking_date,b.start_time,b.end_time,b.status,
-    r.state AS move_state,l.state AS calendar_state,l.agreement_id,a.snapshot_hash AS agreement_hash
+    m.content,m.createdAt,UTC_TIMESTAMP(3) AS now,b.customer_phone,b.customer_agreement_id,b.booking_date,b.start_time,b.end_time,b.status,b.payment_status,b.cancelled_by,b.base_price,b.final_price,b.discount_amount,b.google_event_id,
+    r.state AS move_state,l.state AS calendar_state,l.agreement_id,a.consent_message_id,a.snapshot_hash AS agreement_hash,
+    k.state AS cancellation_state,k.snapshot AS cancellation_snapshot,k.snapshot_hash AS cancellation_hash,
+    l.id AS link_id,l.integration_id,l.calendar_id,l.identity_hash,l.event_reference,l.payload_hash
     FROM merchants merchant JOIN conversations c ON c.merchantId=merchant.id
     JOIN messages m ON m.conversationId=c.id AND m.id=? AND m.direction='incoming'
     JOIN bookings b ON b.merchant_id=merchant.id AND b.id=?
-    JOIN booking_calendar_reschedules r ON r.merchant_id=merchant.id AND r.id=? AND r.booking_reference=b.id
+    LEFT JOIN booking_calendar_reschedules r ON r.merchant_id=merchant.id AND r.id=? AND r.booking_reference=b.id
+    LEFT JOIN booking_calendar_cancellations k ON k.merchant_id=merchant.id AND k.id=? AND k.booking_reference=b.id
     JOIN booking_calendar_links l ON l.merchant_id=merchant.id AND l.booking_reference=b.id
     JOIN conversation_booking_agreements a ON a.id=b.customer_agreement_id AND a.merchant_id=merchant.id
-      AND a.conversation_id=c.id AND a.consent_message_id=m.id AND a.state='accepted'
+      AND a.conversation_id=c.id AND a.state='accepted'
     WHERE merchant.id=? AND merchant.status='active' AND c.id=?`,
-    [s.sourceId, s.bookingId, s.moveId, r.merchant_id, s.conversationId]
+    [
+      s.sourceId,
+      s.bookingId,
+      s.moveId ?? null,
+      s.cancellationId ?? null,
+      r.merchant_id,
+      s.conversationId,
+    ]
   );
   const v = rows[0],
     now = databaseTimeEpoch(v?.now),
@@ -244,22 +341,29 @@ async function eligible(c: PoolConnection, r: any, s: any): Promise<boolean> {
     !Number.isFinite(age) ||
     age < 0 ||
     age >= 24 * 3600000 ||
-    v.move_state !== "applied" ||
-    v.calendar_state !== "synced" ||
-    v.status !== "confirmed" ||
     v.customer_agreement_id !== s.agreementId ||
-    v.agreement_id !== s.agreementId ||
-    v.agreement_hash !== hash(s.after) ||
-    String(
-      v.booking_date instanceof Date
-        ? v.booking_date.toISOString()
-        : v.booking_date
-    ).slice(0, 10) !== s.after.bookingDate ||
-    v.start_time !== s.after.startTime ||
-    v.end_time !== s.after.endTime ||
-    Date.parse(`${s.after.bookingDate}T${s.after.startTime}:00+03:00`) <= now
+    v.agreement_id !== s.agreementId
   )
     return false;
+  if (
+    s.version === 1 &&
+    (v.consent_message_id !== s.sourceId ||
+      v.move_state !== "applied" ||
+      v.calendar_state !== "synced" ||
+      v.status !== "confirmed" ||
+      v.agreement_hash !== hash(s.after) ||
+      String(
+        v.booking_date instanceof Date
+          ? v.booking_date.toISOString()
+          : v.booking_date
+      ).slice(0, 10) !== s.after.bookingDate ||
+      v.start_time !== s.after.startTime ||
+      v.end_time !== s.after.endTime ||
+      Date.parse(`${s.after.bookingDate}T${s.after.startTime}:00+03:00`) <= now)
+  )
+    return false;
+  if (s.version === 2 && !(await cancellationMatches(c, v, s))) return false;
+
   const [later] = await c.execute<any[]>(
     "SELECT id FROM messages WHERE conversationId=? AND direction='incoming' AND id>? LIMIT 1",
     [s.conversationId, s.sourceId]
@@ -291,8 +395,63 @@ async function eligible(c: PoolConnection, r: any, s: any): Promise<boolean> {
     accounts.length === 1 &&
     checkedAge >= 0 &&
     checkedAge < 24 * 3600000 &&
-    Date.parse(`${s.after.bookingDate}T${s.after.startTime}:00+03:00`) > checked
+    (s.version === 2 ||
+      Date.parse(`${s.after.bookingDate}T${s.after.startTime}:00+03:00`) >
+        checked)
   );
+}
+
+async function cancellationMatches(c: PoolConnection, v: any, s: any) {
+  const saved = parse(v.cancellation_snapshot),
+    p = s.commitment?.payload,
+    l = s.commitment?.link,
+    b = s.commitment?.booking;
+  if (
+    !p ||
+    !l ||
+    !b ||
+    v.cancellation_state !== "cancelled" ||
+    v.calendar_state !== "cancelled" ||
+    v.status !== "cancelled" ||
+    v.cancelled_by !== "customer" ||
+    v.payment_status !== "unpaid" ||
+    v.agreement_hash !== s.agreementHash ||
+    v.cancellation_hash !== s.cancellationHash ||
+    hash(saved) !== s.cancellationHash ||
+    hash(saved?.commitment) !== hash(s.commitment) ||
+    saved?.request?.id !== s.sourceId ||
+    hash(saved?.request?.text) !== s.sourceHash ||
+    v.link_id !== l.id ||
+    v.integration_id !== l.integrationId ||
+    v.calendar_id !== l.calendarId ||
+    v.identity_hash !== l.identity ||
+    v.event_reference !== l.reference ||
+    v.payload_hash !== l.payloadHash ||
+    v.base_price !== b.basePrice ||
+    v.final_price !== b.finalPrice ||
+    v.discount_amount !== b.discount ||
+    v.google_event_id !== b.googleEventId ||
+    String(
+      v.booking_date instanceof Date
+        ? v.booking_date.toISOString()
+        : v.booking_date
+    ).slice(0, 10) !== p.date ||
+    v.start_time !== p.startTime ||
+    v.end_time !== p.endTime
+  )
+    return false;
+  for (const table of [
+    "payment_links",
+    "booking_checkout_attempts",
+    "order_payments",
+  ]) {
+    const [rows] = await c.execute<any[]>(
+      `SELECT id FROM ${table} WHERE booking_id=? LIMIT 1`,
+      [s.bookingId]
+    );
+    if (rows.length) return false;
+  }
+  return true;
 }
 
 export async function canDispatchBookingNotice(

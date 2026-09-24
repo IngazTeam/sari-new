@@ -145,6 +145,8 @@ const merchantUxEn: MerchantUxCopy = {
   "refresh": "Refresh review evidence"
 },
   bookingCancellation: {
+    noticeTitle: "Customer cancellation notification",
+    noticeText: "Booking cancellation notification text",
   "title": "Cancel booking #{{id}}",
   "description": "Cancel this booking and its Google event after reviewing the customer’s request. This action supports unpaid bookings with no payment links or collection attempts.",
   "none": "No cancellation has been submitted for this booking.",

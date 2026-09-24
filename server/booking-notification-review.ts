@@ -53,6 +53,7 @@ async function view(c: PoolConnection, r: any): Promise<BookingNoticeReview> {
   const d = proof.d;
   return {
     id: r.id,
+    kind: r.kind,
     // Exclude polling timestamps: scheduling another read does not change the proof.
     evidence: hash({
       notice: [
@@ -60,6 +61,8 @@ async function view(c: PoolConnection, r: any): Promise<BookingNoticeReview> {
         r.merchant_id,
         r.booking_reference,
         r.reschedule_id,
+        r.kind,
+        r.cancellation_id,
         r.snapshot,
         r.snapshot_hash,
         r.dispatch_text,
@@ -116,11 +119,12 @@ async function view(c: PoolConnection, r: any): Promise<BookingNoticeReview> {
 export async function readBookingNoticeReview(
   c: PoolConnection,
   merchantId: number,
-  moveId: number
+  moveId: number,
+  kind: "reschedule" | "cancellation" = "reschedule"
 ) {
   const [rows] = await c.execute<any[]>(
-    "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND reschedule_id=? FOR UPDATE",
-    [merchantId, moveId]
+    `SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND ${kind === "cancellation" ? "cancellation_id" : "reschedule_id"}=? AND kind=? FOR UPDATE`,
+    [merchantId, moveId, kind]
   );
   return rows[0] ? view(c, rows[0]) : null;
 }

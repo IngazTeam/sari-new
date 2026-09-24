@@ -15,6 +15,7 @@ export type BookingNotificationReviewInput = z.infer<
 >;
 export type BookingNoticeReview = {
   id: number;
+  kind: "reschedule" | "cancellation";
   evidence: string;
   canReview: boolean;
   state: string;

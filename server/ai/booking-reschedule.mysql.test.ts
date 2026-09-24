@@ -65,7 +65,10 @@ import {
 import { updateWhatsAppDeliveryStatus } from "../channels/whatsapp/service";
 import { reviewBookingNotification } from "../booking-notification-review";
 import type { CheckoutIdentity } from "./checkout-agreements";
-import { getBookingCancellationReview } from "../booking-cancellation";
+import {
+  getBookingCancellationReview,
+  cancelBookingCalendar,
+} from "../booking-cancellation";
 import {
   getBookingRescheduleReview,
   rescheduleBookingCalendar,
@@ -1077,6 +1080,78 @@ describe.skipIf(!process.env.DATABASE_URL)(
           "Operator checked saved delivery evidence"
         );
         expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("retains independent move and cancellation receipts for the same booking", async () => {
+        await readyNotice();
+        const request = await incoming(`أريد إلغاء الحجز #${bookingId}`);
+        const { id } = await enqueueInbound({
+          source: "webhook",
+          payload: {
+            typeWebhook: "incomingMessageReceived",
+            instanceData: { idInstance: account },
+            idMessage: randomUUID(),
+            senderData: { chatId: `${phone}@c.us` },
+            messageData: {
+              typeMessage: "textMessage",
+              textMessageData: {
+                textMessage: `أريد إلغاء الحجز #${bookingId}`,
+              },
+            },
+          },
+        });
+        const job = (
+          await q("SELECT event_key FROM whatsapp_inbound_jobs WHERE id=?", [
+            id,
+          ])
+        )[0];
+        await q("UPDATE messages SET externalId=? WHERE id=?", [
+          `inbound:v1:${job.event_key}`,
+          request.incomingMessageId,
+        ]);
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET status='completed' WHERE id=?",
+          [id]
+        );
+        provider.get.mockImplementation(() =>
+          active({ etag: '"cancel-version"' })
+        );
+        provider.remove.mockResolvedValue(true);
+        const evidence = (await getBookingCancellationReview(
+          owner.merchantId,
+          bookingId
+        ))!.evidence;
+        await cancelBookingCalendar(owner.merchantId, owner.userId, {
+          bookingId,
+          evidence,
+          requestId: randomUUID(),
+          reviewed: true,
+          reason: "Customer requested cancellation after moving",
+          action: "cancel",
+        });
+        const rows = await notices();
+        expect(rows).toHaveLength(2);
+        expect(rows.map((r: any) => r.kind)).toEqual([
+          "reschedule",
+          "cancellation",
+        ]);
+        await dispatchBookingNotice(owner.merchantId, rows[1].id);
+        expect((await read())!.notification!).toMatchObject({
+          id: rows[0].id,
+          kind: "reschedule",
+          state: "accepted",
+        });
+        expect(
+          (await getBookingCancellationReview(owner.merchantId, bookingId))!
+            .notification!
+        ).toMatchObject({
+          id: rows[1].id,
+          kind: "cancellation",
+          state: "accepted",
+        });
+        expect(transport.send).toHaveBeenCalledTimes(2);
+        expect((await notices())[0].provider_message_id).not.toBe(
+          (await notices())[1].provider_message_id
+        );
       });
       it("reads current receipt without reconciling or adding audit records", async () => {
         await readyNotice();
