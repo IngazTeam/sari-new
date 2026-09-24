@@ -416,6 +416,11 @@ Object.assign(entries, {
     "drizzle/0093_booking_calendar_cancellation.sql"
   ]
 });
+Object.assign(entries, {
+ B037: [entries.B037[0] + ' أُغلق كذلك مسار إعادة الطلب داخل Gaxios وOAuth نفسه؛ مورد Calendar يستخدم access token مُجهزًا دون refresh تلقائي أثناء الأثر، والتجديد الصريح له محاولة واحدة. الخطأ والمهلة لا يسمحان بالتكرار الخفي.', 'server/calendar-transport-pentest.test.ts'],
+ B035: [entries.B035[0] + ' اقتراح التوافر يرفض الصفحات الناقصة والوقت المحلي أو التاريخ غير الصالح، ويحسب أحداث اليوم الكامل وفق المنطقة الزمنية والتوقيت الصيفي؛ قراءة الصفحات محدودة وFreeBusy يجب أن يغطي الفترة المطلوبة نفسها.', 'server/calendar-evidence-pentest.test.ts'],
+ B064: [entries.B064[0] + ' أضيف فحص بمكتبات Google وOAuth2 وGaxios الحقيقية، مع HTTP مصطنع فقط، وحالة ضابطة تثبت خطر التكرار القديم. فحوص الانحدار والأنواع والبناء والترجمة أُعيدت؛ دليل Chromium السابق يعاد استخدامه فقط بعد مطابقة ملفات ومدخلات الواجهة التي لم تتغير.', 'server/calendar-transport-pentest.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

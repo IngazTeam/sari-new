@@ -45,10 +45,18 @@ import {
   createOAuth2Client,
   assertCalendarTimeFree,
 } from "./_core/googleCalendar";
+const dispatchCredentials = {
+  access_token: "synthetic",
+  expiry_date: Date.now() + 3600000,
+};
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.free.mockResolvedValue({
-    data: { calendars: { primary: { busy: [] } } },
+    data: {
+      timeMin: "2026-12-20T07:00:00Z",
+      timeMax: "2026-12-20T08:00:00Z",
+      calendars: { primary: { busy: [] } },
+    },
   });
   mocks.settings.mockResolvedValue({
     enabled: true,
@@ -67,10 +75,57 @@ beforeEach(() => {
   });
 });
 describe("Google calendar provider contract", () => {
+  it.each([
+    {},
+    { timeMin: "2026-12-20T07:00:00Z", timeMax: "2026-12-20T07:30:00Z" },
+    { timeMin: "2026-12-20T07:00:00", timeMax: "2026-12-20T08:00:00" },
+    {
+      timeMin: "2026-12-20T07:00:00Z",
+      timeMax: "2026-12-20T08:00:00Z",
+      error: { code: 503 },
+    },
+  ])(
+    "requires complete freebusy evidence for the requested window (case %#)",
+    async fields => {
+      mocks.free.mockResolvedValueOnce({
+        data: { calendars: { primary: { busy: [] } }, ...fields },
+      });
+      await expect(
+        assertCalendarTimeFree(
+          dispatchCredentials,
+          "primary",
+          new Date("2026-12-20T07:00:00Z"),
+          new Date("2026-12-20T08:00:00Z")
+        )
+      ).rejects.toThrow();
+    }
+  );
+  it("rejects a calendar entry inherited from a prototype", async () => {
+    mocks.free.mockResolvedValueOnce({
+      data: {
+        timeMin: "2026-12-20T07:00:00Z",
+        timeMax: "2026-12-20T08:00:00Z",
+        calendars: Object.create({ primary: { busy: [] } }),
+      },
+    });
+    await expect(
+      assertCalendarTimeFree(
+        dispatchCredentials,
+        "primary",
+        new Date("2026-12-20T07:00:00Z"),
+        new Date("2026-12-20T08:00:00Z")
+      )
+    ).rejects.toThrow();
+  });
   it("conditionally deletes only the reviewed version with a bounded single request", async () => {
     mocks.remove.mockResolvedValueOnce({ status: 204 });
     await expect(
-      deleteCalendarEventIfMatch({}, "original", "event", '"version1"')
+      deleteCalendarEventIfMatch(
+        dispatchCredentials,
+        "original",
+        "event",
+        '"version1"'
+      )
     ).resolves.toBe(true);
     expect(mocks.remove).toHaveBeenCalledExactlyOnceWith(
       { calendarId: "original", eventId: "event", sendUpdates: "none" },
@@ -86,7 +141,7 @@ describe("Google calendar provider contract", () => {
     '"' + "x".repeat(255) + '"',
   ])("rejects unsafe event versions (case %#)", async etag => {
     await expect(
-      deleteCalendarEventIfMatch({}, "primary", "event", etag)
+      deleteCalendarEventIfMatch(dispatchCredentials, "primary", "event", etag)
     ).rejects.toThrow();
     expect(mocks.settings).not.toHaveBeenCalled();
     expect(mocks.remove).not.toHaveBeenCalled();
@@ -96,14 +151,19 @@ describe("Google calendar provider contract", () => {
     async status => {
       mocks.remove.mockResolvedValueOnce({ status });
       await expect(
-        deleteCalendarEventIfMatch({}, "primary", "event", '"version1"')
+        deleteCalendarEventIfMatch(
+          dispatchCredentials,
+          "primary",
+          "event",
+          '"version1"'
+        )
       ).rejects.toThrow();
       expect(mocks.remove).toHaveBeenCalledOnce();
     }
   );
   it("sends the durable ID and private correlation with explicitly offset event times", async () => {
     const reference = "sariappt" + "a".repeat(32);
-    await createCalendarEvent({}, "primary", {
+    await createCalendarEvent(dispatchCredentials, "primary", {
       id: reference,
       privateProperties: { sariAppointment: reference },
       summary: "Test",
@@ -131,7 +191,11 @@ describe("Google calendar provider contract", () => {
   });
   it("uses one bounded GET without requesting provider mutation", async () => {
     expect(
-      await getCalendarEvent({}, "original-calendar", "known-event")
+      await getCalendarEvent(
+        dispatchCredentials,
+        "original-calendar",
+        "known-event"
+      )
     ).toEqual({ id: "known-event", status: "cancelled" });
     expect(mocks.get).toHaveBeenCalledExactlyOnceWith(
       { calendarId: "original-calendar", eventId: "known-event" },
@@ -243,12 +307,17 @@ describe("Google calendar provider contract", () => {
     expect(mocks.request).toHaveBeenCalledExactlyOnceWith({
       url: "https://example.test/token",
       retry: false,
+      retryConfig: {
+        retry: 0,
+        noResponseRetries: 0,
+        shouldRetry: expect.any(Function),
+      },
       timeout: 15000,
     });
   });
   it("requires complete free/busy evidence for the exact interval", async () => {
     await assertCalendarTimeFree(
-      {},
+      dispatchCredentials,
       "primary",
       new Date("2026-12-20T10:00:00+03:00"),
       new Date("2026-12-20T11:00:00+03:00")
@@ -276,11 +345,15 @@ describe("Google calendar provider contract", () => {
     "rejects unavailable, malformed or occupied free/busy response (case %#)",
     async entry => {
       mocks.free.mockResolvedValueOnce({
-        data: { calendars: { primary: entry } },
+        data: {
+          timeMin: "2026-12-20T07:00:00Z",
+          timeMax: "2026-12-20T08:00:00Z",
+          calendars: { primary: entry },
+        },
       });
       await expect(
         assertCalendarTimeFree(
-          {},
+          dispatchCredentials,
           "primary",
           new Date("2026-12-20T10:00:00+03:00"),
           new Date("2026-12-20T11:00:00+03:00")
@@ -291,6 +364,8 @@ describe("Google calendar provider contract", () => {
   it("allows adjacent intervals without counting their shared endpoint as occupied", async () => {
     mocks.free.mockResolvedValueOnce({
       data: {
+        timeMin: "2026-12-20T07:00:00Z",
+        timeMax: "2026-12-20T08:00:00Z",
         calendars: {
           primary: {
             busy: [
@@ -303,7 +378,7 @@ describe("Google calendar provider contract", () => {
     });
     await expect(
       assertCalendarTimeFree(
-        {},
+        dispatchCredentials,
         "primary",
         new Date("2026-12-20T10:00:00+03:00"),
         new Date("2026-12-20T11:00:00+03:00")
@@ -311,8 +386,10 @@ describe("Google calendar provider contract", () => {
     ).resolves.toBeUndefined();
   });
   it("bounds update and delete calls without transport retry", async () => {
-    await updateCalendarEvent({}, "primary", "event", { summary: "new" });
-    await deleteCalendarEvent({}, "primary", "event");
+    await updateCalendarEvent(dispatchCredentials, "primary", "event", {
+      summary: "new",
+    });
+    await deleteCalendarEvent(dispatchCredentials, "primary", "event");
     expect(mocks.patch).toHaveBeenCalledExactlyOnceWith(
       {
         calendarId: "primary",

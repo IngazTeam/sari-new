@@ -5,6 +5,7 @@
 
 import { google } from 'googleapis';
 import { getGoogleOAuthSettings } from '../db';
+import { calendarTimestamp } from '../calendar-evidence';
 
 // OAuth2 Configuration
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
@@ -42,7 +43,14 @@ export async function createOAuth2Client() {
   );
   // Also bound token inspection/refresh: the SDK otherwise enables its own retries.
   const request = client.transporter.request.bind(client.transporter);
-  client.transporter.request = ((options: any) => request({ ...options, timeout: 15000, retry: false })) as typeof client.transporter.request;
+  client.transporter.request = ((options: any) => request({
+    ...options,
+    timeout: Number.isFinite(options.timeout) && options.timeout > 0 ? Math.min(options.timeout, 15000) : 15000,
+    retry: false,
+    // Gaxios honours retryConfig even when retry:false. OAuth supplies its own
+    // retryConfig, including POST retries, so explicitly disable both layers.
+    retryConfig: { retry: 0, noResponseRetries: 0, shouldRetry: () => false },
+  })) as typeof client.transporter.request;
   return client;
 }
 
@@ -73,8 +81,15 @@ export async function getTokensFromCode(code: string) {
  * Create calendar client with credentials
  */
 export async function createCalendarClient(credentials: any) {
+  // Authorization is validated/refreshed before dispatch by the caller. Give
+  // Calendar a bearer-only client: OAuth2 otherwise has its own 401/403 replay
+  // and eager refresh paths, independent of Gaxios retry settings.
+  if (!credentials || typeof credentials.access_token !== 'string' ||
+    !credentials.access_token.trim() || credentials.access_token.length > 16384 ||
+    /[\r\n]/.test(credentials.access_token) || !Number.isFinite(credentials.expiry_date) ||
+    credentials.expiry_date <= Date.now()) throw Error('Calendar dispatch authorization unavailable');
   const oauth2Client = await createOAuth2Client();
-  oauth2Client.setCredentials(credentials);
+  oauth2Client.setCredentials({ access_token: credentials.access_token, token_type: 'Bearer' });
   return google.calendar({ version: 'v3', auth: oauth2Client });
 }
 
@@ -309,9 +324,12 @@ export async function assertCalendarTimeFree(credentials: any, calendarId: strin
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) throw Error('Calendar availability unavailable');
   const calendar = await createCalendarClient(credentials);
   const response = await calendar.freebusy.query({ requestBody: { timeMin: start.toISOString(), timeMax: end.toISOString(), timeZone: 'Asia/Riyadh', items: [{ id: calendarId }] } }, { timeout: 15000, retry: false });
-  const entry = response.data.calendars?.[calendarId];
-  if (!entry || (entry.errors && (!Array.isArray(entry.errors) || entry.errors.length > 0)) || !Array.isArray(entry.busy)) throw Error('Calendar availability unavailable');
-  const epoch = (v: unknown) => typeof v === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(v) ? Date.parse(v) : NaN;
+  if (!response.data || ('error' in response.data && response.data.error) || Array.isArray(response.data) ||
+    calendarTimestamp(response.data.timeMin) !== start.getTime() ||
+    calendarTimestamp(response.data.timeMax) !== end.getTime()) throw Error('Calendar availability unavailable');
+  const entry = Object.hasOwn(response.data.calendars ?? {}, calendarId) ? response.data.calendars?.[calendarId] : undefined;
+  if (!entry || (entry.errors && (!Array.isArray(entry.errors) || entry.errors.length > 0)) || !Array.isArray(entry.busy) || entry.busy.length > 25000) throw Error('Calendar availability unavailable');
+  const epoch = calendarTimestamp;
   for (const item of entry.busy) {
     const from = epoch(item.start), to = epoch(item.end);
     if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) throw Error('Calendar availability unavailable');

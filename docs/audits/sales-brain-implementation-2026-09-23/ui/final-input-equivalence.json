@@ -1,9 +1,10 @@
 {
-  "scope": "Fresh Chromium component verification: 430 passing scenarios, 44 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking cancellation UI",
-  "reused": false,
-  "verifiedAt": "2026-09-24T10:53:42.294Z",
+  "scope": "Prior Chromium component evidence reused: 430 scenarios, 44 screenshots. No fresh browser run. All captured frontend/shared/fixture/verifier source blobs and rebuilt fixture/CSS match the tested inputs.",
+  "reused": true,
+  "verifiedAt": "2026-09-24T11:17:00.431Z",
   "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-cancellation",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-cancellation",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-calendar-transport",
+  "sourceFilesChecked": 63,
   "inputs": {
     "fixture": "73d8fd5ab8f10d4f22c2be61b35e588029d2e3a2e3b23ef8189e7859a04eb34d",
     "report": "b33d8eb50a35f1597047be4aa966b69356028236acae46d958575e5955804e4e",

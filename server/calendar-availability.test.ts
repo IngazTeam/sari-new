@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   service: vi.fn(),
   slots: vi.fn(),
@@ -46,6 +46,97 @@ beforeEach(() => {
   mocks.conflict.mockResolvedValue(false);
 });
 describe("calendar availability evidence", () => {
+  afterEach(() => vi.useRealTimers());
+  it.each([
+    undefined,
+    null,
+    {},
+    { items: null },
+    { items: [], error: { code: 503 } },
+  ])(
+    "never returns free slots from an incomplete response (case %#)",
+    async data => {
+      mocks.list.mockResolvedValue({ data });
+      await expect(getCalendarAvailability(7, input)).rejects.toThrow(
+        "INCOMPLETE"
+      );
+    }
+  );
+  it("does not return partial availability when a later page fails", async () => {
+    mocks.list
+      .mockResolvedValueOnce({ data: { items: [], nextPageToken: "two" } })
+      .mockRejectedValueOnce(Error("provider unavailable"));
+    await expect(getCalendarAvailability(7, input)).rejects.toThrow();
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+  });
+  it("bounds pages even if every token is new", async () => {
+    let page = 0;
+    mocks.list.mockImplementation(async () => ({
+      data: { items: [], nextPageToken: `page-${++page}` },
+    }));
+    await expect(getCalendarAvailability(7, input)).rejects.toThrow(
+      "INCOMPLETE"
+    );
+    expect(mocks.list).toHaveBeenCalledTimes(10);
+  });
+  it("rejects an expired total read deadline and passes the remaining timeout", async () => {
+    vi.useFakeTimers();
+    mocks.list
+      .mockImplementationOnce(async () => {
+        vi.setSystemTime(Date.now() + 29000);
+        return { data: { items: [], nextPageToken: "two" } };
+      })
+      .mockImplementationOnce(async () => {
+        vi.setSystemTime(Date.now() + 1001);
+        return { data: { items: [] } };
+      });
+    await expect(getCalendarAvailability(7, input)).rejects.toThrow(
+      "INCOMPLETE"
+    );
+    expect(mocks.list.mock.calls[1][1]).toEqual({
+      timeout: 1000,
+      retry: false,
+    });
+  });
+  it("does not merge unstable duplicate events from different pages", async () => {
+    const event = { id: "same", status: "cancelled" };
+    mocks.list
+      .mockResolvedValueOnce({ data: { items: [event], nextPageToken: "two" } })
+      .mockResolvedValueOnce({ data: { items: [event] } });
+    await expect(getCalendarAvailability(7, input)).rejects.toThrow(
+      "INCOMPLETE"
+    );
+  });
+  it.each([
+    { durationMinutes: 0 },
+    { durationMinutes: "60" },
+    { durationMinutes: NaN },
+    { bufferTimeMinutes: -1 },
+    { bufferTimeMinutes: "30" },
+  ])("rejects invalid configured service intervals (case %#)", async patch => {
+    mocks.service.mockResolvedValue({
+      id: 11,
+      merchantId: 7,
+      isActive: 1,
+      durationMinutes: 60,
+      ...patch,
+    });
+    await expect(getCalendarAvailability(7, input)).rejects.toThrow(
+      "UNAVAILABLE"
+    );
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
+  it("keeps a foreign-zone all-day event busy until its actual exclusive end", async () => {
+    mocks.list.mockResolvedValue({
+      data: {
+        timeZone: "America/Los_Angeles",
+        items: [{ start: { date: "2026-12-19" }, end: { date: "2026-12-20" } }],
+      },
+    });
+    expect(await getCalendarAvailability(7, input)).toEqual({
+      slots: ["11:00"],
+    });
+  });
   it("uses explicit Riyadh day boundaries independent of server timezone", async () => {
     expect(await getCalendarAvailability(7, input)).toEqual({
       slots: ["10:00", "11:00"],
@@ -55,7 +146,8 @@ describe("calendar availability evidence", () => {
         timeMin: "2026-12-19T21:00:00.000Z",
         timeMax: "2026-12-20T21:00:00.000Z",
         timeZone: "Asia/Riyadh",
-      })
+      }),
+      expect.objectContaining({ timeout: expect.any(Number), retry: false })
     );
   });
   it("reads every Google page before suggesting an interval", async () => {
@@ -75,7 +167,8 @@ describe("calendar availability evidence", () => {
       slots: ["11:00"],
     });
     expect(mocks.list).toHaveBeenLastCalledWith(
-      expect.objectContaining({ pageToken: "second" })
+      expect.objectContaining({ pageToken: "second" }),
+      expect.objectContaining({ timeout: expect.any(Number), retry: false })
     );
   });
   it("treats an opaque all-day event as busy", async () => {
@@ -107,7 +200,9 @@ describe("calendar availability evidence", () => {
   it("fails closed on malformed event timing or incomplete pagination", async () => {
     mocks.list.mockResolvedValueOnce({ data: { items: [{}] } });
     await expect(getCalendarAvailability(7, input)).rejects.toThrow();
-    mocks.list.mockResolvedValue({ data: { nextPageToken: "same" } });
+    mocks.list.mockResolvedValue({
+      data: { items: [], nextPageToken: "same" },
+    });
     await expect(getCalendarAvailability(7, input)).rejects.toThrow(
       "INCOMPLETE"
     );
