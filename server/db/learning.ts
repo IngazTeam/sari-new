@@ -9,6 +9,7 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { createHash } from 'node:crypto';
+import { captureLearningSignals, type LearningSignalInput } from '../ai/learning-signal-capture';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -84,60 +85,13 @@ export async function ensureLearningTables(): Promise<void> {
 // Signals — CRUD
 // ═══════════════════════════════════════════════════════════════
 
-/** Capture a learning signal from a conversation */
-export async function captureSignal(data: {
-  merchantId: number;
-  conversationId: number;
-  signalType: SignalType;
-  signalWeight?: number;
-  botMessage?: string;
-  customerMessage?: string;
-  merchantCorrection?: string;
-  contextSummary?: string;
-  sourceKey?: string;
-  strict?: boolean;
-}): Promise<void> {
-  if (![data.merchantId, data.conversationId].every(value => Number.isSafeInteger(value) && value > 0)) throw Error('Invalid learning signal identity');
-  await ensureLearningTables();
-  const pool = await getPool();
-  if (!pool) { if (data.strict) throw new Error('Learning storage unavailable'); return; }
-
-  // Daily cap: max 500 signals per merchant per day
-  try {
-    const [countRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM sari_learning_signals 
-       WHERE merchant_id = ? AND created_at >= CURDATE()`,
-      [data.merchantId]
-    );
-    if ((countRows as any[])[0]?.cnt >= 500) return;
-  } catch { /* continue */ }
-
-  try {
-    const [insert] = await pool.execute<any>(
-      `INSERT INTO sari_learning_signals 
-       (merchant_id, conversation_id, signal_type, signal_weight,
-        bot_message, customer_message, merchant_correction, context_summary, source_key)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? FROM conversations
-       WHERE id = ? AND merchantId = ?
-       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(sari_learning_signals.id)`,
-      [
-        data.merchantId,
-        data.conversationId,
-        data.signalType,
-        data.signalWeight ?? 1.0,
-        data.botMessage?.substring(0, 2000) ?? null,
-        data.customerMessage?.substring(0, 2000) ?? null,
-        data.merchantCorrection?.substring(0, 2000) ?? null,
-        data.contextSummary?.substring(0, 500) ?? null,
-        data.sourceKey?.substring(0, 160) ?? null,
-        data.conversationId, data.merchantId,
-      ]
-    );
-    if (insert.affectedRows === 0 && !insert.insertId && data.strict) throw Error('Learning conversation ownership mismatch');
-  } catch (e: any) {
-    console.error('[Learning] captureSignal failed:', e.message);
-    if (data.strict) throw e;
-  }
+/** Compatibility writer; keyed strict captures never acknowledge dropped evidence. */
+export async function captureSignal(data: LearningSignalInput): Promise<void> {
+  await captureLearningSignals([data]);
+}
+/** All signals detected from one source commit together. */
+export async function captureSignals(data: readonly LearningSignalInput[]): Promise<void> {
+  await captureLearningSignals(data);
 }
 
 /** Get recent unanalyzed signals for a merchant */

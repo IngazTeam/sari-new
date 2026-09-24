@@ -502,6 +502,13 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' العامل يبدأ ويتوقف مع runtime الإنتاجي، وينظف العمال السابقين عند فشل التهيئة؛ تعطل مهمة لا يمنع نشاطًا آخر من الاستعادة.','server/learning-recovery-bootstrap-pentest.test.ts'],
  B065:[entries.B065[0]+' ترحيل 0101 يضيف جدولة الاستعادة ويؤهل الردود المحفوظة فقط؛ لا يطلق حجزًا أو طلبًا مجهول النتيجة.','drizzle/0101_learning_analysis_recovery.sql'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' حصة إشارات التعلم تؤجل المهمة المتينة إلى بداية UTC التالية دون استنزاف محاولات الأعطال؛ الحجز القديم أو المنتهي لا يملك تعديل الموعد.','server/ai/learning-signal-capture.mysql.test.ts'],
+ B040:[entries.B040[0]+' حفظ إشارات المصدر الواحد ذري، وإعادة هوية المصدر تتطلب مطابقة النشاط والمحادثة والنوع والوزن والنص المحدود؛ لا دمج صامت عند اختلاف المحتوى.','server/ai/learning-signal-capture.ts'],
+ B043:[entries.B043[0]+' لا عينة جزئية عند بلوغ الحصة أو تعطل الإدخال؛ المسار strict يحتفظ بالمهمة حتى قبول كل إشارات الرسالة، وإعادة المصدر القديم لا تستهلك الحصة مجددًا.','server/ai/learning-signal-capture.mysql.test.ts'],
+ B063:[entries.B063[0]+' اختبارات مدخلات وهوية متعارضة وملكية محادثة متغيرة وردود أخطاء منقحة، وسباق آخر خانة بين ثمانية طلبات وثلاث عمليات مستقلة.','server/ai/learning-signal-capture-pentest.test.ts'],
+ B064:[entries.B064[0]+' حفظ الدفعة والحد اليومي في معاملة واحدة؛ فشل العد يغلق الإدخال، وفقد إقرار الحفظ يستعاد بالهوية دون تكرار. لا تغيير مخطط أو واجهة في هذه الدفعة.','docs/SARI_SALES_BRAIN_SIGNAL_ADMISSION_2026-09-24.md'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

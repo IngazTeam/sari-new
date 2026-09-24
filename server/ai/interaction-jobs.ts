@@ -3,6 +3,7 @@ import type { RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import type { ReplyPlan } from '../messaging/reply-plan';
+import { LearningSignalCaptureError } from './learning-signal-capture';
 
 export async function assertInteractionSchema() {
   const { assertCheckoutAgreementSchema } = await import('./checkout-agreements');
@@ -116,7 +117,14 @@ export async function runInteractionJob(): Promise<boolean> {
     });
     await pool.execute(`UPDATE ai_interaction_jobs SET state = 'completed', completed_at = UTC_TIMESTAMP(3),
       lease_token = NULL, lease_until = NULL, last_error = NULL WHERE id = ? AND lease_token = ?`, [job.id, token]);
-  } catch {
+  } catch (error) {
+    if (error instanceof LearningSignalCaptureError && error.code === 'daily_limit') {
+      // Admission is deferred, not a failed processing attempt. Preserve the durable source for tomorrow.
+      await pool.execute(`UPDATE ai_interaction_jobs SET state='pending', attempts=GREATEST(0,attempts-1),
+        available_at=TIMESTAMPADD(DAY,1,UTC_DATE()),lease_token=NULL,lease_until=NULL,last_error='learning_daily_limit'
+        WHERE id=? AND lease_token=? AND lease_until>UTC_TIMESTAMP(3)`,[job.id,token]);
+      return true;
+    }
     await pool.execute(`UPDATE ai_interaction_jobs SET state = IF(attempts >= 8, 'failed', 'pending'),
       available_at = TIMESTAMPADD(SECOND, LEAST(3600, POW(2, attempts) * 15), UTC_TIMESTAMP(3)),
       lease_token = NULL, lease_until = NULL, last_error = 'interaction_processing_failed'

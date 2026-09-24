@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), signal: vi.fn(), count: vi.fn(), schema: vi.fn() }));
-vi.mock('../db', () => ({ getPool: async () => ({ execute: mocks.execute }), getAllMerchants: async () => [] }));
+vi.mock('../db', () => ({ getPool: async () => ({ execute: mocks.execute, getConnection: async()=>({execute:mocks.execute,beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{}}) }), getAllMerchants: async () => [] }));
 vi.mock('../db/schema-readiness', () => ({ assertRuntimeSchema: mocks.schema }));
+vi.mock('../db/connection', () => ({ getPool: async()=>({getConnection:async()=>({execute:mocks.execute,beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{}})}) }));
 vi.mock('./openai', () => ({ callGPT4: vi.fn() }));
 import { captureConversationSignals, selectSignalsForAnalysis } from './learning-engine';
 import { upsertDNA } from '../db/learning';
@@ -11,7 +12,7 @@ import { cacheSuccessfulResponse, findCachedResponse } from './rag-engine';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.execute.mockImplementation(async (sql: string) => sql.includes('COUNT(') ? [[{ cnt: 0 }]] : [[]]);
+  mocks.execute.mockImplementation(async (sql: string) => sql.includes('COUNT(') ? [[{ cnt: 0 }]] : sql.startsWith('SELECT id FROM merchants') ? [[{id:1}]] : sql.startsWith('SELECT id FROM conversations') ? [[{id:2}]] : [[]]);
 });
 describe('sales memory and learning boundaries', () => {
   it('only marks the exact bounded sample shown to the analyst as analyzed', () => {

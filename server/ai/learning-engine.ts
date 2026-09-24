@@ -16,6 +16,7 @@ import { resumeLearningAnalysis, claimLearningAnalysis, dispatchLearningAnalysis
 import { snapshotLearningSignals, sanitizeLearningText } from './learning-analysis-contract';
 import {
   captureSignal,
+  captureSignals,
   getUnanalyzedSignals,
   countUnanalyzedSignals,
   getActiveDNA,
@@ -124,11 +125,12 @@ export async function captureConversationSignals(params: {
       return; // Don't capture anger as a learning signal
     }
 
+    const batch: Parameters<typeof captureSignal>[0][] = [];
     // Check customer message for signals
     for (const pattern of SIGNAL_PATTERNS) {
       if (pattern.patterns.length === 0) continue;
       if (pattern.patterns.some(p => p.test(msgLower))) {
-        await captureSignal({
+        batch.push({
           merchantId,
           conversationId,
           signalType: pattern.type,
@@ -146,7 +148,7 @@ export async function captureConversationSignals(params: {
 
     // Check bot response for knowledge gaps
     if (BOT_GAP_PATTERNS.some(p => p.test(botResponse))) {
-      await captureSignal({
+      batch.push({
         merchantId,
         conversationId,
         signalType: 'knowledge_gap',
@@ -159,17 +161,19 @@ export async function captureConversationSignals(params: {
       });
     }
 
+    await captureSignals(batch);
+
     // Check if analysis should be triggered
     const unanalyzedCount = await countUnanalyzedSignals(merchantId);
     if (unanalyzedCount >= ANALYSIS_THRESHOLD) {
       // Fire-and-forget — don't block the response
       triggerPatternAnalysis(merchantId).catch(err =>
-        console.warn('[Learning] Background analysis failed:', err.message)
+        console.warn('[Learning] Background analysis remains pending')
       );
     }
   } catch (err: any) {
     // Non-blocking — learning failures should never break the bot
-    console.warn('[Learning] Signal capture failed:', err.message);
+    console.warn('[Learning] Signal capture not confirmed');
     if (params.strict) throw err;
   }
 }
@@ -195,7 +199,7 @@ export async function captureMerchantCorrection(params: {
       contextSummary: 'التاجر تدخل وصحح رد البوت',
     });
   } catch (err: any) {
-    console.warn('[Learning] Merchant correction capture failed:', err.message);
+    console.warn('[Learning] Merchant correction capture not confirmed');
   }
 }
 
@@ -228,7 +232,7 @@ export async function captureOutcomeSignal(params: {
       });
     }
   } catch (err: any) {
-    console.warn('[Learning] Outcome capture failed:', err.message);
+    console.warn('[Learning] Outcome capture not confirmed');
   }
 }
 
