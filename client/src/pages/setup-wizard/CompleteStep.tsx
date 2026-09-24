@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, Globe2, Loader2, Pencil, Rocket, Store, Briefcase, MessageSquare, Calendar, Settings } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { AlertCircle, Loader2, Pencil, ArrowRight } from 'lucide-react';
+import PreviewChat from '@/components/PreviewChat';
 import { useTranslation } from 'react-i18next';
 
 interface CompleteStepProps {
@@ -11,365 +10,46 @@ interface CompleteStepProps {
   isLoading: boolean;
 }
 
-export default function CompleteStep({
-  wizardData,
-  goToStep,
-  completeSetup,
-  isLoading,
-}: CompleteStepProps) {
+export default function CompleteStep({ wizardData, goToStep, completeSetup, isLoading }: CompleteStepProps) {
   const { t } = useTranslation();
-  const businessType = wizardData.businessType;
-  const hasProducts = wizardData.products && wizardData.products.length > 0;
-  const hasServices = wizardData.services && wizardData.services.length > 0;
-  const hasIntegrations = wizardData.enableCalendar || wizardData.enableSheets;
   const websiteReview = wizardData.websiteAnalysis?.confirmed ? wizardData.websiteAnalysis : null;
   const hasValidProfile =
     typeof wizardData.businessName === 'string' && wizardData.businessName.trim().length >= 2 &&
     typeof wizardData.phone === 'string' && /^[+0-9][0-9\s()\-]{6,19}$/.test(wizardData.phone.trim());
-
-  // WhatsApp Preview State
-  const [previewMessages, setPreviewMessages] = useState<Array<{ sender: 'user' | 'bot', text: string }>>([]);
-  const [showPreview, setShowPreview] = useState(false);
-
-  // Generate preview messages based on wizard data
-  useEffect(() => {
-    if (showPreview) {
-      const messages: Array<{ sender: 'user' | 'bot', text: string }> = [];
-
-      // User greeting
-      messages.push({ sender: 'user', text: 'السلام عليكم' });
-
-      // Bot response based on personality
-      const greeting = wizardData.botTone === 'friendly'
-        ? 'وعليكم السلام! 😊 أهلاً وسهلاً فيك، أنا ساري مساعدك الذكي'
-        : wizardData.botTone === 'professional'
-          ? 'وعليكم السلام ورحمة الله، مرحباً بك. أنا ساري، المساعد الآلي'
-          : 'وعليكم السلام! أهلاً، أنا ساري';
-
-      messages.push({ sender: 'bot', text: greeting });
-
-      // User asks about products/services
-      if (hasProducts) {
-        messages.push({ sender: 'user', text: 'عندكم ' + (wizardData.products[0]?.name || 'منتجات') + '؟' });
-
-        const productResponse = wizardData.botTone === 'friendly'
-          ? `أكيد! 🎉 عندنا ${wizardData.products[0]?.name || 'المنتج'} بسعر ${wizardData.products[0]?.price || 'مميز'} ريال`
-          : `نعم، متوفر لدينا ${wizardData.products[0]?.name || 'المنتج'} بسعر ${wizardData.products[0]?.price || 'XX'} ريال`;
-
-        messages.push({ sender: 'bot', text: productResponse });
-      } else if (hasServices) {
-        messages.push({ sender: 'user', text: 'وش الخدمات اللي تقدمونها؟' });
-
-        const serviceResponse = wizardData.botTone === 'friendly'
-          ? `نقدم خدمات رائعة! 🌟 مثل ${wizardData.services[0]?.name || 'الخدمة'}`
-          : `نقدم خدمة ${wizardData.services[0]?.name || 'الخدمة'} وخدمات أخرى متنوعة`;
-
-        messages.push({ sender: 'bot', text: serviceResponse });
-      }
-
-      // Final message
-      const finalMsg = wizardData.botTone === 'friendly'
-        ? 'تبي تطلب شيء معين؟ أنا هنا أساعدك! 💪'
-        : 'هل تحتاج مساعدة في شيء محدد؟';
-
-      messages.push({ sender: 'bot', text: finalMsg });
-
-      setPreviewMessages(messages);
-    }
-  }, [showPreview, wizardData, hasProducts, hasServices]);
-
-  return (
-    <div className="space-y-6">
-      {/* Success Header */}
-      <div className="text-center py-6">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 mb-4 animate-bounce">
-          <Check className="h-10 w-10 text-white" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('completeStep.auto_0')}</h2>
-        <p className="text-lg text-gray-600">{t('completeStep.auto_1')}</p>
-      </div>
-
-      {/* WhatsApp Preview Section */}
-      <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
-              <MessageSquare className="h-5 w-5 text-green-600" />
-              <span>{t('wizardCompleteStepPage.text0')}</span>
-            </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPreview(!showPreview)}
-              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-            >
-              {showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة'}
-            </Button>
-          </div>
-
-          {showPreview && (
-            <div className="bg-white rounded-lg shadow-lg p-4 max-w-md mx-auto border border-gray-200">
-              {/* WhatsApp Header */}
-              <div className="bg-green-600 text-white p-3 rounded-t-lg -m-4 mb-4 flex items-center space-x-3 space-x-reverse">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-semibold">ساري - {wizardData.businessName || 'مساعدك الذكي'}</p>
-                  <p className="text-xs text-green-100">{t('wizardCompleteStepPage.text1')}</p>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {previewMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[75%] rounded-lg p-3 ${msg.sender === 'user'
-                          ? 'bg-green-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
-                        }`}
-                    >
-                      <p className="text-sm">{msg.text}</p>
-                      <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-green-100' : 'text-gray-500'}`}>
-                        {new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input (disabled) */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-500 text-center">{t('completeStep.auto_2')}</div>
-              </div>
-            </div>
-          )}
-
-          {!showPreview && (
-            <p className="text-sm text-gray-600 text-center">{t('completeStep.auto_3')}</p>
-          )}
-        </div>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Business Info */}
-        <Card className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
-              {businessType === 'store' ? (
-                <Store className="h-5 w-5 text-white" />
-              ) : businessType === 'services' ? (
-                <Briefcase className="h-5 w-5 text-white" />
-              ) : (
-                <Settings className="h-5 w-5 text-white" />
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text2')}</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(3)} aria-label="تعديل معلومات النشاط">
-                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
-                </Button>
-              </div>
-              <div className="space-y-1 text-sm text-gray-700">
-                <p><strong>{t('wizardCompleteStepPage.text3')}</strong> {wizardData.businessName || 'غير محدد'}</p>
-                <p><strong>{t('wizardCompleteStepPage.text4')}</strong> {
-                  businessType === 'store' ? 'متجر إلكتروني' :
-                    businessType === 'services' ? 'مقدم خدمات' :
-                      'منتجات وخدمات'
-                }</p>
-                <p><strong>{t('wizardCompleteStepPage.text5')}</strong> {wizardData.phone || 'غير محدد'}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Reviewed website analysis */}
-        <Card className="p-5 bg-gradient-to-br from-blue-50 to-cyan-100">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <Globe2 className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">تحليل الموقع</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(4)} aria-label="تعديل تحليل الموقع">
-                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
-                </Button>
-              </div>
-              {websiteReview ? (
-                <div className="space-y-1 text-sm text-gray-700">
-                  <p className="truncate" dir="ltr" title={websiteReview.websiteUrl}>{websiteReview.websiteUrl}</p>
-                  <p>{websiteReview.productCount || 0} عنصر جاهز للحفظ عند الإطلاق</p>
-                  <p className="text-xs text-blue-800">
-                    {websiteReview.profileSuggestionApplied
-                      ? 'اعتمدت اقتراحات الملف بعد موافقتك.'
-                      : 'بقي ملف النشاط المدخل يدويًا دون استبدال.'}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600">تم تخطي تحليل الموقع، ويمكن إضافته لاحقًا.</p>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Products/Services */}
-        <Card className="p-5 bg-gradient-to-br from-teal-50 to-teal-100">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <div className="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center flex-shrink-0">
-              <Store className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text6')}</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(6)} aria-label="تعديل المنتجات والخدمات">
-                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
-                </Button>
-              </div>
-              <div className="space-y-1 text-sm text-gray-700">
-                {hasProducts && (
-                  <p className="flex items-center space-x-1 space-x-reverse">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>{wizardData.products.length} منتج</span>
-                  </p>
-                )}
-                {hasServices && (
-                  <p className="flex items-center space-x-1 space-x-reverse">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>{wizardData.services.length} خدمة</span>
-                  </p>
-                )}
-                {!hasProducts && !hasServices && (
-                  <p className="text-gray-500">{t('wizardCompleteStepPage.text7')}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Bot Personality */}
-        <Card className="p-5 bg-gradient-to-br from-green-50 to-green-100">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
-              <MessageSquare className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text8')}</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(8)} aria-label="تعديل شخصية ساري">
-                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
-                </Button>
-              </div>
-              <div className="space-y-1 text-sm text-gray-700">
-                <p><strong>{t('wizardCompleteStepPage.text9')}</strong> {
-                  wizardData.botTone === 'friendly' ? 'ودود ومرح' :
-                    wizardData.botTone === 'professional' ? 'احترافي ورسمي' :
-                      'عفوي وبسيط'
-                }</p>
-                <p><strong>{t('wizardCompleteStepPage.text10')}</strong> {
-                  wizardData.botLanguage === 'ar' ? 'العربية' :
-                    wizardData.botLanguage === 'en' ? 'الإنجليزية' :
-                      'العربية والإنجليزية'
-                }</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Integrations */}
-        <Card className="p-5 bg-gradient-to-br from-green-50 to-green-100">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
-              <Calendar className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">{t('wizardCompleteStepPage.text11')}</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToStep(7)} aria-label="تعديل التكاملات">
-                  <Pencil className="h-3.5 w-3.5 ml-1" />تعديل
-                </Button>
-              </div>
-              <div className="space-y-1 text-sm text-gray-700">
-                {wizardData.enableCalendar && (
-                  <p className="flex items-center space-x-1 space-x-reverse">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>Google Calendar</span>
-                  </p>
-                )}
-                {wizardData.enableSheets && (
-                  <p className="flex items-center space-x-1 space-x-reverse">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>Google Sheets</span>
-                  </p>
-                )}
-                {!hasIntegrations && (
-                  <p className="text-gray-500">{t('wizardCompleteStepPage.text12')}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* What's Next */}
-      <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2 space-x-reverse">
-            <Rocket className="h-5 w-5 text-emerald-600" />
-            <span>{t('wizardCompleteStepPage.text13')}</span>
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li className="flex items-start space-x-2 space-x-reverse">
-              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>{t('wizardCompleteStepPage.text14')}</span>
-            </li>
-            <li className="flex items-start space-x-2 space-x-reverse">
-              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>{t('wizardCompleteStepPage.text15')}</span>
-            </li>
-            <li className="flex items-start space-x-2 space-x-reverse">
-              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>{t('wizardCompleteStepPage.text16')}</span>
-            </li>
-            <li className="flex items-start space-x-2 space-x-reverse">
-              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>{t('wizardCompleteStepPage.text17')}</span>
-            </li>
-          </ul>
-        </div>
-      </Card>
-
-      {/* Complete Button */}
-      <div className="text-center pt-6">
-        {!hasValidProfile && (
-          <div role="alert" className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            <AlertCircle className="h-4 w-4" />
-            <span>راجع اسم النشاط ورقم الهاتف قبل الإطلاق.</span>
-            <Button type="button" variant="link" size="sm" onClick={() => goToStep(3)}>تعديل الآن</Button>
-          </div>
-        )}
-        <Button
-          size="lg"
-          onClick={completeSetup}
-          disabled={isLoading || !hasValidProfile}
-          className="px-12 py-6 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-green-200"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-6 w-6 animate-spin" />{t('completeStep.auto_4')}</>
-          ) : (
-            <>{t('completeStep.auto_5')}<Rocket className="mr-2 h-6 w-6" />
-            </>
-          )}
-        </Button>
-        <p className="text-sm text-gray-500 mt-3">{t('completeStep.auto_6')}</p>
-      </div>
+  const products = (wizardData.products || []).filter((item: any) => item.name?.trim());
+  const services = (wizardData.services || []).filter((item: any) => item.name?.trim());
+  const tone = wizardData.botTone === 'professional' ? t('setupWorkspace.toneProfessional') : wizardData.botTone === 'casual' ? t('setupWorkspace.toneCasual') : t('setupWorkspace.toneFriendly');
+  const language = ({ ar: 'العربية', en: 'English', both: 'العربية والإنجليزية', fr: 'Français', tr: 'Türkçe', es: 'Español', it: 'Italiano' } as Record<string, string>)[wizardData.botLanguage || 'ar'];
+  const edit = (name: string, action: () => void) => <Button type="button" variant="ghost" size="sm" onClick={action} disabled={isLoading} aria-label={t('setupWorkspace.editNamed', { name })}><Pencil aria-hidden="true" />{t('setupWorkspace.edit')}</Button>;
+  return <div className="space-y-5">
+    <div className="ms-review-list">
+      <section>
+        <header><h2>{t('setupWorkspace.reviewBusiness')}</h2>{edit(t('setupWorkspace.reviewBusiness'), () => goToStep(3))}</header>
+        <dl><div><dt>{t('setupWorkspace.nameLabel')}</dt><dd>{wizardData.businessName || t('setupWorkspace.notProvided')}</dd></div><div><dt>{t('setupWorkspace.phoneLabel')}</dt><dd><bdi>{wizardData.phone || t('setupWorkspace.notProvided')}</bdi></dd></div></dl>
+      </section>
+      <section>
+        <header><h2>{t('setupWorkspace.reviewCatalog')}</h2>{edit(t('setupWorkspace.reviewCatalog'), () => goToStep(6))}</header>
+        {products.length + services.length > 0 ? <><p>{t('setupWorkspace.catalogCount', { products: products.length, services: services.length })}</p><small>{t('setupWorkspace.catalogReviewNote')}</small></> : <p>{t('setupWorkspace.catalogEmpty')}</p>}
+      </section>
+      <section>
+        <header><h2>{t('setupWorkspace.reviewAssistant')}</h2>{edit(t('setupWorkspace.reviewAssistant'), () => goToStep(8))}</header>
+        <dl><div><dt>{t('setupWorkspace.toneLabel')}</dt><dd>{tone}</dd></div><div><dt>{t('setupWorkspace.languageLabel')}</dt><dd>{language}</dd></div></dl>
+      </section>
+      {websiteReview && <section>
+        <header><h2>{t('setupWorkspace.reviewWebsite')}</h2>{edit(t('setupWorkspace.reviewWebsite'), () => goToStep(4))}</header>
+        <p className="break-all" dir="ltr">{websiteReview.websiteUrl}</p>
+      </section>}
     </div>
-  );
+    <details className="ms-details">
+      <summary>{t('setupWorkspace.previewTitle')}</summary>
+      <PreviewChat businessName={wizardData.businessName} botTone={wizardData.botTone || 'friendly'} botLanguage={wizardData.botLanguage || 'ar'} products={products} services={services} welcomeMessage={wizardData.welcomeMessage || ''} useAI={false} className="max-w-md mx-auto" />
+    </details>
+    {!hasValidProfile && <div role="alert" className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><AlertCircle aria-hidden="true" />{t('setupWorkspace.invalidProfile')}</div>}
+    <div className="ms-actions">
+      <Button size="lg" onClick={completeSetup} disabled={isLoading || !hasValidProfile}>
+        {isLoading ? <><Loader2 className="animate-spin" aria-hidden="true" />{t('completeStep.auto_4')}</> : <>{t('setupWorkspace.reviewConfirm')}<ArrowRight aria-hidden="true" /></>}
+      </Button>
+    </div>
+    <p className="text-xs text-muted-foreground leading-relaxed">{t('setupWorkspace.confirmHint')}</p>
+  </div>;
 }

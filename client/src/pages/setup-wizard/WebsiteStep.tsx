@@ -222,9 +222,9 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     const getSiteTypeBadge = (siteType: string) => {
         const config: Record<string, { icon: any; label: string; color: string }> = {
             ecommerce: { icon: ShoppingBag, label: 'متجر إلكتروني', color: 'bg-purple-100 text-purple-700' },
-            services: { icon: Briefcase, label: 'خدمات', color: 'bg-blue-100 text-blue-700' },
-            courses: { icon: GraduationCap, label: 'تدريب وتعليم', color: 'bg-emerald-100 text-emerald-700' },
-            general: { icon: LayoutGrid, label: 'موقع عام', color: 'bg-gray-100 text-gray-700' },
+            services: { icon: Briefcase, label: 'خدمات', color: 'bg-accent text-primary' },
+            courses: { icon: GraduationCap, label: 'تدريب وتعليم', color: 'bg-accent text-primary' },
+            general: { icon: LayoutGrid, label: 'موقع عام', color: 'bg-gray-100 text-foreground' },
         };
         const c = config[siteType] || config.general;
         const Icon = c.icon;
@@ -250,7 +250,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
             {/* URL Input */}
             {!showResults && (
                 <div className="space-y-3">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ms-adaptive-row">
                         <Input
                             type="url"
                             placeholder="https://example.com"
@@ -261,6 +261,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             }}
                             disabled={isAnalyzing}
                             className="text-left"
+                            aria-label={t('setupWorkspace.website')}
                             dir="ltr"
                             onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                         />
@@ -287,12 +288,12 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     )}
 
                     {isAnalyzing && (
-                        <Card className="p-4 bg-blue-50 border-blue-200">
+                        <Card className="p-4 bg-accent border-border">
                             <div className="flex items-center gap-3">
-                                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
                                 <div>
-                                    <p className="font-medium text-blue-900">{t('websiteStep.auto_3')}</p>
-                                    <p className="text-sm text-blue-700">{t('websiteStep.auto_4')}</p>
+                                    <p className="font-medium text-primary">{t('websiteStep.auto_3')}</p>
+                                    <p className="text-sm text-primary">{t('websiteStep.auto_4')}</p>
                                 </div>
                             </div>
                         </Card>
@@ -304,21 +305,21 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
             {showResults && (
                 <div className="space-y-5">
                     {/* Success banner */}
-                    <Card className="p-4 bg-emerald-50 border-emerald-200">
+                    <Card className="p-4 bg-accent border-border">
                         <div className="flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-medium text-emerald-900">{t('websiteStep.auto_5')}</p>
+                                    <p className="font-medium text-primary">{t('websiteStep.auto_5')}</p>
                                     {analysisResult.siteType && getSiteTypeBadge(analysisResult.siteType)}
                                 </div>
-                                <div className="flex items-center gap-3 mt-1 text-sm text-emerald-700">
+                                <div className="flex items-center gap-3 mt-1 text-sm text-primary">
                                     <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
                                         <ExternalLink className="w-3 h-3" />
                                         {url}
                                     </a>
                                     {analysisResult.crawlStats && (
-                                        <span className="text-emerald-600">
+                                        <span className="text-primary">
                                             ({analysisResult.crawlStats.totalPages} صفحة)
                                         </span>
                                     )}
@@ -327,7 +328,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-emerald-700 hover:bg-emerald-100"
+                                className="text-primary hover:bg-accent"
                                 onClick={() => {
                                     setAnalysisResult(null);
                                     setExtractedProducts([]);
@@ -339,24 +340,24 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
 
                     {/* Company Info */}
                     {profileSuggestion?.fields?.length > 0 && (
-                        <Card className="p-4 border-blue-100 bg-blue-50/50">
+                        <Card className="p-4 border-border bg-accent">
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                    <Building2 className="w-5 h-5 text-blue-600" />
+                                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0">
+                                    <Building2 className="w-5 h-5 text-primary" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 text-lg">
+                                    <h3 className="font-bold text-foreground text-lg">
                                         {analysisResult.companyInfo?.name || 'بيانات مقترحة من الموقع'}
                                     </h3>
                                     {analysisResult.companyInfo.description && (
-                                        <p className="text-sm text-gray-600 mt-1 line-clamp-3">{analysisResult.companyInfo.description}</p>
+                                        <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{analysisResult.companyInfo.description}</p>
                                     )}
                                     {analysisResult.companyInfo.industry && (
-                                        <span className="inline-block mt-2 text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-0.5">
+                                        <span className="inline-block mt-2 text-xs bg-accent text-primary rounded-full px-3 py-0.5">
                                             {analysisResult.companyInfo.industry}
                                         </span>
                                     )}
-                                    <p className="text-xs text-blue-800 mt-3">
+                                    <p className="text-xs text-primary mt-3">
                                         هذه اقتراحات مستخرجة فقط، ولن تستبدل ملف نشاطك إلا بعد موافقتك.
                                     </p>
                                     <Button
@@ -365,7 +366,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         size="sm"
                                         onClick={handleApplyProfileSuggestion}
                                         disabled={profileSuggestion.applied}
-                                        className="mt-3 border-blue-300 text-blue-800 hover:bg-blue-100"
+                                        className="mt-3 border-border text-primary hover:bg-accent"
                                     >
                                         {profileSuggestion.applied ? (
                                             <><CheckCircle2 className="w-4 h-4 ml-1" />تم اعتماد الاقتراحات</>
@@ -409,7 +410,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                                 />
                                             ) : null}
                                             <div
-                                                className={`absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 items-center justify-center ${product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() ? 'hidden' : 'flex'}`}
+                                                className={`absolute inset-0 bg-accent items-center justify-center ${product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() ? 'hidden' : 'flex'}`}
                                             >
                                                 <Package className="w-10 h-10 text-primary/30" />
                                             </div>
@@ -442,56 +443,56 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             {/* Contact details */}
                             <Card className="divide-y">
                                 {analysisResult.contactInfo?.phones?.length > 0 && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Phone className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_8')}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
+                                        <span className="text-sm font-medium text-primary" dir="ltr">
                                             {analysisResult.contactInfo.phones[0]}
                                         </span>
                                     </div>
                                 )}
                                 {analysisResult.contactInfo?.emails?.length > 0 && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Mail className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_9')}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
+                                        <span className="text-sm font-medium text-primary" dir="ltr">
                                             {analysisResult.contactInfo.emails[0]}
                                         </span>
                                     </div>
                                 )}
                                 {analysisResult.contactInfo?.whatsappNumber && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <MessageCircle className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_10')}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
+                                        <span className="text-sm font-medium text-primary" dir="ltr">
                                             ✅ +{analysisResult.contactInfo.whatsappNumber}
                                         </span>
                                     </div>
                                 )}
                                 {analysisResult.contactInfo?.address && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <MapPin className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_11')}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-700 max-w-[200px] truncate">
+                                        <span className="text-sm font-medium text-foreground max-w-[200px] truncate">
                                             {analysisResult.contactInfo.address}
                                         </span>
                                     </div>
                                 )}
                                 {analysisResult.faqCount > 0 && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <HelpCircle className="w-4 h-4" />
                                             <span>{t('websiteStep.auto_12')}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600">
+                                        <span className="text-sm font-medium text-primary">
                                             ✅ {analysisResult.faqCount} سؤال
                                         </span>
                                     </div>

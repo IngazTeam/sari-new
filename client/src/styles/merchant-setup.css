@@ -1,0 +1,509 @@
+/* The onboarding route shares the merchant workspace tokens, without its tools navigation. */
+.merchant-setup {
+  min-height: 100dvh;
+}
+.ms-topbar {
+  min-height: 86px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px max(24px, calc((100vw - 1240px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ms-brand {
+  padding: 0;
+}
+.ms-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms-layout {
+  max-width: 1240px;
+  margin: auto;
+  padding: 36px 24px 48px;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.ms-sidebar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px 16px 16px;
+  position: sticky;
+  top: 24px;
+}
+.ms-roadmap-intro {
+  padding: 0 8px;
+}
+.ms-eyebrow {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ms-roadmap-intro h2 {
+  font-size: 20px;
+  line-height: 1.6;
+  margin: 8px 0;
+  font-weight: 600;
+}
+.ms-roadmap-intro p,
+.ms-sidebar-note p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--muted-foreground);
+}
+.ms-progress {
+  padding: 22px 8px;
+}
+.ms-progress > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.ms-progress [data-slot="progress"] {
+  height: 5px;
+  background: var(--muted);
+}
+.ms-steps ol {
+  display: grid;
+  gap: 8px;
+}
+.ms-steps li > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  width: 100%;
+  text-align: start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--muted-foreground);
+  transition: background 150ms ease;
+}
+.ms-steps button:hover:enabled {
+  background: var(--muted);
+}
+.ms-steps button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.ms-steps button[aria-current="step"] {
+  background: #173f35;
+  color: white;
+  opacity: 1;
+}
+.ms-step-number {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.ms-step-number svg {
+  width: 16px;
+  height: 16px;
+}
+[aria-current="step"] .ms-step-number {
+  border-color: #668171;
+  color: var(--mw-lime);
+}
+.ms-step-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+.ms-step-title small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+.ms-sidebar-note {
+  margin-top: 26px;
+  padding: 16px 10px 4px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: start;
+  gap: 10px;
+}
+.ms-sidebar-note svg {
+  width: 18px;
+  flex: none;
+  color: var(--primary);
+  margin-top: 3px;
+}
+.ms-steps-toggle {
+  display: none;
+}
+.ms-main {
+  min-width: 0;
+}
+.ms-step-meta {
+  min-height: 30px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ms-save-status {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  flex-wrap: wrap;
+}
+.ms-save-status svg {
+  height: 14px;
+  width: 14px;
+  flex: none;
+}
+.ms-save-status button {
+  text-decoration: underline;
+  min-height: 32px;
+  color: var(--primary);
+}
+.ms-heading {
+  margin: 14px 0 26px;
+}
+.ms-heading h1 {
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.5;
+}
+.ms-heading h1:focus {
+  outline: none;
+}
+.ms-heading p {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.9;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.ms-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+}
+.ms-step-content {
+  display: grid;
+  gap: 28px;
+}
+.ms-step-content > :not(:first-child) {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.ms-step-content [data-slot="card"] {
+  box-shadow: none;
+  border-radius: 12px;
+  gap: 0;
+  padding-block: 0;
+}
+.ms-step-content [data-slot="card"].p-5 {
+  padding: 20px;
+}
+.ms-step-content [data-slot="card"].p-4 {
+  padding: 16px;
+}
+.ms-step-content :where(input, textarea, select) {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--input);
+  border-radius: 9px;
+}
+.ms-step-content :where(input, select) {
+  min-height: 44px;
+}
+.ms-step-content [data-slot="button"] {
+  min-height: 44px;
+  white-space: normal;
+  height: auto;
+  line-height: 1.5;
+}
+.ms-step-content :where(.flex-1, [data-slot="card"], .grid > *) {
+  min-width: 0;
+}
+.ms-step-content .lucide-arrow-right {
+  transform: scaleX(-1);
+}
+.merchant-setup[dir="ltr"] .ms-step-content .lucide-arrow-right {
+  transform: none;
+}
+.merchant-setup[dir="ltr"] .ms-back-arrow {
+  transform: scaleX(-1);
+}
+.ms-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+.ms-footer p {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-inline-start: auto;
+}
+.ms-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ms-choice {
+  width: 100%;
+  text-align: start;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.ms-choice:hover {
+  background: var(--muted);
+}
+.ms-choice[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.ms-choice > svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--primary);
+}
+.ms-choice strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ms-choice small {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.ms-field-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.ms-details {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 16px;
+}
+.ms-details > summary {
+  min-height: 48px;
+  padding: 14px 0;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ms-details[open] > summary {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ms-details[open] {
+  padding-bottom: 16px;
+}
+.ms-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.ms-catalog-modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ms-catalog-modes button {
+  flex: 1;
+  min-width: 120px;
+  font-size: 12px;
+}
+.ms-review-list { display: grid; gap: 0; }
+.ms-review-list section { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.ms-review-list section:first-child { padding-top: 0; }
+.ms-review-list section:last-child { border-bottom: 0; padding-bottom: 0; }
+.ms-review-list header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.ms-review-list h2 { font-size: 14px; font-weight: 600; }
+.ms-review-list dl { display: grid; gap: 8px; }
+.ms-review-list dl > div { display: flex; gap: 20px; align-items: start; }
+.ms-review-list dt { width: 60px; flex: none; color: var(--muted-foreground); font-size: 12px; }
+.ms-review-list dd, .ms-review-list p { font-size: 13px; overflow-wrap: anywhere; }
+.ms-review-list small { display: block; color: var(--muted-foreground); margin-top: 6px; font-size: 11px; }
+.ms-loading {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.ms-loading > div {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.ms-loading h1 {
+  font-size: 20px;
+}
+@media (max-width: 1023px) {
+  .ms-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    max-width: 800px;
+    padding-top: 20px;
+  }
+  .ms-sidebar {
+    position: static;
+    padding: 12px 16px;
+  }
+  .ms-roadmap-intro,
+  .ms-sidebar-note {
+    display: none;
+  }
+  .ms-progress {
+    padding: 0;
+  }
+  .ms-steps-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: start;
+    min-height: 48px;
+    font-size: 13px;
+  }
+  .ms-steps-toggle > span:last-child {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .ms-steps-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+  .ms-steps-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+  .ms-steps:not([data-open="true"]) {
+    display: none;
+  }
+  .ms-steps ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: 8px;
+  }
+}
+@media (max-width: 600px) {
+  .ms-topbar {
+    min-height: 74px;
+    padding: 12px 16px;
+  }
+  .ms-brand {
+    gap: 8px;
+  }
+  .ms-brand strong {
+    font-size: 23px;
+  }
+  .ms-brand small {
+    font-size: 9px;
+  }
+  .ms-brand .mw-brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+  .ms-topbar-actions button {
+    font-size: 11px;
+    gap: 6px;
+    padding-inline: 10px;
+    min-height: 42px;
+  }
+  .ms-layout {
+    padding: 16px 12px 24px;
+    gap: 16px;
+  }
+  .ms-panel {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+  .ms-heading {
+    margin: 10px 4px 20px;
+  }
+  .ms-heading p {
+    font-size: 13px;
+  }
+  .ms-choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .ms-choice {
+    padding: 12px 6px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+  }
+  .ms-choice small {
+    display: none;
+  }
+  .ms-choice strong { font-size: 12px; }
+  .ms-choice > svg { width: 20px; height: 20px; }
+  .ms-step-content :where(input, textarea, select) {
+    font-size: 16px;
+  }
+  .ms-actions > button {
+    flex: 1;
+  }
+  .ms-step-content .ms-adaptive-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .ms-step-content .ms-unbounded-list {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+  .ms-footer {
+    flex-wrap: wrap;
+  }
+  .ms-footer p {
+    max-width: 200px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .merchant-setup *,
+  .merchant-setup *::before,
+  .merchant-setup *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

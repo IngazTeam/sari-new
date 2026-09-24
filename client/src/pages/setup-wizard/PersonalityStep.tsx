@@ -1,166 +1,105 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ArrowRight, Smile, Briefcase, Coffee, MessageSquare, Eye } from 'lucide-react';
-import PreviewChat from '@/components/PreviewChat';
-import { useTranslation } from 'react-i18next';
+import { Smile, Briefcase, Coffee } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import PreviewChat from "@/components/PreviewChat";
+import { useTranslation } from "react-i18next";
 
 interface PersonalityStepProps {
   wizardData: Record<string, any>;
   updateWizardData: (data: Record<string, any>) => void;
   goToNextStep: () => void;
+  compact?: boolean;
 }
-
-const TONES = [
-  {
-    id: 'friendly',
-    title: 'ودود ومرح',
-    description: 'أسلوب دافئ وقريب من القلب',
-    icon: Smile,
-    color: 'from-pink-500 to-rose-500',
-    example: 'أهلاً وسهلاً! 😊 كيف يمكنني مساعدتك اليوم؟',
-  },
-  {
-    id: 'professional',
-    title: 'احترافي ورسمي',
-    description: 'أسلوب مهني ومحترم',
-    icon: Briefcase,
-    color: 'from-blue-500 to-indigo-500',
-    example: 'مرحباً بك. يسعدني خدمتك، كيف يمكنني المساعدة؟',
-  },
-  {
-    id: 'casual',
-    title: 'عفوي وبسيط',
-    description: 'أسلوب مريح وغير رسمي',
-    icon: Coffee,
-    color: 'from-orange-500 to-amber-500',
-    example: 'هلا! شو تحتاج؟ أنا هنا أساعدك 👋',
-  },
-];
-
-
 
 export default function PersonalityStep({
   wizardData,
   updateWizardData,
   goToNextStep,
+  compact,
 }: PersonalityStepProps) {
   const { t } = useTranslation();
-  const [botTone, setBotTone] = useState(wizardData.botTone || 'friendly');
-
-  const [welcomeMessage, setWelcomeMessage] = useState(
-    wizardData.welcomeMessage || ''
-  );
-
-  const handleNext = () => {
-    updateWizardData({
-      botTone,
-      welcomeMessage,
-    });
-    goToNextStep();
-  };
-
-  const selectedTone = TONES.find(t => t.id === botTone);
-
+  const botTone = wizardData.botTone || "friendly";
+  const tones = [
+    {
+      id: "friendly",
+      icon: Smile,
+      title: t("setupWorkspace.toneFriendly"),
+      description: t("setupWorkspace.toneFriendlyDescription"),
+    },
+    {
+      id: "professional",
+      icon: Briefcase,
+      title: t("setupWorkspace.toneProfessional"),
+      description: t("setupWorkspace.toneProfessionalDescription"),
+    },
+    {
+      id: "casual",
+      icon: Coffee,
+      title: t("setupWorkspace.toneCasual"),
+      description: t("setupWorkspace.toneCasualDescription"),
+    },
+  ];
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <p className="text-gray-600">{t('personalityStep.auto_0')}</p>
-      </div>
-
-      {/* Tone Selection */}
-      <div className="space-y-3">
-        <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          <span>{t('wizardPersonalityStepPage.text0')}</span>
-        </Label>
-
-        <div className="grid md:grid-cols-3 gap-3">
-          {TONES.map((tone) => {
-            const Icon = tone.icon;
-            const isSelected = botTone === tone.id;
-
-            return (
-              <Card
-                key={tone.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${isSelected ? 'ring-2 ring-primary shadow-lg' : ''
-                  }`}
-                onClick={() => setBotTone(tone.id)}
-              >
-                <div className="p-4 space-y-3">
-                  <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tone.color} flex items-center justify-center`}
-                  >
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      {tone.title}
-                    </h4>
-                    <p className="text-xs text-gray-600">{tone.description}</p>
-                  </div>
-
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-gray-500 mb-1">{t('wizardPersonalityStepPage.text1')}</p>
-                    <p className="text-xs text-gray-700 italic bg-gray-50 p-2 rounded">
-                      "{tone.example}"
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+    <div className="space-y-5">
+      <div>
+        <h2 className="ms-field-title" id="assistant-tone-title">
+          {t("setupWorkspace.toneTitle")}
+        </h2>
+        <div
+          className="ms-choice-grid"
+          role="group"
+          aria-labelledby="assistant-tone-title"
+        >
+          {tones.map(tone => (
+            <button
+              type="button"
+              key={tone.id}
+              className="ms-choice"
+              aria-pressed={botTone === tone.id}
+              onClick={() => updateWizardData({ botTone: tone.id })}
+            >
+              <tone.icon aria-hidden="true" />
+              <span>
+                <strong>{tone.title}</strong>
+                <small>{tone.description}</small>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
-
-
-
-      {/* Custom Welcome Message */}
-      <div className="space-y-3">
-        <Label htmlFor="welcomeMessage" className="text-base font-semibold">{t('personalityStep.auto_1')}</Label>
-        <Textarea
-          id="welcomeMessage"
-          placeholder={
-            selectedTone?.id === 'friendly'
-              ? 'مثال: أهلاً وسهلاً! أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟ 😊'
-              : selectedTone?.id === 'professional'
-                ? 'مثال: مرحباً بك في [اسم نشاطك]. أنا ساري، المساعد الافتراضي. يسعدني خدمتك.'
-                : 'مثال: هلا! أنا ساري، جاهز أساعدك بأي شي تحتاجه 👋'
-          }
-          value={welcomeMessage}
-          onChange={(e) => setWelcomeMessage(e.target.value)}
-          rows={4}
-          className="resize-none"
-        />
-        <p className="text-xs text-gray-500">{t('personalityStep.auto_2')}</p>
-      </div>
-
-      {/* Interactive Preview */}
-      <div className="space-y-3">
-        <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
-          <Eye className="h-5 w-5 text-primary" />
-          <span>{t('wizardPersonalityStepPage.text2')}</span>
-        </Label>
-        <p className="text-sm text-gray-600 mb-4">{t('personalityStep.auto_3')}</p>
-        <PreviewChat
-          businessName={wizardData.businessName || 'متجرك'}
-          botTone={botTone as 'friendly' | 'professional' | 'casual'}
-          botLanguage={(wizardData.botLanguage || 'ar') as 'ar' | 'en' | 'both'}
-          products={wizardData.products || []}
-          services={wizardData.services || []}
-          welcomeMessage={welcomeMessage}
-          className="max-w-md mx-auto"
-        />
-      </div>
-
-      {/* Next Button */}
-      <div className="flex justify-center pt-4">
-        <Button size="lg" onClick={handleNext} className="px-8">{t('personalityStep.auto_4')}<ArrowRight className="mr-2 h-5 w-5" />
-        </Button>
-      </div>
+      <details className="ms-details">
+        <summary>{t("setupWorkspace.customizeAssistant")}</summary>
+        <div className="space-y-4">
+          <Label htmlFor="welcomeMessage">{t("personalityStep.auto_1")}</Label>
+          <Textarea
+            id="welcomeMessage"
+            value={wizardData.welcomeMessage || ""}
+            onChange={event =>
+              updateWizardData({ welcomeMessage: event.target.value })
+            }
+            rows={3}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("personalityStep.auto_2")}
+          </p>
+          <PreviewChat
+            businessName={wizardData.businessName}
+            botTone={botTone}
+            botLanguage={wizardData.botLanguage || "ar"}
+            products={wizardData.products || []}
+            services={wizardData.services || []}
+            welcomeMessage={wizardData.welcomeMessage || ""}
+            className="max-w-md mx-auto"
+            useAI={false}
+          />
+        </div>
+      </details>
+      {!compact && (
+        <div className="ms-actions">
+          <Button onClick={goToNextStep}>{t("personalityStep.auto_4")}</Button>
+        </div>
+      )}
     </div>
   );
 }

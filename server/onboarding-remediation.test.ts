@@ -22,8 +22,8 @@ describe('onboarding remediation guards', () => {
     const end = routers.indexOf('// Get templates', start);
     const completion = routers.slice(start, end);
 
-    expect(wizard).toContain('products: products.filter');
-    expect(wizard).toContain('services: services.filter');
+    expect(wizard).toMatch(/products:\s*products\s*\.filter/);
+    expect(wizard).toMatch(/services:\s*services\s*\.filter/);
     expect(completion).toContain('products: z.array(setupProductSchema).max(100)');
     expect(completion).toContain('services: z.array(setupServiceSchema).max(100)');
   });
