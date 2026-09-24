@@ -30,6 +30,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/payment/booking-checkout-reconciliation.mysql.test.ts',
   'server/payment/booking-checkout.mysql.test.ts',
   'server/ai/checkout-discount-release.mysql.test.ts',
   'server/payment/checkout-reconciliation.mysql.test.ts',

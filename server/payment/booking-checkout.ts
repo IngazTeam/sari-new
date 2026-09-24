@@ -14,6 +14,13 @@ import { buildTapCheckoutIdempotentReference, halalasToTapAmount, isTapPaymentRe
 
 const unavailable = () => new Error('Booking checkout requires review');
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+/** Preserve version 1 field order: existing reservations must remain verifiable. */
+export function bookingCheckoutRequestFingerprint(input:{merchantId:number;bookingId:number;linkId:number;serviceId:number;amount:number;currency:string;
+  customerName:string;customerPhone:string;customerEmail:string|null;description:string;secret:string;testMode:boolean}) {
+  return digest({version:1,merchantId:input.merchantId,bookingId:input.bookingId,linkId:input.linkId,serviceId:input.serviceId,
+    amount:input.amount,currency:input.currency,customerName:input.customerName,customerPhone:input.customerPhone,
+    customerEmail:input.customerEmail,description:input.description,provider:digest(input.secret),testMode:input.testMode});
+}
 const checkoutSchema = z.object({ linkId:z.string().min(1).max(100),checkoutAttemptId:z.string().uuid().transform(s=>s.toLowerCase()),
   customerName:z.string().trim().min(2).max(120),customerPhone:z.string().min(9).max(20),
   customerEmail:z.string().trim().email().max(255).optional() }).strict();
@@ -131,10 +138,10 @@ export async function createDurableBookingCheckout(raw:CheckoutInput):Promise<{p
   const reservation=await transaction(async connection=>{
     const {booking,link}=await lockedTarget(connection,input.linkId);
     if(booking.merchant_id!==scope[0].merchant_id||!payable(booking))throw unavailable();await assertAvailable(connection,link);
-    const fingerprint=digest({version:1,merchantId:booking.merchant_id,bookingId:booking.id,linkId:link.id,
+    const fingerprint=bookingCheckoutRequestFingerprint({merchantId:booking.merchant_id,bookingId:booking.id,linkId:link.id,
       serviceId:booking.service_id,amount:link.amount,currency:link.currency,customerName:input.customerName,
       customerPhone:phone,customerEmail:input.customerEmail||null,description:link.description||link.title,
-      provider:digest(secret),testMode});
+      secret,testMode});
     const [attempts]=await connection.execute<any[]>(`SELECT * FROM booking_checkout_attempts WHERE booking_id=?
       AND (state IN ('dispatching','unknown','created') OR (payment_link_id=? AND request_id=?)) ORDER BY created_at,id FOR UPDATE`,
       [booking.id,link.id,input.checkoutAttemptId]);

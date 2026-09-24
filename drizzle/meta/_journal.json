@@ -575,6 +575,13 @@
       "when": 1790467200000,
       "tag": "0081_booking_checkout_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "5",
+      "when": 1790553600000,
+      "tag": "0082_booking_checkout_reviews",
+      "breakpoints": true
     }
   ]
 }

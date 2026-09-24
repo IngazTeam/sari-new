@@ -41,6 +41,7 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
+import { BookingCheckoutAttempts } from '@/components/BookingCheckoutAttempts';
 
 // Default form state for new booking
 const defaultNewBooking = {
@@ -61,6 +62,7 @@ const defaultNewBooking = {
 export default function BookingsManagement() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const utils = trpc.useUtils();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
@@ -574,7 +576,7 @@ export default function BookingsManagement() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-h-[90dvh] min-w-0 overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>{t('bookingsManagementPage.text34')}</DialogTitle>
                               <DialogDescription>{t('bookingsManagement.auto_3')}</DialogDescription>
@@ -616,6 +618,15 @@ export default function BookingsManagement() {
                                     </p>
                                   </div>
                                 )}
+                                <div>
+                                  <p className="text-sm font-medium mb-1">{t('merchantUx.bookingCheckout.paymentStatus')}</p>
+                                  <p className="text-sm">{t(selectedBooking.paymentStatus==='paid'?'merchantUx.bookingCheckout.paid':selectedBooking.paymentStatus==='refunded'?'merchantUx.bookingCheckout.refunded':'merchantUx.bookingCheckout.unpaid')}</p>
+                                </div>
+                                <BookingCheckoutAttempts key={`booking-checkout-${selectedBooking.id}`} bookingId={selectedBooking.id} onReviewed={async()=>{
+                                  const bookingId=selectedBooking.id;const fresh=await utils.bookings.getById.fetch({bookingId});
+                                  setSelectedBooking((current:any)=>current?.id===bookingId?fresh.booking:current);
+                                  await Promise.all([refetch(),utils.bookings.getStats.invalidate()]);
+                                }} />
                                 <div>
                                   <p className="text-sm font-medium mb-2">{t('bookingsManagementPage.text40')}</p>
                                   <Select

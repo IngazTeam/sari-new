@@ -1,6 +1,13 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  bookingCheckout: {
+    scope:'The latest 10 payment attempts for this booking. Retrieve the charge from Tap and match it to the booking without creating a payment or sending a customer message.',
+    created:'Session recorded; check the booking payment status',
+    verified:'The charge was matched and the result saved to the booking. Matching alone does not mean funds were collected; check the payment status.',
+    review:'Match this attempt reference against the Tap dashboard before starting another payment. A lost response or expired session does not prove payment failure.',
+    paymentStatus:'Booking payment status',unpaid:'Unpaid',paid:'Paid',refunded:'Refunded',
+  },
   discountRelease: {
     title:"Release coupon use",
     scope:"Release one use for a local order cancelled before collection, after verifying all payment attempts ended. This does not refund money or change the invoice amount, and closes this order’s payment links.",

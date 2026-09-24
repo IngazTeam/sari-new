@@ -9,6 +9,26 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
       evidence: [{ signalId: 7, relation: 'supporting', excerpt: 'السعر لا يناسب ميزانيتي، هل يوجد خيار أقل تكلفة؟' },
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
+  bookings: {
+    getCheckoutAttempts:{useQuery:()=>{
+      const [recovered,setRecovered]=useState(false),[revision,setRevision]=useState(0);
+      useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('booking-evidence-change',changed);(window as any).__changeBookingEvidence=()=>window.dispatchEvent(new Event('booking-evidence-change'));return()=>window.removeEventListener('booking-evidence-change',changed);},[]);
+      return {isLoading:mode==='booking-review-loading',isError:mode==='booking-review-error'&&!recovered,
+        data:mode.startsWith('booking-review-')&&mode!=='booking-review-empty'?['unknown','dispatching','created','failed'].map((state,id)=>({
+          id:`00000000-0000-4000-8000-00000000000${id}`,state,evidence:(revision?'b':'a').repeat(64),reviewRevision:revision,canReview:mode!=='booking-review-blocked'&&(id===0||id===2),
+          lastReview:mode==='booking-review-audit'?{outcome:'verified',at:'2026-09-24T00:00:00.000Z'}:null,
+          reference:mode==='booking-review-xss'?'<img src=x onerror="window.__bookingXss=1">':'sari_pl_'+'f'.repeat(64),amountMinor:26998,currency:'SAR',
+          paymentId:null,createdAt:'2026-09-24T00:00:00.000Z',updatedAt:'2026-09-24T00:00:00.000Z'})):[],
+        refetch:async()=>{setRecovered(true);(window as any).__bookingEvidenceRefreshed=true;return {isError:false};}};
+    }},
+    reconcileCheckoutAttempt:{useMutation:()=>{
+      const [isPending,setPending]=useState(false);return {isPending,mutateAsync:async(input:any)=>{
+        setPending(true);(window as any).__bookingReviewInput=input;(window as any).__bookingReviewCount=((window as any).__bookingReviewCount||0)+1;
+        await new Promise(r=>setTimeout(r,150));setPending(false);if(mode==='booking-review-write-error')throw Error('private provider failure');
+        return {outcome:mode==='booking-review-unverified'?'unverified':'verified',status:'captured'};
+      }};
+    }},
+  },
   botSettings: {
     getMarginPolicy:{useQuery:()=>{
       const [revision,setRevision]=useState(0),[retry,setRetry]=useState(false);

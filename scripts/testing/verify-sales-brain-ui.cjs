@@ -20,6 +20,41 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    const bookingReview='[data-booking-checkout-review]';
+    for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
+      await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});
+      await page.goto(`${origin}/?case=booking-review-ready&lang=${lang}`,{waitUntil:'networkidle0'});await page.waitForSelector(bookingReview);
+      const bookingLayout=await page.$eval('#booking-checkout-fixture',node=>({overflow:document.documentElement.scrollWidth>innerWidth,rawKeys:node.innerText.includes('merchantUx.'),buttons:[...node.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)}));
+      assert.equal(bookingLayout.overflow,false);assert.equal(bookingLayout.rawKeys,false);assert.ok(bookingLayout.buttons.every(h=>h>=44));
+      assert.equal(await page.$eval(`${bookingReview} button`,n=>n.disabled),true);
+      await page.type(`${bookingReview} input:not([type])`,'chg_fixture_1');await page.focus(`${bookingReview} input[type=checkbox]`);await page.keyboard.press('Space');
+      await page.evaluate(()=>window.__changeBookingEvidence());await page.waitForFunction(()=>document.querySelector('[data-booking-checkout-review] input:not([type])').value==='');
+      assert.equal(await page.$eval(`${bookingReview} input[type=checkbox]`,n=>n.checked),false);
+      await page.type(`${bookingReview} input:not([type])`,'chg_fixture_1');await page.click(`${bookingReview} input[type=checkbox]`);await page.click(`${bookingReview} button`);
+      await page.waitForFunction(()=>window.__bookingParentRefreshed===true);assert.equal(await page.evaluate(()=>window.__bookingReviewCount),1);
+      assert.deepEqual(await page.evaluate(()=>window.__bookingReviewInput),{bookingId:321,attemptId:'00000000-0000-4000-8000-000000000000',chargeId:'chg_fixture_1',evidence:'b'.repeat(64),reviewed:true});
+      assert.equal(await page.$eval(`${bookingReview} button`,n=>n.disabled),true);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#booking-checkout-fixture')).screenshot({path:path.join(output,`booking-checkout-review-${width}.png`)});
+      await page.click('[data-booking-checkout-refresh]');assert.equal(await page.$eval(`${bookingReview} input:not([type])`,n=>n.value),'');
+      results.push({width,lang,mode:'booking_review_evidence_keyboard_single_submit_parent_refresh',passed:true});
+    }
+    for(const state of ['write-error','unverified']){
+      await page.goto(`${origin}/?case=booking-review-${state}`,{waitUntil:'networkidle0'});await page.waitForSelector(bookingReview);
+      await page.type(`${bookingReview} input:not([type])`,'chg_fixture_1');await page.click(`${bookingReview} input[type=checkbox]`);await page.click(`${bookingReview} button`);
+      await page.waitForSelector(`${bookingReview} [role=alert]`);assert.equal(await page.$eval(`${bookingReview} button`,n=>n.disabled),true);
+      assert.equal(await page.$eval('#booking-checkout-fixture',n=>n.innerText.includes('private provider')),false);
+      results.push({width:1440,mode:`booking_review_${state}_requires_refresh`,passed:true});
+    }
+    for(const state of ['empty','loading','error','blocked','audit','xss']){
+      await page.goto(`${origin}/?case=booking-review-${state}`,{waitUntil:'networkidle0'});
+      if(state==='error'){await page.waitForSelector('#booking-checkout-fixture [role=alert]');await page.click('#booking-checkout-fixture button');await page.waitForSelector('[data-booking-checkout-attempts]');}
+      if(state==='loading')await page.waitForSelector('#booking-checkout-fixture [role=status]');
+      if(state==='empty')assert.equal(await page.$('[data-booking-checkout-attempts]'),null);
+      if(state==='blocked')assert.equal(await page.$(bookingReview),null);
+      if(state==='audit')await page.waitForSelector('[data-booking-checkout-outcome]');
+      if(state==='xss'){assert.equal(await page.$('#booking-checkout-fixture img'),null);assert.equal(await page.evaluate(()=>window.__bookingXss),undefined);}
+      results.push({width:1440,mode:`booking_review_${state}`,passed:true});
+    }
     for (const width of [320, 375, 390, 768, 1440]) {
       await page.setViewport({ width, height: width < 500 ? 812 : 900, deviceScaleFactor: 1 });
       for (const mode of ['ready', 'loading', 'error']) {

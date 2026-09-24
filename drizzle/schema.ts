@@ -4126,6 +4126,7 @@ export const orderCheckoutReviews = mysqlTable('order_checkout_reviews', {
 },table=>[uniqueIndex('uq_checkout_review_revision').on(table.attemptId,table.revision)]);
 
 export const bookingCheckoutAttempts = mysqlTable('booking_checkout_attempts', {
+  reviewRevision:int('review_revision').notNull().default(0),
   id:char({length:36}).primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   bookingId:int('booking_id').notNull().references(()=>bookings.id,{onDelete:'cascade'}),
   paymentLinkId:int('payment_link_id').notNull().references(()=>paymentLinks.id,{onDelete:'cascade'}),
@@ -4137,3 +4138,10 @@ export const bookingCheckoutAttempts = mysqlTable('booking_checkout_attempts', {
   activeBookingId:int('active_booking_id').generatedAlwaysAs(sql`CASE WHEN state IN ('dispatching','unknown','created') THEN booking_id ELSE NULL END`,{mode:'virtual'}),
 },table=>[uniqueIndex('uq_booking_checkout_request').on(table.paymentLinkId,table.requestId),
   uniqueIndex('uq_booking_checkout_active').on(table.activeBookingId),uniqueIndex('uq_booking_checkout_reference').on(table.providerReference)]);
+
+export const bookingCheckoutReviews = mysqlTable('booking_checkout_reviews', {
+  id:int().autoincrement().primaryKey(),attemptId:char('attempt_id',{length:36}).notNull().references(()=>bookingCheckoutAttempts.id,{onDelete:'cascade'}),
+  revision:int().notNull(),actorUserId:int('actor_user_id').notNull(),chargeId:varchar('charge_id',{length:255}).notNull(),
+  outcome:varchar({length:20}).notNull(),reason:varchar({length:40}),providerStatus:varchar('provider_status',{length:32}),
+  proofHash:char('proof_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_booking_checkout_review_revision').on(table.attemptId,table.revision)]);

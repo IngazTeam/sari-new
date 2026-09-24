@@ -67,6 +67,7 @@ export type MerchantUxCopy = {
   checkoutDiscount: CopySection<readonly ['title','subtotal','discount','total','pending','applied','invalid','historical']>;
   discountRelease: CopySection<readonly ['title','scope','loading','loadError','refresh','reason','attest','saving','save','success','error','legacy','order','identity','payment','coupon','counter','counterChange']>;
   checkoutAttempts: CopySection<readonly ['title','loading','error','refresh','dispatching','unknown','created','failed','scope','reference','review','chargeId','attest','reconcile','reconciling','verified','unverified','reconcileError']>;
+  bookingCheckout: CopySection<readonly ['scope','created','verified','review','paymentStatus','unpaid','paid','refunded']>;
   discountPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","maxPercent","expireHours","scope","margin","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","historyScope","empty","change","before","after","terms","on","off"]>;
   offerReview: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','latest','pages','attempt',
     'missing','invalid','pending','failed','sent','delivered','read','cancelled','reserved','priorAcceptance','projectionConflict','projected','projectionPending',

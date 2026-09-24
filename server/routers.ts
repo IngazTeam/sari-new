@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
 import { reconcileCheckoutSchema } from '../shared/checkout-reconciliation';
+import { reconcileBookingCheckoutSchema } from '../shared/booking-checkout-reconciliation';
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
@@ -6608,6 +6609,16 @@ export const appRouter = router({
   // Bookings Management
   // ============================================
   bookings: router({
+    getCheckoutAttempts: permissionProcedure('orders.manage').input(z.object({bookingId:z.number().int().positive().safe()}).strict()).query(async({ctx,input})=>{
+      const {getBookingCheckoutAttempts}=await import('./payment/booking-checkout-reconciliation');
+      try{return await getBookingCheckoutAttempts(ctx.merchantId,input.bookingId);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Booking checkout evidence unavailable'});}
+    }),
+    reconcileCheckoutAttempt: permissionProcedure('orders.manage').input(reconcileBookingCheckoutSchema).mutation(async({ctx,input})=>{
+      const {reconcileBookingCheckout}=await import('./payment/booking-checkout-reconciliation');
+      try{return await reconcileBookingCheckout(ctx.merchantId,ctx.user.id,input);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Booking checkout reconciliation unavailable; refresh evidence before another review'});}
+    }),
     // Create a new booking
     create: protectedProcedure
       .input(z.object({

@@ -1,8 +1,10 @@
 {
-  "generatedAt": "2026-09-24T04:02:08.409Z",
+  "generatedAt": "2026-09-24T04:44:10.929Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
+    "booking-checkout-review-1440.png",
+    "booking-checkout-review-375.png",
     "checkout-attempts-1440.png",
     "checkout-attempts-375.png",
     "checkout-discount-1440.png",
@@ -36,6 +38,106 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_review_evidence_keyboard_single_submit_parent_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_write-error_requires_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_unverified_requires_refresh",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_blocked",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_review_xss",
+      "passed": true
+    },
     {
       "width": 320,
       "mode": "ready",
