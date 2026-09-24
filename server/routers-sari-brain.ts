@@ -2511,33 +2511,24 @@ ${fencedContent}`,
     };
   }),
 
-  /** Manually trigger learning analysis */
-  triggerLearningAnalysis: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
+  /** Operational metadata only; refresh is never a model request. */
+  getLearningAnalysisStatus: merchantProcedure.input(z.void()).query(async ({ctx})=>{
+    try {
+      const {getLearningAnalysisStatus}=await import('./ai/learning-analysis-recovery');
+      return await getLearningAnalysisStatus(ctx.merchantId);
+    } catch { throw new TRPCError({code:'CONFLICT',message:'Learning analysis status is temporarily unavailable'}); }
+  }),
+
+  /** Report the actual outcome. A background promise does not prove an analysis started. */
+  triggerLearningAnalysis: permissionProcedure('bot_settings.manage').input(z.void()).mutation(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    const learningDb = await import('./db/learning');
-    const unanalyzed = await learningDb.countUnanalyzedSignals(merchant.id);
-
-    if (unanalyzed < 5) {
-      return {
-        success: false,
-        message: `يوجد فقط ${unanalyzed} إشارات جديدة — تحتاج 5 إشارات على الأقل للتحليل`,
-        signalCount: unanalyzed,
-      };
-    }
-
-    // Trigger analysis in background
     const { triggerPatternAnalysis } = await import('./ai/learning-engine');
-    triggerPatternAnalysis(merchant.id).catch(err =>
-      console.error('[Learning] Manual trigger failed:', err)
-    );
-
-    return {
-      success: true,
-      message: `جاري تحليل ${unanalyzed} إشارة — ستظهر النتائج خلال دقيقة`,
-      signalCount: unanalyzed,
-    };
+    const result=await triggerPatternAnalysis(merchant.id);
+    const messages={applied:'حُفظت نتيجة التحليل للمراجعة.',blocked:'توجد مهمة قائمة أو معلّقة؛ لم يبدأ اتصال جديد.',
+      insufficient_signals:'يتطلب التحليل عشر إشارات جديدة على الأقل.',not_applied:'لم تُحفظ نتيجة جديدة؛ راجع حالة المهمة.',
+      failed:'تعذّر إتمام التحليل. راجع حالة المهمة قبل المحاولة مجددًا.'};
+    return {...result,success:result.status==='applied',message:messages[result.status]};
   }),
 });
 

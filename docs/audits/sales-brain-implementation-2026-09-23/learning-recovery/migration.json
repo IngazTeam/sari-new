@@ -1,0 +1,61 @@
+{
+  "verifiedAt": "2026-09-24T18:30:31.275Z",
+  "database": "sari_learning_recovery_fresh_test",
+  "scope": "Fresh local chain 0000–0100, seven synthetic job states seeded, actual updater applies 0101, then rerun is a no-op. No existing database overwritten.",
+  "migrations": 102,
+  "expected": 102,
+  "previousSourcesPreserved": true,
+  "jobIdentitiesAndResponsesPreserved": true,
+  "backfill": [
+    {
+      "state": "responded",
+      "scheduled": true,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "dispatched",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "uncertain",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "reserved",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "applied",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "stale",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    },
+    {
+      "state": "invalid",
+      "scheduled": false,
+      "attempts": 0,
+      "unclaimed": true
+    }
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "primaryKey": true,
+  "foreignKeyCascade": true,
+  "stateConstraint": true,
+  "recoveryDueIndex": true,
+  "migrationSha256": "bef155d175e2222b8bbe03c31e111ff159ae46b88134545a1d4f4aa3c688123c",
+  "passed": true
+}

@@ -101,7 +101,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'occasionType', 'year', 'enabled', 'status'] },
   { table: 'merchant_onboarding_answers' },
   { table: 'session_contexts', columns: ['version'] }, { table: 'whatsapp_inbound_jobs', columns: ['lease_token', 'reply_plan_json', 'partition_key'] }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
-  { table: 'ai_learning_analysis_jobs', columns: ['source_digest','claim_token','response_hash'] },
+  { table: 'ai_learning_analysis_jobs', columns: ['source_digest','claim_token','response_hash','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at'] },
   { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' },
   { table: 'sari_escalation_queue', columns: ['source_message_id', 'handoff_version'] },
   { table: 'sales_escalation_relays', columns: ['escalation_id', 'ownership_version', 'status', 'quoted_message_id', 'review_revision', 'reconciled_at', 'teaching_recorded_at', 'next_reconcile_at', 'last_reconcile_error'] },

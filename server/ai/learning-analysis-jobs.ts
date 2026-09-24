@@ -6,9 +6,9 @@ import { AiBudgetError } from './budget-ledger';
 import { learningEvidenceIds, parseLearningAnalysis, snapshotLearningSignals,
   type LearningAnalysis, type LearningAnalysisSnapshot } from './learning-analysis-contract';
 
-export type LearningAnalysisClaim = { merchantId: number; token: string; digest: string };
+export type LearningAnalysisClaim = { merchantId: number; token: string; digest: string; recoveryToken?: string };
 type Row = { merchant_id: number; source_digest: string; source_ids: unknown; claim_token: string;
-  state: string; lease_valid: number; response_json: unknown; response_hash: string | null };
+  state: string; lease_valid: number; response_json: unknown; response_hash: string | null; recovery_token: string | null; recovery_valid: number };
 type ClaimResult = { status: 'claimed'; claim: LearningAnalysisClaim }
   | { status: 'responded'; claim: LearningAnalysisClaim; snapshot: LearningAnalysisSnapshot; analysis: LearningAnalysis }
   | { status: 'blocked' | 'idle' | 'stale' };
@@ -20,7 +20,7 @@ function claimOf(row: Row): LearningAnalysisClaim { return { merchantId: row.mer
 async function transaction<T>(merchantId: number, work: (c: PoolConnection, row?: Row) => Promise<T>): Promise<T> {
   identity(merchantId);
   await assertRuntimeSchema('durable learning analysis', [{ table: 'ai_learning_analysis_jobs',
-    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count'],
+    columns: ['source_digest','source_ids','claim_token','state','lease_until','response_json','response_hash','failure_code','generation','proposal_count','recovery_token','recovery_lease_until','recovery_next_at','recovery_attempts','recovery_last_error','recovered_at'],
     uniqueIndexes: [{ name:'PRIMARY',columns:['merchant_id'] }] }]);
   const pool = await getPool(); if (!pool) throw Error('Learning job storage unavailable');
   const c = await pool.getConnection();
@@ -28,7 +28,7 @@ async function transaction<T>(merchantId: number, work: (c: PoolConnection, row?
     await c.beginTransaction();
     const [owners] = await c.execute<any[]>('SELECT id FROM merchants WHERE id=? FOR UPDATE', [merchantId]);
     if (!owners.length) throw Error('Learning merchant unavailable');
-    const [rows] = await c.execute<any[]>(`SELECT *,lease_until>UTC_TIMESTAMP(3) AS lease_valid
+    const [rows] = await c.execute<any[]>(`SELECT *,recovery_lease_until>UTC_TIMESTAMP(3) AS recovery_valid,lease_until>UTC_TIMESTAMP(3) AS lease_valid
       FROM ai_learning_analysis_jobs WHERE merchant_id=? FOR UPDATE`, [merchantId]);
     const result = await work(c, rows[0]);
     await c.commit(); return result;
@@ -50,7 +50,7 @@ async function currentSnapshot(c: PoolConnection, merchantId: number, ids: numbe
   return snapshot.digest === digest ? snapshot : null;
 }
 async function terminal(c: PoolConnection, merchantId: number, state: 'stale' | 'invalid', code: string) {
-  await c.execute(`UPDATE ai_learning_analysis_jobs SET state=?,failure_code=?,response_json=NULL,lease_until=NULL
+  await c.execute(`UPDATE ai_learning_analysis_jobs SET state=?,failure_code=?,response_json=NULL,lease_until=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_last_error=NULL
     WHERE merchant_id=?`, [state,code,merchantId]);
 }
 async function recover(c: PoolConnection, row: Row): Promise<ClaimResult> {
@@ -66,9 +66,15 @@ async function recover(c: PoolConnection, row: Row): Promise<ClaimResult> {
 }
 
 /** Recover saved responses before considering the current threshold or a different source sample. */
-export async function resumeLearningAnalysis(merchantId: number): Promise<ClaimResult> {
+export async function resumeLearningAnalysis(merchantId: number, recovery?: { token:string; claimToken:string; digest:string }): Promise<ClaimResult> {
   return transaction(merchantId, async (c,row) => {
-    if (row?.state === 'responded') return recover(c,row);
+    if (recovery && (!row || row.claim_token!==recovery.claimToken || row.source_digest!==recovery.digest
+      || row.recovery_token!==recovery.token || !row.recovery_valid)) return {status:'blocked'};
+    if (row?.state === 'responded') {
+      const result=await recover(c,row);
+      if(recovery && result.status==='responded')result.claim.recoveryToken=recovery.token;
+      return result;
+    }
     if (row && (['dispatched','uncertain'].includes(row.state) || (row.state === 'reserved' && row.lease_valid))) return { status:'blocked' };
     return { status:'idle' };
   });
@@ -87,7 +93,7 @@ export async function claimLearningAnalysis(snapshot: LearningAnalysisSnapshot):
       VALUES (?,?,?,?,'reserved',TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3)))
       ON DUPLICATE KEY UPDATE source_digest=VALUES(source_digest),source_ids=VALUES(source_ids),claim_token=VALUES(claim_token),
       state='reserved',lease_until=VALUES(lease_until),response_json=NULL,response_hash=NULL,failure_code=NULL,generation=NULL,
-      proposal_count=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
+      proposal_count=NULL,recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_attempts=0,recovery_last_error=NULL,recovered_at=NULL,created_at=UTC_TIMESTAMP(3)`,[snapshot.merchantId,snapshot.digest,JSON.stringify(ids),token]);
     return { status:'claimed', claim:{merchantId:snapshot.merchantId,token,digest:snapshot.digest} };
   });
 }
@@ -113,7 +119,7 @@ export async function storeLearningResponse(claim: LearningAnalysisClaim, respon
     let analysis: LearningAnalysis;
     try { analysis = parseLearningAnalysis(response,ids); }
     catch { await terminal(c,claim.merchantId,'invalid','invalid_response'); return null; }
-    await c.execute(`UPDATE ai_learning_analysis_jobs SET state='responded',response_json=?,response_hash=?,failure_code=NULL
+    await c.execute(`UPDATE ai_learning_analysis_jobs SET state='responded',response_json=?,response_hash=?,failure_code=NULL,recovery_next_at=TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3))
       WHERE merchant_id=?`,[JSON.stringify(analysis),learningResponseHash(analysis),claim.merchantId]);
     return analysis;
   });
@@ -139,16 +145,19 @@ export async function recordLearningProviderFailure(claim: LearningAnalysisClaim
 export class LearningProjectionRejected extends Error {}
 export async function rejectLearningProjection(claim: LearningAnalysisClaim) {
   await transaction(claim.merchantId,async(c,row)=>{
-    if (matches(row,claim) && row!.state === 'responded') await terminal(c,claim.merchantId,'invalid','proposal_closed');
+    if (matches(row,claim) && row!.state === 'responded' && (!claim.recoveryToken || row!.recovery_token===claim.recoveryToken)) {
+      await terminal(c,claim.merchantId,'invalid','proposal_closed');
+    }
   });
 }
 
 /** Called inside the proposal transaction, after the merchant lock and before source locks. */
 export async function lockLearningResponse(c: PoolConnection, snapshot: LearningAnalysisSnapshot, analysis: LearningAnalysis, claim: LearningAnalysisClaim) {
   if (claim.merchantId !== snapshot.merchantId || claim.digest !== snapshot.digest) throw Error('Learning claim scope mismatch');
-  const [rows] = await c.execute<any[]>('SELECT * FROM ai_learning_analysis_jobs WHERE merchant_id=? FOR UPDATE',[snapshot.merchantId]);
+  const [rows] = await c.execute<any[]>('SELECT *,recovery_lease_until>UTC_TIMESTAMP(3) AS recovery_valid FROM ai_learning_analysis_jobs WHERE merchant_id=? FOR UPDATE',[snapshot.merchantId]);
   const row = rows[0];
   if (!matches(row,claim)) throw Error('Learning claim replaced');
+  if (claim.recoveryToken && (row.recovery_token!==claim.recoveryToken || !row.recovery_valid)) return false;
   if (row.state === 'applied' || row.state === 'stale') return false;
   if (row.state !== 'responded' || row.response_hash !== learningResponseHash(analysis)) throw Error('Learning response not durably authorized');
   return true;
@@ -156,7 +165,7 @@ export async function lockLearningResponse(c: PoolConnection, snapshot: Learning
 export async function finishLearningAnalysis(c: PoolConnection, claim: LearningAnalysisClaim,
   result: { status: 'applied' | 'stale'; generation: number | null; proposalCount: number }) {
   const [changed] = await c.execute<any>(`UPDATE ai_learning_analysis_jobs SET state=?,generation=?,proposal_count=?,response_json=NULL,
-    failure_code=NULL,lease_until=NULL WHERE merchant_id=? AND claim_token=? AND source_digest=? AND state='responded'`,
+    failure_code=NULL,lease_until=NULL,recovered_at=IF(recovery_token IS NOT NULL,UTC_TIMESTAMP(3),recovered_at),recovery_token=NULL,recovery_lease_until=NULL,recovery_next_at=NULL,recovery_last_error=NULL WHERE merchant_id=? AND claim_token=? AND source_digest=? AND state='responded'`,
   [result.status,result.generation,result.proposalCount,claim.merchantId,claim.token,claim.digest]);
   if (changed.affectedRows !== 1) throw Error('Learning completion lost ownership');
 }

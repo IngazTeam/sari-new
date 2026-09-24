@@ -102,6 +102,7 @@ export type MerchantUxCopy = {
   discounts: CopySection<typeof discountCopyKeys>;
   comparePlans: CopySection<typeof comparePlanCopyKeys>;
   actions: CopySection<typeof actionCopyKeys>;
+  learningStatus: CopySection<readonly ["title","refresh","refreshing","loading","loadFailed","updated","nextAttempt","proposals","scope","idle","idleHint","preparing","preparingHint","budgetWait","budgetWaitHint","awaitingResult","awaitingResultHint","uncertain","uncertainHint","saved","savedHint","recovering","recoveringHint","retryScheduled","retryScheduledHint","applied","appliedHint","stale","staleHint","invalid","invalidHint"]>;
   learningEvidence: CopySection<typeof learningEvidenceCopyKeys>;
 };
 

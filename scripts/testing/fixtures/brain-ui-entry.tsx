@@ -1,3 +1,4 @@
+import { LearningAnalysisStatusCard } from '../../../client/src/components/LearningAnalysisStatusCard';
 import { BookingReschedule } from '../../../client/src/components/BookingReschedule';
 import { AiCapabilityCard } from '../../../client/src/components/admin/AiCapabilityCard';
 import { buildAiCapabilityManifest } from '../../../shared/ai-capabilities';
@@ -53,6 +54,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('learning-status-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><LearningAnalysisStatusCard/></main>);return;}
   if(mode.startsWith('appointment-reminders-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><AppointmentReminderReview appointmentId={501}/></main>);return;}
   if(mode.startsWith('ai-capabilities-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-4xl p-3"><AiCapabilitiesFixture/></main>);return;}
   if(mode.startsWith('booking-reschedule-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingReschedule bookingId={321} onChanged={async()=>{if(mode==='booking-reschedule-parent-error')throw Error('private parent failure');(window as any).__rescheduleParentRefreshed=true;}} /></main>); return; }

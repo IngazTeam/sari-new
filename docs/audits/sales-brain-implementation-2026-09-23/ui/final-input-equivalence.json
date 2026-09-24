@@ -1,21 +1,22 @@
 {
-  "scope": "Fresh Chromium component verification: 679 passing scenarios, 58 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the AI appointment reminder UI",
+  "scope": "Fresh Chromium component verification: 793 passing scenarios, 60 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for learning status UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T16:29:00.434Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-appointment-reminders",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-appointment-reminders",
+  "verifiedAt": "2026-09-24T18:47:01.134Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-learning-recovery",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-learning-recovery",
   "inputs": {
-    "fixture": "251349a1a94d7aaab9f8ba78d18d36aff66c350603ddecf229fb43054bdd3e75",
-    "report": "16fb43d611513c96b37f58ccc6649e52b2c01eb8105168427e3eb6638b1003d9",
+    "fixture": "ffe4b4821e1a6ad3049719439e1579d22fd78baa067b56a347e9324d5ae1d62e",
+    "report": "5f56981fa872c64241836711b3f6ef5c9c25ba4b965b62626258a6af1eb732d0",
     "verifiers": {
+      "scripts/testing/verify-sales-brain-ui.cjs": "e98560529f7d87b6d56a40bdeb81a181386f2d3e43f1485696505356c24bd6cf",
+      "scripts/testing/verify-learning-status-ui.cjs": "619dd3fcf726658990b80264ecbf25b8c0f6d516dde019f03f7493763dd08707",
       "scripts/testing/verify-appointment-reminders-ui.cjs": "954940cd78ce77ec3ad34f6b05280006c58680f0427bebccd731a889673891b4",
-      "scripts/testing/verify-sales-brain-ui.cjs": "c2405a56459e4f12c6207c7609cd1552ad8ffea899eac037d3fc9f245086dd12",
       "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
-      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
       "scripts/testing/verify-booking-calendar-ui.cjs": "b84f8309bb480a21c0e2b64fcd7bcdf347f7d8fa84eb1441ef37aa8ce7eca761",
+      "scripts/testing/verify-booking-reschedule-ui.cjs": "9e51f8a5ade79bac8fbf584fefd18c645e0258c0c247c7e9f6d0b888b251c70d",
       "scripts/testing/verify-booking-cancellation-ui.cjs": "8050130d8b0042d2dccae15306df567782f3e4de87328ba20d6eb9e528b86203",
-      "scripts/testing/verify-booking-reschedule-ui.cjs": "9e51f8a5ade79bac8fbf584fefd18c645e0258c0c247c7e9f6d0b888b251c70d"
+      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

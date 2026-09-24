@@ -243,9 +243,9 @@ const _analysisInProgress = new Set<number>();
  * Analyze accumulated signals and extract patterns.
  * Triggered automatically every 50 signals.
  */
-export async function triggerPatternAnalysis(merchantId: number): Promise<void> {
+export async function triggerPatternAnalysis(merchantId: number): Promise<{status:'applied'|'blocked'|'insufficient_signals'|'not_applied'|'failed';signalCount:number}> {
   // Prevent concurrent analyses for the same merchant
-  if (_analysisInProgress.has(merchantId)) return;
+  if (_analysisInProgress.has(merchantId)) return {status:'blocked',signalCount:0};
   _analysisInProgress.add(merchantId);
 
   try {
@@ -253,7 +253,7 @@ export async function triggerPatternAnalysis(merchantId: number): Promise<void> 
 
     const { persistLearningAnalysis } = await import('./learning-analysis');
     const resumed = await resumeLearningAnalysis(merchantId);
-    if (resumed.status === 'blocked' || resumed.status === 'stale') return;
+    if (resumed.status === 'blocked' || resumed.status === 'stale') return {status:resumed.status==='blocked'?'blocked':'not_applied',signalCount:0};
     let persisted: Awaited<ReturnType<typeof persistLearningAnalysis>>;
     let analyzedCount: number;
     if (resumed.status === 'responded') {
@@ -264,7 +264,7 @@ export async function triggerPatternAnalysis(merchantId: number): Promise<void> 
       const signals = await getUnanalyzedSignals(merchantId, 100);
       if (signals.length < 10) {
         console.log(`[Learning] Only ${signals.length} signals — skipping analysis`);
-        return;
+        return {status:'insufficient_signals',signalCount:signals.length};
       }
 
       // Get current DNA for context
@@ -330,7 +330,7 @@ ${formatSignalsForPrompt(signalGroups)}
         persisted = await persistLearningAnalysis(job.snapshot,job.analysis,job.claim);
         analyzedCount = job.snapshot.signals.length;
       } else if (job.status === 'claimed') {
-        if (!await dispatchLearningAnalysis(job.claim)) return;
+        if (!await dispatchLearningAnalysis(job.claim)) return {status:'blocked',signalCount:snapshot.signals.length};
         let response: string;
         try {
           response = await callGPT4(messages, {
@@ -346,9 +346,9 @@ ${formatSignalsForPrompt(signalGroups)}
         if (!analysis) throw Error('Learning response rejected or source changed');
         persisted = await persistLearningAnalysis(snapshot,analysis,job.claim);
         analyzedCount = snapshot.signals.length;
-      } else return;
+      } else return {status:job.status==='blocked'?'blocked':'not_applied',signalCount:snapshot.signals.length};
     }
-    if (persisted.status !== 'applied') return; // Another worker consumed this source; never partially merge its result.
+    if (persisted.status !== 'applied') return {status:'not_applied',signalCount:analyzedCount}; // Another worker consumed this source; never partially merge its result.
     const newGeneration = persisted.generation;
     console.log('[Learning] Analysis committed', { merchantId, proposals: persisted.proposalCount,
       signals: analyzedCount, generation: newGeneration });
@@ -382,10 +382,12 @@ ${formatSignalsForPrompt(signalGroups)}
       const { sendKnowledgeGapDigest } = await import('./smart-escalation');
       sendKnowledgeGapDigest(merchantId).catch(() => {});
     } catch { /* non-blocking */ }
+    return {status:'applied',signalCount:analyzedCount};
   } catch (err: any) {
     // Parser/provider messages may contain customer text or response excerpts.
     console.error('[Learning] Pattern analysis not committed', { merchantId,
       reason: err instanceof SyntaxError ? 'invalid_json' : err?.name === 'ZodError' ? 'invalid_contract' : 'analysis_or_storage_failure' });
+    return {status:'failed',signalCount:0};
   } finally {
     _analysisInProgress.delete(merchantId);
   }

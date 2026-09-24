@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T16:28:33.825Z",
+  "generatedAt": "2026-09-24T18:46:46.825Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -52,6 +52,8 @@
     "invoice-margin-375.png",
     "learning-invoice-1440.png",
     "learning-invoice-375.png",
+    "learning-status-1440.png",
+    "learning-status-375.png",
     "margin-exception-1440.png",
     "margin-exception-375.png",
     "margin-exception-audit-375.png",
@@ -66,6 +68,690 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_idle_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_preparing_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_budget_wait_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_awaiting_result_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_uncertain_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_saved_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_recovering_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_retry_scheduled_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_applied_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_stale_read_only",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "learning_status_invalid_read_only",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_loading_truthful_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_error_truthful_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_fetching_truthful_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "learning_status_refresh-error_truthful_refresh",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

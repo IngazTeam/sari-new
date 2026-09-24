@@ -708,6 +708,13 @@
       "when": 1792108800000,
       "tag": "0100_learning_analysis_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1792195200000,
+      "tag": "0101_learning_analysis_recovery",
+      "breakpoints": true
     }
   ]
 }

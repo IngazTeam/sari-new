@@ -218,6 +218,14 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
+    getLearningAnalysisStatus:{useQuery:()=>{
+      const [recovered,setRecovered]=useState(false),[refreshing,setRefreshing]=useState(false);
+      const state=mode.replace('learning-status-','');
+      const isLoading=state==='loading',isError=(state==='error'&&!recovered)||(state==='refresh-error'&&recovered);
+      const data={state:['loading','error','refresh-error','fetching'].includes(state)?'saved':state,updatedAt:'2026-09-24T00:00:00Z',nextAttemptAt:['saved','recovering','retry_scheduled','budget_wait'].includes(state)?'2026-09-24T00:05:00Z':null,recoveryAttempts:0,proposalCount:state==='applied'?0:null};
+      return{data:isLoading?undefined:data,isLoading,isError,isFetching:isLoading||refreshing||state==='fetching',refetch:async()=>{
+        (window as any).__learningStatusReads=((window as any).__learningStatusReads||0)+1;setRefreshing(true);await new Promise(r=>setTimeout(r,400));setRecovered(true);setRefreshing(false);return{isError:state==='refresh-error',data};}};
+    }},
     getLearningDashboard: { useQuery: () => {
     const [retry, setRetry] = useState(false);
     return { data: mode === 'ready' || mode === 'mutation-error' || retry ? fixture : undefined,

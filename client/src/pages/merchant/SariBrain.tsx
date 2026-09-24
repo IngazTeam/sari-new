@@ -1,5 +1,6 @@
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
+import { LearningAnalysisStatusCard } from '@/components/LearningAnalysisStatusCard';
 import { LearningEvidenceCard } from '@/components/LearningEvidenceCard';
 import { SalesSectorSettings } from '@/components/SalesSectorSettings';
 import { FollowupPolicySettings } from '@/components/FollowupPolicySettings';
@@ -476,6 +477,7 @@ export default function SariBrain() {
       </div>
 
       {/* Stats Cards */}
+      <LearningAnalysisStatusCard />
       <LearningEvidenceCard showManageLink={false} />
       <SalesSectorSettings />
       <FollowupPolicySettings />

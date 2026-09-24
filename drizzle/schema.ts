@@ -4254,8 +4254,10 @@ export const appointmentReminders = mysqlTable("appointment_reminders", {
 export const learningAnalysisJobs = mysqlTable('ai_learning_analysis_jobs', {
  merchantId:int('merchant_id').notNull().primaryKey().references(()=>merchants.id,{onDelete:'cascade'}),
  sourceDigest:char('source_digest',{length:64}).notNull(),sourceIds:json('source_ids').notNull(),claimToken:char('claim_token',{length:36}).notNull(),
+ recoveryToken:char('recovery_token',{length:36}),recoveryLeaseUntil:datetime('recovery_lease_until',{mode:'string',fsp:3}),recoveryNextAt:datetime('recovery_next_at',{mode:'string',fsp:3}),
+ recoveryAttempts:int('recovery_attempts',{unsigned:true}).notNull().default(0),recoveryLastError:varchar('recovery_last_error',{length:40}),recoveredAt:datetime('recovered_at',{mode:'string',fsp:3}),
  state:varchar({length:16}).notNull(),leaseUntil:datetime('lease_until',{mode:'string',fsp:3}),responseJson:json('response_json'),
  responseHash:char('response_hash',{length:64}),failureCode:varchar('failure_code',{length:40}),generation:int(),proposalCount:int('proposal_count'),
  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
  updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
-},t=>[check('chk_learning_job_state',sql`${t.state} IN ('reserved','dispatched','responded','applied','stale','invalid','uncertain')`)]);
+},t=>[index('idx_learning_recovery_due').on(t.state,t.recoveryNextAt,t.merchantId),check('chk_learning_job_state',sql`${t.state} IN ('reserved','dispatched','responded','applied','stale','invalid','uncertain')`)]);
