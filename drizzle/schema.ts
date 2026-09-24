@@ -1617,12 +1617,14 @@ export const conversationBookingAgreements = mysqlTable("conversation_booking_ag
   conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   customerPhone: varchar("customer_phone", { length: 50 }).notNull(), sourceMessageId: int("source_message_id").notNull(),
   consentMessageId: int("consent_message_id"), bookingReference: int("booking_reference"), state: varchar({ length: 20 }).default('proposed').notNull(),
+  targetBookingId: int("target_booking_id"), priorAgreementId: int("prior_agreement_id"),
+  beforeSnapshot: json("before_snapshot"), beforeHash: char("before_hash", { length: 64 }),
   snapshot: json().notNull(), snapshotHash: char("snapshot_hash", { length: 64 }).notNull(), offerText: text("offer_text").notNull(),
   expiresAt: datetime("expires_at", { mode: 'string', fsp: 3 }).notNull(),
   createdAt: datetime("created_at", { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
 }, table => [uniqueIndex("uq_conversation_booking_source").on(table.merchantId,table.sourceMessageId),
   uniqueIndex("uq_conversation_booking_consent").on(table.merchantId,table.consentMessageId),
-  uniqueIndex("uq_conversation_booking_result").on(table.merchantId,table.bookingReference),
+  index("idx_conversation_booking_result").on(table.merchantId,table.bookingReference,table.id),
   index("idx_conversation_booking_latest").on(table.merchantId,table.conversationId,table.id)]);
 
 export const appointmentCreationRequests = mysqlTable("appointment_creation_requests", {

@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-09-24T09:24:21.762Z",
+  "migration": "0091_booking_agreement_amendments",
+  "productionChanged": false,
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "retainedHistoricalRecord": true,
+      "multipleAcceptedRevisions": true,
+      "sourceAndConsentStillUnique": true,
+      "revisionIndexVerified": true,
+      "sqlSha256": "fe92eb521407cc4c7dc7e38af708c7e985867b74a33be7b61971776e1ecd382e",
+      "noProductionChanges": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "retainedHistoricalRecord": true,
+      "multipleAcceptedRevisions": true,
+      "sourceAndConsentStillUnique": true,
+      "revisionIndexVerified": true,
+      "sqlSha256": "fe92eb521407cc4c7dc7e38af708c7e985867b74a33be7b61971776e1ecd382e",
+      "noProductionChanges": true
+    }
+  ]
+}

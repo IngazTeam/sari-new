@@ -39,6 +39,7 @@ const units = [
 ];
 const database = [
   'server/ai/booking-agreements.mysql.test.ts',
+  'server/ai/booking-amendments.mysql.test.ts',
   'server/appointment-creation-requests.mysql.test.ts',
   'server/appointment-reconciliation.mysql.test.ts',
   'server/appointment-capacity.mysql.test.ts',

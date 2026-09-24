@@ -65,8 +65,13 @@ export async function readBookingConsentReview(
   booking: any
 ): Promise<BookingConsentReview> {
   const [rows] = await c.execute<any[]>(
-    "SELECT * FROM conversation_booking_agreements WHERE merchant_id=? AND booking_reference=? ORDER BY id LIMIT 2 FOR UPDATE",
-    [merchantId, booking.id]
+    "SELECT * FROM conversation_booking_agreements WHERE merchant_id=? AND booking_reference=? AND (? IS NULL OR id=?) ORDER BY id LIMIT 2 FOR UPDATE",
+    [
+      merchantId,
+      booking.id,
+      booking.customer_agreement_id,
+      booking.customer_agreement_id,
+    ]
   );
   if (!rows.length && booking.customer_agreement_id == null) return empty();
   const result = empty(),

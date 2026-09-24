@@ -638,6 +638,13 @@
       "when": 1791244800000,
       "tag": "0090_booking_consent_binding",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "5",
+      "when": 1791331200000,
+      "tag": "0091_booking_agreement_amendments",
+      "breakpoints": true
     }
   ]
 }

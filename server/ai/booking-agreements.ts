@@ -21,6 +21,7 @@ import {
 } from "./checkout-agreements";
 import { isSalesRefusal, isShortAffirmation } from "./customer-decision";
 import { currentInboundExecution } from "../messaging/inbound-context";
+import { resolveBookingAmendment } from "./booking-amendment-context";
 
 export const bookingSelectionSchema = z
   .object({
@@ -88,6 +89,10 @@ export async function assertBookingAgreementSchema() {
           "source_message_id",
           "consent_message_id",
           "booking_reference",
+          "target_booking_id",
+          "prior_agreement_id",
+          "before_snapshot",
+          "before_hash",
           "state",
           "snapshot",
           "snapshot_hash",
@@ -103,10 +108,6 @@ export async function assertBookingAgreementSchema() {
             name: "uq_conversation_booking_consent",
             columns: ["merchant_id", "consent_message_id"],
           },
-          {
-            name: "uq_conversation_booking_result",
-            columns: ["merchant_id", "booking_reference"],
-          },
         ],
       },
     ],
@@ -117,7 +118,8 @@ export async function assertBookingAgreementSchema() {
 async function readSnapshot(
   c: PoolConnection,
   merchantId: number,
-  raw: Selection
+  raw: Selection,
+  excludeBookingId?: number
 ) {
   const input = bookingSelectionSchema.parse(raw);
   const [services] = await c.execute<any[]>(
@@ -187,12 +189,14 @@ async function readSnapshot(
       throw unavailable();
     const [counts] = await c.execute<any[]>(
       `SELECT
-      (SELECT COUNT(*) FROM bookings WHERE merchant_id=? AND service_id=? AND booking_date=? AND status IN ('pending','confirmed','in_progress'))+
+      (SELECT COUNT(*) FROM bookings WHERE merchant_id=? AND service_id=? AND booking_date=? AND status IN ('pending','confirmed','in_progress') AND (? IS NULL OR id<>?))+
       (SELECT COUNT(*) FROM appointments WHERE merchant_id=? AND service_id=? AND appointment_date>=? AND appointment_date<DATE_ADD(?,INTERVAL 1 DAY) AND status IN ('pending','confirmed')) AS used`,
       [
         merchantId,
         input.serviceId,
         input.bookingDate,
+        excludeBookingId ?? null,
+        excludeBookingId ?? null,
         merchantId,
         input.serviceId,
         input.bookingDate,
@@ -202,11 +206,16 @@ async function readSnapshot(
     if (Number(counts[0].used) >= s.max_bookings_per_day) throw unavailable();
   }
   if (
-    await hasBookingConflict(c, merchantId, {
-      ...input,
-      staffId: input.staffId ?? undefined,
-      endTime,
-    })
+    await hasBookingConflict(
+      c,
+      merchantId,
+      {
+        ...input,
+        staffId: input.staffId ?? undefined,
+        endTime,
+      },
+      excludeBookingId
+    )
   )
     throw unavailable();
   return {
@@ -226,6 +235,127 @@ async function readSnapshot(
   };
 }
 type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
+const day = (value: unknown) =>
+  value instanceof Date
+    ? value.toISOString().slice(0, 10)
+    : String(value).slice(0, 10);
+const json = (value: any) =>
+  typeof value === "string" ? JSON.parse(value) : value;
+/** Lock and fingerprint the old commitment. Financial or calendar effects require assisted changes. */
+async function readAmendmentTarget(
+  c: PoolConnection,
+  input: CheckoutIdentity,
+  bookingId: number
+) {
+  const [bookings] = await c.execute<any[]>(
+    "SELECT * FROM bookings WHERE id=? AND merchant_id=? AND customer_phone=? FOR UPDATE",
+    [bookingId, input.merchantId, input.customerPhone]
+  );
+  const b = bookings[0];
+  if (
+    !b ||
+    !["pending", "confirmed"].includes(b.status) ||
+    b.payment_status !== "unpaid" ||
+    b.google_event_id ||
+    !b.customer_agreement_id ||
+    b.cancelled_at ||
+    b.completed_at
+  )
+    throw unavailable();
+  for (const table of [
+    "payment_links",
+    "booking_checkout_attempts",
+    "order_payments",
+  ]) {
+    const [effects] = await c.execute<any[]>(
+      `SELECT id FROM ${table} WHERE booking_id=? LIMIT 1 FOR UPDATE`,
+      [bookingId]
+    );
+    if (effects.length) throw unavailable();
+  }
+  const [agreements] = await c.execute<any[]>(
+    "SELECT * FROM conversation_booking_agreements WHERE id=? AND merchant_id=? AND conversation_id=? AND customer_phone=? AND booking_reference=? AND state='accepted' FOR UPDATE",
+    [
+      b.customer_agreement_id,
+      input.merchantId,
+      input.conversationId,
+      input.customerPhone,
+      bookingId,
+    ]
+  );
+  const a = agreements[0];
+  if (!a || !a.consent_message_id) throw unavailable();
+  const s = json(a.snapshot);
+  if (
+    !s ||
+    digest(s) !== a.snapshot_hash ||
+    s.version !== 1 ||
+    s.currency !== "SAR" ||
+    s.serviceId !== b.service_id ||
+    s.staffId !== b.staff_id ||
+    s.bookingDate !== day(b.booking_date) ||
+    s.startTime !== b.start_time ||
+    s.endTime !== b.end_time ||
+    s.durationMinutes !== b.duration_minutes ||
+    s.priceMinor !== b.base_price ||
+    s.priceMinor !== b.final_price ||
+    b.discount_amount !== 0
+  )
+    throw unavailable();
+  const [messages] = await c.execute<any[]>(
+    "SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming' AND id IN (?,?) ORDER BY id FOR SHARE",
+    [input.conversationId, a.source_message_id, a.consent_message_id]
+  );
+  if (
+    messages.length !== 2 ||
+    a.source_message_id >= a.consent_message_id ||
+    !isShortAffirmation(String(messages[1].content)) ||
+    !(await wasBookingOfferDelivered(
+      c,
+      { ...input, incomingMessageId: a.consent_message_id },
+      a
+    ))
+  )
+    throw unavailable();
+  const [clock] = await c.execute<any[]>("SELECT UTC_TIMESTAMP(3) AS now");
+  if (
+    Date.parse(`${day(b.booking_date)}T${b.start_time}:00+03:00`) <=
+    databaseTimeEpoch(clock[0].now)
+  )
+    throw unavailable();
+  return {
+    id: b.id,
+    service_id: b.service_id,
+    staff_id: b.staff_id,
+    booking_date: day(b.booking_date),
+    start_time: b.start_time,
+    end_time: b.end_time,
+    duration_minutes: b.duration_minutes,
+    base_price: b.base_price,
+    final_price: b.final_price,
+    discount_amount: b.discount_amount,
+    status: b.status,
+    payment_status: b.payment_status,
+    customer_agreement_id: b.customer_agreement_id,
+    agreement_hash: a.snapshot_hash,
+    confirmed_at: b.confirmed_at,
+    updated_at: b.updated_at,
+    notes_hash: digest(b.notes),
+  };
+}
+function amendmentOfferText(
+  id: number,
+  s: Snapshot,
+  before: Awaited<ReturnType<typeof readAmendmentTarget>>
+) {
+  return (
+    `ملخص تعديل الحجز #${before.id} ${marker(id)}\n\n` +
+    `الموعد الحالي: ${before.booking_date}، ${before.start_time}–${before.end_time} بتوقيت الرياض.\n` +
+    `التفاصيل الجديدة:\n• الخدمة: ${bookingDisplayLabel(s.serviceName)}\n• التاريخ: ${s.bookingDate}\n• الوقت: ${s.startTime}–${s.endTime} بتوقيت الرياض\n` +
+    `• الموظف: ${s.staffName ? bookingDisplayLabel(s.staffName) : "دون موظف محدد"}\n• المدة: ${s.durationMinutes} دقيقة\n• سعر الخدمة: ${formatServicePrice(s.priceMinor)}\n\n` +
+    "يبقى موعدك الحالي محفوظًا حتى موافقتك. الملخص صالح لمدة 15 دقيقة؛ الموافقة تعدّل الحجز نفسه وتعيده لانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولا تثبت دفعًا.\nهل توافق على تعديل الحجز بهذه التفاصيل؟ رد بنعم، أو اذكر التعديل المطلوب."
+  );
+}
 function offerText(id: number, s: Snapshot) {
   return (
     `ملخص طلب حجزك ${marker(id)}\n\n• الخدمة: ${bookingDisplayLabel(s.serviceName)}\n• التاريخ: ${s.bookingDate}\n• الوقت: ${s.startTime}–${s.endTime} بتوقيت الرياض\n` +
@@ -266,6 +396,20 @@ export async function prepareBookingAgreement(
   input: CheckoutIdentity,
   raw: Selection
 ) {
+  return prepare(input, raw);
+}
+export async function prepareBookingAmendment(
+  input: CheckoutIdentity,
+  raw: Selection,
+  targetBookingId: number
+) {
+  return prepare(input, raw, positive(targetBookingId));
+}
+async function prepare(
+  input: CheckoutIdentity,
+  raw: Selection,
+  targetBookingId?: number
+) {
   identity(input);
   const selection = bookingSelectionSchema.parse(raw);
   await assertBookingAgreementSchema();
@@ -275,7 +419,7 @@ export async function prepareBookingAgreement(
     if (isSalesRefusal(source.content))
       return { kind: "declined", text: "لن أسجل طلب حجز دون موافقتك." };
     const [existing] = await c.execute<any[]>(
-      "SELECT id,state,offer_text,conversation_id,customer_phone FROM conversation_booking_agreements WHERE merchant_id=? AND source_message_id=?",
+      "SELECT id,state,offer_text,conversation_id,customer_phone,target_booking_id FROM conversation_booking_agreements WHERE merchant_id=? AND source_message_id=?",
       [input.merchantId, input.incomingMessageId]
     );
     if (existing.length) {
@@ -283,7 +427,8 @@ export async function prepareBookingAgreement(
       if (
         row.conversation_id !== input.conversationId ||
         row.customer_phone !== input.customerPhone ||
-        row.state !== "proposed"
+        row.state !== "proposed" ||
+        row.target_booking_id !== (targetBookingId ?? null)
       )
         throw unavailable();
       return {
@@ -292,14 +437,44 @@ export async function prepareBookingAgreement(
         text: String(row.offer_text),
       };
     }
-    const snapshot = await readSnapshot(c, input.merchantId, selection);
+    const context = await resolveBookingAmendment(
+      c,
+      input,
+      String(source.content)
+    );
+    // A rescheduling request must never silently create an additional booking.
+    if (
+      context.requested !== !!targetBookingId ||
+      (targetBookingId && context.target?.id !== targetBookingId)
+    )
+      throw unavailable();
+    const before = targetBookingId
+      ? await readAmendmentTarget(c, input, targetBookingId)
+      : null;
+    if (before && selection.serviceId !== before.service_id)
+      throw unavailable();
+    const snapshot = await readSnapshot(
+      c,
+      input.merchantId,
+      selection,
+      targetBookingId
+    );
+    if (
+      before &&
+      before.booking_date === snapshot.bookingDate &&
+      before.start_time === snapshot.startTime &&
+      before.staff_id === snapshot.staffId &&
+      before.duration_minutes === snapshot.durationMinutes &&
+      before.final_price === snapshot.priceMinor
+    )
+      throw unavailable();
     await c.execute(
       "UPDATE conversation_booking_agreements SET state='superseded' WHERE merchant_id=? AND conversation_id=? AND state='proposed'",
       [input.merchantId, input.conversationId]
     );
     const [saved] = await c.execute<any>(
-      `INSERT INTO conversation_booking_agreements (merchant_id,conversation_id,customer_phone,source_message_id,snapshot,snapshot_hash,offer_text,expires_at)
-      VALUES (?,?,?,?,?,?,'',TIMESTAMPADD(MINUTE,15,UTC_TIMESTAMP(3)))`,
+      `INSERT INTO conversation_booking_agreements (merchant_id,conversation_id,customer_phone,source_message_id,snapshot,snapshot_hash,target_booking_id,prior_agreement_id,before_snapshot,before_hash,offer_text,expires_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,'',TIMESTAMPADD(MINUTE,15,UTC_TIMESTAMP(3)))`,
       [
         input.merchantId,
         input.conversationId,
@@ -307,10 +482,16 @@ export async function prepareBookingAgreement(
         input.incomingMessageId,
         JSON.stringify(snapshot),
         digest(snapshot),
+        targetBookingId ?? null,
+        before?.customer_agreement_id ?? null,
+        before ? JSON.stringify(before) : null,
+        before ? digest(before) : null,
       ]
     );
     const id = positive(Number(saved.insertId)),
-      text = offerText(id, snapshot);
+      text = before
+        ? amendmentOfferText(id, snapshot, before)
+        : offerText(id, snapshot);
     await c.execute(
       "UPDATE conversation_booking_agreements SET offer_text=? WHERE id=?",
       [text, id]
@@ -378,7 +559,9 @@ export async function acceptBookingAgreement(
         );
       return {
         kind: "declined",
-        text: "لن أسجل طلبًا بناءً على هذا الملخص. يمكنك طلب موعد جديد متى رغبت.",
+        text: row.target_booking_id
+          ? "لم أطبّق هذا التعديل؛ بقي حجزك الحالي كما هو."
+          : "لن أسجل طلبًا بناءً على هذا الملخص. يمكنك طلب موعد جديد متى رغبت.",
       };
     }
     if (!isShortAffirmation(source.content))
@@ -408,12 +591,42 @@ export async function acceptBookingAgreement(
     if (digest(old) !== row.snapshot_hash) throw unavailable();
     let fresh: Snapshot;
     try {
-      fresh = await readSnapshot(c, input.merchantId, {
-        serviceId: old.serviceId,
-        staffId: old.staffId,
-        bookingDate: old.bookingDate,
-        startTime: old.startTime,
-      });
+      if (row.target_booking_id) {
+        const before = json(row.before_snapshot);
+        if (
+          !before ||
+          digest(before) !== row.before_hash ||
+          before.id !== row.target_booking_id ||
+          before.customer_agreement_id !== row.prior_agreement_id
+        )
+          throw unavailable();
+        const current = await readAmendmentTarget(
+          c,
+          input,
+          row.target_booking_id
+        );
+        if (
+          digest(current) !== row.before_hash ||
+          old.serviceId !== current.service_id
+        )
+          throw unavailable();
+      } else if (
+        row.prior_agreement_id ||
+        row.before_snapshot ||
+        row.before_hash
+      )
+        throw unavailable();
+      fresh = await readSnapshot(
+        c,
+        input.merchantId,
+        {
+          serviceId: old.serviceId,
+          staffId: old.staffId,
+          bookingDate: old.bookingDate,
+          startTime: old.startTime,
+        },
+        row.target_booking_id ?? undefined
+      );
     } catch (error) {
       // A storage failure must roll back, never masquerade as changed availability.
       if (
@@ -427,7 +640,9 @@ export async function acceptBookingAgreement(
       );
       return {
         kind: "changed",
-        text: "تغير توفر الموعد أو شروط الخدمة. نحتاج ملخصًا محدثًا وموافقة جديدة قبل تسجيل الحجز.",
+        text: row.target_booking_id
+          ? "تغيرت حالة الحجز أو توفر الموعد أو شروط الخدمة. لم أطبّق التعديل؛ نحتاج مراجعة وملخصًا جديدًا بموافقتك."
+          : "تغير توفر الموعد أو شروط الخدمة. نحتاج ملخصًا محدثًا وموافقة جديدة قبل تسجيل الحجز.",
       };
     }
     if (digest(fresh) !== row.snapshot_hash) {
@@ -441,21 +656,42 @@ export async function acceptBookingAgreement(
       };
     }
     await currentInboundExecution()?.assertOwned();
-    const bookingId = await createBookingInCapacityTransaction(c, {
-      merchantId: input.merchantId,
-      serviceId: fresh.serviceId,
-      staffId: fresh.staffId ?? undefined,
-      customerPhone: input.customerPhone,
-      customerName: source.customerName,
-      bookingDate: fresh.bookingDate,
-      startTime: fresh.startTime,
-      endTime: fresh.endTime,
-      durationMinutes: fresh.durationMinutes,
-      basePrice: fresh.priceMinor,
-      finalPrice: fresh.priceMinor,
-      bookingSource: "whatsapp",
-      notes: `Customer booking agreement ${marker(agreementId)}; final confirmation and billing review required.`,
-    });
+    const bookingId =
+      row.target_booking_id ??
+      (await createBookingInCapacityTransaction(c, {
+        merchantId: input.merchantId,
+        serviceId: fresh.serviceId,
+        staffId: fresh.staffId ?? undefined,
+        customerPhone: input.customerPhone,
+        customerName: source.customerName,
+        bookingDate: fresh.bookingDate,
+        startTime: fresh.startTime,
+        endTime: fresh.endTime,
+        durationMinutes: fresh.durationMinutes,
+        basePrice: fresh.priceMinor,
+        finalPrice: fresh.priceMinor,
+        bookingSource: "whatsapp",
+        notes: `Customer booking agreement ${marker(agreementId)}; final confirmation and billing review required.`,
+      }));
+    if (row.target_booking_id) {
+      const [updated] = await c.execute<any>(
+        `UPDATE bookings SET staff_id=?,booking_date=?,start_time=?,end_time=?,duration_minutes=?,base_price=?,final_price=?,
+        status='pending',confirmed_at=NULL WHERE id=? AND merchant_id=? AND customer_agreement_id=?`,
+        [
+          fresh.staffId,
+          fresh.bookingDate,
+          fresh.startTime,
+          fresh.endTime,
+          fresh.durationMinutes,
+          fresh.priceMinor,
+          fresh.priceMinor,
+          bookingId,
+          input.merchantId,
+          row.prior_agreement_id,
+        ]
+      );
+      if (updated.affectedRows !== 1) throw unavailable();
+    }
     await c.execute(
       "UPDATE bookings SET customer_agreement_id=? WHERE id=? AND merchant_id=?",
       [agreementId, bookingId, input.merchantId]
@@ -468,7 +704,9 @@ export async function acceptBookingAgreement(
       kind: "booking",
       agreementId,
       bookingId,
-      text: `تم تسجيل طلب حجزك #${bookingId} ${marker(agreementId)} بالتفاصيل التي وافقت عليها. الطلب بانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولم يُسجل أي دفع.`,
+      text: row.target_booking_id
+        ? `تم تعديل الحجز #${bookingId} ${marker(agreementId)} بالتفاصيل التي وافقت عليها، دون إنشاء حجز إضافي. الموعد الجديد بانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولم يُسجل أي دفع.`
+        : `تم تسجيل طلب حجزك #${bookingId} ${marker(agreementId)} بالتفاصيل التي وافقت عليها. الطلب بانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولم يُسجل أي دفع.`,
     };
   });
 }
