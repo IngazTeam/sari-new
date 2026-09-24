@@ -39,9 +39,11 @@ export function BookingNotification({
       className="min-w-0 space-y-2 rounded border p-3"
     >
       <h4 className="font-medium">
-        {notice.kind === "cancellation"
-          ? t("merchantUx.bookingCancellation.noticeTitle")
-          : t("merchantUx.bookingReschedule.noticeTitle")}
+        {notice.kind === "confirmation"
+          ? t("merchantUx.bookingCalendar.noticeTitle")
+          : notice.kind === "cancellation"
+            ? t("merchantUx.bookingCancellation.noticeTitle")
+            : t("merchantUx.bookingReschedule.noticeTitle")}
       </h4>
       <p role="status">
         {notificationStates[notice.state] || notificationStates.unknown}
@@ -61,9 +63,11 @@ export function BookingNotification({
       )}
       <details>
         <summary className="flex min-h-11 cursor-pointer items-center">
-          {notice.kind === "cancellation"
-            ? t("merchantUx.bookingCancellation.noticeText")
-            : t("merchantUx.bookingReschedule.noticeText")}
+          {notice.kind === "confirmation"
+            ? t("merchantUx.bookingCalendar.noticeText")
+            : notice.kind === "cancellation"
+              ? t("merchantUx.bookingCancellation.noticeText")
+              : t("merchantUx.bookingReschedule.noticeText")}
         </summary>
         <p dir="auto" className="whitespace-pre-wrap [overflow-wrap:anywhere]">
           {notice.text}

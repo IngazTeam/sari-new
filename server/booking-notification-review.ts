@@ -63,6 +63,7 @@ async function view(c: PoolConnection, r: any): Promise<BookingNoticeReview> {
         r.reschedule_id,
         r.kind,
         r.cancellation_id,
+        r.confirmation_id,
         r.snapshot,
         r.snapshot_hash,
         r.dispatch_text,
@@ -120,10 +121,10 @@ export async function readBookingNoticeReview(
   c: PoolConnection,
   merchantId: number,
   moveId: number,
-  kind: "reschedule" | "cancellation" = "reschedule"
+  kind: "reschedule" | "cancellation" | "confirmation" = "reschedule"
 ) {
   const [rows] = await c.execute<any[]>(
-    `SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND ${kind === "cancellation" ? "cancellation_id" : "reschedule_id"}=? AND kind=? FOR UPDATE`,
+    `SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND ${kind === "confirmation" ? "confirmation_id" : kind === "cancellation" ? "cancellation_id" : "reschedule_id"}=? AND kind=? FOR UPDATE`,
     [merchantId, moveId, kind]
   );
   return rows[0] ? view(c, rows[0]) : null;

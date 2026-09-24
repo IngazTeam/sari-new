@@ -20,6 +20,11 @@ import { databaseTimeEpoch } from "./db/time";
 import { z } from "zod";
 import { assertCalendarRescheduleCapacity } from "./booking-reschedule-state";
 import { calendarTimestamp } from "./calendar-evidence";
+import {
+  assertBookingNotificationSchema,
+  enqueueBookingConfirmationNotice,
+} from "./booking-reschedule-notification";
+import { readBookingNoticeReview } from "./booking-notification-review";
 
 const fail = () => Error("Booking calendar requires fresh verified evidence");
 const positive = (v: number) => z.number().int().positive().safe().parse(v);
@@ -49,6 +54,7 @@ const payload = (
 async function ready() {
   await assertBookingAgreementSchema();
   await assertBookingCalendarSchema();
+  await assertBookingNotificationSchema();
 }
 export async function readBookingCalendarGraph(
   c: PoolConnection,
@@ -211,6 +217,14 @@ export async function readBookingCalendarReview(
         ? new Date(databaseTimeEpoch(g.link.checked_at)).toISOString()
         : null,
       history: await history(c, merchantId, bookingId),
+      notification: g.link
+        ? await readBookingNoticeReview(
+            c,
+            merchantId,
+            g.link.id,
+            "confirmation"
+          )
+        : null,
     };
   });
 }
@@ -461,11 +475,14 @@ export async function synchronizeBookingCalendar(
       "UPDATE booking_calendar_links SET state=?,failure_code=?,revision=revision+1,checked_at=UTC_TIMESTAMP(3) WHERE id=?",
       [state, failureCode, current.link.id]
     );
-    if (!failureCode)
+    if (!failureCode) {
       await c.execute(
         "UPDATE bookings SET google_event_id=? WHERE id=? AND merchant_id=?",
         [reference, input.bookingId, merchantId]
       );
+      if (current.link.state !== "synced")
+        await enqueueBookingConfirmationNotice(c, merchantId, current.link.id);
+    }
     await c.execute(
       `INSERT INTO booking_calendar_reviews (merchant_id,booking_reference,actor_user_id,request_id,request_hash,action,outcome,failure_code,reason,proof_hash) VALUES (?,?,?,?,?,?,?,?,?,?)`,
       [

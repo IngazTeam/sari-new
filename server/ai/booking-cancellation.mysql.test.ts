@@ -811,7 +811,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       let account: string, instanceId: number, jobId: number, requestId: number;
       const notices = () =>
         q(
-          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? ORDER BY id",
+          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND kind<>'confirmation' ORDER BY id",
           [owner.merchantId]
         );
       const send = async () =>
@@ -1107,12 +1107,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
           );
         if (change === "snapshot")
           await q(
-            "UPDATE booking_reschedule_notifications SET snapshot=JSON_SET(snapshot,'$.commitment.payload.startTime','09:00') WHERE merchant_id=?",
+            "UPDATE booking_reschedule_notifications SET snapshot=JSON_SET(snapshot,'$.commitment.payload.startTime','09:00') WHERE merchant_id=? AND kind<>'confirmation'",
             [owner.merchantId]
           );
         if (change === "text")
           await q(
-            "UPDATE booking_reschedule_notifications SET dispatch_text='forged text' WHERE merchant_id=?",
+            "UPDATE booking_reschedule_notifications SET dispatch_text='forged text' WHERE merchant_id=? AND kind<>'confirmation'",
             [owner.merchantId]
           );
         if (change === "price")

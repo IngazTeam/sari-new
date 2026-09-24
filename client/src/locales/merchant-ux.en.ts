@@ -173,6 +173,8 @@ const merchantUxEn: MerchantUxCopy = {
   "refresh": "Refresh cancellation review"
 },
   bookingCalendar: {
+    noticeTitle: "Customer booking confirmation",
+    noticeText: "Booking confirmation notification text",
   "title": "Connect booking to Google Calendar",
   "description": "After reviewing customer consent, add the confirmed booking to the connected calendar. If the outcome is uncertain, the slot stays held while the same event is checked.",
   "none": "This booking is not linked to the calendar yet.",

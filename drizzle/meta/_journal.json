@@ -687,6 +687,13 @@
       "when": 1791849600000,
       "tag": "0097_booking_cancellation_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1791936000000,
+      "tag": "0098_booking_confirmation_notifications",
+      "breakpoints": true
     }
   ]
 }

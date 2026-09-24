@@ -1,17 +1,17 @@
 {
-  "scope": "Fresh Chromium component verification: 569 passing scenarios, 52 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking cancellation notification UI",
+  "scope": "Fresh Chromium component verification: 618 passing scenarios, 54 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the first booking confirmation UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T14:31:55.448Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-cancel-notice",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-cancel-notice",
+  "verifiedAt": "2026-09-24T15:04:33.874Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-confirm-notice",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-confirm-notice",
   "inputs": {
-    "fixture": "c98db07b0195aa4306b28b1f50e1fd5c74777d3136e0f6c93430d5a1faa83306",
-    "report": "f77a96a8789dc6a61095f4d92b88e6be3a7c37049295ccc07ad2669456a6cc02",
+    "fixture": "5945eedece92af31e894371248e444aa451bb7abfa5945b598d26468cb01152c",
+    "report": "60f6c99496f950443d61bf6d4a15acd3ed6104debb88e46af9bc2446c9e54ea5",
     "verifiers": {
       "scripts/testing/verify-sales-brain-ui.cjs": "32eb01324ff19a7103ce4136dca1f2db83f5946a3ec8fe227d477d7b1e138769",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
-      "scripts/testing/verify-booking-calendar-ui.cjs": "950f5e61208fa423a017862f26410b595215ef96b8a6731c9ee7f09e28f4b422",
+      "scripts/testing/verify-booking-calendar-ui.cjs": "b84f8309bb480a21c0e2b64fcd7bcdf347f7d8fa84eb1441ef37aa8ce7eca761",
       "scripts/testing/verify-booking-cancellation-ui.cjs": "8050130d8b0042d2dccae15306df567782f3e4de87328ba20d6eb9e528b86203",
       "scripts/testing/verify-booking-reschedule-ui.cjs": "9e51f8a5ade79bac8fbf584fefd18c645e0258c0c247c7e9f6d0b888b251c70d"
     },

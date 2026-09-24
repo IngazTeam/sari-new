@@ -162,6 +162,7 @@ export const bookingRescheduleFixture = {
           [
             "booking-reschedule-notice-write-error",
             "booking-cancellation-notice-write-error",
+            "booking-calendar-notice-write-error",
           ].includes(mode)
         )
           throw Error("private receipt credential");

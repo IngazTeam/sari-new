@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { BookingNotification } from "./BookingNotification";
 
 export function BookingCalendarSync({
   bookingId,
@@ -119,6 +120,18 @@ export function BookingCalendarSync({
               {states[query.data.state] ||
                 t("merchantUx.bookingCalendar.unknown")}
             </p>
+            {query.data.notification && (
+              <BookingNotification
+                bookingId={bookingId}
+                notice={query.data.notification}
+                fetching={query.isFetching}
+                refresh={async () => {
+                  const fresh = await query.refetch();
+                  if (fresh.isError) throw Error("refresh");
+                  await onChanged();
+                }}
+              />
+            )}
             {query.data.blocked && (
               <p>
                 {blocked[query.data.blocked] ||

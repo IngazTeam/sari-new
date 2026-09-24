@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BookingNoticeReview } from "./booking-reschedule";
 export const bookingCalendarIdSchema = z
   .object({ bookingId: z.number().int().positive().safe() })
   .strict();
@@ -13,6 +14,7 @@ export const bookingCalendarActionSchema = bookingCalendarIdSchema
   .strict();
 export type BookingCalendarAction = z.infer<typeof bookingCalendarActionSchema>;
 export type BookingCalendarReview = {
+  notification?: BookingNoticeReview | null;
   state: string;
   eventId: string | null;
   calendarId: string | null;

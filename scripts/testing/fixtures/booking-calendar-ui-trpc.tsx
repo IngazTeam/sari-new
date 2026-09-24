@@ -40,9 +40,12 @@ export const bookingCalendarFixture = {
                       : mode.startsWith("booking-ops-calendar-")
                         ? "synced"
                         : null;
+      const notice = mode.startsWith("booking-calendar-notice-")
+        ? mode.slice("booking-calendar-notice-".length)
+        : null;
       const state =
         managed ||
-        (saved
+        (saved || notice
           ? "synced"
           : unknown
             ? "create_unknown"
@@ -54,15 +57,63 @@ export const bookingCalendarFixture = {
       const data: BookingCalendarReview = {
         state,
         evidence: (revision ? "b" : "a").repeat(64),
-        eventId: saved || unknown ? "saribook" + "a".repeat(32) : null,
+        eventId:
+          saved || unknown || notice ? "saribook" + "a".repeat(32) : null,
         calendarId: xss
           ? '<img src=x onerror="window.__calendarXss=1">' + "x".repeat(450)
           : "primary",
-        canCreate: active && !blocked && !unknown && !saved,
-        canVerify: active && !blocked && (!!saved || unknown),
+        canCreate: active && !notice && !blocked && !unknown && !saved,
+        canVerify: active && !notice && !blocked && (!!saved || unknown),
         canRelease: mode === "booking-ops-calendar-ended",
         blocked,
         checkedAt: saved ? "2026-09-24T09:00:00Z" : null,
+        notification: notice
+          ? {
+              id: 51,
+              kind: "confirmation",
+              evidence: (revision ? "d" : "c").repeat(64),
+              canReview: !["pending", "dispatching"].includes(notice),
+              state: ["sent", "delivered", "read", "xss"].includes(notice)
+                ? "accepted"
+                : notice,
+              delivery: ["sent", "delivered", "read"].includes(notice)
+                ? notice
+                : "unverified",
+              projected: !!(window as any).__noticeSaved || notice !== "sent",
+              receipt: notice === "sent" ? "confirmation-receipt-51" : null,
+              dispatchAt: "2026-09-24T09:00:00Z",
+              acceptedAt: notice === "sent" ? "2026-09-24T09:00:00Z" : null,
+              issue:
+                notice === "unknown"
+                  ? "receipt_unverified"
+                  : notice === "suppressed"
+                    ? "context_changed"
+                    : notice === "manual_review"
+                      ? "source_channel_missing"
+                      : null,
+              text:
+                notice === "xss"
+                  ? '<img src=x onerror="window.__noticeXss=1">' +
+                    "text-".repeat(100)
+                  : "تم تأكيد حجزك #321 وتسجيل الموعد لدى النشاط. الموعد: 2026-10-01، من 10:00 إلى 11:00 بتوقيت الرياض. هذا تأكيد للموعد، وليس إيصال دفع.",
+              history:
+                (window as any).__noticeSaved || notice === "xss"
+                  ? [
+                      {
+                        actorUserId: 7,
+                        reason:
+                          notice === "xss"
+                            ? '<img src=x onerror="window.__noticeXss=1">'
+                            : "Reviewed confirmation receipt",
+                        state: "accepted",
+                        delivery: "sent",
+                        projected: true,
+                        at: "2026-09-24T09:00:00Z",
+                      },
+                    ]
+                  : [],
+            }
+          : null,
         history:
           mode === "booking-calendar-reschedule-history"
             ? [
@@ -114,7 +165,13 @@ export const bookingCalendarFixture = {
         refetch: async () => {
           setRecovered(true);
           setRevision(n => n + 1);
-          return { data, isError: mode === "booking-calendar-refresh-error" };
+          return {
+            data,
+            isError: [
+              "booking-calendar-refresh-error",
+              "booking-calendar-notice-refresh-error",
+            ].includes(mode),
+          };
         },
       };
     },

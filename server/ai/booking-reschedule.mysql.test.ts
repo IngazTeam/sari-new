@@ -961,7 +961,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       let account: string, instanceId: number;
       const notices = () =>
         q(
-          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? ORDER BY id",
+          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND kind<>'confirmation' ORDER BY id",
           [owner.merchantId]
         );
       const send = async () =>
@@ -1130,6 +1130,17 @@ describe.skipIf(!process.env.DATABASE_URL)(
         });
         const rows = await notices();
         expect(rows).toHaveLength(2);
+        const allNotices = await q(
+          "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? ORDER BY id",
+          [owner.merchantId]
+        );
+        expect(allNotices.map((r: any) => r.kind)).toEqual([
+          "confirmation",
+          "reschedule",
+          "cancellation",
+        ]);
+        expect(new Set(allNotices.map((r: any) => r.id)).size).toBe(3);
+        expect(allNotices[0].state).toBe("manual_review");
         expect(rows.map((r: any) => r.kind)).toEqual([
           "reschedule",
           "cancellation",
@@ -1247,7 +1258,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await readyNotice();
         const input = await noticeCommand();
         await q(
-          "UPDATE booking_reschedule_notifications SET next_check_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),updated_at=UTC_TIMESTAMP(3) WHERE merchant_id=?",
+          "UPDATE booking_reschedule_notifications SET next_check_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),updated_at=UTC_TIMESTAMP(3) WHERE merchant_id=? AND kind<>'confirmation'",
           [owner.merchantId]
         );
         await expect(reviewNotice(input)).resolves.toMatchObject({
@@ -1292,7 +1303,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
           await moveRun();
           if (mode === "dispatching")
             await q(
-              "UPDATE booking_reschedule_notifications SET state='dispatching',dispatch_started_at=UTC_TIMESTAMP(3),claim_token=? WHERE merchant_id=?",
+              "UPDATE booking_reschedule_notifications SET state='dispatching',dispatch_started_at=UTC_TIMESTAMP(3),claim_token=? WHERE merchant_id=? AND kind<>'confirmation'",
               [randomUUID(), owner.merchantId]
             );
           expect((await read())!.notification!.canReview).toBe(false);
@@ -1697,12 +1708,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
           );
         if (mode === "tampered-text")
           await q(
-            "UPDATE booking_reschedule_notifications SET dispatch_text='forged' WHERE merchant_id=?",
+            "UPDATE booking_reschedule_notifications SET dispatch_text='forged' WHERE merchant_id=? AND kind<>'confirmation'",
             [owner.merchantId]
           );
         if (mode === "tampered-snapshot")
           await q(
-            "UPDATE booking_reschedule_notifications SET snapshot=JSON_SET(snapshot,'$.phone','966500000090') WHERE merchant_id=?",
+            "UPDATE booking_reschedule_notifications SET snapshot=JSON_SET(snapshot,'$.phone','966500000090') WHERE merchant_id=? AND kind<>'confirmation'",
             [owner.merchantId]
           );
         if (mode === "changed-consent")
@@ -1858,7 +1869,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await prepareNotice();
         await moveRun();
         await q(
-          "UPDATE booking_reschedule_notifications SET state='dispatching',claim_token=?,dispatch_started_at=TIMESTAMPADD(MINUTE,-3,UTC_TIMESTAMP(3)),next_check_at=UTC_TIMESTAMP(3) WHERE merchant_id=?",
+          "UPDATE booking_reschedule_notifications SET state='dispatching',claim_token=?,dispatch_started_at=TIMESTAMPADD(MINUTE,-3,UTC_TIMESTAMP(3)),next_check_at=UTC_TIMESTAMP(3) WHERE merchant_id=? AND kind<>'confirmation'",
           [randomUUID(), owner.merchantId]
         );
         await runBookingNotificationBatch();
