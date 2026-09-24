@@ -7068,6 +7068,11 @@ export const appRouter = router({
           try { return await createDurableOrderCheckout(input); }
           catch { throw new TRPCError({code:'CONFLICT',message:'تعذر اعتماد جلسة دفع لهذا الطلب. قد تكون محاولة سابقة قيد التحقق؛ راجع حالة الطلب قبل إعادة المحاولة.'}); }
         }
+        if (link.bookingId != null || link.bookingCheckoutPolicyVersion !== 0) {
+          const { createDurableBookingCheckout } = await import('./payment/booking-checkout');
+          try { return await createDurableBookingCheckout(input); }
+          catch { throw new TRPCError({code:'CONFLICT',message:'تعذر اعتماد جلسة دفع لهذا الحجز. راجع حالة الحجز ومحاولات الدفع السابقة قبل إعادة المحاولة.'}); }
+        }
         const settings = await getMerchantPaymentSettings(link.merchantId);
         if (!settings || !settings.tapSecretKey || !isTapPaymentReady(settings)) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'بوابة الدفع غير جاهزة لهذا المتجر' });
@@ -7301,6 +7306,15 @@ export const appRouter = router({
             });
           }
           return { linkId: issued.link.linkId, paymentUrl: issued.paymentUrl, link: issued.link };
+        }
+        if (input.bookingId) {
+          if (!input.isFixedAmount || (input.maxUsageCount != null && input.maxUsageCount !== 1)) {
+            throw new TRPCError({code:'BAD_REQUEST',message:'رابط الحجز يجب أن يكون ثابتًا ولا يستخدم إلا مرة واحدة'});
+          }
+          const { issueCanonicalBookingPaymentLink } = await import('./payment/booking-checkout');
+          try { return await issueCanonicalBookingPaymentLink({merchantId:merchant.id,bookingId:input.bookingId,
+            amount:input.amount,title:input.title,description:input.description,expiresAt:input.expiresAt}); }
+          catch { throw new TRPCError({code:'PRECONDITION_FAILED',message:'الحجز أو رابط الدفع غير متاح، أو يحتاج سجل الدفع السابق إلى مراجعة'}); }
         }
         const dbPayments = await import('./db_payments');
         const crypto = await import('node:crypto');

@@ -568,6 +568,13 @@
       "when": 1790380800000,
       "tag": "0080_checkout_discount_releases",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "5",
+      "when": 1790467200000,
+      "tag": "0081_booking_checkout_attempts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { majorToMinor } from '../../shared/product-money';
 
 export interface PaymentLinkState {
   isActive: number | boolean;
@@ -112,9 +113,9 @@ export function validateTapCheckoutCharge(
   if (!/^chg_[A-Za-z0-9_-]{3,250}$/.test(id)) return null;
   if (charge.status !== 'INITIATED') return null;
   if (charge.currency !== expected.currency) return null;
-  if (!Number.isFinite(charge.amount) || Math.round(Number(charge.amount) * 100) !== expected.amountInHalalas) {
-    return null;
-  }
+  if (!Number.isFinite(charge.amount)) return null;
+  try { if (majorToMinor(charge.amount) !== expected.amountInHalalas) return null; }
+  catch { return null; }
   if (typeof charge.live_mode !== 'boolean' || charge.live_mode !== !expected.testMode) return null;
 
   const paymentUrl = typeof charge.transaction?.url === 'string' ? charge.transaction.url.trim() : '';

@@ -2126,6 +2126,7 @@ export const orderPayments = mysqlTable("order_payments", {
 
 // جدول روابط الدفع السريعة
 export const paymentLinks = mysqlTable("payment_links", {
+	bookingCheckoutPolicyVersion: int('booking_checkout_policy_version').notNull().default(0),
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 
@@ -4123,3 +4124,16 @@ export const orderCheckoutReviews = mysqlTable('order_checkout_reviews', {
   outcome:varchar({length:20}).notNull(),reason:varchar({length:40}),providerStatus:varchar('provider_status',{length:32}),
   proofHash:char('proof_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[uniqueIndex('uq_checkout_review_revision').on(table.attemptId,table.revision)]);
+
+export const bookingCheckoutAttempts = mysqlTable('booking_checkout_attempts', {
+  id:char({length:36}).primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  bookingId:int('booking_id').notNull().references(()=>bookings.id,{onDelete:'cascade'}),
+  paymentLinkId:int('payment_link_id').notNull().references(()=>paymentLinks.id,{onDelete:'cascade'}),
+  requestId:char('request_id',{length:36}).notNull(),requestHash:char('request_hash',{length:64}).notNull(),
+  providerReference:varchar('provider_reference',{length:100}).notNull(),amountMinor:int('amount_minor').notNull(),currency:char({length:3}).notNull(),
+  state:varchar({length:20}).notNull().default('dispatching'),paymentId:int('payment_id'),failureCode:varchar('failure_code',{length:40}),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  activeBookingId:int('active_booking_id').generatedAlwaysAs(sql`CASE WHEN state IN ('dispatching','unknown','created') THEN booking_id ELSE NULL END`,{mode:'virtual'}),
+},table=>[uniqueIndex('uq_booking_checkout_request').on(table.paymentLinkId,table.requestId),
+  uniqueIndex('uq_booking_checkout_active').on(table.activeBookingId),uniqueIndex('uq_booking_checkout_reference').on(table.providerReference)]);
