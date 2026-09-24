@@ -97,6 +97,7 @@ export async function issueCanonicalOrderPaymentLink(input: {
   }
   if (
     !['pending', 'processing'].includes(order.status)
+    || !!order.checkoutDiscountReleased
     || !!order.checkoutReviewRequired
     || !!order.sallaOrderId
     || !Number.isSafeInteger(order.totalAmount)

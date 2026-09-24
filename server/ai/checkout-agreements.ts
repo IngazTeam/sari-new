@@ -31,8 +31,8 @@ export async function assertCheckoutAgreementSchema() {
       'external_provider', 'external_snapshot', 'execution_state', 'external_result', 'execution_attempt_id',
       'execution_started_at', 'external_order_key', 'external_reconciliation', 'projection_pending'],
     uniqueIndexes: ['uq_quote_source', 'uq_quote_consent', 'uq_quote_order', 'uq_quote_external_order'] },
-  { table:'orders',columns:['checkout_subtotal_minor','checkout_discount_minor'] },
-  { table:'checkout_discount_redemptions',columns:['merchant_id','order_id','quotation_id','coupon_id','actor_user_id','discount_code','subtotal_minor','discount_minor','total_minor','terms'],
+  { table:'orders',columns:['checkout_subtotal_minor','checkout_discount_minor','checkout_discount_released'] },
+  { table:'checkout_discount_redemptions',columns:['merchant_id','order_id','quotation_id','coupon_id','actor_user_id','discount_code','subtotal_minor','discount_minor','total_minor','terms','release_policy_version'],
     uniqueIndexes:[{name:'uq_checkout_discount_order',columns:['order_id']}] }]);
 }
 
@@ -229,7 +229,7 @@ export async function loadCheckoutInvoiceReview(connection: PoolConnection, merc
   const quote = quotes[0]; if (quotes.length !== 1 || quote.status !== 'accepted' || !quote.consent_message_id || quote.external_provider) throw new Error('Invoice agreement unavailable');
   const [orders] = await connection.execute<any[]>('SELECT * FROM orders WHERE id = ? AND merchantId = ? FOR UPDATE', [orderId, merchantId]);
   const order = orders[0], snapshot = parseSnapshot(quote.checkout_snapshot);
-  if (!order || order.status !== 'pending' || order.payment_status !== 'unpaid' || order.currency !== 'SAR' || order.sallaOrderId
+  if (!order || order.status !== 'pending' || order.payment_status !== 'unpaid' || order.currency !== 'SAR' || order.sallaOrderId || order.checkout_discount_released
     || (expectedAmountMinor !== undefined && order.totalAmount !== expectedAmountMinor) || snapshot.totalMinor !== order.totalAmount
     || order.customerPhone !== quote.customer_phone) throw new Error('Invoice changed; new agreement required');
   requireMinor(order.totalAmount);

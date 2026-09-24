@@ -1,6 +1,26 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  discountRelease: {
+    title:"Release coupon use",
+    scope:"Release one use for a local order cancelled before collection, after verifying all payment attempts ended. This does not refund money or change the invoice amount, and closes this order’s payment links.",
+    loading:"Loading coupon use evidence…",
+    loadError:"Could not load coupon use evidence.",
+    refresh:"Refresh evidence",
+    reason:"Reason for release (at least 10 characters)",
+    attest:"I reviewed the cancellation and payment results and approve returning this use to the coupon allowance and closing payment for this order.",
+    saving:"Saving release…",
+    save:"Release one coupon use",
+    success:"One use was released and the reason recorded. The order stays cancelled and closed for payment; the coupon’s current validity and terms still apply.",
+    error:"Release failed or evidence changed. Refresh the record and review its state before trying again.",
+    legacy:"This use predates protected payment tracking. A missing payment record cannot prove no external charge exists; this screen cannot release it.",
+    order:"Only an approved, cancelled and unpaid local order is eligible. Collected or refunded orders are excluded.",
+    identity:"Invoice or discount identity does not match. Review the record before making changes.",
+    payment:"A payment is unresolved, mismatched, or has collection history. Review Tap attempts first; elapsed time does not prove failure.",
+    coupon:"The original coupon is missing or belongs to another business. A replacement code with the same name will not be changed.",
+    counter:"The usage counter does not cover recorded local uses. It was not reduced.",
+    counterChange:"Counter at release: {{before}} → {{after}}",
+  },
   checkoutAttempts: {
     chargeId:"Charge ID from the Tap dashboard",
     attest:"I reviewed the attempt reference and amount in Tap. Retrieve and reconcile this charge without creating a new checkout.",
@@ -15,6 +35,7 @@ const merchantUxEn: MerchantUxCopy = {
     reference:'Tap attempt reference',review:'Match this reference against Tap and review the payment outcome before creating another attempt or releasing the coupon use. An uncertain attempt is never resent automatically.'
   },
   checkoutDiscount: {
+    historical:'This is the discount recorded when the invoice was approved. Review the coupon release record below for its usage state after cancellation.',
     title:'Agreed discount breakdown',subtotal:'Products before discount',discount:'Code {{code}} discount',total:'Products after discount',
     pending:'The customer agreed to this amount. The code, margin and charges are checked again before invoice approval; the code has not been consumed yet.',
     applied:'The discount was confirmed on invoice approval and code usage recorded. Invoice approval does not establish payment.',

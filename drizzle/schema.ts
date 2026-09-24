@@ -530,6 +530,7 @@ export const orders = mysqlTable("orders", {
 	checkoutReviewRequired: tinyint('checkout_review_required').default(0).notNull(),
 	checkoutSubtotalMinor: int('checkout_subtotal_minor'),
 	checkoutDiscountMinor: int('checkout_discount_minor'),
+	checkoutDiscountReleased: tinyint('checkout_discount_released').notNull().default(0),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	isGift: tinyint().default(0).notNull(),
@@ -4089,8 +4090,18 @@ export const checkoutDiscountRedemptions = mysqlTable('checkout_discount_redempt
   orderId:int('order_id').notNull().references(()=>orders.id,{onDelete:'cascade'}), quotationId:int('quotation_id').notNull(),
   couponId:int('coupon_id').notNull(), actorUserId:int('actor_user_id').notNull(), discountCode:varchar('discount_code',{length:50}).notNull(),
   subtotalMinor:int('subtotal_minor').notNull(),discountMinor:int('discount_minor').notNull(),totalMinor:int('total_minor').notNull(),terms:json().notNull(),
+  releasePolicyVersion:int('release_policy_version').notNull().default(0),
   createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[uniqueIndex('uq_checkout_discount_order').on(table.orderId)]);
+
+export const checkoutDiscountReleases = mysqlTable('checkout_discount_releases', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  orderId:int('order_id').notNull().references(()=>orders.id,{onDelete:'cascade'}),
+  redemptionId:int('redemption_id').notNull().references(()=>checkoutDiscountRedemptions.id,{onDelete:'cascade'}),
+  couponId:int('coupon_id').notNull(),actorUserId:int('actor_user_id').notNull(),reason:varchar({length:500}).notNull(),
+  policyVersion:int('policy_version').notNull(),usedBefore:int('used_before').notNull(),usedAfter:int('used_after').notNull(),
+  evidenceHash:char('evidence_hash',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_checkout_discount_release_order').on(table.orderId),uniqueIndex('uq_checkout_discount_release_redemption').on(table.redemptionId)]);
 
 export const orderCheckoutAttempts = mysqlTable('order_checkout_attempts', {
   id:char({length:36}).primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),

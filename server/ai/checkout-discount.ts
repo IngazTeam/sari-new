@@ -40,7 +40,9 @@ export async function consumeCheckoutDiscount(connection:PoolConnection,input:{m
   const [updated]=await connection.execute<any>(`UPDATE discount_codes SET usedCount=usedCount+1 WHERE id=? AND merchantId=? AND isActive=1
     AND usedCount<2147483647 AND (maxUses IS NULL OR usedCount<maxUses) AND (expiresAt IS NULL OR expiresAt>UTC_TIMESTAMP(3))`,[fresh.couponId,input.merchantId]);
   if(updated.affectedRows!==1)throw Error('Coupon no longer available');
-  await connection.execute(`INSERT INTO checkout_discount_redemptions (merchant_id,order_id,quotation_id,coupon_id,actor_user_id,discount_code,subtotal_minor,discount_minor,total_minor,terms)
-    VALUES (?,?,?,?,?,?,?,?,?,?)`,[input.merchantId,input.orderId,input.quotationId,fresh.couponId,input.actorUserId,fresh.code,input.subtotalMinor,fresh.amountMinor,input.totalMinor,JSON.stringify(fresh)]);
+  // Only redemptions created after this guarded implementation may release capacity.
+  // Older rows cannot prove that an unrecorded pre-ledger provider call never occurred.
+  await connection.execute(`INSERT INTO checkout_discount_redemptions (merchant_id,order_id,quotation_id,coupon_id,actor_user_id,discount_code,subtotal_minor,discount_minor,total_minor,terms,release_policy_version)
+    VALUES (?,?,?,?,?,?,?,?,?,?,1)`,[input.merchantId,input.orderId,input.quotationId,fresh.couponId,input.actorUserId,fresh.code,input.subtotalMinor,fresh.amountMinor,input.totalMinor,JSON.stringify(fresh)]);
   return fresh;
 }

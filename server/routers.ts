@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { invoiceApprovalSchema, previewMarginSchema } from '../shared/checkout-margin';
 import { reconcileCheckoutSchema } from '../shared/checkout-reconciliation';
+import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaShippingSchema } from '../shared/salla-order';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
@@ -2550,6 +2551,16 @@ export const appRouter = router({
       const { getOrderCheckoutAttempts } = await import('./payment/order-checkout-attempts');
       try { return await getOrderCheckoutAttempts(ctx.merchantId,input.orderId); }
       catch { throw new TRPCError({code:'CONFLICT',message:'Checkout attempt evidence unavailable'}); }
+    }),
+    getCheckoutDiscountRelease: permissionProcedure('orders.manage').input(z.object({orderId:z.number().int().positive().safe()}).strict()).query(async({ctx,input})=>{
+      const {getCheckoutDiscountRelease}=await import('./ai/checkout-discount-release');
+      try{return await getCheckoutDiscountRelease(ctx.merchantId,input.orderId);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Coupon release evidence unavailable'});}
+    }),
+    releaseCheckoutDiscount: permissionProcedure('orders.manage').input(checkoutDiscountReleaseSchema).mutation(async({ctx,input})=>{
+      const {releaseCheckoutDiscount}=await import('./ai/checkout-discount-release');
+      try{return await releaseCheckoutDiscount(ctx.merchantId,ctx.user.id,input);}
+      catch{throw new TRPCError({code:'CONFLICT',message:'Coupon release requires current verified evidence'});}
     }),
     reconcileCheckoutAttempt: permissionProcedure('orders.manage').input(reconcileCheckoutSchema).mutation(async ({ctx,input}) => {
       const {reconcileOrderCheckout}=await import('./payment/checkout-reconciliation');

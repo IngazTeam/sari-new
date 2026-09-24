@@ -151,6 +151,22 @@ export const trpc = {
       isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry, refetch: async () => setRetry(true) };
   } } },
   orders: {
+    getCheckoutDiscountRelease:{useQuery:()=>{
+      const [recovered,setRecovered]=useState(false),[saved,setSaved]=useState(false),[revision,setRevision]=useState(0);
+      useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('coupon-release-change',changed);(window as any).__changeCouponRelease=()=>window.dispatchEvent(new Event('coupon-release-change'));return()=>window.removeEventListener('coupon-release-change',changed);},[]);
+      const blocker=['legacy','order','identity','payment','coupon','counter'].find(b=>mode===`coupon-release-${b}`);
+      const released=saved||mode==='coupon-release-audit';
+      return {isLoading:mode==='coupon-release-loading'&&!recovered,isError:mode==='coupon-release-error'&&!recovered,
+        data:mode.startsWith('coupon-release-')&&mode!=='coupon-release-empty'?{code:'LOCAL_'+'X'.repeat(44),discountMinor:2999,state:released?'released':blocker?'blocked':'eligible',blocker:blocker||null,evidence:(revision?'b':'a').repeat(64),
+          audit:released?{actorUserId:7,reason:(window as any).__couponReleaseInput?.reason||'<img src=x onerror="window.__couponXss=1"> '+ 'long-audit-word-'.repeat(30),usedBefore:4,usedAfter:3,at:'2026-09-24T00:00:00.000Z'}:null}:null,
+        refetch:async()=>{setRecovered(true);setSaved(!!(window as any).__couponReleased);return {isError:false};}};
+    }},
+    releaseCheckoutDiscount:{useMutation:()=>{
+      const [isPending,setPending]=useState(false);
+      return {isPending,mutateAsync:async(input:any)=>{setPending(true);(window as any).__couponReleaseInput=input;
+        (window as any).__couponReleaseCount=((window as any).__couponReleaseCount||0)+1;await new Promise(r=>setTimeout(r,80));setPending(false);
+        if(mode==='coupon-release-write-error')throw Error('private coupon storage');(window as any).__couponReleased=true;return {released:true,alreadyReleased:false};}};
+    }},
     getCheckoutAttempts: {useQuery:()=>{
       const [recovered,setRecovered]=useState(false);
       return {isLoading:mode==='checkout-attempts-loading',isError:mode==='checkout-attempts-error'&&!recovered,

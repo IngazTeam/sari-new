@@ -64,7 +64,8 @@ export const learningEvidenceCopyKeys = [
 export type MerchantUxCopy = {
   marginPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","minimum","scope","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","empty","change","before","after","terms","on","off"]>;
   invoiceMargin: CopySection<readonly ["loading","policyFailed","refresh","title","description","tax","shipping","other","checking","preview","invalid","failed","pass","below","missing","invalidTotals","revenue","totalCosts","profit","ratio","products","unknown","disabled","attestation","exceptionTitle","exceptionScope","exceptionReason","exceptionInvalid","exceptionReviewed","exceptionPermission","exceptionApprove","auditLoading","auditFailed","auditTitle","auditActor","auditRatio","auditScope"]>;
-  checkoutDiscount: CopySection<readonly ['title','subtotal','discount','total','pending','applied','invalid']>;
+  checkoutDiscount: CopySection<readonly ['title','subtotal','discount','total','pending','applied','invalid','historical']>;
+  discountRelease: CopySection<readonly ['title','scope','loading','loadError','refresh','reason','attest','saving','save','success','error','legacy','order','identity','payment','coupon','counter','counterChange']>;
   checkoutAttempts: CopySection<readonly ['title','loading','error','refresh','dispatching','unknown','created','failed','scope','reference','review','chargeId','attest','reconcile','reconciling','verified','unverified','reconcileError']>;
   discountPolicy: CopySection<readonly ["title","description","loading","loadFailed","refresh","enabled","maxPercent","expireHours","scope","margin","current","invalid","reviewed","saving","save","readOnly","failed","saved","history","historyScope","empty","change","before","after","terms","on","off"]>;
   offerReview: CopySection<readonly ['title','scope','loading','loadFailed','refresh','empty','older','latest','pages','attempt',

@@ -5,6 +5,7 @@ import { CheckoutInvoiceReview } from '@/components/CheckoutInvoiceReview';
 import { CheckoutMarginExceptionAudit } from '@/components/CheckoutMarginExceptionAudit';
 import { CheckoutDiscountBreakdown } from '@/components/CheckoutDiscountBreakdown';
 import { OrderCheckoutAttempts } from '@/components/OrderCheckoutAttempts';
+import { CheckoutDiscountRelease } from '@/components/CheckoutDiscountRelease';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
@@ -410,9 +411,10 @@ export default function Orders() {
                 orderId={selectedOrder.id} totalAmount={selectedOrder.totalAmount} onApproved={() => { void refetch(); }}
                 discount={selectedOrder.checkoutDiscountMinor!=null&&selectedOrder.checkoutSubtotalMinor!=null?{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}:undefined} />}
               {!selectedOrder.checkoutReviewRequired&&selectedOrder.checkoutDiscountMinor!=null&&selectedOrder.checkoutSubtotalMinor!=null&&<CheckoutDiscountBreakdown
-                discount={{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}} totalMinor={selectedOrder.totalAmount} approved />}
+                discount={{code:selectedOrder.discountCode,subtotalMinor:selectedOrder.checkoutSubtotalMinor,discountMinor:selectedOrder.checkoutDiscountMinor}} totalMinor={selectedOrder.totalAmount} approved historical={selectedOrder.status==='cancelled'} />}
               {!selectedOrder.checkoutReviewRequired && <CheckoutMarginExceptionAudit key={selectedOrder.id} orderId={selectedOrder.id} />}
               {!selectedOrder.sallaOrderId&&<OrderCheckoutAttempts key={`checkout-${selectedOrder.id}`} orderId={selectedOrder.id} />}
+              {!selectedOrder.sallaOrderId&&selectedOrder.status==='cancelled'&&selectedOrder.checkoutDiscountMinor!=null&&<CheckoutDiscountRelease key={`release-${selectedOrder.id}`} orderId={selectedOrder.id} />}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm text-muted-foreground">{t('ordersPage.statusLabel')}:</span>

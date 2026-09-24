@@ -117,6 +117,41 @@ async function main() {
       if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#checkout-attempts-fixture')).screenshot({path:path.join(output,`checkout-attempts-${width}.png`)});
       results.push({width,lang,mode:'checkout_attempts_states_and_refresh',passed:true});
     }
+    for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
+      await page.setViewport({width,height:900});await page.goto(`${origin}/?case=coupon-release-ready&lang=${lang}`,{waitUntil:'networkidle0'});
+      await page.waitForSelector('[data-coupon-release-review]');assert.equal(await page.$eval('[data-coupon-release-save]',n=>n.disabled),true);
+      assert.ok(await page.$('#coupon-release-fixture [data-discount-state=historical]'));
+      await page.type('#coupon-release-reason-123','سبب المراجعة لإلغاء الطلب قبل تحصيل المبلغ');await page.click('#coupon-release-fixture input[type=checkbox]');
+      await page.type('#coupon-release-reason-123',' بعد المطابقة');assert.equal(await page.$eval('#coupon-release-fixture input[type=checkbox]',n=>n.checked),false);
+      await page.click('#coupon-release-fixture input[type=checkbox]');await page.evaluate(()=>window.__changeCouponRelease());
+      await page.waitForFunction(()=>!document.querySelector('#coupon-release-fixture input[type=checkbox]').checked);
+      assert.equal(await page.$eval('[data-coupon-release-save]',n=>n.disabled),true);
+      await page.type('#coupon-release-reason-123','سبب المراجعة لإلغاء الطلب قبل تحصيل المبلغ');await page.click('#coupon-release-fixture input[type=checkbox]');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      assert.ok(await page.$$eval('#coupon-release-fixture button,#coupon-release-fixture textarea',nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44)));
+      await page.focus('[data-coupon-release-save]');await page.keyboard.press('Enter');await page.waitForSelector('[data-coupon-release-audit]');
+      assert.deepEqual(await page.evaluate(()=>window.__couponReleaseInput),{orderId:123,evidence:'b'.repeat(64),reason:'سبب المراجعة لإلغاء الطلب قبل تحصيل المبلغ',reviewed:true});
+      assert.equal(await page.evaluate(()=>window.__couponReleaseCount),1);assert.equal(await page.$('[data-coupon-release-save]'),null);
+      assert.equal(await page.$eval('#coupon-release-fixture',n=>n.innerText.includes('merchantUx.')),false);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#coupon-release-fixture')).screenshot({path:path.join(output,`coupon-release-${width}.png`)});
+      results.push({width,lang,mode:'coupon_release_review_fresh_evidence_keyboard_audit',passed:true});
+    }
+    for(const blocker of ['legacy','order','identity','payment','coupon','counter']) {
+      await page.setViewport({width:320,height:812});await page.goto(`${origin}/?case=coupon-release-${blocker}`,{waitUntil:'networkidle0'});await page.waitForSelector('[data-coupon-release-blocker]');
+      assert.equal(await page.$('[data-coupon-release-save]'),null);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      results.push({width:320,mode:`coupon_release_blocked_${blocker}`,passed:true});
+    }
+    for(const state of ['loading','error','empty','write-error','audit']) {
+      await page.goto(`${origin}/?case=coupon-release-${state}`,{waitUntil:'networkidle0'});
+      if(state==='loading')await page.waitForSelector('#coupon-release-fixture [role=status]');
+      if(state==='error'){await page.waitForSelector('#coupon-release-fixture [role=alert]');await page.click('#coupon-release-fixture button');await page.waitForSelector('[data-coupon-release]');}
+      if(state==='empty')assert.equal(await page.$('[data-coupon-release]'),null);
+      if(state==='write-error') {await page.type('#coupon-release-reason-123','Reviewed cancellation before any collection');await page.click('#coupon-release-fixture input[type=checkbox]');await page.click('[data-coupon-release-save]');
+        await page.waitForSelector('#coupon-release-fixture [role=alert]');assert.equal(await page.$eval('[data-coupon-release-save]',n=>n.disabled),true);assert.equal(await page.$eval('#coupon-release-fixture',n=>n.textContent.includes('private coupon')),false);
+        await page.click('[data-coupon-release-refresh]');assert.equal(await page.$eval('#coupon-release-reason-123',n=>n.value),'');}
+      if(state==='audit'){assert.equal(await page.$('#coupon-release-fixture img'),null);assert.equal(await page.evaluate(()=>window.__couponXss),undefined);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+      results.push({width:320,mode:`coupon_release_${state}`,passed:true});
+    }
     const checkoutReview='#checkout-attempts-fixture [data-checkout-review]';
     for(const lang of ['ar','en'])for(const width of [320,375,390,768,1440]) {
       await page.setViewport({width,height:900});await page.goto(`${origin}/?case=checkout-attempts-ready&lang=${lang}`,{waitUntil:'networkidle0'});

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
-  checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
+  couponReleaseRead:vi.fn(),couponReleaseWrite:vi.fn(),checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
 vi.mock('./ai/discount-policy', async original => ({ ...await original<typeof import('./ai/discount-policy')>(),
   getDiscountPolicy: mocks.discountRead, updateDiscountPolicy: mocks.discountWrite }));
@@ -10,6 +10,7 @@ vi.mock('./ai/checkout-agreements', async original => ({...await original<typeof
 vi.mock('./payment/order-payment-link', async original => ({...await original<typeof import('./payment/order-payment-link')>(),issueCanonicalOrderPaymentLink:mocks.invoiceLink}));
 vi.mock('./payment/order-checkout-attempts',async original=>({...await original<typeof import('./payment/order-checkout-attempts')>(),getOrderCheckoutAttempts:mocks.checkoutAttempts}));
 vi.mock('./payment/checkout-reconciliation',async original=>({...await original<typeof import('./payment/checkout-reconciliation')>(),reconcileOrderCheckout:mocks.checkoutReconcile}));
+vi.mock('./ai/checkout-discount-release',async original=>({...await original<typeof import('./ai/checkout-discount-release')>(),getCheckoutDiscountRelease:mocks.couponReleaseRead,releaseCheckoutDiscount:mocks.couponReleaseWrite}));
 vi.mock('./ai/sales-offer-review', async original => ({ ...await original<typeof import('./ai/sales-offer-review')>(),
   listSalesOfferAttempts: mocks.offerList, reviewSalesOffer: mocks.offerReview }));
 vi.mock('./ai/escalation-reconciliation', async original => ({ ...await original<typeof import('./ai/escalation-reconciliation')>(),
@@ -49,6 +50,25 @@ beforeEach(() => {
   mocks.invoiceApprove.mockResolvedValue({approved:true,conversationId:4});mocks.invoiceLink.mockResolvedValue({issued:false,reason:'gateway_not_ready'});
 });
 describe('real app router team boundaries', () => {
+  const couponRelease={orderId:10,evidence:'a'.repeat(64),reason:'Cancelled before collection after payment review',reviewed:true as const};
+  it.each(['owner','manager','sales_supervisor'])('scopes coupon release and evidence to the %s membership and session actor',async role=>{
+    mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().orders.getCheckoutDiscountRelease({orderId:10});await caller().orders.releaseCheckoutDiscount(couponRelease);
+    expect(mocks.couponReleaseRead).toHaveBeenCalledWith(20,10);expect(mocks.couponReleaseWrite).toHaveBeenCalledWith(20,7,couponRelease);
+  });
+  it.each(['viewer',null])('denies coupon evidence and release for %s access',async role=>{
+    mocks.access.mockResolvedValue(role?{merchantId:20,role,memberId:3}:null);
+    await expect(caller().orders.getCheckoutDiscountRelease({orderId:10})).rejects.toMatchObject({code:'FORBIDDEN'});await expect(caller().orders.releaseCheckoutDiscount(couponRelease)).rejects.toMatchObject({code:'FORBIDDEN'});
+    expect(mocks.couponReleaseRead).not.toHaveBeenCalled();expect(mocks.couponReleaseWrite).not.toHaveBeenCalled();
+  });
+  it.each([{merchantId:99},{actorUserId:99},{couponId:1},{usedCount:0},{releasePolicyVersion:1},{reviewed:false},{reason:'short'},{reason:'x'.repeat(501)},{evidence:''},{orderId:-1}])('rejects injected coupon release authority %j',async patch=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});await expect(caller().orders.releaseCheckoutDiscount({...couponRelease,...patch} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.couponReleaseWrite).not.toHaveBeenCalled();
+  });
+  it('rejects injected evidence scope and redacts coupon storage failures',async()=>{
+    mocks.access.mockResolvedValue({merchantId:20,role:'owner',memberId:3});
+    await expect(caller().orders.getCheckoutDiscountRelease({orderId:10,merchantId:99} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+    mocks.couponReleaseRead.mockRejectedValueOnce(Error('private sql'));await expect(caller().orders.getCheckoutDiscountRelease({orderId:10})).rejects.toMatchObject({code:'CONFLICT',message:'Coupon release evidence unavailable'});
+    mocks.couponReleaseWrite.mockRejectedValueOnce(Error('private sql'));await expect(caller().orders.releaseCheckoutDiscount(couponRelease)).rejects.toMatchObject({code:'CONFLICT',message:'Coupon release requires current verified evidence'});
+  });
   const checkoutReview={orderId:10,attemptId:'00000000-0000-4000-8000-000000000001',chargeId:'chg_fixture_1',evidence:'a'.repeat(64),reviewed:true as const};
   it.each(['owner','manager','sales_supervisor'])('derives Tap review tenant and actor from the %s session',async role=>{
     mocks.access.mockResolvedValue({merchantId:20,role,memberId:3});await caller().orders.reconcileCheckoutAttempt(checkoutReview);

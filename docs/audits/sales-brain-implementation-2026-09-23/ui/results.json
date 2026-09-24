@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T22:10:00.693Z",
+  "generatedAt": "2026-09-24T04:02:08.409Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -9,6 +9,8 @@
     "checkout-discount-375.png",
     "checkout-reconciliation-1440.png",
     "checkout-reconciliation-375.png",
+    "coupon-release-1440.png",
+    "coupon-release-375.png",
     "discount-policy-1440.png",
     "discount-policy-375.png",
     "followup-policy-1440.png",
@@ -277,6 +279,121 @@
       "width": 1440,
       "lang": "en",
       "mode": "checkout_attempts_states_and_refresh",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "coupon_release_review_fresh_evidence_keyboard_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_legacy",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_order",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_identity",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_payment",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_coupon",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_blocked_counter",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_loading",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_error",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_empty",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_write-error",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "coupon_release_audit",
       "passed": true
     },
     {

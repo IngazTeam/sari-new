@@ -44,7 +44,7 @@ async function lockedTarget(connection:PoolConnection,linkId:string) {
 }
 
 function payable(order:any) {
-  return ['pending','processing'].includes(order.status)&&order.payment_status==='unpaid'&&!order.checkout_review_required;
+  return ['pending','processing'].includes(order.status)&&order.payment_status==='unpaid'&&!order.checkout_review_required&&!order.checkout_discount_released;
 }
 async function assertLinkAvailable(connection:PoolConnection,link:any) {
   // Read time after waiting for the order and link locks.
@@ -67,7 +67,7 @@ async function matchingPayment(connection:PoolConnection,attempt:any) {
 /** A reservation is durable before any POST. Unknown outcomes never expire into a retry. */
 export async function createDurableOrderCheckout(raw:CheckoutInput):Promise<{paymentUrl:string}> {
   const input=inputSchema.parse(raw),phoneNumber=normalizeSaudiPhone(input.customerPhone);
-  await assertRuntimeSchema('durable order checkout', [{table:'order_checkout_attempts',
+  await assertRuntimeSchema('durable order checkout', [{table:'orders',columns:['checkout_discount_released']},{table:'order_checkout_attempts',
     columns:['request_hash','provider_reference','payment_id','failure_code','amount_minor','currency'],
     generatedColumns:[{name:'active_order_id',expression:"case when state in ('dispatching','unknown','created') then order_id else null end",storage:'virtual'}],
     uniqueIndexes:[{name:'uq_checkout_request',columns:['payment_link_id','request_id']},{name:'uq_checkout_active_order',columns:['active_order_id']},'uq_checkout_provider_reference']}]);
