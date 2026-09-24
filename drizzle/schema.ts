@@ -4050,6 +4050,21 @@ export const aiLearningPolicyReviews = mysqlTable('ai_learning_policy_reviews', 
     AND ${table.regressions} BETWEEN 0 AND 8 - ${table.passedCases}
     AND ((${table.outcome} = 'passed' AND ${table.passedCases} = 8) OR (${table.outcome} = 'failed' AND ${table.passedCases} < 8))`)]);
 
+export const aiLearningPolicyCandidates = mysqlTable('ai_learning_policy_candidates', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  proposalId: bigint('proposal_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningProposals.id, { onDelete: 'cascade' }),
+  reviewId: bigint('review_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningPolicyReviews.id, { onDelete: 'cascade' }),
+  version: bigint({ mode: 'number', unsigned: true }).notNull(),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  sourceDigest: char('source_digest', { length: 64 }).notNull(), baselineDigest: char('baseline_digest', { length: 64 }).notNull(),
+  artifactDigest: char('artifact_digest', { length: 64 }).notNull(),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  bundle: json().notNull(), createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex('uq_learning_candidate_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_learning_candidate_version').on(table.merchantId, table.proposalId, table.version),
+  check('ck_learning_candidate_version', sql`${table.version} BETWEEN 1 AND 9007199254740991`)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

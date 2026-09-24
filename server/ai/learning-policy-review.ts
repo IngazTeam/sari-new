@@ -17,7 +17,7 @@ async function lockMerchant(connection: PoolConnection, merchantId: number) {
   if (rows.length !== 1) conflict();
 }
 
-async function sourceSnapshot(connection: PoolConnection, merchantId: number, proposalId: number) {
+export async function getLearningPolicySourceSnapshot(connection: PoolConnection, merchantId: number, proposalId: number) {
   const [proposals] = await connection.execute<any[]>(`SELECT id, dimension, insight, content_hash, status, generation
     FROM ai_learning_proposals WHERE id=? AND merchant_id=? FOR SHARE`, [proposalId, merchantId]);
   if (proposals.length !== 1) conflict();
@@ -69,7 +69,7 @@ export async function getLearningPolicyReview(merchantId: number, value: { propo
   const merchant = identity.parse(merchantId), input = learningPolicyProposalInput.parse(value);
   return checkoutTransaction(async connection => {
     await lockMerchant(connection, merchant);
-    const source = await sourceSnapshot(connection, merchant, input.proposalId);
+    const source = await getLearningPolicySourceSnapshot(connection, merchant, input.proposalId);
     const history = await reviews(connection, merchant, input.proposalId), latest = history[0];
     const current = !!latest && source.eligible && latest.source_digest === source.sourceDigest
       && latest.suite_digest === learningPolicyReviewSuiteDigest;
@@ -98,7 +98,7 @@ export async function recordLearningPolicyReview(merchantId: number, actorUserId
       // Receipt only: a replay never attests that old evidence is still current.
       return { ...receipt(existing[0]), reused: true };
     }
-    const source = await sourceSnapshot(connection, merchant, input.proposalId);
+    const source = await getLearningPolicySourceSnapshot(connection, merchant, input.proposalId);
     if (!source.eligible || source.sourceDigest !== input.sourceDigest) conflict();
     const history = await reviews(connection, merchant, input.proposalId);
     const revision = Number(history[0]?.revision || 0);

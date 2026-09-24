@@ -1,0 +1,26 @@
+{
+  "verifiedAt": "2026-09-24T22:30:45.060Z",
+  "database": "sari_policy_candidates_20260925_test",
+  "scope": "Fresh local 0000–0105 chain; seeded legacy proposal states, evidence, active DNA and a human review; actual updater applies 0106. No existing database overwritten.",
+  "migrations": 107,
+  "expected": 107,
+  "preservedTables": [
+    "ai_learning_proposals",
+    "ai_learning_evidence_links",
+    "sari_learning_signals",
+    "sari_behavioral_dna",
+    "ai_learning_policy_reviews",
+    "ai_budget_policies",
+    "ai_price_cards"
+  ],
+  "noAutomaticCandidates": true,
+  "rerunUnchanged": true,
+  "invalidVersionRejected": true,
+  "globalDailyMicroUsd": "100000000",
+  "requestIndex": true,
+  "versionIndex": true,
+  "sourceCascade": true,
+  "actorRetention": true,
+  "migrationSha256": "cb76feeed006a93d838de5b8198842b7ba36e578f3cfdf6a609510c07a9f420e",
+  "passed": true
+}

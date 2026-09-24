@@ -32,6 +32,8 @@ import { hasPermission } from './_core/permissions';
 import { getFollowupPolicy, updateFollowupPolicy, followupPolicyUpdateSchema } from './ai/followup-policy';
 import { learningPolicyProposalInput, learningPolicyReviewInput } from './ai/learning-policy-review-contract';
 import { getLearningPolicyReview, recordLearningPolicyReview, LearningPolicyReviewConflict } from './ai/learning-policy-review';
+import { policyCandidateInput, policyCandidateVersionInput } from './ai/learning-policy-evaluation-bundle';
+import { getLearningPolicyCandidate, getLearningPolicyCandidateVersion, createLearningPolicyCandidate, LearningPolicyCandidateConflict } from './ai/learning-policy-candidates';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -326,6 +328,18 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getLearningPolicyCandidate: permissionProcedure('bot_settings.manage').input(learningPolicyProposalInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyCandidate(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy candidate changed or is unavailable' }); }
+  }),
+  getLearningPolicyCandidateVersion: permissionProcedure('bot_settings.manage').input(policyCandidateVersionInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyCandidateVersion(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy candidate changed or is unavailable' }); }
+  }),
+  createLearningPolicyCandidate: permissionProcedure('bot_settings.manage').input(policyCandidateInput).mutation(async ({ ctx, input }) => {
+    try { return await createLearningPolicyCandidate(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Learning policy candidate changed or is unavailable' }); }
+  }),
   getLearningPolicyReview: merchantProcedure.input(learningPolicyProposalInput).query(async ({ ctx, input }) => {
     try { return { ...await getLearningPolicyReview(ctx.merchantId, input), canReview: hasPermission(ctx.merchantRole, 'bot_settings.manage') }; }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy review changed or is unavailable' }); }

@@ -1,0 +1,23 @@
+CREATE TABLE `ai_learning_policy_candidates` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `proposal_id` bigint unsigned NOT NULL,
+  `review_id` bigint unsigned NOT NULL,
+  `version` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `source_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `baseline_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `artifact_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `actor_user_id` int DEFAULT NULL,
+  `bundle` json NOT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_learning_candidate_request` (`merchant_id`, `request_id`),
+  UNIQUE KEY `uq_learning_candidate_version` (`merchant_id`, `proposal_id`, `version`),
+  CONSTRAINT `fk_learning_candidate_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_learning_candidate_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `ai_learning_proposals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_learning_candidate_review` FOREIGN KEY (`review_id`) REFERENCES `ai_learning_policy_reviews` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_learning_candidate_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_learning_candidate_version` CHECK (`version` BETWEEN 1 AND 9007199254740991)
+);

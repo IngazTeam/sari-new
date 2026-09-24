@@ -743,6 +743,13 @@
       "when": 1792540800000,
       "tag": "0105_learning_policy_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1792627200000,
+      "tag": "0106_learning_policy_candidates",
+      "breakpoints": true
     }
   ]
 }
