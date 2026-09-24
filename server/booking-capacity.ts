@@ -115,11 +115,25 @@ export async function hasBookingConflict(
   if (excludeAppointmentId !== undefined) positive(excludeAppointmentId);
   const input = bookingScheduleSchema.parse(raw);
   const [rows] = await connection.execute<any[]>(
-    `SELECT id FROM bookings WHERE merchant_id=? AND booking_date=?
+    `(SELECT id FROM bookings WHERE merchant_id=? AND booking_date=?
     AND status IN ('pending','confirmed','in_progress') AND start_time<? AND end_time>?
     AND ((? IS NOT NULL AND staff_id=?) OR (service_id=? AND (? IS NULL OR staff_id IS NULL)))
-    AND (? IS NULL OR id<>?) LIMIT 1`,
+    AND (? IS NULL OR id<>?) LIMIT 1)
+    UNION ALL (SELECT id FROM booking_calendar_reschedules WHERE merchant_id=? AND booking_date=?
+    AND state IN ('pending','moving','move_unknown') AND start_time<? AND end_time>?
+    AND ((? IS NOT NULL AND staff_id=?) OR (service_id=? AND (? IS NULL OR staff_id IS NULL)))
+    AND (? IS NULL OR booking_reference<>?) LIMIT 1) LIMIT 1`,
     [
+      merchantId,
+      input.bookingDate,
+      input.endTime,
+      input.startTime,
+      input.staffId ?? null,
+      input.staffId ?? null,
+      input.serviceId,
+      input.staffId ?? null,
+      excludeBookingId ?? null,
+      excludeBookingId ?? null,
       merchantId,
       input.bookingDate,
       input.endTime,

@@ -659,6 +659,13 @@
       "when": 1791504000000,
       "tag": "0093_booking_calendar_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "5",
+      "when": 1791590400000,
+      "tag": "0094_booking_calendar_reschedules",
+      "breakpoints": true
     }
   ]
 }

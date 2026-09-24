@@ -1,19 +1,19 @@
 {
-  "scope": "Prior Chromium component evidence reused: 430 scenarios, 44 screenshots. No fresh browser run. All captured frontend/shared/fixture/verifier source blobs and rebuilt fixture/CSS match the tested inputs.",
-  "reused": true,
-  "verifiedAt": "2026-09-24T11:17:00.431Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-cancellation",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-calendar-transport",
-  "sourceFilesChecked": 63,
+  "scope": "Fresh Chromium component verification: 471 passing scenarios, 46 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking reschedule UI",
+  "reused": false,
+  "verifiedAt": "2026-09-24T12:00:16.432Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-reschedule",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-reschedule",
   "inputs": {
-    "fixture": "73d8fd5ab8f10d4f22c2be61b35e588029d2e3a2e3b23ef8189e7859a04eb34d",
-    "report": "b33d8eb50a35f1597047be4aa966b69356028236acae46d958575e5955804e4e",
+    "fixture": "5421b813c1028081466c795325328e86e6b53c22aed3a8395accdcc928b190ec",
+    "report": "6ec8f6d859489968bfa5102e3bd3145fb64f90272f666aaff275e88cf41627bd",
     "verifiers": {
-      "scripts/testing/verify-sales-brain-ui.cjs": "61e3f9007497a2738e5ee8667d91ad7eaab33056e95260546a56adf2b78aa376",
+      "scripts/testing/verify-sales-brain-ui.cjs": "32eb01324ff19a7103ce4136dca1f2db83f5946a3ec8fe227d477d7b1e138769",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
-      "scripts/testing/verify-booking-calendar-ui.cjs": "e8d7300b8a5ee6d9ac41fae6c98a99acee8956aa74919efa3ce17eb8e65c4ac3",
-      "scripts/testing/verify-booking-cancellation-ui.cjs": "03aedd69685a1a77370a0cfd8c5c84921a2bf182c820a49aa45822999d0855ae"
+      "scripts/testing/verify-booking-calendar-ui.cjs": "950f5e61208fa423a017862f26410b595215ef96b8a6731c9ee7f09e28f4b422",
+      "scripts/testing/verify-booking-cancellation-ui.cjs": "03aedd69685a1a77370a0cfd8c5c84921a2bf182c820a49aa45822999d0855ae",
+      "scripts/testing/verify-booking-reschedule-ui.cjs": "2cc8434b9051bb7b353a7c991661592717a77990eee3e6d08e28187fa92b754d"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

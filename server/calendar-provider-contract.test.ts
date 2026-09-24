@@ -41,6 +41,7 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
   deleteCalendarEventIfMatch,
+  rescheduleCalendarEventIfMatch,
   validateAndRefreshCredentials,
   createOAuth2Client,
   assertCalendarTimeFree,
@@ -75,6 +76,82 @@ beforeEach(() => {
   });
 });
 describe("Google calendar provider contract", () => {
+  it("patches only the new time and agreement with the reviewed etag", async () => {
+    mocks.patch.mockResolvedValueOnce({ status: 200, data: { id: "event" } });
+    await expect(
+      rescheduleCalendarEventIfMatch(
+        dispatchCredentials,
+        "original",
+        "event",
+        '"v1"',
+        {
+          start: new Date("2026-12-20T07:00:00Z"),
+          end: new Date("2026-12-20T08:00:00Z"),
+          agreementId: 52,
+        }
+      )
+    ).resolves.toEqual({ id: "event" });
+    expect(mocks.patch).toHaveBeenCalledExactlyOnceWith(
+      {
+        calendarId: "original",
+        eventId: "event",
+        sendUpdates: "none",
+        requestBody: {
+          start: {
+            dateTime: "2026-12-20T07:00:00.000Z",
+            timeZone: "Asia/Riyadh",
+          },
+          end: {
+            dateTime: "2026-12-20T08:00:00.000Z",
+            timeZone: "Asia/Riyadh",
+          },
+          extendedProperties: {
+            private: { sariBooking: "event", sariAgreement: "52" },
+          },
+        },
+      },
+      { timeout: 15000, retry: false, headers: { "If-Match": '"v1"' } }
+    );
+  });
+  it.each(["*", 'W/"v1"', '"bad\r\nheader"', ""])(
+    "rejects invalid reschedule version %j before HTTP",
+    async etag => {
+      await expect(
+        rescheduleCalendarEventIfMatch(
+          dispatchCredentials,
+          "original",
+          "event",
+          etag,
+          {
+            start: new Date("2026-12-20T07:00:00Z"),
+            end: new Date("2026-12-20T08:00:00Z"),
+            agreementId: 52,
+          }
+        )
+      ).rejects.toThrow();
+      expect(mocks.patch).not.toHaveBeenCalled();
+    }
+  );
+  it.each([202, 204, 412, 500, undefined])(
+    "does not accept reschedule HTTP %s as completion",
+    async status => {
+      mocks.patch.mockResolvedValueOnce({ status, data: { id: "event" } });
+      await expect(
+        rescheduleCalendarEventIfMatch(
+          dispatchCredentials,
+          "original",
+          "event",
+          '"v1"',
+          {
+            start: new Date("2026-12-20T07:00:00Z"),
+            end: new Date("2026-12-20T08:00:00Z"),
+            agreementId: 52,
+          }
+        )
+      ).rejects.toThrow();
+      expect(mocks.patch).toHaveBeenCalledTimes(1);
+    }
+  );
   it.each([
     {},
     { timeMin: "2026-12-20T07:00:00Z", timeMax: "2026-12-20T07:30:00Z" },

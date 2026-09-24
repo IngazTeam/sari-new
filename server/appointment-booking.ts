@@ -10,6 +10,7 @@ import {
   withBookingCapacityTransaction,
 } from "./booking-capacity";
 import { assertRuntimeSchema } from "./db/schema-readiness";
+import { assertCalendarRescheduleCapacity } from "./booking-reschedule-state";
 
 export class AppointmentConflictError extends Error {
   constructor() {
@@ -160,6 +161,15 @@ export async function reserveAppointmentInTransaction(
   const eventReference = target
     ? `sariappt${randomBytes(16).toString("hex")}`
     : null;
+  if (target)
+    await assertCalendarRescheduleCapacity(
+      connection,
+      input.merchantId,
+      { ...target, id: target.integrationId },
+      input.appointmentDate,
+      input.startTime,
+      endTime
+    );
   const [insert] = await connection.execute<any>(
     `INSERT INTO appointments (merchant_id,customer_phone,customer_name,service_id,staff_id,appointment_date,start_time,end_time,status,notes,
         calendar_sync_state,calendar_integration_id,calendar_target_id,calendar_identity_hash,calendar_event_reference)

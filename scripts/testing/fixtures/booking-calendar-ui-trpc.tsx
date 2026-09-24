@@ -23,17 +23,23 @@ export const bookingCalendarFixture = {
       const unknown = mode === "booking-calendar-unknown",
         xss = mode === "booking-calendar-xss";
       const managed =
-        mode === "booking-ops-calendar-cancelling"
-          ? "cancelling"
-          : mode === "booking-ops-calendar-cancel-unknown"
-            ? "cancel_unknown"
-            : mode === "booking-ops-calendar-cancelled"
-              ? "cancelled"
-              : mode === "booking-ops-calendar-unknown"
-                ? "create_unknown"
-                : mode.startsWith("booking-ops-calendar-")
-                  ? "synced"
-                  : null;
+        mode === "booking-ops-calendar-moving"
+          ? "moving"
+          : mode === "booking-ops-calendar-move-unknown"
+            ? "move_unknown"
+            : mode === "booking-ops-calendar-reschedule-pending"
+              ? "reschedule_pending"
+              : mode === "booking-ops-calendar-cancelling"
+                ? "cancelling"
+                : mode === "booking-ops-calendar-cancel-unknown"
+                  ? "cancel_unknown"
+                  : mode === "booking-ops-calendar-cancelled"
+                    ? "cancelled"
+                    : mode === "booking-ops-calendar-unknown"
+                      ? "create_unknown"
+                      : mode.startsWith("booking-ops-calendar-")
+                        ? "synced"
+                        : null;
       const state =
         managed ||
         (saved
@@ -58,20 +64,47 @@ export const bookingCalendarFixture = {
         blocked,
         checkedAt: saved ? "2026-09-24T09:00:00Z" : null,
         history:
-          saved || xss
+          mode === "booking-calendar-reschedule-history"
             ? [
                 {
-                  action: "create",
-                  outcome: "synced",
-                  failureCode: null,
-                  reason: xss
-                    ? '<img src=x onerror="window.__calendarXss=1">'
-                    : "Operator reviewed consent and calendar",
                   actorUserId: 7,
+                  action: "move",
+                  outcome: "applied",
+                  failureCode: null,
+                  reason: "Approved requested time",
                   at: "2026-09-24T09:00:00Z",
                 },
+                {
+                  actorUserId: 7,
+                  action: "verify_move",
+                  outcome: "applied",
+                  failureCode: null,
+                  reason: "Verified the moved event",
+                  at: "2026-09-24T09:01:00Z",
+                },
+                {
+                  actorUserId: 7,
+                  action: "abandon_move",
+                  outcome: "abandoned",
+                  failureCode: null,
+                  reason: "Closed before dispatch",
+                  at: "2026-09-24T09:02:00Z",
+                },
               ]
-            : [],
+            : saved || xss
+              ? [
+                  {
+                    action: "create",
+                    outcome: "synced",
+                    failureCode: null,
+                    reason: xss
+                      ? '<img src=x onerror="window.__calendarXss=1">'
+                      : "Operator reviewed consent and calendar",
+                    actorUserId: 7,
+                    at: "2026-09-24T09:00:00Z",
+                  },
+                ]
+              : [],
       };
       return {
         data,

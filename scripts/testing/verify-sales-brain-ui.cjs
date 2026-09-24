@@ -28,6 +28,7 @@ async function main() {
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
     await require('./verify-booking-consent-ui.cjs')(page, origin, output, results);
     await require('./verify-booking-calendar-ui.cjs')(page, origin, output, results);
+    await require('./verify-booking-reschedule-ui.cjs')(page, origin, output, results);
     await require('./verify-booking-cancellation-ui.cjs')(page, origin, output, results);
     await require('./verify-calendar-ui.cjs')(page, origin, output, results);
     for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){

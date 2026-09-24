@@ -203,6 +203,7 @@ async function prior(
 ): Promise<Result | null> {
   for (const table of [
     "booking_calendar_reviews",
+    "booking_calendar_reschedules",
     "booking_calendar_cancellations",
     "booking_calendar_links",
     "booking_operation_audits",

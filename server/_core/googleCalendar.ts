@@ -298,6 +298,21 @@ export async function deleteCalendarEventIfMatch(credentials: any, calendarId: s
   return true;
 }
 
+/** A single conditional change to time and the new agreement; no other event fields are replaced. */
+export async function rescheduleCalendarEventIfMatch(credentials: any, calendarId: string, eventId: string, etag: string,
+  next: {start: Date; end: Date; agreementId: number}) {
+  if (typeof etag !== 'string' || !/^"[\x21\x23-\x7e]{1,254}"$/.test(etag) ||
+    !Number.isSafeInteger(next.agreementId) || next.agreementId <= 0 ||
+    !Number.isFinite(next.start.getTime()) || !Number.isFinite(next.end.getTime()) || next.start >= next.end) throw Error('Calendar reschedule evidence unavailable');
+  const calendar = await createCalendarClient(credentials);
+  const response = await calendar.events.patch({calendarId,eventId,sendUpdates:'none',requestBody:{
+    start:{dateTime:next.start.toISOString(),timeZone:'Asia/Riyadh'},end:{dateTime:next.end.toISOString(),timeZone:'Asia/Riyadh'},
+    extendedProperties:{private:{sariBooking:eventId,sariAgreement:String(next.agreementId)}},
+  }},{timeout:15000,retry:false,headers:{'If-Match':etag}});
+  if(response.status !== 200) throw Error('Calendar reschedule acknowledgement unavailable');
+  return response.data;
+}
+
 /**
  * Get a calendar event
  */

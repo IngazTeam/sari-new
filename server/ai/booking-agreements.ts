@@ -23,6 +23,12 @@ import { isSalesRefusal, isShortAffirmation } from "./customer-decision";
 import { currentInboundExecution } from "../messaging/inbound-context";
 import { resolveBookingAmendment } from "./booking-amendment-context";
 import {
+  bookingCalendarProof,
+  readActiveBookingReschedule,
+  rescheduleDailyHolds,
+  assertCalendarRescheduleCapacity,
+} from "../booking-reschedule-state";
+import {
   assertBookingCalendarSchema,
   readBookingCalendarLink,
 } from "../booking-calendar-state";
@@ -66,7 +72,7 @@ export const bookingDisplayLabel = (value: unknown) =>
     .replace(/\]/g, "］")
     .replace(/\s+/g, " ")
     .trim();
-class BookingAgreementUnavailableError extends Error {
+export class BookingAgreementUnavailableError extends Error {
   constructor() {
     super("Booking agreement unavailable");
   }
@@ -120,7 +126,7 @@ export async function assertBookingAgreementSchema() {
   );
 }
 /** Only explicitly configured, single-capacity, fixed-price appointments enter this automatic path. */
-async function readSnapshot(
+export async function readBookingSelectionSnapshot(
   c: PoolConnection,
   merchantId: number,
   raw: Selection,
@@ -208,7 +214,18 @@ async function readSnapshot(
         input.bookingDate,
       ]
     );
-    if (Number(counts[0].used) >= s.max_bookings_per_day) throw unavailable();
+    if (
+      Number(counts[0].used) +
+        (await rescheduleDailyHolds(
+          c,
+          merchantId,
+          input.serviceId,
+          input.bookingDate,
+          excludeBookingId
+        )) >=
+      s.max_bookings_per_day
+    )
+      throw unavailable();
   }
   if (
     await hasBookingConflict(
@@ -239,6 +256,7 @@ async function readSnapshot(
     slotVersion: String(slots[0].updated_at),
   };
 }
+const readSnapshot = readBookingSelectionSnapshot;
 type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
 const day = (value: unknown) =>
   value instanceof Date
@@ -257,13 +275,28 @@ async function readAmendmentTarget(
     [bookingId, input.merchantId, input.customerPhone]
   );
   const b = bookings[0];
-  if (await readBookingCalendarLink(c, input.merchantId, bookingId))
+  const link = await readBookingCalendarLink(c, input.merchantId, bookingId);
+  if (await readActiveBookingReschedule(c, input.merchantId, bookingId))
     throw unavailable();
+  let calendar: ReturnType<typeof bookingCalendarProof> | undefined;
+  if (link) {
+    if (
+      !b ||
+      b.status !== "confirmed" ||
+      link.state !== "synced" ||
+      b.google_event_id !== link.event_reference
+    )
+      throw unavailable();
+    const { readBookingCalendarGraph } = await import("../booking-calendar");
+    const g = await readBookingCalendarGraph(c, input.merchantId, bookingId);
+    if (!g.binding || g.consent.state !== "ready") throw unavailable();
+    calendar = bookingCalendarProof(link);
+  }
   if (
     !b ||
     !["pending", "confirmed"].includes(b.status) ||
     b.payment_status !== "unpaid" ||
-    b.google_event_id ||
+    (b.google_event_id && !calendar) ||
     !b.customer_agreement_id ||
     b.cancelled_at ||
     b.completed_at
@@ -330,6 +363,13 @@ async function readAmendmentTarget(
     databaseTimeEpoch(clock[0].now)
   )
     throw unavailable();
+  return bookingAmendmentFingerprint(b, a.snapshot_hash, calendar);
+}
+export function bookingAmendmentFingerprint(
+  b: any,
+  agreementHash: string,
+  calendar?: ReturnType<typeof bookingCalendarProof>
+) {
   return {
     id: b.id,
     service_id: b.service_id,
@@ -344,10 +384,11 @@ async function readAmendmentTarget(
     status: b.status,
     payment_status: b.payment_status,
     customer_agreement_id: b.customer_agreement_id,
-    agreement_hash: a.snapshot_hash,
+    agreement_hash: agreementHash,
     confirmed_at: b.confirmed_at,
     updated_at: b.updated_at,
     notes_hash: digest(b.notes),
+    ...(calendar ? { calendar } : {}),
   };
 }
 function amendmentOfferText(
@@ -360,7 +401,9 @@ function amendmentOfferText(
     `الموعد الحالي: ${before.booking_date}، ${before.start_time}–${before.end_time} بتوقيت الرياض.\n` +
     `التفاصيل الجديدة:\n• الخدمة: ${bookingDisplayLabel(s.serviceName)}\n• التاريخ: ${s.bookingDate}\n• الوقت: ${s.startTime}–${s.endTime} بتوقيت الرياض\n` +
     `• الموظف: ${s.staffName ? bookingDisplayLabel(s.staffName) : "دون موظف محدد"}\n• المدة: ${s.durationMinutes} دقيقة\n• سعر الخدمة: ${formatServicePrice(s.priceMinor)}\n\n` +
-    "يبقى موعدك الحالي محفوظًا حتى موافقتك. الملخص صالح لمدة 15 دقيقة؛ الموافقة تعدّل الحجز نفسه وتعيده لانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولا تثبت دفعًا.\nهل توافق على تعديل الحجز بهذه التفاصيل؟ رد بنعم، أو اذكر التعديل المطلوب."
+    (before.calendar
+      ? "يبقى موعدك الحالي مؤكدًا حتى اكتمال النقل. الملخص صالح لمدة 15 دقيقة؛ موافقتك تسجل طلب نقل وتحفظ الفترة الجديدة بانتظار مراجعة النشاط وتحديث التقويم. لن أؤكد الموعد الجديد قبل اكتمال النقل، ولا تُسجل هذه الموافقة دفعًا.\nهل توافق على طلب النقل بهذه التفاصيل؟ رد بنعم، أو اذكر التعديل المطلوب."
+      : "يبقى موعدك الحالي محفوظًا حتى موافقتك. الملخص صالح لمدة 15 دقيقة؛ الموافقة تعدّل الحجز نفسه وتعيده لانتظار تأكيد النشاط ومراجعة الرسوم والتقويم الخارجي، ولا تثبت دفعًا.\nهل توافق على تعديل الحجز بهذه التفاصيل؟ رد بنعم، أو اذكر التعديل المطلوب.")
   );
 }
 function offerText(id: number, s: Snapshot) {
@@ -467,6 +510,16 @@ async function prepare(
       targetBookingId
     );
     if (
+      before?.calendar &&
+      (snapshot.staffId !== before.staff_id ||
+        snapshot.priceMinor !== before.final_price ||
+        snapshot.durationMinutes !== before.duration_minutes ||
+        (snapshot.bookingDate === before.booking_date &&
+          snapshot.startTime < before.end_time &&
+          snapshot.endTime > before.start_time))
+    )
+      throw unavailable();
+    if (
       before &&
       before.booking_date === snapshot.bookingDate &&
       before.start_time === snapshot.startTime &&
@@ -507,6 +560,20 @@ async function prepare(
   });
 }
 async function recorded(c: PoolConnection, input: CheckoutIdentity, row: any) {
+  const [moves] = await c.execute<any[]>(
+    "SELECT state FROM booking_calendar_reschedules WHERE merchant_id=? AND agreement_id=?",
+    [input.merchantId, row.id]
+  );
+  if (moves.length && moves[0].state !== "applied")
+    return {
+      kind: "booking",
+      agreementId: row.id,
+      bookingId: Number(row.booking_reference),
+      text:
+        moves[0].state === "abandoned"
+          ? `طلب نقل الحجز #${row.booking_reference} ${marker(row.id)} أُغلق دون إرسال النقل. الموعد السابق بقي محفوظًا؛ أي تغيير لاحق يُراجع مع النشاط.`
+          : `طلب نقل الحجز #${row.booking_reference} ${marker(row.id)} محفوظ ويحتاج مراجعة نتيجة التقويم من النشاط. لم يثبت نقل الموعد؛ لا تعتمد الموعد الجديد حتى تأكيده.`,
+    };
   const [rows] = await c.execute<any[]>(
     "SELECT status,payment_status FROM bookings WHERE id=? AND merchant_id=? AND customer_phone=? FOR UPDATE",
     [row.booking_reference, input.merchantId, input.customerPhone]
@@ -663,6 +730,57 @@ export async function acceptBookingAgreement(
       };
     }
     await currentInboundExecution()?.assertOwned();
+    if (row.target_booking_id && json(row.before_snapshot).calendar) {
+      const snapshot = {
+        before: json(row.before_snapshot),
+        after: fresh,
+        agreementId,
+        consentId: input.incomingMessageId,
+      };
+      const calendar = snapshot.before.calendar;
+      await assertCalendarRescheduleCapacity(
+        c,
+        input.merchantId,
+        {
+          id: calendar.integrationId,
+          calendarId: calendar.calendarId,
+          identity: calendar.identityHash,
+        },
+        fresh.bookingDate,
+        fresh.startTime,
+        fresh.endTime,
+        row.target_booking_id
+      );
+      await c.execute(
+        `INSERT INTO booking_calendar_reschedules (merchant_id,booking_reference,agreement_id,service_id,staff_id,booking_date,start_time,end_time,snapshot,snapshot_hash) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [
+          input.merchantId,
+          row.target_booking_id,
+          agreementId,
+          fresh.serviceId,
+          fresh.staffId,
+          fresh.bookingDate,
+          fresh.startTime,
+          fresh.endTime,
+          JSON.stringify(snapshot),
+          digest(snapshot),
+        ]
+      );
+      await c.execute(
+        "UPDATE conversation_booking_agreements SET state='accepted',consent_message_id=?,booking_reference=? WHERE id=?",
+        [input.incomingMessageId, row.target_booking_id, agreementId]
+      );
+      await c.execute(
+        "UPDATE booking_calendar_links SET state='reschedule_pending',revision=revision+1 WHERE merchant_id=? AND booking_reference=?",
+        [input.merchantId, row.target_booking_id]
+      );
+      return {
+        kind: "booking",
+        agreementId,
+        bookingId: Number(row.target_booking_id),
+        text: `تم تسجيل طلب نقل الحجز #${row.target_booking_id} ${marker(agreementId)} بالتفاصيل التي وافقت عليها. الموعد الحالي ما زال مؤكدًا، والفترة الجديدة محفوظة بانتظار مراجعة النشاط وتحديث التقويم؛ لم يثبت النقل أو الدفع بعد.`,
+      };
+    }
     const bookingId =
       row.target_booking_id ??
       (await createBookingInCapacityTransaction(c, {

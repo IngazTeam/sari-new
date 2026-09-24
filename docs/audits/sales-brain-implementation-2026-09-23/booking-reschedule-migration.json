@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-09-24T11:42:53.165Z",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "sqlSha256": "dd2d89aa5e15bde20b6086001d07fd80eb0566fc0e0700c0e22d702ec915e5ea",
+      "uniqueAgreementAndRequestVerified": true,
+      "bookingDeletionCannotEraseDispatch": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "sqlSha256": "dd2d89aa5e15bde20b6086001d07fd80eb0566fc0e0700c0e22d702ec915e5ea",
+      "uniqueAgreementAndRequestVerified": true,
+      "bookingDeletionCannotEraseDispatch": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    }
+  ]
+}

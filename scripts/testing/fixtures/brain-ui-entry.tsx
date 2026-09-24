@@ -1,3 +1,4 @@
+import { BookingReschedule } from '../../../client/src/components/BookingReschedule';
 import { BookingCalendarSync } from '../../../client/src/components/BookingCalendarSync';
 import { BookingCancellation } from '../../../client/src/components/BookingCancellation';
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
@@ -43,6 +44,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('booking-reschedule-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingReschedule bookingId={321} onChanged={async()=>{if(mode==='booking-reschedule-parent-error')throw Error('private parent failure');(window as any).__rescheduleParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('booking-cancellation-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCancellation bookingId={321} onChanged={async()=>{if(mode==='booking-cancellation-parent-error')throw Error('private parent failure');(window as any).__cancellationParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('booking-calendar-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCalendarSync bookingId={321} onChanged={async()=>{if(mode==='booking-calendar-parent-error')throw Error('private parent failure');(window as any).__bookingCalendarParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('calendar-page-')) { createRoot(document.getElementById('root')!).render(<CalendarPage />); return; }

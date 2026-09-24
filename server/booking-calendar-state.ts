@@ -1,10 +1,40 @@
 import type { PoolConnection } from "mysql2/promise";
 import { assertRuntimeSchema } from "./db/schema-readiness";
 import { databaseTimeEpoch } from "./db/time";
+import { readActiveBookingReschedule } from "./booking-reschedule-state";
 export async function assertBookingCalendarSchema() {
   await assertRuntimeSchema(
     "booking calendar dispatch",
     [
+      {
+        table: "booking_calendar_reschedules",
+        columns: [
+          "booking_reference",
+          "agreement_id",
+          "service_id",
+          "staff_id",
+          "booking_date",
+          "start_time",
+          "end_time",
+          "snapshot",
+          "snapshot_hash",
+          "state",
+          "request_id",
+          "request_hash",
+          "event_etag",
+          "revision",
+        ],
+        uniqueIndexes: [
+          {
+            name: "uq_booking_move_agreement",
+            columns: ["merchant_id", "agreement_id"],
+          },
+          {
+            name: "uq_booking_move_request",
+            columns: ["merchant_id", "request_id"],
+          },
+        ],
+      },
       {
         table: "booking_calendar_cancellations",
         columns: [
@@ -102,7 +132,15 @@ export async function assertBookingCalendarMutation(
     booking.id
   );
   if (!link) return;
-  if (["cancelling", "cancel_unknown"].includes(link.state))
+  if (
+    [
+      "cancelling",
+      "cancel_unknown",
+      "reschedule_pending",
+      "moving",
+      "move_unknown",
+    ].includes(link.state)
+  )
     throw Error("Calendar cancellation requires review");
   const changed = input.status && input.status !== booking.status;
   if (
@@ -136,4 +174,6 @@ export async function assertBookingNotCancelling(
     [merchantId, bookingId]
   );
   if (rows.length) throw Error("Booking cancellation prevents checkout");
+  if (await readActiveBookingReschedule(c, merchantId, bookingId))
+    throw Error("Booking reschedule prevents checkout");
 }

@@ -21,8 +21,44 @@ import {
   getBookingCancellationReview,
   cancelBookingCalendar,
 } from "./booking-cancellation";
+import { bookingRescheduleActionSchema } from "../shared/booking-reschedule";
+import {
+  getBookingRescheduleReview,
+  rescheduleBookingCalendar,
+} from "./booking-reschedule";
 
 export const bookingOperationProcedures = {
+  getRescheduleReview: permissionProcedure("orders.manage")
+    .input(bookingCalendarIdSchema)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await getBookingRescheduleReview(
+          ctx.merchantId,
+          input.bookingId
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking reschedule review unavailable",
+        });
+      }
+    }),
+  rescheduleCalendar: permissionProcedure("orders.manage")
+    .input(bookingRescheduleActionSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await rescheduleBookingCalendar(
+          ctx.merchantId,
+          ctx.user.id,
+          input
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking reschedule requires refreshed evidence",
+        });
+      }
+    }),
   getCancellationReview: permissionProcedure("orders.manage")
     .input(bookingCalendarIdSchema)
     .query(async ({ ctx, input }) => {

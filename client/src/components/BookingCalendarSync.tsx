@@ -41,6 +41,11 @@ export function BookingCalendarSync({
     cancelling: t("merchantUx.bookingCancellation.cancelling"),
     cancel_unknown: t("merchantUx.bookingCancellation.unknown"),
     cancelled: t("merchantUx.bookingCancellation.cancelled"),
+    reschedule_pending: t("merchantUx.bookingReschedule.pending"),
+    moving: t("merchantUx.bookingReschedule.moving"),
+    move_unknown: t("merchantUx.bookingReschedule.unknown"),
+    applied: t("merchantUx.bookingReschedule.applied"),
+    abandoned: t("merchantUx.bookingReschedule.abandoned"),
   };
   const blocked: Record<string, string> = {
     account: t("merchantUx.bookingCalendar.account"),
@@ -205,13 +210,21 @@ export function BookingCalendarSync({
                       className="rounded border p-2 [overflow-wrap:anywhere]"
                     >
                       <p>
-                        {row.action === "cancel"
-                          ? t("merchantUx.bookingCancellation.cancel")
-                          : row.action === "verify_cancel"
-                            ? t("merchantUx.bookingCancellation.verify")
-                            : row.action === "create"
-                              ? t("merchantUx.bookingCalendar.create")
-                              : t("merchantUx.bookingCalendar.verify")}{" "}
+                        {row.action === "move"
+                          ? t("merchantUx.bookingReschedule.move")
+                          : row.action === "verify_move"
+                            ? t("merchantUx.bookingReschedule.verify")
+                            : row.action === "abandon_move"
+                              ? t("merchantUx.bookingReschedule.abandon")
+                              : row.action === "cancel"
+                                ? t("merchantUx.bookingCancellation.cancel")
+                                : row.action === "verify_cancel"
+                                  ? t("merchantUx.bookingCancellation.verify")
+                                  : row.action === "create"
+                                    ? t("merchantUx.bookingCalendar.create")
+                                    : t(
+                                        "merchantUx.bookingCalendar.verify"
+                                      )}{" "}
                         ·{" "}
                         {states[row.outcome] ||
                           t("merchantUx.bookingCalendar.unknown")}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T10:53:07.476Z",
+  "generatedAt": "2026-09-24T11:59:42.170Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -15,6 +15,8 @@
     "booking-link-renewal-375.png",
     "booking-operations-1440.png",
     "booking-operations-375.png",
+    "booking-reschedule-1440.png",
+    "booking-reschedule-375.png",
     "calendar-page-1440.png",
     "calendar-page-375.png",
     "calendar-review-1440.png",
@@ -378,8 +380,235 @@
       "passed": true
     },
     {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_reschedule_history_labels",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_reschedule_history_labels",
+      "passed": true
+    },
+    {
       "width": 375,
       "mode": "booking_calendar_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_reschedule_abandon_before_dispatch",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_binding",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_financial",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_changed",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_consent",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_booking",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_inFlight",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_applied",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_moving",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_move-unknown",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_reschedule-pending",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_reschedule_untrusted_text_inert",
       "passed": true
     },
     {

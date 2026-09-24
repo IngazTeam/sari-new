@@ -18,6 +18,8 @@ import {
 import { calendarIdentity } from "./appointment-booking";
 import { databaseTimeEpoch } from "./db/time";
 import { z } from "zod";
+import { assertCalendarRescheduleCapacity } from "./booking-reschedule-state";
+import { calendarTimestamp } from "./calendar-evidence";
 
 const fail = () => Error("Booking calendar requires fresh verified evidence");
 const positive = (v: number) => z.number().int().positive().safe().parse(v);
@@ -228,6 +230,11 @@ async function prior(
   input: BookingCalendarAction,
   requestHash: string
 ): Promise<Result | null> {
+  const [moves] = await c.execute<any[]>(
+    "SELECT id FROM booking_calendar_reschedules WHERE merchant_id=? AND request_id=?",
+    [merchantId, input.requestId]
+  );
+  if (moves.length) throw fail();
   const [cancellations] = await c.execute<any[]>(
     "SELECT id FROM booking_calendar_cancellations WHERE merchant_id=? AND request_id=?",
     [merchantId, input.requestId]
@@ -268,10 +275,7 @@ export function verifyBookingCalendarEvent(
     return "identity_mismatch";
   if (event.status !== "confirmed" || event.transparency === "transparent")
     return "event_not_active";
-  const epoch = (s: unknown) =>
-    typeof s === "string" && /(?:Z|[+-]\d{2}:\d{2})$/.test(s)
-      ? Date.parse(s)
-      : NaN;
+  const epoch = calendarTimestamp;
   if (
     epoch(event.start?.dateTime) !==
       Date.parse(`${g.payload.date}T${g.payload.startTime}:00+03:00`) ||
@@ -330,6 +334,14 @@ export async function synchronizeBookingCalendar(
     const reference =
       g.link?.event_reference ?? `saribook${randomBytes(16).toString("hex")}`;
     if (input.action === "create") {
+      await assertCalendarRescheduleCapacity(
+        c,
+        merchantId,
+        g.target!,
+        g.payload.date,
+        g.payload.startTime,
+        g.payload.endTime
+      );
       const [overlap] = await c.execute<any[]>(
         `SELECT l.id FROM booking_calendar_links l JOIN bookings b ON b.id=l.booking_reference AND b.merchant_id=l.merchant_id
         WHERE l.merchant_id=? AND l.integration_id=? AND l.calendar_id=? AND l.identity_hash=? AND b.booking_date=? AND b.start_time<? AND b.end_time>?

@@ -37,6 +37,7 @@ module.exports=async function(page,origin,output,results){
   assert.equal(await page.$eval('[data-booking-operations] select',n=>n.disabled),state==='unknown');
   results.push({width:1440,mode:'booking_calendar_operation_guards_'+state,passed:true});
  }
+ for(const lang of ['ar','en']){await visit('reschedule-history',lang);await page.click('[data-booking-calendar] summary');const content=await page.$eval('[data-booking-calendar] ul',n=>n.innerText);for(const label of lang==='ar'?['اكتمل نقل الموعد','أُغلق طلب النقل','تحقق من نتيجة النقل']:['Appointment moved and booking updated','Request closed before dispatch','Verify move outcome'])assert.ok(content.includes(label));results.push({width:1440,lang,mode:'booking_calendar_reschedule_history_labels',passed:true});}
  await page.setViewport({width:375,height:812});await visit('xss');await page.click('[data-booking-calendar] summary');
  assert.equal(await page.$('[data-booking-calendar] img'),null);assert.equal(await page.evaluate(()=>window.__calendarXss),undefined);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  results.push({width:375,mode:'booking_calendar_untrusted_text_inert',passed:true});

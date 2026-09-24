@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookingConsentPanel } from "@/components/BookingConsentPanel";
 import { BookingCalendarSync } from "@/components/BookingCalendarSync";
 import { BookingCancellation } from "@/components/BookingCancellation";
+import { BookingReschedule } from "@/components/BookingReschedule";
 import {
   bookingStatusSchema,
   bookingTransitions,
@@ -343,6 +344,7 @@ export function BookingOperations({
       </Button>
       <BookingCalendarSync bookingId={booking.id} onChanged={() => refresh()} />
       <BookingCancellation bookingId={booking.id} onChanged={() => refresh()} />
+      <BookingReschedule bookingId={booking.id} onChanged={() => refresh()} />
     </section>
   );
 }
