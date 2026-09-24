@@ -4030,6 +4030,26 @@ export const aiLearningProposals = mysqlTable('ai_learning_proposals', {
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
 }, table => [uniqueIndex('uq_ai_learning_proposal').on(table.merchantId, table.dimension, table.contentHash)]);
 
+export const aiLearningPolicyReviews = mysqlTable('ai_learning_policy_reviews', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  proposalId: bigint('proposal_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningProposals.id, { onDelete: 'cascade' }),
+  revision: bigint({ mode: 'number', unsigned: true }).notNull(),
+  requestId: char('request_id', { length: 36 }).notNull(),
+  payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  sourceDigest: char('source_digest', { length: 64 }).notNull(),
+  suiteDigest: char('suite_digest', { length: 64 }).notNull(),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  proposalSnapshot: json('proposal_snapshot').notNull(), assessment: json().notNull(),
+  outcome: varchar({ length: 16 }).notNull(),
+  passedCases: int('passed_cases', { unsigned: true }).notNull(), regressions: int({ unsigned: true }).notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex('uq_learning_review_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_learning_review_revision').on(table.merchantId, table.proposalId, table.revision),
+  check('ck_learning_review_result', sql`${table.revision} BETWEEN 1 AND 9007199254740991 AND ${table.passedCases} BETWEEN 0 AND 8
+    AND ${table.regressions} BETWEEN 0 AND 8 - ${table.passedCases}
+    AND ((${table.outcome} = 'passed' AND ${table.passedCases} = 8) OR (${table.outcome} = 'failed' AND ${table.passedCases} < 8))`)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

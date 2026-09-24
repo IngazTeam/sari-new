@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-09-24T21:13:49.630Z",
+  "database": "sari_policy_review_20260925_test",
+  "scope": "Fresh local 0000–0104 chain, synthetic legacy proposal states/evidence/active DNA, actual updater applies 0105; no existing database overwritten.",
+  "migrations": 106,
+  "expected": 106,
+  "preservedTables": [
+    "ai_learning_proposals",
+    "ai_learning_evidence_links",
+    "sari_learning_signals",
+    "sari_behavioral_dna",
+    "ai_budget_policies",
+    "ai_price_cards"
+  ],
+  "noLegacyPromotion": true,
+  "rerunUnchanged": true,
+  "invalidPassRejected": true,
+  "globalDailyMicroUsd": "100000000",
+  "requestIndex": true,
+  "revisionIndex": true,
+  "proposalCascade": true,
+  "actorRetention": true,
+  "migrationSha256": "95524c0d71ca5cc5b8ead22d6ecb76da8a3cecf588f2dcc3e4641bc31e69a42d",
+  "passed": true
+}
