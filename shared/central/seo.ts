@@ -9,6 +9,9 @@ import {
 } from "./catalog";
 import { escapeHtml as e, renderCentralMarkup } from "./render";
 
+// A new asset URL lets social crawlers refresh the previous team photograph.
+const SOCIAL_IMAGE = CENTRAL_ORIGIN + "/central/sary-sales-partner-social-v1.jpg";
+
 export function centralSeo(path: string, lang: CentralLanguage) {
   const normalized = centralPath(path);
   const canonicalPath = /^\/reset-password\//.test(normalized)
@@ -30,8 +33,8 @@ export function centralSeo(path: string, lang: CentralLanguage) {
   const title =
     canonicalPath === "/"
       ? lang === "ar"
-        ? "ساري | وكيل مبيعات وخدمة عملاء ذكي على واتساب"
-        : "Sary | AI sales and customer service on WhatsApp"
+        ? "ساري | شريك مبيعاتك القوي على واتساب"
+        : "Sary | Your powerful sales partner on WhatsApp"
       : `${topic} | ${lang === "ar" ? "ساري" : "Sary"}`;
   // Each language is self-canonical. Tracking parameters and account tokens never
   // enter canonical URLs, social metadata, JSON-LD or language alternatives.
@@ -74,7 +77,7 @@ export function centralSeo(path: string, lang: CentralLanguage) {
       name: lang === "ar" ? "فريق ساري" : "Sary team",
     };
     main.datePublished = page.date;
-    main.image = CENTRAL_ORIGIN + "/central/social.jpg";
+    main.image = SOCIAL_IMAGE;
     main.mainEntityOfPage = canonical;
   }
   const graph: Record<string, unknown>[] = [organization, website, main];
@@ -127,6 +130,10 @@ export function centralSeo(path: string, lang: CentralLanguage) {
 export function renderCentralHead(path: string, lang: CentralLanguage): string {
   const seo = centralSeo(path, lang);
   if (!seo) return "";
+  const imageAlt =
+    lang === "ar"
+      ? "ساري، شريك مبيعاتك بثوب سعودي وبطاقة تحمل شعار ساري"
+      : "Sary, your sales partner in a Saudi thobe with a Sary ID badge";
   const meta = (name: string, content: string, property = false) =>
     `<meta ${property ? "property" : "name"}="${name}" content="${e(content)}">`;
   return (
@@ -155,20 +162,16 @@ export function renderCentralHead(path: string, lang: CentralLanguage): string {
     meta("og:site_name", "Sary", true) +
     meta("og:locale", seo.locale, true) +
     meta("og:locale:alternate", lang === "ar" ? "en_US" : "ar_SA", true) +
-    meta("og:image", CENTRAL_ORIGIN + "/central/social.jpg", true) +
+    meta("og:image", SOCIAL_IMAGE, true) +
+    meta("og:image:type", "image/jpeg", true) +
     meta("og:image:width", "1200", true) +
     meta("og:image:height", "630", true) +
-    meta(
-      "og:image:alt",
-      lang === "ar"
-        ? "فريق عمل يتعاون — ساري"
-        : "A team working together — Sary",
-      true
-    ) +
+    meta("og:image:alt", imageAlt, true) +
     meta("twitter:card", "summary_large_image") +
     meta("twitter:title", seo.title) +
     meta("twitter:description", seo.description) +
-    meta("twitter:image", CENTRAL_ORIGIN + "/central/social.jpg") +
+    meta("twitter:image", SOCIAL_IMAGE) +
+    meta("twitter:image:alt", imageAlt) +
     meta("theme-color", "#174d3d") +
     (seo.noindex ? meta("referrer", "no-referrer") : "") +
     `<script type="application/ld+json" data-central-seo>${JSON.stringify({ "@context": "https://schema.org", "@graph": seo.graph }).replace(/</g, "\\u003c")}</script>`

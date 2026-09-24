@@ -38,8 +38,8 @@ const special: Record<
     "Sary",
     "شغلك يكبر.\nوساري معك.",
     "Your business grows.\nSary grows with you.",
-    "ساري وكيل مبيعات وخدمة عملاء بالذكاء الاصطناعي على واتساب. يجيب من معلومات نشاطك، يساعد في الطلبات والحجوزات، ويكمل مع فريقك.",
-    "Sary is an AI sales and customer service agent for WhatsApp. Answer from your business knowledge, guide orders and bookings, and collaborate with your team.",
+    "ساري شريك مبيعاتك القوي على واتساب: يفهم منتجاتك، يجيب عن أسئلة عملائك، ويتابع فرص البيع والطلبات والحجوزات مع فريقك، لتتفرغ لتنمية أعمالك.",
+    "Meet Sary, your powerful sales partner on WhatsApp. Answer product questions, follow up with customers and manage orders and bookings alongside your team.",
   ],
   "/pricing": [
     "pricing",

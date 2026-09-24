@@ -155,7 +155,7 @@ describe("central landing: bilingual server HTML and public route contract", () 
       "founder-1024.webp",
       "team-640.webp",
       "team-1024.webp",
-      "social.jpg",
+      "sary-sales-partner-social-v1.jpg",
       "fonts/OFL.txt",
       "fonts/IBMPlexSansArabic-Regular.ttf",
     ])
