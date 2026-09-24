@@ -173,8 +173,8 @@ export function bootstrapCentral() {
     commerce: {
       name: localizedText("متجر ورق", "Waraq store"),
       greeting: localizedText(
-        "يا هلا! تدور على هدية أو دفتر لأفكارك الكبيرة؟",
-        "Hello! Looking for a gift or a notebook for your big ideas?"
+        "يا هلا! تبحث عن هدية أو دفتر للاستخدام اليومي؟",
+        "Hello! Looking for a gift or a notebook for everyday use?"
       ),
       questions: [
         localizedText("أدور على هدية", "I’m looking for a gift"),
@@ -183,24 +183,24 @@ export function bootstrapCentral() {
       ],
       replies: [
         localizedText(
-          "عندنا في هذا المثال دفتر بغلاف أخضر. وش تفضّل: هدية لشخص، أو أدوات لفريقك؟",
-          "In this example, we have a green notebook. Is it a gift for one person or supplies for your team?"
+          "أكيد، الهدية لشخص واحد أو لفريق؟ وهل تفضّل دفترًا للاستخدام اليومي أو طقمًا للكتابة؟",
+          "Of course. Is the gift for one person or a team? Would you prefer an everyday notebook or a writing set?"
         ),
         localizedText(
-          "نراجع المنتج والكمية والبيانات المطلوبة، ثم نوضح لك الخطوة التالية. هذه محاكاة ولا تنشئ طلبًا.",
-          "We would review the product, quantity and required details, then explain the next step. This example creates no real order."
+          "نبدأ باختيار المنتج والكمية، ثم نراجع تفاصيل الطلب وطريقة الاستلام قبل الانتقال للدفع.",
+          "Start with the product and quantity, then review the order and delivery details before continuing to payment."
         ),
         localizedText(
-          "في النشاط الفعلي يتولى الفريق المحادثة مع بقاء سياقها. هنا نعرض مثالًا على انتقال واضح للموظف.",
-          "In a real workspace, a teammate can take over with the conversation context. This illustrates that handover."
+          "فريق المتجر يقدر يساعدك في الطلبات الخاصة. اذكر سؤالك والتفاصيل التي تحتاج توضيحها.",
+          "The store team can help with special requests. Include your question and the details you need clarified."
         ),
       ],
     },
     training: {
       name: localizedText("مركز التدريب", "Training centre"),
       greeting: localizedText(
-        "أهلًا بطموحك! أي مهارة ودّك تطوّرها؟",
-        "Welcome! What skill would you like to develop?"
+        "أهلًا! أي مجال تبحث عن دورة فيه؟",
+        "Welcome! What subject would you like to study?"
       ),
       questions: [
         localizedText("أدور على دورة", "I’m looking for a course"),
@@ -209,16 +209,16 @@ export function bootstrapCentral() {
       ],
       replies: [
         localizedText(
-          "نبدأ بهدفك ومستواك، ثم نعرض معلومات الدورات المتاحة في بيانات المركز. أي مجال يهمك؟",
-          "We start with your goals and experience, then use the centre’s available course information. Which field interests you?"
+          "أي مجال يهمك؟ وهل تبدأ فيه لأول مرة أو تبحث عن مستوى متقدم؟",
+          "Which subject interests you? Are you getting started or looking for an advanced course?"
         ),
         localizedText(
-          "نوضح المحتوى والموعد والمتطلبات، ثم نتبع مسار التسجيل المدعوم. لا يتم تسجيل فعلي من هذه التجربة.",
-          "We explain the content, schedule and requirements, then follow the supported registration process. This example does not enrol you."
+          "اختر الدورة والموعد المناسب، وراجع الرسوم والمتطلبات، ثم أكمل بياناتك عبر صفحة التسجيل الخاصة بالمركز.",
+          "Choose a course and schedule, review its fees and requirements, then complete your details on the centre’s enrolment page."
         ),
         localizedText(
-          "الأسئلة الخاصة ومتطلبات التسجيل غير الواضحة تنتقل للفريق ليكمل معك.",
-          "The team handles special questions and enrolment requirements that need clarification."
+          "فريق التسجيل يساعدك في شروط القبول والشهادات. اذكر اسم الدورة والسؤال الذي تحتاج إجابته.",
+          "The enrolment team can help with entry requirements and certificates. Include the course name and your question."
         ),
       ],
     },
@@ -235,16 +235,16 @@ export function bootstrapCentral() {
       ],
       replies: [
         localizedText(
-          "نشرح الخدمة ومدتها ومتطلباتها من معلومات النشاط، ثم نساعدك تختار الأنسب.",
-          "We explain the service, duration and requirements from business information and help you choose."
+          "ما الخدمة التي تبحث عنها؟ معرفة احتياجك تساعد على اختيار الخدمة ومدتها ومتطلباتها.",
+          "Which service do you need? Your requirements help identify the right service, duration and preparation."
         ),
         localizedText(
-          "نجمع تفضيلاتك ونراجع التوفر عبر الأدوات المربوطة قبل التأكيد. لا يُحجز موعد فعلي هنا.",
-          "We collect your preferences and check availability through connected tools before confirmation. No real appointment is booked here."
+          "حدد الخدمة واليوم الذي يناسبك. بعد مراجعة المواعيد المتاحة، تختار الوقت وتراجع تفاصيل الحجز قبل تأكيده.",
+          "Choose a service and preferred day. Once availability is checked, select a time and review the booking before confirming."
         ),
         localizedText(
-          "نراجع تفاصيل طلب التغيير مع الفريق أو النظام المدعوم، ونوضح النتيجة المؤكدة.",
-          "We review the requested change with the team or supported system and communicate the confirmed result."
+          "لتغيير الموعد، جهّز رقم الحجز والوقت البديل الذي تفضّله. يُراجع التوفر وسياسة التعديل قبل تأكيد الموعد الجديد.",
+          "To reschedule, have your booking reference and preferred time ready. Availability and the change policy are checked before confirming a new time."
         ),
       ],
     },
@@ -271,8 +271,8 @@ export function bootstrapCentral() {
     const answer =
       index === undefined
         ? localizedText(
-            "شكرًا لتوضيحك. في ساري نربط السؤال بمعلومات نشاطك. جرّب الاقتراحات لتشاهد خطوات هذا المثال.",
-            "Thanks for explaining. Sary connects the question with your business knowledge. Try a suggestion to explore this example."
+            "اختر أحد الأسئلة المقترحة لمتابعة جولة المحادثة. ولأسئلة نشاطك، يمكنك التواصل مع فريق ساري من صفحة تواصل معنا.",
+            "Choose a suggested question to continue the conversation tour. For questions about your business, reach the Sary team through the contact page."
           )
         : demoData().replies[index];
     box.insertAdjacentHTML(

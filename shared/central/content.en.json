@@ -543,7 +543,7 @@
       ],
       [
         "Can I try it before setting up my business?",
-        "Open the example conversation to explore the interaction, then create an account to add your own business knowledge."
+        "Explore the conversation tour to see the sales workflow, then create an account and add your business information to get started."
       ]
     ],
     "sector": "commerce"
@@ -774,8 +774,8 @@
     "label": "Clinic appointment booking",
     "title": "An easier way to arrange\nyour next appointment.",
     "description": "Explain specialties, collect appointment preferences and guide visitors to the booking process supported by your clinic.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Help reception organise appointments",
+    "sectionDescription": "Gather the service, preferred clinician and timing before confirming an available appointment.",
     "features": [
       {
         "icon": "messages",
@@ -797,11 +797,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/clinics"
@@ -811,8 +811,8 @@
     "label": "Appointment reminders",
     "title": "A reminder in time.\nA clearer schedule.",
     "description": "Use appointment reminders to invite confirmation or a request to change the visit, giving reception useful context for follow-up.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Keep appointment changes in view",
+    "sectionDescription": "Share visit details and collect confirmations or requests to change an appointment.",
     "features": [
       {
         "icon": "messages",
@@ -834,11 +834,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/clinics"
@@ -846,10 +846,10 @@
   "/solutions/clinics/patient-inquiries": {
     "kind": "service",
     "label": "Patient enquiries",
-    "title": "Clinic information.\nWithout the waiting.",
+    "title": "Clinic information.\nAnswers for your patients.",
     "description": "Answer questions about opening hours, location, services and insurance from clinic information. Route medical questions to the appropriate team.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Answer recurring clinic questions",
+    "sectionDescription": "Keep opening hours, locations, services and insurance information accessible, with medical questions directed to qualified staff.",
     "features": [
       {
         "icon": "messages",
@@ -871,11 +871,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/clinics"
@@ -899,8 +899,8 @@
     "label": "Restaurant orders on WhatsApp",
     "title": "Make ordering feel\nlike a conversation.",
     "description": "Help guests choose from your menu, clarify their preferences and review the details before an order is submitted.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Collect the details your kitchen needs",
+    "sectionDescription": "Bring items, options and fulfilment details together for the customer to review.",
     "features": [
       {
         "icon": "messages",
@@ -922,11 +922,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/restaurants"
@@ -936,8 +936,8 @@
     "label": "Digital menu and payment",
     "title": "A clear menu.\nAn easier next step.",
     "description": "Share menu details and guide customers to the payment step supported by your restaurant’s enabled provider.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Help customers choose and review their order",
+    "sectionDescription": "Explain menu options and prices, then share a clear summary and payment link.",
     "features": [
       {
         "icon": "messages",
@@ -959,11 +959,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/restaurants"
@@ -973,8 +973,8 @@
     "label": "Delivery and repeat orders",
     "title": "Keep the follow-up\nas good as the first reply.",
     "description": "Answer delivery questions using your restaurant’s information and help returning guests find what they want.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Keep customers informed after ordering",
+    "sectionDescription": "Share available order updates and help returning customers review their next order.",
     "features": [
       {
         "icon": "messages",
@@ -996,11 +996,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/restaurants"
@@ -1024,8 +1024,8 @@
     "label": "Salon appointment booking",
     "title": "A service they love.\nA time that fits.",
     "description": "Help clients choose a service and share their appointment preferences through WhatsApp.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Organise services, durations and appointments",
+    "sectionDescription": "Help customers choose a service and review available times with your team.",
     "features": [
       {
         "icon": "messages",
@@ -1047,11 +1047,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/salons"
@@ -1061,8 +1061,8 @@
     "label": "Service menu and deposits",
     "title": "Clear choices.\nClear booking terms.",
     "description": "Present your service menu and deposit policy before the client proceeds to a supported payment step.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Make service prices and booking terms clear",
+    "sectionDescription": "Explain services, deposits and cancellation terms before the customer pays.",
     "features": [
       {
         "icon": "messages",
@@ -1084,11 +1084,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/salons"
@@ -1098,8 +1098,8 @@
     "label": "Salon loyalty campaigns",
     "title": "A thoughtful message.\nAnother reason to return.",
     "description": "Plan relevant follow-up and offers for clients with the necessary communication permissions.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Give customers a reason to return",
+    "sectionDescription": "Plan useful reminders and relevant offers for customers who have chosen to hear from you.",
     "features": [
       {
         "icon": "messages",
@@ -1121,11 +1121,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/salons"
@@ -1149,8 +1149,8 @@
     "label": "Course registration",
     "title": "The right course.\nA clearer enrolment journey.",
     "description": "Explain course content, dates and requirements, then guide prospective learners through your registration process.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Turn course enquiries into enrolment steps",
+    "sectionDescription": "Explain content, dates, fees and requirements so learners can choose their next step.",
     "features": [
       {
         "icon": "messages",
@@ -1172,11 +1172,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/training-centers"
@@ -1186,8 +1186,8 @@
     "label": "Class reminders and certificates",
     "title": "Keep learners informed.\nAt the right moment.",
     "description": "Share class details and help learners understand certificate requirements using the information available to your centre.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Keep class and certificate details accessible",
+    "sectionDescription": "Share class schedules, attendance links and certificates supplied by your centre.",
     "features": [
       {
         "icon": "messages",
@@ -1197,23 +1197,23 @@
       {
         "icon": "calendar",
         "title": "Reminder workflow",
-        "text": "Use the messaging tools enabled for your account."
+        "text": "Share class reminders according to the schedule set by your centre."
       },
       {
         "icon": "users",
         "title": "Certificate enquiries",
-        "text": "Use available records and refer exceptions to staff."
+        "text": "Share certificate links or files once your centre confirms eligibility and supplies the certificate."
       }
     ],
     "steps": [],
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/training-centers"
@@ -1223,8 +1223,8 @@
     "label": "Course marketing",
     "title": "Useful courses.\nRelevant conversations.",
     "description": "Introduce your courses to an appropriate audience and keep their questions connected to enrolment guidance.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Follow up on interest in your courses",
+    "sectionDescription": "Reach the right audience with relevant course information and a clear enrolment step.",
     "features": [
       {
         "icon": "messages",
@@ -1246,11 +1246,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/training-centers"
@@ -1274,8 +1274,8 @@
     "label": "Property lead qualification",
     "title": "Find out what matters.\nBefore the follow-up.",
     "description": "Collect the customer’s area, budget and property preferences so your team can continue a focused conversation.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Understand what the buyer is looking for",
+    "sectionDescription": "Collect location, budget and property preferences before passing the enquiry to your agent.",
     "features": [
       {
         "icon": "messages",
@@ -1297,11 +1297,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/real-estate"
@@ -1311,8 +1311,8 @@
     "label": "Property catalogue",
     "title": "Relevant properties.\nClearer details.",
     "description": "Help customers explore the listing information your business provides and ask your team to confirm time-sensitive details.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Help buyers compare suitable properties",
+    "sectionDescription": "Share listings, specifications, photos and locations from your property information.",
     "features": [
       {
         "icon": "messages",
@@ -1334,11 +1334,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/real-estate"
@@ -1348,8 +1348,8 @@
     "label": "Viewings and follow-up",
     "title": "A viewing with context.\nA follow-up that helps.",
     "description": "Gather preferred viewing times and keep the conversation connected with your property team.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Keep viewing details and follow-ups together",
+    "sectionDescription": "Coordinate the visit and collect the buyer’s questions for the next conversation.",
     "features": [
       {
         "icon": "messages",
@@ -1371,11 +1371,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/real-estate"
@@ -1399,8 +1399,8 @@
     "label": "Consultation booking",
     "title": "A clear request.\nA better first conversation.",
     "description": "Help clients understand the service and provide the details needed to arrange a consultation.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Gather the details before the consultation",
+    "sectionDescription": "Help clients choose the service, duration and preferred appointment.",
     "features": [
       {
         "icon": "messages",
@@ -1422,11 +1422,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/consultants"
@@ -1436,8 +1436,8 @@
     "label": "Consultation advance payment",
     "title": "Clear terms.\nBefore the consultation.",
     "description": "Explain your advance-payment policy and direct clients to a supported provider when payment is required.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Explain fees before the appointment",
+    "sectionDescription": "Share consultation fees and booking terms, then help the client complete payment.",
     "features": [
       {
         "icon": "messages",
@@ -1459,11 +1459,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/consultants"
@@ -1473,8 +1473,8 @@
     "label": "Client follow-up",
     "title": "Keep the context.\nContinue the relationship.",
     "description": "Help clients find the next step while your team retains responsibility for professional advice and decisions.",
-    "sectionTitle": "Designed around your customer journey",
-    "sectionDescription": "Start with the information and tools your team already uses.",
+    "sectionTitle": "Continue with the agreed next steps",
+    "sectionDescription": "Follow up on documents, actions and later sessions discussed with your client.",
     "features": [
       {
         "icon": "messages",
@@ -1496,11 +1496,11 @@
     "faq": [
       [
         "How do we get started?",
-        "Add your service details, policies and instructions. Check the integrations available to your account and test the complete journey with your team."
+        "Add your services, prices, hours and booking policies. Connect the tools you use and choose the enquiries your team will handle."
       ],
       [
         "Can staff stay involved?",
-        "Yes. Your team can review the conversation and handle exceptions. Only communicate a completed action after it is confirmed by the relevant system."
+        "Yes. Your team can review the conversation, help with special requests and follow up on changes that need a staff member."
       ]
     ],
     "parent": "/solutions/consultants"
@@ -1777,7 +1777,7 @@
   "/company/terms": {
     "kind": "legal",
     "label": "Terms of use",
-    "title": "A clear experience.\nFrom the first agreement.",
+    "title": "Terms of use.\nFor the Sary platform.",
     "description": "Terms governing Sary accounts, subscriptions and use of the platform.",
     "version": "2026-08-21",
     "sections": [
@@ -1870,7 +1870,7 @@
   "/company/privacy": {
     "kind": "legal",
     "label": "Privacy policy",
-    "title": "Your data deserves\na clear picture.",
+    "title": "Privacy policy.\nHow we handle your data.",
     "description": "How Sary processes personal data, your rights and how to contact us.",
     "version": "2026-08-21",
     "sections": [
