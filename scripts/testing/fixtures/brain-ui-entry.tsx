@@ -1,6 +1,6 @@
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
 import { CheckoutMarginPolicySettings } from '../../../client/src/components/CheckoutMarginPolicySettings';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
@@ -18,10 +18,22 @@ import { CheckoutMarginExceptionAudit } from '../../../client/src/components/Che
 import { OrderCheckoutAttempts } from '../../../client/src/components/OrderCheckoutAttempts';
 import { BookingCheckoutAttempts } from '../../../client/src/components/BookingCheckoutAttempts';
 import { BookingPaymentLinkRenewal } from '../../../client/src/components/BookingPaymentLinkRenewal';
+import { BookingOperations } from '../../../client/src/components/BookingOperations';
+import type { BookingStatus } from '../../../shared/booking-operations';
 import { CheckoutDiscountRelease } from '../../../client/src/components/CheckoutDiscountRelease';
 import { CheckoutDiscountBreakdown } from '../../../client/src/components/CheckoutDiscountBreakdown';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
+function BookingOperationsFixture(){
+  const mode=new URL(location.href).searchParams.get('case')||'';
+  const initial:BookingStatus=mode==='booking-ops-cancelled'?'cancelled':mode==='booking-ops-completed'?'completed':mode==='booking-ops-no-show'?'no_show':mode==='booking-ops-paid'?'confirmed':'pending';
+  const [status,setStatus]=useState<BookingStatus>(initial),[deleted,setDeleted]=useState(false);
+  useEffect(()=>{(window as any).__changeOperationalBooking=()=>setStatus('cancelled');},[]);
+  return deleted?<p data-booking-deleted>Booking removed from the list</p>:<BookingOperations booking={{id:321,status,paymentStatus:mode==='booking-ops-refunded'?'refunded':mode==='booking-ops-paid'?'paid':'unpaid'}} onChanged={async(isDeleted)=>{
+    if(mode==='booking-ops-parent-error')throw Error('private parent failure');
+    (window as any).__operationParentRefreshed=true;if(isDeleted)setDeleted(true);else if((window as any).__operationSaved&&mode!=='booking-ops-stale')setStatus((window as any).__operationInput.status);
+  }}/>;
+}
 async function render() {
   const lng = new URL(location.href).searchParams.get('lang') === 'en' ? 'en' : 'ar';
   const mode=new URL(location.href).searchParams.get('case')||'';
@@ -34,6 +46,7 @@ async function render() {
     <div id="checkout-attempts-fixture"><OrderCheckoutAttempts orderId={123} /></div>
     <div id="booking-checkout-fixture"><BookingCheckoutAttempts bookingId={321} onReviewed={async()=>{(window as any).__bookingParentRefreshed=true;}} /></div>
     <div id="booking-renewal-fixture"><BookingPaymentLinkRenewal bookingId={321} onRenewed={async()=>{(window as any).__renewalParentRefreshed=true;}} /></div>
+    <div id="booking-operations-fixture">{mode.startsWith('booking-ops-')&&<BookingOperationsFixture />}</div>
     <div id="coupon-release-fixture">{mode.startsWith('coupon-release-')&&<CheckoutDiscountBreakdown discount={{code:'LOCAL10',subtotalMinor:29997,discountMinor:2999}} totalMinor={26998} approved historical />}<CheckoutDiscountRelease orderId={123} /></div>
     <div id="zid-fixture"><ZidCheckoutReconciliation /></div><div id="sector-fixture"><SalesSectorSettings /></div>
     <form id="discount-policy-fixture" onSubmit={event => { event.preventDefault(); (window as any).__unexpectedBotSubmit = true; }}><DiscountPolicySettings /></form>

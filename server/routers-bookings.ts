@@ -1,3 +1,4 @@
+import { bookingOperationProcedures } from './routers-booking-operations';
 /**
  * Bookings Router Module
  * Handles appointment booking management
@@ -145,76 +146,7 @@ export const bookingsRouter = router({
             return { bookings };
         }),
 
-    // Update booking
-    update: protectedProcedure
-        .input(z.object({
-            bookingId: z.number(),
-            status: z.enum(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']).optional(),
-            paymentStatus: z.enum(['unpaid', 'paid', 'refunded']).optional(),
-            staffId: z.number().optional(),
-            bookingDate: z.string().optional(),
-            startTime: z.string().optional(),
-            endTime: z.string().optional(),
-            notes: z.string().optional(),
-            cancellationReason: z.string().optional(),
-            cancelledBy: z.enum(['customer', 'merchant', 'system']).optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const booking = await getBookingById(input.bookingId);
-            if (!booking || booking.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
-            }
-
-            if (input.bookingDate || input.startTime || input.endTime) {
-                const bookingDateStr = input.bookingDate ||
-                    (booking.bookingDate instanceof Date
-                        ? booking.bookingDate.toISOString().split('T')[0]
-                        : String(booking.bookingDate));
-                const hasConflict = await checkBookingConflict(
-                    booking.serviceId,
-                    input.staffId || booking.staffId,
-                    bookingDateStr,
-                    input.startTime || String(booking.startTime),
-                    input.endTime || String(booking.endTime),
-                    booking.id
-                );
-
-                if (hasConflict) {
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'This time slot is already booked'
-                    });
-                }
-            }
-
-            const { bookingId, ...updateData } = input;
-            await updateBooking(bookingId, updateData);
-
-            return { success: true };
-        }),
-
-    // Delete booking
-    delete: protectedProcedure
-        .input(z.object({ bookingId: z.number() }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const booking = await getBookingById(input.bookingId);
-            if (!booking || booking.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
-            }
-
-            await deleteBooking(input.bookingId);
-            return { success: true };
-        }),
+    ...bookingOperationProcedures,
 
     // Get booking statistics
     getStats: protectedProcedure

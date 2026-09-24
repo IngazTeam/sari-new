@@ -589,6 +589,13 @@
       "when": 1790640000000,
       "tag": "0083_booking_payment_link_renewals",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "5",
+      "when": 1790726400000,
+      "tag": "0084_booking_operation_audits",
+      "breakpoints": true
     }
   ]
 }

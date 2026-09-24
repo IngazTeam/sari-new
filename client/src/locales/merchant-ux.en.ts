@@ -8,6 +8,14 @@ const merchantUxEn: MerchantUxCopy = {
     review:'Match this attempt reference against the Tap dashboard before starting another payment. A lost response or expired session does not prove payment failure.',
     paymentStatus:'Booking payment status',unpaid:'Unpaid',paid:'Paid',refunded:'Refunded',
   },
+  bookingOperations: {
+    before:'Previous status:',after:'Resulting status:',
+    title:'Manage booking status',scope:'Changing fulfillment status does not prove payment or refund. Financial status is updated only by verified payment settlement.',status:'New status',
+    pending:'Pending',confirmed:'Confirmed',inProgress:'In progress',completed:'Completed',cancelled:'Cancelled',noShow:'No show',loading:'Loading booking history…',
+    failed:'The action could not be confirmed. Refresh and review the booking and payment records; the current state or linked history may prevent this change.',refresh:'Refresh booking status',saving:'Saving…',save:'Save status',saved:'The action was saved to booking history.',
+    terminal:'The current state allows no further operational transition.',deleteScope:'Only pending or cancelled bookings with no payment, link, confirmation, review or external calendar history can be deleted. The deletion audit is retained.',
+    deleteAttest:'I reviewed this booking and want to delete it. Cancellation keeps the booking and its records when they need to be retained.',remove:'Delete booking',history:'Latest 20 recorded actions',empty:'No recorded actions yet.',actor:'Staff member #{{id}}',deleted:'Booking deleted',updated:'Booking updated',
+  },
   bookingRenewal: {
     title:'Renew booking payment link',scope:'Extend the same link for 24 hours from renewal, at the same amount. This creates no charge and sends no customer message. Available only after the link expires, with no collection or unresolved payment attempt.',
     loading:'Checking the booking link…',failed:'Renewal could not be confirmed. Refresh the record to check the result before trying again.',refresh:'Refresh link record',

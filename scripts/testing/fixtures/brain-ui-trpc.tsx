@@ -10,6 +10,26 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
         { signalId: 8, relation: 'contrary', excerpt: 'أحتاج التأكد من المميزات المشمولة والموعد المتاح قبل القرار.' }] }] } };
 export const trpc = {
   bookings: {
+    getOperationHistory:{useQuery:()=>{
+      const [recovered,setRecovered]=useState(false),[version,setVersion]=useState(0);
+      const saved=(window as any).__operationSaved;
+      const data=saved||mode==='booking-ops-audit'?[{actorUserId:7,operation:(window as any).__operationDelete?'delete':'update',beforeStatus:'pending',afterStatus:(window as any).__operationDelete?null:'confirmed',changedFields:['status'],at:'2026-09-24T00:00:00Z'}]:[];
+      return {data,isLoading:mode==='booking-ops-loading',isError:mode==='booking-ops-error'&&!recovered,isFetching:mode==='booking-ops-fetching',
+        refetch:async()=>{setRecovered(true);setVersion(version+1);if(mode==='booking-ops-refresh-error')return {isError:true,data};
+          return {isError:false,data:(window as any).__operationSaved?[{...data[0],operation:(window as any).__operationDelete?'delete':'update',afterStatus:(window as any).__operationDelete?null:'confirmed'}]:data};}};
+    }},
+    update:{useMutation:()=>{
+      const [isPending,setPending]=useState(false);return {isPending,mutateAsync:async(input:any)=>{
+        setPending(true);(window as any).__operationInput=input;(window as any).__operationCount=((window as any).__operationCount||0)+1;await new Promise(r=>setTimeout(r,250));setPending(false);
+        if(mode==='booking-ops-write-error')throw Error('private financial record');(window as any).__operationSaved=true;return {success:true,deleted:false,alreadyApplied:false};
+      }};
+    }},
+    delete:{useMutation:()=>{
+      const [isPending,setPending]=useState(false);return {isPending,mutateAsync:async(input:any)=>{
+        setPending(true);(window as any).__operationInput=input;(window as any).__operationCount=((window as any).__operationCount||0)+1;await new Promise(r=>setTimeout(r,250));setPending(false);
+        if(mode==='booking-ops-delete-blocked')throw Error('private payment link');(window as any).__operationSaved=true;(window as any).__operationDelete=true;return {success:true,deleted:true,alreadyApplied:false};
+      }};
+    }},
     getPaymentLinkRenewal:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[revision,setRevision]=useState(0),[saved,setSaved]=useState(false);
       useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('renewal-evidence-change',changed);(window as any).__changeRenewalEvidence=()=>window.dispatchEvent(new Event('renewal-evidence-change'));return()=>window.removeEventListener('renewal-evidence-change',changed);},[]);

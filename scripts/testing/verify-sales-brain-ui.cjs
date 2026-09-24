@@ -26,6 +26,45 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
+      await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});await page.goto(`${origin}/?case=booking-ops-ready&lang=${lang}`,{waitUntil:'networkidle0'});await page.waitForSelector('[data-booking-operations]');
+      const layout=await page.$eval('#booking-operations-fixture',node=>({overflow:document.documentElement.scrollWidth>innerWidth,rawKeys:node.innerText.includes('merchantUx.'),buttons:[...node.querySelectorAll('button,select')].map(b=>b.getBoundingClientRect().height)}));
+      assert.equal(layout.overflow,false);assert.equal(layout.rawKeys,false);assert.ok(layout.buttons.every(h=>h>=44));
+      assert.equal(await page.$eval('[data-booking-operation-save]',n=>n.disabled),true);assert.equal(await page.$eval('[data-booking-operation-delete]',n=>n.disabled),true);
+      await page.select('[data-booking-operations] select','confirmed');assert.equal(await page.evaluate(()=>window.__operationCount),undefined);
+      await page.click('[data-booking-operation-save]');assert.equal(await page.$eval('[data-booking-operation-refresh]',n=>n.disabled),true);
+      await page.waitForFunction(()=>window.__operationParentRefreshed===true);await page.waitForSelector('[data-booking-operation-audit]');
+      const input=await page.evaluate(()=>window.__operationInput);assert.equal(input.bookingId,321);assert.equal(input.expectedStatus,'pending');assert.equal(input.status,'confirmed');assert.match(input.operationId,/^[a-f0-9-]{36}$/);assert.equal('paymentStatus' in input,false);
+      assert.equal(await page.evaluate(()=>window.__operationCount),1);assert.equal(await page.$eval('[data-booking-operation-delete]',n=>n.disabled),true);
+      if(lang==='ar'&&[375,1440].includes(width))await(await page.$('#booking-operations-fixture')).screenshot({path:path.join(output,`booking-operations-${width}.png`)});
+      results.push({width,lang,mode:'booking_operations_explicit_save_and_audit',passed:true});
+    }
+    for(const state of ['cancelled','completed','no-show','paid','refunded','loading','error','fetching','audit']){
+      await page.goto(`${origin}/?case=booking-ops-${state}`,{waitUntil:'networkidle0'});
+      if(['cancelled','completed','no-show','refunded','fetching'].includes(state))assert.equal(await page.$eval('[data-booking-operations] select',n=>n.disabled),true);
+      if(['completed','no-show','paid','refunded'].includes(state))assert.equal(await page.$eval('[data-booking-operation-delete]',n=>n.disabled),true);
+      if(state==='loading')await page.waitForSelector('#booking-operations-fixture [role=status]');
+      if(state==='error'){await page.waitForSelector('#booking-operations-fixture [role=alert]');await page.click('#booking-operations-fixture button');await page.waitForSelector('[data-booking-operations]');}
+      if(state==='audit')await page.waitForSelector('[data-booking-operation-audit]');results.push({width:1440,mode:`booking_operations_${state}`,passed:true});
+    }
+    for(const state of ['write-error','refresh-error','parent-error','stale']){
+      await page.goto(`${origin}/?case=booking-ops-${state}`,{waitUntil:'networkidle0'});await page.select('[data-booking-operations] select','confirmed');await page.click('[data-booking-operation-save]');
+      await page.waitForFunction(()=>window.__operationCount===1&&!document.querySelector('[data-booking-operation-refresh]').disabled);
+      if(state!=='stale')await page.waitForSelector('#booking-operations-fixture [role=alert]');
+      assert.equal(await page.$eval('[data-booking-operation-save]',n=>n.disabled),true);assert.equal(await page.$eval('#booking-operations-fixture',n=>n.innerText.includes('private')),false);
+      results.push({width:1440,mode:`booking_operations_${state}_single_submit`,passed:true});
+    }
+    for(const state of ['delete','delete-blocked']){
+      await page.goto(`${origin}/?case=booking-ops-${state}`,{waitUntil:'networkidle0'});await page.click('[data-booking-operations] input[type=checkbox]');await page.select('[data-booking-operations] select','confirmed');
+      assert.equal(await page.$eval('[data-booking-operations] input[type=checkbox]',n=>n.checked),false);await page.click('[data-booking-operations] input[type=checkbox]');await page.click('[data-booking-operation-delete]');
+      if(state==='delete')await page.waitForSelector('[data-booking-deleted]');else{await page.waitForSelector('#booking-operations-fixture [role=alert]');assert.equal(await page.$eval('[data-booking-operation-delete]',n=>n.disabled),true);}
+      const input=await page.evaluate(()=>window.__operationInput);assert.equal(input.expectedStatus,'pending');assert.equal('status' in input,false);assert.equal(await page.evaluate(()=>window.__operationCount),1);
+      results.push({width:1440,mode:`booking_operations_${state}_attestation`,passed:true});
+    }
+    await page.goto(`${origin}/?case=booking-ops-ready`,{waitUntil:'networkidle0'});await page.select('[data-booking-operations] select','confirmed');await page.click('[data-booking-operations] input[type=checkbox]');
+    await page.evaluate(()=>window.__changeOperationalBooking());await page.waitForFunction(()=>document.querySelector('[data-booking-operations] select').value==='cancelled');
+    assert.equal(await page.$eval('[data-booking-operations] input[type=checkbox]',n=>n.checked),false);assert.equal(await page.$eval('[data-booking-operation-save]',n=>n.disabled),true);
+    results.push({width:1440,mode:'booking_operations_changed_status_clears_consent',passed:true});
     const renewalForm='[data-booking-link-renewal-form]';
     for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
       await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});

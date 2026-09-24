@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
 import { BookingCheckoutAttempts } from '@/components/BookingCheckoutAttempts';
 import { BookingPaymentLinkRenewal } from '@/components/BookingPaymentLinkRenewal';
+import { BookingOperations } from '@/components/BookingOperations';
 
 // Default form state for new booking
 const defaultNewBooking = {
@@ -100,41 +101,6 @@ export default function BookingsManagement() {
     },
   });
 
-  const updateMutation = trpc.bookings.update.useMutation({
-    onSuccess: () => {
-      toast({
-        title: t('bookingsManagementPage.text0'),
-        description: t('bookingsManagementPage.text1'),
-      });
-      refetch();
-      setSelectedBooking(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: t('bookingsManagementPage.text2'),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = trpc.bookings.delete.useMutation({
-    onSuccess: () => {
-      toast({
-        title: t('bookingsManagementPage.text3'),
-        description: t('bookingsManagementPage.text4'),
-      });
-      refetch();
-    },
-    onError: (error: any) => {
-      toast({
-        title: t('bookingsManagementPage.text5'),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const bookings = bookingsData?.bookings || [];
   const stats = statsData?.stats;
   const services = servicesData?.services || [];
@@ -162,19 +128,6 @@ export default function BookingsManagement() {
 
   const formatPrice = (price: number) => {
     return `${(price / 100).toFixed(2)} ريال`;
-  };
-
-  const handleStatusChange = (bookingId: number, newStatus: string) => {
-    updateMutation.mutate({
-      bookingId,
-      status: newStatus as any,
-    });
-  };
-
-  const handleDelete = (bookingId: number) => {
-    if (confirm(t('bookingsManagementPage.text12'))) {
-      deleteMutation.mutate({ bookingId });
-    }
   };
 
   // Auto-calculate endTime and price when service/startTime changes
@@ -630,36 +583,17 @@ export default function BookingsManagement() {
                                   setSelectedBooking((current:any)=>current?.id===bookingId?fresh.booking:current);
                                   await Promise.all([refetch(),utils.bookings.getStats.invalidate()]);
                                 }} />
-                                <div>
-                                  <p className="text-sm font-medium mb-2">{t('bookingsManagementPage.text40')}</p>
-                                  <Select
-                                    value={selectedBooking.status}
-                                    onValueChange={(value) => handleStatusChange(selectedBooking.id, value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">{t('bookingsManagementPage.text41')}</SelectItem>
-                                      <SelectItem value="confirmed">{t('bookingsManagementPage.text42')}</SelectItem>
-                                      <SelectItem value="in_progress">{t('bookingsManagementPage.text43')}</SelectItem>
-                                      <SelectItem value="completed">{t('bookingsManagementPage.text44')}</SelectItem>
-                                      <SelectItem value="cancelled">{t('bookingsManagementPage.text45')}</SelectItem>
-                                      <SelectItem value="no_show">{t('bookingsManagementPage.text46')}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                                <BookingOperations key={`booking-operations-${selectedBooking.id}-${selectedBooking.status}`} booking={selectedBooking} onChanged={async(deleted)=>{
+                                  const bookingId=selectedBooking.id;
+                                  await Promise.all([refetch(),utils.bookings.getStats.invalidate(),utils.bookings.getCheckoutAttempts.invalidate({bookingId}),utils.bookings.getPaymentLinkRenewal.invalidate({bookingId})]);
+                                  if(deleted)setSelectedBooking(null);
+                                  else{const fresh=await utils.bookings.getById.fetch({bookingId});setSelectedBooking((current:any)=>current?.id===bookingId?fresh.booking:current);}
+                                }} />
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(booking.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+
                       </div>
                     </td>
                   </tr>

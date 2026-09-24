@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T05:26:02.324Z",
+  "generatedAt": "2026-09-24T06:00:15.811Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -7,6 +7,8 @@
     "booking-checkout-review-375.png",
     "booking-link-renewal-1440.png",
     "booking-link-renewal-375.png",
+    "booking-operations-1440.png",
+    "booking-operations-375.png",
     "checkout-attempts-1440.png",
     "checkout-attempts-375.png",
     "checkout-discount-1440.png",
@@ -40,6 +42,146 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_operations_explicit_save_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_cancelled",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_completed",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_no-show",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_paid",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_refunded",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_write-error_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_refresh-error_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_parent-error_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_stale_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_delete_attestation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_delete-blocked_attestation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_operations_changed_status_clears_consent",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

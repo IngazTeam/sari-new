@@ -6928,7 +6928,7 @@ export async function createBooking(data: {
     bookingSource: data.bookingSource || 'whatsapp',
   });
 
-  return (result as any).insertId;
+  return Number((result as any)[0].insertId);
 }
 
 export async function getBookingById(id: number) {
@@ -7013,40 +7013,17 @@ export async function getBookingsByCustomer(merchantId: number, customerPhone: s
     .orderBy(desc(bookings.createdAt));
 }
 
-export async function updateBooking(id: number, data: {
-  status?: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
-  paymentStatus?: 'unpaid' | 'paid' | 'refunded';
-  staffId?: number;
-  bookingDate?: string;
-  startTime?: string;
-  endTime?: string;
-  notes?: string;
-  cancellationReason?: string;
-  cancelledBy?: 'customer' | 'merchant' | 'system';
-  googleEventId?: string;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const updateData: any = { ...data };
-
-  if (data.status === 'confirmed' && !updateData.confirmedAt) {
-    updateData.confirmedAt = new Date().toISOString();
-  }
-  if (data.status === 'completed' && !updateData.completedAt) {
-    updateData.completedAt = new Date().toISOString();
-  }
-  if (data.status === 'cancelled' && !updateData.cancelledAt) {
-    updateData.cancelledAt = new Date().toISOString();
-  }
-
-  await db.update(bookings).set(updateData).where(eq(bookings.id, id));
+/** Operational writes require authenticated merchant/actor context; payment state belongs to verified settlement. */
+export async function updateBooking(id:number,input:import('../shared/booking-operations').UpdateBookingOperationInput,merchantId:number,actorUserId:number) {
+  if(id!==input.bookingId)throw new Error('Booking identity mismatch');
+  const {updateBookingOperation}=await import('./booking-operations');
+  return updateBookingOperation(merchantId,actorUserId,input);
 }
 
-export async function deleteBooking(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.delete(bookings).where(eq(bookings.id, id));
+export async function deleteBooking(id:number,input:import('../shared/booking-operations').DeleteBookingOperationInput,merchantId:number,actorUserId:number) {
+  if(id!==input.bookingId)throw new Error('Booking identity mismatch');
+  const {deleteBookingOperation}=await import('./booking-operations');
+  return deleteBookingOperation(merchantId,actorUserId,input);
 }
 
 export async function getBookingStats(merchantId: number, filters?: {
@@ -11996,15 +11973,15 @@ export async function updateOrder(id: number, data: Partial<InsertOrder>): Promi
 
 /**
  * Update booking status by ID
- * Used by tap-webhook.ts for payment confirmation
+ * Operational updates require tenant, actor, and idempotency context.
+ * Payment settlement uses the canonical payment transaction instead.
  */
 export async function updateBookingStatus(
-  id: number,
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+  id:number,status:import('../shared/booking-operations').BookingStatus,
+  context:{merchantId:number;actorUserId:number;operationId:string;expectedStatus:import('../shared/booking-operations').BookingStatus}
 ): Promise<void> {
-  return updateBooking(id, { status });
+  await updateBooking(id,{bookingId:id,status,operationId:context.operationId,expectedStatus:context.expectedStatus},context.merchantId,context.actorUserId);
 }
-
 /**
  * Count repeat customers (customers with more than one order)
  * Used by routers-performance.ts
