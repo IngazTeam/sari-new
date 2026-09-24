@@ -1,14 +1,15 @@
 {
-  "scope": "Fresh Chromium component verification: 642 passing scenarios, 56 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the AI capability routing UI",
+  "scope": "Fresh Chromium component verification: 679 passing scenarios, 58 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the AI appointment reminder UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T15:38:39.169Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-ai-capabilities",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-ai-capabilities",
+  "verifiedAt": "2026-09-24T16:29:00.434Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-appointment-reminders",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-appointment-reminders",
   "inputs": {
-    "fixture": "0345b3898874415db3e03f9a9470ccf786a2d1f31a9e12245adfa475816366c4",
-    "report": "8d49874f6661f3d57b3543716411fd6a083e75cb6584c1f48c35edb37964c9ea",
+    "fixture": "251349a1a94d7aaab9f8ba78d18d36aff66c350603ddecf229fb43054bdd3e75",
+    "report": "16fb43d611513c96b37f58ccc6649e52b2c01eb8105168427e3eb6638b1003d9",
     "verifiers": {
-      "scripts/testing/verify-sales-brain-ui.cjs": "4ead9337e95b468f3b74aa8bc7747d752b7692e5981ac33f547b2c340b90c84a",
+      "scripts/testing/verify-appointment-reminders-ui.cjs": "954940cd78ce77ec3ad34f6b05280006c58680f0427bebccd731a889673891b4",
+      "scripts/testing/verify-sales-brain-ui.cjs": "c2405a56459e4f12c6207c7609cd1552ad8ffea899eac037d3fc9f245086dd12",
       "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
@@ -18,7 +19,7 @@
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
-      "index-CHATWY2i.css": "39bd91c45c2b12851245529183863171f8aacd4ee521b6eb819b65935d325590"
+      "index-BB6d2wJJ.css": "ff8be485ceda09a4b1a979b48a574cc89c67d897abd089cc9df17e02b41cacbd"
     }
   }
 }

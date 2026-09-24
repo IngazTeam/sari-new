@@ -26,6 +26,7 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    await require('./verify-appointment-reminders-ui.cjs')(page, origin, output, results);
     await require('./verify-ai-capabilities-ui.cjs')(page, origin, output, results);
     await require('./verify-booking-consent-ui.cjs')(page, origin, output, results);
     await require('./verify-booking-calendar-ui.cjs')(page, origin, output, results);

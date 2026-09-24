@@ -1,0 +1,12 @@
+{
+  "database": "sari_brain_migration_test",
+  "sqlSha256": "6ee554e30259ec97e6fabb73a6ae14854c27831e5aad2319e7bbe89146e96bdd",
+  "legacyAppointmentsPreserved": 2,
+  "oldSentFlagsPreserved": true,
+  "noRetrospectiveEnrollment": true,
+  "duplicateSourcesAndTermsRejected": true,
+  "invalidHoursAndWindowRejected": true,
+  "negativeConstraints": 4,
+  "repeatMigrationPreservesOutbox": true,
+  "productionChanged": false
+}

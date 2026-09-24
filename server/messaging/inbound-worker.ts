@@ -10,6 +10,8 @@ export async function startInboundWorker() {
   const stopOfferReconciliation = await startSalesOfferReconciliationWorker();
   const { startBookingNotificationWorker } = await import('../booking-reschedule-notification');
   const stopBookingNotifications = await startBookingNotificationWorker();
+  const { startAppointmentReminderWorker } = await import('../appointment-reminders');
+  const stopAppointmentReminders = await startAppointmentReminderWorker();
   let stopping = false;
   let active: Promise<void> | undefined;
   let nextRetentionAt = 0;
@@ -33,5 +35,5 @@ export async function startInboundWorker() {
   };
   const timer = setInterval(tick, 500);
   tick();
-  return async () => { stopping = true; clearInterval(timer); await active; await stopInteractions(); await stopReconciliation(); await stopOfferReconciliation(); await stopBookingNotifications(); };
+  return async () => { stopping = true; clearInterval(timer); await active; await stopInteractions(); await stopReconciliation(); await stopOfferReconciliation(); await stopBookingNotifications(); await stopAppointmentReminders(); };
 }

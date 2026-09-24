@@ -15,6 +15,9 @@ import { WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS } from '../channels/whatsapp/schem
 
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
+  { table: 'appointment_reminders', columns: ['appointment_reference','source_message_id','hours_before','terms_hash','snapshot','snapshot_hash','dispatch_text','due_at','expires_at','cancelled_at','cancellation_source_id','claim_token','dispatch_started_at','delivery_state','next_check_at'],
+    uniqueIndexes: [{ name: 'uq_appointment_reminder_source', columns: ['merchant_id','source_message_id'] }, { name: 'uq_appointment_reminder_terms', columns: ['merchant_id','appointment_reference','hours_before','terms_hash'] }],
+    checkConstraints: [{ name: 'chk_appointment_reminder_hours', expression: 'hours_before IN (1,24)', enforced: true }, { name: 'chk_appointment_reminder_window', expression: 'expires_at>due_at', enforced: true }] },
   { table: "booking_notification_reviews", columns: ["notification_id", "booking_reference", "actor_user_id", "request_id", "request_hash", "evidence_hash", "outcome", "delivery_state", "projected", "reason", "created_at"], uniqueIndexes: [{ name: "uq_booking_notice_review_request", columns: ["merchant_id", "request_id"] }] },
   { table: 'booking_reschedule_notifications', columns: ['kind', 'confirmation_id', 'cancellation_id', 'reschedule_id', 'snapshot_hash', 'claim_token', 'dispatch_started_at', 'delivery_state', 'next_check_at'],
     uniqueIndexes: [{ name: 'uq_booking_notice_move', columns: ['merchant_id', 'reschedule_id'] }] },

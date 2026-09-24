@@ -1,6 +1,33 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
 
 const merchantUxEn: MerchantUxCopy = {
+  appointmentReminders: {
+  "title": "Appointment reminders",
+  "refresh": "Refresh reminders",
+  "scope": "The latest 20 saved reminder requests for this appointment. This view cannot grant consent or send another message.",
+  "conditions": "A reminder requires an explicit customer request on WhatsApp. A new message, changed appointment or account, staff takeover, or an expired sending window stops it. Older appointments are not enrolled automatically.",
+  "loading": "Loading reminders…",
+  "loadFailed": "Unable to verify reminders. Refresh before relying on this status.",
+  "empty": "No saved reminder request for this appointment. The appointment is unchanged.",
+  "reference": "Appointment A{{id}} · {{hours}} hour reminder",
+  "pending": "Request saved; sending depends on checks when due.",
+  "dispatching": "A send attempt started; its outcome is not confirmed.",
+  "unknown": "Send outcome unknown. No automatic resend.",
+  "accepted": "Provider acceptance is verified; delivery or reading is not implied.",
+  "rejected": "Message acceptance is not verified. No automatic resend.",
+  "suppressed": "The request was stopped before sending the reminder.",
+  "noReceipt": "No saved receipt",
+  "delivered": "Delivered according to the provider receipt",
+  "read": "Read according to the provider receipt",
+  "deliveryFailed": "The transport shows a failure; any earlier acceptance remains visible in the request status.",
+  "delivery": "Transport: {{status}}",
+  "due": "Reminder time · Riyadh",
+  "expires": "Sending deadline · Riyadh",
+  "cancelled": "The customer requested cancellation of the reminder. This does not cancel the appointment or recall a send attempt already started.",
+  "attention": "The outcome or evidence needs review. Refreshing only reads the saved state.",
+  "source": "View the customer reminder request",
+  "unverified": "Evidence unavailable or unverified"
+},
   aiCapabilities: {
   "title": "AI capability routing",
   "scope": "Saved settings used at runtime. Changing the form selection only takes effect after saving.",

@@ -1,4 +1,6 @@
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { readAppointmentReminders } from "./appointment-reminders";
 import { merchantProcedure, permissionProcedure } from "./_core/trpc";
 import {
   appointmentCancellationSchema,
@@ -16,6 +18,23 @@ import {
 import { readAppointmentCreationRequest } from "./appointment-creation-requests";
 
 export const calendarAppointmentProcedures = {
+  getReminderReview: permissionProcedure("orders.manage")
+    .input(
+      z.object({ appointmentId: z.number().int().positive().safe() }).strict()
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readAppointmentReminders(
+          ctx.merchantId,
+          input.appointmentId
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "تعذر قراءة حالة التذكيرات؛ راجع صلاحياتك وحالة الموعد.",
+        });
+      }
+    }),
   bookAppointment: permissionProcedure("orders.manage")
     .input(appointmentCommandSchema)
     .mutation(async ({ ctx, input }) => {

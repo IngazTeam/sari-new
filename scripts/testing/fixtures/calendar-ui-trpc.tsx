@@ -3,6 +3,18 @@ const mode = new URL(location.href).searchParams.get("case") || "";
 const win = window as any;
 const reference = "sariappt" + "a".repeat(32);
 export const calendarFixture = {
+  getReminderReview: {
+    useQuery: () => {
+      const [busy,setBusy]=useState(false), [recovered,setRecovered]=useState(false);
+      const state=mode.startsWith('appointment-reminders-') ? mode.slice('appointment-reminders-'.length) : 'empty';
+      const data={appointmentId:501,reminders:state==='empty'?[]:[{id:7,hours:1,requestedAt:'2026-09-24T09:00:00Z',dueAt:'2026-09-24T10:00:00Z',expiresAt:'2026-09-24T10:15:00Z',
+        state:['pending','dispatching','unknown','accepted','failed','suppressed'].includes(state)?state:'accepted',
+        delivery:state==='read'?'read':state==='delivered'?'delivered':state==='failed'?'failed':state==='pending'?'none':'sent',
+        cancelled:state==='cancelled',attention:state==='unknown',sourceText:state==='xss'?'<img src=x onerror="window.__reminderXss=1">'+'long'.repeat(160):'ذكرني بالموعد A501 قبل ساعة',sourceId:53,conversationId:44}]};
+      return {data:state==='loading'?undefined:data,isLoading:state==='loading',isError:state==='error'&&!recovered,isFetching:busy||state==='fetching',
+        refetch:async()=>{win.__reminderRefreshCount=(win.__reminderRefreshCount||0)+1;setBusy(true);await new Promise(resolve=>setTimeout(resolve,180));setBusy(false);setRecovered(true);return {data,isError:state==='refresh-error'};}};
+    },
+  },
   getSyncReview: {
     useQuery: () => {
       const [version, setVersion] = useState(0),

@@ -6,6 +6,7 @@ import { BookingCancellation } from '../../../client/src/components/BookingCance
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
 import CalendarPage from '../../../client/src/pages/CalendarPage';
 import { AppointmentSyncReview } from '../../../client/src/components/AppointmentSyncReview';
+import { AppointmentReminderReview } from '../../../client/src/components/AppointmentReminderReview';
 import { CheckoutMarginPolicySettings } from '../../../client/src/components/CheckoutMarginPolicySettings';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -52,6 +53,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('appointment-reminders-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><AppointmentReminderReview appointmentId={501}/></main>);return;}
   if(mode.startsWith('ai-capabilities-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-4xl p-3"><AiCapabilitiesFixture/></main>);return;}
   if(mode.startsWith('booking-reschedule-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingReschedule bookingId={321} onChanged={async()=>{if(mode==='booking-reschedule-parent-error')throw Error('private parent failure');(window as any).__rescheduleParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('booking-cancellation-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCancellation bookingId={321} onChanged={async()=>{if(mode==='booking-cancellation-parent-error')throw Error('private parent failure');(window as any).__cancellationParentRefreshed=true;}} /></main>); return; }

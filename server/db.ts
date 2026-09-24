@@ -6456,44 +6456,6 @@ export async function getUpcomingAppointments(merchantId: number, limit: number 
     .limit(limit);
 }
 
-export async function getAppointmentsNeedingReminder(type: '24h' | '1h') {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const now = new Date();
-  const targetTime = new Date();
-
-  if (type === '24h') {
-    targetTime.setHours(targetTime.getHours() + 24);
-  } else {
-    targetTime.setHours(targetTime.getHours() + 1);
-  }
-
-  const targetTimeStr = targetTime.toISOString().slice(0, 19).replace('T', ' ');
-  const reminderField = type === '24h' ? appointments.reminder24hSent : appointments.reminder1hSent;
-
-  return await db.select().from(appointments)
-    .where(and(
-      eq(appointments.status, 'confirmed'),
-      lte(appointments.appointmentDate, targetTimeStr),
-      eq(reminderField, 0)
-    ))
-    .orderBy(appointments.appointmentDate, appointments.startTime);
-}
-
-export async function markReminderSent(id: number, type: '24h' | '1h') {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const updateData = type === '24h'
-    ? { reminder24hSent: 1 }
-    : { reminder1hSent: 1 };
-
-  await db.update(appointments)
-    .set(updateData)
-    .where(eq(appointments.id, id));
-}
-
 // Get appointment statistics
 export async function getAppointmentStats(merchantId: number, startDate?: string, endDate?: string) {
   const db = await getDb();
@@ -6522,41 +6484,6 @@ export async function getAppointmentStats(merchantId: number, startDate?: string
   };
 
   return stats;
-}
-
-// Get appointments for reminder within time range
-export async function getAppointmentsForReminder(
-  merchantId: number,
-  startTime: Date,
-  endTime: Date
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const startStr = formatDateForDB(startTime);
-  const endStr = formatDateForDB(endTime);
-
-  // ط·آ§ط¸â€‍ط·آ¨ط·آ­ط·آ« ط·آ¹ط¸â€  ط·آ§ط¸â€‍ط¸â€¦ط¸ث†ط·آ§ط·آ¹ط¸ظ¹ط·آ¯ ط·آ§ط¸â€‍ط·ع¾ط¸ظ¹ ط·ع¾ط·آ¨ط·آ¯ط·آ£ ط¸ظ¾ط¸ظ¹ ط·آ§ط¸â€‍ط¸â€ ط·آ·ط·آ§ط¸â€ڑ ط·آ§ط¸â€‍ط·آ²ط¸â€¦ط¸â€ ط¸ظ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯
-  const results = await db.select({
-    id: appointments.id,
-    merchantId: appointments.merchantId,
-    customerName: appointments.customerName,
-    customerPhone: appointments.customerPhone,
-    serviceId: appointments.serviceId,
-    staffId: appointments.staffId,
-    startTime: appointments.startTime,
-    reminder24hSent: appointments.reminder24hSent,
-    reminder1hSent: appointments.reminder1hSent,
-  })
-    .from(appointments)
-    .where(and(
-      eq(appointments.merchantId, merchantId),
-      eq(appointments.status, 'confirmed'),
-      gte(appointments.startTime, startStr),
-      lt(appointments.startTime, endStr)
-    ));
-
-  return results;
 }
 
 // Get all merchants with Google Calendar integration

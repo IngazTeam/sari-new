@@ -4,7 +4,7 @@
  */
 
 import cron from "node-cron";
-import { runRemindersForAllMerchants } from "./appointmentReminders";
+
 import { runTrialExpiryCheck } from "./cron/trial-expiry-check";
 import { runDailyForAllMerchants, runWeeklyForAllMerchants } from "./ai/sales-conductor";
 import { runFollowUps } from "./ai/proactive-followup";
@@ -18,16 +18,7 @@ import { sendDailyAiReport } from "./cron/ai-daily-report";
 export function startCronJobs() {
   console.log("[Cron] Starting cron jobs...");
 
-  // Appointment Reminders — every hour at minute 0
-  cron.schedule("0 * * * *", async () => {
-    console.log("[Cron] Running appointment reminders...");
-    try {
-      await runRemindersForAllMerchants();
-      console.log("[Cron] Appointment reminders completed successfully");
-    } catch (error) {
-      console.error("[Cron] Error running appointment reminders:", error);
-    }
-  });
+  // Requested appointment reminders are drained by the durable inbound worker.
 
   // Trial Expiry Check — daily at 9:00 AM
   cron.schedule("0 9 * * *", async () => {

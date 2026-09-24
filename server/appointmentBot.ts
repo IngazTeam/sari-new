@@ -323,7 +323,10 @@ ${staff ? `• الموظف: ${staff.name}` : ""}
 • المدة: ${service.durationMinutes} دقيقة
 • السعر: ${formatServicePrice(service.basePrice)}
 
-سيتم إرسال تذكير لك قبل الموعد بـ 24 ساعة وساعة واحدة.
+• رقم الموعد: A${appointment.appointmentId}
+
+يمكنك طلب تذكير برسالة: ذكرني بالموعد A${appointment.appointmentId} قبل ساعة.
+سنتحقق من إمكانية تسجيل التذكير ونؤكد نتيجة الطلب برسالة مستقلة.
 
 نتطلع لرؤيتك! 🌟`;
 

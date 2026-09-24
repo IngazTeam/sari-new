@@ -9,6 +9,7 @@ import arLocale from "@fullcalendar/core/locales/ar";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { AppointmentSyncReview } from "@/components/AppointmentSyncReview";
+import { AppointmentReminderReview } from "@/components/AppointmentReminderReview";
 
 const todayInRiyadh = () =>
   new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
@@ -383,6 +384,9 @@ export default function CalendarPage() {
                 </Button>
               </div>
             )}
+          {query.data?.canManage && (
+            <AppointmentReminderReview key={`reminders-${current.id}`} appointmentId={current.id} />
+          )}
           {query.data?.canManage && (
             <AppointmentSyncReview
               key={current.id}

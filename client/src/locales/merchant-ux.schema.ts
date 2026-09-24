@@ -62,6 +62,7 @@ export const learningEvidenceCopyKeys = [
 ] as const;
 
 export type MerchantUxCopy = {
+  appointmentReminders: CopySection<readonly ["title","refresh","scope","conditions","loading","loadFailed","empty","reference","pending","dispatching","unknown","accepted","rejected","suppressed","noReceipt","delivered","read","deliveryFailed","delivery","due","expires","cancelled","attention","source","unverified"]>;
   aiCapabilities: CopySection<readonly ["title","scope","refresh","loading","failed","mixed","openai","budget","text","structured","transcription","embedding","configured","missing","unreadable","disabled","textScope","structuredScope","transcriptionScope","embeddingScope","certification"]>;
   calendarReview: CopySection<readonly ["title","refresh","scope","loading","failed","activeResult","cancelledResult","unverifiedResult","ineligible","inFlight","targetUnavailable","providerUnavailable","identityMismatch","timeMismatch","notActive","cancelUnconfirmed","legacyScope","bindPermission","action","restore","confirmCancel","eventId","reason","bindAttest","attest","saving","submit","history","noHistory","actor","manualBinding"]>;
   calendarPage: CopySection<readonly ["total","title","description","refresh","connectionError","disconnected","settings","failed","loading","truncated","calendar","list","empty","unknownService","unassigned","details","more","close","cancelAttest","cancel","cancelling","pending","confirmed","cancelled","completed","noShow","local","synced","syncPending","needsReview"]>;
