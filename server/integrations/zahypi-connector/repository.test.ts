@@ -153,6 +153,13 @@ describe("ZahyPi connector repository", () => {
     await expect(repository.getActiveConnectorCredential("sari")).rejects.toThrow(
       "Unable to decrypt stored credential",
     );
+    const metadata = await repository.getActiveConnectorMetadata("sari");
+    expect(metadata).toMatchObject({ generation: 1, model: "qwen-local", projectId: "sari" });
+    expect(metadata).not.toHaveProperty("apiKey");
+    expect(metadata).not.toHaveProperty("apiKeyPrefix");
+    expect(metadata).not.toHaveProperty("apiKeyHash");
+    expect(metadata).not.toHaveProperty("apiKeyCiphertext");
+    expect(JSON.stringify(metadata)).not.toContain("tampered");
   });
 
   it("replays a completed receipt only when the signed body hash is identical", async () => {

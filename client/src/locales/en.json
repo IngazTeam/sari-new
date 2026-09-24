@@ -7244,6 +7244,8 @@
     "auto_5": "توصيات حرجة"
   },
   "aISettings": {
+    "credentialRecoveryTitle": "Save the keys for these services again",
+    "credentialRecoveryDescription": "The saved keys could not be read. Enter and save valid keys on this page, then configure model prices and test the connection. Requests that need these settings remain blocked until they are corrected.",
     "auto_0": "إعدادات الذكاء الاصطناعي",
     "auto_1": "إدارة مفتاح OpenAI API وتتبع الاستهلاك",
     "auto_2": "طلبات اليوم",

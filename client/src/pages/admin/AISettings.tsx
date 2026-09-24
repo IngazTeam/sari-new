@@ -178,6 +178,16 @@ export default function AISettings() {
       </div>
 
       <AiBudgetCard />
+      {(settings?.openaiCredentialStatus === "unreadable" || settings?.zahyPiCredentialStatus === "unreadable") && (
+        <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          <p className="font-medium">{t('aISettings.credentialRecoveryTitle')}</p>
+          <p className="mt-1 text-sm">{t('aISettings.credentialRecoveryDescription')}</p>
+          <p className="mt-1 text-sm font-medium" dir="ltr">
+            {[settings.openaiCredentialStatus === "unreadable" && "OpenAI",
+              settings.zahyPiCredentialStatus === "unreadable" && "ZahyPi"].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+      )}
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-emerald-500">

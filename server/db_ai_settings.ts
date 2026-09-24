@@ -3,7 +3,7 @@
  */
 import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { aiSettings, AiSettings, NewAiSettings, aiUsageLogs, NewAiUsageLog } from "../drizzle/schema_ai_settings";
-import { getActiveConnectorCredential } from "./integrations/zahypi-connector/repository";
+import { getActiveConnectorCredential, getActiveConnectorMetadata } from "./integrations/zahypi-connector/repository";
 import { decryptSecret, encryptSecret } from "./security/secrets";
 
 export const AI_SETTINGS_SINGLETON_ID = 1;
@@ -125,6 +125,20 @@ export async function getOpenAiApiKey(
 export async function getZahyPiRuntimeConfig(
   desired: { enabled?: boolean; provider?: TextGenerationProvider } = {},
 ): Promise<ZahyPiRuntimeConfig> {
+  return readZahyPiConfig(desired, true);
+}
+
+export async function getZahyPiRuntimeMetadata(
+  desired: { enabled?: boolean; provider?: TextGenerationProvider } = {},
+): Promise<Omit<ZahyPiRuntimeConfig, "apiKey">> {
+  const { apiKey: _key, ...metadata } = await readZahyPiConfig(desired, false);
+  return metadata;
+}
+
+async function readZahyPiConfig(
+  desired: { enabled?: boolean; provider?: TextGenerationProvider },
+  includeCredentials: boolean,
+): Promise<ZahyPiRuntimeConfig> {
   let record: {
     textGenerationProvider: TextGenerationProvider | null;
     isActive: boolean;
@@ -157,8 +171,8 @@ export async function getZahyPiRuntimeConfig(
   const fallbackConfig = {
     enabled,
     provider,
-    apiKey: record?.zahyPiApiKey
-      ? decryptSecret(record.zahyPiApiKey) || ""
+    apiKey: !includeCredentials || !enabled ? "" : record?.zahyPiApiKey
+      ? (provider === "openai" ? "" : decryptSecret(record.zahyPiApiKey) || "")
       : process.env.ZAHYPI_API_KEY?.trim() || "",
     baseUrl: record?.zahyPiBaseUrl?.trim()
       || process.env.ZAHYPI_BASE_URL?.trim()
@@ -176,13 +190,20 @@ export async function getZahyPiRuntimeConfig(
     return fallbackConfig;
   }
 
+  // An explicit administrator selection with a saved key takes precedence
+  // over an older one-click connector, including during credential recovery.
+  if (provider === "zahypi" && record?.zahyPiApiKey) return fallbackConfig;
+
   try {
-    const connectorCredential = await getActiveConnectorCredential("sari");
+    const connectorCredential = includeCredentials
+      ? await getActiveConnectorCredential("sari")
+      : await getActiveConnectorMetadata("sari");
     if (connectorCredential) {
       return {
         enabled: true,
         provider: "zahypi",
-        apiKey: connectorCredential.apiKey,
+        apiKey: "apiKey" in connectorCredential && typeof connectorCredential.apiKey === "string"
+          ? connectorCredential.apiKey : "",
         baseUrl: connectorCredential.baseUrl,
         projectId: connectorCredential.projectId,
         model: connectorCredential.model,

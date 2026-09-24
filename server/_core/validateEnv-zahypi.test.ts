@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("validateEnv with ZahyPi", () => {
-  it("still requires OpenAI while Whisper and embeddings use it directly", () => {
+  it("allows provider keys to be configured later through super-admin", () => {
     process.env.NODE_ENV = "test";
     process.env.DATABASE_URL = "mysql://local/test";
     process.env.JWT_SECRET = "x".repeat(32);
@@ -22,13 +22,13 @@ describe("validateEnv with ZahyPi", () => {
 
     const result = validateEnv();
 
-    expect(result.valid).toBe(false);
-    expect(result.errors).toEqual(expect.arrayContaining([
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual(expect.arrayContaining([
       expect.stringContaining("OPENAI_API_KEY"),
     ]));
   });
 
-  it("rejects a ZahyPi origin outside the configured allowlist", () => {
+  it("warns about an invalid optional origin without blocking credential recovery", () => {
     process.env.NODE_ENV = "test";
     process.env.DATABASE_URL = "mysql://local/test";
     process.env.JWT_SECRET = "x".repeat(32);
@@ -41,8 +41,8 @@ describe("validateEnv with ZahyPi", () => {
 
     const result = validateEnv();
 
-    expect(result.valid).toBe(false);
-    expect(result.errors).toEqual(expect.arrayContaining([
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual(expect.arrayContaining([
       expect.stringContaining("approved origin"),
     ]));
   });
@@ -52,6 +52,7 @@ describe("validateEnv with ZahyPi", () => {
     process.env.DATABASE_URL = "mysql://local/test";
     process.env.JWT_SECRET = "x".repeat(32);
     process.env.FIELD_ENCRYPTION_KEY = "y".repeat(32);
+    process.env.SARI_BOOTSTRAP_SECRET = "z".repeat(32);
     process.env.OPENAI_API_KEY = "openai-test-key";
     process.env.ZAHYPI_ENABLED = "false";
     vi.spyOn(console, "log").mockImplementation(() => undefined);

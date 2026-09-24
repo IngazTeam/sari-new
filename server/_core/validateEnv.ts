@@ -105,22 +105,20 @@ export function validateEnv(): ValidationResult {
         ] as const;
         for (const [name, description] of gatewayRequirements) {
             if (!process.env[name]?.trim()) {
-                result.valid = false;
-                result.errors.push(`❌ Missing required env: ${name} - ${description}`);
+                result.warnings.push(`⚠️ Optional env fallback missing: ${name} - configure ${description} in super-admin`);
             }
         }
         try {
             validateZahyPiBaseUrl(process.env.ZAHYPI_BASE_URL);
         } catch (error) {
-            result.valid = false;
-            result.errors.push(`❌ ${(error as Error).message}`);
+            result.warnings.push(`⚠️ ZahyPi environment fallback unavailable: ${(error as Error).message}`);
         }
     }
 
-    // Whisper transcription and RAG embeddings still use OpenAI directly.
+    // Provider keys are managed in super-admin. Missing environment fallbacks
+    // must not prevent the website or the credential recovery screen booting.
     if (!process.env.OPENAI_API_KEY?.trim()) {
-        result.valid = false;
-        result.errors.push('❌ Missing required env: OPENAI_API_KEY - required for Whisper and embeddings');
+        result.warnings.push('⚠️ OPENAI_API_KEY environment fallback missing; configure OpenAI in super-admin');
     }
 
     // Print results

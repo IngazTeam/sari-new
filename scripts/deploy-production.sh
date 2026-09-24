@@ -190,7 +190,7 @@ run_post_migration_checks() {
   corepack pnpm preflight:occasion-campaigns:after
   corepack pnpm preflight:order-notification-ops:after
   corepack pnpm preflight:ai-settings-singleton:after
-  corepack pnpm preflight:ai-budget
+  corepack pnpm preflight:ai-deployment
   corepack pnpm preflight:whatsapp-disconnect-alerts:after
 }
 

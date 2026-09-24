@@ -20,6 +20,17 @@ function assertAdmin(role: string) {
   }
 }
 
+// Only the administration read path tolerates an unreadable credential.
+// Paid request accessors still throw; no environment fallback is introduced.
+async function adminCredential(read: () => Promise<string>) {
+  try {
+    const value = await read();
+    return { value, status: value ? "configured" as const : "missing" as const };
+  } catch {
+    return { value: "", status: "unreadable" as const };
+  }
+}
+
 // AI-02 FIX: Whitelist allowed models
 const ALLOWED_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
 const ALLOWED_WHISPER_MODELS = ["whisper-1"] as const;
@@ -66,14 +77,18 @@ export const aiSettingsRouter = router({
       getAiSettings,
       getOpenAiApiKey,
       getZahyPiRuntimeConfig,
+      getZahyPiRuntimeMetadata,
     } = await import("./db_ai_settings");
     const settings = await getAiSettings();
-    const effectiveOpenAiKey = await getOpenAiApiKey({ allowInactive: true });
-    const zahyPiConfig = await resolveZahyPiRuntimeConfig();
-    const availableZahyPiConfig = await getZahyPiRuntimeConfig({
+    const zahyPiConfig = await getZahyPiRuntimeMetadata();
+    const availableMetadata = await getZahyPiRuntimeMetadata({ enabled: true, provider: "zahypi" });
+    const openAiCredential = await adminCredential(() => getOpenAiApiKey({ allowInactive: true }));
+    const zahyPiCredential = await adminCredential(async () => (await getZahyPiRuntimeConfig({
       enabled: true,
       provider: "zahypi",
-    });
+    })).apiKey);
+    const effectiveOpenAiKey = openAiCredential.value;
+    const availableZahyPiConfig = { ...availableMetadata, apiKey: zahyPiCredential.value };
 
     // Mask API key — show only last 4 chars
     const maskedKey = effectiveOpenAiKey
@@ -97,6 +112,7 @@ export const aiSettingsRouter = router({
       lastAlertSentAt: settings?.lastAlertSentAt ?? null,
       openaiApiKey: maskedKey,
       hasKey: Boolean(effectiveOpenAiKey),
+      openaiCredentialStatus: openAiCredential.status,
       textGenerationProvider: zahyPiConfig.provider,
       textGenerationModel: usesZahyPi
         ? zahyPiConfig.model
@@ -104,6 +120,7 @@ export const aiSettingsRouter = router({
       textGenerationManagedByEnvironment: zahyPiConfig.source === "environment",
       zahyPiApiKey: maskedZahyPiKey,
       hasZahyPiKey: Boolean(availableZahyPiConfig.apiKey),
+      zahyPiCredentialStatus: zahyPiCredential.status,
       zahyPiBaseUrl: availableZahyPiConfig.baseUrl,
       zahyPiProjectId: availableZahyPiConfig.projectId,
       zahyPiModel: availableZahyPiConfig.model,
@@ -182,7 +199,11 @@ export const aiSettingsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
-      const stored = await resolveZahyPiRuntimeConfig();
+      const { getZahyPiRuntimeMetadata } = await import("./db_ai_settings");
+      // Testing a replacement key must not first decrypt the broken old key.
+      const stored = input.apiKey
+        ? { ...await getZahyPiRuntimeMetadata({ enabled: true, provider: "zahypi" }), apiKey: "" }
+        : await resolveZahyPiRuntimeConfig();
       const runtimeConfig = {
         enabled: true,
         provider: "zahypi" as const,

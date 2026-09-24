@@ -257,6 +257,17 @@ export function createZahyPiConnectorRepository({
     });
   }
 
+  // Configuration screens must remain readable even when an old credential
+  // cannot be decrypted. This path never unseals or returns credential bytes.
+  async function getActiveConnectorMetadata(projectId: string) {
+    return store.transaction(async (tx) => {
+      const active = (await tx.lockCredentials(projectId)).find((row) => row.status === "active");
+      if (!active) return null;
+      const { replayed: _replayed, apiKeyPrefix: _prefix, ...metadata } = summaryFromRow(active, false);
+      return metadata;
+    });
+  }
+
   async function getActiveConnectorCredentialSummary(
     projectId: string,
   ): Promise<Omit<ConnectorCredentialSummary, "replayed"> | null> {
@@ -330,6 +341,7 @@ export function createZahyPiConnectorRepository({
   return {
     activateConnectorCredential,
     getActiveConnectorCredential,
+    getActiveConnectorMetadata,
     getActiveConnectorCredentialSummary,
     reserveConnectorReceipt,
     completeConnectorReceipt,
@@ -400,6 +412,10 @@ export async function activateConnectorCredential(input: ConnectorActivationInpu
 
 export async function getActiveConnectorCredential(projectId = "sari") {
   return (await defaultRepository()).getActiveConnectorCredential(projectId);
+}
+
+export async function getActiveConnectorMetadata(projectId = "sari") {
+  return (await defaultRepository()).getActiveConnectorMetadata(projectId);
 }
 
 export async function getActiveConnectorCredentialSummary(projectId = "sari") {
