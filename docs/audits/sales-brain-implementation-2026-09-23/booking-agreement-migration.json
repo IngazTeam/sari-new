@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-09-24T08:27:26.374Z",
+  "scope": "Read-only metadata verification on two local test databases; no production migration",
+  "migration": "0089_conversation_booking_agreements",
+  "rawSqlSha256": "331668cb4b264c5e6110712043c87a3920326eeb572b850b585b88655814404f",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "journalMatched": true,
+      "sourceConsentAndBookingUnique": true,
+      "bookingReferenceSurvivesBookingDeletion": true,
+      "onlyConversationAndMerchantForeignKeys": true,
+      "noLegacyBookingMutation": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "journalMatched": true,
+      "sourceConsentAndBookingUnique": true,
+      "bookingReferenceSurvivesBookingDeletion": true,
+      "onlyConversationAndMerchantForeignKeys": true,
+      "noLegacyBookingMutation": true
+    }
+  ]
+}

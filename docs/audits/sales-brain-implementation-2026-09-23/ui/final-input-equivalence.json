@@ -1,16 +1,19 @@
 {
-  "scope": "Reuse of 332 passing component UI scenarios and 38 screenshots after byte-equivalence verification of fixture bundle, both verifiers and all loaded stylesheets; this repair changes server request identity only",
-  "reused": true,
-  "verifiedAt": "2026-09-24T07:54:35.208Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-calendar-review",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-appointment-request",
-  "fixture": "3d48bd6ec8edaaef18891fe1dbf6cb2f54a6c8e1ac8d0aa7622d953697954961",
-  "verifiers": {
-    "scripts/testing/verify-sales-brain-ui.cjs": "e806a0980948b92bba742680fc9e719a665e5d67ccc078c9924d69baaab7dac0",
-    "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0"
-  },
-  "styles": {
-    "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
-    "index-BuGepGAl.css": "5e419bfdb576f97e70db058d6c578889bf26800ec5d9e998247c572e1f1504fb"
+  "scope": "Fresh Chromium component verification: 332 passing scenarios, 38 screenshots, API fixtures and external network blocked; server-only changes followed by byte-equivalence verification of rebuilt fixture and styles",
+  "reused": false,
+  "verifiedAt": "2026-09-24T08:36:24.221Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-agreement",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-agreement",
+  "inputs": {
+    "fixture": "b8d94a05fc03505c135558c85d8edca84dbda4219b58642cfcd187e231c70004",
+    "report": "abf05f749379b91c95cd4c0a802c19fff1b05c2be009ca305228dac1d3922cdf",
+    "verifiers": {
+      "scripts/testing/verify-sales-brain-ui.cjs": "e806a0980948b92bba742680fc9e719a665e5d67ccc078c9924d69baaab7dac0",
+      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0"
+    },
+    "styles": {
+      "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
+      "index-CRcIGZ01.css": "bf86c00757602b7192a99baacf6f461ee4940528443a82487545a5f882f1af80"
+    }
   }
 }

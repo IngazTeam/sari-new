@@ -624,6 +624,13 @@
       "when": 1791072000000,
       "tag": "0088_appointment_creation_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "5",
+      "when": 1791158400000,
+      "tag": "0089_conversation_booking_agreements",
+      "breakpoints": true
     }
   ]
 }

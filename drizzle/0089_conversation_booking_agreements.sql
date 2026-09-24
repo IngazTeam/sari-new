@@ -1,0 +1,21 @@
+CREATE TABLE conversation_booking_agreements (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  merchant_id INT NOT NULL,
+  conversation_id INT NOT NULL,
+  customer_phone VARCHAR(50) NOT NULL,
+  source_message_id INT NOT NULL,
+  consent_message_id INT NULL,
+  booking_reference INT NULL,
+  state VARCHAR(20) NOT NULL DEFAULT 'proposed',
+  snapshot JSON NOT NULL,
+  snapshot_hash CHAR(64) NOT NULL,
+  offer_text TEXT NOT NULL,
+  expires_at DATETIME(3) NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY uq_conversation_booking_source (merchant_id,source_message_id),
+  UNIQUE KEY uq_conversation_booking_consent (merchant_id,consent_message_id),
+  UNIQUE KEY uq_conversation_booking_result (merchant_id,booking_reference),
+  KEY idx_conversation_booking_latest (merchant_id,conversation_id,id),
+  CONSTRAINT fk_conversation_booking_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE,
+  CONSTRAINT fk_conversation_booking_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);

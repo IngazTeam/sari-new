@@ -7,6 +7,8 @@ import type { ReplyPlan } from '../messaging/reply-plan';
 export async function assertInteractionSchema() {
   const { assertCheckoutAgreementSchema } = await import('./checkout-agreements');
   await assertCheckoutAgreementSchema();
+  const { assertBookingAgreementSchema } = await import('./booking-agreements');
+  await assertBookingAgreementSchema();
   await assertRuntimeSchema('sales interaction events', [
     { table: 'ai_sales_sector_settings', columns: ['playbook_id', 'revision', 'updated_by'] },
     { table: 'ai_interaction_jobs', uniqueIndexes: ['uq_ai_interaction_message'] },

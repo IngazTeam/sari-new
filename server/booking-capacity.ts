@@ -11,7 +11,12 @@ import {
 
 const positive = (value: number) =>
   z.number().int().positive().safe().parse(value);
-const unavailable = () => new Error("Booking capacity unavailable");
+export class BookingCapacityUnavailableError extends Error {
+  constructor() {
+    super("Booking capacity unavailable");
+  }
+}
+const unavailable = () => new BookingCapacityUnavailableError();
 type QueryConnection = Pick<PoolConnection, "execute">;
 
 /** Cross-process serialization for both appointment ledgers. No network work inside. */
@@ -156,53 +161,61 @@ export async function createAtomicBooking(
   raw: CreateScopedBookingInput
 ): Promise<number> {
   const input = createScopedBookingSchema.parse(raw);
-  return withBookingCapacityTransaction(input.merchantId, async connection => {
-    const [services] = await connection.execute<any[]>(
-      "SELECT * FROM services WHERE id=? AND merchant_id=? AND is_active=1 FOR UPDATE",
-      [input.serviceId, input.merchantId]
-    );
-    if (services.length !== 1) throw unavailable();
-    await validateBookingStaff(
-      connection,
-      input.merchantId,
-      services[0],
-      input.staffId
-    );
-    const schedule = {
-      serviceId: input.serviceId,
-      staffId: input.staffId,
-      bookingDate: input.bookingDate,
-      startTime: input.startTime,
-      endTime: input.endTime,
-    };
-    if (await hasBookingConflict(connection, input.merchantId, schedule))
-      throw unavailable();
-    const [result] = await connection.execute<any>(
-      `INSERT INTO bookings
+  return withBookingCapacityTransaction(input.merchantId, connection =>
+    createBookingInCapacityTransaction(connection, input)
+  );
+}
+/** Internal: caller owns the merchant capacity transaction. */
+export async function createBookingInCapacityTransaction(
+  connection: PoolConnection,
+  raw: CreateScopedBookingInput
+): Promise<number> {
+  const input = createScopedBookingSchema.parse(raw);
+  const [services] = await connection.execute<any[]>(
+    "SELECT * FROM services WHERE id=? AND merchant_id=? AND is_active=1 FOR UPDATE",
+    [input.serviceId, input.merchantId]
+  );
+  if (services.length !== 1) throw unavailable();
+  await validateBookingStaff(
+    connection,
+    input.merchantId,
+    services[0],
+    input.staffId
+  );
+  const schedule = {
+    serviceId: input.serviceId,
+    staffId: input.staffId,
+    bookingDate: input.bookingDate,
+    startTime: input.startTime,
+    endTime: input.endTime,
+  };
+  if (await hasBookingConflict(connection, input.merchantId, schedule))
+    throw unavailable();
+  const [result] = await connection.execute<any>(
+    `INSERT INTO bookings
       (merchant_id,service_id,customer_phone,customer_name,customer_email,staff_id,booking_date,start_time,end_time,duration_minutes,status,payment_status,base_price,discount_amount,final_price,notes,booking_source)
       VALUES (?,?,?,?,?,?,?,?,?,?,'pending','unpaid',?,?,?,?,?)`,
-      [
-        input.merchantId,
-        input.serviceId,
-        input.customerPhone,
-        input.customerName ?? null,
-        input.customerEmail ?? null,
-        input.staffId ?? null,
-        input.bookingDate,
-        input.startTime,
-        input.endTime,
-        input.durationMinutes,
-        input.basePrice,
-        input.discountAmount ?? 0,
-        input.finalPrice,
-        input.notes ?? null,
-        input.bookingSource ?? "whatsapp",
-      ]
-    );
-    const id = Number(result.insertId);
-    positive(id);
-    return id;
-  });
+    [
+      input.merchantId,
+      input.serviceId,
+      input.customerPhone,
+      input.customerName ?? null,
+      input.customerEmail ?? null,
+      input.staffId ?? null,
+      input.bookingDate,
+      input.startTime,
+      input.endTime,
+      input.durationMinutes,
+      input.basePrice,
+      input.discountAmount ?? 0,
+      input.finalPrice,
+      input.notes ?? null,
+      input.bookingSource ?? "whatsapp",
+    ]
+  );
+  const id = Number(result.insertId);
+  positive(id);
+  return id;
 }
 
 export async function checkBookingCapacity(

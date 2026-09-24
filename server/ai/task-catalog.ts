@@ -820,7 +820,7 @@ const TASK_DEFINITIONS: readonly TaskDefinition[] = [
     taskType: "sari.appointment.extract",
     businessNameAr: "استخراج تفاصيل الموعد",
     owner: "sari-booking-team",
-    sourceFiles: ["server/appointmentBot.ts"],
+    sourceFiles: ["server/appointmentBot.ts", "server/ai/booking-conversation.ts"],
     inputKind: "conversation",
     outputKind: "analysis",
     fallback: "request_missing_appointment_fields",

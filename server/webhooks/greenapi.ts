@@ -27,7 +27,6 @@ import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
 import { selectABTestVariant, recordABTestResult } from '../ai/ab-testing';
-import { isAppointmentRequest, handleAppointmentRequest } from '../appointmentBot';
 import { logDelivery } from '../routers-monitor';
 import { captureMerchantCorrection } from '../ai/learning-engine';
 import {
@@ -353,21 +352,8 @@ async function processTextMessage(params: {
       console.error('[Notification] Failed to send new message notification:', error);
     }
     
-    // التحقق من طلبات حجز المواعيد أولاً
-    const isAppointment = await isAppointmentRequest(params.messageText);
-    let response: string;
-    
-    if (isAppointment) {
-      console.log('[Webhook] Detected appointment request');
-      response = await handleAppointmentRequest(
-        params.merchantId,
-        params.customerPhone,
-        params.customerName || 'عميل',
-        params.messageText
-      );
-    } else {
-      // Get AI response from Sari
-      response = await chatWithSari({
+    // Booking proposals and consent use the same owned conversation pipeline as other sales replies.
+    const response = await chatWithSari({
         merchantId: params.merchantId,
         customerPhone: params.customerPhone,
         customerName: params.customerName,
@@ -377,8 +363,6 @@ async function processTextMessage(params: {
         incomingMessageId: incomingMsg?.id,
         isGroupMessage: params.isGroupMessage,
       });
-    }
-    
     console.log('[Webhook] Sari response:', response);
     
     // استخراج الكلمات المفتاحية من الرسالة

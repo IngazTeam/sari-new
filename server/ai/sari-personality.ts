@@ -1811,6 +1811,13 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
     }
 
     // التحقق من طلبات الشراء عبر Zid
+    if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+      const { handleBookingConversation } = await import('./booking-conversation');
+      const bookingReply = await handleBookingConversation({ merchantId: params.merchantId,
+        conversationId: params.conversationId, incomingMessageId: params.incomingMessageId,
+        customerPhone: params.customerPhone, message: params.message });
+      if (bookingReply) return bookingReply;
+    }
     const isZidConnected = await dbZid.isZidConnected(params.merchantId);
     if (!isZidConnected && !params.isGroupMessage && params.conversationId && params.incomingMessageId) {
       const { handleLocalCheckout } = await import('./checkout-conversation');
