@@ -11,6 +11,7 @@ import { databaseTimeEpoch } from "./db/time";
 import { assertBookingAgreementSchema } from "./ai/booking-agreements";
 import { readBookingConsentReview } from "./booking-consent-review";
 import { bookingConsentAttestationSchema } from "../shared/booking-consent-review";
+import { assertBookingCalendarMutation } from "./booking-calendar-state";
 import {
   bookingTransitions,
   bookingStatusSchema,
@@ -151,6 +152,9 @@ async function execute(
     let after: ReturnType<typeof snapshot> | null = null,
       changedFields: string[] = [];
     if (operation === "delete") {
+      await assertBookingCalendarMutation(connection, booking, {
+        remove: true,
+      });
       if (
         hasFinancialHistory ||
         !["pending", "cancelled"].includes(booking.status) ||
@@ -189,6 +193,10 @@ async function execute(
         (patch.startTime !== undefined &&
           patch.startTime !== booking.start_time) ||
         (patch.endTime !== undefined && patch.endTime !== booking.end_time);
+      await assertBookingCalendarMutation(connection, booking, {
+        schedule: scheduleChanged,
+        status: next,
+      });
       if (
         scheduleChanged ||
         (booking.status === "pending" && next === "confirmed") ||

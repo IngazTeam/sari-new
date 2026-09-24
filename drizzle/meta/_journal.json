@@ -645,6 +645,13 @@
       "when": 1791331200000,
       "tag": "0091_booking_agreement_amendments",
       "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "5",
+      "when": 1791417600000,
+      "tag": "0092_booking_calendar_dispatch",
+      "breakpoints": true
     }
   ]
 }

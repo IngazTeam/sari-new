@@ -1,0 +1,99 @@
+import type { PoolConnection } from "mysql2/promise";
+import { assertRuntimeSchema } from "./db/schema-readiness";
+import { databaseTimeEpoch } from "./db/time";
+export async function assertBookingCalendarSchema() {
+  await assertRuntimeSchema(
+    "booking calendar dispatch",
+    [
+      {
+        table: "booking_calendar_links",
+        columns: [
+          "booking_reference",
+          "request_hash",
+          "agreement_id",
+          "integration_id",
+          "calendar_id",
+          "identity_hash",
+          "event_reference",
+          "payload",
+          "payload_hash",
+          "state",
+          "revision",
+          "checked_at",
+        ],
+        uniqueIndexes: [
+          {
+            name: "uq_booking_calendar_booking",
+            columns: ["merchant_id", "booking_reference"],
+          },
+          {
+            name: "uq_booking_calendar_request",
+            columns: ["merchant_id", "request_id"],
+          },
+          { name: "uq_booking_calendar_event", columns: ["event_reference"] },
+        ],
+      },
+      {
+        table: "booking_calendar_reviews",
+        columns: [
+          "booking_reference",
+          "request_hash",
+          "action",
+          "outcome",
+          "reason",
+          "proof_hash",
+        ],
+        uniqueIndexes: [
+          {
+            name: "uq_booking_calendar_review_request",
+            columns: ["merchant_id", "request_id"],
+          },
+        ],
+      },
+    ],
+    { cacheSuccess: false }
+  );
+}
+export async function readBookingCalendarLink(
+  c: PoolConnection,
+  merchantId: number,
+  bookingId: number
+) {
+  const [rows] = await c.execute<any[]>(
+    "SELECT * FROM booking_calendar_links WHERE merchant_id=? AND booking_reference=? FOR UPDATE",
+    [merchantId, bookingId]
+  );
+  return rows[0] ?? null;
+}
+/** Never release a slot while a calendar write may still exist. */
+export async function assertBookingCalendarMutation(
+  c: PoolConnection,
+  booking: any,
+  input: { schedule?: boolean; remove?: boolean; status?: string }
+) {
+  const link = await readBookingCalendarLink(
+    c,
+    booking.merchant_id,
+    booking.id
+  );
+  if (!link) return;
+  const changed = input.status && input.status !== booking.status;
+  if (
+    input.schedule ||
+    input.remove ||
+    (changed && (link.state !== "synced" || input.status === "cancelled"))
+  )
+    throw Error("Calendar commitment requires review");
+  if (changed && ["completed", "no_show"].includes(input.status!)) {
+    const [clock] = await c.execute<any[]>("SELECT UTC_TIMESTAMP(3) AS now");
+    const date =
+      booking.booking_date instanceof Date
+        ? booking.booking_date.toISOString().slice(0, 10)
+        : String(booking.booking_date).slice(0, 10);
+    if (
+      Date.parse(`${date}T${booking.end_time}:00+03:00`) >
+      databaseTimeEpoch(clock[0].now)
+    )
+      throw Error("Calendar slot is still active");
+  }
+}

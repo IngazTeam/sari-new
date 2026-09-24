@@ -1,0 +1,43 @@
+CREATE TABLE booking_calendar_links (
+ id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ merchant_id INT NOT NULL,
+ booking_reference INT NOT NULL,
+ actor_user_id INT NOT NULL,
+ request_id CHAR(36) NOT NULL,
+ request_hash CHAR(64) NOT NULL,
+ agreement_id INT NOT NULL,
+ integration_id INT NOT NULL,
+ calendar_id VARCHAR(255) NOT NULL,
+ identity_hash CHAR(64) NOT NULL,
+ event_reference VARCHAR(100) NOT NULL,
+ payload JSON NOT NULL,
+ payload_hash CHAR(64) NOT NULL,
+ state VARCHAR(24) NOT NULL DEFAULT 'creating',
+ failure_code VARCHAR(40) NULL,
+ revision INT NOT NULL DEFAULT 0,
+ checked_at DATETIME(3) NULL,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+ UNIQUE KEY uq_booking_calendar_booking (merchant_id,booking_reference),
+ UNIQUE KEY uq_booking_calendar_request (merchant_id,request_id),
+ UNIQUE KEY uq_booking_calendar_event (event_reference),
+ CONSTRAINT fk_booking_calendar_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE booking_calendar_reviews (
+ id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ merchant_id INT NOT NULL,
+ booking_reference INT NOT NULL,
+ actor_user_id INT NOT NULL,
+ request_id CHAR(36) NOT NULL,
+ request_hash CHAR(64) NOT NULL,
+ action VARCHAR(20) NOT NULL,
+ outcome VARCHAR(24) NOT NULL,
+ failure_code VARCHAR(40) NULL,
+ reason VARCHAR(500) NOT NULL,
+ proof_hash CHAR(64) NOT NULL,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ UNIQUE KEY uq_booking_calendar_review_request (merchant_id,request_id),
+ KEY idx_booking_calendar_reviews (merchant_id,booking_reference,id),
+ CONSTRAINT fk_booking_calendar_review_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE
+);

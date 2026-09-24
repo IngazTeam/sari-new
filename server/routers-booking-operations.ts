@@ -8,8 +8,44 @@ import {
 import { updateBooking, deleteBooking } from "./db";
 import { getBookingOperationHistory } from "./booking-operations";
 import { getBookingConsentReview } from "./booking-consent-review";
+import {
+  bookingCalendarActionSchema,
+  bookingCalendarIdSchema,
+} from "../shared/booking-calendar";
+import {
+  readBookingCalendarReview,
+  synchronizeBookingCalendar,
+} from "./booking-calendar";
 
 export const bookingOperationProcedures = {
+  getCalendarReview: permissionProcedure("orders.manage")
+    .input(bookingCalendarIdSchema)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readBookingCalendarReview(ctx.merchantId, input.bookingId);
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking calendar review unavailable",
+        });
+      }
+    }),
+  synchronizeCalendar: permissionProcedure("orders.manage")
+    .input(bookingCalendarActionSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await synchronizeBookingCalendar(
+          ctx.merchantId,
+          ctx.user.id,
+          input
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking calendar requires refreshed evidence",
+        });
+      }
+    }),
   getConsentReview: permissionProcedure("orders.manage")
     .input(z.object({ bookingId: z.number().int().positive().safe() }).strict())
     .query(async ({ ctx, input }) => {

@@ -4210,3 +4210,17 @@ export const bookingOperationAudits = mysqlTable('booking_operation_audits', {
 export const bookingCapacityLocks = mysqlTable("booking_capacity_locks", {
   merchantId: int("merchant_id").notNull().primaryKey().references(() => merchants.id, { onDelete: "cascade" }),
 });
+
+export const bookingCalendarLinks = mysqlTable("booking_calendar_links", {
+ id: int().autoincrement().primaryKey(), merchantId: int("merchant_id").notNull().references(()=>merchants.id,{onDelete:"cascade"}),
+ bookingReference:int("booking_reference").notNull(),actorUserId:int("actor_user_id").notNull(),requestId:char("request_id",{length:36}).notNull(),requestHash:char("request_hash",{length:64}).notNull(),
+ agreementId:int("agreement_id").notNull(),integrationId:int("integration_id").notNull(),calendarId:varchar("calendar_id",{length:255}).notNull(),identityHash:char("identity_hash",{length:64}).notNull(),
+ eventReference:varchar("event_reference",{length:100}).notNull(),payload:json().notNull(),payloadHash:char("payload_hash",{length:64}).notNull(),state:varchar({length:24}).default("creating").notNull(),
+ failureCode:varchar("failure_code",{length:40}),revision:int().default(0).notNull(),checkedAt:datetime("checked_at",{mode:"string",fsp:3}),
+ createdAt:datetime("created_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),updatedAt:datetime("updated_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},t=>[uniqueIndex("uq_booking_calendar_booking").on(t.merchantId,t.bookingReference),uniqueIndex("uq_booking_calendar_request").on(t.merchantId,t.requestId),uniqueIndex("uq_booking_calendar_event").on(t.eventReference)]);
+export const bookingCalendarReviews = mysqlTable("booking_calendar_reviews", {
+ id:int().autoincrement().primaryKey(),merchantId:int("merchant_id").notNull().references(()=>merchants.id,{onDelete:"cascade"}),bookingReference:int("booking_reference").notNull(),actorUserId:int("actor_user_id").notNull(),
+ requestId:char("request_id",{length:36}).notNull(),requestHash:char("request_hash",{length:64}).notNull(),action:varchar({length:20}).notNull(),outcome:varchar({length:24}).notNull(),failureCode:varchar("failure_code",{length:40}),
+ reason:varchar({length:500}).notNull(),proofHash:char("proof_hash",{length:64}).notNull(),createdAt:datetime("created_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},t=>[uniqueIndex("uq_booking_calendar_review_request").on(t.merchantId,t.requestId),index("idx_booking_calendar_reviews").on(t.merchantId,t.bookingReference,t.id)]);

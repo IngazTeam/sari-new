@@ -22,6 +22,10 @@ import {
 import { isSalesRefusal, isShortAffirmation } from "./customer-decision";
 import { currentInboundExecution } from "../messaging/inbound-context";
 import { resolveBookingAmendment } from "./booking-amendment-context";
+import {
+  assertBookingCalendarSchema,
+  readBookingCalendarLink,
+} from "../booking-calendar-state";
 
 export const bookingSelectionSchema = z
   .object({
@@ -77,6 +81,7 @@ function identity(input: CheckoutIdentity) {
   appointmentCreationSchema.shape.customerPhone.parse(input.customerPhone);
 }
 export async function assertBookingAgreementSchema() {
+  await assertBookingCalendarSchema();
   await assertRuntimeSchema(
     "conversation booking agreements",
     [
@@ -252,6 +257,8 @@ async function readAmendmentTarget(
     [bookingId, input.merchantId, input.customerPhone]
   );
   const b = bookings[0];
+  if (await readBookingCalendarLink(c, input.merchantId, bookingId))
+    throw unavailable();
   if (
     !b ||
     !["pending", "confirmed"].includes(b.status) ||

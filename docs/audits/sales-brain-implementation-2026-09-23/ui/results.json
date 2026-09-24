@@ -1,8 +1,10 @@
 {
-  "generatedAt": "2026-09-24T09:03:03.564Z",
+  "generatedAt": "2026-09-24T10:16:10.936Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
+    "booking-calendar-1440.png",
+    "booking-calendar-375.png",
     "booking-checkout-review-1440.png",
     "booking-checkout-review-375.png",
     "booking-consent-1440.png",
@@ -181,6 +183,201 @@
     {
       "width": 375,
       "mode": "booking_consent_resets_on_booking_change",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_account",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_binding",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_in_flight",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_legacy",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_consent",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_parent-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_unknown",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_synced",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_ended",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_calendar_untrusted_text_inert",
       "passed": true
     },
     {

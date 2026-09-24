@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { BookingConsentPanel } from "@/components/BookingConsentPanel";
+import { BookingCalendarSync } from "@/components/BookingCalendarSync";
 import {
   bookingStatusSchema,
   bookingTransitions,
@@ -25,6 +26,17 @@ export function BookingOperations({
     [saved, setSaved] = useState(false);
   const inFlight = useRef(false);
   const [consentReviewed, setConsentReviewed] = useState(false);
+  const calendar = trpc.bookings.getCalendarReview.useQuery(
+    { bookingId: booking.id },
+    { refetchOnWindowFocus: false }
+  );
+  const calendarReady =
+    !!calendar.data &&
+    !calendar.isLoading &&
+    !calendar.isFetching &&
+    !calendar.isError;
+  const calendarManaged =
+    !!calendar.data && !["none", "legacy"].includes(calendar.data.state);
   const consent = trpc.bookings.getConsentReview.useQuery(
     { bookingId: booking.id },
     { refetchOnWindowFocus: false }
@@ -71,16 +83,18 @@ export function BookingOperations({
     if (!deleted && result.data?.[0]?.operation !== "delete") {
       const fresh = await consent.refetch();
       if (fresh.isError) throw Error("Booking consent refresh failed");
+      const calendarFresh = await calendar.refetch();
+      if (calendarFresh.isError) throw Error("Booking calendar refresh failed");
     }
     await onChanged(deleted || result.data?.[0]?.operation === "delete");
   };
   const perform = async (operation: "update" | "delete") => {
     if (inFlight.current || busy || submitted || history.isFetching) return;
+    if (!calendarReady || (operation === "delete" && calendarManaged)) return;
     if (operation === "update" && confirming && !canConfirm) return;
     if (
       (operation === "update" &&
-        (!bookingTransitions[booking.status].includes(status) ||
-          booking.paymentStatus === "refunded")) ||
+        (!allowed.includes(status) || booking.paymentStatus === "refunded")) ||
       (operation === "delete" && !attested)
     )
       return;
@@ -146,11 +160,19 @@ export function BookingOperations({
   const allowed =
     booking.paymentStatus === "refunded"
       ? []
-      : bookingTransitions[booking.status];
-  const disabled = busy || submitted || history.isFetching;
+      : bookingTransitions[booking.status].filter(
+          next =>
+            !calendarManaged ||
+            (calendar.data?.state === "synced" &&
+              next !== "cancelled" &&
+              (!["completed", "no_show"].includes(next) ||
+                calendar.data.canRelease))
+        );
+  const disabled = busy || submitted || history.isFetching || !calendarReady;
   const mayDelete =
     ["pending", "cancelled"].includes(booking.status) &&
-    booking.paymentStatus === "unpaid";
+    booking.paymentStatus === "unpaid" &&
+    !calendarManaged;
   return (
     <section
       data-booking-operations
@@ -318,6 +340,7 @@ export function BookingOperations({
       >
         {t("merchantUx.bookingOperations.refresh")}
       </Button>
+      <BookingCalendarSync bookingId={booking.id} onChanged={() => refresh()} />
     </section>
   );
 }

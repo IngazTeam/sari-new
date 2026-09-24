@@ -1,3 +1,4 @@
+import { BookingCalendarSync } from '../../../client/src/components/BookingCalendarSync';
 import { DiscountPolicySettings } from '../../../client/src/components/DiscountPolicySettings';
 import CalendarPage from '../../../client/src/pages/CalendarPage';
 import { AppointmentSyncReview } from '../../../client/src/components/AppointmentSyncReview';
@@ -28,7 +29,7 @@ import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidChe
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
 function BookingOperationsFixture(){
   const mode=new URL(location.href).searchParams.get('case')||'';
-  const initial:BookingStatus=mode==='booking-ops-cancelled'?'cancelled':mode==='booking-ops-completed'?'completed':mode==='booking-ops-no-show'?'no_show':mode==='booking-ops-paid'?'confirmed':'pending';
+  const initial:BookingStatus=mode.startsWith('booking-ops-calendar-')?'confirmed':mode==='booking-ops-cancelled'?'cancelled':mode==='booking-ops-completed'?'completed':mode==='booking-ops-no-show'?'no_show':mode==='booking-ops-paid'?'confirmed':'pending';
   const [status,setStatus]=useState<BookingStatus>(initial),[deleted,setDeleted]=useState(false);
   useEffect(()=>{(window as any).__changeOperationalBooking=()=>setStatus('cancelled');},[]);
   return deleted?<p data-booking-deleted>Booking removed from the list</p>:<BookingOperations booking={{id:321,status,paymentStatus:mode==='booking-ops-refunded'?'refunded':mode==='booking-ops-paid'?'paid':'unpaid'}} onChanged={async(isDeleted)=>{
@@ -41,6 +42,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('booking-calendar-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><BookingCalendarSync bookingId={321} onChanged={async()=>{if(mode==='booking-calendar-parent-error')throw Error('private parent failure');(window as any).__bookingCalendarParentRefreshed=true;}} /></main>); return; }
   if(mode.startsWith('calendar-page-')) { createRoot(document.getElementById('root')!).render(<CalendarPage />); return; }
   if(mode.startsWith('calendar-review-')) { createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><AppointmentSyncReview appointmentId={501} onChanged={async()=>{if(mode==='calendar-review-parent-error')throw Error('private parent failure');(window as any).__calendarParentRefreshed=true;}} /></main>); return; }
   createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl space-y-6 p-4" dir={lng === 'ar' ? 'rtl' : 'ltr'}>

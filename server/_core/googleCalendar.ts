@@ -35,11 +35,15 @@ export async function createOAuth2Client() {
     throw new Error('Google OAuth credentials not configured. Please add them in Admin > Google OAuth Settings');
   }
 
-  return new google.auth.OAuth2(
+  const client = new google.auth.OAuth2(
     clientId,
     clientSecret,
     REDIRECT_URI
   );
+  // Also bound token inspection/refresh: the SDK otherwise enables its own retries.
+  const request = client.transporter.request.bind(client.transporter);
+  client.transporter.request = ((options: any) => request({ ...options, timeout: 15000, retry: false })) as typeof client.transporter.request;
+  return client;
 }
 
 /**
@@ -204,7 +208,7 @@ export async function createCalendarEvent(
   const response = await calendar.events.insert({
     calendarId: calendarId,
     requestBody: event,
-  });
+  }, { timeout: 15000, retry: false });
 
   return response.data;
 }
@@ -246,7 +250,7 @@ export async function updateCalendarEvent(
     calendarId: calendarId,
     eventId: eventId,
     requestBody: event,
-  });
+  }, { timeout: 15000, retry: false });
 
   return response.data;
 }
@@ -264,7 +268,7 @@ export async function deleteCalendarEvent(
   await calendar.events.delete({
     calendarId: calendarId,
     eventId: eventId,
-  });
+  }, { timeout: 15000, retry: false });
 
   return true;
 }
@@ -290,26 +294,43 @@ export async function getCalendarEvent(
 /**
  * Check if credentials are valid and refresh if needed
  */
-export async function validateAndRefreshCredentials(credentials: any) {
-  const oauth2Client = createOAuth2Client();
-  // @ts-ignore
-  oauth2Client.setCredentials(credentials);
-
-  try {
-    // Try to get token info
-    // @ts-ignore
-    const tokenInfo = await oauth2Client.getTokenInfo(credentials.access_token);
-    
-    // If token is valid, return as is
-    return credentials;
-  } catch (error) {
-    // Token expired, try to refresh
-    if (credentials.refresh_token) {
-      // @ts-ignore
-      const { credentials: newCredentials } = await oauth2Client.refreshAccessToken();
-      return newCredentials;
-    }
-    
-    throw new Error('Invalid credentials and no refresh token available');
+/** Exact interval, complete response required; an error must never be interpreted as free time. */
+export async function assertCalendarTimeFree(credentials: any, calendarId: string, start: Date, end: Date) {
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) throw Error('Calendar availability unavailable');
+  const calendar = await createCalendarClient(credentials);
+  const response = await calendar.freebusy.query({ requestBody: { timeMin: start.toISOString(), timeMax: end.toISOString(), timeZone: 'Asia/Riyadh', items: [{ id: calendarId }] } }, { timeout: 15000, retry: false });
+  const entry = response.data.calendars?.[calendarId];
+  if (!entry || (entry.errors && (!Array.isArray(entry.errors) || entry.errors.length > 0)) || !Array.isArray(entry.busy)) throw Error('Calendar availability unavailable');
+  const epoch = (v: unknown) => typeof v === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(v) ? Date.parse(v) : NaN;
+  for (const item of entry.busy) {
+    const from = epoch(item.start), to = epoch(item.end);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) throw Error('Calendar availability unavailable');
+    if (start.getTime() < to && end.getTime() > from) throw Error('Calendar interval is occupied');
   }
+}
+
+export async function validateAndRefreshCredentials(credentials: any) {
+  const failed = () => new Error('Calendar authorization unavailable');
+  const token = (value: unknown) => typeof value === 'string' && value.trim().length > 0 && value.length <= 16384;
+  if (!credentials || typeof credentials !== 'object' || Array.isArray(credentials) ||
+    (!token(credentials.access_token) && !token(credentials.refresh_token))) throw failed();
+  try {
+    const oauth2Client = await createOAuth2Client();
+    const original = { ...credentials };
+    oauth2Client.setCredentials({ ...original });
+    if (token(original.access_token)) {
+      try {
+        const info = await oauth2Client.getTokenInfo(original.access_token);
+        if (!Number.isFinite(info.expiry_date)) throw failed();
+        if (info.expiry_date > Date.now()) return { ...original, expiry_date: info.expiry_date };
+      } catch (error: any) {
+        // A timeout or outage is not evidence of token expiry; don't amplify it with refresh.
+        if (![400, 401].includes(error?.response?.status)) throw failed();
+      }
+    }
+    if (!token(original.refresh_token)) throw failed();
+    const { credentials: renewed } = await oauth2Client.refreshAccessToken();
+    if (!token(renewed.access_token) || !Number.isFinite(renewed.expiry_date) || renewed.expiry_date! <= Date.now()) throw failed();
+    return { ...original, ...renewed, refresh_token: original.refresh_token };
+  } catch { throw failed(); }
 }

@@ -1,3 +1,4 @@
+import { bookingCalendarFixture } from './booking-calendar-ui-trpc';
 import { useEffect, useMemo, useState } from 'react';
 import { calendarFixture } from './calendar-ui-trpc';
 import { consentFixture } from './booking-consent-ui-trpc';
@@ -13,6 +14,8 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
 export const trpc = {
   calendar: calendarFixture,
   bookings: {
+    getCalendarReview: bookingCalendarFixture.query,
+    synchronizeCalendar: bookingCalendarFixture.mutation,
     getConsentReview: consentFixture,
     getOperationHistory:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[version,setVersion]=useState(0);

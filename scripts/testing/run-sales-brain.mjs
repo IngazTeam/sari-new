@@ -12,6 +12,7 @@ const units = [
   'server/calendar-availability.test.ts',
   'server/booking-capacity-pentest.test.ts',
   'server/booking-operations-pentest.test.ts',
+  'server/booking-calendar-pentest.test.ts',
   'server/booking-checkout-pentest.test.ts',
   'server/checkout-reconciliation-pentest.test.ts',
   'server/ai/checkout-margin.test.ts',
@@ -40,6 +41,7 @@ const units = [
 const database = [
   'server/ai/booking-agreements.mysql.test.ts',
   'server/ai/booking-amendments.mysql.test.ts',
+  'server/ai/booking-calendar.mysql.test.ts',
   'server/appointment-creation-requests.mysql.test.ts',
   'server/appointment-reconciliation.mysql.test.ts',
   'server/appointment-capacity.mysql.test.ts',

@@ -1,17 +1,21 @@
 {
-  "scope": "Reuse of 357 passing component UI scenarios and 40 screenshots after byte-equivalence verification of fixture bundle, all three verifiers and all loaded stylesheets; this repair changes server-side booking amendment consent only",
-  "reused": true,
-  "verifiedAt": "2026-09-24T09:26:43.896Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-consent-review",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-amendments",
-  "fixture": "9bade014aff303f9e880fb310a7074c7239ddc5b75690e503c4ea42fcd32a3ca",
-  "verifiers": {
-    "scripts/testing/verify-sales-brain-ui.cjs": "922aa77f37bde105c7b140d90996352c91c69a2852a38a8975998c300c2eefda",
-    "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
-    "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d"
-  },
-  "styles": {
-    "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
-    "index-CRcIGZ01.css": "bf86c00757602b7192a99baacf6f461ee4940528443a82487545a5f882f1af80"
+  "scope": "Fresh Chromium component verification: 392 passing scenarios, 42 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking calendar UI",
+  "reused": false,
+  "verifiedAt": "2026-09-24T10:16:49.535Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-calendar",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-calendar",
+  "inputs": {
+    "fixture": "a6c858419565e0230a6aa056a6558345f30804189d878e506eeb9c5d1cab3ded",
+    "report": "1c6b0411fa89c0ae758ab6c0040a5b4b744e85bd41f46f264ec992b35da57c75",
+    "verifiers": {
+      "scripts/testing/verify-sales-brain-ui.cjs": "80165571b5c477c177a2c1157321f343f144eac0c6805d72e7742684d7099107",
+      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
+      "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
+      "scripts/testing/verify-booking-calendar-ui.cjs": "e8d7300b8a5ee6d9ac41fae6c98a99acee8956aa74919efa3ce17eb8e65c4ac3"
+    },
+    "styles": {
+      "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
+      "index-CRcIGZ01.css": "bf86c00757602b7192a99baacf6f461ee4940528443a82487545a5f882f1af80"
+    }
   }
 }
