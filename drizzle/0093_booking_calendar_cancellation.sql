@@ -1,0 +1,21 @@
+CREATE TABLE booking_calendar_cancellations (
+ id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ merchant_id INT NOT NULL,
+ booking_reference INT NOT NULL,
+ actor_user_id INT NOT NULL,
+ request_id CHAR(36) NOT NULL,
+ request_hash CHAR(64) NOT NULL,
+ snapshot JSON NOT NULL,
+ snapshot_hash CHAR(64) NOT NULL,
+ event_etag VARCHAR(256) NOT NULL,
+ reason VARCHAR(500) NOT NULL,
+ evidence_hash CHAR(64) NOT NULL,
+ state VARCHAR(24) NOT NULL DEFAULT 'cancelling',
+ failure_code VARCHAR(40) NULL,
+ revision INT NOT NULL DEFAULT 0,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+ UNIQUE KEY uq_booking_cancel_booking (merchant_id,booking_reference),
+ UNIQUE KEY uq_booking_cancel_request (merchant_id,request_id),
+ CONSTRAINT fk_booking_cancel_merchant FOREIGN KEY (merchant_id) REFERENCES merchants(id) ON DELETE CASCADE
+);

@@ -6,6 +6,7 @@ import { getMerchantPaymentSettings } from '../db';
 import { getPaymentLinkById } from '../db_payments';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { databaseTimeEpoch } from '../db/time';
+import { assertBookingNotCancelling } from '../booking-calendar-state';
 import { publicPaymentUrls } from '../utils/public-url';
 import { requireMinor } from '../../shared/product-money';
 import { postTapCharge } from './tap-client';
@@ -56,6 +57,7 @@ async function lockedBooking(connection:PoolConnection,merchantId:number,booking
   // Settlement also locks the booking before payment links and payment rows.
   const [rows]=await connection.execute<any[]>('SELECT * FROM bookings WHERE id=? AND merchant_id=? FOR UPDATE',[bookingId,merchantId]);
   const booking=rows[0];if(!booking)throw unavailable();
+  await assertBookingNotCancelling(connection, merchantId, bookingId);
   const [services]=await connection.execute<any[]>('SELECT id FROM services WHERE id=? AND merchant_id=? FOR SHARE',[booking.service_id,merchantId]);
   if(services.length!==1)throw unavailable();
   return booking;

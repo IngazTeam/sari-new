@@ -1,0 +1,23 @@
+{
+  "verifiedAt": "2026-09-24T10:41:55.536Z",
+  "migration": "0093_booking_calendar_cancellation",
+  "productionChanged": false,
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "sqlSha256": "1d4d04960119507f249094433eafb4eceb231fd17853210b930e4e702bebf366",
+      "uniqueBookingAndRequestVerified": true,
+      "bookingDeletionCannotEraseCancellation": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "sqlSha256": "1d4d04960119507f249094433eafb4eceb231fd17853210b930e4e702bebf366",
+      "uniqueBookingAndRequestVerified": true,
+      "bookingDeletionCannotEraseCancellation": true,
+      "noBackfillOrExistingBookingChanges": true,
+      "productionChanged": false
+    }
+  ]
+}

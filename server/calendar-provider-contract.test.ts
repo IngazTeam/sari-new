@@ -40,6 +40,7 @@ import {
   getCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
+  deleteCalendarEventIfMatch,
   validateAndRefreshCredentials,
   createOAuth2Client,
   assertCalendarTimeFree,
@@ -66,6 +67,40 @@ beforeEach(() => {
   });
 });
 describe("Google calendar provider contract", () => {
+  it("conditionally deletes only the reviewed version with a bounded single request", async () => {
+    mocks.remove.mockResolvedValueOnce({ status: 204 });
+    await expect(
+      deleteCalendarEventIfMatch({}, "original", "event", '"version1"')
+    ).resolves.toBe(true);
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith(
+      { calendarId: "original", eventId: "event", sendUpdates: "none" },
+      { timeout: 15000, retry: false, headers: { "If-Match": '"version1"' } }
+    );
+  });
+  it.each([
+    "",
+    "*",
+    "version1",
+    'W/"version1"',
+    '"bad\r\nheader"',
+    '"' + "x".repeat(255) + '"',
+  ])("rejects unsafe event versions (case %#)", async etag => {
+    await expect(
+      deleteCalendarEventIfMatch({}, "primary", "event", etag)
+    ).rejects.toThrow();
+    expect(mocks.settings).not.toHaveBeenCalled();
+    expect(mocks.remove).not.toHaveBeenCalled();
+  });
+  it.each([200, 202, 404, 410, 412, 500, undefined])(
+    "does not accept a cancellation acknowledgement %s",
+    async status => {
+      mocks.remove.mockResolvedValueOnce({ status });
+      await expect(
+        deleteCalendarEventIfMatch({}, "primary", "event", '"version1"')
+      ).rejects.toThrow();
+      expect(mocks.remove).toHaveBeenCalledOnce();
+    }
+  );
   it("sends the durable ID and private correlation with explicitly offset event times", async () => {
     const reference = "sariappt" + "a".repeat(32);
     await createCalendarEvent({}, "primary", {

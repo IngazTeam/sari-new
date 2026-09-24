@@ -6,6 +6,31 @@ export async function assertBookingCalendarSchema() {
     "booking calendar dispatch",
     [
       {
+        table: "booking_calendar_cancellations",
+        columns: [
+          "booking_reference",
+          "actor_user_id",
+          "request_hash",
+          "snapshot",
+          "snapshot_hash",
+          "event_etag",
+          "reason",
+          "evidence_hash",
+          "state",
+          "revision",
+        ],
+        uniqueIndexes: [
+          {
+            name: "uq_booking_cancel_booking",
+            columns: ["merchant_id", "booking_reference"],
+          },
+          {
+            name: "uq_booking_cancel_request",
+            columns: ["merchant_id", "request_id"],
+          },
+        ],
+      },
+      {
         table: "booking_calendar_links",
         columns: [
           "booking_reference",
@@ -77,6 +102,8 @@ export async function assertBookingCalendarMutation(
     booking.id
   );
   if (!link) return;
+  if (["cancelling", "cancel_unknown"].includes(link.state))
+    throw Error("Calendar cancellation requires review");
   const changed = input.status && input.status !== booking.status;
   if (
     input.schedule ||
@@ -96,4 +123,17 @@ export async function assertBookingCalendarMutation(
     )
       throw Error("Calendar slot is still active");
   }
+}
+
+/** Caller holds the booking lock; a cancellation dispatch fences later checkout issuance. */
+export async function assertBookingNotCancelling(
+  c: PoolConnection,
+  merchantId: number,
+  bookingId: number
+) {
+  const [rows] = await c.execute<any[]>(
+    "SELECT id FROM booking_calendar_cancellations WHERE merchant_id=? AND booking_reference=? FOR UPDATE",
+    [merchantId, bookingId]
+  );
+  if (rows.length) throw Error("Booking cancellation prevents checkout");
 }

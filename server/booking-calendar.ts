@@ -48,7 +48,11 @@ async function ready() {
   await assertBookingAgreementSchema();
   await assertBookingCalendarSchema();
 }
-async function graph(c: PoolConnection, merchantId: number, bookingId: number) {
+export async function readBookingCalendarGraph(
+  c: PoolConnection,
+  merchantId: number,
+  bookingId: number
+) {
   const [rows] = await c.execute<any[]>(
     "SELECT * FROM bookings WHERE id=? AND merchant_id=? FOR UPDATE",
     [bookingId, merchantId]
@@ -162,6 +166,7 @@ async function graph(c: PoolConnection, merchantId: number, bookingId: number) {
     evidence: hash({ b, link, consent, target: targetProof }),
   };
 }
+const graph = readBookingCalendarGraph;
 async function history(
   c: PoolConnection,
   merchantId: number,
@@ -223,6 +228,11 @@ async function prior(
   input: BookingCalendarAction,
   requestHash: string
 ): Promise<Result | null> {
+  const [cancellations] = await c.execute<any[]>(
+    "SELECT id FROM booking_calendar_cancellations WHERE merchant_id=? AND request_id=?",
+    [merchantId, input.requestId]
+  );
+  if (cancellations.length) throw fail();
   const [reviews] = await c.execute<any[]>(
     "SELECT request_hash,outcome FROM booking_calendar_reviews WHERE merchant_id=? AND request_id=?",
     [merchantId, input.requestId]
@@ -241,7 +251,7 @@ async function prior(
   }
   return null;
 }
-function verify(
+export function verifyBookingCalendarEvent(
   event: any,
   g: Awaited<ReturnType<typeof graph>>,
   reference: string
@@ -271,6 +281,7 @@ function verify(
     return "time_mismatch";
   return null;
 }
+const verify = verifyBookingCalendarEvent;
 /** One durable creation dispatch. Retries inspect the existing reference, never repeat its POST. */
 export async function synchronizeBookingCalendar(
   merchantId: number,

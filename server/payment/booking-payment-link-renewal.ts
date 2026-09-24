@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { databaseTimeEpoch } from '../db/time';
+import { assertBookingNotCancelling } from '../booking-calendar-state';
 import { readPaymentLinkId } from './payment-link-policy';
 import { bookingPaymentLinkRenewalSchema, type BookingPaymentLinkRenewalInput, type BookingPaymentLinkRenewalBlocker } from '../../shared/booking-payment-link-renewal';
 
@@ -44,6 +45,7 @@ function terminal(payment: any) {
 async function graph(connection: PoolConnection, merchantId: number, bookingId: number) {
   const [bookings] = await connection.execute<any[]>('SELECT * FROM bookings WHERE id=? AND merchant_id=? FOR UPDATE', [bookingId, merchantId]);
   const booking = bookings[0]; if (!booking) throw unavailable();
+  await assertBookingNotCancelling(connection, merchantId, bookingId);
   const [services] = await connection.execute<any[]>('SELECT id FROM services WHERE id=? AND merchant_id=? FOR UPDATE', [booking.service_id, merchantId]);
   const [links] = await connection.execute<any[]>('SELECT * FROM payment_links WHERE booking_id=? ORDER BY id FOR UPDATE', [bookingId]);
   if (!links.length) return null;

@@ -38,6 +38,9 @@ export function BookingCalendarSync({
     create_unknown: t("merchantUx.bookingCalendar.unknown"),
     synced: t("merchantUx.bookingCalendar.synced"),
     legacy: t("merchantUx.bookingCalendar.legacy"),
+    cancelling: t("merchantUx.bookingCancellation.cancelling"),
+    cancel_unknown: t("merchantUx.bookingCancellation.unknown"),
+    cancelled: t("merchantUx.bookingCancellation.cancelled"),
   };
   const blocked: Record<string, string> = {
     account: t("merchantUx.bookingCalendar.account"),
@@ -202,9 +205,13 @@ export function BookingCalendarSync({
                       className="rounded border p-2 [overflow-wrap:anywhere]"
                     >
                       <p>
-                        {row.action === "create"
-                          ? t("merchantUx.bookingCalendar.create")
-                          : t("merchantUx.bookingCalendar.verify")}{" "}
+                        {row.action === "cancel"
+                          ? t("merchantUx.bookingCancellation.cancel")
+                          : row.action === "verify_cancel"
+                            ? t("merchantUx.bookingCancellation.verify")
+                            : row.action === "create"
+                              ? t("merchantUx.bookingCalendar.create")
+                              : t("merchantUx.bookingCalendar.verify")}{" "}
                         ·{" "}
                         {states[row.outcome] ||
                           t("merchantUx.bookingCalendar.unknown")}

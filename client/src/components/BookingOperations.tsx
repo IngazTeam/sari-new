@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { BookingConsentPanel } from "@/components/BookingConsentPanel";
 import { BookingCalendarSync } from "@/components/BookingCalendarSync";
+import { BookingCancellation } from "@/components/BookingCancellation";
 import {
   bookingStatusSchema,
   bookingTransitions,
@@ -341,6 +342,7 @@ export function BookingOperations({
         {t("merchantUx.bookingOperations.refresh")}
       </Button>
       <BookingCalendarSync bookingId={booking.id} onChanged={() => refresh()} />
+      <BookingCancellation bookingId={booking.id} onChanged={() => refresh()} />
     </section>
   );
 }

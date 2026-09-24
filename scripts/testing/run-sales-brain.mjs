@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 // Keep virtual-clock provider tests separate from real MySQL integration tests.
 const units = [
+  'server/booking-cancellation-intent.test.ts',
+  'server/booking-cancellation-pentest.test.ts',
   'server/ai/booking-conversation.test.ts',
   'server/calendar-provider-contract.test.ts',
   'server/appointment-reconciliation-pentest.test.ts',
@@ -39,6 +41,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/booking-cancellation.mysql.test.ts',
   'server/ai/booking-agreements.mysql.test.ts',
   'server/ai/booking-amendments.mysql.test.ts',
   'server/ai/booking-calendar.mysql.test.ts',

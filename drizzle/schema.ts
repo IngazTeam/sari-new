@@ -4224,3 +4224,10 @@ export const bookingCalendarReviews = mysqlTable("booking_calendar_reviews", {
  requestId:char("request_id",{length:36}).notNull(),requestHash:char("request_hash",{length:64}).notNull(),action:varchar({length:20}).notNull(),outcome:varchar({length:24}).notNull(),failureCode:varchar("failure_code",{length:40}),
  reason:varchar({length:500}).notNull(),proofHash:char("proof_hash",{length:64}).notNull(),createdAt:datetime("created_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
 },t=>[uniqueIndex("uq_booking_calendar_review_request").on(t.merchantId,t.requestId),index("idx_booking_calendar_reviews").on(t.merchantId,t.bookingReference,t.id)]);
+
+export const bookingCalendarCancellations = mysqlTable("booking_calendar_cancellations", {
+ id:int().autoincrement().primaryKey(),merchantId:int("merchant_id").notNull().references(()=>merchants.id,{onDelete:"cascade"}),bookingReference:int("booking_reference").notNull(),actorUserId:int("actor_user_id").notNull(),
+ requestId:char("request_id",{length:36}).notNull(),requestHash:char("request_hash",{length:64}).notNull(),snapshot:json().notNull(),snapshotHash:char("snapshot_hash",{length:64}).notNull(),eventEtag:varchar("event_etag",{length:256}).notNull(),
+ reason:varchar({length:500}).notNull(),evidenceHash:char("evidence_hash",{length:64}).notNull(),state:varchar({length:24}).default("cancelling").notNull(),failureCode:varchar("failure_code",{length:40}),revision:int().default(0).notNull(),
+ createdAt:datetime("created_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),updatedAt:datetime("updated_at",{mode:"string",fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},t=>[uniqueIndex("uq_booking_cancel_booking").on(t.merchantId,t.bookingReference),uniqueIndex("uq_booking_cancel_request").on(t.merchantId,t.requestId)]);

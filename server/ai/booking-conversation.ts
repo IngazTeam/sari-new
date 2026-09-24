@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getPool } from "../db/connection";
 import { callGPT4 } from "./openai";
 import { currentInboundExecution } from "../messaging/inbound-context";
+import { requestedBookingCancellationId } from "./booking-cancellation-intent";
 import {
   isShortAffirmation,
   isSalesRefusal,
@@ -57,6 +58,29 @@ export async function handleBookingConversation(
     if (owned.length !== 1) return null;
     const message = String(owned[0].content || "");
     bookingContext = isBookingTopic(message);
+    const cancellationId = requestedBookingCancellationId(message);
+    if (cancellationId) {
+      const [targets] = await pool.execute<any[]>(
+        `SELECT b.status,l.state AS calendar_state FROM bookings b
+         JOIN conversation_booking_agreements a ON a.id=b.customer_agreement_id AND a.merchant_id=b.merchant_id AND a.booking_reference=b.id AND a.customer_phone=b.customer_phone AND a.state='accepted'
+         LEFT JOIN booking_calendar_links l ON l.merchant_id=b.merchant_id AND l.booking_reference=b.id
+         WHERE b.id=? AND b.merchant_id=? AND b.customer_phone=? AND a.conversation_id=?`,
+        [
+          cancellationId,
+          input.merchantId,
+          input.customerPhone,
+          input.conversationId,
+        ]
+      );
+      const target = targets[0];
+      if (!target)
+        return "لم أتمكن من مطابقة رقم الحجز مع حجوزاتك في هذه المحادثة. راجع الرقم مع النشاط؛ لم ألغِ أي موعد.";
+      if (target.status === "cancelled")
+        return `حجزك #${cancellationId} ملغى حسب سجل النشاط. أي رسوم أو استرداد تُراجع من سجل الدفع.`;
+      if (["cancelling", "cancel_unknown"].includes(target.calendar_state))
+        return `نتيجة إلغاء الحجز #${cancellationId} تحتاج تحققًا من النشاط. الموعد ما زال محفوظًا محليًا؛ لم يثبت اكتمال الإلغاء.`;
+      return `طلب إلغاء الحجز #${cancellationId} محفوظ في هذه المحادثة. يحتاج النشاط إلى مراجعة الموعد والرسوم قبل تأكيد الإلغاء؛ الحجز لم يُلغَ بعد.`;
+    }
     const [quotes] = await pool.execute<any[]>(
       `SELECT id,source_message_id,consent_message_id,state FROM conversation_booking_agreements
       WHERE merchant_id=? AND conversation_id=? AND customer_phone=? ORDER BY id DESC LIMIT 1`,

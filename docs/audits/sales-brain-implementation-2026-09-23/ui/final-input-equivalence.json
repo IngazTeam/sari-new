@@ -1,17 +1,18 @@
 {
-  "scope": "Fresh Chromium component verification: 392 passing scenarios, 42 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking calendar UI",
+  "scope": "Fresh Chromium component verification: 430 passing scenarios, 44 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the booking cancellation UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T10:16:49.535Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-calendar",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-calendar",
+  "verifiedAt": "2026-09-24T10:53:42.294Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-cancellation",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-cancellation",
   "inputs": {
-    "fixture": "a6c858419565e0230a6aa056a6558345f30804189d878e506eeb9c5d1cab3ded",
-    "report": "1c6b0411fa89c0ae758ab6c0040a5b4b744e85bd41f46f264ec992b35da57c75",
+    "fixture": "73d8fd5ab8f10d4f22c2be61b35e588029d2e3a2e3b23ef8189e7859a04eb34d",
+    "report": "b33d8eb50a35f1597047be4aa966b69356028236acae46d958575e5955804e4e",
     "verifiers": {
-      "scripts/testing/verify-sales-brain-ui.cjs": "80165571b5c477c177a2c1157321f343f144eac0c6805d72e7742684d7099107",
+      "scripts/testing/verify-sales-brain-ui.cjs": "61e3f9007497a2738e5ee8667d91ad7eaab33056e95260546a56adf2b78aa376",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
-      "scripts/testing/verify-booking-calendar-ui.cjs": "e8d7300b8a5ee6d9ac41fae6c98a99acee8956aa74919efa3ce17eb8e65c4ac3"
+      "scripts/testing/verify-booking-calendar-ui.cjs": "e8d7300b8a5ee6d9ac41fae6c98a99acee8956aa74919efa3ce17eb8e65c4ac3",
+      "scripts/testing/verify-booking-cancellation-ui.cjs": "03aedd69685a1a77370a0cfd8c5c84921a2bf182c820a49aa45822999d0855ae"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

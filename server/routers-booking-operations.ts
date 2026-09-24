@@ -16,8 +16,40 @@ import {
   readBookingCalendarReview,
   synchronizeBookingCalendar,
 } from "./booking-calendar";
+import { bookingCancellationActionSchema } from "../shared/booking-cancellation";
+import {
+  getBookingCancellationReview,
+  cancelBookingCalendar,
+} from "./booking-cancellation";
 
 export const bookingOperationProcedures = {
+  getCancellationReview: permissionProcedure("orders.manage")
+    .input(bookingCalendarIdSchema)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await getBookingCancellationReview(
+          ctx.merchantId,
+          input.bookingId
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking cancellation review unavailable",
+        });
+      }
+    }),
+  cancelCalendar: permissionProcedure("orders.manage")
+    .input(bookingCancellationActionSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await cancelBookingCalendar(ctx.merchantId, ctx.user.id, input);
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking cancellation requires refreshed evidence",
+        });
+      }
+    }),
   getCalendarReview: permissionProcedure("orders.manage")
     .input(bookingCalendarIdSchema)
     .query(async ({ ctx, input }) => {

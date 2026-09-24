@@ -273,6 +273,16 @@ export async function deleteCalendarEvent(
   return true;
 }
 
+/** Delete only the exact version reviewed by the caller; never retry a lost acknowledgement. */
+export async function deleteCalendarEventIfMatch(credentials: any, calendarId: string, eventId: string, etag: string) {
+  if (typeof etag !== 'string' || !/^"[\x21\x23-\x7e]{1,254}"$/.test(etag)) throw Error('Calendar event version unavailable');
+  const calendar = await createCalendarClient(credentials);
+  const response = await calendar.events.delete({ calendarId, eventId, sendUpdates: 'none' },
+    { timeout: 15000, retry: false, headers: { 'If-Match': etag } });
+  if (response.status !== 204) throw Error('Calendar cancellation acknowledgement unavailable');
+  return true;
+}
+
 /**
  * Get a calendar event
  */

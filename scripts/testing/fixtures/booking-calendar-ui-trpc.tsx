@@ -23,11 +23,17 @@ export const bookingCalendarFixture = {
       const unknown = mode === "booking-calendar-unknown",
         xss = mode === "booking-calendar-xss";
       const managed =
-        mode === "booking-ops-calendar-unknown"
-          ? "create_unknown"
-          : mode.startsWith("booking-ops-calendar-")
-            ? "synced"
-            : null;
+        mode === "booking-ops-calendar-cancelling"
+          ? "cancelling"
+          : mode === "booking-ops-calendar-cancel-unknown"
+            ? "cancel_unknown"
+            : mode === "booking-ops-calendar-cancelled"
+              ? "cancelled"
+              : mode === "booking-ops-calendar-unknown"
+                ? "create_unknown"
+                : mode.startsWith("booking-ops-calendar-")
+                  ? "synced"
+                  : null;
       const state =
         managed ||
         (saved
