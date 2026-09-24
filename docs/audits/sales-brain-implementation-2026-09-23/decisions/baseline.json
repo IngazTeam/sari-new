@@ -1,0 +1,2671 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-24T16:38:10.741Z",
+  "scope": "Public synthetic deterministic decision regression; no held-out or live-model claims",
+  "corpusSha256": "16b3e37421650deeae5e0a5d2568931bfffff33e8ef6479e388d3a94247f1cb4",
+  "runnerSha256": "b56655b4683a1798ca57787397a41dba410ee8b656eba7b6ff7bb82c188bb19c",
+  "sourceSha256": {
+    "server/ai/customer-decision.ts": "05f7c7af3eb5c2b91b54c90757d232288e3316380745a5b39b4a4aa237af3195",
+    "server/ai/session-context.ts": "0df8d1a58a0c168afa600697b30ca61f2a83d35f737236c704fe3e51043bcaf9",
+    "server/ai/sales-turn-policy.ts": "61cd3b48111811332dae721092a409e1e0ec33c7d6d6ac672c62e35e3ae65740"
+  },
+  "liveModelCalls": 0,
+  "total": 93,
+  "passed": 51,
+  "failed": 42,
+  "critical": 84,
+  "criticalPassed": 44,
+  "byFamily": {
+    "refusal": {
+      "total": 22,
+      "passed": 14,
+      "failed": 8,
+      "critical": 22,
+      "criticalPassed": 14
+    },
+    "process": {
+      "total": 16,
+      "passed": 8,
+      "failed": 8,
+      "critical": 16,
+      "criticalPassed": 8
+    },
+    "details": {
+      "total": 10,
+      "passed": 2,
+      "failed": 8,
+      "critical": 10,
+      "criticalPassed": 2
+    },
+    "confirm": {
+      "total": 10,
+      "passed": 3,
+      "failed": 7,
+      "critical": 10,
+      "criticalPassed": 3
+    },
+    "appointment": {
+      "total": 4,
+      "passed": 1,
+      "failed": 3,
+      "critical": 4,
+      "criticalPassed": 1
+    },
+    "ambiguity": {
+      "total": 12,
+      "passed": 8,
+      "failed": 4,
+      "critical": 12,
+      "criticalPassed": 8
+    },
+    "instruction": {
+      "total": 10,
+      "passed": 8,
+      "failed": 2,
+      "critical": 10,
+      "criticalPassed": 8
+    },
+    "control": {
+      "total": 9,
+      "passed": 7,
+      "failed": 2,
+      "critical": 0,
+      "criticalPassed": 0
+    }
+  },
+  "partitions": {
+    "development": {
+      "total": 58,
+      "passed": 27,
+      "failed": 31,
+      "critical": 58,
+      "criticalPassed": 27
+    },
+    "regression": {
+      "total": 35,
+      "passed": 24,
+      "failed": 11,
+      "critical": 26,
+      "criticalPassed": 17
+    }
+  },
+  "results": [
+    {
+      "id": "refusal-01",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "لا أريد الشراء الآن"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-02",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "كنت أبي أشتري لكن غيرت رأيي"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-03",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "مش عايز أشتري"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-04",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "ما أبي أطلب"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-05",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "لا شكراً"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-06",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "غير موافق"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-07",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "لا تكمل الطلب"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-08",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "مو الحين"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-09",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "not now"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-10",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Not yet."
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-11",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "I am not ready to buy"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-12",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "I am not ready to order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-13",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "I changed my mind"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-14",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Don't place my order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [
+        "refusal",
+        "explicitPurchase",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-15",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Do not complete the order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "explicitPurchase",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-16",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Don't proceed with the order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "refusal-17",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "I do not want to buy"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-18",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "No thanks!"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-19",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Cancel my order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-20",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Stop messaging me"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-21",
+      "family": "refusal",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم، لكن لا تكمل الطلب"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "refusal-22",
+      "family": "refusal",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes, but do not place the order"
+      },
+      "expected": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-01",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "كيف أطلب السماعة؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-02",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "طريقة الطلب"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-03",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "كيف أدفع؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-04",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "خطوات الشراء"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-05",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "إزاي أطلب الدورة؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-06",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "ازاى اشتري؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-07",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "شلون أطلب المنتج؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-08",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "هل أقدر أطلب عبر الواتساب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-09",
+      "family": "process",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "ممكن أعرف كيف أحجز؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-10",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "How do I order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-11",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "How can I buy this?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-12",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Can I pay online?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-13",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Could I order through WhatsApp?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "process-14",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "How do I complete my order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-15",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Can I place my order here?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "process-16",
+      "family": "process",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "How do I book a consultation?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": true,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "processQuestion",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-01",
+      "family": "details",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "تبي أرسل لك التفاصيل؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "details-02",
+      "family": "details",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "تمام",
+        "previous": "هل تريد معرفة التفاصيل؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-03",
+      "family": "details",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "أيوه",
+        "previous": "تحب أشرح لك الخيارات؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "details-04",
+      "family": "details",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "هل أشرح لك طريقة الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-05",
+      "family": "details",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "موافق",
+        "previous": "هل تريد معلومات عن الدورة؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-06",
+      "family": "details",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Would you like more details?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-07",
+      "family": "details",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "okay",
+        "previous": "Can I send you the catalog?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-08",
+      "family": "details",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "yes please",
+        "previous": "Would you like me to explain the payment steps?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-09",
+      "family": "details",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "OK",
+        "previous": "Shall I explain the options?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "details-10",
+      "family": "details",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes!",
+        "previous": "Do you want information about the course?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-01",
+      "family": "confirm",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "السماعة 230 ريال. هل تبغى أكمل الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "confirm-02",
+      "family": "confirm",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "تمام",
+        "previous": "هل تريد تأكيد الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "confirm-03",
+      "family": "confirm",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "أيوه",
+        "previous": "هل نؤكد الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-04",
+      "family": "confirm",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "موافق",
+        "previous": "تحب أسجل طلبك؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "confirm-05",
+      "family": "confirm",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "أرسلت التفاصيل. هل أكمل الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "information",
+        "intent": "inquiring",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-06",
+      "family": "confirm",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Shall I place your order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-07",
+      "family": "confirm",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "okay",
+        "previous": "Would you like me to complete the order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-08",
+      "family": "confirm",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes, please",
+        "previous": "Can I confirm your order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-09",
+      "family": "confirm",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "OK",
+        "previous": "Do you want me to place the order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "confirm-10",
+      "family": "confirm",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "yes",
+        "previous": "I sent the details. Shall I complete your order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "appointment-01",
+      "family": "appointment",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "تبغى نأكد الموعد؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "appointment",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "appointment",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "appointment-02",
+      "family": "appointment",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "تمام",
+        "previous": "هل تريد تأكيد الحجز؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "appointment",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending"
+      ],
+      "passed": false
+    },
+    {
+      "id": "appointment-03",
+      "family": "appointment",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Shall I confirm your appointment?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "appointment",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending"
+      ],
+      "passed": false
+    },
+    {
+      "id": "appointment-04",
+      "family": "appointment",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "OK",
+        "previous": "Would you like me to book the appointment?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "appointment",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [
+        "pending"
+      ],
+      "passed": false
+    },
+    {
+      "id": "ambiguity-01",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-02",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "yes"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-03",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "تمام",
+        "previous": "أكمل الطلب بعد التحقق من موافقتك."
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-04",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "I can place your order once you approve."
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-05",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "هل أكمل الطلب؟ هل تريد التفاصيل؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "ambiguity-06",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Shall I place your order or send more details?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-07",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "تمام",
+        "previous": "هل تريد تفاصيل الطلب أم تأكيد الطلب؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "ambiguity-08",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Do you want red or blue?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-09",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "هل أكمل الطلب؟ أي عنوان تفضل؟"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "ambiguity-10",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Shall I place your order? What is your address?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "ambiguity-11",
+      "family": "ambiguity",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "نعم",
+        "previous": "المثال: «هل تبغى أكمل الطلب؟»"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "purchase",
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [
+        "pending",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "ambiguity-12",
+      "family": "ambiguity",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Yes",
+        "previous": "Example: \"Shall I place your order?\""
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "pending": "none",
+        "intent": "unknown",
+        "goal": "explain_requested_information"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-01",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "أبغى أطلب سماعة"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-02",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "أريد الشراء"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-03",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "عايز اشتري الدورة"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-04",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "بدي اشتري"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-05",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "أبي أخذ المنتج"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-06",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "كمل الطلب"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-07",
+      "family": "instruction",
+      "language": "ar",
+      "critical": true,
+      "input": {
+        "message": "سجلني بالدورة"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-08",
+      "family": "instruction",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "I want to buy"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "instruction-09",
+      "family": "instruction",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Please place my order"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "instruction-10",
+      "family": "instruction",
+      "language": "en",
+      "critical": true,
+      "input": {
+        "message": "Complete my order"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "control-01",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "كم سعر الجهاز"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "answer_then_qualify"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "inquiring",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-02",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "غالي مرة"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "objecting",
+        "goal": "understand_objection"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "objecting",
+        "goal": "understand_objection"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-03",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "بفكر فيها"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "hesitating",
+        "goal": "understand_objection"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "hesitating",
+        "goal": "understand_objection"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-04",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "لقيته أرخص عند غيركم"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "comparing",
+        "goal": "compare_suitable_options"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "comparing",
+        "goal": "compare_suitable_options"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-05",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "طلبي تأخر والسعر غالي"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-06",
+      "family": "control",
+      "language": "en",
+      "critical": false,
+      "input": {
+        "message": "Where is my order?"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-07",
+      "family": "control",
+      "language": "en",
+      "critical": false,
+      "input": {
+        "message": "Don't cancel my order"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "post_purchase",
+        "goal": "resolve_existing_order"
+      },
+      "actual": {
+        "refusal": true,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "declined",
+        "goal": "respect_decline"
+      },
+      "mismatches": [
+        "refusal",
+        "intent",
+        "goal"
+      ],
+      "passed": false
+    },
+    {
+      "id": "control-08",
+      "family": "control",
+      "language": "ar",
+      "critical": false,
+      "input": {
+        "message": "لا مشكلة، أريد الشراء"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": true,
+        "intent": "ready_to_buy",
+        "goal": "confirm_agreement"
+      },
+      "mismatches": [],
+      "passed": true
+    },
+    {
+      "id": "control-09",
+      "family": "control",
+      "language": "en",
+      "critical": false,
+      "input": {
+        "message": "I don't know which product fits me"
+      },
+      "expected": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "unknown",
+        "goal": "answer_then_qualify"
+      },
+      "actual": {
+        "refusal": false,
+        "processQuestion": false,
+        "explicitPurchase": false,
+        "intent": "browsing",
+        "goal": "answer_then_qualify"
+      },
+      "mismatches": [
+        "intent"
+      ],
+      "passed": false
+    }
+  ]
+}

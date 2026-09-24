@@ -58,11 +58,22 @@ describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and con
     expect(await issueCanonicalOrderPaymentLink({ merchantId: fixture.merchantId, orderId: order.id, conversationId: identity.conversationId }))
       .toEqual({ issued: false, reason: 'order_not_payable' });
   });
-  it.each(['لا أريد الشراء', 'لا', 'مش عايز أشتري'])('withdraws pending consent on %s', async message => {
+  it.each(['لا أريد الشراء', 'لا', 'مش عايز أشتري', "Don't place my order", 'Do not complete the order',
+    "Don't proceed with the order", 'not now', 'Not yet.', 'I am not ready to buy', 'Yes, but do not place the order'])('withdraws pending consent on %s', async message => {
     const quote = await offer(); expect((await acceptCheckoutQuote(await incoming(message), quote.quotationId)).kind).toBe('declined');
     expect(await orders()).toHaveLength(0);
     expect((await query('SELECT status FROM sales_quotations WHERE id = ?', [quote.quotationId]))[0].status).toBe('rejected');
+    expect((await acceptCheckoutQuote(await incoming('Yes'), quote.quotationId)).kind).toBe('changed');
+    expect(await orders()).toHaveLength(0);
   });
+  it.each(['إزاي أطلب الدورة؟', 'شلون أطلب؟', 'How do I complete my order?', 'Can I place my order here?', 'Yes?', 'Yes, but change the quantity'])
+   ('does not create an order or attach consent for %s', async message => {
+      const quote = await offer();
+      expect((await acceptCheckoutQuote(await incoming(message), quote.quotationId)).kind).toBe('clarify');
+      expect(await orders()).toHaveLength(0);
+      const [row] = await query('SELECT status, consent_message_id, order_id FROM sales_quotations WHERE id = ?', [quote.quotationId]);
+      expect(row).toMatchObject({ status: 'sent', consent_message_id: null, order_id: null });
+    });
   it('allows a scoped merchant attestation without changing the customer-consented amount', async () => {
     const quote = await offer(); await acceptCheckoutQuote(await incoming(), quote.quotationId); const [order] = await orders();
     const approval = { merchantId: fixture.merchantId, orderId: order.id, actorUserId: fixture.userId, expectedAmountMinor: 29997, totalIsFinal: true as const };

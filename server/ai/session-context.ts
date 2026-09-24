@@ -12,7 +12,7 @@
 // Types
 // ═══════════════════════════════════════════════════════════════
 
-import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, normalizeCustomerText, pendingDecisionFromQuestion } from './customer-decision';
+import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, isExplicitPurchaseInstruction, normalizeCustomerText, pendingDecisionFromQuestion } from './customer-decision';
 
 export interface ConversationSession {
   contextSchemaVersion?: number;
@@ -315,12 +315,18 @@ export function detectIntent(
   const msg = normalizeCustomerText(message);
   if (isSalesRefusal(message)) return 'declined';
   // An existing-order issue takes precedence over price words or old profile data.
-  if (['طلبي', 'وين وصل', 'ما وصل', 'tracking', 'my order'].some(s => msg.includes(s))) return 'post_purchase';
+  if (['طلبي', 'وين وصل', 'ما وصل', 'tracking'].some(s => msg.includes(s))
+    || /\bmy order\b.{0,35}\b(?:late|delayed|missing|wrong|damaged)\b/.test(msg)) return 'post_purchase';
   if (isPurchaseProcessQuestion(message)) return 'inquiring';
   if (isShortAffirmation(message)) {
     const pending = pendingDecisionFromQuestion(lastAssistantMessage);
     return pending === 'purchase' ? 'ready_to_buy' : pending === 'information' ? 'inquiring' : 'unknown';
   }
+
+  // "Complete my order" is a new instruction, while "Where is my order?"
+  // concerns an existing order. The noun alone cannot determine the stage.
+  if (isExplicitPurchaseInstruction(message)) return 'ready_to_buy';
+  if (/\bmy order\b/.test(msg)) return 'post_purchase';
   
   // Ready to buy — highest priority
   const buySignals = ['ابغى اطلب', 'ابي اطلب', 'ابي اشتري', 'ابغى اشتري', 'عايز اشتري', 'بدي اشتري',
@@ -374,15 +380,13 @@ export function detectIntent(
   // (first message of a new conversation from a known customer)
   if (customerTotalConversations && customerTotalConversations > 1) {
     // Check if this looks like a greeting (start of new convo)
-    const greetSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح',
-      'hello', 'hi', 'hey'];
-    if (greetSignals.some(s => msg.includes(s))) return 'returning';
+    const greetSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح'];
+    if (greetSignals.some(s => msg.includes(s)) || /\b(?:hello|hi|hey)\b/.test(msg)) return 'returning';
   }
 
   // Browsing (generic — new customer greeting)
-  const browseSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح',
-    'hello', 'hi', 'hey', 'وش عندكم', 'ابغى اشوف'];
-  if (browseSignals.some(s => msg.includes(s))) return 'browsing';
+  const browseSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح', 'وش عندكم', 'ابغى اشوف'];
+  if (browseSignals.some(s => msg.includes(s)) || /\b(?:hello|hi|hey)\b/.test(msg)) return 'browsing';
   
   // ── Profile-Informed Fallback ──
   // When keywords are ambiguous, use GPT-enriched buyingStage from profile

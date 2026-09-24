@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "frozenAt": "2026-09-24T16:37:11.383Z",
+  "corpusSha256": "16b3e37421650deeae5e0a5d2568931bfffff33e8ef6479e388d3a94247f1cb4",
+  "caseCount": 93,
+  "baselineHead": "8f8eb57b",
+  "exposure": "All cases are public and visible to the implementer. No blind acceptance split is claimed.",
+  "partitions": {
+    "development": [
+      "refusal",
+      "process",
+      "details",
+      "confirm"
+    ],
+    "regression": [
+      "appointment",
+      "ambiguity",
+      "instruction",
+      "control"
+    ]
+  },
+  "metrics": [
+    "exact case match across decision fields",
+    "critical exact case match",
+    "per-family exact case match"
+  ],
+  "limits": [
+    "Deterministic decision gates only",
+    "No generated responses, provider scores, conversion, or independent human review",
+    "Development and regression are reporting labels, not an unseen validation set"
+  ]
+}

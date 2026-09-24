@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-09-24T16:52:43.786Z",
+  "scope": "Local evidence-integrity probes; no production endpoints or provider calls",
+  "results": [
+    {
+      "case": "changed_expectation",
+      "rejected": true
+    },
+    {
+      "case": "missing_case",
+      "rejected": true
+    },
+    {
+      "case": "invented_total",
+      "rejected": true
+    },
+    {
+      "case": "wrong_source",
+      "rejected": true
+    },
+    {
+      "case": "wrong_runner",
+      "rejected": true
+    },
+    {
+      "case": "wrong_corpus",
+      "rejected": true
+    },
+    {
+      "case": "live_model_claim",
+      "rejected": true
+    },
+    {
+      "case": "false_case_result",
+      "rejected": true
+    }
+  ]
+}
