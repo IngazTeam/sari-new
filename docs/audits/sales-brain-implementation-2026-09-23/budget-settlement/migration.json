@@ -1,0 +1,20 @@
+{
+  "verifiedAt": "2026-09-24T20:48:05.619Z",
+  "database": "sari_budget_settlement_fresh_test",
+  "scope": "Fresh local chain 0000–0103; four legacy financial states and seven learning states seeded; actual updater applies 0104; rerun is a no-op. No existing database overwritten.",
+  "migrations": 105,
+  "expected": 105,
+  "allPreviousFinancialFieldsPreserved": true,
+  "allLearningJobsPreserved": true,
+  "allPeriodTotalsPreserved": true,
+  "legacyUsageRemainsAbsent": true,
+  "rerunUnchanged": true,
+  "partialReceiptRejected": true,
+  "unsafeReceiptRejected": true,
+  "globalDailyMicroUsd": "100000000",
+  "dueIndex": true,
+  "receiptConstraint": true,
+  "periodForeignKey": true,
+  "migrationSha256": "9a9982e515362e7b4f8a7bbb8aab8590558ced8e5e8b536160c1592aa968d922",
+  "passed": true
+}

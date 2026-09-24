@@ -161,7 +161,9 @@ export async function markAiBudgetUnknown(reservation: Reservation): Promise<voi
 }
 
 export async function settleAiBudget(reservation: Pick<Reservation, 'reservationKey' | 'scopeKey'> & Partial<Reservation>, usage: { prompt_tokens: number; completion_tokens: number },
-  evidence?: { billedMicroUsd: number; reference: string; actorId: number }): Promise<void> {
+  evidence?: { billedMicroUsd: number; reference: string; actorId: number }, recovery?:{token:string;requestId:string}): Promise<void> {
+  reservation={...reservation};usage={...usage};recovery=recovery?{...recovery}:undefined;evidence=evidence?{...evidence}:undefined;
+  if(recovery && (evidence || !/^[a-f0-9-]{36}$/i.test(recovery.token)))throw new AiBudgetError('reservation_conflict');
   if (evidence && (!Number.isSafeInteger(evidence.actorId) || evidence.actorId <= 0 || evidence.reference.trim().length < 8 || evidence.reference.length > 160)) {
     throw new AiBudgetError('invalid_usage');
   }
@@ -176,8 +178,15 @@ export async function settleAiBudget(reservation: Pick<Reservation, 'reservation
     const period = lookup[0].period;
     await connection.execute("SELECT scope_key FROM ai_budget_periods WHERE scope_key = 'global' AND period_start = ? FOR UPDATE", [period]);
     await connection.execute('SELECT scope_key FROM ai_budget_periods WHERE scope_key = ? AND period_start = ? FOR UPDATE', [reservation.scopeKey, period]);
-    const [rows] = await connection.execute<any[]>('SELECT * FROM ai_usage_reservations WHERE reservation_key = ? AND scope_key = ? FOR UPDATE', [reservation.reservationKey, reservation.scopeKey]);
+    const [rows] = await connection.execute<any[]>('SELECT *,settlement_lease_until>UTC_TIMESTAMP(3) AS settlement_lease_valid FROM ai_usage_reservations WHERE reservation_key = ? AND scope_key = ? FOR UPDATE', [reservation.reservationKey, reservation.scopeKey]);
     const row = rows[0];
+    if(!row)throw new AiBudgetError('reservation_conflict');
+    if(recovery && (row.request_id!==recovery.requestId || row.settlement_token!==recovery.token || !row.settlement_lease_valid
+      || row.usage_received_at===null || Number(row.usage_prompt_tokens)!==usage.prompt_tokens || Number(row.usage_completion_tokens)!==usage.completion_tokens)) {
+      throw new AiBudgetError('reservation_conflict');
+    }
+    if(!evidence && row.usage_received_at!==null && (Number(row.usage_prompt_tokens)!==integer(usage.prompt_tokens)
+      || Number(row.usage_completion_tokens)!==integer(usage.completion_tokens)))throw new AiBudgetError('reservation_conflict');
     const amount = evidence ? integer(evidence.billedMicroUsd)
       : pricedMicroUsd(usage.prompt_tokens, usage.completion_tokens, row.input_rate, row.output_rate, row.flat_micro_usd);
     if (row.state === 'settled') {
@@ -198,7 +207,8 @@ export async function settleAiBudget(reservation: Pick<Reservation, 'reservation
       );
       if (Number(globalUpdated.affectedRows) !== 1) throw new AiBudgetError('reservation_conflict');
       await connection.execute(`UPDATE ai_usage_reservations SET state = 'settled', settled_micro_usd = ?,
-        reconciliation_reference = ?, reconciled_by = ? WHERE reservation_key = ?`,
+        reconciliation_reference = ?, reconciled_by = ?,settlement_token=NULL,settlement_lease_until=NULL,
+        settlement_next_at=NULL,settlement_last_error=NULL WHERE reservation_key = ?`,
         [amount, evidence?.reference ?? null, evidence?.actorId ?? null, reservation.reservationKey]);
     }
     await connection.commit();
@@ -239,12 +249,14 @@ export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt:
     }
     const result = await operation(attempt);
     providerCompleted = true;
-    if (lifecycle) {
-      try { await lifecycle.afterResponse(result, attempt); }
-      catch { throw new AiBudgetError('budget_unavailable'); }
-    }
+    let handoffFailed=false;
+    if (lifecycle) {try { await lifecycle.afterResponse(result, attempt); }catch {handoffFailed=true;}}
     const usage = usageOf(result);
-    if (usage) await settleAiBudget(reservation, usage);
+    if(handoffFailed){
+      if(usage)await (await import('./budget-settlement')).persistAiProviderUsage(attempt,usage);
+      throw new AiBudgetError('budget_unavailable');
+    }
+    if (usage) await (await import('./budget-settlement')).settleAiProviderUsage(attempt, usage);
     else await markAiBudgetUnknown(reservation);
     return result;
   } catch (error) {

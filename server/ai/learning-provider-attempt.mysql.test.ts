@@ -13,6 +13,7 @@ import { clearZahyPiRuntimeConfigCache } from './zahypi-client';
 import { resolveSariTaskType } from './task-catalog';
 import { triggerPatternAnalysis } from './learning-engine';
 import { saveLearningProviderResponse } from './learning-response-handoff';
+import { runAiSettlementBatch } from './budget-settlement';
 
 const config=vi.hoisted(()=>({provider:'openai',model:'',notify:vi.fn(),enabled:true}));
 vi.mock('../db_ai_settings',()=>({
@@ -173,6 +174,11 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
   it('retains the recovered response through a settlement outage',async()=>{
     const {fetch}=await accepted();await dueProvider();await fault('settle before');expect((await runLearningProviderRecoveryBatch()).saved).toBe(1);
     expect((await job()).state).toBe('responded');expect((await ledger())[0].state).toBe('unknown');expect(fetch).toHaveBeenCalledOnce();vi.restoreAllMocks();await recover();
+    expect((await ledger())[0]).toMatchObject({usage_prompt_tokens:3,usage_completion_tokens:2});
+    // Replacing the one-per-merchant learning slot must not erase the financial recovery evidence.
+    await query('UPDATE sari_learning_signals SET customer_message=?,analyzed=0 WHERE merchant_id=?',['New source after recovered result',owner.merchantId]);await claim();
+    await query('UPDATE ai_usage_reservations SET settlement_next_at=UTC_TIMESTAMP(3) WHERE scope_key=?',[`merchant:${owner.merchantId}`]);
+    expect((await runAiSettlementBatch()).settled).toBe(1);expect((await ledger())[0].state).toBe('settled');expect(fetch).toHaveBeenCalledOnce();expect(config.notify).not.toHaveBeenCalled();
   });
   it('recovers a lost response-save acknowledgement after GET without reading or generating again',async()=>{
     const {fetch}=await accepted();await dueProvider();await responseFault('after',1,'ECONNRESET');

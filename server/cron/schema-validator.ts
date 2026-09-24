@@ -24,7 +24,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'ai_budget_policies', columns: ['scope_key', 'version', 'daily_limit_micro_usd', 'enabled'] },
   { table: 'ai_price_cards', columns: ['provider', 'model', 'version', 'input_micro_usd_per_million', 'output_micro_usd_per_million', 'flat_micro_usd', 'max_input_tokens', 'enabled'] },
   { table: 'ai_budget_periods', columns: ['scope_key', 'period_start', 'limit_micro_usd', 'reserved_micro_usd', 'spent_micro_usd'] },
-  { table: 'ai_usage_reservations', columns: ['reservation_key', 'request_id', 'scope_key', 'period_start', 'price_version', 'state', 'reconciliation_reference', 'reconciled_by'] },
+  { table: 'ai_usage_reservations', columns: ['reservation_key', 'request_id', 'scope_key', 'period_start', 'price_version', 'state', 'reconciliation_reference', 'reconciled_by','usage_prompt_tokens','usage_completion_tokens','usage_received_at','settlement_token','settlement_lease_until','settlement_next_at','settlement_attempts','settlement_last_error'] },
   { table: 'users', columns: ['account_status', 'email_verified_at', 'deletion_requested_at'] },
   { table: 'auth_sessions', columns: ['token_id_hash', 'expires_at', 'revoked_at'] },
   { table: 'auth_login_attempts', columns: ['email_hash', 'ip_hash', 'attempted_at'] },

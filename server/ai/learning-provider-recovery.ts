@@ -4,7 +4,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { loadLearningProviderRecovery, type LearningAnalysisClaim } from './learning-analysis-jobs';
 import { saveLearningProviderResponse } from './learning-response-handoff';
 import { retrieveZahyPiLearningJob } from './zahypi-client';
-import { settleAiBudget } from './budget-ledger';
+import { settleAiProviderUsage } from './budget-settlement';
 
 export async function assertLearningProviderRecoverySchema() {
   await assertRuntimeSchema('learning provider recovery', [{table:'ai_learning_analysis_jobs',
@@ -52,7 +52,7 @@ export async function recoverLearningProviderResult(claim: LearningAnalysisClaim
     const analysis = await saveLearningProviderResponse(claim,content,saved.attempt);
     // Settlement uses the original quote; failures leave funds held and do not discard a saved response.
     if (analysis) {
-      try { await settleAiBudget(saved.attempt,response.usage); } catch { /* Existing financial reconciliation remains available. */ }
+      try { await settleAiProviderUsage(saved.attempt,response.usage); } catch { /* Persisted usage is recovered by the independent settlement worker. */ }
     }
     await release(claim,Boolean(analysis)); return analysis?'saved' as const:'skipped' as const;
   } catch {

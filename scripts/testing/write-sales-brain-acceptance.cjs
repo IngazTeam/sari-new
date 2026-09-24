@@ -532,6 +532,13 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبار الاسترجاع من SQL في عمليات Node مستقلة مع هوية مزورة، تغيير المصدر والمزوّد، توقف العامل وفقد إقرار commit؛ لا قياس جودة نموذج حي.','docs/SARI_SALES_BRAIN_ACCEPTED_JOB_RECOVERY_2026-09-24.md'],
  B065:[entries.B065[0]+' ترحيل 0103 يضيف إيصال قبول JSON اختياريًا، دون backfill أو تغيير الحالات السابقة. مطلوب قبل تشغيل العمال الجدد.','drizzle/0103_learning_provider_receipt.sql'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' تسوية الاستهلاك أصبحت تستأنف من سجل الميزانية الدائم، حتى بعد استبدال خانة التعلم أو موت العملية؛ حجز SQL ومدة صلاحية يمنعان العامل القديم من التسوية أو التأجيل.','server/ai/budget-settlement.mysql.test.ts'],
+ B050:[entries.B050[0]+' حفظ الاستهلاك يعيد SQL فقط ثلاث مرات كحد أقصى في الأعطال المؤقتة؛ فشل الحفظ لا يطلق المبلغ ولا يعيد الاتصال بالمزوّد.','server/ai/budget-settlement-pentest.test.ts'],
+ B051:[entries.B051[0]+' أضيف إيصال استهلاك ثابت مرتبط بالمحاولة والعقد والنموذج؛ عامل SQL يطبق السعر والفترة الأصليين مرة واحدة، ويحترم التسوية اليدوية الموثقة ويستبعد ما لا يملك استهلاكًا محفوظًا. لا يغطي ردًا ضاع قبل حفظ بيانات استهلاكه أو قبول الأسعار الحية.','server/ai/budget-settlement.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبارات فعلية لحفظ الاستهلاك وفقد إقرار commit والتنافس بين عمليات مستقلة وعبور اليوم وتغيير السعر والتسوية اليدوية وانتهاء الحجز أثناء انتظار قفل المحاسبة.','docs/SARI_SALES_BRAIN_DURABLE_USAGE_SETTLEMENT_2026-09-24.md'],
+ B065:[entries.B065[0]+' ترحيل 0104 يضيف الاستهلاك والجدولة إلى دفتر الحجز بقيد سلامة وفهرس أهلية؛ السجلات السابقة تبقى دون استهلاك مستنتج أو إعادة تسوية تلقائية.','drizzle/0104_ai_usage_settlement.sql'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

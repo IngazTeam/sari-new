@@ -28,6 +28,8 @@ export async function startInboundWorker() {
     stops.push(stopLearningRecovery);
     const { startLearningProviderRecoveryWorker } = await import('../ai/learning-provider-recovery');
     stops.push(await startLearningProviderRecoveryWorker());
+    const { startAiSettlementWorker } = await import('../ai/budget-settlement');
+    stops.push(await startAiSettlementWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

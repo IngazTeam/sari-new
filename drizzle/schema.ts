@@ -28,6 +28,12 @@ export const aiBudgetPeriods = mysqlTable('ai_budget_periods', {
   updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [primaryKey({ columns: [table.scopeKey, table.periodStart] })]);
 export const aiUsageReservations = mysqlTable('ai_usage_reservations', {
+  usagePromptTokens:bigint('usage_prompt_tokens',{mode:'number',unsigned:true}),
+  usageCompletionTokens:bigint('usage_completion_tokens',{mode:'number',unsigned:true}),
+  usageReceivedAt:datetime('usage_received_at',{mode:'string',fsp:3}),
+  settlementToken:char('settlement_token',{length:36}),settlementLeaseUntil:datetime('settlement_lease_until',{mode:'string',fsp:3}),
+  settlementNextAt:datetime('settlement_next_at',{mode:'string',fsp:3}),settlementAttempts:int('settlement_attempts',{unsigned:true}).notNull().default(0),
+  settlementLastError:varchar('settlement_last_error',{length:40}),
   requestId: varchar('request_id', { length: 160 }).notNull(),
   reconciliationReference: varchar('reconciliation_reference', { length: 160 }),
   reconciledBy: int('reconciled_by'),
@@ -49,6 +55,8 @@ export const aiUsageReservations = mysqlTable('ai_usage_reservations', {
   updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [
   index('idx_ai_reservation_scope_state').on(table.scopeKey, table.state, table.createdAt),
+  index('idx_ai_settlement_due').on(table.state,table.settlementNextAt,table.reservationKey),
+  check('chk_ai_usage_receipt',sql`(${table.usagePromptTokens} IS NULL AND ${table.usageCompletionTokens} IS NULL AND ${table.usageReceivedAt} IS NULL) OR (${table.usagePromptTokens} IS NOT NULL AND ${table.usageCompletionTokens} IS NOT NULL AND ${table.usageReceivedAt} IS NOT NULL AND ${table.usagePromptTokens}<=9007199254740991 AND ${table.usageCompletionTokens}<=9007199254740991)`),
   foreignKey({ name: 'fk_ai_reservation_period', columns: [table.scopeKey, table.periodStart], foreignColumns: [aiBudgetPeriods.scopeKey, aiBudgetPeriods.periodStart] }),
 ]);
 
