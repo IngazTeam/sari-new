@@ -63,6 +63,7 @@ import {
   bookingNoticeKey,
 } from "../booking-reschedule-notification";
 import { updateWhatsAppDeliveryStatus } from "../channels/whatsapp/service";
+import { reviewBookingNotification } from "../booking-notification-review";
 import type { CheckoutIdentity } from "./checkout-agreements";
 import { getBookingCancellationReview } from "../booking-cancellation";
 import {
@@ -1009,14 +1010,398 @@ describe.skipIf(!process.env.DATABASE_URL)(
         );
         return consent;
       }
-      beforeEach(() =>
+      beforeEach(() => {
         transport.send.mockReset().mockImplementation(async () => ({
           accepted: true,
           outcome: "accepted",
           status: "sent",
           providerMessageId: randomUUID(),
-        }))
+        }));
+      });
+      const noticeReviews = () =>
+        q(
+          "SELECT * FROM booking_notification_reviews WHERE merchant_id=? ORDER BY id",
+          [owner.merchantId]
+        );
+      const noticeCommand = async () => {
+        const notice = (await read())!.notification!;
+        return {
+          bookingId,
+          notificationId: notice.id,
+          evidence: notice.evidence,
+          requestId: randomUUID(),
+          reviewed: true as const,
+          reason: "Operator checked saved delivery evidence",
+        };
+      };
+      const reviewNotice = async (
+        input?: Awaited<ReturnType<typeof noticeCommand>>
+      ) =>
+        reviewBookingNotification(
+          owner.merchantId,
+          owner.userId,
+          input ?? (await noticeCommand())
+        );
+      const readyNotice = async () => {
+        await prepareNotice();
+        await moveRun();
+        await send();
+      };
+      it("shows exact receipt evidence and records an owned review without resending", async () => {
+        await readyNotice();
+        const before = (await read())!.notification!;
+        expect(before).toMatchObject({
+          state: "accepted",
+          delivery: "sent",
+          projected: true,
+          canReview: true,
+          issue: null,
+          history: [],
+        });
+        expect(before.receipt).toBe((await notices())[0].provider_message_id);
+        expect(before.evidence).toMatch(/^[a-f0-9]{64}$/);
+        expect(JSON.stringify(before)).not.toMatch(
+          /claim_token|bookingNoticeGuard|synthetic-access|fixture/
+        );
+        await reviewNotice();
+        const history = await noticeReviews();
+        expect(history).toHaveLength(1);
+        expect(history[0]).toMatchObject({
+          actor_user_id: owner.userId,
+          booking_reference: bookingId,
+          outcome: "accepted",
+          delivery_state: "sent",
+          projected: 1,
+        });
+        expect((await read())!.notification!.history[0].reason).toBe(
+          "Operator checked saved delivery evidence"
+        );
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("reads current receipt without reconciling or adding audit records", async () => {
+        await readyNotice();
+        await receipt("read");
+        expect((await read())!.notification!.delivery).toBe("read");
+        expect((await notices())[0].delivery_state).toBe("sent");
+        expect(await noticeReviews()).toHaveLength(0);
+        await reviewNotice();
+        expect((await notices())[0].delivery_state).toBe("read");
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("serves concurrent review reads without requesting schema connections while holding capacity locks", async () => {
+        await readyNotice();
+        const results = await Promise.all(
+          Array.from({ length: 24 }, () => read())
+        );
+        expect(results.every(r => r?.notification?.delivery === "sent")).toBe(
+          true
+        );
+        expect(await noticeReviews()).toHaveLength(0);
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("replays concurrent identical reviews once and rejects changing the actor or request body", async () => {
+        await readyNotice();
+        const input = await noticeCommand();
+        const results = await Promise.all(
+          Array.from({ length: 6 }, () => reviewNotice(input))
+        );
+        expect(results.filter(r => !r.replayed)).toHaveLength(1);
+        expect(await noticeReviews()).toHaveLength(1);
+        await expect(
+          reviewNotice({ ...input, reason: "Changed explanation after commit" })
+        ).rejects.toThrow();
+        await expect(
+          reviewBookingNotification(owner.merchantId, other.userId, input)
+        ).rejects.toThrow();
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("allows only one concurrent review of the same evidence with different request ids", async () => {
+        await readyNotice();
+        const input = await noticeCommand();
+        const results = await Promise.allSettled(
+          Array.from({ length: 5 }, () =>
+            reviewNotice({ ...input, requestId: randomUUID() })
+          )
+        );
+        expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
+        expect(await noticeReviews()).toHaveLength(1);
+      });
+      it.each([
+        "receipt",
+        "account",
+        "message",
+        "conversation",
+        "snapshot",
+        "review",
+      ])(
+        "rejects stale %s evidence before reconciliation or audit",
+        async mode => {
+          await readyNotice();
+          const input = await noticeCommand(),
+            n = (await notices())[0];
+          if (mode === "receipt") await receipt("read");
+          if (mode === "account")
+            await q("UPDATE whatsapp_instances SET instance_id=? WHERE id=?", [
+              randomUUID(),
+              instanceId,
+            ]);
+          if (mode === "message")
+            await q(
+              "UPDATE messages SET content='changed projection' WHERE id=?",
+              [n.projection_message_id]
+            );
+          if (mode === "conversation")
+            await q(
+              "UPDATE conversations SET customerPhone='966500000098' WHERE id=?",
+              [source.conversationId]
+            );
+          if (mode === "snapshot")
+            await q(
+              "UPDATE booking_reschedule_notifications SET snapshot_hash=? WHERE id=?",
+              ["b".repeat(64), n.id]
+            );
+          if (mode === "review") await reviewNotice(input);
+          await expect(
+            reviewNotice({ ...input, requestId: randomUUID() })
+          ).rejects.toThrow();
+          expect(await noticeReviews()).toHaveLength(mode === "review" ? 1 : 0);
+          expect(transport.send).toHaveBeenCalledTimes(1);
+        }
       );
+      it("does not invalidate evidence for polling schedule changes", async () => {
+        await readyNotice();
+        const input = await noticeCommand();
+        await q(
+          "UPDATE booking_reschedule_notifications SET next_check_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),updated_at=UTC_TIMESTAMP(3) WHERE merchant_id=?",
+          [owner.merchantId]
+        );
+        await expect(reviewNotice(input)).resolves.toMatchObject({
+          replayed: false,
+        });
+      });
+      it.each(["unknown", "failed", "suppressed", "manual_review"])(
+        "records %s without fabricating receipt or requeueing",
+        async mode => {
+          if (mode === "manual_review") {
+            await pending();
+            await moveRun();
+          } else {
+            await prepareNotice();
+            await moveRun();
+            if (mode === "suppressed") await incoming("changed my mind");
+            if (mode === "unknown")
+              transport.send.mockRejectedValue(Error("timeout"));
+            if (mode === "failed")
+              transport.send.mockResolvedValue({
+                accepted: false,
+                outcome: "rejected",
+                status: "failed",
+              });
+            await send();
+          }
+          const n = (await notices())[0];
+          expect(n.state).toBe(mode);
+          const sends = transport.send.mock.calls.length;
+          await reviewNotice();
+          await send();
+          expect((await notices())[0].state).toBe(mode);
+          expect((await read())!.notification!.receipt).toBeNull();
+          expect((await noticeReviews())[0].outcome).toBe(mode);
+          expect(transport.send).toHaveBeenCalledTimes(sends);
+        }
+      );
+      it.each(["pending", "dispatching"])(
+        "does not review an active %s attempt",
+        async mode => {
+          await prepareNotice();
+          await moveRun();
+          if (mode === "dispatching")
+            await q(
+              "UPDATE booking_reschedule_notifications SET state='dispatching',dispatch_started_at=UTC_TIMESTAMP(3),claim_token=? WHERE merchant_id=?",
+              [randomUUID(), owner.merchantId]
+            );
+          expect((await read())!.notification!.canReview).toBe(false);
+          await expect(reviewNotice()).rejects.toThrow();
+          expect(await noticeReviews()).toHaveLength(0);
+          expect(transport.send).not.toHaveBeenCalled();
+        }
+      );
+      it("isolates a leaked notification id and mismatched booking id", async () => {
+        await readyNotice();
+        const input = await noticeCommand();
+        await expect(
+          reviewBookingNotification(other.merchantId, other.userId, input)
+        ).rejects.toThrow();
+        await expect(
+          reviewNotice({ ...input, bookingId: bookingId + 1000000 })
+        ).rejects.toThrow();
+        await expect(
+          reviewNotice({
+            ...input,
+            notificationId: input.notificationId + 1000000,
+          })
+        ).rejects.toThrow();
+        expect(await noticeReviews()).toHaveLength(0);
+      });
+      it("recovers a late receipt and missing projection after the automatic seven-day polling period", async () => {
+        await readyNotice();
+        const n = (await notices())[0];
+        await q("DELETE FROM messages WHERE id=?", [n.projection_message_id]);
+        await q(
+          "UPDATE booking_reschedule_notifications SET state='unknown',accepted_at=NULL,provider_message_id=NULL,projection_message_id=NULL,delivery_state='unverified',created_at=TIMESTAMPADD(DAY,-8,UTC_TIMESTAMP(3)),next_check_at=NULL WHERE id=?",
+          [n.id]
+        );
+        const before = (await read())!.notification!;
+        expect(before).toMatchObject({
+          state: "unknown",
+          delivery: "sent",
+          projected: false,
+          issue: "projection_missing",
+        });
+        await reviewNotice();
+        expect((await read())!.notification!).toMatchObject({
+          state: "accepted",
+          projected: true,
+        });
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it.each(["delete", "corrupt", "reassign", "receipt-id"])(
+        "does not trust stale cached projection after %s",
+        async mode => {
+          await readyNotice();
+          const n = (await notices())[0];
+          if (mode === "delete")
+            await q("DELETE FROM messages WHERE id=?", [
+              n.projection_message_id,
+            ]);
+          if (mode === "corrupt")
+            await q(
+              "UPDATE messages SET content='unrelated history' WHERE id=?",
+              [n.projection_message_id]
+            );
+          if (mode === "reassign")
+            await q(
+              "UPDATE conversations SET customerPhone='966500000090' WHERE id=?",
+              [source.conversationId]
+            );
+          if (mode === "receipt-id")
+            await q(
+              "UPDATE whatsapp_message_deliveries SET provider_message_id=? WHERE merchant_id=? AND idempotency_key=?",
+              [
+                randomUUID(),
+                owner.merchantId,
+                bookingNoticeKey(owner.merchantId, n.id),
+              ]
+            );
+          expect((await read())!.notification!.projected).toBe(false);
+          await reviewNotice();
+          expect((await read())!.notification!.projected).toBe(
+            mode === "delete"
+          );
+          expect((await notices())[0].provider_message_id).toBe(
+            n.provider_message_id
+          );
+          expect(transport.send).toHaveBeenCalledTimes(1);
+        }
+      );
+      it("does not show delivered or read without a valid provider message identity", async () => {
+        await readyNotice();
+        const n = (await notices())[0];
+        await q(
+          "UPDATE booking_reschedule_notifications SET state='unknown',accepted_at=NULL,provider_message_id=NULL WHERE id=?",
+          [n.id]
+        );
+        await q(
+          "UPDATE whatsapp_message_deliveries SET status='read',provider_message_id=NULL WHERE merchant_id=? AND idempotency_key=?",
+          [owner.merchantId, bookingNoticeKey(owner.merchantId, n.id)]
+        );
+        expect((await read())!.notification!).toMatchObject({
+          delivery: "unverified",
+          receipt: null,
+          projected: false,
+        });
+        await reviewNotice();
+        expect((await noticeReviews())[0]).toMatchObject({
+          outcome: "unknown",
+          delivery_state: "unverified",
+          projected: 0,
+        });
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("recovers a lost review commit acknowledgement with the original request id", async () => {
+        await readyNotice();
+        const input = await noticeCommand(),
+          pool = (await getPool())!,
+          original = pool.getConnection.bind(pool);
+        let lost = false;
+        const spy = vi.spyOn(pool, "getConnection").mockImplementation(
+          async () =>
+            new Proxy(await original(), {
+              get(target, key) {
+                if (key === "commit")
+                  return async () => {
+                    await target.commit();
+                    if (!lost) {
+                      lost = true;
+                      throw Error("ack lost");
+                    }
+                  };
+                const value = Reflect.get(target, key);
+                return typeof value === "function" ? value.bind(target) : value;
+              },
+            })
+        );
+        try {
+          await expect(reviewNotice(input)).rejects.toThrow();
+        } finally {
+          spy.mockRestore();
+        }
+        expect(await noticeReviews()).toHaveLength(1);
+        await expect(reviewNotice(input)).resolves.toMatchObject({
+          replayed: true,
+        });
+        expect(await noticeReviews()).toHaveLength(1);
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
+      it("rolls back receipt recovery and projection when recording the review fails", async () => {
+        await readyNotice();
+        const n = (await notices())[0];
+        await q("DELETE FROM messages WHERE id=?", [n.projection_message_id]);
+        const input = await noticeCommand(),
+          pool = (await getPool())!,
+          original = pool.getConnection.bind(pool);
+        const spy = vi
+          .spyOn(pool, "getConnection")
+          .mockImplementation(async () => {
+            const c = await original();
+            return new Proxy(c, {
+              get(target, key) {
+                if (key === "execute")
+                  return async (sql: any, args: any) => {
+                    if (
+                      String(sql).includes(
+                        "INSERT INTO booking_notification_reviews"
+                      )
+                    )
+                      throw Error("audit unavailable");
+                    return target.execute(sql, args);
+                  };
+                const value = Reflect.get(target, key);
+                return typeof value === "function" ? value.bind(target) : value;
+              },
+            });
+          });
+        try {
+          await expect(reviewNotice(input)).rejects.toThrow();
+        } finally {
+          spy.mockRestore();
+        }
+        expect(await noticeReviews()).toHaveLength(0);
+        expect((await read())!.notification!.projected).toBe(false);
+        await reviewNotice(input);
+        expect((await read())!.notification!.projected).toBe(true);
+        expect(transport.send).toHaveBeenCalledTimes(1);
+      });
       it("waits for the consent reply job to finish before sending the later outcome", async () => {
         await prepareNotice();
         await q(

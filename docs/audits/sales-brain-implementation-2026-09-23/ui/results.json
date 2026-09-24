@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T12:27:22.152Z",
+  "generatedAt": "2026-09-24T13:31:57.096Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -15,6 +15,8 @@
     "booking-link-renewal-375.png",
     "booking-notice-1440.png",
     "booking-notice-375.png",
+    "booking-notice-review-1440.png",
+    "booking-notice-review-375.png",
     "booking-operations-1440.png",
     "booking-operations-375.png",
     "booking-reschedule-1440.png",
@@ -832,6 +834,76 @@
     {
       "width": 320,
       "mode": "booking_notice_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_notice_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_notice_refresh-error_no_blind_retry",
       "passed": true
     },
     {

@@ -6,6 +6,34 @@ export const bookingRescheduleActionSchema = bookingCalendarActionSchema
 export type BookingRescheduleAction = z.infer<
   typeof bookingRescheduleActionSchema
 >;
+export const bookingNotificationReviewSchema = bookingCalendarActionSchema
+  .omit({ action: true })
+  .extend({ notificationId: z.number().int().positive().safe() })
+  .strict();
+export type BookingNotificationReviewInput = z.infer<
+  typeof bookingNotificationReviewSchema
+>;
+export type BookingNoticeReview = {
+  id: number;
+  evidence: string;
+  canReview: boolean;
+  state: string;
+  delivery: string;
+  projected: boolean;
+  text: string;
+  receipt: string | null;
+  issue: string | null;
+  dispatchAt: string | null;
+  acceptedAt: string | null;
+  history: {
+    actorUserId: number;
+    reason: string;
+    state: string;
+    delivery: string;
+    projected: boolean;
+    at: string;
+  }[];
+};
 export type BookingRescheduleReview = {
   state: string;
   evidence: string;
@@ -18,11 +46,5 @@ export type BookingRescheduleReview = {
   offerText: string;
   consent: { id: number; text: string; at: string } | null;
   history: { action: string; outcome: string; reason: string; at: string }[];
-  notification?: {
-    state: string;
-    delivery: string;
-    projected: boolean;
-    text: string;
-    acceptedAt: string | null;
-  } | null;
+  notification?: BookingNoticeReview | null;
 };

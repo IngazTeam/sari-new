@@ -1,0 +1,27 @@
+{
+  "verifiedAt": "2026-09-24T13:27:57.401Z",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "sqlSha256": "109329a7a7159a0a935bb1f5780623fc616ffe675c3d39606eee1de1d3fff13c",
+      "uniqueMerchantRequestVerified": true,
+      "historyIndexVerified": true,
+      "repeatRequestRejected": true,
+      "distinctReviewsPreserved": true,
+      "noBookingNotificationOrActorCascade": true,
+      "noBackfillOrNotificationStateChanges": true,
+      "productionChanged": false
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "sqlSha256": "109329a7a7159a0a935bb1f5780623fc616ffe675c3d39606eee1de1d3fff13c",
+      "uniqueMerchantRequestVerified": true,
+      "historyIndexVerified": true,
+      "repeatRequestRejected": true,
+      "distinctReviewsPreserved": true,
+      "noBookingNotificationOrActorCascade": true,
+      "noBackfillOrNotificationStateChanges": true,
+      "productionChanged": false
+    }
+  ]
+}

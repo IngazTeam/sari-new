@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { BookingNotificationReview } from "./BookingNotificationReview";
 export function BookingReschedule({
   bookingId,
   onChanged,
@@ -179,6 +180,19 @@ export function BookingReschedule({
                     {query.data.notification.text}
                   </p>
                 </details>
+                <BookingNotificationReview
+                  key={`${bookingId}:${query.data.notification.id}`}
+                  bookingId={bookingId}
+                  notice={query.data.notification}
+                  fetching={query.isFetching}
+                  states={notificationStates}
+                  deliveries={deliveryStates}
+                  refresh={async () => {
+                    const fresh = await query.refetch();
+                    if (fresh.isError) throw Error("refresh");
+                    await onChanged();
+                  }}
+                />
               </div>
             )}
             <div className="grid min-w-0 gap-2 sm:grid-cols-2">

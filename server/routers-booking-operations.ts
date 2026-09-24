@@ -21,13 +21,33 @@ import {
   getBookingCancellationReview,
   cancelBookingCalendar,
 } from "./booking-cancellation";
-import { bookingRescheduleActionSchema } from "../shared/booking-reschedule";
+import {
+  bookingRescheduleActionSchema,
+  bookingNotificationReviewSchema,
+} from "../shared/booking-reschedule";
+import { reviewBookingNotification } from "./booking-notification-review";
 import {
   getBookingRescheduleReview,
   rescheduleBookingCalendar,
 } from "./booking-reschedule";
 
 export const bookingOperationProcedures = {
+  reviewRescheduleNotification: permissionProcedure("orders.manage")
+    .input(bookingNotificationReviewSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await reviewBookingNotification(
+          ctx.merchantId,
+          ctx.user.id,
+          input
+        );
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Notification review requires refreshed evidence",
+        });
+      }
+    }),
   getRescheduleReview: permissionProcedure("orders.manage")
     .input(bookingCalendarIdSchema)
     .query(async ({ ctx, input }) => {

@@ -87,6 +87,34 @@ export const bookingRescheduleFixture = {
             : [],
         notification: notice
           ? {
+              id: 47,
+              evidence: (revision ? "d" : "c").repeat(64),
+              canReview: !["pending", "dispatching"].includes(notice),
+              receipt: notice === "sent" ? "provider-message-47" : null,
+              dispatchAt: notice === "sent" ? source.at : null,
+              issue:
+                notice === "unknown"
+                  ? "receipt_unverified"
+                  : notice === "manual_review"
+                    ? "source_channel_missing"
+                    : null,
+              history:
+                (window as any).__noticeSaved || notice === "xss"
+                  ? [
+                      {
+                        actorUserId: 7,
+                        reason:
+                          notice === "xss"
+                            ? '<img src=x onerror="window.__noticeXss=1">' +
+                              "history-".repeat(80)
+                            : "Checked the saved provider receipt",
+                        state: "accepted",
+                        delivery: "sent",
+                        projected: true,
+                        at: source.at,
+                      },
+                    ]
+                  : [],
               state: ["sent", "delivered", "read", "xss"].includes(notice)
                 ? "accepted"
                 : notice,
@@ -113,11 +141,28 @@ export const bookingRescheduleFixture = {
           setRevision(n => n + 1);
           return {
             data,
-            isError: mode === "booking-reschedule-refresh-error",
+            isError: [
+              "booking-reschedule-refresh-error",
+              "booking-reschedule-notice-refresh-error",
+            ].includes(mode),
           };
         },
       };
     },
+  },
+  noticeMutation: {
+    useMutation: () => ({
+      mutateAsync: async (input: any) => {
+        (window as any).__noticeInput = input;
+        (window as any).__noticeCalls =
+          ((window as any).__noticeCalls || 0) + 1;
+        await new Promise(resolve => setTimeout(resolve, 200));
+        if (mode === "booking-reschedule-notice-write-error")
+          throw Error("private receipt credential");
+        (window as any).__noticeSaved = true;
+        return { state: "accepted", replayed: false };
+      },
+    }),
   },
   mutation: {
     useMutation: () => ({

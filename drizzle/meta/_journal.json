@@ -673,6 +673,13 @@
       "when": 1791676800000,
       "tag": "0095_booking_reschedule_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1791763200000,
+      "tag": "0096_booking_notification_reviews",
+      "breakpoints": true
     }
   ]
 }

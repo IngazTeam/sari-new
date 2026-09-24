@@ -27,18 +27,33 @@ const positive = (v: number) => {
 export const bookingNoticeKey = (merchantId: number, id: number) =>
   `booking_notice:${merchantId}:${id}`;
 export type BookingNoticeGuard = { id: number; token: string };
-export type BookingNoticeReview = {
-  state: string;
-  delivery: string;
-  projected: boolean;
-  text: string;
-  acceptedAt: string | null;
-};
 
 export async function assertBookingNotificationSchema() {
   await assertRuntimeSchema(
     "Booking result notifications",
     [
+      {
+        table: "booking_notification_reviews",
+        columns: [
+          "notification_id",
+          "booking_reference",
+          "actor_user_id",
+          "request_id",
+          "request_hash",
+          "evidence_hash",
+          "outcome",
+          "delivery_state",
+          "projected",
+          "reason",
+          "created_at",
+        ],
+        uniqueIndexes: [
+          {
+            name: "uq_booking_notice_review_request",
+            columns: ["merchant_id", "request_id"],
+          },
+        ],
+      },
       {
         table: "booking_reschedule_notifications",
         columns: [
@@ -327,25 +342,88 @@ export async function canDispatchBookingNotice(
   }
 }
 
-export async function readBookingNoticeReview(
-  c: PoolConnection,
-  merchantId: number,
-  moveId: number
-): Promise<BookingNoticeReview | null> {
-  const [rows] = await c.execute<any[]>(
-    "SELECT * FROM booking_reschedule_notifications WHERE merchant_id=? AND reschedule_id=?",
-    [merchantId, moveId]
+/** Lock the exact saved receipt and projection; never contact the provider. */
+export async function inspectBookingNotice(c: PoolConnection, r: any) {
+  const merchantId = r.merchant_id,
+    id = r.id;
+  const s = parse(r.snapshot);
+  const [deliveries] = await c.execute<any[]>(
+    `SELECT d.*,i.instance_id AS account,i.provider AS account_provider,i.merchant_id AS account_merchant,
+      i.phone_number_id,i.provider_account_id FROM whatsapp_message_deliveries d LEFT JOIN whatsapp_instances i ON i.id=d.instance_id
+      WHERE d.merchant_id=? AND d.idempotency_key=? FOR UPDATE`,
+    [merchantId, bookingNoticeKey(merchantId, id)]
   );
-  const r = rows[0];
-  if (!r) return null;
+  const d = deliveries[0],
+    request = parse(d?.request_json),
+    g = request?.bookingNoticeGuard;
+  const valid =
+    intact(r, s) &&
+    !!r.dispatch_started_at &&
+    typeof r.claim_token === "string" &&
+    /^[a-f0-9-]{36}$/i.test(r.claim_token) &&
+    s.channel &&
+    deliveries.length === 1 &&
+    d.direction === "outgoing" &&
+    d.instance_id === s.channel.id &&
+    d.provider === s.channel.provider &&
+    d.account === s.channel.account &&
+    d.account_provider === s.channel.provider &&
+    d.account_merchant === merchantId &&
+    d.phone_number_id === s.channel.phoneNumberId &&
+    d.provider_account_id === s.channel.providerAccountId &&
+    (!r.provider_message_id ||
+      r.provider_message_id === d.provider_message_id) &&
+    request?.kind === "text" &&
+    request.to === s.phone &&
+    request.text === r.dispatch_text &&
+    g?.id === id &&
+    g?.token === r.claim_token;
+  const receipt =
+    valid &&
+    typeof d.provider_message_id === "string" &&
+    /^[^\s<>\x00-\x1f]{1,255}$/.test(d.provider_message_id)
+      ? d.provider_message_id
+      : null;
+  const accepted =
+    receipt &&
+    (["sent", "delivered", "read"].includes(d.status) ||
+      (r.accepted_at && r.provider_message_id === receipt));
+  const [conversations] = await c.execute<any[]>(
+    "SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE",
+    [s?.conversationId ?? 0, merchantId]
+  );
+  const [messages] = await c.execute<any[]>(
+    "SELECT id,conversationId,direction,content,sender_type FROM messages WHERE externalId=? FOR UPDATE",
+    [`booking-notice:v1:${merchantId}:${id}`]
+  );
+  const conversationMatches =
+    !!s?.phone &&
+    privateSalesPhone(conversations[0]?.customerPhone) === s.phone;
+  const conflict =
+    messages.length > 1 ||
+    messages.some(
+      m =>
+        m.conversationId !== s?.conversationId ||
+        m.direction !== "outgoing" ||
+        m.content !== r.dispatch_text ||
+        m.sender_type !== "assistant"
+    );
   return {
-    state: r.state,
-    delivery: r.delivery_state,
-    projected: !!r.projection_message_id,
-    text: r.dispatch_text,
-    acceptedAt: r.accepted_at
-      ? new Date(databaseTimeEpoch(r.accepted_at)).toISOString()
-      : null,
+    s,
+    d,
+    valid: !!valid,
+    delivery:
+      valid &&
+      (["queued", "failed"].includes(d.status) ||
+        (accepted && ["sent", "delivered", "read"].includes(d.status)))
+        ? (d.status as string)
+        : "unverified",
+    receipt: accepted ? receipt : null,
+    accepted: !!accepted,
+    conversationMatches,
+    messages,
+    conflict,
+    conversationPhone: conversations[0]?.customerPhone ?? null,
   };
 }
 
@@ -354,137 +432,100 @@ export async function reconcileBookingNotice(merchantId: number, id: number) {
   positive(merchantId);
   positive(id);
   await assertBookingNotificationSchema();
-  return withBookingCapacityTransaction(merchantId, async c => {
-    const r = await read(c, merchantId, id);
-    if (!r) throw Error("Notification unavailable");
-    if (!r.dispatch_started_at || ["pending", "suppressed"].includes(r.state))
-      return;
-    const s = parse(r.snapshot);
-    const [deliveries] = await c.execute<any[]>(
-      `SELECT d.*,i.instance_id AS account,i.provider AS account_provider,i.merchant_id AS account_merchant,
-      i.phone_number_id,i.provider_account_id FROM whatsapp_message_deliveries d LEFT JOIN whatsapp_instances i ON i.id=d.instance_id
-      WHERE d.merchant_id=? AND d.idempotency_key=?`,
-      [merchantId, bookingNoticeKey(merchantId, id)]
-    );
-    const d = deliveries[0],
-      request = parse(d?.request_json),
-      g = request?.bookingNoticeGuard;
-    const valid =
-      intact(r, s) &&
-      s.channel &&
-      deliveries.length === 1 &&
-      d.direction === "outgoing" &&
-      d.instance_id === s.channel.id &&
-      d.provider === s.channel.provider &&
-      d.account === s.channel.account &&
-      d.account_provider === s.channel.provider &&
-      d.account_merchant === merchantId &&
-      d.phone_number_id === s.channel.phoneNumberId &&
-      d.provider_account_id === s.channel.providerAccountId &&
-      request?.kind === "text" &&
-      request.to === s.phone &&
-      request.text === r.dispatch_text &&
-      g?.id === id &&
-      g?.token === r.claim_token;
-    const receipt =
-      valid &&
-      typeof d.provider_message_id === "string" &&
-      /^[^\s<>\x00-\x1f]{1,255}$/.test(d.provider_message_id)
-        ? d.provider_message_id
-        : null;
-    const accepted =
-      receipt &&
-      (["sent", "delivered", "read"].includes(d.status) ||
-        (r.accepted_at && r.provider_message_id === receipt));
-    let state = accepted
-        ? "accepted"
-        : valid && d.status === "failed"
-          ? "failed"
-          : "unknown",
-      error: string | null = accepted
-        ? null
-        : valid
-          ? "provider_unconfirmed"
-          : "receipt_unverified";
-    let projected = r.projection_message_id;
-    if (accepted) {
-      const [conversations] = await c.execute<any[]>(
-        "SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE",
-        [s.conversationId, merchantId]
-      );
-      if (privateSalesPhone(conversations[0]?.customerPhone) !== s.phone) {
-        error = "conversation_unavailable";
+  return withBookingCapacityTransaction(merchantId, c =>
+    reconcileBookingNoticeInTransaction(c, merchantId, id)
+  );
+}
+export async function reconcileBookingNoticeInTransaction(
+  c: PoolConnection,
+  merchantId: number,
+  id: number
+) {
+  const r = await read(c, merchantId, id);
+  if (!r) throw Error("Notification unavailable");
+  if (!r.dispatch_started_at || ["pending", "suppressed"].includes(r.state))
+    return;
+  const {
+    s,
+    d,
+    valid,
+    receipt,
+    accepted,
+    conversationMatches,
+    messages,
+    conflict,
+    delivery,
+  } = await inspectBookingNotice(c, r);
+  let state = accepted
+      ? "accepted"
+      : valid && d.status === "failed"
+        ? "failed"
+        : "unknown",
+    error: string | null = accepted
+      ? null
+      : valid
+        ? "provider_unconfirmed"
+        : "receipt_unverified";
+  let projected: number | null = null;
+  if (accepted) {
+    if (!conversationMatches) {
+      error = "conversation_unavailable";
+      projected = null;
+    } else {
+      const external = `booking-notice:v1:${merchantId}:${id}`;
+      if (conflict) {
+        error = "projection_conflict";
         projected = null;
-      } else {
-        const external = `booking-notice:v1:${merchantId}:${id}`;
-        const [messages] = await c.execute<any[]>(
-          "SELECT * FROM messages WHERE externalId=? FOR UPDATE",
-          [external]
-        );
-        if (
-          messages.length > 1 ||
-          messages.some(
-            m =>
-              m.conversationId !== s.conversationId ||
-              m.direction !== "outgoing" ||
-              m.content !== r.dispatch_text ||
-              m.sender_type !== "assistant"
-          )
-        ) {
-          error = "projection_conflict";
-          projected = null;
-        } else if (messages.length) projected = messages[0].id;
-        else {
-          const [inserted] = await c.execute<any>(
-            `INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,aiResponse,sender_type,createdAt)
+      } else if (messages.length) projected = messages[0].id;
+      else {
+        const [inserted] = await c.execute<any>(
+          `INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,aiResponse,sender_type,createdAt)
           VALUES (?,'outgoing','text',?,?,1,?,'assistant',?)`,
-            [
-              s.conversationId,
-              r.dispatch_text,
-              external,
-              r.dispatch_text,
-              r.dispatch_started_at,
-            ]
-          );
-          projected = inserted.insertId;
-          await c.execute(
-            "UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?",
-            [
-              r.dispatch_started_at,
-              r.dispatch_started_at,
-              s.conversationId,
-              merchantId,
-            ]
-          );
-        }
+          [
+            s.conversationId,
+            r.dispatch_text,
+            external,
+            r.dispatch_text,
+            r.dispatch_started_at,
+          ]
+        );
+        projected = inserted.insertId;
+        await c.execute(
+          "UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?",
+          [
+            r.dispatch_started_at,
+            r.dispatch_started_at,
+            s.conversationId,
+            merchantId,
+          ]
+        );
       }
     }
-    // A later failed receipt doesn't erase historical acceptance. Nor does corrupt evidence erase it.
-    if (r.accepted_at && !accepted) {
-      state = "accepted";
-      error = "receipt_unverified";
-    }
-    const delivery = valid ? d.status : "unverified";
-    await c.execute(
-      `UPDATE booking_reschedule_notifications SET state=?,delivery_state=?,provider_message_id=COALESCE(?,provider_message_id),
+  }
+  // A later failed receipt doesn't erase historical acceptance. Nor does corrupt evidence erase it.
+  if (r.accepted_at && !accepted) {
+    state = "accepted";
+    error = "receipt_unverified";
+  }
+  await c.execute(
+    `UPDATE booking_reschedule_notifications SET state=?,delivery_state=?,provider_message_id=COALESCE(?,provider_message_id),
       accepted_at=IF(?=1,COALESCE(accepted_at,UTC_TIMESTAMP(3)),accepted_at),projection_message_id=?,last_error=?,
       next_check_at=IF(?=1 AND created_at>TIMESTAMPADD(DAY,-7,UTC_TIMESTAMP(3)),TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),NULL) WHERE id=? AND merchant_id=?`,
-      [
-        state,
-        delivery,
-        accepted ? receipt : null,
-        accepted ? 1 : 0,
-        projected,
-        error,
-        state === "unknown" ||
-        (state === "accepted" && (delivery !== "read" || !!error))
-          ? 1
-          : 0,
-        id,
-        merchantId,
-      ]
-    );
-  });
+    [
+      state,
+      delivery,
+      accepted ? receipt : null,
+      accepted ? 1 : 0,
+      projected,
+      error,
+      state === "unknown" ||
+      (state === "accepted" && (delivery !== "read" || !!error))
+        ? 1
+        : 0,
+      id,
+      merchantId,
+    ]
+  );
 }
 
 export async function dispatchBookingNotice(merchantId: number, id: number) {

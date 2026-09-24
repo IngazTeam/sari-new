@@ -55,5 +55,33 @@ module.exports=async function(page,origin,output,results){
  }
  await page.setViewport({width:320,height:812});await visit('notice-xss');await page.click('[data-booking-notification] summary');
  assert.equal(await page.$('[data-booking-notification] img'),null);assert.equal(await page.evaluate(()=>window.__noticeXss),undefined);
+ await page.click('[data-notice-history] summary');assert.equal(await page.$('[data-notice-history] img'),null);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);results.push({width:320,mode:'booking_notice_untrusted_text_inert',passed:true});
+ const noticeFill=async()=>{await page.type('[data-notice-reason]','Checked the saved provider receipt');await page.focus('[data-notice-attest]');await page.keyboard.press('Space');};
+ for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
+  await page.setViewport({width,height:812});await visit('notice-sent',lang);
+  assert.equal(await page.$eval('[data-notice-submit]',n=>n.disabled),true);await noticeFill();
+  await page.type('[data-notice-reason]',' carefully');assert.equal(await page.$eval('[data-notice-attest]',n=>n.checked),false);
+  await page.evaluate(()=>window.__changeReschedule());await page.waitForFunction(()=>document.querySelector('[data-notice-reason]').value==='');
+  assert.equal(await page.$eval('[data-notice-attest]',n=>n.checked),false);await noticeFill();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.equal(await page.$eval('[data-notice-review]',n=>n.innerText.includes('merchantUx.')),false);
+  assert.equal(await page.$eval('[data-notice-review]',n=>[...n.querySelectorAll('button')].every(b=>b.getBoundingClientRect().height>=44)),true);
+  if(lang==='ar'&&[375,1440].includes(width))await(await page.$('[data-booking-notification]')).screenshot({path:path.join(output,`booking-notice-review-${width}.png`)});
+  await page.$eval('[data-notice-submit]',n=>{n.click();n.click();});await page.waitForSelector('[data-notice-done]');
+  assert.equal(await page.evaluate(()=>window.__noticeCalls),1);assert.equal(await page.evaluate(()=>window.__rescheduleCalls),undefined);
+  const input=await page.evaluate(()=>window.__noticeInput);assert.deepEqual(Object.keys(input).sort(),['bookingId','notificationId','requestId','evidence','reviewed','reason'].sort());
+  assert.equal(input.bookingId,321);assert.equal(input.notificationId,47);assert.equal(input.evidence,'d'.repeat(64));assert.equal(input.reviewed,true);assert.match(input.requestId,/^[a-f0-9-]{36}$/);
+  assert.equal(await page.$eval('[data-notice-submit]',n=>n.disabled),true);await page.click('[data-notice-history] summary');
+  assert.ok((await page.$eval('[data-notice-history]',n=>n.innerText)).includes('Checked the saved provider receipt'));
+  await page.click('[data-notice-refresh]');await page.waitForFunction(()=>!document.querySelector('[data-notice-reason]').disabled);
+  assert.equal(await page.$eval('[data-notice-attest]',n=>n.checked),false);assert.equal(await page.evaluate(()=>window.__noticeCalls),1);
+  results.push({width,lang,mode:'booking_notice_evidence_review_audit_single_submit',passed:true});
+ }
+ for(const mode of ['write-error','refresh-error']){
+  await visit(`notice-${mode}`);await noticeFill();await page.click('[data-notice-submit]');await page.waitForSelector('[data-notice-review] [role=alert]');
+  assert.equal(await page.$eval('[data-notice-submit]',n=>n.disabled),true);assert.equal(await page.$eval('[data-notice-review]',n=>n.innerText.includes('private')),false);
+  assert.equal(await page.evaluate(()=>window.__noticeCalls),1);await page.click('[data-notice-submit]');assert.equal(await page.evaluate(()=>window.__noticeCalls),1);
+  results.push({width:1440,mode:`booking_notice_${mode}_no_blind_retry`,passed:true});
+ }
 };
