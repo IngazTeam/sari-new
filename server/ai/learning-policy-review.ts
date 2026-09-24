@@ -45,6 +45,11 @@ async function sourceSnapshot(connection: PoolConnection, merchantId: number, pr
   const sourceDigest = reviewDigest({ merchantId, proposal, links, sources });
   // No duplicated customer transcript in the durable review record.
   return { sourceDigest, eligible, independentConversations, evidenceLinks: links.length,
+    evidencePreview: links.slice(-20).reverse().map(link => {
+      const source = sources.find(row => Number(row.id) === Number(link.signal_id))!;
+      return { signalId: Number(link.signal_id), relation: String(link.relation),
+        excerpt: String(source.customer_message || source.context_summary || '').slice(0, 500) };
+    }),
     proposal: { id: Number(proposal.id), dimension: String(proposal.dimension), insight: String(proposal.insight) } };
 }
 

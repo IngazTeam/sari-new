@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T18:46:46.825Z",
+  "generatedAt": "2026-09-24T22:08:19.607Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -52,6 +52,10 @@
     "invoice-margin-375.png",
     "learning-invoice-1440.png",
     "learning-invoice-375.png",
+    "learning-policy-review-ar-1440.png",
+    "learning-policy-review-ar-375.png",
+    "learning-policy-review-en-1440.png",
+    "learning-policy-review-en-375.png",
     "learning-status-1440.png",
     "learning-status-375.png",
     "margin-exception-1440.png",
@@ -68,6 +72,244 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "policy_review_eight_cases_keyboard_attestation_single_save_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_readonly",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_readonly",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_ineligible",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_ineligible",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_passed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_passed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_failed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_failed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_stale",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_stale",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_xss",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_xss",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_unsupported",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_unsupported",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_changed-suite",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "policy_review_changed-suite",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_write-unknown_same_request",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_write-outage_same_request",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_conflict_requires_explicit_new_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_saved_receipt_survives_refresh_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_stale_read_after_save_cannot_start_new_review",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_refresh_preserves_answers_requires_reconfirmation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_source_changes_preserve_and_lock_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "policy_review_role_changes_preserve_and_lock_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "policy_review_lazy_entry_preserves_collapsed_draft",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

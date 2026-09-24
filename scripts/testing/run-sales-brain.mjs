@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 // Keep virtual-clock provider tests separate from real MySQL integration tests.
 const units = [
+  'server/learning-policy-review-ui-pentest.test.ts',
   'server/ai/learning-policy-review-pentest.test.ts',
   'server/learning-policy-review-access-pentest.test.ts',
   'server/ai/budget-settlement-pentest.test.ts',

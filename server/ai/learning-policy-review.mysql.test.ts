@@ -49,6 +49,25 @@ describe.skipIf(!process.env.DATABASE_URL)('versioned offline learning policy re
     expect(await query('SELECT * FROM ai_learning_proposals WHERE id=?', [proposalId])).toEqual(before);
     expect(await query('SELECT * FROM sari_behavioral_dna WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
   });
+  it('returns evidence excerpts from the same scoped source snapshot, without provider metadata', async () => {
+    const before=await get();expect(before.evidencePreview).toEqual([
+      {signalId:signalIds[1],relation:'contrary',excerpt:'Private synthetic transcript 1'},
+      {signalId:signalIds[0],relation:'supporting',excerpt:'Private synthetic transcript 0'},
+    ]);
+    await query('UPDATE sari_learning_signals SET customer_message=? WHERE id=?',['Changed '+ 'x'.repeat(700),signalIds[1]]);
+    const after=await get();expect(after.sourceDigest).not.toBe(before.sourceDigest);expect(after.evidencePreview[0].excerpt).toHaveLength(500);
+    expect(Object.keys(after.evidencePreview[0]).sort()).toEqual(['excerpt','relation','signalId']);
+  });
+  it('bounds the displayed sample without reducing the full source count or digest authority', async () => {
+    for(let i=0;i<24;i++) {
+      const signal=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,conversationId])).insertId;
+      await attachLearningEvidence({...proposal(),observedSignalIds:[signal]});
+    }
+    const before=await get();expect(before.evidenceLinks).toBe(26);expect(before.evidencePreview).toHaveLength(20);expect(before.independentConversations).toBe(1);
+    expect(before.evidencePreview.some(item=>item.signalId===signalIds[0])).toBe(false);
+    await query("UPDATE sari_learning_signals SET customer_message='Changed outside the excerpt sample' WHERE id=?",[signalIds[0]]);
+    expect((await get()).sourceDigest).not.toBe(before.sourceDigest);
+  });
   it('keeps a failed later revision and does not cherry-pick the preceding pass', async () => {
     await record(await input()); const next = await input(); next.cases[0].candidateVerdict = 'fail';
     expect(await record(next)).toMatchObject({ outcome: 'failed', passedCases: 7, regressions: 1, revision: 2 });

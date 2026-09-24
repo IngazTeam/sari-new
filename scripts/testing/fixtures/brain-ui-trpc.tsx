@@ -1,4 +1,5 @@
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
+import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
 import { bookingCalendarFixture } from './booking-calendar-ui-trpc';
 import { bookingCancellationFixture } from './booking-cancellation-ui-trpc';
 import { useEffect, useMemo, useState } from 'react';
@@ -218,6 +219,8 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
+    getLearningPolicyReview: learningPolicyReviewFixture.query,
+    recordLearningPolicyReview: learningPolicyReviewFixture.mutation,
     getLearningAnalysisStatus:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[refreshing,setRefreshing]=useState(false);
       const state=mode.replace('learning-status-','');
@@ -228,7 +231,7 @@ export const trpc = {
     }},
     getLearningDashboard: { useQuery: () => {
     const [retry, setRetry] = useState(false);
-    return { data: mode === 'ready' || mode === 'mutation-error' || retry ? fixture : undefined,
+    return { data: mode === 'ready' || mode === 'mutation-error' || mode === 'learning-review-card' || retry ? fixture : undefined,
       isLoading: mode === 'loading' && !retry, isError: mode === 'error' && !retry, refetch: async () => setRetry(true) };
   } } },
   orders: {

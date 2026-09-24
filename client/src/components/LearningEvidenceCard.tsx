@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LearningPolicyReview } from './LearningPolicyReview';
 
 export function LearningEvidenceCard({ showManageLink = true }: { showManageLink?: boolean } = {}) {
   const { t } = useTranslation();
@@ -55,6 +56,7 @@ export function LearningEvidenceCard({ showManageLink = true }: { showManageLink
                 <p className="whitespace-pre-wrap break-words leading-relaxed">{item.excerpt}</p>
               </blockquote>)}
             </div>
+            <LearningPolicyReview proposalId={proposal.id} />
           </details>)}
         </section>
         {!!data.dnaInsights.length && <details className="rounded-lg border p-3">

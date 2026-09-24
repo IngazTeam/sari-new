@@ -1,6 +1,8 @@
 import type { MerchantUxCopy } from './merchant-ux.schema';
+import { learningPolicyReviewEn } from './learning-policy-review';
 
 const merchantUxEn: MerchantUxCopy = {
+  policyReview: learningPolicyReviewEn,
   learningStatus: {
   "title": "Learning analysis status",
   "refresh": "Refresh status",

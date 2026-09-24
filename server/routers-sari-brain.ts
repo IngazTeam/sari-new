@@ -31,7 +31,7 @@ import { salesSectorPlaybooks } from '../shared/sales-sector-playbooks';
 import { hasPermission } from './_core/permissions';
 import { getFollowupPolicy, updateFollowupPolicy, followupPolicyUpdateSchema } from './ai/followup-policy';
 import { learningPolicyProposalInput, learningPolicyReviewInput } from './ai/learning-policy-review-contract';
-import { getLearningPolicyReview, recordLearningPolicyReview } from './ai/learning-policy-review';
+import { getLearningPolicyReview, recordLearningPolicyReview, LearningPolicyReviewConflict } from './ai/learning-policy-review';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -332,7 +332,7 @@ export const sariBrainRouter = router({
   }),
   recordLearningPolicyReview: permissionProcedure('bot_settings.manage').input(learningPolicyReviewInput).mutation(async ({ ctx, input }) => {
     try { return await recordLearningPolicyReview(ctx.merchantId, ctx.user.id, input); }
-    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy review changed or is unavailable' }); }
+    catch (error) { throw new TRPCError({ code: error instanceof LearningPolicyReviewConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Learning policy review changed or is unavailable' }); }
   }),
   getFollowupPolicy: merchantProcedure.query(async ({ ctx }) => ({
     ...await getFollowupPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
