@@ -1,0 +1,1151 @@
+{
+  "date": "2026-09-23",
+  "commit": "9c6bf9112c889a91eff47045f476a9f346a0ab3d",
+  "scope": {
+    "routes": 122,
+    "pages": 102,
+    "sidebar": 49,
+    "liveRouteVisits": 122
+  },
+  "score": 5,
+  "findings": [
+    {
+      "id": "UX01",
+      "priority": "P1",
+      "title": "نصوص واجهة خاطئة في صفحات أساسية",
+      "evidence": "مؤكد محليًا وفي المصدر",
+      "observation": "العملاء بعنوان «تم إضافة الملاحظة»، إعدادات التقويم بعنوان تحذير الفصل، الولاء بعنوان «تم الحفظ بنجاح»، وطلبات WooCommerce بعنوان «تمت المزامنة بنجاح». ظهرت قبل أي إجراء. تشمل المشكلة سلة وSheets والولاء والعملاء والتقارير المجدولة والأتمتة والعملة وساحة التجربة.",
+      "solution": "استبدال مفاتيح textN/auto_N بمفاتيح دلالية ومراجعة السياق والحقول والتنبيهات، لا مجرد وجود الترجمة.",
+      "acceptance": "افتح كل صفحة دون إجراء: عنوان صحيح، حقول تصف مدخلاتها، لا رسالة نجاح أو فشل ثابتة. اختبر النجاح والفشل للنماذج.",
+      "source": "client/src/locales/ar.json; client/src/pages/SallaIntegration.tsx:49; client/src/pages/Customers.tsx"
+    },
+    {
+      "id": "UX02",
+      "priority": "P1",
+      "title": "المحادثات بعد أول 50 غير متاحة والبحث محدود",
+      "evidence": "مؤكد بالتجربة والمصدر",
+      "observation": "قاعدة الفحص تحتوي 65 محادثة. القائمة تُحمّل pageSize=50 وcurrentPage=1 دون استخدام setCurrentPage. البحث عن ux-customer-065 يعرض «لا توجد محادثات بعد». العدّاد الكلي 65 لكن النشط والمغلق 40 و10 من الصفحة الحالية فقط.",
+      "solution": "بحث خادمي على كامل التيننت، ترقيم أو تحميل إضافي، وإجماليات من المصدر نفسه. حالة لا نتائج تختلف عن عدم وجود محادثات.",
+      "acceptance": "أنشئ 65+ محادثة؛ العميل 65 قابل للبحث والفتح، وعدّادات الحالة تتطابق مع العدد الكلي.",
+      "source": "client/src/pages/merchant/Conversations.tsx:31; client/src/pages/merchant/Conversations.tsx:60; client/src/pages/merchant/Conversations.tsx:101"
+    },
+    {
+      "id": "UX03",
+      "priority": "P1",
+      "title": "تعديل الحملة يفتح 404",
+      "evidence": "مؤكد بالنقر محليًا",
+      "observation": "زر تعديل مسودة الحملة يفتح /merchant/campaigns/1/edit؛ لا تعريف لهذا المسار. ظهر قالب 404 العام خارج لوحة التاجر.",
+      "solution": "إضافة مسار ونموذج تعديل للمسودات، أو تحويل الإجراء إلى محرر قائم. الاحتفاظ بسياق لوحة التاجر عند أخطاء المسار.",
+      "acceptance": "تعديل مسودة وحفظها ثم إعادة فتحها؛ الحملة المرسلة لا تعرض إجراء تعديل غير صالح.",
+      "source": "client/src/pages/merchant/Campaigns.tsx:300; client/src/App.tsx:336"
+    },
+    {
+      "id": "UX04",
+      "priority": "P1",
+      "title": "مقاييس الأداء تطلب تيننت رقم صفر ثم تعرض أصفارًا",
+      "evidence": "مؤكد بالمصدر؛ واجهة الأصفار شوهدت محليًا",
+      "observation": "المسار لا يحتوي merchantId، لكن الصفحة تأخذه من useParams فتستخدم 0. الخادم يرفض المعرف غير المملوك. الواجهة لا تعرض خطأ وتستخدم ||0.",
+      "solution": "استخدام التيننت المختار ومنع الاستعلام قبل تحديده، وإظهار الخطأ مع إعادة المحاولة.",
+      "acceptance": "المؤشرات تأتي من التيننت الصحيح؛ رفض الطلب يظهر حالة خطأ لا أرقامًا صفرية.",
+      "source": "client/src/pages/merchant/PerformanceMetrics.tsx:12; server/routers-performance.ts:19"
+    },
+    {
+      "id": "UX05",
+      "priority": "P1",
+      "title": "تعريف الطلب المكتمل لا يطابق حالات الطلبات",
+      "evidence": "مؤكد بالمصدر وببيانات الفحص",
+      "observation": "ملخص الرئيسية يحسب orders.status=completed بينما enum الطلبات هو pending/paid/processing/shipped/delivered/cancelled. في الفحص كانت هناك طلبات delivered والرئيسية تعرض مكتملة=0. تختلف تعريفات الإيراد بين الأسطح.",
+      "solution": "قاموس مؤشرات موحد: تعريف الإيراد المؤكد، الطلب المكتمل، الفترة، العملة والمصدر. لا تُجمع حالات غير موجودة.",
+      "acceptance": "بيانات ثابتة لطلب مدفوع ومسلم وملغى ومسترد تعطي نتائج معروفة ومتسقة في الرئيسية والتقارير.",
+      "source": "server/dashboard-analytics.ts:82; drizzle/schema.ts:524"
+    },
+    {
+      "id": "UX06",
+      "priority": "P1",
+      "title": "غياب حالات فشل تحميل مميزة",
+      "evidence": "مؤكد بالمصدر في صفحات متعددة",
+      "observation": "الرئيسية ومقاييس الأداء والتحليلات وبعض القوائم لا تفصل فشل القراءة عن الصفر/الفراغ. وجود toast.onError للتعديل لا يعالج فشل query. فحص آلي أولي وجد 18 ملفًا بلا إشارة error عامة؛ هذا مؤشر مراجعة وليس عددًا نهائيًا للعيوب.",
+      "solution": "حالات مستقلة للتحميل والفراغ وعدم التطابق وعدم الربط والرفض والخطأ؛ إعادة محاولة تحفظ المرشحات.",
+      "acceptance": "أجبر 403/500/انقطاع الاتصال؛ لا أصفار مضللة ولا دعوة إنشاء مكررة.",
+      "source": "client/src/pages/merchant/Dashboard.tsx:44; client/src/pages/merchant/AnalyticsDashboard.tsx:82"
+    },
+    {
+      "id": "UX07",
+      "priority": "P2",
+      "title": "حالات تشغيل ثابتة تتناقض مع الواقع",
+      "evidence": "مؤكد بصريًا",
+      "observation": "التيننت بلا رقم واتساب والرد الآلي معطل. الرئيسية تقول وضع الإعداد بينما القائمة تعرض ساري نشط الآن ويتعلم الآن. صفحة Webhook تعرض جاهز ونشط ومفعّل.",
+      "solution": "مصدر حالة واحد يربط القناة والإعداد والتفعيل ووقت آخر فحص. استخدم غير متصل أو يحتاج إعداد عند غياب الدليل.",
+      "acceptance": "حالات غير مربوط/منقطع/معطل/جاهز متطابقة في جميع الصفحات.",
+      "source": "client/src/components/DashboardLayout.tsx:548; client/src/pages/merchant/WhatsAppWebhookSetup.tsx"
+    },
+    {
+      "id": "UX08",
+      "priority": "P2",
+      "title": "تكرار المسارات واختلاف الوعد عن الوجهة",
+      "evidence": "مؤكد بالتنقل والمصدر",
+      "observation": "سجل الرسائل والصوت والتحليلات المتقدمة وغيرها تعرض نفس Analytics. الكلمات المفتاحية تحوّل لتحليل الموقع رغم وصفها إعداد ردود. مسار A/B يفتح الرؤى على تبويب الكلمات المفتاحية.",
+      "solution": "وجهة رئيسية واحدة لكل مهمة مع تبويب مرتبط بالرابط؛ تحويل المسارات القديمة مع حفظ الفلتر.",
+      "acceptance": "كل اسم في القائمة يفتح الوظيفة الموعودة، والرجوع يحفظ السياق والبحث.",
+      "source": "client/src/App.tsx:953; client/src/pages/merchant/AIWhatsAppHub.tsx:53; client/src/pages/merchant/InsightsDashboard.tsx:131"
+    },
+    {
+      "id": "UX09",
+      "priority": "P2",
+      "title": "ثقل التنقل وترتيب الرئيسية",
+      "evidence": "مؤكد بصريًا وتقييم تصميمي",
+      "observation": "49 عنصرًا في 6 مجموعات؛ أدوات إعداد وتقارير متعددة بجانب مهام التشغيل. في الرئيسية تسبق بطاقات التعلم والمزامنة عنوان الترحيب وملخص المبيعات.",
+      "solution": "8 مجالات عمل واضحة، أدوات متقدمة داخل صفحاتها، بحث شامل بالمرادفات، وبداية يوم تعرض التنبيهات والمهام والأداء.",
+      "acceptance": "الوصول للمحادثة أو الطلب خلال نقرتين من الرئيسية؛ معرفة الخطوة التالية دون تمرير طويل.",
+      "source": "client/src/components/DashboardLayout.tsx:153; client/src/pages/merchant/Dashboard.tsx:160"
+    },
+    {
+      "id": "UX10",
+      "priority": "P2",
+      "title": "الجوال يجعل المحادثة بعيدة عن المهمة",
+      "evidence": "مؤكد عند عرض 390×844",
+      "observation": "تكدس العدادات الكبيرة قبل قائمة المحادثات؛ قائمة ثابتة 600px ثم مساحة المحادثة أسفلها. شريط الجوال مزدحم وحالة العنوان تختنق. توجد أيضًا عناوين فرعية تعود إلى Menu عند غياب تطابق تام.",
+      "solution": "قائمة ثم محادثة بملء المساحة مع عودة واضحة؛ شريط علوي مختصر، تنقل سفلي للمهام المتكررة، فلاتر قابلة للفتح.",
+      "acceptance": "اختبار 360/390/768/1440 ولوحة مفاتيح الجوال؛ لا تداخل أو تمرير أفقي للصفحة، زر الرد ظاهر.",
+      "source": "client/src/pages/merchant/Conversations.tsx:284; client/src/components/DashboardLayout.tsx:628"
+    },
+    {
+      "id": "UX11",
+      "priority": "P2",
+      "title": "تصدير الرؤى لا يصدر ملفًا",
+      "evidence": "مؤكد بالمصدر",
+      "observation": "handleExportCSV يعرض «جاري تصدير البيانات...» ثم TODO فقط. التحديث كذلك يعلن النجاح دون انتظار اكتمال الطلبات.",
+      "solution": "تنفيذ تصدير للفترة والمرشحات الفعلية؛ تعطيل الإجراء مع تفسير إن لم يكن متاحًا؛ النجاح بعد اكتمال العملية.",
+      "acceptance": "ينتج ملفًا صحيحًا عند الضغط، والفشل يعرض خطأ قابلًا للاستعادة.",
+      "source": "client/src/pages/merchant/InsightsDashboard.tsx:41"
+    },
+    {
+      "id": "UX12",
+      "priority": "P2",
+      "title": "روابط وسياسات وعودة الدفع القديم غير صحيحة",
+      "evidence": "مؤكد بالمصدر ومحليًا",
+      "observation": "روابط الشروط والخصوصية في Checkout هي #. PaymentSuccess يقرأ query من useLocation الذي يعيد pathname فقط؛ اختبار subscriptionId=1 عرض #0. PaymentCancel لا يتحقق من حالة الخصم. تخص هذه الملاحظة المسارات القديمة، ولا تثبت فشل مسار Tap الحالي.",
+      "solution": "استخدام useSearch أو window.location.search، روابط سياسات فعلية، وحالة دفع من الخادم؛ إعادة محاولة تحفظ الباقة.",
+      "acceptance": "معرف صحيح يقرأ صحيحًا؛ مرجع ناقص يوضح السبب؛ لا ادعاء عدم الخصم دون تحقق. لا يلزم تنفيذ دفعة حقيقية لاختبار القراءة.",
+      "source": "client/src/pages/merchant/Checkout.tsx:169; client/src/pages/merchant/PaymentSuccess.tsx:15; client/src/pages/merchant/PaymentCancel.tsx:10"
+    },
+    {
+      "id": "UX13",
+      "priority": "P2",
+      "title": "بقايا كود تظهر للمستخدم",
+      "evidence": "مؤكد بصريًا",
+      "observation": "صفحة مصادر العملاء تعرض // @ts-ignore ضمن محتواها. توجد نصوص ترجمة تحتوي ${error.message} حرفيًا في أدوات واتساب.",
+      "solution": "إزالة التعليقات من JSX النصي واستخدام interpolation الصحيح؛ مسح النص المعروض آليًا.",
+      "acceptance": "لا يظهر @ts-ignore أو مفاتيح ترجمة أو ${...} في المحتوى النهائي.",
+      "source": "client/src/pages/merchant/AcquisitionReport.tsx:61; client/src/pages/merchant/WhatsAppTest.tsx:84"
+    },
+    {
+      "id": "UX14",
+      "priority": "P2",
+      "title": "نموذج تعديل خدمة غير موجودة لا يشرح المشكلة",
+      "evidence": "مؤكد قبل إنشاء الخدمة",
+      "observation": "فتح services/1/edit قبل وجود الخدمة أظهر نموذج تعديل فارغ؛ صفحة services/1 نفسها أظهرت غير موجودة. إنشاء خدمة جديدة بقيمة 150 ومدة 60 نجح لاحقًا.",
+      "solution": "حالات loading/error/not-found مستقلة قبل عرض نموذج التعديل، مع العودة للقائمة.",
+      "acceptance": "معرف غير موجود لا يعرض حقول تحرير أو زر حفظ؛ إنشاء وتعديل سجل حقيقي يعملان.",
+      "source": "client/src/pages/merchant/ServiceForm.tsx"
+    },
+    {
+      "id": "UX15",
+      "priority": "P2",
+      "title": "إتاحة غير متسقة خارج مجلد merchant",
+      "evidence": "مؤكد بالمصدر؛ يلزم استكمال اختبار قارئ الشاشة",
+      "observation": "الاختبار الحالي يغطي مجلد merchant وأربع صفحات إضافية؛ صفحات مثل ScheduledReports وWhatsAppAutoNotifications خارج هذا النطاق وفيها أزرار أيقونات بلا أسماء وحذف مباشر. توجد main متداخلة في التخطيط الحالي.",
+      "solution": "توليد نطاق فحص الإتاحة من المسارات الفعلية، وتسميات أزرار وسياق الحذف وإدارة التركيز.",
+      "acceptance": "كل وظيفة متاحة بلوحة المفاتيح؛ focus واضح؛ dialogs تعيد التركيز؛ عنصر main رئيسي واحد.",
+      "source": "server/merchant-core-accessibility-pentest.test.ts:13; client/src/pages/ScheduledReports.tsx:60; client/src/components/DashboardLayout.tsx:301"
+    },
+    {
+      "id": "UX16",
+      "priority": "P3",
+      "title": "تحسينات صدق الأرقام والحالات الفارغة",
+      "evidence": "مؤكد محليًا/المصدر",
+      "observation": "0 تقييم يظهر 0.0 كأنه تقييم سلبي؛ استعادة 0 من 0 توصف بالانخفاض؛ صفحة الباقات تعرض وفر 20% ثابتًا بغض النظر عن الأسعار؛ المنتجات المتوفرة تعني النشطة حتى لو المخزون صفر.",
+      "solution": "عرض لا توجد بيانات كافية، توضيح تعريف النشط والمتوفر، وحساب المقارنات والخصم من البيانات الفعلية.",
+      "acceptance": "صفر عينة لا ينتج حكم أداء، والتوفير والتوفر قابلان للحساب من السجلات.",
+      "source": "client/src/pages/merchant/OverviewAnalytics.tsx; client/src/pages/merchant/SubscriptionPlans.tsx; client/src/pages/merchant/Products.tsx"
+    }
+  ],
+  "pages": [
+    {
+      "title": "الإعداد الأولي",
+      "group": "settings",
+      "note": "اختصار رحلة الإعداد إلى النشاط والمعرفة والقناة والتجربة؛ إبقاء التقدم قابلًا للاستكمال.",
+      "file": "client/src/pages/SetupWizard.tsx",
+      "routes": [
+        "/merchant/setup-wizard"
+      ]
+    },
+    {
+      "title": "نظرة عامة",
+      "group": "overview",
+      "note": "تقديم مهام اليوم وملخص الأداء على تفاصيل تعلم المخ والمزامنة؛ توحيد حالة التشغيل.",
+      "file": "client/src/pages/merchant/Dashboard.tsx",
+      "routes": [
+        "/merchant/dashboard"
+      ]
+    },
+    {
+      "title": "مركز المساعد",
+      "group": "ai",
+      "note": "توحيد المعرفة والسلوك والتجربة والتشغيل؛ تصحيح وجهتي الكلمات المفتاحية والصوت.",
+      "file": "client/src/pages/merchant/AIWhatsAppHub.tsx",
+      "routes": [
+        "/merchant/ai-hub"
+      ]
+    },
+    {
+      "title": "مركز التحليلات",
+      "group": "analytics",
+      "note": "استخدام تبويبات واضحة لتعريفات المؤشرات بدل بطاقات متشابهة.",
+      "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+      "routes": [
+        "/merchant/analytics-hub"
+      ]
+    },
+    {
+      "title": "الحملات",
+      "group": "marketing",
+      "note": "إصلاح تعديل المسودة المكسور وتصحيح نص تأكيد الإرسال.",
+      "file": "client/src/pages/merchant/Campaigns.tsx",
+      "routes": [
+        "/merchant/campaigns"
+      ]
+    },
+    {
+      "title": "إنشاء حملة",
+      "group": "marketing",
+      "note": "خطوات جمهور ثم رسالة ثم مراجعة؛ بيان الموافقة وعدد المستلمين والتوقيت قبل الجدولة.",
+      "file": "client/src/pages/merchant/NewCampaign.tsx",
+      "routes": [
+        "/merchant/campaigns/new"
+      ]
+    },
+    {
+      "title": "تفاصيل الحملة",
+      "group": "marketing",
+      "note": "إظهار سياق الحملة وإجراء متابعة؛ توضيح قبول المزود مقابل التسليم.",
+      "file": "client/src/pages/merchant/CampaignDetails.tsx",
+      "routes": [
+        "/merchant/campaigns/:id"
+      ]
+    },
+    {
+      "title": "تقرير الحملة",
+      "group": "analytics",
+      "note": "تصحيح عنوان نجاح الإرسال ليوافق معنى الحالة؛ تمييز الخطأ عن حملة غير موجودة.",
+      "file": "client/src/pages/merchant/CampaignReport.tsx",
+      "routes": [
+        "/merchant/campaigns/:id/report"
+      ]
+    },
+    {
+      "title": "المنتجات",
+      "group": "catalog",
+      "note": "توضيح الفرق بين النشط والمتوفر بالمخزون؛ إظهار مصدر المنتج وحالة مزامنته.",
+      "file": "client/src/pages/merchant/Products.tsx",
+      "routes": [
+        "/merchant/products"
+      ]
+    },
+    {
+      "title": "استيراد المنتجات",
+      "group": "catalog",
+      "note": "معاينة الأعمدة والأخطاء والتكرارات قبل الاعتماد مع ملخص بعد الاستيراد.",
+      "file": "client/src/pages/merchant/UploadProducts.tsx",
+      "routes": [
+        "/merchant/products/upload"
+      ]
+    },
+    {
+      "title": "المحادثات",
+      "group": "inbox",
+      "note": "إصلاح حد 50 والبحث؛ جعل الجوال قائمة ثم محادثة؛ نقل العدادات إلى ملخص مضغوط.",
+      "file": "client/src/pages/merchant/Conversations.tsx",
+      "routes": [
+        "/merchant/conversations"
+      ]
+    },
+    {
+      "title": "أرقام واتساب",
+      "group": "settings",
+      "note": "معالج ربط واحد يوضح Meta وQR وحالة كل خطوة دون ادعاء نشاط غير مؤكد.",
+      "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
+      "routes": [
+        "/merchant/whatsapp",
+        "/merchant/whatsapp-instances"
+      ]
+    },
+    {
+      "title": "ربط سلة",
+      "group": "settings",
+      "note": "إعادة بناء النصوص الدلالية للعناوين والحقول والتنبيهات؛ عنوان الصفحة الحالي رسالة تحقق.",
+      "file": "client/src/pages/SallaIntegration.tsx",
+      "routes": [
+        "/merchant/salla"
+      ]
+    },
+    {
+      "title": "ربط بيان",
+      "group": "settings",
+      "note": "إيضاح مصدر الحقيقة وما يُدار من بيان مع وقت آخر مزامنة وإجراء معالجة.",
+      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
+      "routes": [
+        "/merchant/integrations/byaan"
+      ]
+    },
+    {
+      "title": "بيان: الدورات والمتدربون",
+      "group": "settings",
+      "note": "الحالة غير المرتبطة توفر رابطًا واضحًا؛ اختبار المزامنة يحتاج بيئة بيان تجريبية.",
+      "file": "client/src/pages/ByaanDashboard.tsx",
+      "routes": [
+        "/merchant/byaan-dashboard"
+      ]
+    },
+    {
+      "title": "ربط زد",
+      "group": "settings",
+      "note": "الربط عبر OAuth واضح؛ إضافة ملخص متطلبات وسجل محاولات مفهوم.",
+      "file": "client/src/pages/merchant/ZidIntegration.tsx",
+      "routes": [
+        "/merchant/integrations/zid",
+        "/merchant/zid/settings"
+      ]
+    },
+    {
+      "title": "نتيجة تفويض زد",
+      "group": "settings",
+      "note": "حالة التفويض الناقص مفهومة؛ الحفاظ على مسار عودة مباشر.",
+      "file": "client/src/pages/ZidCallback.tsx",
+      "routes": [
+        "/merchant/zid/callback"
+      ]
+    },
+    {
+      "title": "منتجات زد",
+      "group": "catalog",
+      "note": "حالة عدم الربط واضحة؛ توحيدها ضمن المنتجات مع مرشح المصدر.",
+      "file": "client/src/pages/ZidProducts.tsx",
+      "routes": [
+        "/merchant/zid/products"
+      ]
+    },
+    {
+      "title": "سجل مزامنة زد",
+      "group": "settings",
+      "note": "توضيح نوع الفشل والإجراء ووقت آخر نجاح؛ ترقيم بدل حد ثابت.",
+      "file": "client/src/pages/ZidSyncLogs.tsx",
+      "routes": [
+        "/merchant/zid/sync-logs"
+      ]
+    },
+    {
+      "title": "ربط WooCommerce",
+      "group": "settings",
+      "note": "تقليل المصطلحات في المسار الأساسي وإخفاء تفاصيل Webhook ضمن إعدادات متقدمة.",
+      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
+      "routes": [
+        "/merchant/woocommerce/settings"
+      ]
+    },
+    {
+      "title": "منتجات WooCommerce",
+      "group": "catalog",
+      "note": "العنوان والعدادات غير متوافقة مع المقصود؛ إعادة تعيين النصوص.",
+      "file": "client/src/pages/WooCommerceProducts.tsx",
+      "routes": [
+        "/merchant/woocommerce/products"
+      ]
+    },
+    {
+      "title": "طلبات WooCommerce",
+      "group": "sales",
+      "note": "العناوين تعرض رسائل نجاح وفشل ثابتة؛ توحيد النصوص والبحث عبر النتائج.",
+      "file": "client/src/pages/WooCommerceOrders.tsx",
+      "routes": [
+        "/merchant/woocommerce/orders"
+      ]
+    },
+    {
+      "title": "تحليلات WooCommerce",
+      "group": "analytics",
+      "note": "تعريف الإيراد المكتمل وعدم ادعاء تحويل غير موثوق نقطتان جيدتان؛ دمج مرشح المصدر.",
+      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
+      "routes": [
+        "/merchant/woocommerce/analytics"
+      ]
+    },
+    {
+      "title": "ربط Calendly",
+      "group": "settings",
+      "note": "معالج اتصال واختبار واضح؛ تحويل خطوات الرمز إلى شرح مختصر ومرجع متقدم.",
+      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
+      "routes": [
+        "/merchant/integrations/calendly"
+      ]
+    },
+    {
+      "title": "كوبونات الخصم",
+      "group": "marketing",
+      "note": "نصوص دلالية وحالات خطأ وفراغ جيدة؛ معاينة أثر الخصم قبل الحفظ.",
+      "file": "client/src/pages/DiscountCodes.tsx",
+      "routes": [
+        "/merchant/discounts"
+      ]
+    },
+    {
+      "title": "إحالات التجار",
+      "group": "settings",
+      "note": "فصل إحالة تاجر جديد عن ولاء عملاء المتجر؛ توضيح شروط اكتساب المكافأة.",
+      "file": "client/src/pages/merchant/Referrals.tsx",
+      "routes": [
+        "/merchant/referrals"
+      ]
+    },
+    {
+      "title": "السلات المتروكة",
+      "group": "marketing",
+      "note": "تصحيح رسالة نجاح الاستعادة؛ توضيح مصدر السلة وشروط إرسال التذكير.",
+      "file": "client/src/pages/merchant/AbandonedCartsPage.tsx",
+      "routes": [
+        "/merchant/abandoned-carts"
+      ]
+    },
+    {
+      "title": "حملات المناسبات",
+      "group": "marketing",
+      "note": "التفعيل الصريح جيد؛ تصحيح رسالة نجاح التبديل وعرض موعد المنطقة الزمنية.",
+      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
+      "routes": [
+        "/merchant/occasion-campaigns"
+      ]
+    },
+    {
+      "title": "العروض الترويجية",
+      "group": "marketing",
+      "note": "تمييز العرض المقترح للمساعد عن كوبون الخصم والحملة المرسلة.",
+      "file": "client/src/pages/merchant/Promotions.tsx",
+      "routes": [
+        "/merchant/promotions"
+      ]
+    },
+    {
+      "title": "تحليلات المبيعات",
+      "group": "analytics",
+      "note": "منع عرض أصفار قبل التحميل أو عند فشل الاستعلامات؛ تعريف كل مؤشر.",
+      "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
+      "routes": [
+        "/merchant/analytics"
+      ]
+    },
+    {
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة.",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "routes": [
+        "/merchant/message-analytics",
+        "/merchant/sari-analytics",
+        "/merchant/advanced-analytics",
+        "/merchant/analytics-dashboard",
+        "/merchant/voice-messages",
+        "/merchant/analysis"
+      ]
+    },
+    {
+      "title": "نظرة الأداء",
+      "group": "analytics",
+      "note": "عدم وصف 0 من 0 بأنه أداء ضعيف؛ استخدام لا توجد بيانات كافية.",
+      "file": "client/src/pages/merchant/OverviewAnalytics.tsx",
+      "routes": [
+        "/merchant/overview-analytics"
+      ]
+    },
+    {
+      "title": "الطلبات",
+      "group": "sales",
+      "note": "عرض تحذير استرداد طلبات زد فقط عندما يرتبط الحساب بزد أو توجد حالات فعلية.",
+      "file": "client/src/pages/merchant/Orders.tsx",
+      "routes": [
+        "/merchant/orders"
+      ]
+    },
+    {
+      "title": "تشخيص واتساب",
+      "group": "settings",
+      "note": "أداة متقدمة؛ لا تظهر مفاتيح المزود كمسار إعداد يومي للتاجر.",
+      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
+      "routes": [
+        "/merchant/whatsapp-test"
+      ]
+    },
+    {
+      "title": "دليل QR القديم",
+      "group": "settings",
+      "note": "إبقاؤه كمرجع للقناة القديمة ضمن معالج القناة، لا مسارًا موازيًا أساسيًا.",
+      "file": "client/src/pages/merchant/GreenAPISetupGuide.tsx",
+      "routes": [
+        "/merchant/greenapi-setup"
+      ]
+    },
+    {
+      "title": "تجربة المساعد",
+      "group": "ai",
+      "note": "توحيد مع ساحة التجربة؛ إظهار مصدر المعرفة وحدود التجربة قبل الإرسال.",
+      "file": "client/src/pages/merchant/TestSari.tsx",
+      "routes": [
+        "/merchant/test-sari"
+      ]
+    },
+    {
+      "title": "مقاييس المساعد",
+      "group": "analytics",
+      "note": "تحديد مصدر المقاييس والحد الأدنى للعينة؛ منع المقارنات على بيانات مفقودة.",
+      "file": "client/src/pages/merchant/MetricsDashboard.tsx",
+      "routes": [
+        "/merchant/metrics-dashboard",
+        "/merchant/try-sari-analytics"
+      ]
+    },
+    {
+      "title": "تشخيص Webhook",
+      "group": "settings",
+      "note": "إزالة مؤشرات جاهز ونشط ومفعل الثابتة في بيئة لا تملك قناة.",
+      "file": "client/src/pages/merchant/WhatsAppWebhookSetup.tsx",
+      "routes": [
+        "/merchant/whatsapp-webhook-setup"
+      ]
+    },
+    {
+      "title": "سلوك المساعد",
+      "group": "ai",
+      "note": "تقليل طول الصفحة؛ تبويبات للسلوك والدوام والتحويل مع حفظ وحالة تغييرات واضحة.",
+      "file": "client/src/pages/merchant/BotSettings.tsx",
+      "routes": [
+        "/merchant/bot-settings"
+      ]
+    },
+    {
+      "title": "التدخل البشري",
+      "group": "inbox",
+      "note": "ربط القائمة بالمحادثات مباشرة مع مدة الإيقاف ومالك المحادثة.",
+      "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
+      "routes": [
+        "/merchant/human-takeover"
+      ]
+    },
+    {
+      "title": "شخصيات المساعد",
+      "group": "ai",
+      "note": "تحديد حدود الأدوار وأولوية التحويل؛ عدم خلطه بأعضاء الفريق الحقيقيين.",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "routes": [
+        "/merchant/virtual-team"
+      ]
+    },
+    {
+      "title": "معرفة المساعد",
+      "group": "ai",
+      "note": "تقسيم الصفحة الكبيرة إلى مصادر ومراجعات وقواعد؛ فصل إعادة الضبط في منطقة مستقلة.",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "routes": [
+        "/merchant/sari-brain"
+      ]
+    },
+    {
+      "title": "ساحة التجربة",
+      "group": "ai",
+      "note": "تصحيح النصوص المنزاحة وإزالة نشط ومتصل الثابتة؛ دمجها مع التجربة الأساسية.",
+      "file": "client/src/pages/SariPlayground.tsx",
+      "routes": [
+        "/merchant/sari-playground"
+      ]
+    },
+    {
+      "title": "عروض الأسعار",
+      "group": "sales",
+      "note": "استخدام اسم عروض الأسعار؛ معاينة قبل الإرسال وسياق العميل وحالة العرض.",
+      "file": "client/src/pages/merchant/SalesHub.tsx",
+      "routes": [
+        "/merchant/sales-hub"
+      ]
+    },
+    {
+      "title": "فرص البيع",
+      "group": "sales",
+      "note": "ربط الحالات بالفرص والمحادثات؛ عرض خطأ الاستعلام بدل العدادات الصفرية.",
+      "file": "client/src/pages/merchant/SalesPipeline.tsx",
+      "routes": [
+        "/merchant/sales-pipeline"
+      ]
+    },
+    {
+      "title": "مصادر العملاء",
+      "group": "analytics",
+      "note": "إزالة تعليق @ts-ignore الظاهر فعليًا وإضافة وصف الإسناد.",
+      "file": "client/src/pages/merchant/AcquisitionReport.tsx",
+      "routes": [
+        "/merchant/acquisition-report"
+      ]
+    },
+    {
+      "title": "قوالب عروض الأسعار",
+      "group": "sales",
+      "note": "معاينة الجوال وPDF؛ تمييز مسودة القالب من النسخة المعتمدة.",
+      "file": "client/src/pages/merchant/QuotationTemplates.tsx",
+      "routes": [
+        "/merchant/quotation-templates"
+      ]
+    },
+    {
+      "title": "مكتبة الوسائط",
+      "group": "catalog",
+      "note": "الحصة والفراغ واضحان؛ إظهار التقدم والفشل لكل ملف ومرجع استخدامه.",
+      "file": "client/src/pages/merchant/MediaLibrary.tsx",
+      "routes": [
+        "/merchant/media-library"
+      ]
+    },
+    {
+      "title": "الرسائل المجدولة",
+      "group": "marketing",
+      "note": "بيان التوقيت والجمهور والموافقة وإمكانية إيقاف الجدولة.",
+      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
+      "routes": [
+        "/merchant/scheduled-messages"
+      ]
+    },
+    {
+      "title": "الردود السريعة",
+      "group": "inbox",
+      "note": "إتاحتها داخل المحادثة مع البحث والمعاينة، إضافة إلى الإدارة.",
+      "file": "client/src/pages/merchant/QuickResponses.tsx",
+      "routes": [
+        "/merchant/quick-responses"
+      ]
+    },
+    {
+      "title": "الرؤى والاقتراحات وA/B",
+      "group": "analytics",
+      "note": "تصدير CSV غير منفذ؛ فتح تبويب A/B عند دخول مساره؛ انتظار نجاح التحديث.",
+      "file": "client/src/pages/merchant/InsightsDashboard.tsx",
+      "routes": [
+        "/merchant/insights",
+        "/merchant/ai-suggestions",
+        "/merchant/ab-tests"
+      ]
+    },
+    {
+      "title": "مقاييس الأداء",
+      "group": "analytics",
+      "note": "إصلاح merchantId=0 القادم من مسار لا يحوي هذا المعرف، وإظهار الرفض كخطأ.",
+      "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
+      "routes": [
+        "/merchant/performance-metrics"
+      ]
+    },
+    {
+      "title": "مزامنة Google Sheets",
+      "group": "settings",
+      "note": "إجراء ربط قبل مزامنة الآن؛ بيان عدم التفعيل بدل تعليمات تبدو كحالة تشغيل.",
+      "file": "client/src/pages/merchant/DataSync.tsx",
+      "routes": [
+        "/merchant/data-sync"
+      ]
+    },
+    {
+      "title": "تقييمات المنتجات",
+      "group": "customers",
+      "note": "توحيد التقييمات مع تقييمات الخدمات مع مرشح النوع وحالات الرد والخطأ.",
+      "file": "client/src/pages/merchant/Reviews.tsx",
+      "routes": [
+        "/merchant/reviews"
+      ]
+    },
+    {
+      "title": "تقييمات الحجوزات",
+      "group": "customers",
+      "note": "دمج قائمة الردود ضمن مركز العملاء مع تمييز الخدمة.",
+      "file": "client/src/pages/merchant/BookingReviews.tsx",
+      "routes": [
+        "/merchant/booking-reviews"
+      ]
+    },
+    {
+      "title": "إشعارات الطلبات",
+      "group": "settings",
+      "note": "معاينة المتغيرات والرسالة قبل التفعيل؛ دمجها ضمن مركز الأتمتة.",
+      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
+      "routes": [
+        "/merchant/order-notifications"
+      ]
+    },
+    {
+      "title": "الحساب والمتجر",
+      "group": "settings",
+      "note": "فصل الحساب والمتجر والمعرفة؛ عدم تكرار رفع ملف المعرفة في مكانين.",
+      "file": "client/src/pages/merchant/Settings.tsx",
+      "routes": [
+        "/merchant/settings"
+      ]
+    },
+    {
+      "title": "الخصوصية",
+      "group": "settings",
+      "note": "حافظ على وضوح نطاق التصدير وخطوات طلب الحقوق؛ اختبار النتائج دون حذف حقيقي.",
+      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
+      "routes": [
+        "/merchant/privacy-center"
+      ]
+    },
+    {
+      "title": "الإشعارات",
+      "group": "overview",
+      "note": "تجميع حسب الحاجة للإجراء وربط كل تنبيه بوجهته؛ توحيد المنطقة الزمنية.",
+      "file": "client/src/pages/merchant/NotificationsPage.tsx",
+      "routes": [
+        "/merchant/notifications"
+      ]
+    },
+    {
+      "title": "لغة المساعد",
+      "group": "ai",
+      "note": "تسمية لغة ردود المساعد بوضوح وفصلها عن لغة الواجهة والعملة.",
+      "file": "client/src/pages/merchant/LanguageSettings.tsx",
+      "routes": [
+        "/merchant/language-settings"
+      ]
+    },
+    {
+      "title": "ربط Google Calendar",
+      "group": "settings",
+      "note": "عنوان الصفحة الحالي تحذير فصل؛ إعادة تعيين النصوص بالكامل.",
+      "file": "client/src/pages/CalendarSettings.tsx",
+      "routes": [
+        "/merchant/calendar/settings"
+      ]
+    },
+    {
+      "title": "التقويم",
+      "group": "catalog",
+      "note": "حالة عدم الربط مفهومة؛ عرض حجوزات ساري مستقلة عن ربط تقويم خارجي إن أمكن.",
+      "file": "client/src/pages/CalendarPage.tsx",
+      "routes": [
+        "/merchant/calendar"
+      ]
+    },
+    {
+      "title": "مقدمو الخدمات",
+      "group": "catalog",
+      "note": "فصل مقدمي الخدمات عن أعضاء صلاحيات اللوحة؛ ربط الخدمة والتوفر.",
+      "file": "client/src/pages/StaffManagement.tsx",
+      "routes": [
+        "/merchant/staff"
+      ]
+    },
+    {
+      "title": "الفريق والصلاحيات",
+      "group": "settings",
+      "note": "المهام والصلاحيات مفهومة؛ إظهار المالك الحالي بدل إحصاء مالكين صفر.",
+      "file": "client/src/pages/merchant/TeamManagement.tsx",
+      "routes": [
+        "/merchant/team"
+      ]
+    },
+    {
+      "title": "الخدمات",
+      "group": "catalog",
+      "note": "إنشاء خدمة وحفظها نجح؛ بطاقة موجزة وسعر ومدة واضحان.",
+      "file": "client/src/pages/merchant/ServicesManagement.tsx",
+      "routes": [
+        "/merchant/services"
+      ]
+    },
+    {
+      "title": "إضافة وتعديل خدمة",
+      "group": "catalog",
+      "note": "النصوص الجديدة جيدة؛ يجب رفض تعديل معرف غير موجود بدل نموذج فارغ.",
+      "file": "client/src/pages/merchant/ServiceForm.tsx",
+      "routes": [
+        "/merchant/services/new",
+        "/merchant/services/:id/edit"
+      ]
+    },
+    {
+      "title": "تفاصيل الخدمة",
+      "group": "catalog",
+      "note": "حالة غير موجودة مع عودة جيدة؛ ربط الحجز ومقدمي الخدمة في مكان واحد.",
+      "file": "client/src/pages/ServiceDetails.tsx",
+      "routes": [
+        "/merchant/services/:id"
+      ]
+    },
+    {
+      "title": "الحجوزات",
+      "group": "catalog",
+      "note": "وضع يوم وأسبوع وقائمة؛ تثبيت حالة الحجز وتوقيته والمنطقة الزمنية.",
+      "file": "client/src/pages/BookingsManagement.tsx",
+      "routes": [
+        "/merchant/bookings"
+      ]
+    },
+    {
+      "title": "تصنيفات الخدمات",
+      "group": "catalog",
+      "note": "إدارة ضمن الكتالوج؛ حالة الفراغ والإضافة واضحتان.",
+      "file": "client/src/pages/merchant/ServiceCategories.tsx",
+      "routes": [
+        "/merchant/service-categories"
+      ]
+    },
+    {
+      "title": "حزم الخدمات",
+      "group": "catalog",
+      "note": "معاينة القيمة والتوفير والخدمات المضمنة قبل الحفظ.",
+      "file": "client/src/pages/merchant/ServicePackages.tsx",
+      "routes": [
+        "/merchant/service-packages"
+      ]
+    },
+    {
+      "title": "ربط Google Sheets",
+      "group": "settings",
+      "note": "نجح الإعداد وفشل الإعداد عناوين ثابتة خاطئة؛ تصحيح النصوص.",
+      "file": "client/src/pages/SheetsSettings.tsx",
+      "routes": [
+        "/merchant/sheets/settings"
+      ]
+    },
+    {
+      "title": "تصدير المحادثات",
+      "group": "analytics",
+      "note": "حالات خطأ وفراغ جيدة؛ توضيح نطاق تحديد الكل وإتاحة التصدير لما بعد 100.",
+      "file": "client/src/pages/SheetsExport.tsx",
+      "routes": [
+        "/merchant/sheets/export"
+      ]
+    },
+    {
+      "title": "تقارير Google Sheets",
+      "group": "analytics",
+      "note": "عناوين نجاح ثابتة؛ عرض توليد/جدولة حقيقي وحالة آخر تشغيل.",
+      "file": "client/src/pages/SheetsReports.tsx",
+      "routes": [
+        "/merchant/sheets/reports"
+      ]
+    },
+    {
+      "title": "مخزون Google Sheets",
+      "group": "catalog",
+      "note": "تصحيح العناوين؛ معاينة الفرق قبل استبدال المخزون.",
+      "file": "client/src/pages/SheetsInventory.tsx",
+      "routes": [
+        "/merchant/sheets/inventory"
+      ]
+    },
+    {
+      "title": "المدفوعات",
+      "group": "sales",
+      "note": "توحيد المسارين المتكررين وعنوان h1؛ فصل مدفوعات العملاء عن فواتير ساري.",
+      "file": "client/src/pages/merchant/Payments.tsx",
+      "routes": [
+        "/merchant/payments",
+        "/merchant/merchant-payments"
+      ]
+    },
+    {
+      "title": "تفاصيل معاملة",
+      "group": "sales",
+      "note": "غير موجودة مع رجوع جيد؛ إضافة حالة تحقق غير مؤكدة بدلاً من الجزم.",
+      "file": "client/src/pages/PaymentDetails.tsx",
+      "routes": [
+        "/merchant/payments/:id"
+      ]
+    },
+    {
+      "title": "روابط الدفع",
+      "group": "sales",
+      "note": "نسخ الرابط بعد نجاح clipboard فقط؛ ملخص العميل والمبلغ والصلاحية.",
+      "file": "client/src/pages/merchant/PaymentLinks.tsx",
+      "routes": [
+        "/merchant/payment-links"
+      ]
+    },
+    {
+      "title": "بوابة دفع العملاء",
+      "group": "settings",
+      "note": "إعداد منفصل عن اشتراك ساري؛ فحص الاتصال وحالة المتطلبات بوضوح.",
+      "file": "client/src/pages/merchant/PaymentSettings.tsx",
+      "routes": [
+        "/merchant/payment-settings"
+      ]
+    },
+    {
+      "title": "إعدادات الولاء",
+      "group": "marketing",
+      "note": "إعادة بناء النصوص؛ العناوين والحقول تستدعي رسائل نجاح وفشل غير مناسبة.",
+      "file": "client/src/pages/LoyaltySettings.tsx",
+      "routes": [
+        "/merchant/loyalty/settings"
+      ]
+    },
+    {
+      "title": "مستويات الولاء",
+      "group": "marketing",
+      "note": "تصحيح النصوص وعرض قواعد الترقية والمزايا بجدول مقارن.",
+      "file": "client/src/pages/LoyaltyTiers.tsx",
+      "routes": [
+        "/merchant/loyalty/tiers"
+      ]
+    },
+    {
+      "title": "مكافآت الولاء",
+      "group": "marketing",
+      "note": "تصحيح النصوص؛ توضيح الرصيد والتكلفة والتوفر قبل الاستبدال.",
+      "file": "client/src/pages/LoyaltyRewards.tsx",
+      "routes": [
+        "/merchant/loyalty/rewards"
+      ]
+    },
+    {
+      "title": "عملاء الولاء",
+      "group": "customers",
+      "note": "تصحيح رؤوس الجدول والعدادات؛ سجل سبب تعديل النقاط.",
+      "file": "client/src/pages/LoyaltyCustomers.tsx",
+      "routes": [
+        "/merchant/loyalty/customers"
+      ]
+    },
+    {
+      "title": "صحة التكاملات",
+      "group": "settings",
+      "note": "إعادة تعيين النصوص؛ عدم عرض نسبة نجاح 100% عندما لا توجد عمليات.",
+      "file": "client/src/pages/IntegrationsDashboard.tsx",
+      "routes": [
+        "/merchant/integrations-dashboard"
+      ]
+    },
+    {
+      "title": "التكاملات",
+      "group": "settings",
+      "note": "بطاقات مصدر وحالة ووقت آخر نجاح وإجراء واحد لكل بطاقة.",
+      "file": "client/src/pages/PlatformIntegrations.tsx",
+      "routes": [
+        "/merchant/platform-integrations"
+      ]
+    },
+    {
+      "title": "تفضيلات الإشعارات",
+      "group": "settings",
+      "note": "توحيدها مع إشعارات المتصفح والطلبات مع الفصل بين المستلم والعميل.",
+      "file": "client/src/pages/NotificationSettings.tsx",
+      "routes": [
+        "/merchant/notification-settings"
+      ]
+    },
+    {
+      "title": "عملة المتجر",
+      "group": "settings",
+      "note": "القيم المعروضة والعناوين منزاحة؛ فصل تغيير وحدة العرض عن تحويل المبالغ.",
+      "file": "client/src/pages/CurrencySettings.tsx",
+      "routes": [
+        "/merchant/currency-settings"
+      ]
+    },
+    {
+      "title": "إشعارات المتصفح",
+      "group": "settings",
+      "note": "طلب الإذن بعد فعل واضح؛ اختصار التفاصيل التقنية ضمن تشخيص.",
+      "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
+      "routes": [
+        "/merchant/push-notifications"
+      ]
+    },
+    {
+      "title": "التقارير المجدولة",
+      "group": "analytics",
+      "note": "عنوان حذف التقرير وأزرار تحقق خاطئة؛ أسماء صحيحة وحذف مع تأكيد.",
+      "file": "client/src/pages/ScheduledReports.tsx",
+      "routes": [
+        "/merchant/scheduled-reports"
+      ]
+    },
+    {
+      "title": "أتمتة رسائل العملاء",
+      "group": "marketing",
+      "note": "العنوان إلغاء الطلب غير صحيح؛ معاينة لكل حدث وحذف محمي ومسمى.",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "routes": [
+        "/merchant/whatsapp-auto-notifications"
+      ]
+    },
+    {
+      "title": "التقارير",
+      "group": "analytics",
+      "note": "مراجعة أسماء الفلاتر والتبويبات وربط كل تصدير بفترته ومرشحه.",
+      "file": "client/src/pages/Reports.tsx",
+      "routes": [
+        "/merchant/reports"
+      ]
+    },
+    {
+      "title": "الباقة والفواتير",
+      "group": "settings",
+      "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة.",
+      "file": "client/src/pages/merchant/MySubscription.tsx",
+      "routes": [
+        "/merchant/subscriptions",
+        "/merchant/subscription",
+        "/merchant/my-subscription"
+      ]
+    },
+    {
+      "title": "استهلاك الرسائل",
+      "group": "settings",
+      "note": "دمجها مع الاستخدام الموحد وتوضيح مصدر العدادات ودورة إعادة التعيين.",
+      "file": "client/src/pages/merchant/Usage.tsx",
+      "routes": [
+        "/merchant/usage"
+      ]
+    },
+    {
+      "title": "حدود الاستخدام",
+      "group": "settings",
+      "note": "حالات الاستعادة جيدة؛ توحيد الحدود وتعريف العملاء مقابل المحادثات.",
+      "file": "client/src/pages/merchant/UsageDashboard.tsx",
+      "routes": [
+        "/merchant/usage-dashboard"
+      ]
+    },
+    {
+      "title": "الباقات",
+      "group": "settings",
+      "note": "احتساب التوفير السنوي من الأسعار الفعلية بدل نسبة ثابتة؛ تمييز الباقة الحالية.",
+      "file": "client/src/pages/merchant/SubscriptionPlans.tsx",
+      "routes": [
+        "/merchant/subscription/plans"
+      ]
+    },
+    {
+      "title": "مقارنة الباقات",
+      "group": "settings",
+      "note": "نصوص دلالية وحدود فعلية جيدة؛ عرض مناسب للجوال دون ازدحام.",
+      "file": "client/src/pages/ComparePlans.tsx",
+      "routes": [
+        "/merchant/subscription/compare"
+      ]
+    },
+    {
+      "title": "بدء الاشتراك المدفوع",
+      "group": "settings",
+      "note": "إصلاح روابط الشروط والخصوصية # وإضافة عودة عندما تكون الباقة غير موجودة.",
+      "file": "client/src/pages/merchant/Checkout.tsx",
+      "routes": [
+        "/merchant/checkout"
+      ]
+    },
+    {
+      "title": "نتيجة دفع الاشتراك",
+      "group": "settings",
+      "note": "قراءة search الصحيحة؛ المرجع المرسل يظهر #0 حاليًا في هذا المسار القديم.",
+      "file": "client/src/pages/merchant/PaymentSuccess.tsx",
+      "routes": [
+        "/merchant/payment/success"
+      ]
+    },
+    {
+      "title": "إلغاء دفع الاشتراك",
+      "group": "settings",
+      "note": "لا تجزم بعدم الخصم دون تحقق؛ الاحتفاظ بخيار الباقة عند إعادة المحاولة.",
+      "file": "client/src/pages/merchant/PaymentCancel.tsx",
+      "routes": [
+        "/merchant/payment/cancel"
+      ]
+    },
+    {
+      "title": "العملاء",
+      "group": "customers",
+      "note": "عنوان تم إضافة الملاحظة ثابت وخاطئ؛ تصحيح النصوص وتجميع سجل العميل.",
+      "file": "client/src/pages/Customers.tsx",
+      "routes": [
+        "/merchant/customers"
+      ]
+    },
+    {
+      "title": "تحليل الموقع",
+      "group": "ai",
+      "note": "معالج اكتشاف ثم معاينة ثم استيراد إلى المعرفة؛ حالة تقدم موثوقة.",
+      "file": "client/src/pages/SmartAnalysis.tsx",
+      "routes": [
+        "/merchant/smart-analysis"
+      ]
+    },
+    {
+      "title": "تحليل المنافسين",
+      "group": "analytics",
+      "note": "ميزة متقدمة ضمن الرؤى؛ بيان آخر تحليل ومصدر المقارنة.",
+      "file": "client/src/pages/CompetitorAnalysis.tsx",
+      "routes": [
+        "/merchant/competitor-analysis"
+      ]
+    },
+    {
+      "title": "ملف العميل",
+      "group": "customers",
+      "note": "أسماء مؤشرات الحالة خاطئة؛ سجل موحد للمحادثات والطلبات والتقييمات.",
+      "file": "client/src/pages/CustomerDetails.tsx",
+      "routes": [
+        "/merchant/customers/:phone"
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "url": "/merchant/chat-orders",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/orders",
+      "routeLine": 461
+    },
+    {
+      "url": "/merchant/whatsapp-setup",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/whatsapp",
+      "routeLine": 525
+    },
+    {
+      "url": "/merchant/sari-personality",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/bot-settings",
+      "routeLine": 631
+    },
+    {
+      "url": "/merchant/website-analysis",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/smart-analysis",
+      "routeLine": 926
+    },
+    {
+      "url": "/merchant/keywords",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/smart-analysis",
+      "routeLine": 953
+    },
+    {
+      "url": "/merchant/weekly-reports",
+      "component": null,
+      "file": null,
+      "redirect": "/merchant/reports",
+      "routeLine": 965
+    }
+  ]
+}

@@ -1,348 +1,478 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useRoute } from 'wouter';
+import { ArrowRight, Check, MessageSquare, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useLocation } from 'wouter';
-import { toast } from 'sonner';
-import { useState } from 'react';
-import { ArrowRight, Send, Users, Filter } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { QueryStateCard } from '@/components/QueryStateCard';
+import { merchantDateTimeInput } from '@/lib/merchant-date';
 
-import { useTranslation } from 'react-i18next';
+type Audience = {
+  lastActivityDays?: number;
+  purchaseCountMin?: number;
+  purchaseCountMax?: number;
+};
+const steps = ['الجمهور', 'الرسالة', 'المراجعة والحفظ'];
+
 export default function NewCampaign() {
-  const { t } = useTranslation();
-
-  const [, setLocation] = useLocation();
-  const [formData, setFormData] = useState({
+  const [, navigate] = useLocation();
+  const [editing, params] = useRoute('/merchant/campaigns/:id/edit');
+  const campaignId = Number(params?.id);
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
     name: '',
     message: '',
     imageUrl: '',
     scheduledAt: '',
   });
-
-  const [filters, setFilters] = useState({
-    lastActivityDays: undefined as number | undefined,
-    purchaseCountMin: undefined as number | undefined,
-    purchaseCountMax: undefined as number | undefined,
-  });
-
-  // Get filtered customers count
-  const { data: filteredData } = trpc.campaigns.filterCustomers.useQuery(
-    filters,
-    { enabled: Object.values(filters).some(v => v !== undefined) }
+  const [filters, setFilters] = useState<Audience>({});
+  const [validation, setValidation] = useState('');
+  const loadedId = useRef<number | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const existing = trpc.campaigns.getById.useQuery(
+    { id: campaignId },
+    { enabled: editing && Number.isInteger(campaignId) && campaignId > 0 }
   );
+  const audience = trpc.campaigns.filterCustomers.useQuery(filters);
+  const utils = trpc.useUtils();
+  const created = trpc.campaigns.create.useMutation();
+  const updated = trpc.campaigns.update.useMutation();
+  const pending = created.isPending || updated.isPending;
 
-  const createMutation = trpc.campaigns.create.useMutation({
-    onSuccess: () => {
-      toast.success(t('toast.campaigns.msg1'));
-      setLocation('/merchant/campaigns');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || t('newCampaignPage.text26'));
-    },
-  });
-
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft: boolean = false) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
-      toast.error(t('toast.campaigns.msg7'));
-      return;
-    }
-
-    if (!formData.message.trim()) {
-      toast.error(t('toast.campaigns.msg8'));
-      return;
-    }
-
-    // FIX #1/#5: Serialize targeting filters as JSON so backend can apply them during send
-    const hasFilters = Object.values(filters).some(v => v !== undefined);
-    const targetAudience = hasFilters ? JSON.stringify(filters) : undefined;
-
-    await createMutation.mutateAsync({
-      name: formData.name,
-      message: formData.message,
-      imageUrl: formData.imageUrl || undefined,
-      targetAudience,
-      scheduledAt: saveAsDraft ? undefined : (formData.scheduledAt ? new Date(formData.scheduledAt) : undefined),
+  useEffect(() => {
+    if (!existing.data || loadedId.current === existing.data.id) return;
+    const data = existing.data;
+    loadedId.current = data.id;
+    setForm({
+      name: data.name,
+      message: data.message,
+      imageUrl: data.imageUrl || '',
+      scheduledAt: merchantDateTimeInput(data.scheduledAt),
     });
+    try {
+      setFilters(data.targetAudience ? JSON.parse(data.targetAudience) : {});
+    } catch {
+      setValidation(
+        'تعذر قراءة جمهور الحملة المحفوظ. راجع خيارات الجمهور قبل الحفظ.'
+      );
+    }
+  }, [existing.data]);
+  const goToStep = (next: number) => {
+    setStep(next);
+    setValidation('');
+  };
+  useEffect(() => {
+    heading.current?.focus();
+  }, [step]);
+
+  const validateStep = () => {
+    if (!form.name.trim())
+      return 'اكتب اسمًا للحملة ليسهل العثور عليها لاحقًا.';
+    if (step > 0 && !form.message.trim())
+      return 'اكتب الرسالة التي تريد أن تصل إلى عملائك.';
+    if (step > 0 && form.imageUrl) {
+      try {
+        const url = new URL(form.imageUrl);
+        if (url.protocol !== 'https:' || url.username || url.password)
+          return 'استخدم رابط صورة HTTPS دون بيانات دخول.';
+      } catch {
+        return 'راجع رابط الصورة أو اتركه فارغًا.';
+      }
+    }
+    if (
+      step > 0 &&
+      form.scheduledAt &&
+      (!Number.isFinite(new Date(form.scheduledAt).getTime()) ||
+        new Date(form.scheduledAt).getTime() <= Date.now())
+    )
+      return 'اختر موعدًا في المستقبل، أو أزل الموعد للحفظ كمسودة.';
+    return '';
+  };
+  const save = async () => {
+    const error = validateStep();
+    if (error) {
+      setValidation(error);
+      return;
+    }
+    try {
+      const common = {
+        name: form.name.trim(),
+        message: form.message.trim(),
+        targetAudience: JSON.stringify(filters),
+      };
+      if (editing)
+        await updated.mutateAsync({
+          ...common,
+          id: campaignId,
+          imageUrl: form.imageUrl || null,
+          scheduledAt: form.scheduledAt ? new Date(form.scheduledAt) : null,
+        });
+      else
+        await created.mutateAsync({
+          ...common,
+          imageUrl: form.imageUrl || undefined,
+          scheduledAt: form.scheduledAt
+            ? new Date(form.scheduledAt)
+            : undefined,
+        });
+      await Promise.all([
+        utils.campaigns.list.invalidate(),
+        utils.campaigns.getStats.invalidate(),
+        ...(editing
+          ? [utils.campaigns.getById.invalidate({ id: campaignId })]
+          : []),
+      ]);
+      toast.success(
+        form.scheduledAt ? 'تم حفظ الحملة المجدولة' : 'تم حفظ مسودة الحملة'
+      );
+      navigate('/merchant/campaigns');
+    } catch (error) {
+      setValidation(
+        error instanceof Error
+          ? error.message
+          : 'تعذر حفظ الحملة. حاول مرة أخرى.'
+      );
+    }
   };
 
+  if (
+    editing &&
+    (!Number.isInteger(campaignId) || campaignId <= 0 || existing.error)
+  )
+    return (
+      <QueryStateCard
+        kind="error"
+        title="تعذر فتح الحملة"
+        description="تحقق من رابط الحملة وصلاحية الوصول إليها."
+        onRetry={() => void existing.refetch()}
+      />
+    );
+  if (editing && !existing.data) return <p role="status">جارٍ تحميل الحملة…</p>;
+  if (
+    editing &&
+    existing.data &&
+    !['draft', 'scheduled'].includes(existing.data.status)
+  )
+    return (
+      <section className="mw-panel">
+        <h1>الحملة غير قابلة للتعديل</h1>
+        <p>بدأ إرسال هذه الحملة أو اكتمل إرسالها.</p>
+        <Link href={`/merchant/campaigns/${campaignId}`}>
+          العودة إلى تفاصيل الحملة
+        </Link>
+      </section>
+    );
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation('/merchant/campaigns')}
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          {t('newCampaignPage.text27')}
-        </Button>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <header className="mw-page-heading">
         <div>
-          <h1 className="text-3xl font-bold">{t('newCampaignPage.text0')}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t('newCampaignPage.text28')}
-          </p>
+          <Link
+            href="/merchant/campaigns"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-3"
+          >
+            <ArrowRight size={16} />
+            الحملات
+          </Link>
+          <h1>{editing ? 'تعديل الحملة' : 'حملة جديدة، خطوة بخطوة'}</h1>
+          <p>اختر جمهورك، اكتب رسالتك، وراجعها قبل الحفظ.</p>
         </div>
-      </div>
-
-      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
-        {/* Campaign Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('newCampaignPage.text1')}</CardTitle>
-            <CardDescription>
-              {t('newCampaignPage.text29')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Campaign Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">{t('newCampaignPage.text2')}</Label>
-              <Input
-                id="name"
-                placeholder={t('newCampaignPage.text3')}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                {t('newCampaignPage.text30')}
-              </p>
-            </div>
-
-            {/* Message */}
-            <div className="space-y-2">
-              <Label htmlFor="message">{t('newCampaignPage.text4')}</Label>
-              <Textarea
-                id="message"
-                placeholder={t('newCampaignPage.text5')}
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                rows={6}
-                required
-                className="resize-none"
-              />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{t('newCampaignPage.text6')}</span>
-                <span>{formData.message.length} {t('common.characters', 'حرف')}</span>
-              </div>
-            </div>
-
-            {/* Image URL */}
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">{t('newCampaignPage.text8')}</Label>
-              <div className="flex gap-2">
+      </header>
+      <ol className="mw-campaign-steps" aria-label="خطوات إعداد الحملة">
+        {steps.map((title, index) => (
+          <li
+            key={title}
+            className="mw-campaign-step"
+            aria-current={step === index ? 'step' : undefined}
+          >
+            <span>{index < step ? <Check size={15} /> : index + 1}</span>
+            {title}
+          </li>
+        ))}
+      </ol>
+      <form
+        onSubmit={event => {
+          event.preventDefault();
+          const error = validateStep();
+          if (error) setValidation(error);
+          else if (step < 2) goToStep(step + 1);
+          else void save();
+        }}
+        className="space-y-5"
+      >
+        <section
+          className="mw-panel space-y-5"
+          aria-labelledby="campaign-step-title"
+        >
+          <h2
+            id="campaign-step-title"
+            ref={heading}
+            tabIndex={-1}
+            className="text-xl font-semibold outline-none"
+          >
+            {steps[step]}
+          </h2>
+          {step === 0 && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="campaign-name">اسم الحملة</Label>
                 <Input
-                  id="imageUrl"
+                  id="campaign-name"
+                  maxLength={255}
+                  required
+                  value={form.name}
+                  onChange={event =>
+                    setForm({ ...form, name: event.target.value })
+                  }
+                  placeholder="مثال: عروض نهاية الأسبوع"
+                />
+                <p className="text-xs text-muted-foreground">
+                  اسم داخلي يظهر لك في قائمة الحملات.
+                </p>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="campaign-activity">آخر تفاعل</Label>
+                  <select
+                    id="campaign-activity"
+                    className="mw-form-select"
+                    value={filters.lastActivityDays ?? ''}
+                    onChange={event =>
+                      setFilters({
+                        ...filters,
+                        lastActivityDays: event.target.value
+                          ? Number(event.target.value)
+                          : undefined,
+                      })
+                    }
+                  >
+                    <option value="">كل الأوقات</option>
+                    <option value="7">آخر 7 أيام</option>
+                    <option value="30">آخر 30 يومًا</option>
+                    <option value="90">آخر 90 يومًا</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="campaign-purchases">عدد المشتريات</Label>
+                  <select
+                    id="campaign-purchases"
+                    className="mw-form-select"
+                    value={
+                      filters.purchaseCountMin === 0 &&
+                      filters.purchaseCountMax === 0
+                        ? '0'
+                        : filters.purchaseCountMax === 5
+                          ? '1-5'
+                          : filters.purchaseCountMin === 6
+                            ? '6+'
+                            : filters.purchaseCountMin === 5
+                              ? '5+'
+                              : 'all'
+                    }
+                    onChange={event => {
+                      const value = event.target.value;
+                      setFilters({
+                        ...filters,
+                        purchaseCountMin:
+                          value === '0'
+                            ? 0
+                            : value === '1-5'
+                              ? 1
+                              : value === '6+'
+                                ? 6
+                                : value === '5+'
+                                  ? 5
+                                  : undefined,
+                        purchaseCountMax:
+                          value === '0' ? 0 : value === '1-5' ? 5 : undefined,
+                      });
+                    }}
+                  >
+                    <option value="all">كل العملاء</option>
+                    <option value="0">لم يشترِ بعد</option>
+                    <option value="1-5">من 1 إلى 5 مشتريات</option>
+                    {filters.purchaseCountMin === 5 && (
+                      <option value="5+">5 مشتريات فأكثر (المحفوظ)</option>
+                    )}
+                    <option value="6+">6 مشتريات فأكثر</option>
+                  </select>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4 flex items-start gap-3">
+                <Users className="h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <strong>
+                    {audience.error
+                      ? 'تعذر تقدير الجمهور'
+                      : audience.isLoading
+                        ? 'جارٍ حساب الجمهور…'
+                        : `${audience.data?.count ?? 0} محادثة تطابق الاختيارات`}
+                  </strong>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    العدد أولي؛ يُستبعد عند الإرسال من لم يوافق على الحملات
+                    والأرقام المكررة والمحظورة.
+                  </p>
+                  {audience.error && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => void audience.refetch()}
+                    >
+                      إعادة المحاولة
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+          {step === 1 && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="campaign-message">نص الرسالة</Label>
+                <Textarea
+                  id="campaign-message"
+                  value={form.message}
+                  onChange={event =>
+                    setForm({ ...form, message: event.target.value })
+                  }
+                  maxLength={3800}
+                  rows={7}
+                  required
+                  placeholder="اكتب رسالة واضحة ومختصرة لعملائك…"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {form.message.length} / 3800 حرف
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="campaign-image">
+                  رابط الصورة{' '}
+                  <span className="text-muted-foreground">(اختياري)</span>
+                </Label>
+                <Input
+                  id="campaign-image"
                   type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  maxLength={500}
+                  dir="ltr"
+                  placeholder="https://…"
+                  value={form.imageUrl}
+                  onChange={event =>
+                    setForm({ ...form, imageUrl: event.target.value })
+                  }
                 />
               </div>
-              <p className="text-sm text-muted-foreground">
-                {t('newCampaignPage.text31')}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Customer Targeting */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              {t('newCampaignPage.text32')}
-            </CardTitle>
-            <CardDescription>
-              {t('newCampaignPage.text33')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Last Activity Filter */}
-            <div className="space-y-2">
-              <Label>{t('newCampaignPage.text9')}</Label>
-              <Select
-                value={filters.lastActivityDays?.toString() || 'all'}
-                onValueChange={(value) => 
-                  setFilters({ ...filters, lastActivityDays: value === 'all' ? undefined : parseInt(value) })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('newCampaignPage.text10')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('newCampaignPage.text11')}</SelectItem>
-                  <SelectItem value="7">{t('newCampaignPage.text12')}</SelectItem>
-                  <SelectItem value="30">{t('newCampaignPage.text13')}</SelectItem>
-                  <SelectItem value="90">{t('newCampaignPage.text14')}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
-                {t('newCampaignPage.text34')}
-              </p>
-            </div>
-
-            {/* Purchase Count Filter */}
-            <div className="space-y-2">
-              <Label>{t('newCampaignPage.text15')}</Label>
-              <Select
-                value={
-                  filters.purchaseCountMin === 0 && filters.purchaseCountMax === 0 ? '0' :
-                  filters.purchaseCountMin === 1 && filters.purchaseCountMax === 5 ? '1-5' :
-                  filters.purchaseCountMin === 5 ? '5+' :
-                  'all'
-                }
-                onValueChange={(value) => {
-                  if (value === 'all') {
-                    setFilters({ ...filters, purchaseCountMin: undefined, purchaseCountMax: undefined });
-                  } else if (value === '0') {
-                    setFilters({ ...filters, purchaseCountMin: 0, purchaseCountMax: 0 });
-                  } else if (value === '1-5') {
-                    setFilters({ ...filters, purchaseCountMin: 1, purchaseCountMax: 5 });
-                  } else if (value === '5+') {
-                    setFilters({ ...filters, purchaseCountMin: 5, purchaseCountMax: undefined });
+              <div className="space-y-2">
+                <Label htmlFor="campaign-time">
+                  موعد الإرسال{' '}
+                  <span className="text-muted-foreground">(اختياري)</span>
+                </Label>
+                <Input
+                  id="campaign-time"
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={event =>
+                    setForm({ ...form, scheduledAt: event.target.value })
                   }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('newCampaignPage.text16')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('newCampaignPage.text17')}</SelectItem>
-                  <SelectItem value="0">{t('newCampaignPage.text18')}</SelectItem>
-                  <SelectItem value="1-5">{t('newCampaignPage.text19')}</SelectItem>
-                  <SelectItem value="5+">{t('newCampaignPage.text20')}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
-                {t('newCampaignPage.text35')}
-              </p>
-            </div>
-
-            {/* Filtered Count */}
-            {filteredData && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">
-                      {t('newCampaignPage.text36')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  التوقيت المحلي لجهازك (
+                  {Intl.DateTimeFormat().resolvedOptions().timeZone}). بدون موعد
+                  تُحفظ مسودة لتُرسلها لاحقًا.
+                </p>
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <h3 className="font-semibold">{form.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    الجمهور الأولي:{' '}
+                    {audience.error
+                      ? 'غير متاح'
+                      : (audience.data?.count ?? '…')}{' '}
+                    محادثة
+                  </p>
+                  <p className="text-sm">
+                    {form.scheduledAt
+                      ? `ستُجدول للإرسال في ${new Date(form.scheduledAt).toLocaleString('ar-SA')}`
+                      : 'ستُحفظ كمسودة. لا تُرسل رسائل عند الحفظ.'}
+                  </p>
+                  {form.imageUrl && (
+                    <p className="text-sm break-all" dir="ltr">
+                      {form.imageUrl}
                     </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {t('newCampaignPage.text43', { var0: filteredData.count })}
-                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => goToStep(0)}
+                    disabled={pending}
+                  >
+                    تعديل الجمهور
+                  </Button>
+                </div>
+                <div>
+                  <p className="text-sm mb-3 flex items-center gap-2">
+                    <MessageSquare size={16} />
+                    معاينة نص الرسالة
+                  </p>
+                  <div className="mw-message-preview" dir="auto">
+                    {form.message}
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => goToStep(1)}
+                    disabled={pending}
+                  >
+                    تعديل الرسالة والموعد
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {/* Clear Filters */}
-            {Object.values(filters).some(v => v !== undefined) && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFilters({
-                  lastActivityDays: undefined,
-                  purchaseCountMin: undefined,
-                  purchaseCountMax: undefined,
-                })}
-              >
-                {t('newCampaignPage.text37')}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Scheduling */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('newCampaignPage.text21')}</CardTitle>
-            <CardDescription>
-              {t('newCampaignPage.text38')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="scheduledAt">{t('newCampaignPage.text22')}</Label>
-              <Input
-                id="scheduledAt"
-                type="datetime-local"
-                value={formData.scheduledAt}
-                onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-              />
-              <p className="text-sm text-muted-foreground">
-                {t('newCampaignPage.text39')}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Preview — WhatsApp-style bubble (#10) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('newCampaignPage.text23')}</CardTitle>
-            <CardDescription>
-              {t('newCampaignPage.text40')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-end">
-              <div className="bg-[#dcf8c6] rounded-xl rounded-tr-none p-3 max-w-[85%] shadow-sm border border-[#b5dba5]">
-                {formData.imageUrl && (
-                  <div className="mb-2">
-                    <img
-                      src={formData.imageUrl}
-                      alt="Preview"
-                      className="max-w-full h-auto rounded-lg"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-                <div className="whitespace-pre-wrap text-sm">
-                  {formData.message || t('newCampaignPage.previewPlaceholder', 'سيظهر نص الرسالة هنا...')}
-                </div>
-                <div className="text-[10px] text-gray-500 text-left mt-1">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ✓✓
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex gap-4 justify-end">
+              {form.scheduledAt && (
+                <p className="rounded-lg border p-4 text-sm">
+                  حفظ الجدولة يتيح إرسال الحملة تلقائيًا في الموعد المحدد، وفق
+                  اتصال واتساب والاشتراك وموافقات العملاء.
+                </p>
+              )}
+            </>
+          )}
+        </section>
+        {validation && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+          >
+            {validation}
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"
-            onClick={() => setLocation('/merchant/campaigns')}
-            disabled={createMutation.isPending}
+            disabled={pending}
+            onClick={() =>
+              step ? goToStep(step - 1) : navigate('/merchant/campaigns')
+            }
           >
-            {t('newCampaignPage.text41')}
+            {step ? 'السابق' : 'إلغاء'}
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={(e) => handleSubmit(e, true)}
-            disabled={createMutation.isPending}
-          >
-            {t('newCampaignPage.text42')}
-          </Button>
-          <Button
-            type="submit"
-            disabled={createMutation.isPending || !formData.scheduledAt}
-          >
-            <Send className="w-4 h-4 ml-2" />
-            {formData.scheduledAt ? t('newCampaignPage.text24') : t('newCampaignPage.text25')}
+          <Button type="submit" disabled={pending}>
+            {pending
+              ? 'جارٍ الحفظ…'
+              : step < 2
+                ? 'التالي'
+                : form.scheduledAt
+                  ? 'تأكيد الجدولة'
+                  : editing
+                    ? 'حفظ التعديلات'
+                    : 'حفظ كمسودة'}
           </Button>
         </div>
       </form>

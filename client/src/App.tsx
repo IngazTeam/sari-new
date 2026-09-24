@@ -82,6 +82,7 @@ const WhatsAppPaymentGuide = lazyLoad(() => import("./pages/landing/WhatsAppPaym
 
 // Merchant pages - lazy loaded
 const MerchantDashboard = lazyLoad(() => import("./pages/merchant/Dashboard"));
+const MerchantTools = lazyLoad(() => import("./pages/merchant/Tools"));
 const Campaigns = lazyLoad(() => import("./pages/merchant/Campaigns"));
 const NewCampaign = lazyLoad(() => import("./pages/merchant/NewCampaign"));
 const CampaignDetails = lazyLoad(() => import("./pages/merchant/CampaignDetails"));
@@ -345,6 +346,9 @@ function Router() {
         </DashboardLayout>
       </Route>
 
+      <Route path="/merchant/campaigns/:id/edit">
+        <DashboardLayout><NewCampaign /></DashboardLayout>
+      </Route>
       <Route path="/merchant/campaigns/:id">
         <DashboardLayout>
           <CampaignDetails />
@@ -916,6 +920,9 @@ function Router() {
         <PaymentCancel />
       </Route>
 
+      <Route path="/merchant/tools">
+        <DashboardLayout><MerchantTools /></DashboardLayout>
+      </Route>
       <Route path="/merchant/customers">
         <DashboardLayout>
           <Customers />

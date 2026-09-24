@@ -154,7 +154,7 @@ export default function Campaigns() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="mw-summary-cards grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -216,7 +216,7 @@ export default function Campaigns() {
         </CardHeader>
         <CardContent>
           {campaigns && campaigns.length > 0 ? (
-            <Table>
+            <Table className="mw-mobile-records">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('campaignsPage.campaignName')}</TableHead>
@@ -230,11 +230,11 @@ export default function Campaigns() {
               <TableBody>
                 {campaigns.map((campaign) => (
                   <TableRow key={campaign.id}>
-                    <TableCell className="font-medium">{campaign.name}</TableCell>
-                    <TableCell>{getStatusBadge(campaign.status)}</TableCell>
-                    <TableCell>{campaign.sentCount}</TableCell>
-                    <TableCell>{campaign.totalRecipients}</TableCell>
-                    <TableCell>
+                    <TableCell data-label={t('campaignsPage.campaignName')} className="font-medium">{campaign.name}</TableCell>
+                    <TableCell data-label={t('campaignsPage.status')}>{getStatusBadge(campaign.status)}</TableCell>
+                    <TableCell data-label={t('campaignsPage.sent')}>{campaign.sentCount}</TableCell>
+                    <TableCell data-label={t('campaignsPage.total')}>{campaign.totalRecipients}</TableCell>
+                    <TableCell data-label={t('campaignsPage.date')}>
                       {campaign.status === 'sending' && campaign.id === progressCampaign?.id && sendProgress && sendProgress.progress !== undefined ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="w-3 h-3 animate-spin text-primary" />
@@ -254,7 +254,7 @@ export default function Campaigns() {
                         new Date(campaign.createdAt).toLocaleDateString()
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t('campaignsPage.actions')}>
                       <div className="flex gap-2">
                         <Button
                           type="button"

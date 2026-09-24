@@ -1,11 +1,11 @@
 import { getDb } from "./db";
 import { orders, products } from "../drizzle/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lt, sql, desc } from "drizzle-orm";
 
 /**
  * الحصول على اتجاه الطلبات لآخر 30 يوم
  */
-export async function getOrdersTrend(merchantId: number, days: number = 30) {
+export async function getOrdersTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
   const db = await getDb();
   if (!db) return [];
 
@@ -22,6 +22,7 @@ export async function getOrdersTrend(merchantId: number, days: number = 30) {
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        currency ? eq(orders.currency, currency) : undefined,
         gte(orders.createdAt, startDate)
       )
     )
@@ -33,7 +34,7 @@ export async function getOrdersTrend(merchantId: number, days: number = 30) {
 /**
  * الحصول على اتجاه الإيرادات لآخر 30 يوم
  */
-export async function getRevenueTrend(merchantId: number, days: number = 30) {
+export async function getRevenueTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
   const db = await getDb();
   if (!db) return [];
 
@@ -50,7 +51,8 @@ export async function getRevenueTrend(merchantId: number, days: number = 30) {
     .where(
       and(
         eq(orders.merchantId, merchantId),
-        sql`${orders.status} = 'completed'`,
+        currency ? eq(orders.currency, currency) : undefined,
+        sql`${orders.status} = 'delivered'`,
         gte(orders.createdAt, startDate)
       )
     )
@@ -62,7 +64,7 @@ export async function getRevenueTrend(merchantId: number, days: number = 30) {
 /**
  * مقارنة الفترة الحالية مع الفترة السابقة
  */
-export async function getComparisonStats(merchantId: number, days: number = 30) {
+export async function getComparisonStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
   const db = await getDb();
   if (!db) return {
     current: { totalOrders: 0, totalRevenue: 0, completedOrders: 0, averageOrderValue: 0 },
@@ -79,12 +81,13 @@ export async function getComparisonStats(merchantId: number, days: number = 30) 
     .select({
       totalOrders: sql<number>`COUNT(*)`,
       totalRevenue: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)`,
-      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'completed' THEN 1 ELSE 0 END)`,
+      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'delivered' THEN 1 ELSE 0 END)`,
     })
     .from(orders)
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        currency ? eq(orders.currency, currency) : undefined,
         gte(orders.createdAt, currentPeriodStart)
       )
     );
@@ -94,14 +97,15 @@ export async function getComparisonStats(merchantId: number, days: number = 30) 
     .select({
       totalOrders: sql<number>`COUNT(*)`,
       totalRevenue: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)`,
-      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'completed' THEN 1 ELSE 0 END)`,
+      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'delivered' THEN 1 ELSE 0 END)`,
     })
     .from(orders)
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        currency ? eq(orders.currency, currency) : undefined,
         gte(orders.createdAt, previousPeriodStart),
-        lte(orders.createdAt, currentPeriodStart)
+        lt(orders.createdAt, currentPeriodStart)
       )
     );
 
@@ -158,11 +162,11 @@ export async function getComparisonStats(merchantId: number, days: number = 30) 
  * محسّن: يستخدم JSON_TABLE في MySQL للتجميع على مستوى قاعدة البيانات
  * بدلاً من تحميل جميع الطلبات في الذاكرة
  */
-export async function getTopProducts(merchantId: number, limit: number = 5) {
+export async function getTopProducts(merchantId: number, limit: number = 5, days: number = 90, currency?: "SAR" | "USD"): Promise<Array<{ productName: string; totalSales: number; totalRevenue: number; averagePrice: number }>> {
   const db = await getDb();
   if (!db) return [];
 
-  const last90Days = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const last90Days = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   try {
     // محاولة استخدام JSON_TABLE (MySQL 8.0+) للتجميع على مستوى DB
@@ -179,7 +183,8 @@ export async function getTopProducts(merchantId: number, limit: number = 5) {
         item_price DECIMAL(10,2) PATH '$.price' DEFAULT '0' ON EMPTY
       )) AS jt
       WHERE ${orders.merchantId} = ${merchantId}
-        AND ${orders.status} = 'completed'
+        AND ${currency ? eq(orders.currency, currency) : sql`1 = 1`}
+        AND ${orders.status} = 'delivered'
         AND ${orders.createdAt} >= ${last90Days.toISOString()}
       GROUP BY item_name
       ORDER BY totalSales DESC
@@ -204,7 +209,8 @@ export async function getTopProducts(merchantId: number, limit: number = 5) {
       .where(
         and(
           eq(orders.merchantId, merchantId),
-          sql`${orders.status} = 'completed'`,
+          currency ? eq(orders.currency, currency) : undefined,
+          sql`${orders.status} = 'delivered'`,
           sql`${orders.createdAt} >= ${last90Days.toISOString()}`
         )
       );
@@ -213,7 +219,7 @@ export async function getTopProducts(merchantId: number, limit: number = 5) {
       productName: string;
       totalSales: number;
       totalRevenue: number;
-    }> = {};
+    }> = Object.create(null);
 
     for (const order of allOrders) {
       try {
@@ -246,7 +252,7 @@ export async function getTopProducts(merchantId: number, limit: number = 5) {
 /**
  * الحصول على إحصائيات Dashboard الرئيسية
  */
-export async function getDashboardStats(merchantId: number) {
+export async function getDashboardStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
   const db = await getDb();
   if (!db) return {
     totalOrders: 0,
@@ -258,7 +264,7 @@ export async function getDashboardStats(merchantId: number) {
   };
 
   const now = new Date();
-  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const last30Days = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
   // إجمالي الطلبات والإيرادات
   const stats = await db
@@ -266,13 +272,14 @@ export async function getDashboardStats(merchantId: number) {
       totalOrders: sql<number>`COUNT(*)`,
       totalRevenue: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)`,
       pendingOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'pending' THEN 1 ELSE 0 END)`,
-      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'completed' THEN 1 ELSE 0 END)`,
+      completedOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'delivered' THEN 1 ELSE 0 END)`,
       cancelledOrders: sql<number>`SUM(CASE WHEN ${orders.status} = 'cancelled' THEN 1 ELSE 0 END)`,
     })
     .from(orders)
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        currency ? eq(orders.currency, currency) : undefined,
         gte(orders.createdAt, last30Days)
       )
     );
@@ -301,16 +308,17 @@ export async function getDashboardStats(merchantId: number) {
  * ملخص لوحة التحكم - يجمع كل البيانات في استدعاء واحد
  * يقلل عدد الطلبات المتزامنة من 5 إلى 1
  */
-export async function getDashboardSummary(merchantId: number, days: number = 30, topProductsLimit: number = 5) {
+export async function getDashboardSummary(merchantId: number, days: number = 30, topProductsLimit: number = 5, currency: "SAR" | "USD" = "SAR") {
   const [stats, comparison, ordersTrend, revenueTrend, topProducts] = await Promise.all([
-    getDashboardStats(merchantId),
-    getComparisonStats(merchantId, days),
-    getOrdersTrend(merchantId, days),
-    getRevenueTrend(merchantId, days),
-    getTopProducts(merchantId, topProductsLimit),
+    getDashboardStats(merchantId, days, currency),
+    getComparisonStats(merchantId, days, currency),
+    getOrdersTrend(merchantId, days, currency),
+    getRevenueTrend(merchantId, days, currency),
+    getTopProducts(merchantId, topProductsLimit, days, currency),
   ]);
 
   return {
+    currency,
     stats,
     comparison,
     ordersTrend,

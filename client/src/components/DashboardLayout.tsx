@@ -117,6 +117,7 @@ import { SubscriptionBadge } from "./SubscriptionBadge";
 import { EmergencyPhoneButton } from "./EmergencyPhoneButton";
 import { useTranslation } from 'react-i18next';
 import { useIntegration } from '@/hooks/useIntegration';
+import MerchantShell from './merchant/MerchantShell';
 
 // Menu item type with optional group
 type MenuItem = {
@@ -240,6 +241,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
+  const [routeLocation] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -284,6 +286,10 @@ export default function DashboardLayout({
   const isAdmin = user.role === 'admin' || user.role === 'superadmin';
   if (isAdminRoute && !isAdmin) {
     return <Redirect to="/merchant/dashboard" />;
+  }
+
+  if (routeLocation.startsWith('/merchant/')) {
+    return <MerchantShell>{children}</MerchantShell>;
   }
 
   return (

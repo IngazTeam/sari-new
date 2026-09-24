@@ -1,0 +1,207 @@
+{
+  "retrieved": "2026-09-22",
+  "sourcePage": "https://www.arfonts.net/expo-arabic-semibold-font",
+  "scope": "Local interactive web demonstration only. Downloaded preview files identify as ForWebDemonstrationOnly; this does not grant a production redistribution license.",
+  "fonts": [
+    {
+      "url": "https://www.arfonts.net/TEtRWDc1OFk1c1hxZVhuQVVhSWNUWko5ZDlvRTQ5MEpEOG9FYWpYSFJEQT0.woff2",
+      "weight": 600,
+      "names": [
+        {
+          "id": 0,
+          "text": "Copyright � 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 0,
+          "text": "Copyright © 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        }
+      ],
+      "file": "ExpoArabic-SemiBold.woff2",
+      "bytes": 16352
+    },
+    {
+      "url": "https://www.arfonts.net/OFZEU2dydzNibDdYdzNuTW5QWEN6U0tVOTVvdDVrd3A5NG9OeEFmdGtHTT0.woff2",
+      "weight": 700,
+      "names": [
+        {
+          "id": 0,
+          "text": "Copyright � 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Bold"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 0,
+          "text": "Copyright © 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        }
+      ],
+      "file": "ExpoArabic-Bold.woff2",
+      "bytes": 22792
+    },
+    {
+      "url": "https://www.arfonts.net/VVd0aCtlVWVEekJldDdOeFNiUGY5MXl5UFJtS2FFQTlBemk4YWU2RzhQaz0.woff2",
+      "weight": 400,
+      "names": [
+        {
+          "id": 0,
+          "text": "Copyright � 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 0,
+          "text": "Copyright © 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        }
+      ],
+      "file": "ExpoArabic-Book.woff2",
+      "bytes": 17336
+    },
+    {
+      "url": "https://www.arfonts.net/b09SbHZlVmY1MlJZRmo3OS9ZSzJHendyTUhaZnFkRHp5eXRZUFFlRGg5TT0.woff2",
+      "weight": 300,
+      "names": [
+        {
+          "id": 0,
+          "text": "Copyright � 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 0,
+          "text": "Copyright © 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        }
+      ],
+      "file": "ExpoArabic-Light.woff2",
+      "bytes": 17280
+    },
+    {
+      "url": "https://www.arfonts.net/cis2NW9XZjVWQ2kyOVJUSTlDZXU3alhiQVc1d0g0Q0NvRVZxNWF3bGZwND0.woff2",
+      "weight": 500,
+      "names": [
+        {
+          "id": 0,
+          "text": "Copyright � 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 0,
+          "text": "Copyright © 2015 by Pascal Zoghbi. All rights reserved."
+        },
+        {
+          "id": 1,
+          "text": "ForWebDemonstrationOnly"
+        },
+        {
+          "id": 2,
+          "text": "Regular"
+        },
+        {
+          "id": 6,
+          "text": "ForWebDemonstrationOnly"
+        }
+      ],
+      "file": "ExpoArabic-Medium.woff2",
+      "bytes": 15832
+    }
+  ]
+}

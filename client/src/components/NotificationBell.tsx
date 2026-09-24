@@ -89,7 +89,7 @@ export function NotificationBell() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button type="button" variant="ghost" size="icon" className="relative" aria-label={t('compNotificationBellPage.text2')}>
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge

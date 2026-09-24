@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, permissionProcedure, router } from "./_core/trpc";
+import { formatDateForDB } from './db/connection';
 import {
   createCampaign,
   deleteCampaign,
@@ -28,7 +29,7 @@ import {
   getConversationsByMerchantId,
   getMerchantById,
   getPrimaryWhatsAppInstance,
-  updateCampaign,
+  updateEditableCampaign,
 } from './db';
 import {
   CampaignSuppressionUnavailableError,
@@ -55,6 +56,11 @@ const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
         return false;
     }
 }, { message: 'Campaign images must use a public HTTPS URL' });
+
+// Validate at the server boundary as API clients can bypass the campaign form.
+const campaignScheduleSchema = z.date()
+    .max(new Date('2038-01-19T03:14:07Z'), { message: 'موعد الحملة خارج النطاق المدعوم' })
+    .refine(value => value.getTime() > Date.now(), { message: 'اختر موعدًا للحملة في المستقبل' });
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -103,7 +109,7 @@ export const campaignsRouter = router({
             message: z.string().trim().min(1).max(3800),
             imageUrl: campaignImageUrlSchema.optional(),
             targetAudience: z.string().max(1000).refine(isValidCampaignTargetAudience).optional(),
-            scheduledAt: z.date().optional(),
+            scheduledAt: campaignScheduleSchema.optional(),
         }).strict())
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -122,7 +128,7 @@ export const campaignsRouter = router({
                 imageUrl: input.imageUrl || null,
                 targetAudience: input.targetAudience || null,
                 status: input.scheduledAt ? 'scheduled' : 'draft',
-                scheduledAt: (input.scheduledAt || null) as any,
+                scheduledAt: input.scheduledAt ? formatDateForDB(input.scheduledAt) : null,
                 sentCount: 0,
                 totalRecipients: 0,
             });
@@ -133,13 +139,15 @@ export const campaignsRouter = router({
     // Update campaign
     update: permissionProcedure('campaigns.manage')
         .input(z.object({
-            id: z.number(),
+            id: z.number().int().positive(),
             name: z.string().trim().min(1).max(255).optional(),
             message: z.string().trim().min(1).max(3800).optional(),
-            imageUrl: campaignImageUrlSchema.optional(),
+            imageUrl: campaignImageUrlSchema.nullable().optional(),
             targetAudience: z.string().max(1000).refine(isValidCampaignTargetAudience).optional(),
-            scheduledAt: z.date().optional(),
-        }).strict())
+            scheduledAt: campaignScheduleSchema.nullable().optional(),
+        }).strict().refine(value => Object.entries(value).some(([key, field]) => key !== 'id' && field !== undefined), {
+            message: 'حدد بيانات الحملة المطلوب تعديلها',
+        }))
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -151,13 +159,18 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
-            if (campaign.status === 'completed' || campaign.status === 'sending') {
+            if (!['draft', 'scheduled'].includes(campaign.status)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot edit campaign in current status' });
             }
 
-            const { id, ...updateData } = input;
-            // @ts-ignore
-            await updateCampaign(id, updateData);
+            const { id, scheduledAt, ...updateData } = input;
+            // Changing the schedule must also change the queue eligibility.
+            const scheduleStatus = scheduledAt !== undefined
+                ? { status: scheduledAt ? 'scheduled' as const : 'draft' as const,
+                    scheduledAt: scheduledAt ? formatDateForDB(scheduledAt) : null }
+                : {};
+            const saved = await updateEditableCampaign(id, merchant.id, { ...updateData, ...scheduleStatus });
+            if (!saved) throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الحملة. حدّث الصفحة قبل تعديلها.' });
 
             return { success: true };
         }),

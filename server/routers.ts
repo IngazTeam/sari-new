@@ -1489,8 +1489,9 @@ export const appRouter = router({
     // Get all conversations for current merchant (with optional pipeline filters)
     list: permissionProcedure('conversations.read')
       .input(z.object({
-        page: z.number().min(1).default(1),
-        pageSize: z.number().min(1).max(100).default(50),
+        page: z.number().int().min(1).max(100000).default(1),
+        pageSize: z.number().int().min(1).max(100).default(50),
+        search: z.string().trim().max(200).optional(),
         // Pipeline filters (from SalesPipeline deep-links)
         stage: z.string().optional(),
         needsHuman: z.boolean().optional(),
@@ -1506,19 +1507,26 @@ export const appRouter = router({
         const offset = (page - 1) * pageSize;
         const stage = input?.stage;
         const needsHuman = input?.needsHuman;
+        const search = input?.search;
 
         // Whitelist of valid deal stages — invalid values fall through to unfiltered default
         const { isValidDealStage } = await import('@shared/const');
         const isValidFilter = needsHuman || (stage && isValidDealStage(stage));
 
         // If pipeline filters are active, use targeted SQL query
-        if (isValidFilter) {
+        if (isValidFilter || search) {
           const { getPool } = await import('./db');
           const pool = await getPool();
-          if (!pool) return { items: [], total: 0, page, pageSize, totalPages: 0 };
+          if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Conversation data is temporarily unavailable' });
 
           let where = 'c.merchantId = ?';
           const params: any[] = [merchant.id];
+
+          // Literal, parameterized search across this merchant's entire inbox.
+          if (search) {
+            where += ' AND (LOCATE(?, c.customerName) > 0 OR LOCATE(?, c.customerPhone) > 0)';
+            params.push(search, search);
+          }
 
           if (needsHuman) {
             where += ` AND c.id IN (SELECT DISTINCT conversation_id FROM sari_escalation_queue WHERE merchant_id = ? AND status IN ('pending', 'notified'))`;
@@ -1528,7 +1536,7 @@ export const appRouter = router({
           } else if (stage === 'ready') {
             // Match pipeline card: only show ready leads active in last 48h
             where += ` AND c.deal_stage = 'ready' AND c.lastMessageAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
-          } else if (stage) {
+          } else if (stage && isValidDealStage(stage)) {
             where += ` AND c.deal_stage = ?`;
             params.push(stage);
           }
@@ -1536,7 +1544,7 @@ export const appRouter = router({
           const [countRows] = await pool.execute(
             `SELECT COUNT(*) as total FROM conversations c WHERE ${where}`, params
           );
-          const total = (countRows as any[])[0]?.total || 0;
+          const total = Number((countRows as any[])[0]?.total || 0);
 
           const [rows] = await pool.execute(
             `SELECT c.* FROM conversations c WHERE ${where} ORDER BY c.lastMessageAt DESC LIMIT ? OFFSET ?`,

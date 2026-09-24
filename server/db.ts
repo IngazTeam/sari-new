@@ -1480,6 +1480,18 @@ export async function updateCampaign(id: number, data: Partial<InsertCampaign>):
   await db.update(campaigns).set(data).where(eq(campaigns.id, id));
 }
 
+/** Guard the write itself so a dispatcher cannot claim a campaign between read and edit. */
+export async function updateEditableCampaign(id: number, merchantId: number, data: Partial<InsertCampaign>): Promise<boolean> {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  const [result] = await database.update(campaigns).set(data).where(and(
+    eq(campaigns.id, id),
+    eq(campaigns.merchantId, merchantId),
+    sql`${campaigns.status} IN ('draft', 'scheduled')`,
+  ));
+  return result.affectedRows > 0;
+}
+
 export async function deleteCampaign(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;

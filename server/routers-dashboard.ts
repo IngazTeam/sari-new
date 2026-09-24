@@ -10,11 +10,14 @@ import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import { getMerchantById } from './db';
 
+const reportDays = z.number().int().min(1).max(366).default(30);
+const productLimit = z.number().int().min(1).max(50).default(5);
+
 export const dashboardRouter = router({
     // Orders trend
     getOrdersTrend: permissionProcedure('analytics.read')
         .input(z.object({
-            days: z.number().optional().default(30),
+            days: reportDays,
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -29,7 +32,7 @@ export const dashboardRouter = router({
     // Revenue trend
     getRevenueTrend: permissionProcedure('analytics.read')
         .input(z.object({
-            days: z.number().optional().default(30),
+            days: reportDays,
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -44,7 +47,7 @@ export const dashboardRouter = router({
     // Comparison with previous period
     getComparisonStats: permissionProcedure('analytics.read')
         .input(z.object({
-            days: z.number().optional().default(30),
+            days: reportDays,
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -59,7 +62,7 @@ export const dashboardRouter = router({
     // Top products
     getTopProducts: permissionProcedure('analytics.read')
         .input(z.object({
-            limit: z.number().optional().default(5),
+            limit: productLimit,
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -86,8 +89,8 @@ export const dashboardRouter = router({
     // Combined dashboard summary - reduces 5 requests to 1
     getSummary: permissionProcedure('analytics.read')
         .input(z.object({
-            days: z.number().optional().default(30),
-            topProductsLimit: z.number().optional().default(5),
+            days: reportDays,
+            topProductsLimit: productLimit,
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -96,7 +99,7 @@ export const dashboardRouter = router({
             }
 
             const { getDashboardSummary } = await import('./dashboard-analytics');
-            return await getDashboardSummary(merchant.id, input.days, input.topProductsLimit);
+            return await getDashboardSummary(merchant.id, input.days, input.topProductsLimit, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // AI Opportunity Engine — "ساري يقترح"

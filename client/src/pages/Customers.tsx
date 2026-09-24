@@ -179,10 +179,10 @@ export default function Customers() {
   };
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('customersPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('customersPage.text8')}</h1>
           <p className="text-muted-foreground mt-1">{t('customers.auto_0')}</p>
         </div>
         <Button onClick={handleExport} variant="outline" disabled={customerExport.isFetching}>
@@ -190,10 +190,10 @@ export default function Customers() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="mw-summary-cards grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('customersPage.text1')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text9')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -204,7 +204,7 @@ export default function Customers() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('customersPage.text2')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text10')}</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -215,12 +215,12 @@ export default function Customers() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('customersPage.text3')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text11')}</CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.newThisMonth || 0}</div>
-            <p className="text-xs text-muted-foreground">{t('customersPage.text4')}</p>
+            <p className="text-xs text-muted-foreground">{t('customersPage.text12')}</p>
           </CardContent>
         </Card>
       </div>
@@ -228,15 +228,16 @@ export default function Customers() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('customersPage.text5')}</CardTitle>
-          <CardDescription>{t('customersPage.text6')}</CardDescription>
+          <CardTitle>{t('customersPage.text13')}</CardTitle>
+          <CardDescription>{t('customersPage.text14')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('customersPage.text7')}
+                placeholder={t('customersPage.text15')}
+                aria-label={t('customersPage.text15')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -246,7 +247,7 @@ export default function Customers() {
 
           {/* Customers Table */}
           {isLoading ? (
-            <div className="text-center py-8">{t('customersPage.text8')}</div>
+            <div className="text-center py-8">{t('customersPage.text16')}</div>
           ) : customers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">{t('customers.auto_4')}</div>
           ) : (
@@ -254,13 +255,13 @@ export default function Customers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('customersPage.text9')}</TableHead>
-                    <TableHead>{t('customersPage.text10')}</TableHead>
-                    <TableHead>{t('customersPage.text11')}</TableHead>
-                    <TableHead>{t('customersPage.text12')}</TableHead>
-                    <TableHead>{t('customersPage.text13')}</TableHead>
-                    <TableHead>{t('customersPage.text14')}</TableHead>
-                    <TableHead>{t('customersPage.text15')}</TableHead>
+                    <TableHead>{t('customersPage.text17')}</TableHead>
+                    <TableHead>{t('customersPage.text18')}</TableHead>
+                    <TableHead>{t('customersPage.text19')}</TableHead>
+                    <TableHead>{t('customersPage.text20')}</TableHead>
+                    <TableHead>{t('customersPage.text21')}</TableHead>
+                    <TableHead>{t('customersPage.text22')}</TableHead>
+                    <TableHead>{t('customersPage.text23')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,46 +328,46 @@ export default function Customers() {
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('customersPage.text16')}</DialogTitle>
+            <DialogTitle>{t('customersPage.text26')}</DialogTitle>
             <DialogDescription>{t('customers.auto_5')}</DialogDescription>
           </DialogHeader>
 
           {selectedCustomer && (
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="info">{t('customersPage.text17')}</TabsTrigger>
-                <TabsTrigger value="conversations">{t('customersPage.text18')}</TabsTrigger>
-                <TabsTrigger value="orders">{t('customersPage.text19')}</TabsTrigger>
-                <TabsTrigger value="notes">{t('customersPage.text20')}</TabsTrigger>
+                <TabsTrigger value="info">{t('customersPage.text27')}</TabsTrigger>
+                <TabsTrigger value="conversations">{t('customersPage.text28')}</TabsTrigger>
+                <TabsTrigger value="orders">{t('customersPage.text29')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('customersPage.text30')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('customersPage.text21')}</CardTitle>
+                    <CardTitle>{t('customersPage.text31')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>{t('customersPage.text22')}</Label>
+                        <Label>{t('customersPage.text32')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.name || "غير محدد"}
                         </p>
                       </div>
                       <div>
-                        <Label>{t('customersPage.text23')}</Label>
+                        <Label>{t('customersPage.text33')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.phone}
                         </p>
                       </div>
                       <div>
-                        <Label>{t('customersPage.text24')}</Label>
+                        <Label>{t('customersPage.text34')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.email || "غير محدد"}
                         </p>
                       </div>
                       <div>
-                        <Label>{t('customersPage.text25')}</Label>
+                        <Label>{t('customersPage.text35')}</Label>
                         <p className="text-sm font-medium">
                           {new Date(
                             selectedCustomer.createdAt
@@ -376,7 +377,7 @@ export default function Customers() {
                     </div>
 
                     <div>
-                      <Label className="mb-2 block">{t('customersPage.text26')}</Label>
+                      <Label className="mb-2 block">{t('customersPage.text36')}</Label>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {selectedCustomer.tags?.map((tag: string) => (
                           <Badge key={tag} variant="secondary">
@@ -393,7 +394,7 @@ export default function Customers() {
                       </div>
                       <div className="flex gap-2">
                         <Input
-                          placeholder={t('customersPage.text27')}
+                          placeholder={t('customersPage.text37')}
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
                         />
@@ -407,7 +408,7 @@ export default function Customers() {
               <TabsContent value="conversations">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('customersPage.text28')}</CardTitle>
+                    <CardTitle>{t('customersPage.text38')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-center py-8">{t('customers.auto_7')}</p>
@@ -418,7 +419,7 @@ export default function Customers() {
               <TabsContent value="orders">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('customersPage.text29')}</CardTitle>
+                    <CardTitle>{t('customersPage.text39')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-center py-8">{t('customers.auto_8')}</p>
@@ -429,13 +430,13 @@ export default function Customers() {
               <TabsContent value="notes" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('customersPage.text30')}</CardTitle>
+                    <CardTitle>{t('customersPage.text40')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>{t('customersPage.text31')}</Label>
+                      <Label>{t('customersPage.text41')}</Label>
                       <Textarea
-                        placeholder={t('customersPage.text32')}
+                        placeholder={t('customersPage.text42')}
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                       />
@@ -444,7 +445,7 @@ export default function Customers() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>{t('customersPage.text33')}</Label>
+                      <Label>{t('customersPage.text43')}</Label>
                       {selectedCustomer.notes?.length > 0 ? (
                         selectedCustomer.notes.map((note: any, index: number) => (
                           <Card key={index}>
