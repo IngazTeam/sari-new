@@ -33,20 +33,23 @@ export const bookingSelectionSchema = z
 type Selection = z.infer<typeof bookingSelectionSchema>;
 // MySQL normalizes JSON object key order. Hash semantic content, not insertion order.
 const canonical = (value: unknown): unknown =>
-  Array.isArray(value)
-    ? value.map(canonical)
-    : value && typeof value === "object"
-      ? Object.fromEntries(
-          Object.entries(value)
-            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-            .map(([key, item]) => [key, canonical(item)])
-        )
-      : value;
+  value instanceof Date
+    ? value.toISOString()
+    : Array.isArray(value)
+      ? value.map(canonical)
+      : value && typeof value === "object"
+        ? Object.fromEntries(
+            Object.entries(value)
+              .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+              .map(([key, item]) => [key, canonical(item)])
+          )
+        : value;
 const digest = (value: unknown) =>
   createHash("sha256")
     .update(JSON.stringify(canonical(value)))
     .digest("hex");
 const marker = (id: number) => `[BA-${id}]`;
+export { digest as bookingAgreementDigest };
 /** Catalogue labels are display data, never commands for the downstream rich-reply parser. */
 export const bookingDisplayLabel = (value: unknown) =>
   String(value)
@@ -76,6 +79,7 @@ export async function assertBookingAgreementSchema() {
   await assertRuntimeSchema(
     "conversation booking agreements",
     [
+      { table: "bookings", columns: ["customer_agreement_id"] },
       {
         table: "conversation_booking_agreements",
         columns: [
@@ -452,6 +456,10 @@ export async function acceptBookingAgreement(
       bookingSource: "whatsapp",
       notes: `Customer booking agreement ${marker(agreementId)}; final confirmation and billing review required.`,
     });
+    await c.execute(
+      "UPDATE bookings SET customer_agreement_id=? WHERE id=? AND merchant_id=?",
+      [agreementId, bookingId, input.merchantId]
+    );
     await c.execute(
       "UPDATE conversation_booking_agreements SET state='accepted',consent_message_id=?,booking_reference=? WHERE id=?",
       [input.incomingMessageId, bookingId, agreementId]

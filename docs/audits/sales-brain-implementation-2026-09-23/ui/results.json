@@ -1,10 +1,12 @@
 {
-  "generatedAt": "2026-09-24T08:33:27.886Z",
+  "generatedAt": "2026-09-24T09:03:03.564Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
     "booking-checkout-review-1440.png",
     "booking-checkout-review-375.png",
+    "booking-consent-1440.png",
+    "booking-consent-375.png",
     "booking-link-renewal-1440.png",
     "booking-link-renewal-375.png",
     "booking-operations-1440.png",
@@ -46,6 +48,141 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_missing",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_integrity",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_source",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_terms",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_refused",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_unavailable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_truncated",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_write-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_refresh-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_parent-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_untrusted_text_stays_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_resets_on_booking_change",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

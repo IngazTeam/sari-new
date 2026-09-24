@@ -1,15 +1,16 @@
 {
-  "scope": "Fresh Chromium component verification: 332 passing scenarios, 38 screenshots, API fixtures and external network blocked; server-only changes followed by byte-equivalence verification of rebuilt fixture and styles",
+  "scope": "Fresh Chromium component verification: 357 passing scenarios, 40 screenshots, API fixtures and external network blocked; final tested fixture and styles verified for the consent review UI",
   "reused": false,
-  "verifiedAt": "2026-09-24T08:36:24.221Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-agreement",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-agreement",
+  "verifiedAt": "2026-09-24T09:03:33.533Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-consent-review",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-booking-consent-review",
   "inputs": {
-    "fixture": "b8d94a05fc03505c135558c85d8edca84dbda4219b58642cfcd187e231c70004",
-    "report": "abf05f749379b91c95cd4c0a802c19fff1b05c2be009ca305228dac1d3922cdf",
+    "fixture": "9bade014aff303f9e880fb310a7074c7239ddc5b75690e503c4ea42fcd32a3ca",
+    "report": "10711d2047b3bdba63426af152b9006988f40ea3476c146fc628851fa2218132",
     "verifiers": {
-      "scripts/testing/verify-sales-brain-ui.cjs": "e806a0980948b92bba742680fc9e719a665e5d67ccc078c9924d69baaab7dac0",
-      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0"
+      "scripts/testing/verify-sales-brain-ui.cjs": "922aa77f37bde105c7b140d90996352c91c69a2852a38a8975998c300c2eefda",
+      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
+      "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

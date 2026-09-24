@@ -631,6 +631,13 @@
       "when": 1791158400000,
       "tag": "0089_conversation_booking_agreements",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "5",
+      "when": 1791244800000,
+      "tag": "0090_booking_consent_binding",
+      "breakpoints": true
     }
   ]
 }

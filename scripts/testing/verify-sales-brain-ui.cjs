@@ -26,6 +26,7 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    await require('./verify-booking-consent-ui.cjs')(page, origin, output, results);
     await require('./verify-calendar-ui.cjs')(page, origin, output, results);
     for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
       await page.setViewport({width,height:width<500?812:900,deviceScaleFactor:1});await page.goto(`${origin}/?case=booking-ops-ready&lang=${lang}`,{waitUntil:'networkidle0'});await page.waitForSelector('[data-booking-operations]');

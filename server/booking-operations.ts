@@ -8,6 +8,9 @@ import { z } from "zod";
 import { getPool } from "./db/connection";
 import { assertRuntimeSchema } from "./db/schema-readiness";
 import { databaseTimeEpoch } from "./db/time";
+import { assertBookingAgreementSchema } from "./ai/booking-agreements";
+import { readBookingConsentReview } from "./booking-consent-review";
+import { bookingConsentAttestationSchema } from "../shared/booking-consent-review";
 import {
   bookingTransitions,
   bookingStatusSchema,
@@ -46,6 +49,7 @@ const snapshot = (row: any) => ({
 });
 
 async function schemaReady() {
+  await assertBookingAgreementSchema();
   await assertRuntimeSchema(
     "booking operations",
     [
@@ -141,6 +145,9 @@ async function execute(
       payments.length > 0 ||
       booking.payment_status !== "unpaid";
     const before = snapshot(booking);
+    let reviewedConsent:
+      | import("../shared/booking-consent-review").BookingConsentAttestation
+      | null = null;
     let after: ReturnType<typeof snapshot> | null = null,
       changedFields: string[] = [];
     if (operation === "delete") {
@@ -182,6 +189,33 @@ async function execute(
         (patch.startTime !== undefined &&
           patch.startTime !== booking.start_time) ||
         (patch.endTime !== undefined && patch.endTime !== booking.end_time);
+      if (
+        scheduleChanged ||
+        (booking.status === "pending" && next === "confirmed") ||
+        patch.consentReview
+      ) {
+        const consent = await readBookingConsentReview(
+          connection,
+          merchantId,
+          booking
+        );
+        if (scheduleChanged && consent.state !== "none") throw unavailable();
+        if (
+          booking.status === "pending" &&
+          next === "confirmed" &&
+          consent.state !== "none"
+        ) {
+          const attestation = patch.consentReview;
+          if (
+            consent.state !== "ready" ||
+            !attestation ||
+            attestation.agreementId !== consent.agreementId ||
+            attestation.evidence !== consent.evidence
+          )
+            throw unavailable();
+          reviewedConsent = attestation;
+        } else if (patch.consentReview) throw unavailable();
+      }
       if (scheduleChanged) {
         if (
           hasFinancialHistory ||
@@ -279,7 +313,10 @@ async function execute(
         input.operationId,
         requestHash,
         operation,
-        JSON.stringify(before),
+        JSON.stringify({
+          ...before,
+          ...(reviewedConsent ? { consentReview: reviewedConsent } : {}),
+        }),
         after ? JSON.stringify(after) : null,
         JSON.stringify(changedFields),
       ]
@@ -358,6 +395,12 @@ export async function getBookingOperationHistory(
         ])
       )
       .parse(json(row.changed_fields)),
+    consentReview:
+      json(row.before_state).consentReview == null
+        ? null
+        : bookingConsentAttestationSchema.parse(
+            json(row.before_state).consentReview
+          ),
     at: new Date(databaseTimeEpoch(row.created_at)).toISOString(),
   }));
 }

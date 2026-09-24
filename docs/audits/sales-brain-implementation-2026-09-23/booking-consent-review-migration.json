@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-09-24T08:55:25.880Z",
+  "scope": "Local test migration and seeded backfill verification on two isolated MySQL databases; no production changes",
+  "migration": "0090_booking_consent_binding",
+  "rawSqlSha256": "2e3e3622477219d82900d5ea5628a838be72bcf9cffe17176f7bb6910465507a",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "existingLinkBackfilled": true,
+      "legacyLeftUnchanged": true,
+      "foreignLinkRejected": true,
+      "noProductionChanges": true,
+      "journalMatched": true,
+      "nullableInteger": true,
+      "noAgreementForeignKey": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "existingLinkBackfilled": true,
+      "legacyLeftUnchanged": true,
+      "foreignLinkRejected": true,
+      "noProductionChanges": true,
+      "journalMatched": true,
+      "nullableInteger": true,
+      "noAgreementForeignKey": true
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bookingConsentAttestationSchema } from "./booking-consent-review";
 
 export const bookingStatusSchema = z.enum([
   "pending",
@@ -52,7 +53,11 @@ export const bookingOperationalPatchSchema = z
   })
   .strict();
 export const updateBookingOperationSchema = z
-  .object({ ...identity, ...bookingOperationalPatchSchema.shape })
+  .object({
+    ...identity,
+    ...bookingOperationalPatchSchema.shape,
+    consentReview: bookingConsentAttestationSchema.optional(),
+  })
   .strict()
   .refine(value =>
     Object.keys(bookingOperationalPatchSchema.shape).some(

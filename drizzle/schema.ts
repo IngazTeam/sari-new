@@ -1663,6 +1663,7 @@ export const serviceReviews = mysqlTable("service_reviews", {
 
 export const bookings = mysqlTable("bookings", {
 	id: int().autoincrement().notNull().primaryKey(),
+	customerAgreementId: int("customer_agreement_id"), // Retained even when the original conversation is deleted.
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	serviceId: int("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
 	customerPhone: varchar("customer_phone", { length: 50 }).notNull(),

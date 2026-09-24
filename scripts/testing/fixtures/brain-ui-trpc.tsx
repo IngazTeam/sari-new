@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { calendarFixture } from './calendar-ui-trpc';
+import { consentFixture } from './booking-consent-ui-trpc';
 import { defaultFollowupPolicy } from '../../../shared/followup-policy';
 import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sales-sector-playbooks';
 const parameters = new URL(location.href).searchParams;
@@ -12,10 +13,11 @@ const fixture = { totalConversations: 1234, totalSignals: 4567, dnaInsights: [{ 
 export const trpc = {
   calendar: calendarFixture,
   bookings: {
+    getConsentReview: consentFixture,
     getOperationHistory:{useQuery:()=>{
       const [recovered,setRecovered]=useState(false),[version,setVersion]=useState(0);
       const saved=(window as any).__operationSaved;
-      const data=saved||mode==='booking-ops-audit'?[{actorUserId:7,operation:(window as any).__operationDelete?'delete':'update',beforeStatus:'pending',afterStatus:(window as any).__operationDelete?null:'confirmed',changedFields:['status'],at:'2026-09-24T00:00:00Z'}]:[];
+      const data=saved||mode==='booking-ops-audit'?[{actorUserId:7,operation:(window as any).__operationDelete?'delete':'update',beforeStatus:'pending',afterStatus:(window as any).__operationDelete?null:'confirmed',changedFields:['status'],consentReview:(window as any).__operationInput?.consentReview??null,at:'2026-09-24T00:00:00Z'}]:[];
       return {data,isLoading:mode==='booking-ops-loading',isError:mode==='booking-ops-error'&&!recovered,isFetching:mode==='booking-ops-fetching',
         refetch:async()=>{setRecovered(true);setVersion(version+1);if(mode==='booking-ops-refresh-error')return {isError:true,data};
           return {isError:false,data:(window as any).__operationSaved?[{...data[0],operation:(window as any).__operationDelete?'delete':'update',afterStatus:(window as any).__operationDelete?null:'confirmed'}]:data};}};
@@ -23,7 +25,7 @@ export const trpc = {
     update:{useMutation:()=>{
       const [isPending,setPending]=useState(false);return {isPending,mutateAsync:async(input:any)=>{
         setPending(true);(window as any).__operationInput=input;(window as any).__operationCount=((window as any).__operationCount||0)+1;await new Promise(r=>setTimeout(r,250));setPending(false);
-        if(mode==='booking-ops-write-error')throw Error('private financial record');(window as any).__operationSaved=true;return {success:true,deleted:false,alreadyApplied:false};
+        if(['booking-ops-write-error','booking-ops-consent-write-error'].includes(mode))throw Error('private financial record');(window as any).__operationSaved=true;return {success:true,deleted:false,alreadyApplied:false};
       }};
     }},
     delete:{useMutation:()=>{

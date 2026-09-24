@@ -32,7 +32,7 @@ function BookingOperationsFixture(){
   const [status,setStatus]=useState<BookingStatus>(initial),[deleted,setDeleted]=useState(false);
   useEffect(()=>{(window as any).__changeOperationalBooking=()=>setStatus('cancelled');},[]);
   return deleted?<p data-booking-deleted>Booking removed from the list</p>:<BookingOperations booking={{id:321,status,paymentStatus:mode==='booking-ops-refunded'?'refunded':mode==='booking-ops-paid'?'paid':'unpaid'}} onChanged={async(isDeleted)=>{
-    if(mode==='booking-ops-parent-error')throw Error('private parent failure');
+    if(['booking-ops-parent-error','booking-ops-consent-parent-error'].includes(mode))throw Error('private parent failure');
     (window as any).__operationParentRefreshed=true;if(isDeleted)setDeleted(true);else if((window as any).__operationSaved&&mode!=='booking-ops-stale')setStatus((window as any).__operationInput.status);
   }}/>;
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { BookingConsentPanel } from "@/components/BookingConsentPanel";
 import {
   bookingStatusSchema,
   bookingTransitions,
@@ -23,6 +24,28 @@ export function BookingOperations({
     [error, setError] = useState(false),
     [saved, setSaved] = useState(false);
   const inFlight = useRef(false);
+  const [consentReviewed, setConsentReviewed] = useState(false);
+  const consent = trpc.bookings.getConsentReview.useQuery(
+    { bookingId: booking.id },
+    { refetchOnWindowFocus: false }
+  );
+  useEffect(() => {
+    setConsentReviewed(false);
+  }, [
+    booking.id,
+    booking.status,
+    consent.data?.evidence,
+    consent.isError,
+    consent.isFetching,
+  ]);
+  const confirming = booking.status === "pending" && status === "confirmed";
+  const canConfirm =
+    !consent.isLoading &&
+    !consent.isError &&
+    !consent.isFetching &&
+    !!consent.data &&
+    (consent.data.state === "none" ||
+      (consent.data.state === "ready" && consentReviewed));
   useEffect(() => {
     setStatus(booking.status);
     setAttested(false);
@@ -45,10 +68,15 @@ export function BookingOperations({
   const refresh = async (deleted = false) => {
     const result = await history.refetch();
     if (result.isError) throw Error("Booking history refresh failed");
+    if (!deleted && result.data?.[0]?.operation !== "delete") {
+      const fresh = await consent.refetch();
+      if (fresh.isError) throw Error("Booking consent refresh failed");
+    }
     await onChanged(deleted || result.data?.[0]?.operation === "delete");
   };
   const perform = async (operation: "update" | "delete") => {
     if (inFlight.current || busy || submitted || history.isFetching) return;
+    if (operation === "update" && confirming && !canConfirm) return;
     if (
       (operation === "update" &&
         (!bookingTransitions[booking.status].includes(status) ||
@@ -70,7 +98,19 @@ export function BookingOperations({
     try {
       const result =
         operation === "update"
-          ? await update.mutateAsync({ ...input, status })
+          ? await update.mutateAsync({
+              ...input,
+              status,
+              ...(confirming && consent.data?.state === "ready"
+                ? {
+                    consentReview: {
+                      agreementId: consent.data.agreementId!,
+                      evidence: consent.data.evidence!,
+                      reviewed: true as const,
+                    },
+                  }
+                : {}),
+            })
           : await remove.mutateAsync(input);
       deleted = result.deleted;
       setSaved(true);
@@ -78,6 +118,7 @@ export function BookingOperations({
       setError(true);
     } finally {
       setAttested(false);
+      setConsentReviewed(false);
       try {
         await refresh(deleted);
       } catch {
@@ -134,6 +175,7 @@ export function BookingOperations({
           disabled={disabled || !allowed.length}
           onChange={event => {
             setStatus(bookingStatusSchema.parse(event.target.value));
+            setConsentReviewed(false);
             setAttested(false);
             setError(false);
             setSaved(false);
@@ -146,11 +188,28 @@ export function BookingOperations({
           ))}
         </select>
       </label>
+      <BookingConsentPanel
+        data={consent.data}
+        loading={consent.isLoading}
+        failed={consent.isError}
+        fetching={consent.isFetching}
+        reviewed={consentReviewed}
+        disabled={disabled}
+        confirming={confirming}
+        onReviewed={setConsentReviewed}
+        onRefresh={async () => {
+          if (inFlight.current) return;
+          setConsentReviewed(false);
+          await consent.refetch();
+        }}
+      />
       <Button
         type="button"
         data-booking-operation-save
         className="min-h-11 max-w-full whitespace-normal"
-        disabled={disabled || !allowed.includes(status)}
+        disabled={
+          disabled || !allowed.includes(status) || (confirming && !canConfirm)
+        }
         onClick={() => perform("update")}
       >
         {t(
@@ -213,6 +272,13 @@ export function BookingOperations({
           <p>
             {t("merchantUx.bookingOperations.actor", { id: row.actorUserId })}
           </p>
+          {row.consentReview && (
+            <p data-booking-consent-audit>
+              {t("merchantUx.bookingConsent.audit", {
+                id: row.consentReview.agreementId,
+              })}
+            </p>
+          )}
           <p>
             {t("merchantUx.bookingOperations.before")}{" "}
             {labels[row.beforeStatus]}

@@ -7,8 +7,21 @@ import {
 } from "../shared/booking-operations";
 import { updateBooking, deleteBooking } from "./db";
 import { getBookingOperationHistory } from "./booking-operations";
+import { getBookingConsentReview } from "./booking-consent-review";
 
 export const bookingOperationProcedures = {
+  getConsentReview: permissionProcedure("orders.manage")
+    .input(z.object({ bookingId: z.number().int().positive().safe() }).strict())
+    .query(async ({ ctx, input }) => {
+      try {
+        return await getBookingConsentReview(ctx.merchantId, input.bookingId);
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Booking consent review unavailable",
+        });
+      }
+    }),
   update: permissionProcedure("orders.manage")
     .input(updateBookingOperationSchema)
     .mutation(async ({ ctx, input }) => {

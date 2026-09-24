@@ -9,6 +9,12 @@ import {
 } from "vitest";
 import { fork, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { getBookingConsentReview } from "../booking-consent-review";
+import {
+  updateBookingOperation,
+  getBookingOperationHistory,
+} from "../booking-operations";
 vi.mock("./openai", () => ({ callGPT4: vi.fn() }));
 import { callGPT4 } from "./openai";
 import { handleBookingConversation } from "./booking-conversation";
@@ -727,6 +733,330 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).rejects.toThrow();
       expect(ctx.assertOwned).toHaveBeenCalledTimes(2);
       expect(await bookings()).toHaveLength(0);
+    });
+    describe("operator review of persisted booking consent", () => {
+      async function accepted() {
+        const quote = await offer(),
+          consent = await incoming();
+        const result = await acceptBookingAgreement(consent, quote.agreementId);
+        return { quote, consent, bookingId: result.bookingId! };
+      }
+      const confirmation = (bookingId: number, review: any) => ({
+        bookingId,
+        operationId: randomUUID(),
+        expectedStatus: "pending" as const,
+        status: "confirmed" as const,
+        consentReview: {
+          agreementId: review.agreementId,
+          evidence: review.evidence,
+          reviewed: true as const,
+        },
+      });
+      it("shows exact approved terms and incoming messages without exposing raw records", async () => {
+        const { bookingId, consent, quote } = await accepted();
+        const result = await getBookingConsentReview(
+          owner.merchantId,
+          bookingId
+        );
+        expect(result.state).toBe("ready");
+        expect(result.evidence).toMatch(/^[a-f0-9]{64}$/);
+        expect(result.terms?.amountMinor).toBe(12500);
+        expect(result.consent?.id).toBe(consent.incomingMessageId);
+        expect(result.offerText).toBe(quote.text);
+        expect(result.source?.id).toBe(source.incomingMessageId);
+        expect(JSON.stringify(result)).not.toContain("customer_phone");
+        expect((await bookings())[0].customer_agreement_id).toBe(
+          quote.agreementId
+        );
+      });
+      it("requires review and records its proof with actor and operational update atomically", async () => {
+        const { bookingId } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId);
+        const input = confirmation(bookingId, review);
+        await expect(
+          updateBookingOperation(owner.merchantId, owner.userId, {
+            ...input,
+            consentReview: undefined,
+          })
+        ).rejects.toThrow();
+        expect((await bookings())[0].status).toBe("pending");
+        expect(
+          (await updateBookingOperation(owner.merchantId, owner.userId, input))
+            .alreadyApplied
+        ).toBe(false);
+        expect((await bookings())[0].payment_status).toBe("unpaid");
+        const history = await getBookingOperationHistory(
+          owner.merchantId,
+          bookingId
+        );
+        expect(history[0].consentReview).toEqual(input.consentReview);
+        expect(history[0].actorUserId).toBe(owner.userId);
+        await incoming("هل يمكن تذكيري؟");
+        expect(
+          (await updateBookingOperation(owner.merchantId, owner.userId, input))
+            .alreadyApplied
+        ).toBe(true);
+        expect(
+          await getBookingOperationHistory(owner.merchantId, bookingId)
+        ).toHaveLength(1);
+      });
+      it.each([
+        "wrong_evidence",
+        "wrong_agreement",
+        "terms",
+        "source",
+        "consent",
+        "delivery",
+        "service",
+        "slot",
+        "conversation",
+        "agreement",
+        "pointer",
+        "foreign_pointer",
+        "refusal_then_question",
+        "long_source",
+        "slot_counter",
+        "buffer_policy",
+        "snapshot_corrupt",
+      ])("blocks confirmation with %s", async change => {
+        const { bookingId, quote, consent } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId),
+          input = confirmation(bookingId, review);
+        if (change === "wrong_evidence")
+          input.consentReview.evidence = "0".repeat(64);
+        if (change === "wrong_agreement")
+          input.consentReview.agreementId += 10000000;
+        if (change === "terms")
+          await q("UPDATE bookings SET final_price=1 WHERE id=?", [bookingId]);
+        if (change === "source")
+          await q("DELETE FROM messages WHERE id=?", [
+            source.incomingMessageId,
+          ]);
+        if (change === "consent")
+          await q("UPDATE messages SET content='لا تحجز' WHERE id=?", [
+            consent.incomingMessageId,
+          ]);
+        if (change === "delivery")
+          await q(
+            "UPDATE ai_interaction_jobs SET state='suppressed' WHERE incoming_message_id=?",
+            [source.incomingMessageId]
+          );
+        if (change === "service")
+          await q("UPDATE services SET is_active=0 WHERE id=?", [serviceId]);
+        if (change === "slot")
+          await q("UPDATE booking_time_slots SET is_blocked=1 WHERE id=?", [
+            slotId,
+          ]);
+        if (change === "slot_counter")
+          await q(
+            "UPDATE booking_time_slots SET current_bookings=1 WHERE id=?",
+            [slotId]
+          );
+        if (change === "buffer_policy")
+          await q("UPDATE services SET buffer_time_minutes=15 WHERE id=?", [
+            serviceId,
+          ]);
+        if (change === "snapshot_corrupt")
+          await q(
+            "UPDATE conversation_booking_agreements SET snapshot=JSON_SET(snapshot,'$.priceMinor',1) WHERE id=?",
+            [quote.agreementId]
+          );
+        if (change === "conversation")
+          await q("DELETE FROM conversations WHERE id=?", [
+            source.conversationId,
+          ]);
+        if (change === "agreement")
+          await q("DELETE FROM conversation_booking_agreements WHERE id=?", [
+            quote.agreementId,
+          ]);
+        if (change === "pointer")
+          await q("UPDATE bookings SET customer_agreement_id=NULL WHERE id=?", [
+            bookingId,
+          ]);
+        if (change === "foreign_pointer")
+          await q(
+            "UPDATE conversation_booking_agreements SET merchant_id=? WHERE id=?",
+            [other.merchantId, quote.agreementId]
+          );
+        if (change === "refusal_then_question") {
+          await incoming("لا تحجز");
+          await incoming("ما ساعات العمل؟");
+        }
+        if (change === "long_source")
+          await q("UPDATE messages SET content=? WHERE id=?", [
+            "x".repeat(8001),
+            source.incomingMessageId,
+          ]);
+        if (!change.startsWith("wrong_"))
+          expect(
+            (await getBookingConsentReview(owner.merchantId, bookingId)).state
+          ).toBe("blocked");
+        await expect(
+          updateBookingOperation(owner.merchantId, owner.userId, input)
+        ).rejects.toThrow();
+        expect((await bookings())[0].status).toBe("pending");
+        expect(
+          await getBookingOperationHistory(owner.merchantId, bookingId)
+        ).toHaveLength(0);
+      });
+      it("invalidates an attestation on a new message and permits explicit review of refreshed evidence", async () => {
+        const { bookingId } = await accepted(),
+          old = await getBookingConsentReview(owner.merchantId, bookingId);
+        await incoming("هل توجد مواقف؟");
+        const fresh = await getBookingConsentReview(
+          owner.merchantId,
+          bookingId
+        );
+        expect(fresh.state).toBe("ready");
+        expect(fresh.evidence).not.toBe(old.evidence);
+        await expect(
+          updateBookingOperation(
+            owner.merchantId,
+            owner.userId,
+            confirmation(bookingId, old)
+          )
+        ).rejects.toThrow();
+        await updateBookingOperation(
+          owner.merchantId,
+          owner.userId,
+          confirmation(bookingId, fresh)
+        );
+        expect((await bookings())[0].status).toBe("confirmed");
+      });
+      it.each([
+        { bookingDate: "2026-12-28" },
+        { startTime: "11:00", endTime: "12:00" },
+      ])(
+        "blocks changing approved schedule %j even with an attestation",
+        async patch => {
+          const { bookingId } = await accepted(),
+            review = await getBookingConsentReview(owner.merchantId, bookingId);
+          await expect(
+            updateBookingOperation(owner.merchantId, owner.userId, {
+              ...confirmation(bookingId, review),
+              ...patch,
+            })
+          ).rejects.toThrow();
+          expect((await bookings())[0].status).toBe("pending");
+        }
+      );
+      it("retains cancellation when consent has become unavailable", async () => {
+        const { bookingId, quote } = await accepted();
+        await q("DELETE FROM conversation_booking_agreements WHERE id=?", [
+          quote.agreementId,
+        ]);
+        await updateBookingOperation(owner.merchantId, owner.userId, {
+          bookingId,
+          operationId: randomUUID(),
+          expectedStatus: "pending",
+          status: "cancelled",
+        });
+        expect((await bookings())[0].status).toBe("cancelled");
+      });
+      it("rejects cross-tenant reads", async () => {
+        const { bookingId } = await accepted();
+        await expect(
+          getBookingConsentReview(other.merchantId, bookingId)
+        ).rejects.toThrow();
+      });
+      it("serializes concurrent confirmation and stores only one audit", async () => {
+        const { bookingId } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId);
+        const results = await Promise.allSettled(
+          [
+            confirmation(bookingId, review),
+            confirmation(bookingId, review),
+          ].map(input =>
+            updateBookingOperation(owner.merchantId, owner.userId, input)
+          )
+        );
+        expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
+        expect(
+          await getBookingOperationHistory(owner.merchantId, bookingId)
+        ).toHaveLength(1);
+      });
+      it("rolls confirmation back if its audit cannot be stored", async () => {
+        const { bookingId } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId);
+        const pool = (await getPool())!,
+          original = pool.getConnection.bind(pool);
+        let reached = false;
+        const spy = vi.spyOn(pool, "getConnection").mockImplementation(
+          async () =>
+            new Proxy(await original(), {
+              get(target, key) {
+                if (key === "execute")
+                  return async (sql: string, args: any[]) => {
+                    if (sql.includes("INSERT INTO booking_operation_audits")) {
+                      reached = true;
+                      throw Error("audit failed");
+                    }
+                    return target.execute(sql, args);
+                  };
+                const value = Reflect.get(target, key);
+                return typeof value === "function" ? value.bind(target) : value;
+              },
+            })
+        );
+        await expect(
+          updateBookingOperation(
+            owner.merchantId,
+            owner.userId,
+            confirmation(bookingId, review)
+          )
+        ).rejects.toThrow();
+        spy.mockRestore();
+        expect(reached).toBe(true);
+        expect((await bookings())[0].status).toBe("pending");
+      });
+      it("recovers a confirmed booking and its consent proof after losing commit acknowledgement", async () => {
+        const { bookingId } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId),
+          input = confirmation(bookingId, review);
+        const pool = (await getPool())!,
+          original = pool.getConnection.bind(pool);
+        const spy = vi.spyOn(pool, "getConnection").mockImplementation(
+          async () =>
+            new Proxy(await original(), {
+              get(target, key) {
+                if (key === "commit")
+                  return async () => {
+                    await target.commit();
+                    throw Error("lost commit");
+                  };
+                const value = Reflect.get(target, key);
+                return typeof value === "function" ? value.bind(target) : value;
+              },
+            })
+        );
+        await expect(
+          updateBookingOperation(owner.merchantId, owner.userId, input)
+        ).rejects.toThrow();
+        spy.mockRestore();
+        expect(
+          (await updateBookingOperation(owner.merchantId, owner.userId, input))
+            .alreadyApplied
+        ).toBe(true);
+        expect(
+          await getBookingOperationHistory(owner.merchantId, bookingId)
+        ).toHaveLength(1);
+      });
+      it("changes the evidence when a booking note is edited without changing consent", async () => {
+        const { bookingId } = await accepted(),
+          review = await getBookingConsentReview(owner.merchantId, bookingId);
+        await updateBookingOperation(owner.merchantId, owner.userId, {
+          bookingId,
+          operationId: randomUUID(),
+          expectedStatus: "pending",
+          notes: "Reviewed by staff",
+        });
+        const fresh = await getBookingConsentReview(
+          owner.merchantId,
+          bookingId
+        );
+        expect(fresh.evidence).not.toBe(review.evidence);
+        expect(fresh.state).toBe("ready");
+      });
     });
     it("fails closed when migration metadata is unavailable", async () => {
       vi.spyOn(readiness, "assertRuntimeSchema").mockRejectedValue(
