@@ -26,7 +26,7 @@ import {
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
 import { reserveAppointment } from "./appointment-booking";
-import { bookCalendarAppointment } from "./appointment-calendar";
+import { bookCalendarAppointment as bookCalendarRequest } from "./appointment-calendar";
 import {
   readAppointmentReview,
   reconcileAppointment,
@@ -52,6 +52,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
       appointmentDate: "2026-12-20",
       startTime: "10:00",
     });
+    const bookCalendarAppointment = (data: ReturnType<typeof input>) =>
+      bookCalendarRequest(data, {
+        requestId: randomUUID(),
+        actorUserId: owner.userId,
+      });
     const row = async (id: number) =>
       (await q("SELECT * FROM appointments WHERE id=?", [id]))[0];
     const audits = () =>

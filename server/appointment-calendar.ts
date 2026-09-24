@@ -7,9 +7,16 @@ import {
 import {
   assertAppointmentSchema,
   calendarIdentity,
-  reserveAppointment,
 } from "./appointment-booking";
 import { withBookingCapacityTransaction } from "./booking-capacity";
+import {
+  appointmentRequestIdentitySchema,
+  type AppointmentRequestIdentity,
+} from "../shared/appointment-request";
+import {
+  reserveCalendarAppointmentRequest,
+  readAppointmentCreationRequest,
+} from "./appointment-creation-requests";
 
 export class AppointmentCalendarReviewError extends Error {
   constructor() {
@@ -19,15 +26,25 @@ export class AppointmentCalendarReviewError extends Error {
   }
 }
 // Persist dispatch before network I/O. Never automatically retry an ambiguous provider response.
-export async function bookCalendarAppointment(raw: AppointmentCreationInput) {
+export async function bookCalendarAppointment(
+  raw: AppointmentCreationInput,
+  rawIdentity: AppointmentRequestIdentity
+) {
   const input = scopedAppointmentCreationSchema.parse(raw);
-  const reservation = await reserveAppointment(input, true);
-  if (!reservation.target)
-    return {
-      success: true as const,
-      appointmentId: reservation.appointmentId,
-      calendarSyncState: "none" as const,
-    };
+  const identity = appointmentRequestIdentitySchema.parse(rawIdentity);
+  const reserved = await reserveCalendarAppointmentRequest(input, identity);
+  const result = async () => {
+    const state = await readAppointmentCreationRequest(
+      input.merchantId,
+      identity
+    );
+    if (state.state !== "recorded") throw new AppointmentCalendarReviewError();
+    return { success: true as const, replayed: false, ...state };
+  };
+  if (reserved.kind === "replay")
+    return { success: true as const, replayed: true, ...reserved.result };
+  const { reservation } = reserved;
+  if (!reservation.target) return result();
   const { target } = reservation;
   let eventId: string;
   try {
@@ -59,11 +76,7 @@ export async function bookCalendarAppointment(raw: AppointmentCreationInput) {
         [reservation.appointmentId, input.merchantId]
       );
     });
-    return {
-      success: true as const,
-      appointmentId: reservation.appointmentId,
-      calendarSyncState: "create_unknown" as const,
-    };
+    return result();
   }
   // Lost commit acknowledgement leaves a capacity hold; never issue another POST.
   await withBookingCapacityTransaction(input.merchantId, async connection => {
@@ -73,11 +86,7 @@ export async function bookCalendarAppointment(raw: AppointmentCreationInput) {
     );
     if (result.affectedRows !== 1) throw new AppointmentCalendarReviewError();
   });
-  return {
-    success: true as const,
-    appointmentId: reservation.appointmentId,
-    calendarSyncState: "synced" as const,
-  };
+  return result();
 }
 export async function cancelCalendarAppointment(
   merchantId: number,

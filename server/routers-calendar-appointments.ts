@@ -1,7 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure } from "./_core/trpc";
 import {
-  appointmentCreationSchema,
   appointmentCancellationSchema,
   appointmentAvailabilitySchema,
 } from "../shared/appointment-creation";
@@ -10,21 +9,45 @@ import {
   cancelCalendarAppointment,
 } from "./appointment-calendar";
 import { getCalendarAvailability } from "./calendar-availability";
+import {
+  appointmentCommandSchema,
+  appointmentRequestLookupSchema,
+} from "../shared/appointment-request";
+import { readAppointmentCreationRequest } from "./appointment-creation-requests";
 
 export const calendarAppointmentProcedures = {
   bookAppointment: permissionProcedure("orders.manage")
-    .input(appointmentCreationSchema)
+    .input(appointmentCommandSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await bookCalendarAppointment({
-          ...input,
-          merchantId: ctx.merchantId,
-        });
+        const { requestId, ...fields } = input;
+        return await bookCalendarAppointment(
+          {
+            ...fields,
+            merchantId: ctx.merchantId,
+          },
+          { requestId, actorUserId: ctx.user.id }
+        );
       } catch {
         throw new TRPCError({
           code: "CONFLICT",
           message:
-            "تعذر إتمام الحجز؛ راجع قائمة المواعيد والتوفر قبل إعادة المحاولة.",
+            "تعذر تأكيد نتيجة الحجز؛ تحقق من الطلب بمعرفه الأصلي قبل إعادة المحاولة.",
+        });
+      }
+    }),
+  getBookingRequest: permissionProcedure("orders.manage")
+    .input(appointmentRequestLookupSchema)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readAppointmentCreationRequest(ctx.merchantId, {
+          ...input,
+          actorUserId: ctx.user.id,
+        });
+      } catch {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "تعذر قراءة نتيجة طلب الحجز؛ راجع صلاحياتك وحالة الموعد.",
         });
       }
     }),

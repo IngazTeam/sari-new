@@ -1611,6 +1611,15 @@ export const appointments = mysqlTable("appointments", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [index("idx_appointment_capacity").on(table.merchantId, table.appointmentDate, table.status)]);
 
+export const appointmentCreationRequests = mysqlTable("appointment_creation_requests", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  requestId: char("request_id", { length: 36 }).notNull(), actorUserId: int("actor_user_id").notNull(),
+  requestHash: char("request_hash", { length: 64 }).notNull(), appointmentReference: int("appointment_reference").notNull(),
+  createdAt: datetime("created_at", { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex("uq_appointment_creation_request").on(table.merchantId,table.requestId),
+  uniqueIndex("uq_appointment_creation_reference").on(table.merchantId,table.appointmentReference)]);
+
 export const appointmentCalendarReviews = mysqlTable("appointment_calendar_reviews", {
   id: int().autoincrement().primaryKey(), merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
   appointmentReference: int("appointment_reference").notNull(), actorUserId: int("actor_user_id").notNull(),

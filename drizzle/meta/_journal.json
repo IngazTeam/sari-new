@@ -617,6 +617,13 @@
       "when": 1790985600000,
       "tag": "0087_appointment_calendar_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "5",
+      "when": 1791072000000,
+      "tag": "0088_appointment_creation_requests",
+      "breakpoints": true
     }
   ]
 }

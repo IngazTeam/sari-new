@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-09-24T07:54:08.589Z",
+  "scope": "Read-only metadata verification on two local test databases; no production migration",
+  "migration": "0088_appointment_creation_requests",
+  "rawSqlSha256": "d4443365d7460b468de52d728c2189e1bc461f5622e8851eb814b3b8411d6399",
+  "results": [
+    {
+      "database": "sari_brain_test",
+      "journalMatched": true,
+      "requestAndAppointmentUnique": true,
+      "onlyMerchantForeignKey": true,
+      "noLegacyAppointmentMutation": true
+    },
+    {
+      "database": "sari_brain_migration_test",
+      "journalMatched": true,
+      "requestAndAppointmentUnique": true,
+      "onlyMerchantForeignKey": true,
+      "noLegacyAppointmentMutation": true
+    }
+  ]
+}

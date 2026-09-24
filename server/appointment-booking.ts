@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { PoolConnection } from "mysql2/promise";
 import {
   scopedAppointmentCreationSchema,
   type AppointmentCreationInput,
@@ -84,111 +85,119 @@ export async function reserveAppointment(
 ) {
   const input = scopedAppointmentCreationSchema.parse(raw);
   await assertAppointmentSchema();
-  return withBookingCapacityTransaction(input.merchantId, async connection => {
-    const [services] = await connection.execute<any[]>(
-      "SELECT * FROM services WHERE id=? AND merchant_id=? AND is_active=1 FOR UPDATE",
-      [input.serviceId, input.merchantId]
+  return withBookingCapacityTransaction(input.merchantId, connection =>
+    reserveAppointmentInTransaction(connection, input, synchronizeCalendar)
+  );
+}
+/** Caller must already hold the merchant capacity transaction and verify schema readiness. */
+export async function reserveAppointmentInTransaction(
+  connection: PoolConnection,
+  raw: AppointmentCreationInput,
+  synchronizeCalendar: boolean
+) {
+  const input = scopedAppointmentCreationSchema.parse(raw);
+  const [services] = await connection.execute<any[]>(
+    "SELECT * FROM services WHERE id=? AND merchant_id=? AND is_active=1 FOR UPDATE",
+    [input.serviceId, input.merchantId]
+  );
+  const service = services[0];
+  if (!service) throw new AppointmentOwnershipError("service");
+  try {
+    await validateBookingStaff(
+      connection,
+      input.merchantId,
+      service,
+      input.staffId
     );
-    const service = services[0];
-    if (!service) throw new AppointmentOwnershipError("service");
-    try {
-      await validateBookingStaff(
-        connection,
-        input.merchantId,
-        service,
-        input.staffId
-      );
-    } catch {
-      throw new AppointmentOwnershipError("staff");
-    }
-    const endTime = calculateAppointmentEndTime(
-      input.startTime,
-      Number(service.duration_minutes)
+  } catch {
+    throw new AppointmentOwnershipError("staff");
+  }
+  const endTime = calculateAppointmentEndTime(
+    input.startTime,
+    Number(service.duration_minutes)
+  );
+  if (
+    await hasBookingConflict(connection, input.merchantId, {
+      serviceId: input.serviceId,
+      staffId: input.staffId,
+      bookingDate: input.appointmentDate,
+      startTime: input.startTime,
+      endTime,
+    })
+  )
+    throw new AppointmentConflictError();
+  let staff: ConfirmedAppointment["staff"] = null;
+  if (input.staffId) {
+    const [rows] = await connection.execute<any[]>(
+      "SELECT id,merchant_id AS merchantId,name FROM staff_members WHERE id=? AND merchant_id=?",
+      [input.staffId, input.merchantId]
     );
-    if (
-      await hasBookingConflict(connection, input.merchantId, {
-        serviceId: input.serviceId,
-        staffId: input.staffId,
-        bookingDate: input.appointmentDate,
-        startTime: input.startTime,
-        endTime,
-      })
-    )
-      throw new AppointmentConflictError();
-    let staff: ConfirmedAppointment["staff"] = null;
-    if (input.staffId) {
-      const [rows] = await connection.execute<any[]>(
-        "SELECT id,merchant_id AS merchantId,name FROM staff_members WHERE id=? AND merchant_id=?",
-        [input.staffId, input.merchantId]
-      );
-      staff = rows[0];
+    staff = rows[0];
+  }
+  let target: {
+    integrationId: number;
+    calendarId: string;
+    identity: string;
+    credentials: any;
+  } | null = null;
+  if (synchronizeCalendar) {
+    const [integrations] = await connection.execute<any[]>(
+      "SELECT * FROM google_integrations WHERE merchant_id=? AND integration_type='calendar' AND is_active=1 FOR SHARE",
+      [input.merchantId]
+    );
+    if (integrations.length > 1) throw Error("CALENDAR_TARGET_AMBIGUOUS");
+    if (integrations.length === 1) {
+      const integration = integrations[0],
+        credentials = JSON.parse(integration.credentials || "{}");
+      target = {
+        integrationId: integration.id,
+        calendarId: integration.calendar_id || "primary",
+        identity: calendarIdentity(credentials),
+        credentials,
+      };
     }
-    let target: {
-      integrationId: number;
-      calendarId: string;
-      identity: string;
-      credentials: any;
-    } | null = null;
-    if (synchronizeCalendar) {
-      const [integrations] = await connection.execute<any[]>(
-        "SELECT * FROM google_integrations WHERE merchant_id=? AND integration_type='calendar' AND is_active=1 FOR SHARE",
-        [input.merchantId]
-      );
-      if (integrations.length > 1) throw Error("CALENDAR_TARGET_AMBIGUOUS");
-      if (integrations.length === 1) {
-        const integration = integrations[0],
-          credentials = JSON.parse(integration.credentials || "{}");
-        target = {
-          integrationId: integration.id,
-          calendarId: integration.calendar_id || "primary",
-          identity: calendarIdentity(credentials),
-          credentials,
-        };
-      }
-    }
-    const eventReference = target
-      ? `sariappt${randomBytes(16).toString("hex")}`
-      : null;
-    const [insert] = await connection.execute<any>(
-      `INSERT INTO appointments (merchant_id,customer_phone,customer_name,service_id,staff_id,appointment_date,start_time,end_time,status,notes,
+  }
+  const eventReference = target
+    ? `sariappt${randomBytes(16).toString("hex")}`
+    : null;
+  const [insert] = await connection.execute<any>(
+    `INSERT INTO appointments (merchant_id,customer_phone,customer_name,service_id,staff_id,appointment_date,start_time,end_time,status,notes,
         calendar_sync_state,calendar_integration_id,calendar_target_id,calendar_identity_hash,calendar_event_reference)
        VALUES (?,?,?,?,?,?,?,?,'confirmed',?,?,?,?,?,?)`,
-      [
-        input.merchantId,
-        input.customerPhone,
-        input.customerName || null,
-        input.serviceId,
-        input.staffId ?? null,
-        `${input.appointmentDate} 00:00:00`,
-        input.startTime,
-        endTime,
-        input.notes ?? null,
-        target ? "creating" : "none",
-        target?.integrationId ?? null,
-        target?.calendarId ?? null,
-        target?.identity ?? null,
-        eventReference,
-      ]
-    );
-    const appointmentId = Number(insert.insertId);
-    if (!Number.isSafeInteger(appointmentId) || appointmentId <= 0)
-      throw Error("APPOINTMENT_INSERT_FAILED");
-    return {
-      appointmentId,
+    [
+      input.merchantId,
+      input.customerPhone,
+      input.customerName || null,
+      input.serviceId,
+      input.staffId ?? null,
+      `${input.appointmentDate} 00:00:00`,
+      input.startTime,
       endTime,
-      staff,
-      target,
+      input.notes ?? null,
+      target ? "creating" : "none",
+      target?.integrationId ?? null,
+      target?.calendarId ?? null,
+      target?.identity ?? null,
       eventReference,
-      service: {
-        id: Number(service.id),
-        merchantId: Number(service.merchant_id),
-        name: String(service.name),
-        durationMinutes: Number(service.duration_minutes),
-        basePrice:
-          service.base_price == null ? null : Number(service.base_price),
-      },
-    };
-  });
+    ]
+  );
+  const appointmentId = Number(insert.insertId);
+  if (!Number.isSafeInteger(appointmentId) || appointmentId <= 0)
+    throw Error("APPOINTMENT_INSERT_FAILED");
+  return {
+    appointmentId,
+    endTime,
+    staff,
+    target,
+    eventReference,
+    service: {
+      id: Number(service.id),
+      merchantId: Number(service.merchant_id),
+      name: String(service.name),
+      durationMinutes: Number(service.duration_minutes),
+      basePrice: service.base_price == null ? null : Number(service.base_price),
+    },
+  };
 }
 export async function createConfirmedAppointment(input: {
   merchantId: number;

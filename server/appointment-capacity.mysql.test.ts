@@ -30,7 +30,7 @@ import {
   reserveAppointment,
 } from "./appointment-booking";
 import {
-  bookCalendarAppointment,
+  bookCalendarAppointment as bookCalendarRequest,
   cancelCalendarAppointment,
 } from "./appointment-calendar";
 import {
@@ -80,6 +80,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ...patch,
     });
     const create = (patch: any = {}) => reserveAppointment(input(patch));
+    const bookCalendarAppointment = (data: ReturnType<typeof input>) =>
+      bookCalendarRequest(data, {
+        requestId: randomUUID(),
+        actorUserId: owner.userId,
+      });
     const rows = () =>
       query("SELECT * FROM appointments WHERE merchant_id=? ORDER BY id", [
         owner.merchantId,
