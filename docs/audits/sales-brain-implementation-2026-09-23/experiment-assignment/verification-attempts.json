@@ -1,0 +1,30 @@
+{
+  "scope": "Synthetic local validation. Final reports are exclusively from the frozen final source snapshot.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 158,
+      "failed": 0,
+      "logSha256": "5ec1c50ba8ca71101789c99ee71ddca59c79f3df84bcd40d1857dece9125097f"
+    },
+    {
+      "kind": "overlap-fixture-first",
+      "result": "The fixture tried to prepare the same proposal again with revision zero; current-review validation correctly refused it. The overlap case now creates a separate protocol from the existing approved candidate.",
+      "logSha256": "a87800748843a0222dc609b9c2f8a46213bfb2621f4ef80f06da39900b1a1e69"
+    },
+    {
+      "kind": "overlap-fixture-second",
+      "result": "The fixture tried to register a second protocol while the first was registered. It now follows the required withdrawal before registering the next protocol.",
+      "logSha256": "8b00ad537699ed906f7cbf010265570bb5e28221c3073bedc016bdd690fe8076"
+    },
+    {
+      "kind": "typecheck-initial",
+      "result": "TypeScript required an explicit return on the never-returning conflict branch to narrow nullable launch authority. Corrected and the entire final verification rerun.",
+      "logSha256": "9958a4c4ba109885fc8ae3aaecd3dea11e394fbe13108bd78e70cc1032c8e673"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "0407375290aebe0b4a09b8926565514577e9f45b6d65d24c5cdd7ae59974541e"
+    }
+  ]
+}

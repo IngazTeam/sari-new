@@ -150,13 +150,19 @@ export async function inspectSalesExperimentCohort(merchantId: number, value: z.
   const merchant = id.parse(merchantId), input = inspectSalesCohortInput.parse(value);
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
+    return (await inspectSalesCohortWithinTransaction(c, merchant, input)).inspection;
+  });
+}
+
+/** Internal composition only: caller must hold the merchant lock. Identity never leaves the public inspection. */
+export async function inspectSalesCohortWithinTransaction(c: PoolConnection, merchant: number, input: z.infer<typeof inspectSalesCohortInput>) {
     const frozen = await load(c, merchant, input.protocolId), s: SalesCohortSnapshot = frozen.snapshot;
     if (frozen.cohortDigest !== input.cohortDigest) conflict();
     const current = await currentProtocol(c, merchant, input.protocolId, s.protocolDigest);
     if (s.population !== current.protocol.design.cohort.population || s.enrollmentStartsAt !== current.protocol.design.window.enrollmentStartsAt
       || s.enrollmentEndsAt !== current.protocol.design.window.enrollmentEndsAt) conflict();
     const [conversations] = await c.execute<any[]>(`SELECT customerName,customerPhone,status,human_takeover,automation_after_message_id,deal_stage FROM conversations
-      WHERE id=? AND merchantId=? FOR SHARE`, [input.conversationId, merchant]);
+      WHERE id=? AND merchantId=? FOR UPDATE`, [input.conversationId, merchant]);
     if (conversations.length !== 1) conflict();
     const conversation = conversations[0];
     const [messages] = await c.execute<any[]>(`SELECT id,messageType,content,DATE_FORMAT(createdAt,'%Y-%m-%dT%H:%i:%s.000Z') AS received_at
@@ -175,9 +181,9 @@ export async function inspectSalesExperimentCohort(merchantId: number, value: z.
         && input.incomingMessageId > Number(conversation.automation_after_message_id),
       latestInbound: Number(latest[0]?.id) === input.incomingMessageId, messageType: String(message.messageType),
       content: String(message.content ?? ''), messageReceivedAt: String(message.received_at), inspectedAt, priorInbound: prior.length > 0 };
-    return { ...evaluateSalesCohort(s, facts), protocolId: input.protocolId, cohortDigest: frozen.cohortDigest, inspectedAt,
+    const inspection = { ...evaluateSalesCohort(s, facts), protocolId: input.protocolId, cohortDigest: frozen.cohortDigest, inspectedAt,
       conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, messageDigest: selectedDigest,
       // Evidence fingerprint only; neither raw customer text nor phone leaks into the inspection response.
       sourceDigest: policyArtifactDigest({ merchant, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, facts }) };
-  });
+    return { inspection, canonicalPhone: phone.success ? phone.data : null, messageReceivedAt: facts.messageReceivedAt, frozen };
 }

@@ -1,0 +1,34 @@
+{
+  "verifiedAt": "2026-09-25T16:34:30.150Z",
+  "database": "sari_sales_assignment_1790354045276_test",
+  "scope": "Actual updater applies 0000–0112 in a fresh isolated database, seeds historical evidence, applies 0113 and reruns.",
+  "migrations": 114,
+  "preservedTables": [
+    "ai_learning_proposals",
+    "ai_learning_policy_reviews",
+    "ai_learning_policy_candidates",
+    "ai_learning_policy_evaluations",
+    "ai_learning_policy_output_reviews",
+    "ai_sales_experiment_protocols",
+    "ai_sales_experiment_cohorts",
+    "ai_sales_experiment_reviews",
+    "ai_sales_experiment_launches",
+    "ai_sales_experiment_launch_revocations",
+    "ai_budget_policies",
+    "ai_price_cards"
+  ],
+  "noAutomaticAssignments": true,
+  "rejected": {
+    "duplicateCustomer": true,
+    "duplicateSource": true,
+    "foreignProtocol": true,
+    "foreignLaunch": true,
+    "badArm": true,
+    "duplicateConversation": true,
+    "foreignAssignment": true
+  },
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "d94ada925474d2c21ba81c57078f4c5b21d204a800ef7934ee9024cd105395e3",
+  "passed": true
+}

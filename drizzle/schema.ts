@@ -4174,6 +4174,29 @@ export const aiSalesExperimentLaunchRevocations = mysqlTable('ai_sales_experimen
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_sales_launch_revoke_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_launch_revoke_once').on(table.launchId)]);
 
+export const aiSalesExperimentAssignments = mysqlTable('ai_sales_experiment_assignments', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  launchId: bigint('launch_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentLaunches.id, { onDelete: 'cascade' }),
+  customerKey: char('customer_key', { length: 64 }).notNull(), arm: varchar({ length: 16 }).notNull(),
+  conversationReference: int('conversation_reference').notNull(), messageReference: int('message_reference').notNull(),
+  observationEndsAt: datetime('observation_ends_at', { mode: 'string', fsp: 3 }).notNull(),
+  assignmentDigest: char('assignment_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_assignment_customer').on(table.merchantId, table.protocolId, table.customerKey),
+  uniqueIndex('uq_sales_assignment_source').on(table.protocolId, table.messageReference), index('idx_sales_assignment_overlap').on(table.merchantId, table.customerKey, table.observationEndsAt),
+  check('ck_sales_assignment_arm', sql`${table.arm} IN ('baseline','candidate')`)]);
+
+// Durable references, not cascading conversation/message foreign keys.
+export const aiSalesExperimentAssignmentConversations = mysqlTable('ai_sales_experiment_assignment_conversations', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  conversationReference: int('conversation_reference').notNull(), customerKey: char('customer_key', { length: 64 }).notNull(),
+  assignmentId: bigint('assignment_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentAssignments.id, { onDelete: 'cascade' }),
+}, table => [uniqueIndex('uq_sales_assignment_conversation').on(table.merchantId, table.protocolId, table.conversationReference)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
