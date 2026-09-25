@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { compatibleRun, definiteReviewError, evaluationCost } from '@/lib/learning-policy-evaluation-state';
 import { LearningPolicyOutputReview } from './LearningPolicyOutputReview';
+import { LearningPolicyReviewArchive } from './LearningPolicyArchive';
 
 export function LearningPolicyEvaluationRun({ runId, active, onLock }: { runId: number; active: boolean; onLock: (locked: boolean) => void }) {
   const { t } = useTranslation();
@@ -79,7 +80,7 @@ export function LearningPolicyEvaluationRun({ runId, active, onLock }: { runId: 
     } finally { inFlight.current = false; if (mounted.current) setBusy(false); }
   }
   return <section ref={panel} className="min-w-0 space-y-4 rounded-xl border p-3 sm:p-5 [overflow-wrap:anywhere]" data-evaluation-run aria-busy={busy || query.isFetching}>
-    <div className="flex flex-wrap items-start justify-between gap-3"><h4 className="font-semibold text-lg">{t('merchantUx.policyEvaluation.run', { id: runId })}</h4><Button type="button" variant="outline" className="min-h-11" data-evaluation-refresh disabled={busy || query.isFetching} onClick={() => void refresh()}>{t('merchantUx.policyEvaluation.refresh')}</Button></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><h4 tabIndex={-1} data-evaluation-heading className="font-semibold text-lg focus-visible:outline">{t('merchantUx.policyEvaluation.run', { id: runId })}</h4><Button type="button" variant="outline" className="min-h-11" data-evaluation-refresh disabled={busy || query.isFetching} onClick={() => void refresh()}>{t('merchantUx.policyEvaluation.refresh')}</Button></div>
     {query.isLoading && <p role="status">{t('merchantUx.policyEvaluation.loading')}</p>}
     {(query.isError || failure === 'refresh') && <p role="alert" data-evaluation-error>{t('merchantUx.policyEvaluation.failed')}</p>}
     {failure === 'changed' && <p role="alert">{t('merchantUx.policyEvaluation.changed')}</p>}
@@ -100,5 +101,6 @@ export function LearningPolicyEvaluationRun({ runId, active, onLock }: { runId: 
       {last && <details className="rounded-lg border p-3"><summary className="min-h-11 cursor-pointer py-2">{t('merchantUx.policyEvaluation.lastReply')}</summary><p dir="auto" className="whitespace-pre-wrap">{last.response}</p></details>}
     </>}
     {compatible && data!.state === 'completed' && <LearningPolicyOutputReview key={runId} runId={runId} active={active && readable && !busy && !query.isFetching} onLock={lockReview} />}
+    <LearningPolicyReviewArchive runId={runId} active={active && !busy && !query.isFetching} />
   </section>;
 }

@@ -6,6 +6,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { definiteReviewError } from '@/lib/learning-policy-evaluation-state';
 import { LearningPolicyEvaluationRun } from './LearningPolicyEvaluationRun';
+import { LearningPolicyRunArchive } from './LearningPolicyArchive';
 type Inputs = inferRouterInputs<AppRouter>['sariBrain'];
 type Pending = { kind: 'candidate'; input: Inputs['createLearningPolicyCandidate'] } | { kind: 'run'; input: Inputs['startLearningPolicyEvaluation'] };
 
@@ -21,6 +22,12 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
   const create = trpc.sariBrain.createLearningPolicyCandidate.useMutation({ retry: false }), start = trpc.sariBrain.startLearningPolicyEvaluation.useMutation({ retry: false });
   const [runId, setRunId] = useState<number | null>(null), [busy, setBusy] = useState(false), [childLock, setChildLock] = useState(false);
   const [failure, setFailure] = useState<'unknown' | 'changed' | 'refresh' | null>(null);
+  const [jumpToRun, setJumpToRun] = useState(0), panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!jumpToRun) return;
+    const heading = panel.current?.querySelector<HTMLElement>('[data-evaluation-heading]');
+    heading?.focus(); heading?.scrollIntoView({ block: 'start' });
+  }, [jumpToRun]);
   const pending = useRef<Pending | null>(null), inFlight = useRef(false);
   const data = query.data, readable = !!data && !query.isError && !query.isLoading, uncertain = failure === 'unknown';
   const ready = readable && !query.isFetching && !busy && !childLock && !uncertain && active && failure !== 'refresh' && failure !== 'changed';
@@ -59,7 +66,7 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
       inFlight.current = false; setBusy(false);
     }
   }
-  return <section className="mt-4 min-w-0 space-y-4 rounded-xl border bg-background p-3 text-sm leading-relaxed sm:p-5 [overflow-wrap:anywhere]" data-evaluation-panel aria-busy={busy || query.isFetching}>
+  return <section ref={panel} className="mt-4 min-w-0 space-y-4 rounded-xl border bg-background p-3 text-sm leading-relaxed sm:p-5 [overflow-wrap:anywhere]" data-evaluation-panel aria-busy={busy || query.isFetching}>
     <div className="flex flex-col gap-3 sm:flex-row sm:justify-between"><div className="min-w-0 flex-1"><h3 className="text-lg font-semibold">{t('merchantUx.policyEvaluation.title')}</h3><p className="mt-1 text-muted-foreground">{t('merchantUx.policyEvaluation.scope')}</p></div><Button type="button" variant="outline" className="min-h-11 shrink-0" data-candidate-refresh disabled={busy || childLock || query.isFetching} onClick={() => void refresh()}>{t('merchantUx.policyEvaluation.refresh')}</Button></div>
     {query.isLoading && <p role="status">{t('merchantUx.policyEvaluation.loading')}</p>}
     {(query.isError || failure === 'refresh') && <p role="alert" data-candidate-error>{t('merchantUx.policyEvaluation.failed')}</p>}
@@ -70,6 +77,7 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
       <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" className="min-h-11 h-auto whitespace-normal" data-candidate-create disabled={!ready || !data!.canCreate} onClick={() => void save('candidate')}>{t('merchantUx.policyEvaluation.prepare')}</Button><Button type="button" className="min-h-11 h-auto whitespace-normal" data-evaluation-create disabled={!ready || !current || data!.evaluationRuns.some(row => row.state === 'running')} onClick={() => void save('run')}>{t('merchantUx.policyEvaluation.createRun')}</Button></div>
       <label className="block" htmlFor={`${id}-run`}>{t('merchantUx.policyEvaluation.chooseRun')}</label><select id={`${id}-run`} data-evaluation-select className="min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base" value={runId ?? ''} disabled={busy || childLock || uncertain || query.isFetching || !active} onChange={event => setRunId(event.target.value ? Number(event.target.value) : null)}><option value="">{t('merchantUx.policyEvaluation.none')}</option>{runId && !data!.evaluationRuns.some(row => row.runId === runId) && <option value={runId}>{t('merchantUx.policyEvaluation.run', { id: runId })}</option>}{data!.evaluationRuns.map(row => <option key={row.runId} value={row.runId}>{t('merchantUx.policyEvaluation.run', { id: row.runId })} · {row.provider === 'openai' ? 'OpenAI' : 'ZahyPi'} · {row.model}</option>)}</select>
     </>}
+    <LearningPolicyRunArchive proposalId={proposalId} active={active && !busy && !childLock && !uncertain && !query.isFetching} onSelect={id => { setRunId(id); setJumpToRun(n => n + 1); }} />
     {runId && <LearningPolicyEvaluationRun key={runId} runId={runId} active={active && !busy} onLock={lockChild} />}
   </section>;
 }

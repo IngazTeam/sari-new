@@ -104,5 +104,47 @@ module.exports=async(page,origin,output,results)=>{
   await visit('pause');await selectRun();await page.click('[data-evaluation-cost-consent]');await page.click('[data-evaluation-generate]');await page.waitForFunction(()=>window.__evalAdvanceInputs?.length===1);
   await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'));});
   await new Promise(r=>setTimeout(r,450));assert.equal(await count('Advance'),1);results.push({width:375,mode:'evaluation_simulated_background_tab_stops_batch',passed:true});
+ const runs='[data-policy-archive=runs]',history='[data-policy-archive=reviews]';
+ for(const width of [320,375,390,768,1440])for(const lang of ['ar','en']){
+  await page.setViewport({width,height:900});await visit('review-archive',lang);
+  assert.equal(await page.evaluate(()=>window.__historyReads?.length||0),0);
+  await page.click(`${runs}>summary`);await page.waitForSelector('[data-history-run="45"]');
+  assert.equal((await page.$$('[data-history-run]')).length,20);await page.evaluate(()=>window.__addHistoryRun());
+  await page.click(`${runs} [data-history-next]`);await page.waitForSelector('[data-history-run="25"]');
+  await page.click(`${runs} [data-history-back]`);await page.waitForSelector('[data-history-run="45"]');assert.equal(await page.$('[data-history-run="46"]'),null);
+  await page.click(`${runs} [data-history-next]`);await page.click(`${runs} [data-history-next]`);await page.waitForSelector('[data-history-run="5"]');
+  assert.equal((await page.$$('[data-history-run]')).length,5);assert.equal(await page.$eval(`${runs} [data-history-next]`,n=>n.disabled),true);await check();
+  if(width===375&&lang==='ar'||width===1440&&lang==='en')await(await page.$(runs)).screenshot({path:path.join(output,`policy-history-runs-${lang}-${width}.png`)});
+  await page.click('[data-history-select="1"]');await page.waitForSelector('[data-evaluation-run]');
+  assert.equal(await page.$eval('[data-evaluation-select]',n=>n.value),'1');assert.equal(await count('Advance'),0);
+  assert.equal(await page.$eval(runs,n=>n.open),false);assert.equal(await page.evaluate(()=>document.activeElement?.hasAttribute('data-evaluation-heading')),true);await page.click(`${runs}>summary`);await page.click(`${runs} [data-history-reset]`);await page.waitForSelector('[data-history-run="46"]');await page.click(`${runs}>summary`);
+  await page.click(`${history}>summary`);await page.waitForSelector(`${history} [data-history-next]`);await page.waitForSelector('[data-history-review="142"]');
+  assert.equal((await page.$$('[data-history-review]')).length,20);await page.click(`${history} [data-history-next]`);await page.click(`${history} [data-history-next]`);await page.waitForSelector('[data-history-review="101"]');
+  await page.click('[data-history-record="101"]');await page.waitForSelector('[data-history-detail]');assert.equal((await page.$$('[data-history-case]')).length,32);
+  await page.click('[data-history-case] summary');assert.ok((await page.$eval('[data-history-detail]',n=>n.innerText)).includes('Original saved baseline quote'));await check();
+  if(width===375&&lang==='ar'||width===1440&&lang==='en')await(await page.$('[data-history-review="101"]')).screenshot({path:path.join(output,`policy-history-review-${lang}-${width}.png`)});
+  const reads=await page.evaluate(()=>window.__historyReads);assert.ok(reads.some(row=>row.kind==='record'&&row.input.reviewId===101));
+  assert.equal(await count('Review'),0);assert.equal(await count('Start'),0);assert.equal(await count('Advance'),0);
+  results.push({width,lang,mode:'evaluation_history_all_pages_stable_window_original_judgments_no_writes',passed:true});
+ }
+ await page.setViewport({width:375,height:812});
+ for(const mode of ['review-history-error','review-record-error']){
+  await visit(mode);await selectRun();await page.click(`${history}>summary`);await page.waitForSelector(`${history} [data-history-next]`);
+  if(mode==='review-history-error'){
+   await page.click(`${history} [data-history-next]`);await page.waitForSelector(`${history} [data-history-error]`);assert.equal(await page.$('[data-history-review]'),null);
+   await page.click(`${history} [data-history-retry]`);await page.waitForSelector('[data-history-review="122"]');
+  }else{
+   await page.click('[data-history-record="142"]');await page.waitForSelector('[data-history-detail] [role=alert]');assert.equal(await page.$('[data-history-case]'),null);
+   await page.click('[data-history-detail-refresh]');await page.waitForSelector('[data-history-case]');
+  }
+  await check();assert.equal(await count('Review'),0);results.push({width:375,mode:`evaluation_${mode}_read_only_retry`,passed:true});
+ }
+ await visit('review-archive');await selectRun();await page.click(`${runs}>summary`);await page.waitForSelector('[data-history-select]');await page.click('[data-output-start]');await page.type('[data-output-reason=baseline]','Keep my current unsaved judgment');
+ await page.waitForFunction(()=>document.querySelector('[data-history-select]').disabled);assert.equal(await page.$eval(`${runs} [data-history-next]`,n=>n.disabled),true);
+ await page.click(`${history}>summary`);await page.waitForSelector(`${history} [data-history-next]`);await page.click('[data-history-record="142"]');await page.waitForSelector('[data-history-case]');
+ assert.equal(await page.$eval('[data-output-reason=baseline]',n=>n.value),'Keep my current unsaved judgment');assert.equal(await count('Review'),0);results.push({width:375,mode:'evaluation_history_cannot_replace_run_or_overwrite_active_draft',passed:true});
+ await visit('review-history-xss');await selectRun();await page.click(`${history}>summary`);await page.waitForSelector(`${history} [data-history-next]`);await page.click('[data-history-record="142"]');await page.click('[data-history-case] summary');await check();assert.equal(await page.$('[data-history-detail] img'),null);assert.equal(await page.evaluate(()=>window.__evaluationXss),undefined);results.push({width:375,mode:'evaluation_history_untrusted_saved_quote_is_text',passed:true});
+ await visit('review-archive');await selectRun();await page.click(`${history}>summary`);await page.waitForSelector(`${history} [data-history-next]`);await page.click('[data-history-record="142"]');await page.evaluate(()=>window.__revokeEvaluationRole());
+ await page.waitForSelector(`${history} [data-history-error]`);assert.equal(await page.$('[data-history-detail]'),null);assert.equal(await page.$('[data-history-review]'),null);results.push({width:375,mode:'evaluation_history_revoked_reads_hide_cached_judgments',passed:true});
  }finally{page.off('dialog',accept);}
 };

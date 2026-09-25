@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T06:33:56.000Z",
+  "generatedAt": "2026-09-25T07:27:48.029Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -71,6 +71,10 @@
     "policy-evaluation-review-en-375.png",
     "policy-evaluation-saved-ar-375.png",
     "policy-evaluation-saved-en-1440.png",
+    "policy-history-review-ar-375.png",
+    "policy-history-review-en-1440.png",
+    "policy-history-runs-ar-375.png",
+    "policy-history-runs-en-1440.png",
     "relay-review-1440.png",
     "relay-review-375.png"
   ],
@@ -323,6 +327,91 @@
     {
       "width": 375,
       "mode": "evaluation_simulated_background_tab_stops_batch",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "evaluation_history_all_pages_stable_window_original_judgments_no_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "evaluation_review-history-error_read_only_retry",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "evaluation_review-record-error_read_only_retry",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "evaluation_history_cannot_replace_run_or_overwrite_active_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "evaluation_history_untrusted_saved_quote_is_text",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "evaluation_history_revoked_reads_hide_cached_judgments",
       "passed": true
     },
     {

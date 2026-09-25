@@ -38,6 +38,8 @@ import { evaluationStartInput, evaluationRunInput, evaluationAdvanceInput } from
 import { startLearningPolicyEvaluation, getLearningPolicyEvaluation, advanceLearningPolicyEvaluation, cancelLearningPolicyEvaluation, LearningPolicyEvaluationConflict } from './ai/learning-policy-evaluation';
 import { outputReviewInput, outputReviewReadInput } from './ai/learning-policy-output-review-contract';
 import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from './ai/learning-policy-output-review';
+import { getLearningPolicyEvaluationHistory, getLearningPolicyOutputReviewHistory, getLearningPolicyOutputReviewRecord } from './ai/learning-policy-history';
+import { evaluationHistoryInput, outputHistoryInput, outputRecordInput } from './ai/learning-policy-history-contract';
 import { LearningPolicyOutputReviewConflict } from './ai/learning-policy-output-review-store';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
@@ -333,6 +335,18 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getLearningPolicyEvaluationHistory: permissionProcedure('bot_settings.manage').input(evaluationHistoryInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyEvaluationHistory(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy history is unavailable' }); }
+  }),
+  getLearningPolicyOutputReviewHistory: permissionProcedure('bot_settings.manage').input(outputHistoryInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyOutputReviewHistory(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy history is unavailable' }); }
+  }),
+  getLearningPolicyOutputReviewRecord: permissionProcedure('bot_settings.manage').input(outputRecordInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyOutputReviewRecord(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy history is unavailable' }); }
+  }),
   getLearningPolicyOutputReview: permissionProcedure('bot_settings.manage').input(outputReviewReadInput).query(async ({ ctx, input }) => {
     try { return await getLearningPolicyOutputReview(ctx.merchantId, input); }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy output review changed or is unavailable' }); }

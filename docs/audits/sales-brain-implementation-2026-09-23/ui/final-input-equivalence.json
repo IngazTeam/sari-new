@@ -1,12 +1,12 @@
 {
-  "scope": "Fresh Chromium component verification: 881 passing scenarios, 70 fresh screenshots, real components with API fixtures and external network blocked. Includes candidate preparation, generation and output review, and all prior sales-brain UI journeys; not Safari or physical iPhone.",
+  "scope": "Fresh Chromium component verification: 896 passing scenarios, 74 fresh screenshots, real components with API fixtures and external network blocked. Includes bounded archive pages, immutable historical judgments, draft protection and all prior sales-brain UI journeys; not Safari or physical iPhone.",
   "reused": false,
-  "verifiedAt": "2026-09-25T06:34:06.305Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-evaluation-ui-20260925-v2",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-evaluation-ui-20260925-v2",
+  "verifiedAt": "2026-09-25T07:28:31.560Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-history-ui-20260925-v2",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-history-ui-20260925-v2",
   "inputs": {
-    "fixture": "b898a54fdfe97349a187226254e26281123dde45af52ec95e9b4da740d1e0905",
-    "report": "bd8bd18753356399e9a8348677d1319d461602bbd61f37cd8a274cf4232fc378",
+    "fixture": "0a280964147aae2ae57853e9bc61c53523fcc337fa75c336bb0bac9966dd6ded",
+    "report": "be5fd5cd9d86559c24e9a9bd6e28eede00c37e57382407b7dcf8ba9b97f94ff4",
     "verifiers": {
       "scripts/testing/verify-sales-brain-ui.cjs": "9cf633355005790a8813c5178d9aa25b7e027bc95f5bbffff7efe09947db6b7c",
       "scripts/testing/verify-learning-status-ui.cjs": "619dd3fcf726658990b80264ecbf25b8c0f6d516dde019f03f7493763dd08707",
@@ -18,7 +18,7 @@
       "scripts/testing/verify-booking-cancellation-ui.cjs": "8050130d8b0042d2dccae15306df567782f3e4de87328ba20d6eb9e528b86203",
       "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
       "scripts/testing/verify-learning-policy-review-ui.cjs": "e8aedc7fdd00f30ef4d39f915e02ce5aa946501129ec586f3f2eee5179456b98",
-      "scripts/testing/verify-learning-policy-evaluation-ui.cjs": "e1ba192453b97a23c65728e1b5e8b1c7c38305d0768de89a0851558f351f07b4"
+      "scripts/testing/verify-learning-policy-evaluation-ui.cjs": "064558b79794074c25d7d5dfe9ccc1b4abbbc8f89577a0d63cea85f0cf919dce"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

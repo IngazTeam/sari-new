@@ -1,4 +1,8 @@
 export const learningPolicyEvaluationEn = {
+  archiveRuns: 'All evaluation runs', archiveReviews: 'All saved reviews', archiveScope: 'Historical records only. Opening a record does not generate replies, certify current eligibility, or publish an approach.',
+  archiveRefresh: 'Show latest records', archivePage: 'Page {{page}}', archiveFailed: 'History could not be loaded. Retry this page or return to the latest records.',
+  archiveEmpty: 'No records in this page.', archiveSelect: 'Open this run', archiveVersion: 'Comparison version {{version}}', archiveRead: 'Read saved judgments', archiveHide: 'Hide judgments',
+  archivePrevious: 'Previous page', archiveNext: 'Next page', archiveNavigation: 'History pages',
   open: 'Compare generated replies', close: 'Hide comparison', title: 'Evaluate this sales approach',
   scope: 'Prepare a comparison, generate 64 replies, then review 32 pairs. A review does not publish the approach.',
   prepare: 'Prepare comparison version', prepareHint: 'Complete a passing preparatory review before preparing the comparison.',
@@ -40,6 +44,10 @@ export const learningPolicyEvaluationEn = {
 };
 export type LearningPolicyEvaluationCopy = { [K in keyof typeof learningPolicyEvaluationEn]: string };
 export const learningPolicyEvaluationAr: LearningPolicyEvaluationCopy = {
+  archiveRuns: 'أرشيف جميع التشغيلات', archiveReviews: 'أرشيف جميع المراجعات', archiveScope: 'سجل تاريخي للقراءة. فتح السجل لا يولّد ردودًا ولا يثبت الأهلية الحالية ولا ينشر الأسلوب.',
+  archiveRefresh: 'عرض أحدث السجلات', archivePage: 'الصفحة {{page}}', archiveFailed: 'تعذر تحميل السجل. أعد محاولة هذه الصفحة أو ارجع إلى أحدث السجلات.',
+  archiveEmpty: 'لا توجد سجلات في هذه الصفحة.', archiveSelect: 'فتح هذا التشغيل', archiveVersion: 'نسخة المقارنة {{version}}', archiveRead: 'قراءة الأحكام المحفوظة', archiveHide: 'إخفاء الأحكام',
+  archivePrevious: 'الصفحة السابقة', archiveNext: 'الصفحة التالية', archiveNavigation: 'صفحات السجل',
   open: 'مقارنة الردود المولّدة', close: 'إخفاء المقارنة', title: 'تقييم أسلوب البيع المقترح',
   scope: 'جهّز نسخة للمقارنة، ثم ولّد 64 ردًا وراجع 32 حالة. حفظ المراجعة لا ينشر الأسلوب.',
   prepare: 'تجهيز نسخة المقارنة', prepareHint: 'أكمل المراجعة التحضيرية بنتيجة ناجحة قبل تجهيز نسخة المقارنة.',

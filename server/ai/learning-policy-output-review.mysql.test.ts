@@ -11,6 +11,7 @@ import { startLearningPolicyEvaluation, getLearningPolicyEvaluation, cancelLearn
 import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from './learning-policy-output-review';
 import { outputReviewRubricDigest, type OutputReviewInput } from './learning-policy-output-review-contract';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { getLearningPolicyEvaluationHistory, getLearningPolicyOutputReviewHistory, getLearningPolicyOutputReviewRecord } from './learning-policy-history';
 vi.mock('../db_ai_settings', () => ({ getActiveModel: async () => 'synthetic-model',
   getZahyPiRuntimeMetadata: async () => ({ enabled: true, provider: 'openai', model: 'synthetic-model', source: 'database' }) }));
 
@@ -169,5 +170,74 @@ describe.skipIf(!process.env.DATABASE_URL)('durable human judgment on stored eva
     expect((await view()).latestReview).toMatchObject({ id: saved.id, actorUserId: null });
     await query('DELETE FROM ai_learning_policy_evaluations WHERE id=?', [runId]);
     expect(await query('SELECT id FROM ai_learning_policy_output_reviews WHERE id=?', [saved.id])).toHaveLength(0);
+  });
+  it('walks every run beyond twenty with stable pages while newer runs arrive', async () => {
+    const ids = [runId];
+    for (let i = 0; i < 41; i++) {
+      const next = await startLearningPolicyEvaluation(owner.merchantId, owner.userId, { ...startInput, requestId: randomUUID() });
+      await cancelLearningPolicyEvaluation(owner.merchantId, { runId: next.runId }); ids.push(next.runId);
+    }
+    const first = await getLearningPolicyEvaluationHistory(owner.merchantId, { proposalId });
+    expect(first.items).toHaveLength(20); expect(first.items.map(row => row.runId)).toEqual(ids.slice(-20).reverse());
+    expect(first).toMatchObject({ activationAllowed: false, eligibility: 'not_checked' });
+    const newer = await startLearningPolicyEvaluation(owner.merchantId, owner.userId, { ...startInput, requestId: randomUUID() });
+    await cancelLearningPolicyEvaluation(owner.merchantId, { runId: newer.runId });
+    const second = await getLearningPolicyEvaluationHistory(owner.merchantId, { proposalId, cursor: first.nextCursor });
+    const last = await getLearningPolicyEvaluationHistory(owner.merchantId, { proposalId, cursor: second.nextCursor });
+    expect([...first.items, ...second.items, ...last.items].map(row => row.runId)).toEqual(ids.reverse());
+    expect(last.nextCursor).toBeNull();
+    expect((await getLearningPolicyEvaluationHistory(owner.merchantId, { proposalId, cursor: first.pageCursor })).items.map(row => row.runId)).toEqual(first.items.map(row => row.runId));
+    expect((await getLearningPolicyEvaluationHistory(owner.merchantId, { proposalId })).items[0].runId).toBe(newer.runId);
+    expect(JSON.stringify(first)).not.toMatch(/response_text|input_digest|reservation_key|bundle|Private synthetic/);
+  });
+  it('reads all immutable review revisions, pins the window and opens the oldest exact judgment', async () => {
+    const ids: number[] = [], original = await request();
+    for (let i = 0; i < 42; i++) ids.push((await record({ ...original, requestId: randomUUID(), expectedRevision: i })).id);
+    const first = await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId });
+    expect(first.items).toHaveLength(20); expect(first.items[0].revision).toBe(42);
+    expect(first.items[0]).not.toHaveProperty('review'); expect(first.items[0]).not.toHaveProperty('current');
+    await record({ ...original, requestId: randomUUID(), expectedRevision: 42 });
+    const second = await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId, cursor: first.nextCursor });
+    const last = await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId, cursor: second.nextCursor });
+    expect([...first.items, ...second.items, ...last.items].map(row => row.id)).toEqual([...ids].reverse()); expect(last.nextCursor).toBeNull();
+    const saved = await getLearningPolicyOutputReviewRecord(owner.merchantId, { runId, reviewId: ids[0] });
+    expect(saved).toMatchObject({ id: ids[0], revision: 1, actorUserId: owner.userId, eligibility: 'not_checked', activationAllowed: false });
+    expect(saved.review.cases).toHaveLength(32); expect(saved.review.cases[0].candidate.reason).toContain('Synthetic reviewer');
+  });
+  it('retains historical review access when current source and generated output are no longer valid', async () => {
+    const saved = await record(await request());
+    await query("UPDATE sari_learning_signals SET customer_message='Changed later' WHERE id=?", [signalId]);
+    await query("UPDATE ai_learning_policy_evaluation_samples SET response_text='Changed later' WHERE run_id=? AND ordinal=0", [runId]);
+    await expect(view()).rejects.toThrow();
+    expect((await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId })).items[0].id).toBe(saved.id);
+    expect(await getLearningPolicyOutputReviewRecord(owner.merchantId, { runId, reviewId: saved.id })).toMatchObject({ eligibility: 'not_checked', activationAllowed: false });
+  });
+  it('keeps tenant, run and proposal boundaries even with leaked identifiers and cursor positions', async () => {
+    const saved = await record(await request()), other = await createDisposableMerchant('history-other'); users.push(other.userId);
+    await expect(getLearningPolicyEvaluationHistory(other.merchantId, { proposalId })).rejects.toThrow();
+    await expect(getLearningPolicyOutputReviewHistory(other.merchantId, { runId })).rejects.toThrow();
+    await expect(getLearningPolicyOutputReviewRecord(other.merchantId, { runId, reviewId: saved.id })).rejects.toThrow();
+    const another = await startLearningPolicyEvaluation(owner.merchantId, owner.userId, { ...startInput, requestId: randomUUID() });
+    await expect(getLearningPolicyOutputReviewRecord(owner.merchantId, { runId: another.runId, reviewId: saved.id })).rejects.toThrow();
+    await expect(getLearningPolicyOutputReviewHistory(owner.merchantId, { runId, cursor: { scopeId: another.runId, through: 10, before: 5 } })).rejects.toThrow();
+    expect((await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId: another.runId })).items).toEqual([]);
+  });
+  it.each(['review','score','digest'])('refuses corrupted archived %s instead of returning a successful receipt', async mode => {
+    const saved = await record(await request());
+    const change = mode === 'review' ? "review=JSON_SET(review,'$.cases[0].candidate.quote','tampered')" : mode === 'score' ? "outcome='failed'" : "review_digest=REPEAT('0',64)";
+    await query(`UPDATE ai_learning_policy_output_reviews SET ${change} WHERE id=?`, [saved.id]);
+    await expect(getLearningPolicyOutputReviewHistory(owner.merchantId, { runId })).rejects.toThrow();
+    await expect(getLearningPolicyOutputReviewRecord(owner.merchantId, { runId, reviewId: saved.id })).rejects.toThrow();
+  });
+  it('preserves deleted-reviewer audit data and traverses a deleted page boundary', async () => {
+    const other = await createDisposableMerchant('history-actor'); users.push(other.userId);
+    const input = await request(), saved = await recordLearningPolicyOutputReview(owner.merchantId, other.userId, input);
+    await query('DELETE FROM users WHERE id=?', [other.userId]);
+    expect(await getLearningPolicyOutputReviewRecord(owner.merchantId, { runId, reviewId: saved.id })).toMatchObject({ actorUserId: null, revision: 1 });
+    for (let i = 1; i < 22; i++) await record({ ...input, requestId: randomUUID(), expectedRevision: i });
+    const first = await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId });
+    await query('DELETE FROM ai_learning_policy_output_reviews WHERE run_id=? AND revision=?', [runId, first.nextCursor!.before]);
+    const next = await getLearningPolicyOutputReviewHistory(owner.merchantId, { runId, cursor: first.nextCursor });
+    expect(next.items.map(row => row.revision)).toEqual([2, 1]); expect(next.nextCursor).toBeNull();
   });
 });
