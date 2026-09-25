@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-09-25T08:49:38.284Z",
+  "database": "sari_sales_protocol_1790326151408_test",
+  "scope": "Fresh isolated 0000–0108 chain with seeded historical candidate, run and output review, then actual updater applies 0109 and reruns.",
+  "migrations": 110,
+  "preservedTables": [
+    "ai_learning_proposals",
+    "ai_learning_policy_reviews",
+    "ai_learning_policy_candidates",
+    "ai_learning_policy_evaluations",
+    "ai_learning_policy_output_reviews",
+    "ai_budget_policies",
+    "ai_price_cards"
+  ],
+  "noAutomaticProtocols": true,
+  "duplicateRegisteredProtocolRejected": true,
+  "invalidStatesRejected": 4,
+  "withdrawnSlotCanBeReused": true,
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "e433eb837c5ded1e00afe570d758b5419f77f227705a90e87c5beff71463dee6",
+  "passed": true,
+  "finalSourceVerification": {
+    "verifiedAt": "2026-09-25T09:05:55.158Z",
+    "sourceGitBlob": "b93ea8b1d7885d319ee3126a584af8d8e3b1f51b",
+    "snapshotSha256": "b3379efb43a4cd1f1f488ad0cc6d01f355d7ca5efdaeeedb0b48204501450909",
+    "equivalence": "Only checkout line endings differ (LF versus CRLF); normalized complete SQL text and Git-filtered blobs match the actually tested migration."
+  }
+}

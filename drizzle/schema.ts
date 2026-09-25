@@ -4103,6 +4103,30 @@ export const aiLearningPolicyOutputReviews = mysqlTable('ai_learning_policy_outp
   check('ck_output_review_revision', sql`${table.revision} BETWEEN 1 AND 9007199254740991`),
   check('ck_output_review_outcome', sql`${table.outcome} IN ('passed','failed','inconclusive')`)]);
 
+export const aiSalesExperimentProtocols = mysqlTable('ai_sales_experiment_protocols', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  candidateId: bigint('candidate_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningPolicyCandidates.id, { onDelete: 'cascade' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  artifactDigest: char('artifact_digest', { length: 64 }).notNull(), protocolDigest: char('protocol_digest', { length: 64 }).notNull(),
+  protocol: json().notNull(), state: varchar({ length: 16 }).notNull().default('registered'), activeSlot: int('active_slot').default(1),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_protocol_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_sales_protocol_active').on(table.merchantId, table.activeSlot),
+  check('ck_sales_protocol_state', sql`(${table.state}='registered' AND ${table.activeSlot} IS NOT NULL AND ${table.activeSlot}=1) OR (${table.state}='withdrawn' AND ${table.activeSlot} IS NULL)`)]);
+
+export const aiSalesExperimentWithdrawals = mysqlTable('ai_sales_experiment_withdrawals', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  withdrawalDigest: char('withdrawal_digest', { length: 64 }).notNull(), withdrawal: json().notNull(),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_withdrawal_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_sales_withdrawal_protocol').on(table.protocolId)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

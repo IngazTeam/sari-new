@@ -41,6 +41,8 @@ import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from 
 import { getLearningPolicyEvaluationHistory, getLearningPolicyOutputReviewHistory, getLearningPolicyOutputReviewRecord } from './ai/learning-policy-history';
 import { evaluationHistoryInput, outputHistoryInput, outputRecordInput } from './ai/learning-policy-history-contract';
 import { LearningPolicyOutputReviewConflict } from './ai/learning-policy-output-review-store';
+import { registerSalesExperimentProtocolInput, salesExperimentProtocolInput, salesExperimentProtocolHistoryInput, withdrawSalesExperimentProtocolInput } from './ai/sales-experiment-protocol-contract';
+import { registerSalesExperimentProtocol, getSalesExperimentProtocol, getSalesExperimentProtocolHistory, withdrawSalesExperimentProtocol, SalesExperimentProtocolConflict } from './ai/sales-experiment-protocol';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -335,6 +337,22 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  registerSalesExperimentProtocol: permissionProcedure('bot_settings.manage').input(registerSalesExperimentProtocolInput).mutation(async ({ ctx, input }) => {
+    try { return await registerSalesExperimentProtocol(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesExperimentProtocolConflict || error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales experiment protocol changed or is unavailable' }); }
+  }),
+  getSalesExperimentProtocol: permissionProcedure('bot_settings.manage').input(salesExperimentProtocolInput).query(async ({ ctx, input }) => {
+    try { return await getSalesExperimentProtocol(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment protocol changed or is unavailable' }); }
+  }),
+  getSalesExperimentProtocolHistory: permissionProcedure('bot_settings.manage').input(salesExperimentProtocolHistoryInput).query(async ({ ctx, input }) => {
+    try { return await getSalesExperimentProtocolHistory(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment protocol changed or is unavailable' }); }
+  }),
+  withdrawSalesExperimentProtocol: permissionProcedure('bot_settings.manage').input(withdrawSalesExperimentProtocolInput).mutation(async ({ ctx, input }) => {
+    try { return await withdrawSalesExperimentProtocol(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesExperimentProtocolConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales experiment protocol changed or is unavailable' }); }
+  }),
   getLearningPolicyEvaluationHistory: permissionProcedure('bot_settings.manage').input(evaluationHistoryInput).query(async ({ ctx, input }) => {
     try { return await getLearningPolicyEvaluationHistory(ctx.merchantId, input); }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy history is unavailable' }); }
