@@ -4209,6 +4209,21 @@ export const aiSalesExperimentTurns = mysqlTable('ai_sales_experiment_turns', {
 }, table => [uniqueIndex('uq_sales_turn_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_turn_message').on(table.merchantId, table.messageReference),
   index('idx_sales_turn_assignment').on(table.merchantId, table.assignmentId, table.id)]);
 
+export const aiSalesExperimentGenerations = mysqlTable('ai_sales_experiment_generations', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  turnId: bigint('turn_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentTurns.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  authorizationDigest: char('authorization_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  state: mysqlEnum(['dispatching', 'responded', 'invalid', 'blocked', 'uncertain']).notNull(), claimToken: char('claim_token', { length: 36 }).notNull(),
+  reservationKey: varchar('reservation_key', { length: 64 }), responseText: mediumtext('response_text'), responseMetadata: json('response_metadata'),
+  responseDigest: char('response_digest', { length: 64 }), failureCode: varchar('failure_code', { length: 64 }),
+  leaseUntil: datetime('lease_until', { mode: 'string', fsp: 3 }), completedAt: datetime('completed_at', { mode: 'string', fsp: 3 }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_generation_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_generation_turn').on(table.merchantId, table.turnId),
+  uniqueIndex('uq_sales_generation_reservation').on(table.reservationKey)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

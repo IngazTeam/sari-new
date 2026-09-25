@@ -144,6 +144,15 @@ export async function resolveSalesExperimentTurnPrompt(merchantId: number, value
   const merchant = id.parse(merchantId), input = resolveSalesExperimentTurnInput.parse(value);
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
+    const result = await loadSalesExperimentTurnPrompt(c, merchant, input);
+    if (result.kind !== 'resolved') return result;
+    const { customerMessage, snapshot, route, ...view } = result;
+    return view;
+  });
+}
+
+/** Internal composition under the caller's merchant lock; never a generation/dispatch permit by itself. */
+export async function loadSalesExperimentTurnPrompt(c: PoolConnection, merchant: number, input: z.infer<typeof resolveSalesExperimentTurnInput>) {
     const saved = await load(c, merchant, input), s = saved.snapshot;
     if (policyArtifactDigest(input.baseSystemPrompt) !== s.basePromptDigest) return conflict();
     const current = await currentContext(c, merchant, { assignmentId: s.assignmentId, assignmentDigest: s.assignmentDigest, conversationId: s.conversationId, incomingMessageId: s.incomingMessageId });
@@ -157,6 +166,6 @@ export async function resolveSalesExperimentTurnPrompt(merchantId: number, value
     const checkedAt = await clock(c);
     if (Date.parse(checkedAt) < Date.parse(s.preparedAt) || Date.parse(checkedAt) >= Date.parse(s.observationEndsAt)) return blocked('outside_observation');
     return { kind: 'resolved' as const, turnId: saved.turnId, turnDigest: saved.turnDigest, systemPrompt: input.baseSystemPrompt + selected.policyText,
+      customerMessage: current.content, snapshot: s, route: current.launch.snapshot.basis.review.basis,
       selectionCurrentAtRead: true as const, checkedAt, observationEndsAt: s.observationEndsAt, ...flags };
-  });
 }

@@ -1,0 +1,47 @@
+{
+  "scope": "Synthetic local validation. Final reports are exclusively from the frozen final source snapshot.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 166,
+      "failed": 1,
+      "result": "The test expected an invalid saved record for an empty OpenAI reply; the existing adapter rejects it before durable handoff. Corrected the expectation to uncertain with retained budget and no fabricated response or retry.",
+      "logSha256": "30209974e91d9fd23322f3142b6927bf4bea2124cbca99dd8d7e072f5ef31603"
+    },
+    {
+      "kind": "focused-corrected",
+      "passed": 77,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "a010ff9a1a074dcb7bfa282a701a68d1f5f45fece43c959fb872fcfef6201194"
+    },
+    {
+      "kind": "typecheck-before-freeze",
+      "passed": true,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "kind": "final-source-adjustments",
+      "result": "Moved the final lease check after source revalidation. Normalized the new unpublished journal entry to the existing version 7 and daily timestamp convention before final suites; aligned only the disposable database provisional journal timestamp after verifying the unchanged SQL hash."
+    },
+    {
+      "kind": "first-full",
+      "unitPassed": 3100,
+      "databasePassed": 2571,
+      "regressionPassed": 1061,
+      "regressionFailed": 1,
+      "result": "The source-governance scanner requires an explicit literal task type at the callsite. Replaced the equivalent recipe constant with sari.reply without weakening the check, then reran all groups on a new final snapshot.",
+      "logSha256": "7ad91729a299a8043f0da9f746235994c10083051a584ad7c836c0d53914ad14"
+    },
+    {
+      "kind": "governance-corrected",
+      "passed": 7,
+      "failed": 0,
+      "logSha256": "6de99fc7e33492f7760cba9690b68b78d3019945d6b9cb63a3d9796a12fe0818"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "f4587c03ea61a3df2adb4dd432b9fd09bd2190d2b607c086b3d0060694bb5b93"
+    }
+  ]
+}

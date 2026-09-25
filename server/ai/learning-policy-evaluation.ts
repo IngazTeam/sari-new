@@ -24,13 +24,13 @@ async function loadRun(c:PoolConnection,merchantId:number,runId:number){
   const [rows]=await c.execute<any[]>('SELECT * FROM ai_learning_policy_evaluations WHERE id=? AND merchant_id=? FOR UPDATE',[runId,merchantId]);
   if(rows.length!==1)conflict();return rows[0];
 }
-function routeFor(config:Omit<ZahyPiRuntimeConfig,'apiKey'>,openaiModel:string){
+export function policyGenerationRoute(config:Omit<ZahyPiRuntimeConfig,'apiKey'>,openaiModel:string){
   if(!config.enabled)conflict();
   const provider=config.provider,model=z.string().min(1).max(128).parse(provider==='zahypi'?config.model:openaiModel);
   return {provider,model,digest:policyArtifactDigest({provider,model,
     route:provider==='zahypi'?providerRouteFingerprint(config):'openai-chat-completions'})};
 }
-export async function getCurrentLearningPolicyEvaluationRoute(){return routeFor(await getZahyPiRuntimeMetadata(),await getActiveModel());}
+export async function getCurrentLearningPolicyEvaluationRoute(){return policyGenerationRoute(await getZahyPiRuntimeMetadata(),await getActiveModel());}
 const freshRoute = getCurrentLearningPolicyEvaluationRoute;
 async function receipt(c:PoolConnection,merchantId:number,row:any){
   const outputReview=await latestOutputReviewReceipt(c,merchantId,Number(row.id));
@@ -170,7 +170,7 @@ export async function advanceLearningPolicyEvaluation(merchantId:number,value:z.
   if(work){
     try{
       await runWithZahyPiContext({merchantId:merchant,conversationId:`policy-eval-${work.claim.token}`,taskType:evaluationRecipe.taskType},async()=>{
-        const actual=routeFor(await resolveZahyPiRuntimeConfig(undefined,{refresh:true}),await getActiveModel());
+        const actual=policyGenerationRoute(await resolveZahyPiRuntimeConfig(undefined,{refresh:true}),await getActiveModel());
         if(actual.digest!==work.route.digest)conflict();
         const started=Date.now();
         await callGPT4(work.messages,{merchantId:merchant,model:work.route.model,taskType:'sari.reply',

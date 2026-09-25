@@ -606,6 +606,12 @@ Object.assign(entries, {
  B062:[entries.B062[0]+' سجل اختيار السياسة مربوط بالتخصيص والتفاعل وبصمة المصدر والمزوّد والقطاع، لكنه ليس دليل توليد أو تعرض. يمنع إنشاء اختيار بأثر رجعي لرسالة معالجة أو سبق الرد عليها. إسناد الرسالة المقبولة والدفع والاسترداد ما زال مفتوحًا.','server/ai/sales-experiment-turn-pentest.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0114 يضيف سجل قرارات التفاعل مع تفرد الطلب والرسالة ومراجع دائمة للمصدر. اختُبر حفظ 14 جدولًا ورفض 4 مخالفات وإعادة تشغيل آمنة، دون تفعيل أو تكلفة تلقائية.','scripts/testing/verify-sales-experiment-turn-migration.cjs'],
 });
+Object.assign(entries, {
+ B044:[entries.B044[0]+' خدمة توليد داخلية صريحة لمرة واحدة من قرار التفاعل، عبر المحوّلين الفعليين وبنفس الميزانية. تفويض المالك وبصمات النص والسياق والمزوّد محفوظة، ولا يعاد تفسير تفويض التحضير كإذن توليد أو إرسال. لا ربط حي تلقائي بالسريع والكامل بعد.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B045:[entries.B045[0]+' محاولة واحدة لكل قرار، مع حفظ قبل الاتصال وإعادة فحص المصدر والصلاحية قبل الطلب، وحفظ الجواب قبل تسوية التكلفة. الغموض أو انتهاء مهلة العامل لا يمنحان إذن إنشاء طلب بديل؛ تعاد كتابة الحفظ المحلي حتى ثلاث مرات دون تكرار المزوّد.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B062:[entries.B062[0]+' أضيف دليل توليد مرتبط ببصمة القرار والمدخلات ومرجع حجز الميزانية، مع النص الأصلي وبيانات الإكمال وبصمتها. الرد المتأخر يبقى تاريخيًا، والموديل غير المراجع أو الإكمال غير السليم لا يقبلان كنجاح جودة. ليس دليل إرسال أو تعرض أو تحسن بيع.','server/ai/sales-experiment-generation-pentest.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0115 يضيف سجل التوليد دون backfill؛ تحقق 116 ترحيلًا وحفظ 15 جدولًا ورفض خمسة انتهاكات للتفرد والمراجع. الميزانية المركزية 100 دولار لم تتغير، ولا تفعيل آلي عند الترحيل.','scripts/testing/verify-sales-experiment-generation-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
