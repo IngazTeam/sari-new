@@ -1,0 +1,47 @@
+CREATE TABLE `ai_learning_policy_evaluations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `candidate_id` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `artifact_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `route_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `provider` varchar(16) NOT NULL,
+  `model` varchar(128) NOT NULL,
+  `observed_model` varchar(128) DEFAULT NULL,
+  `recipe` json NOT NULL,
+  `state` varchar(16) NOT NULL DEFAULT 'running',
+  `actor_user_id` int DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_policy_eval_request` (`merchant_id`,`request_id`),
+  KEY `idx_policy_eval_candidate` (`merchant_id`,`candidate_id`,`id`),
+  CONSTRAINT `fk_policy_eval_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_policy_eval_candidate` FOREIGN KEY (`candidate_id`) REFERENCES `ai_learning_policy_candidates` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_policy_eval_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_policy_eval_state` CHECK (`state` IN ('running','completed','halted','cancelled') AND `provider` IN ('openai','zahypi'))
+);
+--> statement-breakpoint
+CREATE TABLE `ai_learning_policy_evaluation_samples` (
+  `run_id` bigint unsigned NOT NULL,
+  `ordinal` int unsigned NOT NULL,
+  `case_id` varchar(80) NOT NULL,
+  `arm` varchar(16) NOT NULL,
+  `input_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `state` varchar(16) NOT NULL DEFAULT 'queued',
+  `claim_token` char(36) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `lease_until` datetime(3) DEFAULT NULL,
+  `reservation_key` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `response_text` text DEFAULT NULL,
+  `response_metadata` json DEFAULT NULL,
+  `response_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `elapsed_ms` int unsigned DEFAULT NULL,
+  `failure_code` varchar(48) DEFAULT NULL,
+  `completed_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`run_id`,`ordinal`),
+  UNIQUE KEY `uq_policy_eval_sample` (`run_id`,`case_id`,`arm`),
+  UNIQUE KEY `uq_policy_eval_reservation` (`reservation_key`),
+  CONSTRAINT `fk_policy_eval_sample_run` FOREIGN KEY (`run_id`) REFERENCES `ai_learning_policy_evaluations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ck_policy_eval_sample_state` CHECK (`ordinal` < 64 AND `arm` IN ('baseline','candidate')
+    AND `state` IN ('queued','dispatching','responded','invalid','uncertain','blocked'))
+);

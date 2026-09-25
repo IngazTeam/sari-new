@@ -4065,6 +4065,29 @@ export const aiLearningPolicyCandidates = mysqlTable('ai_learning_policy_candida
   uniqueIndex('uq_learning_candidate_version').on(table.merchantId, table.proposalId, table.version),
   check('ck_learning_candidate_version', sql`${table.version} BETWEEN 1 AND 9007199254740991`)]);
 
+export const aiLearningPolicyEvaluations = mysqlTable('ai_learning_policy_evaluations', {
+  id: bigint({mode:'number',unsigned:true}).autoincrement().primaryKey(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  candidateId:bigint('candidate_id',{mode:'number',unsigned:true}).notNull().references(()=>aiLearningPolicyCandidates.id,{onDelete:'cascade'}),
+  requestId:char('request_id',{length:36}).notNull(),payloadDigest:char('payload_digest',{length:64}).notNull(),
+  artifactDigest:char('artifact_digest',{length:64}).notNull(),routeDigest:char('route_digest',{length:64}).notNull(),
+  provider:varchar({length:16}).notNull(),model:varchar({length:128}).notNull(),observedModel:varchar('observed_model',{length:128}),
+  recipe:json().notNull(),state:varchar({length:16}).notNull().default('running'),
+  actorUserId:int('actor_user_id').references(()=>users.id,{onDelete:'set null'}),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_policy_eval_request').on(table.merchantId,table.requestId),index('idx_policy_eval_candidate').on(table.merchantId,table.candidateId,table.id),
+  check('ck_policy_eval_state',sql`${table.state} IN ('running','completed','halted','cancelled') AND ${table.provider} IN ('openai','zahypi')`)]);
+
+export const aiLearningPolicyEvaluationSamples = mysqlTable('ai_learning_policy_evaluation_samples', {
+  runId:bigint('run_id',{mode:'number',unsigned:true}).notNull().references(()=>aiLearningPolicyEvaluations.id,{onDelete:'cascade'}),
+  ordinal:int({unsigned:true}).notNull(),caseId:varchar('case_id',{length:80}).notNull(),arm:varchar({length:16}).notNull(),
+  inputDigest:char('input_digest',{length:64}).notNull(),state:varchar({length:16}).notNull().default('queued'),
+  claimToken:char('claim_token',{length:36}),leaseUntil:datetime('lease_until',{mode:'string',fsp:3}),reservationKey:char('reservation_key',{length:64}),
+  responseText:text('response_text'),responseMetadata:json('response_metadata'),responseDigest:char('response_digest',{length:64}),
+  elapsedMs:int('elapsed_ms',{unsigned:true}),failureCode:varchar('failure_code',{length:48}),completedAt:datetime('completed_at',{mode:'string',fsp:3}),
+},table=>[primaryKey({columns:[table.runId,table.ordinal]}),uniqueIndex('uq_policy_eval_sample').on(table.runId,table.caseId,table.arm),
+  uniqueIndex('uq_policy_eval_reservation').on(table.reservationKey),check('ck_policy_eval_sample_state',sql`${table.ordinal}<64 AND ${table.arm} IN ('baseline','candidate') AND ${table.state} IN ('queued','dispatching','responded','invalid','uncertain','blocked')`)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

@@ -51,6 +51,7 @@ export interface ChatCompletionResponse {
   object: string;
   created: number;
   model: string;
+  system_fingerprint?: string | null;
   choices: Array<{
     index: number;
     message: {
@@ -356,7 +357,10 @@ async function fetchWithTimeout(
   }
   }, data => data.usage, lifecycle && {
     beforeDispatch: attempt => lifecycle.beforeDispatch(attempt),
-    afterResponse: (data, attempt) => lifecycle.afterResponse(data.choices[0].message.content, attempt),
+    afterResponse: (data, attempt) => lifecycle.afterResponse(data.choices[0].message.content, attempt, {
+      id: data.id, model: data.model, finishReason: data.choices[0].finish_reason,
+      systemFingerprint: data.system_fingerprint, usage: data.usage,
+    }),
   });
   return completion.choices[0].message.content;
 }

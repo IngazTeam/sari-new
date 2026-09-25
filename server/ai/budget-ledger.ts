@@ -18,9 +18,11 @@ export type BudgetRequest = { merchantId: Identity; provider: string; model: str
 export type AiBudgetAttempt = Readonly<Pick<Reservation, 'reservationKey' | 'requestId' | 'scopeKey'>
   & Pick<BudgetRequest, 'provider' | 'model' | 'taskType'>>;
 /** Internal durable handoff hooks; neither hook authorizes another provider attempt. */
+export type AiCompletionMetadata = { id: string; model: string; finishReason: string | null;
+  systemFingerprint?: string | null; usage?: { prompt_tokens: number; completion_tokens: number } };
 export type AiBudgetLifecycle<T> = {
   beforeDispatch(attempt: AiBudgetAttempt): Promise<void>;
-  afterResponse(result: T, attempt: AiBudgetAttempt): Promise<void>;
+  afterResponse(result: T, attempt: AiBudgetAttempt, metadata?: AiCompletionMetadata): Promise<void>;
   afterJobAccepted?(receipt: AiProviderJobReceipt, attempt: AiBudgetAttempt): Promise<void>;
 };
 

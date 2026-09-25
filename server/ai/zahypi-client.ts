@@ -157,7 +157,7 @@ export async function resolveZahyPiRuntimeConfig(
   if (override) return { ...override, source: "override" };
   const scope = interactionConfig.getStore();
   if (scope) {
-    scope.config ??= loadRuntimeConfig().then(value => Object.freeze({ ...value,
+    scope.config ??= loadRuntimeConfig(options.refresh).then(value => Object.freeze({ ...value,
       ...(value.taskTypes ? { taskTypes: Object.freeze([...value.taskTypes]) } : {}) }));
     const snapshot = await scope.config;
     // An explicit global stop overrides the frozen provider choice.
@@ -849,7 +849,8 @@ export async function requestZahyPiChat(
     afterResponse: async (completion, attempt) => {
       const content = completion.choices[0]?.message.content;
       if (typeof content !== 'string' || !content.trim()) throw new AiBudgetError('invalid_usage');
-      await options.lifecycle!.afterResponse(content.trim(), attempt);
+      await options.lifecycle!.afterResponse(content.trim(), attempt, { id: completion.id, model: completion.model,
+        finishReason: completion.choices[0].finish_reason, usage: completion.usage });
     },
   });
   const content = body.choices[0]?.message.content;
