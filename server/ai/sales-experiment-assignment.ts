@@ -37,14 +37,19 @@ function receipt(row: any) {
 const selection = "SELECT *,DATE_FORMAT(observation_ends_at,'%Y-%m-%dT%H:%i:%s.%fZ') AS observation_utc FROM ai_sales_experiment_assignments";
 function parseRow(row: any) { return receipt({ ...row, observation_ends_at: String(row.observation_utc).replace(/(\.\d{3})\d{3}Z$/, '$1Z') }); }
 
+/** Internal historical read under the caller's merchant lock; never a current-use permit. */
+export async function loadSalesExperimentAssignment(c: PoolConnection, merchant: number, assignmentId: number) {
+  const [rows] = await c.execute<any[]>(`${selection} WHERE merchant_id=? AND id=? FOR SHARE`, [merchant, assignmentId]);
+  if (rows.length !== 1) return conflict();
+  return parseRow(rows[0]);
+}
+
 /** History remains readable after revocation/source deletion. A receipt never authorizes generation or sending. */
 export async function getSalesExperimentAssignment(merchantId: number, value: { assignmentId: number }) {
   const merchant = id.parse(merchantId), input = readSalesExperimentAssignmentInput.parse(value);
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
-    const [rows] = await c.execute<any[]>(`${selection} WHERE merchant_id=? AND id=? FOR SHARE`, [merchant, input.assignmentId]);
-    if (rows.length !== 1) conflict();
-    return parseRow(rows[0]);
+    return loadSalesExperimentAssignment(c, merchant, input.assignmentId);
   });
 }
 

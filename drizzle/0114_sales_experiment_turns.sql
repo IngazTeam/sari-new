@@ -1,0 +1,20 @@
+CREATE TABLE `ai_sales_experiment_turns` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `protocol_id` bigint unsigned NOT NULL,
+  `assignment_id` bigint unsigned NOT NULL,
+  `conversation_reference` int NOT NULL,
+  `message_reference` int NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `turn_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `snapshot` json NOT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sales_turn_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_sales_turn_message` (`merchant_id`,`message_reference`),
+  KEY `idx_sales_turn_assignment` (`merchant_id`,`assignment_id`,`id`),
+  CONSTRAINT `fk_sales_turn_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_turn_protocol` FOREIGN KEY (`protocol_id`) REFERENCES `ai_sales_experiment_protocols` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_turn_assignment` FOREIGN KEY (`assignment_id`) REFERENCES `ai_sales_experiment_assignments` (`id`) ON DELETE CASCADE
+);

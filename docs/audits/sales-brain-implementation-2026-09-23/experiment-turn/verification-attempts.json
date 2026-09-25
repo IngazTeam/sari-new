@@ -1,0 +1,28 @@
+{
+  "scope": "Synthetic local validation. Final reports are exclusively from the frozen final source snapshot.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 104,
+      "failed": 45,
+      "result": "The raw SQL selected senderType instead of the actual sender_type column. Corrected the server SELECT alias and test fixtures; added further source-state and time-boundary cases.",
+      "logSha256": "83b645d9d2850f025fbce1a3288972119a0bef3ebbfc35c19c32e14721eeee23"
+    },
+    {
+      "kind": "focused-final",
+      "passed": 101,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "dfe5dcf2b7b63a5eb9191cc414e8860af80de127325edd7149f9cf2b8ef0ed80"
+    },
+    {
+      "kind": "typecheck-before-freeze",
+      "passed": true,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "d83b60d69626dfc2bd593771c6effd45c2bf9eb5f372c1feed63e8bc027b3550"
+    }
+  ]
+}

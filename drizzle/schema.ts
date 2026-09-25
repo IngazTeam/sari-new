@@ -4197,6 +4197,18 @@ export const aiSalesExperimentAssignmentConversations = mysqlTable('ai_sales_exp
   assignmentId: bigint('assignment_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentAssignments.id, { onDelete: 'cascade' }),
 }, table => [uniqueIndex('uq_sales_assignment_conversation').on(table.merchantId, table.protocolId, table.conversationReference)]);
 
+export const aiSalesExperimentTurns = mysqlTable('ai_sales_experiment_turns', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  assignmentId: bigint('assignment_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentAssignments.id, { onDelete: 'cascade' }),
+  conversationReference: int('conversation_reference').notNull(), messageReference: int('message_reference').notNull(),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  turnDigest: char('turn_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_turn_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_turn_message').on(table.merchantId, table.messageReference),
+  index('idx_sales_turn_assignment').on(table.merchantId, table.assignmentId, table.id)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
