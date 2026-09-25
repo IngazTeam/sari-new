@@ -24,7 +24,7 @@ export const freezeSalesCohortInput = z.object({
   matchesRegisteredDefinition: z.literal(true), mappingReview: text,
 }).strict();
 export const readSalesCohortInput = z.object({ protocolId: id }).strict();
-export const inspectSalesCohortInput = z.object({ protocolId: id, cohortDigest: digest, conversationId: id, incomingMessageId: id }).strict();
+export const inspectSalesCohortInput = z.object({ protocolId: id, cohortDigest: digest, conversationId: id, incomingMessageId: id, expectedMessageDigest: digest.optional() }).strict();
 export const salesCohortSnapshot = z.object({
   version: z.literal('sales-cohort-snapshot.v1'), merchantId: id, protocolId: id, protocolDigest: digest, frozenAt: utc,
   population: z.enum(['all', 'new', 'returning']),

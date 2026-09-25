@@ -3,7 +3,7 @@ import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sa
 import { registerSalesExperimentProtocolInput, withdrawSalesExperimentProtocolInput } from '../../../shared/sales-experiment-protocol';
 import { syntheticSalesExperimentDesign } from '../../../server/tests/helpers/sales-experiment-design';
 const rawMode = new URL(location.href).searchParams.get('case') || '';
-const mode = rawMode.startsWith('cohort-') ? 'cohort' : rawMode.replace('protocol-', '') || 'ready';
+const mode = (rawMode.startsWith('cohort-') || rawMode.startsWith('inspection-')) ? 'cohort' : rawMode.replace('protocol-', '') || 'ready';
 const win = window as any, listeners = new Set<() => void>(), records = new Map<number, any>();
 const state = { sectorRevision: 0, candidateId: 4, revoked: false, newest: 45, registration: null as any, withdrawal: null as any };
 const emit = () => listeners.forEach(listener => listener());

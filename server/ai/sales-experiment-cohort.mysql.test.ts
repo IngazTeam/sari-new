@@ -8,7 +8,7 @@ import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { seedCohortProtocol, syntheticCohortRules } from '../tests/helpers/sales-cohort';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
-import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, prepareSalesExperimentCohort } from './sales-experiment-cohort';
+import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, prepareSalesExperimentCohort, listSalesExperimentCohortSources } from './sales-experiment-cohort';
 import { withdrawSalesExperimentProtocol } from './sales-experiment-protocol';
 import { updateSalesSectorSettings } from './sales-sector-settings';
 
@@ -208,6 +208,73 @@ describe.skipIf(!process.env.DATABASE_URL)('frozen sales cohort and authoritativ
     }));
     expect(new Set(results.map(r => r.id)).size).toBe(1); expect(results.filter(r => !r.reused)).toHaveLength(1);
   }, 25000);
+
+  const sources = async (extra: any = {}, merchant = owner.merchantId) => listSalesExperimentCohortSources(merchant, { protocolId: seed.protocol.protocolId, cohortDigest: (await get()).cohortDigest, search: '', limit: 10, ...extra });
+  const inspectSelection = async (row: any) => inspectSalesExperimentCohort(owner.merchantId, { protocolId: seed.protocol.protocolId, cohortDigest: (await get()).cohortDigest,
+    conversationId: row.conversationId, incomingMessageId: row.incomingMessageId, expectedMessageDigest: row.messageDigest });
+  it('lists owned latest inbound messages only without qualification prefilter or any writes', async () => {
+    await freeze(); const own = await message(), latest = await message(undefined, undefined, own.conversationId); await message('966500000201', other.merchantId);
+    await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'outgoing','text','Not an incoming preview')", [own.conversationId]);
+    await query("UPDATE conversations SET status='closed',human_takeover=1,deal_stage='paid' WHERE id=?", [own.conversationId]);
+    await query('INSERT INTO conversations (merchantId,customerPhone) VALUES (?,?)', [owner.merchantId, '966500000299']);
+    const rows = await sources(); expect(rows.items).toHaveLength(1); expect(rows.items[0]).toMatchObject(latest); expect(rows.activationAllowed).toBe(false);
+    const check = await inspectSelection(rows.items[0]); expect(check.reasons).toContain('inactive_conversation'); expect(check.reasons).toContain('human_takeover'); expect(check.reasons).toContain('excluded_deal_stage');
+    expect(check).toMatchObject({ conversationId: own.conversationId, incomingMessageId: latest.incomingMessageId, messageDigest: rows.items[0].messageDigest, assignmentCreated: false });
+    expect(await query('SELECT id FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    expect(await query('SELECT id FROM messages WHERE conversationId=?', [own.conversationId])).toHaveLength(3);
+  });
+  it('pages conversation IDs without duplicates when new conversations arrive', async () => {
+    await freeze(); const original = []; for (let i = 0; i < 5; i++) original.push((await message('96650000020' + i)).conversationId);
+    const first = await sources({ limit: 2 }); await message('966500000299'); const second = await sources({ limit: 2, beforeId: first.nextBeforeId }); const third = await sources({ limit: 2, beforeId: second.nextBeforeId });
+    expect([...first.items, ...second.items, ...third.items].map(row => row.conversationId)).toEqual(original.reverse()); expect(third.nextBeforeId).toBeNull();
+  });
+  it.each(['%', '_', '!', "' OR 1=1 --", 'عميل', '966500000201'])('treats search %s as bounded literal text', async search => {
+    await freeze(); const target = await message(), decoy = await message('966500000299');
+    await query('UPDATE conversations SET customerName=? WHERE id=?', ['Named ' + search + ' customer', target.conversationId]);
+    await query('UPDATE conversations SET customerName=? WHERE id=?', ['Unrelated customer', decoy.conversationId]);
+    expect((await sources({ search })).items.map(row => row.conversationId)).toEqual([target.conversationId]);
+  });
+  it('caps Unicode previews and uses full content for inspection', async () => {
+    const value = input(); value.rules.requiredAnyTerms = ['course']; await freeze(value); await elapsed(); const target = await message();
+    await query('UPDATE messages SET content=? WHERE id=?', ['😀'.repeat(330) + ' course', target.incomingMessageId]);
+    const row = (await sources()).items[0]; expect(Array.from(row.preview)).toHaveLength(320); expect(row.previewTruncated).toBe(true); expect(row.preview).not.toContain('course');
+    expect((await inspectSelection(row)).qualifiesAtRead).toBe(true);
+  });
+  it('never exposes media URLs or fetches attachments in a source listing', async () => {
+    await freeze(); const target = await message(); await query("UPDATE messages SET messageType='voice',content='https://private.example/media',voiceUrl='https://private.example/voice' WHERE id=?", [target.incomingMessageId]);
+    const result = await sources(); expect(result.items[0]).toMatchObject({ messageType: 'voice', preview: '', previewTruncated: false }); expect(JSON.stringify(result)).not.toContain('private.example');
+  });
+  it.each(['content', 'phone', 'name', 'time', 'type', 'owner', 'direction', 'deleted'])('rejects the selected source after %s changes', async mode => {
+    await freeze(); const target = await message(), row = (await sources()).items[0];
+    if (mode === 'content') await query("UPDATE messages SET content='Different message' WHERE id=?", [target.incomingMessageId]);
+    if (mode === 'phone') await query("UPDATE conversations SET customerPhone='966500000298' WHERE id=?", [target.conversationId]);
+    if (mode === 'name') await query("UPDATE conversations SET customerName='Different customer' WHERE id=?", [target.conversationId]);
+    if (mode === 'time') await query('UPDATE messages SET createdAt=TIMESTAMPADD(DAY,-1,createdAt) WHERE id=?', [target.incomingMessageId]);
+    if (mode === 'type') await query("UPDATE messages SET messageType='image' WHERE id=?", [target.incomingMessageId]);
+    if (mode === 'owner') await query('UPDATE conversations SET merchantId=? WHERE id=?', [other.merchantId, target.conversationId]);
+    if (mode === 'direction') await query("UPDATE messages SET direction='outgoing' WHERE id=?", [target.incomingMessageId]);
+    if (mode === 'deleted') await query('DELETE FROM messages WHERE id=?', [target.incomingMessageId]);
+    await expect(inspectSelection(row)).rejects.toThrow();
+  });
+  it('reports a newer inbound and re-reads human takeover without trusting the selected preview', async () => {
+    await freeze(); await elapsed(); const target = await message(), row = (await sources()).items[0];
+    await message(undefined, undefined, target.conversationId); await query('UPDATE conversations SET human_takeover=1 WHERE id=?', [target.conversationId]);
+    expect((await inspectSelection(row)).reasons).toEqual(['human_takeover', 'superseded_inbound']);
+  });
+  it.each(['merchant', 'digest', 'source', 'sector', 'withdrawn'])('rejects source discovery for stale or foreign %s', async mode => {
+    await freeze(); await message();
+    if (mode === 'source') await query("UPDATE sari_learning_signals SET customer_message='Changed evidence' WHERE id=?", [seed.signalId]);
+    if (mode === 'sector') await updateSalesSectorSettings({ merchantId: owner.merchantId, actorUserId: owner.userId, expectedRevision: 0, playbookId: 'training' });
+    if (mode === 'withdrawn') await withdrawSalesExperimentProtocol(owner.merchantId, owner.userId, { protocolId: seed.protocol.protocolId, protocolDigest: seed.protocol.protocolDigest, requestId: randomUUID(), reason: 'A safety regression requires withdrawal of this plan.' });
+    await expect(sources(mode === 'digest' ? { cohortDigest: 'a'.repeat(64) } : {}, mode === 'merchant' ? other.merchantId : owner.merchantId)).rejects.toThrow();
+  });
+  it('returns a real empty page without treating failed reads as empty results', async () => {
+    await freeze(); expect((await sources()).items).toEqual([]);
+    const request = { protocolId: seed.protocol.protocolId, cohortDigest: (await get()).cohortDigest, search: '', limit: 10 };
+    const pool = (await getPool())!, acquire = pool.getConnection.bind(pool);
+    vi.spyOn(pool, 'getConnection').mockImplementationOnce(async () => { const c = await acquire(), execute = c.execute.bind(c); vi.spyOn(c, 'execute').mockImplementation((async (sql: any, values: any) => { if (String(sql).includes('FROM conversations c JOIN messages')) throw Error('Synthetic discovery failure'); return execute(sql, values); }) as any); return c; });
+    await expect(listSalesExperimentCohortSources(owner.merchantId, request)).rejects.toThrow();
+  });
   it('retains history after reviewer deletion and cascades only with the owning protocol', async () => {
     const value = input(), frozen = await freeze(value, other.userId); await query('DELETE FROM users WHERE id=?', [other.userId]);
     expect(await get()).toMatchObject({ actorUserId: null, cohortId: frozen.cohortId });

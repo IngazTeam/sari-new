@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T11:23:47.125Z",
+  "generatedAt": "2026-09-25T12:16:57.810Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -81,6 +81,11 @@
     "sales-cohort-review-ar-375.png",
     "sales-cohort-review-en-1440.png",
     "sales-cohort-review-en-375.png",
+    "sales-inspection-excluded-ar-375.png",
+    "sales-inspection-qualified-ar-1440.png",
+    "sales-inspection-qualified-ar-375.png",
+    "sales-inspection-qualified-en-1440.png",
+    "sales-inspection-qualified-en-375.png",
     "sales-protocol-review-ar-1440.png",
     "sales-protocol-review-ar-375.png",
     "sales-protocol-review-en-1440.png",
@@ -90,6 +95,196 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "inspection_explicit_keyboard_check_exact_source_without_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_all_exclusion_reasons_translated",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_loading_no_inferred_qualification",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_fetching_no_inferred_qualification",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_list-error_no_inferred_qualification",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_list-mismatch_no_inferred_qualification",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_empty_no_inferred_qualification",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_failed_discovery_recovers_without_inspection",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_error_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_throw_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_mismatch_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_unsafe_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_unknown-reason_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_contradiction_rejects_untrusted_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_stable_keyset_pages_during_new_arrivals",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_search_submission_resets_cursor_selection_and_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_xss_safe_preview_and_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_media_safe_preview_and_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_truncated_safe_preview_and_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_same_tick_double_click_once",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_late_result_after_collapse_is_ignored",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_changed_source_ignores_inflight_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_permission_loss_hides_sources_and_ignores_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_failed_list_read_hides_previous_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_thrown_refresh_does_not_reuse_cached_authority",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_new_selection_clears_old_result",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "inspection_parent_refresh_never_reuses_a_previous_check",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

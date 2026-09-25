@@ -1,3 +1,4 @@
+import { SalesCohortInspection } from './SalesCohortInspection';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
@@ -86,6 +87,7 @@ function CohortPanel({ record, active, onLock }: { record: ProtocolRecord; activ
       <RulesSummary rules={frozen.snapshot.rules} review={frozen.snapshot.mappingReview} /><p>{t('merchantUx.salesCohort.frozenAt')}: <bdi>{frozen.snapshot.frozenAt}</bdi></p>
       <p>{frozen.actorUserId ? t('merchantUx.policyReview.reviewer', { id: frozen.actorUserId }) : t('merchantUx.policyReview.removedReviewer')}</p>
       <details className="rounded-md border p-3"><summary className="min-h-11 cursor-pointer py-2">{t('merchantUx.salesCohort.fingerprint')}</summary><p dir="ltr">{frozen.cohortDigest}</p></details></div>}
+    {frozen && !draft && <SalesCohortInspection protocolId={record.protocolId} cohortDigest={frozen.cohortDigest} active={active && readable && !query.isFetching && !busy && record.state === 'registered'} />}
   </section>;
 }
 function stageLabels(t: ReturnType<typeof useTranslation>['t']) { return { new: t('merchantUx.salesCohort.new'), interested: t('merchantUx.salesCohort.interested'), qualified: t('merchantUx.salesCohort.qualified'), ready: t('merchantUx.salesCohort.ready'), payment_link_sent: t('merchantUx.salesCohort.payment_link_sent'), payment_failed: t('merchantUx.salesCohort.payment_failed'), stalled: t('merchantUx.salesCohort.stalled') }; }

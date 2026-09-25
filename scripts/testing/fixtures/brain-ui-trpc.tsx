@@ -1,3 +1,4 @@
+import { salesCohortInspectionFixture } from './sales-cohort-inspection-trpc';
 import { salesCohortFixture } from './sales-cohort-ui-trpc';
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
 import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
@@ -195,6 +196,7 @@ export const trpc = {
     ...evaluationFixture,
     ...salesProtocolFixture,
     ...salesCohortFixture,
+    ...salesCohortInspectionFixture,
     getFollowupPolicy: { useQuery: () => {
       const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
       const data = useMemo(() => ({ policy: (window as any).__followupInput?.policy || defaultFollowupPolicy,
@@ -225,7 +227,7 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
-    ...((mode.startsWith('protocol-') || mode.startsWith('cohort-')) ? protocolBasisFixture : {}),
+    ...((mode.startsWith('protocol-') || (mode.startsWith('cohort-') || mode.startsWith('inspection-'))) ? protocolBasisFixture : {}),
     getLearningPolicyReview: learningPolicyReviewFixture.query,
     recordLearningPolicyReview: learningPolicyReviewFixture.mutation,
     getLearningAnalysisStatus:{useQuery:()=>{

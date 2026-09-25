@@ -1,3 +1,4 @@
+import { salesCohortInspectionAr } from './sales-cohort-inspection';
 import { salesCohortAr } from './sales-cohort';
 import type { MerchantUxCopy } from './merchant-ux.schema';
 import { learningPolicyReviewAr } from './learning-policy-review';
@@ -7,6 +8,7 @@ import { salesExperimentProtocolAr } from './sales-experiment-protocol';
 const merchantUxAr: MerchantUxCopy = {
   policyReview: learningPolicyReviewAr,
   policyEvaluation: learningPolicyEvaluationAr,
+  cohortInspection: salesCohortInspectionAr,
   salesCohort: salesCohortAr,
   salesProtocol: salesExperimentProtocolAr,
   learningStatus: {

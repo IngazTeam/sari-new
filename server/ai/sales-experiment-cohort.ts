@@ -5,6 +5,7 @@ import { loadSalesExperimentProtocol } from './sales-experiment-protocol';
 import { requireCurrentLearningPolicyCandidate, LearningPolicyCandidateConflict } from './learning-policy-candidates';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { getSalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
+import { listSalesCohortSourcesInput, cohortSourcePage, type ListSalesCohortSourcesInput } from '../../shared/sales-cohort-inspection';
 import { cohortPhone, evaluateSalesCohort, freezeSalesCohortInput, inspectSalesCohortInput, readSalesCohortInput, salesCohortSnapshot,
   type FreezeSalesCohortInput, type SalesCohortSnapshot } from './sales-experiment-cohort-contract';
 
@@ -106,6 +107,41 @@ export async function prepareSalesExperimentCohort(merchantId: number, value: { 
   });
 }
 
+function messageDigest(merchant: number, conversationId: number, conversation: any, message: any) {
+  return policyArtifactDigest({ version: 'cohort-message-selection.v1', merchant, conversationId, incomingMessageId: Number(message.id),
+    customerName: conversation.customerName ?? null, customerPhone: String(conversation.customerPhone), messageType: String(message.messageType),
+    content: String(message.content ?? ''), receivedAt: String(message.received_at) });
+}
+
+/** Bounded, owned discovery. No qualification prefilter or automatic inspection. */
+export async function listSalesExperimentCohortSources(merchantId: number, value: ListSalesCohortSourcesInput) {
+  const merchant = id.parse(merchantId), input = listSalesCohortSourcesInput.parse(value);
+  return checkoutTransaction(async c => {
+    await lockMerchant(c, merchant);
+    const frozen = await load(c, merchant, input.protocolId);
+    if (frozen.cohortDigest !== input.cohortDigest) conflict();
+    await currentProtocol(c, merchant, input.protocolId, frozen.snapshot.protocolDigest);
+    // Escape LIKE metacharacters with an explicit escape character; values never enter SQL syntax.
+    const pattern = `%${input.search.replace(/[!%_]/g, character => `!${character}`)}%`;
+    const [rows] = await c.execute<any[]>(`SELECT c.id AS conversation_id,c.customerName,c.customerPhone,m.id,m.messageType,m.content,
+      DATE_FORMAT(m.createdAt,'%Y-%m-%dT%H:%i:%s.000Z') AS received_at
+      FROM conversations c JOIN messages m ON m.id=(SELECT latest.id FROM messages latest
+        WHERE latest.conversationId=c.id AND latest.direction='incoming' ORDER BY latest.id DESC LIMIT 1)
+      WHERE c.merchantId=? ${input.beforeId ? 'AND c.id<?' : ''}
+        AND (c.customerName LIKE ? ESCAPE '!' OR c.customerPhone LIKE ? ESCAPE '!')
+      ORDER BY c.id DESC LIMIT ${input.limit + 1}`, [merchant, ...(input.beforeId ? [input.beforeId] : []), pattern, pattern]);
+    const selected = rows.slice(0, input.limit);
+    return cohortSourcePage.parse({ protocolId: input.protocolId, cohortDigest: frozen.cohortDigest, search: input.search, beforeId: input.beforeId ?? null, limit: input.limit,
+      listedAt: await clock(c), activationAllowed: false, nextBeforeId: rows.length > selected.length ? Number(selected.at(-1)!.conversation_id) : null,
+      items: selected.map(row => { const points = Array.from(String(row.content ?? '')); return {
+        conversationId: Number(row.conversation_id), incomingMessageId: Number(row.id), customerName: row.customerName ?? null, customerPhone: String(row.customerPhone),
+        messageType: row.messageType, preview: row.messageType === 'text' ? points.slice(0, 320).join('') : '', previewTruncated: row.messageType === 'text' && points.length > 320,
+        receivedAt: String(row.received_at), messageDigest: messageDigest(merchant, Number(row.conversation_id), row, row),
+      }; }),
+    });
+  });
+}
+
 /** Point-in-time inspection only. Never assigns an arm, writes a denominator or dispatches a reply. */
 export async function inspectSalesExperimentCohort(merchantId: number, value: z.infer<typeof inspectSalesCohortInput>) {
   const merchant = id.parse(merchantId), input = inspectSalesCohortInput.parse(value);
@@ -116,7 +152,7 @@ export async function inspectSalesExperimentCohort(merchantId: number, value: z.
     const current = await currentProtocol(c, merchant, input.protocolId, s.protocolDigest);
     if (s.population !== current.protocol.design.cohort.population || s.enrollmentStartsAt !== current.protocol.design.window.enrollmentStartsAt
       || s.enrollmentEndsAt !== current.protocol.design.window.enrollmentEndsAt) conflict();
-    const [conversations] = await c.execute<any[]>(`SELECT customerPhone,status,human_takeover,automation_after_message_id,deal_stage FROM conversations
+    const [conversations] = await c.execute<any[]>(`SELECT customerName,customerPhone,status,human_takeover,automation_after_message_id,deal_stage FROM conversations
       WHERE id=? AND merchantId=? FOR SHARE`, [input.conversationId, merchant]);
     if (conversations.length !== 1) conflict();
     const conversation = conversations[0];
@@ -124,7 +160,8 @@ export async function inspectSalesExperimentCohort(merchantId: number, value: z.
       FROM messages WHERE id=? AND conversationId=? AND direction='incoming' FOR SHARE`, [input.incomingMessageId, input.conversationId]);
     if (messages.length !== 1) conflict();
     const [latest] = await c.execute<any[]>('SELECT id FROM messages WHERE conversationId=? AND direction=\'incoming\' ORDER BY id DESC LIMIT 1 FOR SHARE', [input.conversationId]);
-    const message = messages[0], phone = cohortPhone.safeParse(conversation.customerPhone);
+    const message = messages[0], phone = cohortPhone.safeParse(conversation.customerPhone), selectedDigest = messageDigest(merchant, input.conversationId, conversation, messages[0]);
+    if (input.expectedMessageDigest && input.expectedMessageDigest !== selectedDigest) conflict();
     // Exact two canonical spellings, scoped to this merchant; never LIKE/REPLACE arbitrary phone strings.
     const [prior] = phone.success ? await c.execute<any[]>(`SELECT m.id FROM conversations c JOIN messages m ON m.conversationId=c.id
       WHERE c.merchantId=? AND c.customerPhone IN (?,?) AND m.direction='incoming' AND m.createdAt<? LIMIT 1 FOR SHARE`,
@@ -136,6 +173,7 @@ export async function inspectSalesExperimentCohort(merchantId: number, value: z.
       latestInbound: Number(latest[0]?.id) === input.incomingMessageId, messageType: String(message.messageType),
       content: String(message.content ?? ''), messageReceivedAt: String(message.received_at), inspectedAt, priorInbound: prior.length > 0 };
     return { ...evaluateSalesCohort(s, facts), protocolId: input.protocolId, cohortDigest: frozen.cohortDigest, inspectedAt,
+      conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, messageDigest: selectedDigest,
       // Evidence fingerprint only; neither raw customer text nor phone leaks into the inspection response.
       sourceDigest: policyArtifactDigest({ merchant, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, facts }) };
   });

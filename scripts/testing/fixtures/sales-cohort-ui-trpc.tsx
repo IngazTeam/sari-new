@@ -13,7 +13,7 @@ function receipt(raw: any) {
     rules: input.rules, matchesRegisteredDefinition: true, mappingReview: input.mappingReview, mappingApproval: 'operator_attestation_only', activationAllowed: false }),
     actorUserId: mode === 'deleted-actor' ? null : 7, createdAt: new Date().toISOString(), eligibility: 'not_checked', activationAllowed: false, experimentStarted: false };
 }
-if (new URL(location.href).searchParams.get('case')?.startsWith('cohort-') && ['frozen','xss','deleted-actor'].includes(mode)) {
+if ((new URL(location.href).searchParams.get('case')?.startsWith('cohort-') && ['frozen','xss','deleted-actor'].includes(mode)) || new URL(location.href).searchParams.get('case')?.startsWith('inspection-')) {
   const p = cohortProtocolRecord();
   state.frozen = receipt({ protocolId: p.protocolId, protocolDigest: p.protocolDigest, requestId: '00000000-0000-4000-8000-000000000001',
     rules: { version: 'sales-cohort-rules.v1', historyDefinition: 'owned_inbound_before_enrollment', messageType: 'text', minimumCharacters: 1, maximumCharacters: 4000,
