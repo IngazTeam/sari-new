@@ -345,11 +345,11 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 
 export const sariBrainRouter = router({
   prepareSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(salesExperimentLaunchInput).query(async ({ ctx, input }) => {
-    try { return await prepareSalesExperimentLaunch(ctx.merchantId, input); }
+    try { return { ...await prepareSalesExperimentLaunch(ctx.merchantId, input), operatorUserId: ctx.user.id }; }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment launch authorization changed or is unavailable' }); }
   }),
   getSalesExperimentLaunchStatus: permissionProcedure('bot_settings.manage').input(salesExperimentLaunchInput).query(async ({ ctx, input }) => {
-    try { return await getSalesExperimentLaunchStatus(ctx.merchantId, input); }
+    try { return { ...await getSalesExperimentLaunchStatus(ctx.merchantId, input), operatorUserId: ctx.user.id }; }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment launch authorization changed or is unavailable' }); }
   }),
   authorizeSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(authorizeSalesExperimentLaunchInput).mutation(async ({ ctx, input }) => {

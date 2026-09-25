@@ -589,6 +589,11 @@ Object.assign(entries, {
  B045:[entries.B045[0]+' التفويض يجب أن يسبق نافذة الإدخال بساعة قاعدة البيانات. عرض الحالة يميز المجدول والنافذة المفتوحة والمغلقة والتفويض الملغى أو المتقادم؛ لا يمدد النافذة ولا يغير المقام ولا يمنح فائزًا. لا تخصيص أو تعرض مسجل حتى الآن.','server/ai/sales-experiment-launch.mysql.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0112 يضيف التفويض والإلغاء مع تفرد الخطة والطلب والإلغاء وقيود الحالة. تحقق الترحيل من 0000–0111 وحفظ 10 جداول ورفض 7 مخالفات وإعادة آمنة، دون إنشاء تفويض تلقائي أو تغيير سقف 100 دولار.','scripts/testing/verify-sales-experiment-launch-migration.cjs'],
 });
+Object.assign(entries, {
+ B044:[entries.B044[0]+' اكتملت واجهة التفويض والإلغاء بالعربية والإنجليزية، مع عرض المراجعة والنافذة والسبب وإقرارات مستقلة، وتمييز الاعتماد التاريخي عن الحالة الحالية. لا يزال التوزيع والإرسال وقياس الأثر غير موصول.','server/sales-launch-ui-pentest.test.ts'],
+ B045:[entries.B045[0]+' تعرض الواجهة نافذة القياس بتوقيت UTC وفق اللغة، وتحجب التفويض الجديد عند بدايتها، وتسمح بإلغاء السجل المتقادم أو المغلق. لا تقترح تمديد النافذة أو إعلان فائز.','scripts/testing/verify-sales-launch-ui.cjs'],
+ B063:[entries.B063[0]+' أضيفت إدارة تفويض التجربة داخل سجل الخطة، مع قفل التحرير المتعارض، ومسودة محفوظة أثناء إخفاء اللوحة وفقد الصلاحية، وإلغاء الإقرارات عند تغير الأدلة. غموض الحفظ يبقي UUID والسبب والهوية الأصلية؛ رفض صلاحية لاحق لا يمحو طلبًا غير محسوم.','scripts/testing/verify-sales-launch-ui.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

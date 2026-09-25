@@ -1,33 +1,12 @@
 {
-  "scope": "Reused the existing 1036 Chromium component journeys and 101 screenshots: all client/shared/fixture/verifier source is unchanged and the freshly compiled fixture and final CSS hashes are identical. No new browser run; backend APIs verified separately.",
-  "reused": true,
-  "verifiedAt": "2026-09-25T15:08:53.642Z",
-  "baselineCommit": "ecf33c921fa8b5e1b2c4c5d5c721ab5fbf5dac22",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-planning-review-ui-20260925",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-experiment-launch-20260925",
-  "inputs": {
-    "fixture": "5e8be096afec56aba9cc20de4111068fe3ad1efa2be8e91df4a1d3a567b0c317",
-    "report": "ed19ab01b91ba24f1353ab37c1010413e0b65f7687a64c373d25f377a016c3ff",
-    "verifiers": {
-      "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
-      "scripts/testing/verify-appointment-reminders-ui.cjs": "954940cd78ce77ec3ad34f6b05280006c58680f0427bebccd731a889673891b4",
-      "scripts/testing/verify-booking-calendar-ui.cjs": "b84f8309bb480a21c0e2b64fcd7bcdf347f7d8fa84eb1441ef37aa8ce7eca761",
-      "scripts/testing/verify-booking-cancellation-ui.cjs": "8050130d8b0042d2dccae15306df567782f3e4de87328ba20d6eb9e528b86203",
-      "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
-      "scripts/testing/verify-booking-reschedule-ui.cjs": "9e51f8a5ade79bac8fbf584fefd18c645e0258c0c247c7e9f6d0b888b251c70d",
-      "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
-      "scripts/testing/verify-learning-policy-evaluation-ui.cjs": "064558b79794074c25d7d5dfe9ccc1b4abbbc8f89577a0d63cea85f0cf919dce",
-      "scripts/testing/verify-learning-policy-review-ui.cjs": "e8aedc7fdd00f30ef4d39f915e02ce5aa946501129ec586f3f2eee5179456b98",
-      "scripts/testing/verify-learning-status-ui.cjs": "619dd3fcf726658990b80264ecbf25b8c0f6d516dde019f03f7493763dd08707",
-      "scripts/testing/verify-sales-brain-ui.cjs": "d134f4e0fdf3950be87a39c807ec628df51e47e146fbbfc7ee83d75f07bc9663",
-      "scripts/testing/verify-sales-cohort-inspection-ui.cjs": "b73ed7969ca1e8ae2ae58050a022eb65b11a660873459bb28216c9500d0dcbb6",
-      "scripts/testing/verify-sales-cohort-ui.cjs": "eb17c1dc743ff01f4b4a1de7efda9d977d2b9cb29e823567338fbbb9d73bd087",
-      "scripts/testing/verify-sales-planning-review-ui.cjs": "6225c6e8e18e0d94320305f6d14bc2c5c05c1a835df97e3fcd7e3aa171ce8262",
-      "scripts/testing/verify-sales-protocol-ui.cjs": "1d580da8f1dc7b0ca65d0127414d075ea79ec52470955df1866d6778b2738e57"
-    },
-    "styles": {
-      "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
-      "index-CS-AEKRJ.css": "bdad9d93bdc7d2e4f8a164645e011c402d1884037008c0afb230ac9284548dc9"
-    }
-  }
+  "generatedAt": "2026-09-25T16:07:00.680Z",
+  "reused": false,
+  "baselineCommit": "38f7765e994a84518d89ad2b991c483bc2a2dfb6",
+  "scope": "Full browser verification rerun against the staged-source snapshot and its final production CSS; fixture API only.",
+  "fixtureSha256": "391bd1a1d09c46d928b365bf20fa91c6d7e8f2a4fd55340cabd50916a4b231e8",
+  "styles": {
+    "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
+    "index-CS-AEKRJ.css": "bdad9d93bdc7d2e4f8a164645e011c402d1884037008c0afb230ac9284548dc9"
+  },
+  "uiResultsSha256": "c1abaf8dc07ad4f6530f1e5509613ee10c33b17632b784705b26464275ad05f2"
 }

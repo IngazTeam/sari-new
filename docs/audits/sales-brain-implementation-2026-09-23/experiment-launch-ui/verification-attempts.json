@@ -1,0 +1,40 @@
+{
+  "scope": "Local verification; all final evidence comes from the staged-source snapshot.",
+  "attempts": [
+    {
+      "kind": "focused-contracts",
+      "passed": 129,
+      "failed": 0,
+      "logSha256": "3214ed7d1dd3c4a5b2865f6cf1fbb45b9e4992ac572f894aee26cbfba47fd9ff"
+    },
+    {
+      "kind": "browser-first",
+      "result": "The first assertion ran before the parent lock effect settled. Starting the draft now also locks the parent synchronously; the verifier waits for the observable locked state.",
+      "logSha256": "35c91efd763a864574f1680781e92493dfd3333a1e14f1a99e99460e4139e233"
+    },
+    {
+      "kind": "browser-second",
+      "result": "The fixture used one saved flag for both authorize and revoke and returned the old authorization. The fixture now tracks committed requests separately; application receipt validation correctly refused the wrong receipt.",
+      "logSha256": "30d71c4c2b90015e4d6c4c0b9ce4751f880c3520e04d73d3f5e3353b9fc5b4ae"
+    },
+    {
+      "kind": "browser-third",
+      "passed": 48,
+      "failed": 0,
+      "logSha256": "7461aab5cb67e92d90e59e207caf3ea1508253b12e9e5d45d68d70f44b9d3553"
+    },
+    {
+      "kind": "browser-final-focused",
+      "passed": 48,
+      "failed": 0,
+      "result": "After visual review, dates use the locale and UTC, and the full plan is expandable while its window remains visible. Keyboard expansion is verified.",
+      "logSha256": "7461aab5cb67e92d90e59e207caf3ea1508253b12e9e5d45d68d70f44b9d3553"
+    },
+    {
+      "kind": "browser-final-complete",
+      "passed": 1084,
+      "failed": 0,
+      "logSha256": "32487fa2ee3cb4cf08c48a1e650a5282be7933c450e5272dbb8afc88c3078a61"
+    }
+  ]
+}

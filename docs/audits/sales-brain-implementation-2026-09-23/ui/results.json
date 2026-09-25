@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T14:41:22.265Z",
+  "generatedAt": "2026-09-25T16:06:48.606Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -86,6 +86,14 @@
     "sales-inspection-qualified-ar-375.png",
     "sales-inspection-qualified-en-1440.png",
     "sales-inspection-qualified-en-375.png",
+    "sales-launch-authorization-ar-1440.png",
+    "sales-launch-authorization-ar-375.png",
+    "sales-launch-authorization-en-1440.png",
+    "sales-launch-authorization-en-375.png",
+    "sales-launch-revocation-ar-1440.png",
+    "sales-launch-revocation-ar-375.png",
+    "sales-launch-revocation-en-1440.png",
+    "sales-launch-revocation-en-375.png",
     "sales-planning-comparisons-ar-1440.png",
     "sales-planning-comparisons-ar-375.png",
     "sales-planning-comparisons-en-1440.png",
@@ -109,6 +117,256 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "launch_authorize_then_revoke_explicit_keyboard_and_receipts",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_loading_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_fetching_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_read-error_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_bad-status_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_no-approval_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_foreign_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_unsupported_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_mismatch-actor_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_expired_fails_closed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_scheduled_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_enrollment_open_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_enrollment_closed_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoked_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_stale_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_unavailable_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_removed-actor_historical_status_and_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_unknown_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_mismatch_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_outage_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_unknown_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_mismatch_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_outage_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_retry-forbidden_keeps_original_request",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoked-recovery_keeps_original_request",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_conflict_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_refresh-error_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_authorize_slow_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_conflict_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_refresh-error_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_revoke_slow_preserves_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_changed_basis_invalidates_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_changed_actor_invalidates_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_changed_review_invalidates_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_changed_authorization_invalidates_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_drift_does_not_prevent_revocation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_external_revocation_preserves_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_hide_permission_loss_restore_and_discard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "launch_untrusted_history_is_wrapped_text",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

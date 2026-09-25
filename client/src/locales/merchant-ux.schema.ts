@@ -67,7 +67,9 @@ import type { LearningPolicyReviewCopy } from './learning-policy-review';
 import type { LearningPolicyEvaluationCopy } from './learning-policy-evaluation';
 import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
+import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
+  experimentLaunch: SalesExperimentLaunchCopy;
   experimentReview: SalesExperimentReviewCopy;
   cohortInspection: SalesCohortInspectionCopy;
   salesCohort: SalesCohortCopy;
