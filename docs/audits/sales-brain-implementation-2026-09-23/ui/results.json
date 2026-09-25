@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T07:27:48.029Z",
+  "generatedAt": "2026-09-25T09:58:46.909Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -76,12 +76,211 @@
     "policy-history-runs-ar-375.png",
     "policy-history-runs-en-1440.png",
     "relay-review-1440.png",
-    "relay-review-375.png"
+    "relay-review-375.png",
+    "sales-protocol-review-ar-1440.png",
+    "sales-protocol-review-ar-375.png",
+    "sales-protocol-review-en-1440.png",
+    "sales-protocol-review-en-375.png"
   ],
   "fixtureApi": true,
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "protocol_four_steps_keyboard_explicit_registration_complete_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_unknown_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_outage_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_receipt-mismatch_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_withdraw-ready_immutable_reason_and_replay",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_withdraw-unknown_immutable_reason_and_replay",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_loading_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_fetching_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_viewer_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_stale_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_missing_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_candidate-error_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_sector-error_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_history-error_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_existing_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_changed_Sector_preserves_draft_and_requires_discard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_changed_Candidate_preserves_draft_and_requires_discard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_definite_conflict_keeps_draft_without_new_retry",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_saved_receipt_survives_read_failure_without_duplicate",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_double_click_sends_once",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_fold_preserves_draft_without_writes",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_role_revocation_blocks_stale_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_withdrawal_draft_survives_permission_refresh",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_history_keyset_pages_and_complete_historical_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_unsupported_safe_record_display",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_record-error_safe_record_display",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_xss_safe_record_display",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_standalone_history_without_any_current_proposal",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

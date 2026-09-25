@@ -63,7 +63,9 @@ export const learningEvidenceCopyKeys = [
 
 import type { LearningPolicyReviewCopy } from './learning-policy-review';
 import type { LearningPolicyEvaluationCopy } from './learning-policy-evaluation';
+import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 export type MerchantUxCopy = {
+  salesProtocol: SalesExperimentProtocolCopy;
   policyReview: LearningPolicyReviewCopy;
   policyEvaluation: LearningPolicyEvaluationCopy;
   appointmentReminders: CopySection<readonly ["title","refresh","scope","conditions","loading","loadFailed","empty","reference","pending","dispatching","unknown","accepted","rejected","suppressed","noReceipt","delivered","read","deliveryFailed","delivery","due","expires","cancelled","attention","source","unverified"]>;

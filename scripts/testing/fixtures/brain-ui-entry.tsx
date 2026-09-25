@@ -35,6 +35,7 @@ import { CheckoutDiscountRelease } from '../../../client/src/components/Checkout
 import { CheckoutDiscountBreakdown } from '../../../client/src/components/CheckoutDiscountBreakdown';
 import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidCheckoutReconciliation';
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
+import { SalesExperimentProtocol } from '../../../client/src/components/SalesExperimentProtocol';
 function AiCapabilitiesFixture(){
   const mode=new URL(location.href).searchParams.get('case')||'';
   const [failed,setFailed]=useState(mode==='ai-capabilities-error'),[refreshing,setRefreshing]=useState(false);
@@ -56,6 +57,7 @@ async function render() {
   const mode=new URL(location.href).searchParams.get('case')||'';
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
+  if(mode.startsWith('protocol-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-6xl p-3">{mode==='protocol-standalone'?<SalesExperimentProtocol/>:<LearningPolicyEvaluationPanel proposalId={16}/>}</main>);return;}
   if(mode.startsWith('evaluation-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-6xl p-3">{mode==='evaluation-close'?<LearningPolicyEvaluation proposalId={16}/>:<LearningPolicyEvaluationPanel proposalId={16}/>}</main>);return;}
   if(mode.startsWith('learning-review-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl p-3">{mode==='learning-review-card'?<LearningEvidenceCard/>:<LearningPolicyReviewPanel proposalId={16}/>}</main>);return;}
   if(mode.startsWith('learning-status-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-3xl p-3"><LearningAnalysisStatusCard/></main>);return;}

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { definiteReviewError } from '@/lib/learning-policy-evaluation-state';
 import { LearningPolicyEvaluationRun } from './LearningPolicyEvaluationRun';
 import { LearningPolicyRunArchive } from './LearningPolicyArchive';
+import { SalesExperimentProtocol } from './SalesExperimentProtocol';
 type Inputs = inferRouterInputs<AppRouter>['sariBrain'];
 type Pending = { kind: 'candidate'; input: Inputs['createLearningPolicyCandidate'] } | { kind: 'run'; input: Inputs['startLearningPolicyEvaluation'] };
 
@@ -20,7 +21,8 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
   const { t } = useTranslation(), id = useId();
   const query = trpc.sariBrain.getLearningPolicyCandidate.useQuery({ proposalId }, { retry: false, staleTime: 0, refetchOnWindowFocus: false });
   const create = trpc.sariBrain.createLearningPolicyCandidate.useMutation({ retry: false }), start = trpc.sariBrain.startLearningPolicyEvaluation.useMutation({ retry: false });
-  const [runId, setRunId] = useState<number | null>(null), [busy, setBusy] = useState(false), [childLock, setChildLock] = useState(false);
+  const [runId, setRunId] = useState<number | null>(null), [busy, setBusy] = useState(false), [runLock, setRunLock] = useState(false), [protocolLock, setProtocolLock] = useState(false);
+  const childLock = runLock || protocolLock;
   const [failure, setFailure] = useState<'unknown' | 'changed' | 'refresh' | null>(null);
   const [jumpToRun, setJumpToRun] = useState(0), panel = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -32,7 +34,8 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
   const data = query.data, readable = !!data && !query.isError && !query.isLoading, uncertain = failure === 'unknown';
   const ready = readable && !query.isFetching && !busy && !childLock && !uncertain && active && failure !== 'refresh' && failure !== 'changed';
   const current = data?.latestCandidate?.current && data.latestCandidate.bundle?.version === 'sales-style-candidate.v1' && data.latestCandidate.activationAllowed === false;
-  const lockChild = useCallback((value: boolean) => setChildLock(value), []);
+  const lockChild = useCallback((value: boolean) => setRunLock(value), []);
+  const lockProtocol = useCallback((value: boolean) => setProtocolLock(value), []);
   useEffect(() => {
     if (!busy && !uncertain) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -78,6 +81,7 @@ export function LearningPolicyEvaluationPanel({ proposalId, active = true }: { p
       <label className="block" htmlFor={`${id}-run`}>{t('merchantUx.policyEvaluation.chooseRun')}</label><select id={`${id}-run`} data-evaluation-select className="min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base" value={runId ?? ''} disabled={busy || childLock || uncertain || query.isFetching || !active} onChange={event => setRunId(event.target.value ? Number(event.target.value) : null)}><option value="">{t('merchantUx.policyEvaluation.none')}</option>{runId && !data!.evaluationRuns.some(row => row.runId === runId) && <option value={runId}>{t('merchantUx.policyEvaluation.run', { id: runId })}</option>}{data!.evaluationRuns.map(row => <option key={row.runId} value={row.runId}>{t('merchantUx.policyEvaluation.run', { id: row.runId })} · {row.provider === 'openai' ? 'OpenAI' : 'ZahyPi'} · {row.model}</option>)}</select>
     </>}
     <LearningPolicyRunArchive proposalId={proposalId} active={active && !busy && !childLock && !uncertain && !query.isFetching} onSelect={id => { setRunId(id); setJumpToRun(n => n + 1); }} />
-    {runId && <LearningPolicyEvaluationRun key={runId} runId={runId} active={active && !busy} onLock={lockChild} />}
+    {runId && <LearningPolicyEvaluationRun key={runId} runId={runId} active={active && !busy && !protocolLock} onLock={lockChild} />}
+    <SalesExperimentProtocol proposalId={proposalId} active={active && !busy && !runLock && !uncertain} onLock={lockProtocol} />
   </section>;
 }

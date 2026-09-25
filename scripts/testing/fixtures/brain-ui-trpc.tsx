@@ -1,6 +1,7 @@
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
 import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
 import { evaluationFixture } from './learning-policy-evaluation-ui-trpc';
+import { salesProtocolFixture, protocolBasisFixture } from './sales-protocol-ui-trpc';
 import { bookingCalendarFixture } from './booking-calendar-ui-trpc';
 import { bookingCancellationFixture } from './booking-cancellation-ui-trpc';
 import { useEffect, useMemo, useState } from 'react';
@@ -191,6 +192,7 @@ export const trpc = {
   },
   sariBrain: {
     ...evaluationFixture,
+    ...salesProtocolFixture,
     getFollowupPolicy: { useQuery: () => {
       const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
       const data = useMemo(() => ({ policy: (window as any).__followupInput?.policy || defaultFollowupPolicy,
@@ -221,6 +223,7 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
+    ...(mode.startsWith('protocol-') ? protocolBasisFixture : {}),
     getLearningPolicyReview: learningPolicyReviewFixture.query,
     recordLearningPolicyReview: learningPolicyReviewFixture.mutation,
     getLearningAnalysisStatus:{useQuery:()=>{

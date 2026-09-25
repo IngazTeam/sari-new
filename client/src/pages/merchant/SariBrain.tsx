@@ -3,6 +3,7 @@ import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { LearningAnalysisStatusCard } from '@/components/LearningAnalysisStatusCard';
 import { LearningEvidenceCard } from '@/components/LearningEvidenceCard';
 import { SalesSectorSettings } from '@/components/SalesSectorSettings';
+import { SalesExperimentProtocol } from '@/components/SalesExperimentProtocol';
 import { FollowupPolicySettings } from '@/components/FollowupPolicySettings';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -480,6 +481,7 @@ export default function SariBrain() {
       <LearningAnalysisStatusCard />
       <LearningEvidenceCard showManageLink={false} />
       <SalesSectorSettings />
+      <SalesExperimentProtocol />
       <FollowupPolicySettings />
       <DiscountPolicySettings />
       <CheckoutMarginPolicySettings />
