@@ -159,10 +159,10 @@ describe('Advanced Features - A/B Testing', () => {
   it('should track A/B test usage', async () => {
     const tests = await db.getABTests(merchantId, 'running');
     if (tests.length > 0) {
-      await db.trackABTestUsage(tests[0].id, 'A', true);
-      await db.trackABTestUsage(tests[0].id, 'B', false);
+      await db.trackABTestUsage(tests[0].id, 'A', true, merchantId);
+      await db.trackABTestUsage(tests[0].id, 'B', false, merchantId);
       
-      const updated = await db.getABTestById(tests[0].id);
+      const updated = await db.getABTestById(tests[0].id, merchantId);
       expect(updated?.variantAUsageCount).toBeGreaterThan(0);
       expect(updated?.variantBUsageCount).toBeGreaterThan(0);
     }
@@ -171,11 +171,11 @@ describe('Advanced Features - A/B Testing', () => {
   it('should declare A/B test winner', async () => {
     const tests = await db.getABTests(merchantId, 'running');
     if (tests.length > 0) {
-      await db.declareABTestWinner(tests[0].id, 'variant_a', 85);
-      const updated = await db.getABTestById(tests[0].id);
+      await db.declareABTestWinner(tests[0].id, 'variant_a', merchantId);
+      const updated = await db.getABTestById(tests[0].id, merchantId);
       expect(updated?.status).toBe('completed');
       expect(updated?.winner).toBe('variant_a');
-      expect(updated?.confidenceLevel).toBe(85);
+      expect(updated?.confidenceLevel).toBe(0);
     }
   });
 
@@ -189,16 +189,16 @@ describe('Advanced Features - A/B Testing', () => {
       variantBText: 'التوصيل السريع خلال 3 أيام فقط!',
     });
 
-    await db.pauseABTest(testId);
-    const test = await db.getABTestById(testId);
+    await db.pauseABTest(testId, merchantId);
+    const test = await db.getABTestById(testId, merchantId);
     expect(test?.status).toBe('paused');
   });
 
   it('should resume A/B test', async () => {
     const tests = await db.getABTests(merchantId, 'paused');
     if (tests.length > 0) {
-      await db.resumeABTest(tests[0].id);
-      const test = await db.getABTestById(tests[0].id);
+      await db.resumeABTest(tests[0].id, merchantId);
+      const test = await db.getABTestById(tests[0].id, merchantId);
       expect(test?.status).toBe('running');
     }
   });

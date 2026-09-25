@@ -1,0 +1,1129 @@
+{
+  "file": "server/routers-ab-tests.ts",
+  "reason": "Repository pre-commit hook requires named DB imports. Only import syntax and static member references changed.",
+  "beforeSource": "18c57e9bb0633c080c696fc71e4d8bf718dc8f2da664ed902011161e777e5cad",
+  "afterSource": "534d2258ba599311e47cbd581b3e1974cd61d2a60e2d8cac5b663bba5b55e285",
+  "beforeBundles": {
+    "dist/index.js": "15853af4a1e670af0c28d12019d5ab040c1ad149ad072febe6ef34d72d4791d0",
+    "dist/worker.js": "f64251474ac64c7aba030408c67ae41766ae094e4f89544828664896611f1635"
+  },
+  "afterBundles": {
+    "dist/index.js": "15853af4a1e670af0c28d12019d5ab040c1ad149ad072febe6ef34d72d4791d0",
+    "dist/worker.js": "f64251474ac64c7aba030408c67ae41766ae094e4f89544828664896611f1635"
+  },
+  "runtimeBundlesIdentical": true,
+  "verifiedAt": "2026-09-25T08:29:56.221Z",
+  "snapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-legacy-ab-20260925-v3",
+  "focused": {
+    "passed": 271,
+    "failed": 0,
+    "skipped": 0,
+    "startedAt": "2026-09-25T08:27:51.250Z",
+    "files": [
+      {
+        "file": "server/legacy-ab-access-pentest.test.ts",
+        "tests": [
+          {
+            "name": "mounted legacy A/B uses membership for owner",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B uses membership for manager",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B denies viewer",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B denies sales_supervisor",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B denies unauthenticated users and nonmembers",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected merchantId",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected confidenceLevel",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected actorUserId",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected activationAllowed",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected variantAId",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects injected variantBId",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects malformed id 0",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects malformed id -1",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects malformed id 1.5",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects malformed id 9007199254740992",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B rejects malformed id 1 OR 1=1",
+            "status": "passed"
+          },
+          {
+            "name": "mounted legacy A/B returns generic errors for foreign/missing data and storage errors",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B uses membership for owner",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B uses membership for manager",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B denies viewer",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B denies sales_supervisor",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B denies unauthenticated users and nonmembers",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected merchantId",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected confidenceLevel",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected actorUserId",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected activationAllowed",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected variantAId",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects injected variantBId",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects malformed id 0",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects malformed id -1",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects malformed id 1.5",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects malformed id 9007199254740992",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B rejects malformed id 1 OR 1=1",
+            "status": "passed"
+          },
+          {
+            "name": "direct legacy A/B returns generic errors for foreign/missing data and storage errors",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "server/public-claims-truth-pentest.test.ts",
+        "tests": [
+          {
+            "name": "payment public URL truth falls back to the production domain instead of emitting undefined",
+            "status": "passed"
+          },
+          {
+            "name": "payment public URL truth uses the canonical origin and strips accidental path/query fragments",
+            "status": "passed"
+          },
+          {
+            "name": "payment public URL truth rejects malformed and non-http public origins",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy allows an active link and blocks disabled, expired, and exhausted links",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy converts persisted halalas to Tap major currency units exactly",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy normalizes Saudi mobile numbers and rejects ambiguous input",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy reads only valid payment-link identifiers from payment metadata",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy does not allow test/live mode labels to disagree with the secret key",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy requires both Tap key types to agree with the selected mode",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy separates verified credentials from operational payment readiness",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy never serializes the Tap secret or reports stale readiness",
+            "status": "passed"
+          },
+          {
+            "name": "payment-link policy never reveals short secrets while masking",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate removes the two unconsumed direct-charge procedures",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate keeps public checkout as the only browser charge-creation journey",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate rejects ambiguous or cross-tenant payment-link targets before persistence",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate binds webhook side effects to the persisted local payment target",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate rechecks order, booking, and service tenancy before any state mutation",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate uses only locally stored metadata for the optional conversation attribution",
+            "status": "passed"
+          },
+          {
+            "name": "Tap payment ownership and canonical surface release gate does not consume a successful-use quota when a payment attempt fails",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate derives an opaque stable Tap reference per link and checkout attempt",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate rejects malformed checkout identities before contacting Tap",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate accepts only a matching initiated Tap-hosted response",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate bounds and parses Tap responses without exposing credentials",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate fails closed on a Tap timeout with a stable non-secret error",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate sends the official idempotent reference and persists only local identity",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate keeps the browser attempt stable for duplicate clicks and retries",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate enforces local charge and public-link identity in schema and migration 0033",
+            "status": "passed"
+          },
+          {
+            "name": "Tap checkout idempotency and response-integrity release gate ships a privacy-safe preflight and wires the migration in order",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate builds the exact Tap field hashstring with SAR precision",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate verifies Tap hashstring and rejects a raw-body HMAC",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate fails closed when a signed field is missing or malformed",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate does not treat INITIATED or AUTHORIZED as captured money",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate allows a refund only after capture and rejects terminal regression",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate uses only the official hashstring header on the HTTP webhook route",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate selects the verifier from local charge ownership and has no legacy mutation fallback",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate removes browser-callable webhook mutations from both router surfaces",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate validates local payment identity before its compare-and-set transition",
+            "status": "passed"
+          },
+          {
+            "name": "Tap webhook authenticity and state-machine release gate stores only bounded status fields and uses only the local customer phone",
+            "status": "passed"
+          },
+          {
+            "name": "Tap merchant credential probe release gate uses Tap official POST /charges/list with a one-record bound",
+            "status": "passed"
+          },
+          {
+            "name": "Tap merchant credential probe release gate discards list data and keeps the response bounded",
+            "status": "passed"
+          },
+          {
+            "name": "Tap merchant credential probe release gate binds a verification result to the exact credential tuple under a row lock",
+            "status": "passed"
+          },
+          {
+            "name": "Tap merchant credential probe release gate clears verification only for an authenticated rejection of the same snapshot",
+            "status": "passed"
+          },
+          {
+            "name": "Tap merchant credential probe release gate keeps both router surfaces on one probe and returns only generic errors",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates never exposes either stored secret and derives verification from key mode",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates encrypts/decrypts platform credentials and includes them in the migration",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates binds each probe result to the locked credential snapshot",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates uses the bounded official probe and invalidates only explicit credential rejection",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates returns a secret-free admin DTO and rejects mode mismatch before saving or testing",
+            "status": "passed"
+          },
+          {
+            "name": "platform Tap settings penetration gates keeps browser secret inputs blank and blocks stale credential tests",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates derives an opaque stable provider reference per merchant attempt",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates rejects malformed local identities before a provider request",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates uses one bounded charge client and validates the complete response identity",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates stores a minimal replayable summary and sends no internal identity to Tap metadata",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates deduplicates the local intent and attaches one charge with a conditional write",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates requires a UUID on every subscription charge surface and shares the hardened path",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates keeps browser attempts stable across double click and retry",
+            "status": "passed"
+          },
+          {
+            "name": "subscription Tap checkout idempotency and privacy gates ships the nullable legacy-safe column and composite unique migration in order",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates exposes only coarse local states and makes unknown equal pending",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates accepts provider-shaped opaque references and rejects URL/path payloads",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates keeps the public redirect callback local, read-only, strict, and minimal",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates keeps the signed webhook as the sole Tap subscription entitlement authority",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates turns the authenticated legacy callback into a tenant-owned local query",
+            "status": "passed"
+          },
+          {
+            "name": "subscription payment callback authority and enumeration gates polls both return pages with a finite budget and never declares callback success eagerly",
+            "status": "passed"
+          },
+          {
+            "name": "order payment return truth and retired Tap surfaces requires captured money and treats authorized as processing",
+            "status": "passed"
+          },
+          {
+            "name": "order payment return truth and retired Tap surfaces accepts only canonical opaque link and charge references",
+            "status": "passed"
+          },
+          {
+            "name": "order payment return truth and retired Tap surfaces returns one coarse local status without a not-found oracle or provider request",
+            "status": "passed"
+          },
+          {
+            "name": "order payment return truth and retired Tap surfaces retires duplicate unbounded clients and the unmounted payment router",
+            "status": "passed"
+          },
+          {
+            "name": "order payment return truth and retired Tap surfaces bounds both public return pages and never treats authorized as success",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority removes direct Tap charges and credentials from both conversation writers",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority creates the charge only after the customer enters the canonical checkout",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority binds one fixed single-use link to the persisted order identity",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority recovers only a duplicate-key race and verifies the winning row",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority routes protected order-link creation through the same canonical issuer",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority adds a fail-closed database identity gate and a count-only preflight",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority does not promise a fixed expiry without consulting the link",
+            "status": "passed"
+          },
+          {
+            "name": "conversation order payment-link authority carries only a server-validated conversation identity into checkout metadata",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate removes the unconsumed PayPal client, webhook, and admin editor",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate has no PayPal webhook or generic payment-gateway API surface",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate keeps legacy checkout closed and accepts no PayPal selection",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate redirects the retired admin URL to the canonical Tap settings page",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate points merchant settings to the real Tap configuration flow",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate drops the redundant credential table after the canonical Tap migrations",
+            "status": "passed"
+          },
+          {
+            "name": "platform payment-gateway retirement release gate does not require or migrate the retired table at runtime",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects commits payment, order projection, and link counters in one locked transaction",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects projects a signed refund and reverses collected totals without reactivating the link",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects commits a duplicate as a noop without incrementing counters twice",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects rolls back cross-tenant link drift before any mutation",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects rejects payment identity drift after the target lock without mutating state",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects serializes the target and rejects a second settled payment",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects projects captured booking payment without reviving an already cancelled booking",
+            "status": "passed"
+          },
+          {
+            "name": "atomic Tap order-payment effects destroys a connection whose commit outcome is unknown",
+            "status": "passed"
+          },
+          {
+            "name": "Tap order-payment effects release gate fails closed on schema drift and validates all local identities before mutation",
+            "status": "passed"
+          },
+          {
+            "name": "Tap order-payment effects release gate does not cancel an order or booking merely because one payment attempt failed",
+            "status": "passed"
+          },
+          {
+            "name": "Tap order-payment effects release gate uses the canonical WhatsApp delivery idempotency ledger for terminal notices",
+            "status": "passed"
+          },
+          {
+            "name": "Tap order-payment effects release gate adds a count-only preflight and an ordered migration for the projection columns",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary verifies the exact bytes and requires the documented signature strategy",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary accepts Salla current numeric merchant identity and the legacy object shape safely",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary rejects unsupported events, non-canonical IDs, unsafe numbers and invalid UTF-8",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary creates a deterministic, content-bound replay key",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary acknowledges only after the signed payload is durably enqueued",
+            "status": "passed"
+          },
+          {
+            "name": "Salla signed webhook boundary does not touch persistence for an invalid signature or unavailable raw body",
+            "status": "passed"
+          },
+          {
+            "name": "Salla canonical identity and order state uses only a token-authorized HTTPS store identity",
+            "status": "passed"
+          },
+          {
+            "name": "Salla canonical identity and order state maps official slugs conservatively and never defaults unknown states to pending",
+            "status": "passed"
+          },
+          {
+            "name": "Salla canonical identity and order state blocks out-of-order regressions and terminal-state rewrites",
+            "status": "passed"
+          },
+          {
+            "name": "Salla webhook durable-ingress release gate removes mutable JSON verification, in-memory replay state and domain enumeration",
+            "status": "passed"
+          },
+          {
+            "name": "Salla webhook durable-ingress release gate persists PII-minimized receipts before acknowledgement and leases retries safely",
+            "status": "passed"
+          },
+          {
+            "name": "Salla webhook durable-ingress release gate stores exact Salla identity under uniqueness and starts one primary worker",
+            "status": "passed"
+          },
+          {
+            "name": "Salla webhook durable-ingress release gate encrypts Salla tokens and derives connection identity from the authorized API response",
+            "status": "passed"
+          },
+          {
+            "name": "Salla webhook durable-ingress release gate ships a count-only cutover preflight and controlled identity backfill",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out canonicalizes Saudi and international phone forms and rejects unsafe identities",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out recognizes explicit Arabic, English and button-label opt-outs without matching questions",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out requires unambiguous marketing opt-in language and rejects ordinary commerce replies",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out adds one clear withdrawal instruction to campaign content",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out persists a canonical tenant-scoped withdrawal and stores only HMAC evidence",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out fails closed when suppression storage or schema is unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out deduplicates canonical recipients and removes invalid and opted-out phones in one batch",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out guards manual campaigns before durable claim and rechecks immediately before provider delivery",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out makes scheduled campaigns fail closed and routes every recipient through the JIT worker",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out applies initial and just-in-time suppression to automatic occasion campaigns",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out records text and interactive customer opt-outs before subscription or bot processing",
+            "status": "passed"
+          },
+          {
+            "name": "canonical campaign suppression and customer opt-out does not expose a delete-based silent resubscribe or log customer identity",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate removes unsupported fixed activation-time claims from rendered public journeys",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate limits the payment guide to the provider proven by the merchant flow",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate states the actual payment state machine instead of promising instant settlement",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate keeps structured data and visible ordering copy aligned with Tap verification",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate replaces stale support instructions and fixed model/provider promises",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate removes unsupported scale, always-on, and instant-sync SEO promises in both languages",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate qualifies training outcomes, payment confirmation, and campaign compliance",
+            "status": "passed"
+          },
+          {
+            "name": "public proof and payment-claim release gate anchors marketing copy to key-mode, persistence, and webhook controls in code",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "server/rbac-pentest.test.ts",
+        "tests": [
+          {
+            "name": "Permissions Module Owner — Full Access has all 15 permissions",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Owner — Full Access can manage subscription",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Owner — Full Access can add other owners",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Owner — Full Access can manage team",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Manager — All except subscription & owner can manage products",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Manager — All except subscription & owner can manage bot settings",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Manager — All except subscription & owner CANNOT manage subscription",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Manager — All except subscription & owner CANNOT add owners",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Manager — All except subscription & owner CAN manage team (non-owner members)",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only can read conversations",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only can reply to conversations",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only can manage products",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only can read analytics",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only CANNOT manage campaigns",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only CANNOT manage bot settings",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only CANNOT manage team",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only CANNOT manage WhatsApp",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Sales Supervisor — Customer-facing only CANNOT manage settings",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only can read conversations",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only can read analytics",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only CANNOT reply to conversations",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only CANNOT manage products",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only CANNOT manage anything",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Viewer — Read-only has exactly 2 permissions (read only)",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Security Boundaries rejects unknown role",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Security Boundaries rejects null role",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Security Boundaries rejects undefined role",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Security Boundaries rejects unknown permission for valid role",
+            "status": "passed"
+          },
+          {
+            "name": "Permissions Module Security Boundaries getRoleInfo returns correct Arabic labels",
+            "status": "passed"
+          },
+          {
+            "name": "TRPC Auth Middleware exports merchantProcedure",
+            "status": "passed"
+          },
+          {
+            "name": "TRPC Auth Middleware exports permissionProcedure factory",
+            "status": "passed"
+          },
+          {
+            "name": "TRPC Auth Middleware permissionProcedure returns a procedure",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantMembers table is exported",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantInvitations table is exported",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables MerchantMember type is exported",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantMembers has required columns",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantInvitations has token column",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantInvitations has status column",
+            "status": "passed"
+          },
+          {
+            "name": "Schema — RBAC Tables merchantInvitations has expiresAt column",
+            "status": "passed"
+          },
+          {
+            "name": "Team Router — Contract teamRouter is exported",
+            "status": "passed"
+          },
+          {
+            "name": "Team Router — Contract has all required procedures",
+            "status": "passed"
+          },
+          {
+            "name": "Team Router — Contract invite requires email + role",
+            "status": "passed"
+          },
+          {
+            "name": "Team Router — Contract acceptInvite is a public POST mutation so the bearer is not encoded in a GET URL",
+            "status": "passed"
+          },
+          {
+            "name": "Team Router — Contract confirmInvite is a protected mutation",
+            "status": "passed"
+          },
+          {
+            "name": "Privilege Escalation — Prevention viewer cannot have team.manage permission",
+            "status": "passed"
+          },
+          {
+            "name": "Privilege Escalation — Prevention sales_supervisor cannot have settings.manage",
+            "status": "passed"
+          },
+          {
+            "name": "Privilege Escalation — Prevention manager cannot manage subscriptions",
+            "status": "passed"
+          },
+          {
+            "name": "Privilege Escalation — Prevention invite role cannot be owner",
+            "status": "passed"
+          },
+          {
+            "name": "Privilege Escalation — Prevention only owner/manager/sales_supervisor/viewer are valid roles",
+            "status": "passed"
+          },
+          {
+            "name": "Context — MerchantRole Injection TrpcContext type includes merchantId",
+            "status": "passed"
+          },
+          {
+            "name": "Context — MerchantRole Injection getMerchantMemberByUserId is exported from db",
+            "status": "passed"
+          },
+          {
+            "name": "Invitation Token — Security crypto module is available for token generation",
+            "status": "passed"
+          },
+          {
+            "name": "Invitation Token — Security generated tokens are unique",
+            "status": "passed"
+          },
+          {
+            "name": "Invitation Token — Security token has sufficient entropy (32 bytes = 256 bits)",
+            "status": "passed"
+          },
+          {
+            "name": "Cross-Role Boundary Fuzz each role only has expected permissions (no hidden grants)",
+            "status": "passed"
+          },
+          {
+            "name": "Cross-Role Boundary Fuzz viewer has strictly fewer permissions than sales_supervisor",
+            "status": "passed"
+          },
+          {
+            "name": "Cross-Role Boundary Fuzz sales_supervisor has strictly fewer permissions than manager",
+            "status": "passed"
+          },
+          {
+            "name": "Cross-Role Boundary Fuzz manager has strictly fewer permissions than owner",
+            "status": "passed"
+          },
+          {
+            "name": "Cross-Role Boundary Fuzz permission hierarchy is strictly ordered: viewer < sales < manager < owner",
+            "status": "passed"
+          },
+          {
+            "name": "Router Integration team router is mounted on appRouter",
+            "status": "passed"
+          },
+          {
+            "name": "Router Integration team.list exists on appRouter",
+            "status": "passed"
+          },
+          {
+            "name": "Router Integration team.invite exists on appRouter",
+            "status": "passed"
+          },
+          {
+            "name": "Router Integration team.myRole exists on appRouter",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "server/ai/legacy-ab-pentest.test.ts",
+        "tests": [
+          {
+            "name": "legacy A/B is not approved sales evidence does not fabricate a winner or confidence for 50",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not fabricate a winner or confidence for 100000",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not fabricate a winner or confidence for 1",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not fabricate a winner or confidence for 0",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters -1/0 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters 10/11 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters 10/-1 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters 1.5/1 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters NaN/0 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters Infinity/0 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence marks malformed counters 9007199254740992/0 unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not expose a missing or foreign test",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence never promotes old selection variant_a, including repeated calls",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence never promotes old selection variant_b, including repeated calls",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence never promotes old selection no_winner, including repeated calls",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence never promotes old selection null, including repeated calls",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment undefined or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment positive or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment happy or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment neutral or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment negative or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence does not infer purchase from sentiment unknown or a short conversation",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence keeps stored history intact while masking unsupported confidence at the API boundary",
+            "status": "passed"
+          },
+          {
+            "name": "legacy A/B is not approved sales evidence passes tenant ownership for raw observations",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation keeps the arm across retries and new conversations for the same customer",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation allocates both arms over a fixed synthetic customer cohort",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation does not fall back to random allocation without an owned conversation",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects noncanonical customer identity ",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects noncanonical customer identity name",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects noncanonical customer identity 00966500000001",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects noncanonical customer identity 966***001",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects noncanonical customer identity 966500000001 OR 1=1",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation refuses unavailable active test null",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation refuses unavailable active test {\"id\":4,\"merchantId\":21,\"status\":\"running\",\"variantAText\":\"A text\",\"variantBText\":\"B text\",\"variantAUsageCount\":50,\"variantASuccessCount\":40,\"variantBUsageCount\":50,\"variantBSuccessCount\":25,\"confidenceLevel\":95}",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation refuses unavailable active test {\"id\":4,\"merchantId\":20,\"status\":\"paused\",\"variantAText\":\"A text\",\"variantBText\":\"B text\",\"variantAUsageCount\":50,\"variantASuccessCount\":40,\"variantBUsageCount\":50,\"variantBSuccessCount\":25,\"confidenceLevel\":95}",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation refuses unavailable active test {\"id\":4,\"merchantId\":20,\"status\":\"completed\",\"variantAText\":\"A text\",\"variantBText\":\"B text\",\"variantAUsageCount\":50,\"variantASuccessCount\":40,\"variantBUsageCount\":50,\"variantBSuccessCount\":25,\"confidenceLevel\":95}",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects invalid ids 0 before lookup",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects invalid ids -1 before lookup",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects invalid ids 1.5 before lookup",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects invalid ids 9007199254740992 before lookup",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation rejects invalid ids 1 OR 1=1 before lookup",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation bounds testName",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation bounds keyword",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation bounds variantAText",
+            "status": "passed"
+          },
+          {
+            "name": "stable customer allocation bounds variantBText",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  }
+}

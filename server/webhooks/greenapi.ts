@@ -26,7 +26,6 @@ import { whatsAppEffectKey, whatsAppEventEffectKey } from '../channels/whatsapp/
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
-import { selectABTestVariant, recordABTestResult } from '../ai/ab-testing';
 import { logDelivery } from '../routers-monitor';
 import { captureMerchantCorrection } from '../ai/learning-engine';
 import {

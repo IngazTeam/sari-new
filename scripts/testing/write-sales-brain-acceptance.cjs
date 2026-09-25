@@ -539,6 +539,10 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبارات فعلية لحفظ الاستهلاك وفقد إقرار commit والتنافس بين عمليات مستقلة وعبور اليوم وتغيير السعر والتسوية اليدوية وانتهاء الحجز أثناء انتظار قفل المحاسبة.','docs/SARI_SALES_BRAIN_DURABLE_USAGE_SETTLEMENT_2026-09-24.md'],
  B065:[entries.B065[0]+' ترحيل 0104 يضيف الاستهلاك والجدولة إلى دفتر الحجز بقيد سلامة وفهرس أهلية؛ السجلات السابقة تبقى دون استهلاك مستنتج أو إعادة تسوية تلقائية.','drizzle/0104_ai_usage_settlement.sql'],
 });
+Object.assign(entries, {
+ B044:[entries.B044[0]+' أُغلق منفذ ترقية الردود من نتائج A/B القديمة؛ لا فائز أو اختيار يدوي أو ثقة تاريخية يفعّل ردًا أو يتجاوز الاعتماد.','server/ai/legacy-ab.mysql.test.ts'],
+ B045:['أُصلح مسار A/B القديم: توزيع ثابت مشتق من هوية عميل المحادثة المملوكة، عدادات وصفية ذرية، عزل التاجر والصلاحية، منع اختبارات نشطة متنافسة أو إعادة فتح نتيجة مغلقة. أزيلت الثقة الاحتمالية المصطنعة؛ الاختيار اليدوي غير معتمد ولا يفعل ردًا. الدالة غير موصولة حاليًا بدورة إرسال واتساب؛ لا تسجيل تعرضات فريدة أو تخصيص دائم أو نتيجة شراء موثقة أو بروتوكول مسبق أو قياس أثر. التجربة التجارية ما زالت مفتوحة.','server/ai/legacy-ab.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
