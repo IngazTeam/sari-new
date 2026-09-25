@@ -3,8 +3,9 @@ import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sa
 import { registerSalesExperimentProtocolInput, withdrawSalesExperimentProtocolInput } from '../../../shared/sales-experiment-protocol';
 import { syntheticSalesExperimentDesign } from '../../../server/tests/helpers/sales-experiment-design';
 import { calculateSalesExperimentSample } from '../../../shared/sales-experiment-sample';
+import { planningReviewFixtureRecord } from './sales-planning-review-data';
 const rawMode = new URL(location.href).searchParams.get('case') || '';
-const mode = (rawMode.startsWith('cohort-') || rawMode.startsWith('inspection-')) ? 'cohort' : rawMode.replace('protocol-', '') || 'ready';
+const mode = (rawMode.startsWith('cohort-') || rawMode.startsWith('inspection-') || rawMode.startsWith('plan-review-')) ? 'cohort' : rawMode.replace('protocol-', '') || 'ready';
 const win = window as any, listeners = new Set<() => void>(), records = new Map<number, any>();
 const state = { sectorRevision: 0, candidateId: 4, revoked: false, newest: 45, registration: null as any, withdrawal: null as any };
 const emit = () => listeners.forEach(listener => listener());
@@ -24,6 +25,7 @@ function record(id: number, registered = false) {
 }
 if (['history', 'xss', 'history-error', 'standalone'].includes(mode)) for (let id = 1; id <= 45; id++) records.set(id, record(id));
 if (mode.startsWith('withdraw') || ['existing','unsupported','record-error','cohort','legacy-sample','corrupt-sample'].includes(mode)) records.set(45, record(45, true));
+if (rawMode.startsWith('plan-review-')) records.set(45, planningReviewFixtureRecord());
 function value(kind: string, input: any) {
   if (kind === 'candidate') return { proposalId: 16, reviewId: 2, sourceDigest: 'a'.repeat(64), baselineDigest: 'b'.repeat(64), expectedVersion: 1,
     canCreate: false, activationAllowed: false, latestCandidate: mode === 'missing' ? null : { id: state.candidateId, version: state.candidateId - 3, current: mode !== 'stale', artifactDigest: 'c'.repeat(64), activationAllowed: false, bundle: { version: 'sales-style-candidate.v1' } }, evaluationRuns: [] };

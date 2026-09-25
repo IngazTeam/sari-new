@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T13:11:49.962Z",
+  "generatedAt": "2026-09-25T14:41:22.265Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -86,6 +86,18 @@
     "sales-inspection-qualified-ar-375.png",
     "sales-inspection-qualified-en-1440.png",
     "sales-inspection-qualified-en-375.png",
+    "sales-planning-comparisons-ar-1440.png",
+    "sales-planning-comparisons-ar-375.png",
+    "sales-planning-comparisons-en-1440.png",
+    "sales-planning-comparisons-en-375.png",
+    "sales-planning-decision-ar-1440.png",
+    "sales-planning-decision-ar-375.png",
+    "sales-planning-decision-en-1440.png",
+    "sales-planning-decision-en-375.png",
+    "sales-planning-evidence-ar-1440.png",
+    "sales-planning-evidence-ar-375.png",
+    "sales-planning-evidence-en-1440.png",
+    "sales-planning-evidence-en-375.png",
     "sales-protocol-review-ar-1440.png",
     "sales-protocol-review-ar-375.png",
     "sales-protocol-review-en-1440.png",
@@ -97,6 +109,166 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "planning_review_complete_evidence_32_comparisons_keyboard_and_saved_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_self_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_unavailable_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_loading_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_fetching_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_unsupported_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_wrong-protocol_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_missing-pair_blocks_new_decision",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_unknown_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_mismatch_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_outage_same_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_conflict_retains_confirmed_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_refresh-error_retains_confirmed_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_slow_retains_confirmed_state",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_changed_basis_preserves_draft_and_revokes_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_changed_decision_preserves_draft_and_revokes_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_hide_permission_loss_restore_and_explicit_discard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_history_bounded_history_without_current_approval",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_history-error_bounded_history_without_current_approval",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_historical-unavailable_bounded_history_without_current_approval",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "planning_review_untrusted_evidence_is_text_and_wraps",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

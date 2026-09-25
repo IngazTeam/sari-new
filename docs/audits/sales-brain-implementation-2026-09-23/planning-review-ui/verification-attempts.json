@@ -1,0 +1,85 @@
+{
+  "scope": "Local checks; final evidence uses the staged-source snapshot.",
+  "attempts": [
+    {
+      "kind": "types",
+      "result": "Added the new translation section to MerchantUxCopy after the first type check identified the missing declaration."
+    },
+    {
+      "kind": "focused",
+      "passed": 152,
+      "failed": 0,
+      "logSha256": "5e847eedf0a5e10f590d117ccf3a4c7b7c1aeefb4d1cd046161b7df2d9be143c"
+    },
+    {
+      "kind": "browser-first-two",
+      "result": "The permission test timed out reading textarea.disabled. The field was correctly disabled by its parent fieldset; changed the assertion to matches(:disabled). No UI protection or timeout was relaxed.",
+      "logs": [
+        {
+          "file": ".tmp/planning-review-ui-targeted.log",
+          "sha256": "bdd5e0fdc800baf178885f79bff9f1e33846c0967f445943e7324ca9604496ed"
+        },
+        {
+          "file": ".tmp/planning-review-ui-recheck.log",
+          "sha256": "4fd46addff741cdaf1648028823096249d36a8bf6de373a60de12946234e7353"
+        }
+      ]
+    },
+    {
+      "kind": "browser-recheck",
+      "scenarios": 30,
+      "screenshots": 12,
+      "failed": 0,
+      "logSha256": "2369894df6a38e251f1750b5434b819bbeaa8886443bc1a1a75d0127ccd40fb4"
+    },
+    {
+      "kind": "additional-contracts",
+      "result": "Three additional client checks reject contradictory output scores, preferences and current-review evidence. Included in final verification."
+    },
+    {
+      "kind": "database-first",
+      "result": "2361 passed, one local connection timeout (ETIMEDOUT 127.0.0.1:33087) in sales-offer-authority.mysql.test.ts. A subsequent health read succeeded with zero server connection-error counters. The complete database group and remaining groups were rerun without changing source or timeouts.",
+      "reportSha256": "0398e667c136474905702c28cc4fec52b6a301c2daf75536079339fc39cedc8d",
+      "health": {
+        "health": [
+          {
+            "alive": 1,
+            "databaseTime": "2026-09-25T11:16:20.344Z"
+          }
+        ],
+        "status": [
+          {
+            "Variable_name": "Aborted_connects",
+            "Value": "0"
+          },
+          {
+            "Variable_name": "Connection_errors_internal",
+            "Value": "0"
+          },
+          {
+            "Variable_name": "Connection_errors_max_connections",
+            "Value": "0"
+          },
+          {
+            "Variable_name": "Threads_connected",
+            "Value": "1"
+          },
+          {
+            "Variable_name": "Threads_running",
+            "Value": "2"
+          },
+          {
+            "Variable_name": "Uptime",
+            "Value": "5480"
+          }
+        ]
+      },
+      "logSha256": "a6872bdfec2cf62cb59712f38a306e85a104bd4ee60a64980f268ce1252c6afc"
+    },
+    {
+      "kind": "browser-full-first",
+      "result": "The final XSS fixture retained an unsaved draft after the planning suite removed its dialog handler. Its actual beforeunload guard blocked navigation into the next suite. The verifier now explicitly discards that draft through the UI; application protections were unchanged. This verifier-only correction was staged and copied to the snapshot before a fresh complete browser run.",
+      "logSha256": "3a6b006c4d0c66f0299ba138df875792eb2e0ddfa55e3d08f371fd5516c69b23"
+    }
+  ]
+}

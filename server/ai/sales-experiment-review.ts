@@ -11,7 +11,7 @@ import { getCurrentLearningPolicyEvaluationRoute } from './learning-policy-evalu
 import { getSalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { prepareSalesExperimentReviewInput, recordSalesExperimentReviewInput, salesExperimentReviewBasis,
-  salesExperimentReviewSnapshot, salesExperimentReviewHistoryInput, type RecordSalesExperimentReviewInput } from './sales-experiment-review-contract';
+  salesExperimentReviewSnapshot, salesExperimentReviewHistoryInput, salesExperimentReviewWorkspaceInput, type RecordSalesExperimentReviewInput } from './sales-experiment-review-contract';
 
 const id = z.number().int().positive().safe();
 export class SalesExperimentReviewConflict extends Error { constructor() { super('Sales experiment review changed or is unavailable'); } }
@@ -87,14 +87,33 @@ async function currentBasis(c: PoolConnection, merchant: number, protocolId: num
     rubricDigest: r.rubric_digest, participantUserIds: Array.from(new Set(participants.map(Number))).sort((a, b) => a - b) });
   const checkedAt = await clock(c);
   if (Date.parse(checkedAt) >= Date.parse(p.design.window.enrollmentStartsAt)) conflict();
-  return { basis, basisDigest: policyArtifactDigest(basis), checkedAt };
+  return { basis, basisDigest: policyArtifactDigest(basis), checkedAt,
+    evidence: { protocol: record, cohort, pairs: outputs.pairs, outputReview: reviewed.review } };
+}
+
+/** One locked read binds displayed evidence to the exact review basis; no provider calls. */
+export async function getSalesExperimentReviewWorkspace(merchantId: number, actorUserId: number, value: z.infer<typeof salesExperimentReviewWorkspaceInput>) {
+  const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = salesExperimentReviewWorkspaceInput.parse(value);
+  return checkoutTransaction(async c => {
+    await lockMerchant(c, merchant);
+    const protocol = await loadSalesExperimentProtocol(c, merchant, input.protocolId);
+    const [runs] = await c.execute<any[]>(`SELECT id FROM ai_learning_policy_evaluations
+      WHERE merchant_id=? AND candidate_id=? ORDER BY id DESC LIMIT 1 FOR SHARE`, [merchant, protocol.protocol.candidate.id]);
+    if (runs.length !== 1) conflict();
+    const packet = await currentBasis(c, merchant, input.protocolId, Number(runs[0].id)), saved = await latest(c, merchant, input.protocolId);
+    const current = !!saved && saved.reviewerPresent && saved.snapshot.basisDigest === packet.basisDigest;
+    return { ...packet, reviewerUserId: actor, latestReview: saved, expectedRevision: saved?.snapshot.revision ?? 0,
+      canReview: !packet.basis.participantUserIds.includes(actor),
+      stage: !saved ? 'not_reviewed' : !current ? 'review_stale' : saved.snapshot.verdict,
+      planningReviewCurrent: current && saved!.snapshot.verdict === 'approved', activationAllowed: false as const, experimentStarted: false as const };
+  });
 }
 
 export async function prepareSalesExperimentReview(merchantId: number, actorUserId: number, value: z.infer<typeof prepareSalesExperimentReviewInput>) {
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = prepareSalesExperimentReviewInput.parse(value);
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
-    const packet = await currentBasis(c, merchant, input.protocolId, input.runId), saved = await latest(c, merchant, input.protocolId);
+    const { evidence: _evidence, ...packet } = await currentBasis(c, merchant, input.protocolId, input.runId), saved = await latest(c, merchant, input.protocolId);
     const current = !!saved && saved.reviewerPresent && saved.snapshot.basisDigest === packet.basisDigest;
     return { ...packet, latestReview: saved, expectedRevision: saved?.snapshot.revision ?? 0,
       canReview: !packet.basis.participantUserIds.includes(actor),

@@ -579,6 +579,11 @@ Object.assign(entries, {
  B062:[entries.B062[0]+' تربط بصمة أساس المراجعة مصادرها، وتتقادم عند إصدار أحدث لتقييم الردود ولو نجح التقييمان. لا يجيز مصدر متغير أو قطاع/نموذج متغير أو رد محرف كتابة مراجعة جديدة؛ الإيصال التاريخي يبقى قابلاً للاسترجاع دون ادعاء صلاحية حالية.','server/sales-experiment-review-access-pentest.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0111 يضيف سجل المراجعات دون اعتماد تلقائي أو تغيير الجداول القائمة، مع تفرد الطلب والإصدار وقيود القرار؛ اختُبر الترحيل من 0000–0110 والإعادة وحفظ سقف 100 دولار.','scripts/testing/verify-sales-experiment-review-migration.cjs'],
 });
+Object.assign(entries, {
+ B044:[entries.B044[0].replace('واجهة المراجعة وربط بوابة إطلاق وتشغيل معتمد ما زالا مطلوبين','ربط بوابة إطلاق وتشغيل معتمد ما زال مطلوبًا')+' أضيفت واجهة مراجعة مستقلة بثلاث خطوات تعرض الخطة والتأهيل والردود الـ64 والأحكام المسجلة، مع علامات مراجعة صريحة وإقرارين وقرار مسبب غير محدد مسبقًا. لا إطلاق من الواجهة.','scripts/testing/verify-sales-planning-review-ui.cjs'],
+ B062:[entries.B062[0]+' قراءة موحدة داخل معاملة تربط كل الأدلة المعروضة بأحدث تشغيل مملوك وأساس المراجعة؛ لا اختيار معرّف يدوي أو الرجوع لنجاح قديم. الواجهة ترفض المصادر والإيصالات المتناقضة ولا تدعي أن علامة القراءة تثبت صحة الحكم.','server/ai/sales-experiment-review.mysql.test.ts'],
+ B063:[entries.B063[0]+' واجهة عربية/إنجليزية للمراجعة المستقلة والسجل التاريخي حتى عند تعذر مراجعة جديدة. تحفظ المسودة والأدلة عند الإخفاء وفقد الصلاحية، وتزيل الإقرار عند تغير المصدر أو القرار، وتسترجع الطلب نفسه عند غموض الحفظ وتحتفظ بإيصال النجاح بعد فشل القراءة.','server/sales-planning-review-ui-pentest.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

@@ -46,8 +46,8 @@ import { registerSalesExperimentProtocol, getSalesExperimentProtocol, getSalesEx
 import { freezeSalesCohortInput, readSalesCohortInput, inspectSalesCohortInput } from './ai/sales-experiment-cohort-contract';
 import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, prepareSalesExperimentCohort, listSalesExperimentCohortSources, SalesCohortConflict } from './ai/sales-experiment-cohort';
 import { listSalesCohortSourcesInput } from '../shared/sales-cohort-inspection';
-import { prepareSalesExperimentReviewInput, recordSalesExperimentReviewInput, salesExperimentReviewHistoryInput } from './ai/sales-experiment-review-contract';
-import { prepareSalesExperimentReview, recordSalesExperimentReview, getSalesExperimentReviewHistory, SalesExperimentReviewConflict } from './ai/sales-experiment-review';
+import { prepareSalesExperimentReviewInput, recordSalesExperimentReviewInput, salesExperimentReviewHistoryInput, salesExperimentReviewWorkspaceInput } from './ai/sales-experiment-review-contract';
+import { prepareSalesExperimentReview, recordSalesExperimentReview, getSalesExperimentReviewHistory, getSalesExperimentReviewWorkspace, SalesExperimentReviewConflict } from './ai/sales-experiment-review';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -342,6 +342,10 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getSalesExperimentReviewWorkspace: permissionProcedure('bot_settings.manage').input(salesExperimentReviewWorkspaceInput).query(async ({ ctx, input }) => {
+    try { return await getSalesExperimentReviewWorkspace(ctx.merchantId, ctx.user.id, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment review changed or is unavailable' }); }
+  }),
   prepareSalesExperimentReview: permissionProcedure('bot_settings.manage').input(prepareSalesExperimentReviewInput).query(async ({ ctx, input }) => {
     try { return await prepareSalesExperimentReview(ctx.merchantId, ctx.user.id, input); }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment review changed or is unavailable' }); }

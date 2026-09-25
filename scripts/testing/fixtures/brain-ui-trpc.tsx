@@ -1,4 +1,5 @@
 import { salesCohortInspectionFixture } from './sales-cohort-inspection-trpc';
+import { planningReviewFixture } from './sales-planning-review-trpc';
 import { salesCohortFixture } from './sales-cohort-ui-trpc';
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
 import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
@@ -193,6 +194,7 @@ export const trpc = {
     } },
   },
   sariBrain: {
+    ...planningReviewFixture,
     ...evaluationFixture,
     ...salesProtocolFixture,
     ...salesCohortFixture,
@@ -227,7 +229,7 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
-    ...((mode.startsWith('protocol-') || (mode.startsWith('cohort-') || mode.startsWith('inspection-'))) ? protocolBasisFixture : {}),
+    ...((mode.startsWith('protocol-') || (mode.startsWith('cohort-') || mode.startsWith('inspection-') || mode.startsWith('plan-review-'))) ? protocolBasisFixture : {}),
     getLearningPolicyReview: learningPolicyReviewFixture.query,
     recordLearningPolicyReview: learningPolicyReviewFixture.mutation,
     getLearningAnalysisStatus:{useQuery:()=>{

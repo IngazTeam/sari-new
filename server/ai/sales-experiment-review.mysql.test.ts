@@ -9,7 +9,8 @@ import { startLearningPolicyEvaluation, getLearningPolicyEvaluation } from './le
 import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from './learning-policy-output-review';
 import { outputReviewRubricDigest } from './learning-policy-output-review-contract';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
-import { prepareSalesExperimentReview, recordSalesExperimentReview, getSalesExperimentReviewHistory } from './sales-experiment-review';
+import { prepareSalesExperimentReview, recordSalesExperimentReview, getSalesExperimentReviewHistory, getSalesExperimentReviewWorkspace } from './sales-experiment-review';
+import { compatibleReviewWorkspace } from '../../client/src/lib/sales-experiment-review';
 import type { RecordSalesExperimentReviewInput } from './sales-experiment-review-contract';
 import { updateSalesSectorSettings } from './sales-sector-settings';
 const route = vi.hoisted(() => ({ enabled: true, model: 'synthetic-model' }));
@@ -74,6 +75,22 @@ describe.skipIf(!process.env.DATABASE_URL)('independent experiment planning revi
     expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
     expect(await query('SELECT reservation_key FROM ai_usage_reservations WHERE scope_key=?', [`merchant:${owner.merchantId}`])).toHaveLength(0);
     expect(fetch).not.toHaveBeenCalled();
+  });
+  it('loads a browser-compatible workspace from the latest owned run without generation or a supplied run id', async () => {
+    const w = await getSalesExperimentReviewWorkspace(owner.merchantId, reviewer.userId, { protocolId: input.protocolId });
+    expect(w.basisDigest).toBe(input.basisDigest); expect(w.evidence.pairs).toHaveLength(32);
+    expect(compatibleReviewWorkspace(w, seeded.protocol)).toBe(true);
+    expect(w).toMatchObject({ reviewerUserId: reviewer.userId, canReview: true, activationAllowed: false });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await prepare()).not.toHaveProperty('evidence');
+  });
+  it('exposes bound evidence to its preparer with self review explicitly blocked', async () => {
+    expect(await getSalesExperimentReviewWorkspace(owner.merchantId, owner.userId, { protocolId: input.protocolId })).toMatchObject({ canReview: false, reviewerUserId: owner.userId });
+  });
+  it('refuses foreign or stale workspace evidence without leaking another activity', async () => {
+    await expect(getSalesExperimentReviewWorkspace(reviewer.merchantId, reviewer.userId, { protocolId: input.protocolId })).rejects.toThrow();
+    await query("UPDATE sari_learning_signals SET customer_message='Different evidence' WHERE id=?", [seeded.signalId]);
+    await expect(getSalesExperimentReviewWorkspace(owner.merchantId, reviewer.userId, { protocolId: input.protocolId })).rejects.toThrow();
   });
   it('rejects self approval and self rejection, even with a valid basis', async () => {
     expect(await prepare(owner.userId)).toMatchObject({ canReview: false });

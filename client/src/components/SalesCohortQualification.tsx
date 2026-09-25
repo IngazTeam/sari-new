@@ -92,7 +92,7 @@ function CohortPanel({ record, active, onLock }: { record: ProtocolRecord; activ
 }
 function stageLabels(t: ReturnType<typeof useTranslation>['t']) { return { new: t('merchantUx.salesCohort.new'), interested: t('merchantUx.salesCohort.interested'), qualified: t('merchantUx.salesCohort.qualified'), ready: t('merchantUx.salesCohort.ready'), payment_link_sent: t('merchantUx.salesCohort.payment_link_sent'), payment_failed: t('merchantUx.salesCohort.payment_failed'), stalled: t('merchantUx.salesCohort.stalled') }; }
 function FixedConditions() { const { t } = useTranslation(); return <div className="space-y-2 rounded-md bg-muted/50 p-3"><p className="font-medium">{t('merchantUx.salesCohort.fixed')}</p><p>{t('merchantUx.salesCohort.safeguards')}</p><p>{t('merchantUx.salesCohort.history')}</p></div>; }
-function RulesSummary({ rules, review }: { rules: SalesCohortRules; review: string }) {
+export function RulesSummary({ rules, review }: { rules: SalesCohortRules; review: string }) {
   const { t } = useTranslation(), labels = stageLabels(t);
   return <div className="space-y-3" data-cohort-summary><dl className="grid gap-3 sm:grid-cols-2">{[
     [t('merchantUx.salesCohort.minimum'), rules.minimumCharacters], [t('merchantUx.salesCohort.maximum'), rules.maximumCharacters],
