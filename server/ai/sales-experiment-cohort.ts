@@ -52,6 +52,9 @@ async function load(c: PoolConnection, merchant: number, protocolId: number) {
   return frozen;
 }
 
+/** Internal composed read; caller holds the merchant transaction lock. Not a freshness check. */
+export const loadSalesExperimentCohort = load;
+
 /** Freezes supported predicates before enrollment; no caller can turn prose into executable authority. */
 export async function freezeSalesExperimentCohort(merchantId: number, actorUserId: number, value: FreezeSalesCohortInput) {
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = freezeSalesCohortInput.parse(value);

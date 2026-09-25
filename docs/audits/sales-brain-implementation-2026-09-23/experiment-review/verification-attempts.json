@@ -1,0 +1,30 @@
+{
+  "scope": "Local verification attempts; final evidence is the complete staged-source snapshot run.",
+  "attempts": [
+    {
+      "kind": "types",
+      "result": "Initial TypeScript check rejected Set spreading at the configured target; changed to Array.from without changing validation semantics."
+    },
+    {
+      "kind": "runner",
+      "result": "Sandbox prevented esbuild config loading; retried with approved local execution scope."
+    },
+    {
+      "kind": "focused",
+      "passed": 99,
+      "failed": 1,
+      "cause": "The new no-budget-side-effect assertion selected nonexistent id instead of reservation_key; corrected the test query.",
+      "logSha256": "c3b22548be000259b4d8f4ea0f6ac7375f3319b54888970b849581f10b13bb1d"
+    },
+    {
+      "kind": "focused-recheck",
+      "passed": 102,
+      "failed": 0,
+      "logSha256": "c749dd0db43e83ea27946492afbb2af356339ee62e9f0d1e6faccb3cf2f9dfff"
+    },
+    {
+      "kind": "additional-case",
+      "result": "Added refusal of an older passing evaluation after a newer run exists; covered by final full verification."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+CREATE TABLE `ai_sales_experiment_reviews` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `protocol_id` bigint unsigned NOT NULL,
+  `revision` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `basis_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `review_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `snapshot` json NOT NULL,
+  `verdict` varchar(16) NOT NULL,
+  `actor_user_id` int DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sales_review_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_sales_review_revision` (`protocol_id`,`revision`),
+  CONSTRAINT `ck_sales_review_revision` CHECK (`revision` BETWEEN 1 AND 9007199254740991),
+  CONSTRAINT `ck_sales_review_verdict` CHECK (`verdict` IN ('approved','rejected')),
+  CONSTRAINT `fk_sales_review_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_review_protocol` FOREIGN KEY (`protocol_id`) REFERENCES `ai_sales_experiment_protocols` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_review_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+);

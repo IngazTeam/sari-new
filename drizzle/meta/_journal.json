@@ -778,6 +778,13 @@
       "when": 1792972800000,
       "tag": "0110_sales_experiment_cohorts",
       "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1793059200000,
+      "tag": "0111_sales_experiment_reviews",
+      "breakpoints": true
     }
   ]
 }

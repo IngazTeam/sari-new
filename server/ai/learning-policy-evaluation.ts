@@ -30,7 +30,8 @@ function routeFor(config:Omit<ZahyPiRuntimeConfig,'apiKey'>,openaiModel:string){
   return {provider,model,digest:policyArtifactDigest({provider,model,
     route:provider==='zahypi'?providerRouteFingerprint(config):'openai-chat-completions'})};
 }
-async function freshRoute(){return routeFor(await getZahyPiRuntimeMetadata(),await getActiveModel());}
+export async function getCurrentLearningPolicyEvaluationRoute(){return routeFor(await getZahyPiRuntimeMetadata(),await getActiveModel());}
+const freshRoute = getCurrentLearningPolicyEvaluationRoute;
 async function receipt(c:PoolConnection,merchantId:number,row:any){
   const outputReview=await latestOutputReviewReceipt(c,merchantId,Number(row.id));
   return {runId:Number(row.id),candidateId:Number(row.candidate_id),state:row.state as 'running'|'completed'|'halted'|'cancelled',

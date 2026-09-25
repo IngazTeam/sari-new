@@ -25,7 +25,7 @@ async function reviewHistory(c: PoolConnection, merchantId: number, runId: numbe
     actorUserId: row.actor_user_id === null ? null : Number(row.actor_user_id), createdAt: row.created_at }));
 }
 
-async function completedOutputs(c: PoolConnection, merchantId: number, run: any) {
+export async function loadCompletedLearningPolicyOutputs(c: PoolConnection, merchantId: number, run: any) {
   const { bundle } = await loadLearningPolicyCandidateArtifact(c, merchantId, Number(run.candidate_id), run.artifact_digest);
   if (run.state !== 'completed' || !run.observed_model || policyArtifactDigest(decode(run.recipe)) !== policyArtifactDigest(evaluationRecipe)) conflict();
   const expected = evaluationSamples(bundle);
@@ -57,7 +57,7 @@ export async function getLearningPolicyOutputReview(merchantId: number, value: z
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
     const run = await loadRun(c, merchant, input.runId), history = await reviewHistory(c, merchant, input.runId), latest = history[0];
-    const outputs = run.state === 'completed' ? await completedOutputs(c, merchant, run) : null;
+    const outputs = run.state === 'completed' ? await loadCompletedLearningPolicyOutputs(c, merchant, run) : null;
     let candidateCurrent = false;
     if (outputs) {
       try { await requireCurrentLearningPolicyCandidate(c, merchant, Number(run.candidate_id), run.artifact_digest); candidateCurrent = true; }
@@ -89,7 +89,7 @@ export async function recordLearningPolicyOutputReview(merchantId: number, actor
     }
     const run = await loadRun(c, merchant, input.runId);
     await requireCurrentLearningPolicyCandidate(c, merchant, Number(run.candidate_id), run.artifact_digest);
-    const outputs = await completedOutputs(c, merchant, run);
+    const outputs = await loadCompletedLearningPolicyOutputs(c, merchant, run);
     if (outputs.runDigest !== input.runDigest) conflict();
     const history = await reviewHistory(c, merchant, input.runId), revision = history[0]?.revision ?? 0;
     if (input.expectedRevision !== revision || revision >= Number.MAX_SAFE_INTEGER) conflict();
