@@ -48,6 +48,8 @@ import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExpe
 import { listSalesCohortSourcesInput } from '../shared/sales-cohort-inspection';
 import { prepareSalesExperimentReviewInput, recordSalesExperimentReviewInput, salesExperimentReviewHistoryInput, salesExperimentReviewWorkspaceInput } from './ai/sales-experiment-review-contract';
 import { prepareSalesExperimentReview, recordSalesExperimentReview, getSalesExperimentReviewHistory, getSalesExperimentReviewWorkspace, SalesExperimentReviewConflict } from './ai/sales-experiment-review';
+import { salesExperimentLaunchInput, authorizeSalesExperimentLaunchInput, revokeSalesExperimentLaunchInput } from './ai/sales-experiment-launch-contract';
+import { prepareSalesExperimentLaunch, authorizeSalesExperimentLaunch, revokeSalesExperimentLaunch, getSalesExperimentLaunchStatus, SalesExperimentLaunchConflict } from './ai/sales-experiment-launch';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -342,6 +344,26 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  prepareSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(salesExperimentLaunchInput).query(async ({ ctx, input }) => {
+    try { return await prepareSalesExperimentLaunch(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment launch authorization changed or is unavailable' }); }
+  }),
+  getSalesExperimentLaunchStatus: permissionProcedure('bot_settings.manage').input(salesExperimentLaunchInput).query(async ({ ctx, input }) => {
+    try { return await getSalesExperimentLaunchStatus(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment launch authorization changed or is unavailable' }); }
+  }),
+  authorizeSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(authorizeSalesExperimentLaunchInput).mutation(async ({ ctx, input }) => {
+    try { return await authorizeSalesExperimentLaunch(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesExperimentLaunchConflict || error instanceof SalesExperimentReviewConflict
+      || error instanceof SalesCohortConflict || error instanceof SalesExperimentProtocolConflict || error instanceof LearningPolicyCandidateConflict
+      || error instanceof LearningPolicyOutputReviewConflict || error instanceof LearningPolicyEvaluationConflict ? 'PRECONDITION_FAILED' : 'CONFLICT',
+      message: 'Sales experiment launch authorization changed or is unavailable' }); }
+  }),
+  revokeSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(revokeSalesExperimentLaunchInput).mutation(async ({ ctx, input }) => {
+    try { return await revokeSalesExperimentLaunch(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesExperimentLaunchConflict ? 'PRECONDITION_FAILED' : 'CONFLICT',
+      message: 'Sales experiment launch authorization changed or is unavailable' }); }
+  }),
   getSalesExperimentReviewWorkspace: permissionProcedure('bot_settings.manage').input(salesExperimentReviewWorkspaceInput).query(async ({ ctx, input }) => {
     try { return await getSalesExperimentReviewWorkspace(ctx.merchantId, ctx.user.id, input); }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment review changed or is unavailable' }); }

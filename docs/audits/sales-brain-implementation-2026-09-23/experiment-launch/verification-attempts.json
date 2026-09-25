@@ -1,0 +1,30 @@
+{
+  "scope": "Local verification; final evidence comes from the complete staged-source snapshot.",
+  "attempts": [
+    {
+      "kind": "focused-first",
+      "passed": 160,
+      "failed": 3,
+      "result": "The synthetic failure tests tried CREATE TRIGGER through prepared statements, which MySQL does not support.",
+      "logSha256": "02a29cf09f6c13958dd126114ae979a502e198a7052575bf37ccb999512d6f0c"
+    },
+    {
+      "kind": "focused-second",
+      "passed": 167,
+      "failed": 3,
+      "result": "CREATE TRIGGER over the text protocol required elevated MySQL privileges with binary logging. No privileges or server settings were changed.",
+      "logSha256": "193edfce335761932da06d3f5df84fa9570d76323e5bbf41368ca2dcbd750ff8"
+    },
+    {
+      "kind": "focused-final",
+      "passed": 170,
+      "failed": 0,
+      "result": "Fault injection now runs the actual INSERT/UPDATE on the real transaction connection and throws afterwards. The tests verify rollback in MySQL without triggers or SUPER. The focused run includes the unchanged 44 review tests.",
+      "logSha256": "a3d7a60adc5f91e4a40720d8298c8c53f0ca3f193e8f96230cd7fc3616bdc46f"
+    },
+    {
+      "kind": "ui-equivalence",
+      "result": "Client/shared/fixture/verifier sources are unchanged. Recompiled fixture and final CSS match the previous browser evidence exactly; no browser rerun."
+    }
+  ]
+}

@@ -1,9 +1,10 @@
 {
-  "scope": "Fresh Chromium component verification: 1036 passing scenarios, 101 screenshots, real components and final CSS with API fixtures and external network blocked. Not authenticated production, physical iPhone or Safari.",
-  "reused": false,
-  "verifiedAt": "2026-09-25T14:41:35.982Z",
+  "scope": "Reused the existing 1036 Chromium component journeys and 101 screenshots: all client/shared/fixture/verifier source is unchanged and the freshly compiled fixture and final CSS hashes are identical. No new browser run; backend APIs verified separately.",
+  "reused": true,
+  "verifiedAt": "2026-09-25T15:08:53.642Z",
+  "baselineCommit": "ecf33c921fa8b5e1b2c4c5d5c721ab5fbf5dac22",
   "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-planning-review-ui-20260925",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-planning-review-ui-20260925",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-experiment-launch-20260925",
   "inputs": {
     "fixture": "5e8be096afec56aba9cc20de4111068fe3ad1efa2be8e91df4a1d3a567b0c317",
     "report": "ed19ab01b91ba24f1353ab37c1010413e0b65f7687a64c373d25f377a016c3ff",

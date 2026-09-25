@@ -45,7 +45,7 @@ async function latest(c: PoolConnection, merchant: number, protocolId: number) {
 }
 
 /** Caller holds the merchant lock. All evidence is re-read; no submitted summaries or old pass flags. */
-async function currentBasis(c: PoolConnection, merchant: number, protocolId: number, runId: number) {
+async function currentBasis(c: PoolConnection, merchant: number, protocolId: number, runId: number, planningWindow = true) {
   const record = await loadSalesExperimentProtocol(c, merchant, protocolId), p = record.protocol;
   if (record.state !== 'registered' || p.sampleCalculation?.status !== 'meets_calculated_floor') conflict();
   const candidate = await requireCurrentLearningPolicyCandidate(c, merchant, p.candidate.id, p.candidate.artifactDigest);
@@ -86,9 +86,19 @@ async function currentBasis(c: PoolConnection, merchant: number, protocolId: num
     outputReviewId: reviewed.id, outputReviewRevision: reviewed.revision, outputReviewDigest: r.review_digest,
     rubricDigest: r.rubric_digest, participantUserIds: Array.from(new Set(participants.map(Number))).sort((a, b) => a - b) });
   const checkedAt = await clock(c);
-  if (Date.parse(checkedAt) >= Date.parse(p.design.window.enrollmentStartsAt)) conflict();
+  if (planningWindow && Date.parse(checkedAt) >= Date.parse(p.design.window.enrollmentStartsAt)) conflict();
   return { basis, basisDigest: policyArtifactDigest(basis), checkedAt,
     evidence: { protocol: record, cohort, pairs: outputs.pairs, outputReview: reviewed.review } };
+}
+
+/** Internal use under the merchant lock. Revalidates approval during the runtime window too;
+ * the public planning mutations still require the original pre-enrollment deadline. */
+export async function loadApprovedSalesExperimentPlan(c: PoolConnection, merchant: number, protocolId: number) {
+  const review = await latest(c, merchant, protocolId);
+  if (!review || !review.reviewerPresent || review.snapshot.verdict !== 'approved') return conflict();
+  const packet = await currentBasis(c, merchant, protocolId, review.snapshot.runId, false);
+  if (packet.basisDigest !== review.snapshot.basisDigest) conflict();
+  return { ...packet, review };
 }
 
 /** One locked read binds displayed evidence to the exact review basis; no provider calls. */

@@ -1,0 +1,40 @@
+CREATE TABLE `ai_sales_experiment_launches` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `protocol_id` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `basis_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `review_id` bigint unsigned NOT NULL,
+  `review_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `launch_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `snapshot` json NOT NULL,
+  `state` varchar(16) NOT NULL DEFAULT 'authorized',
+  `actor_user_id` int DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sales_launch_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_sales_launch_protocol` (`protocol_id`),
+  CONSTRAINT `ck_sales_launch_state` CHECK (`state` IN ('authorized','revoked')),
+  CONSTRAINT `fk_sales_launch_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_launch_protocol` FOREIGN KEY (`protocol_id`) REFERENCES `ai_sales_experiment_protocols` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_launch_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+);
+--> statement-breakpoint
+CREATE TABLE `ai_sales_experiment_launch_revocations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `launch_id` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `revocation_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `snapshot` json NOT NULL,
+  `actor_user_id` int DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sales_launch_revoke_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_sales_launch_revoke_once` (`launch_id`),
+  CONSTRAINT `fk_sales_launch_revoke_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_launch_revoke_launch` FOREIGN KEY (`launch_id`) REFERENCES `ai_sales_experiment_launches` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_launch_revoke_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+);

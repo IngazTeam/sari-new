@@ -4151,6 +4151,29 @@ export const aiSalesExperimentReviews = mysqlTable('ai_sales_experiment_reviews'
   check('ck_sales_review_revision', sql`${table.revision} BETWEEN 1 AND 9007199254740991`),
   check('ck_sales_review_verdict', sql`${table.verdict} IN ('approved','rejected')`)]);
 
+export const aiSalesExperimentLaunches = mysqlTable('ai_sales_experiment_launches', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  basisDigest: char('basis_digest', { length: 64 }).notNull(), reviewId: bigint('review_id', { mode: 'number', unsigned: true }).notNull(),
+  reviewDigest: char('review_digest', { length: 64 }).notNull(), launchDigest: char('launch_digest', { length: 64 }).notNull(),
+  snapshot: json().notNull(), state: varchar({ length: 16 }).notNull().default('authorized'),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_launch_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_launch_protocol').on(table.protocolId),
+  check('ck_sales_launch_state', sql`${table.state} IN ('authorized','revoked')`)]);
+
+export const aiSalesExperimentLaunchRevocations = mysqlTable('ai_sales_experiment_launch_revocations', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  launchId: bigint('launch_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentLaunches.id, { onDelete: 'cascade' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  revocationDigest: char('revocation_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_launch_revoke_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_launch_revoke_once').on(table.launchId)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
