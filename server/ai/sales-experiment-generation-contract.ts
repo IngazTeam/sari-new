@@ -12,7 +12,7 @@ export const generateSalesExperimentTurnInput = resolveSalesExperimentTurnInput.
 }).strict();
 export const readSalesExperimentGenerationInput = z.object({ generationId: id }).strict();
 export const salesGenerationRecipe = Object.freeze({ version: 'sales-turn-generation.v1', temperature: 0.7, maxTokens: 1500, taskType: 'sari.reply' });
-export const salesGenerationSnapshot = z.object({
+const legacySalesGenerationSnapshot = z.object({
   version: z.literal('sales-turn-generation-authorization.v1'), merchantId: id, actorUserId: id, turnId: id, turnDigest: digest,
   conversationId: id, incomingMessageId: id, promptDigest: digest, inputDigest: digest, contextDigest: digest,
   provider: z.enum(['openai', 'zahypi']), model: z.string().min(1).max(128), observedModel: z.string().min(1).max(128), routeDigest: digest,
@@ -20,5 +20,9 @@ export const salesGenerationSnapshot = z.object({
   authorizedAt: utc, observationEndsAt: utc, reason: z.string().min(30).max(3000),
   allowProviderCharge: z.literal(true), understandsNoCustomerMessage: z.literal(true), scope: z.literal('single_turn_generation_only'),
   dispatchAllowed: z.literal(false), exposureRecorded: z.literal(false),
-}).strict().refine(v => Date.parse(v.authorizedAt) < Date.parse(v.observationEndsAt));
+}).strict();
+export const salesGenerationSnapshot = z.discriminatedUnion('version', [legacySalesGenerationSnapshot,
+  legacySalesGenerationSnapshot.extend({ version: z.literal('sales-turn-generation-authorization.v2'),
+    providerRequestId: z.string().length(36).uuid().regex(/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/) }).strict(),
+]).refine(v => Date.parse(v.authorizedAt) < Date.parse(v.observationEndsAt));
 export type GenerateSalesExperimentTurnInput = z.input<typeof generateSalesExperimentTurnInput>;

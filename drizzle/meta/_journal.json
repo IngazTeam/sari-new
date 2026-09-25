@@ -820,6 +820,13 @@
       "when": 1793491200000,
       "tag": "0116_sales_generation_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1793577600000,
+      "tag": "0117_sales_generation_budget_identity",
+      "breakpoints": true
     }
   ]
 }

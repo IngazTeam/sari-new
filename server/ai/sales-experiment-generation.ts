@@ -11,8 +11,9 @@ import { policyGenerationRoute } from './learning-policy-evaluation';
 import { getActiveModel } from '../db_ai_settings';
 import { resolveZahyPiRuntimeConfig, runWithZahyPiContext } from './zahypi-client';
 import { callGPT4, type ChatMessage } from './openai';
-import { AiBudgetError, type AiBudgetAttempt, type AiCompletionMetadata } from './budget-ledger';
+import { AiBudgetError, aiBudgetReservationKey, type AiBudgetAttempt, type AiCompletionMetadata } from './budget-ledger';
 import { parseReplyProviderJobReceipt, type AiProviderJobReceipt } from './provider-job-receipt';
+import { getPool } from '../db/connection';
 
 const id = z.number().int().positive().safe(), flags = { generationAllowed: false as const, dispatchAllowed: false as const, exposureRecorded: false as const };
 const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
@@ -33,6 +34,8 @@ function authorization(row: any) {
       || s.merchantId !== Number(row.merchant_id) || s.turnId !== Number(row.turn_id)
       || row.actor_user_id !== null && s.actorUserId !== Number(row.actor_user_id)
       || !['dispatching', 'responded', 'invalid', 'blocked', 'uncertain'].includes(row.state)) return conflict();
+    const expected = s.version === 'sales-turn-generation-authorization.v2' ? aiBudgetReservationKey(`merchant:${s.merchantId}`, s.providerRequestId) : null;
+    if (row.expected_reservation_key !== expected || expected !== null && row.reservation_key !== null && row.reservation_key !== expected) return conflict();
     const response = { text: row.response_text, metadata: row.response_metadata === null ? null : decode(row.response_metadata) };
     if (['responded', 'invalid'].includes(row.state)) {
       if (!row.reservation_key || !row.response_digest || row.response_digest !== responseDigest(row, response)) return conflict();
@@ -52,6 +55,7 @@ function providerReceipt(row: any, s: z.infer<typeof salesGenerationSnapshot>) {
   if (row.provider_receipt === null) { if (row.provider_receipt_digest !== null) return conflict(); return null; }
   const raw = decode(row.provider_receipt), r = parseReplyProviderJobReceipt(raw);
   if (!row.reservation_key || s.provider !== 'zahypi' || r.tenantId !== `merchant:${s.merchantId}`
+    || s.version === 'sales-turn-generation-authorization.v2' && r.traceId !== s.providerRequestId
     || receiptDigest(row, raw) !== row.provider_receipt_digest || receiptDigest(row, r) !== row.provider_receipt_digest
     || policyArtifactDigest({ provider: s.provider, model: s.model, route: r.configFingerprint }) !== s.routeDigest) return conflict();
   return r;
@@ -64,16 +68,18 @@ async function receipt(c: PoolConnection, row: any) {
   const parsed = authorization(row);
   let cost = null;
   if (row.reservation_key) {
-    const [rows] = await c.execute<any[]>(`SELECT scope_key,provider,model,task_type,state,price_version,reserved_micro_usd,settled_micro_usd
+    const [rows] = await c.execute<any[]>(`SELECT scope_key,request_id,provider,model,task_type,state,price_version,reserved_micro_usd,settled_micro_usd
       FROM ai_usage_reservations WHERE reservation_key=? FOR SHARE`, [row.reservation_key]);
     const r = rows[0], s = parsed.snapshot;
-    if (r && (r.scope_key !== `merchant:${s.merchantId}` || r.provider !== s.provider || r.model !== s.model || r.task_type !== salesGenerationRecipe.taskType)) return conflict();
+    if (r && (r.scope_key !== `merchant:${s.merchantId}` || r.provider !== s.provider || r.model !== s.model || r.task_type !== salesGenerationRecipe.taskType
+      || s.version === 'sales-turn-generation-authorization.v2' && r.request_id !== s.providerRequestId)) return conflict();
     cost = r ? { state: String(r.state), priceVersion: String(r.price_version), heldMicroUsd: r.state === 'settled' ? 0 : Number(r.reserved_micro_usd),
       settledMicroUsd: r.settled_micro_usd === null ? null : Number(r.settled_micro_usd) } : { state: 'unavailable' };
   }
   return { generationId: id.parse(Number(row.id)), authorizationDigest: String(row.authorization_digest), ...parsed,
     state: row.state as 'dispatching' | 'responded' | 'invalid' | 'blocked' | 'uncertain', actorPresent: row.actor_user_id !== null,
     responseDigest: row.response_digest as string | null, failureCode: row.failure_code as string | null, cost,
+    reservationLink: row.reservation_key ? 'linked' as const : row.expected_reservation_key ? 'not_observed' as const : 'legacy_unresolved' as const,
     assessment: 'not_assessed' as const, eligibility: 'not_checked' as const, ...flags };
 }
 type Input = z.infer<typeof generateSalesExperimentTurnInput>;
@@ -97,14 +103,54 @@ async function recoveryLease(c: PoolConnection, claim: Claim) {
 }
 async function attemptOwned(c: PoolConnection, claim: Claim, attempt: AiBudgetAttempt, s: z.infer<typeof salesGenerationSnapshot>) {
   if (attempt.scopeKey !== `merchant:${claim.merchant}` || attempt.provider !== s.provider || attempt.model !== s.model || attempt.taskType !== salesGenerationRecipe.taskType) return conflict();
+  if (s.version === 'sales-turn-generation-authorization.v2' && (attempt.requestId !== s.providerRequestId
+    || attempt.reservationKey !== aiBudgetReservationKey(attempt.scopeKey, s.providerRequestId))) return conflict();
   const [rows] = await c.execute<any[]>('SELECT * FROM ai_usage_reservations WHERE reservation_key=? FOR SHARE', [attempt.reservationKey]);
   const r = rows[0]; if (!r || r.scope_key !== attempt.scopeKey || r.request_id !== attempt.requestId || r.provider !== attempt.provider || r.model !== attempt.model
     || r.task_type !== attempt.taskType || !['reserved', 'unknown', 'settled'].includes(r.state)) return conflict();
 }
+/** Correlation only: never settles, releases, dispatches or treats a ledger row as permission to send. */
+async function restoreReservation(c: PoolConnection, row: any) {
+  const { snapshot: s } = authorization(row);
+  if (row.reservation_key !== null || s.version !== 'sales-turn-generation-authorization.v2') return false;
+  const [rows] = await c.execute<any[]>('SELECT reservation_key FROM ai_usage_reservations WHERE reservation_key=? FOR SHARE', [row.expected_reservation_key]);
+  if (!rows.length) return false;
+  await attemptOwned(c, { merchant: s.merchantId, generationId: Number(row.id), token: row.claim_token, authorizationDigest: row.authorization_digest },
+    { reservationKey: row.expected_reservation_key, requestId: s.providerRequestId, scopeKey: `merchant:${s.merchantId}`, provider: s.provider, model: s.model, taskType: salesGenerationRecipe.taskType }, s);
+  await c.execute('UPDATE ai_sales_experiment_generations SET reservation_key = ? WHERE id=?', [row.expected_reservation_key, row.id]);
+  row.reservation_key = row.expected_reservation_key; return true;
+}
+/** Bounded SQL-only repair. Legacy attempts have no provable identity and are deliberately excluded. */
+export async function reconcileSalesGenerationReservations(limit = 5) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5) throw Error('Invalid sales reservation batch');
+  const pool = await getPool(); if (!pool) return conflict();
+  const [rows] = await pool.execute<any[]>(`SELECT g.id,g.merchant_id,g.authorization_digest FROM ai_sales_experiment_generations g
+    INNER JOIN ai_usage_reservations r ON r.reservation_key=g.expected_reservation_key
+    WHERE g.reservation_key IS NULL AND g.expected_reservation_key IS NOT NULL
+      AND (g.recovery_next_at IS NULL OR g.recovery_next_at<=UTC_TIMESTAMP(3)) ORDER BY g.id LIMIT ${limit}`);
+  const result = { inspected: rows.length, linked: 0, deferred: 0 };
+  for (const candidate of rows) {
+    try {
+      const linked = await checkoutTransaction(async c => {
+        await lock(c, Number(candidate.merchant_id)); const row = await load(c, Number(candidate.merchant_id), Number(candidate.id));
+        if (row.authorization_digest !== candidate.authorization_digest) return conflict();
+        return restoreReservation(c, row);
+      });
+      if (linked) result.linked++;
+    } catch {
+      result.deferred++;
+      await pool.execute(`UPDATE ai_sales_experiment_generations SET recovery_next_at=TIMESTAMPADD(SECOND,60,UTC_TIMESTAMP(3)),
+        recovery_last_error='budget_link_deferred' WHERE id=? AND merchant_id=? AND authorization_digest=? AND reservation_key IS NULL`,
+        [candidate.id, candidate.merchant_id, candidate.authorization_digest]);
+    }
+  }
+  return result;
+}
 async function bind(claim: Claim, input: Input, attempt: AiBudgetAttempt) {
   await checkoutTransaction(async c => {
     const { row, owner, snapshot: s } = await claimed(c, claim);
-    if (owner !== s.actorUserId || row.actor_user_id === null || row.state !== 'dispatching' || row.reservation_key !== null) return conflict();
+    if (owner !== s.actorUserId || row.actor_user_id === null || row.state !== 'dispatching'
+      || row.reservation_key !== null && row.reservation_key !== attempt.reservationKey) return conflict();
     await attemptOwned(c, claim, attempt, s);
     const checked = await current(c, claim.merchant, input);
     if (checked.inputDigest !== s.inputDigest || checked.turn.snapshot.promptDigest !== s.promptDigest || checked.turn.snapshot.routeDigest !== s.routeDigest
@@ -179,6 +225,7 @@ export async function getSalesExperimentGeneration(merchantId: number, value: z.
   const merchant = id.parse(merchantId), input = readSalesExperimentGenerationInput.parse(value);
   return checkoutTransaction(async c => {
     await lock(c, merchant); const row = await load(c, merchant, input.generationId);
+    await restoreReservation(c, row);
     if (row.state === 'dispatching') {
       const [changed] = await c.execute<any>(`UPDATE ai_sales_experiment_generations SET state='uncertain',failure_code='dispatch_acknowledgement_unknown',lease_until=NULL
         WHERE id=? AND state='dispatching' AND (lease_until IS NULL OR lease_until<=UTC_TIMESTAMP(3))`, [input.generationId]);
@@ -202,17 +249,19 @@ export async function generateSalesExperimentTurn(merchantId: number, actorUserI
     const [existing] = await c.execute<any[]>('SELECT id FROM ai_sales_experiment_generations WHERE merchant_id=? AND turn_id=? FOR SHARE', [merchant, input.turnId]);
     if (existing.length) return conflict();
     const authorizedAt = await now(c); if (Date.parse(authorizedAt) < Date.parse(t.checkedAt)) return conflict();
-    const snapshot = salesGenerationSnapshot.parse({ version: 'sales-turn-generation-authorization.v1', merchantId: merchant, actorUserId: actor,
+    const snapshot = salesGenerationSnapshot.parse({ version: 'sales-turn-generation-authorization.v2', providerRequestId: randomUUID(), merchantId: merchant, actorUserId: actor,
       turnId: input.turnId, turnDigest: input.turnDigest, conversationId: s.conversationId, incomingMessageId: s.incomingMessageId,
       promptDigest: s.promptDigest, inputDigest: checked.inputDigest, contextDigest: policyArtifactDigest(contextMessages),
       provider: t.route.provider, model: t.route.model, observedModel: t.route.observedModel, routeDigest: s.routeDigest, recipe: salesGenerationRecipe,
       authorizedAt, observationEndsAt: s.observationEndsAt, reason: input.reason, allowProviderCharge: true, understandsNoCustomerMessage: true,
       scope: 'single_turn_generation_only', dispatchAllowed: false, exposureRecorded: false });
+    if (snapshot.version !== 'sales-turn-generation-authorization.v2') return conflict();
     const token = randomUUID();
     const [inserted] = await c.execute<any>(`INSERT INTO ai_sales_experiment_generations
-      (merchant_id,turn_id,actor_user_id,request_id,payload_digest,authorization_digest,snapshot,state,claim_token,lease_until)
-      VALUES (?,?,?,?,?,?,?,'dispatching',?,TIMESTAMPADD(SECOND,90,UTC_TIMESTAMP(3)))`,
-      [merchant, input.turnId, actor, input.requestId, payload, policyArtifactDigest(snapshot), JSON.stringify(snapshot), token]);
+      (merchant_id,turn_id,actor_user_id,request_id,payload_digest,authorization_digest,snapshot,state,claim_token,expected_reservation_key,lease_until)
+      VALUES (?,?,?,?,?,?,?,'dispatching',?,?,TIMESTAMPADD(SECOND,90,UTC_TIMESTAMP(3)))`,
+      [merchant, input.turnId, actor, input.requestId, payload, policyArtifactDigest(snapshot), JSON.stringify(snapshot), token,
+        aiBudgetReservationKey(`merchant:${merchant}`, snapshot.providerRequestId)]);
     return { generationId: Number(inserted.insertId), dispatch: { claim: { merchant, generationId: Number(inserted.insertId), token, authorizationDigest: policyArtifactDigest(snapshot) }, messages: checked.messages, snapshot } };
   });
   if (work.dispatch) {
@@ -223,7 +272,7 @@ export async function generateSalesExperimentTurn(merchantId: number, actorUserI
         if (actual.digest !== d.snapshot.routeDigest) return conflict();
         await callGPT4(d.messages, { merchantId: merchant, model: d.snapshot.model, taskType: 'sari.reply',
           temperature: salesGenerationRecipe.temperature, maxTokens: salesGenerationRecipe.maxTokens, noRetry: true,
-          lifecycle: { beforeDispatch: attempt => bind(d.claim, input, attempt), afterJobAccepted: (receipt, attempt) => accepted(d.claim, receipt, attempt),
+          lifecycle: { requestId: d.snapshot.providerRequestId, beforeDispatch: attempt => bind(d.claim, input, attempt), afterJobAccepted: (receipt, attempt) => accepted(d.claim, receipt, attempt),
             afterResponse: (text, attempt, metadata) => saveSalesGenerationResponse(d.claim, attempt, text, metadata) } });
       });
     } catch (error) { await fail(d.claim, error); }

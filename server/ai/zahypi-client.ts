@@ -1,4 +1,4 @@
-import { AiBudgetError, withAiBudget, promptBudgetShape, type AiBudgetLifecycle } from './budget-ledger';
+import { AiBudgetError, withAiBudget, promptBudgetShape, durableAiRequestId, type AiBudgetLifecycle } from './budget-ledger';
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
@@ -682,6 +682,7 @@ export async function requestZahyPiJobCompletion(
   lifecycle?: AiBudgetLifecycle<ZahyPiCompletionResponse>,
 ): Promise<ZahyPiCompletionResponse> {
   if (lifecycle && requestedMaxAttempts !== 1) throw new AiBudgetError('invalid_usage');
+  const durableId = durableAiRequestId(lifecycle?.requestId);
   const resolvedContext = context ?? getZahyPiRequestContext();
   assertValidContext(resolvedContext);
   const contract = resolveSariTaskType(resolvedContext.taskType.trim());
@@ -711,7 +712,7 @@ export async function requestZahyPiJobCompletion(
   const circuitKey = `${projectId}:${tenantId}`;
   if (!canAttemptCircuit(circuitKey)) throw new Error("ZahyPi circuit breaker is open");
 
-  const traceId = randomUUID();
+  const traceId = durableId ?? randomUUID();
   const promptMessages = governedPromptMessages(payload);
   const businessInput = buildSariBusinessInput(
     contract,
@@ -844,6 +845,7 @@ export async function requestZahyPiChat(
     temperature: options.temperature ?? 0.7,
     max_tokens: options.maxTokens ?? 1_000,
   }, context, options.timeoutMs, options.maxAttempts, runtimeConfig, options.lifecycle && {
+    requestId: options.lifecycle.requestId,
     beforeDispatch: attempt => options.lifecycle!.beforeDispatch(attempt),
     afterJobAccepted: options.lifecycle.afterJobAccepted,
     afterResponse: async (completion, attempt) => {

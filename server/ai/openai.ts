@@ -11,7 +11,7 @@ import {
   requestZahyPiChat,
   resolveZahyPiRuntimeConfig,
 } from './zahypi-client';
-import { AiBudgetError, withAiBudget, promptBudgetShape, type AiBudgetLifecycle } from './budget-ledger';
+import { AiBudgetError, withAiBudget, promptBudgetShape, durableAiRequestId, type AiBudgetLifecycle } from './budget-ledger';
 import { AUXILIARY_AI_ROUTES } from '../../shared/ai-capabilities';
 import { resolveAuxiliaryAiRoute, assertAuxiliaryAiRouteCurrent } from './auxiliary-routing';
 
@@ -157,6 +157,7 @@ export async function callGPT4(
   }
 ): Promise<string> {
   if (options?.lifecycle && options.noRetry !== true) throw new AiBudgetError('invalid_usage');
+  if (options?.lifecycle) options = { ...options, lifecycle: { ...options.lifecycle, requestId: durableAiRequestId(options.lifecycle.requestId) } };
   const startedAt = Date.now();
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
@@ -356,6 +357,7 @@ async function fetchWithTimeout(
     throw error;
   }
   }, data => data.usage, lifecycle && {
+    requestId: lifecycle.requestId,
     beforeDispatch: attempt => lifecycle.beforeDispatch(attempt),
     afterResponse: (data, attempt) => lifecycle.afterResponse(data.choices[0].message.content, attempt, {
       id: data.id, model: data.model, finishReason: data.choices[0].finish_reason,

@@ -4218,6 +4218,7 @@ export const aiSalesExperimentGenerations = mysqlTable('ai_sales_experiment_gene
   authorizationDigest: char('authorization_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
   state: mysqlEnum(['dispatching', 'responded', 'invalid', 'blocked', 'uncertain']).notNull(), claimToken: char('claim_token', { length: 36 }).notNull(),
   reservationKey: varchar('reservation_key', { length: 64 }), responseText: mediumtext('response_text'), responseMetadata: json('response_metadata'),
+  expectedReservationKey: char('expected_reservation_key', { length: 64 }),
   responseDigest: char('response_digest', { length: 64 }), failureCode: varchar('failure_code', { length: 64 }),
   providerReceipt: json('provider_receipt'), providerReceiptDigest: char('provider_receipt_digest', { length: 64 }),
   recoveryToken: char('recovery_token', { length: 36 }), recoveryLeaseUntil: datetime('recovery_lease_until', { mode: 'string', fsp: 3 }),
@@ -4226,7 +4227,8 @@ export const aiSalesExperimentGenerations = mysqlTable('ai_sales_experiment_gene
   leaseUntil: datetime('lease_until', { mode: 'string', fsp: 3 }), completedAt: datetime('completed_at', { mode: 'string', fsp: 3 }),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_sales_generation_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_generation_turn').on(table.merchantId, table.turnId),
-  uniqueIndex('uq_sales_generation_reservation').on(table.reservationKey), index('idx_sales_generation_recovery').on(table.state, table.recoveryNextAt)]);
+  uniqueIndex('uq_sales_generation_reservation').on(table.reservationKey), index('idx_sales_generation_recovery').on(table.state, table.recoveryNextAt),
+  uniqueIndex('uq_sales_generation_expected_reservation').on(table.expectedReservationKey)]);
 
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),

@@ -21,12 +21,20 @@ export type AiBudgetAttempt = Readonly<Pick<Reservation, 'reservationKey' | 'req
 export type AiCompletionMetadata = { id: string; model: string; finishReason: string | null;
   systemFingerprint?: string | null; usage?: { prompt_tokens: number; completion_tokens: number } };
 export type AiBudgetLifecycle<T> = {
+  /** Server-persisted identity of this one attempt; never a permission to replay it. */
+  requestId?: string;
   beforeDispatch(attempt: AiBudgetAttempt): Promise<void>;
   afterResponse(result: T, attempt: AiBudgetAttempt, metadata?: AiCompletionMetadata): Promise<void>;
   afterJobAccepted?(receipt: AiProviderJobReceipt, attempt: AiBudgetAttempt): Promise<void>;
 };
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+export function durableAiRequestId(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || value.length !== 36 || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value)) throw new AiBudgetError('invalid_usage');
+  return value;
+}
+export function aiBudgetReservationKey(scopeKey: string, requestId: string): string { return digest([scopeKey, requestId]); }
 function integer(value: unknown): number {
   if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+$/.test(value))) {
     throw new AiBudgetError('invalid_usage');
@@ -101,7 +109,7 @@ export async function reserveAiBudget(input: BudgetRequest): Promise<Reservation
   const amount = pricedMicroUsd(promptTokens, input.maxOutputTokens,
     price.input_micro_usd_per_million, price.output_micro_usd_per_million, price.flat_micro_usd);
   if (amount === 0) throw new AiBudgetError('price_required');
-  const reservationKey = digest([policy.scopeKey, requestId]);
+  const reservationKey = aiBudgetReservationKey(policy.scopeKey, requestId);
   const fingerprint = digest([input.provider, input.model, input.taskType, input.inputTokens, input.maxOutputTokens, Boolean(input.hasExternalMedia)]);
   const connection = await policy.pool.getConnection();
   try {
@@ -236,6 +244,11 @@ export async function withAiBudget<T>(input: BudgetRequest, operation: (attempt:
   lifecycle?: AiBudgetLifecycle<T>): Promise<T> {
   // Snapshot metadata before awaiting storage; callbacks never share a mutable authority object.
   input = { ...input };
+  const durableId = durableAiRequestId(lifecycle?.requestId);
+  if (durableId !== undefined) {
+    if (input.requestId !== undefined && input.requestId !== durableId) throw new AiBudgetError('reservation_conflict');
+    input.requestId = durableId;
+  }
   const route = { provider: input.provider, model: input.model, taskType: input.taskType };
   let reservation: Reservation;
   try { reservation = await reserveAiBudget(input); }

@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
-import { loadSalesGenerationRecovery, saveSalesGenerationResponse, type SalesGenerationClaim } from './sales-experiment-generation';
+import { loadSalesGenerationRecovery, saveSalesGenerationResponse, reconcileSalesGenerationReservations, type SalesGenerationClaim } from './sales-experiment-generation';
 import { retrieveZahyPiReplyJob } from './zahypi-client';
 import { persistAiProviderUsage, settleAiProviderUsage } from './budget-settlement';
 
 export async function assertSalesGenerationRecoverySchema() {
   await assertRuntimeSchema('sales generation recovery', [{ table: 'ai_sales_experiment_generations',
-    columns: ['provider_receipt', 'provider_receipt_digest', 'recovery_token', 'recovery_lease_until', 'recovery_next_at', 'recovery_attempts', 'recovery_last_error'],
-    uniqueIndexes: [{ name: 'PRIMARY', columns: ['id'] }, { name: 'uq_sales_generation_reservation', columns: ['reservation_key'] }] }]);
+    columns: ['expected_reservation_key', 'provider_receipt', 'provider_receipt_digest', 'recovery_token', 'recovery_lease_until', 'recovery_next_at', 'recovery_attempts', 'recovery_last_error'],
+    uniqueIndexes: [{ name: 'PRIMARY', columns: ['id'] }, { name: 'uq_sales_generation_reservation', columns: ['reservation_key'] },
+      { name: 'uq_sales_generation_expected_reservation', columns: ['expected_reservation_key'] }] }]);
 }
 export async function claimSalesGenerationRecoveries(limit = 5): Promise<SalesGenerationClaim[]> {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5) throw Error('Invalid sales recovery batch');
@@ -63,6 +64,7 @@ export async function recoverSalesGenerationResult(claim: SalesGenerationClaim) 
   }
 }
 export async function runSalesGenerationRecoveryBatch() {
+  await reconcileSalesGenerationReservations();
   const claims = await claimSalesGenerationRecoveries(), result = { claimed: claims.length, saved: 0, skipped: 0, deferred: 0 };
   for (const claim of claims) { try { result[await recoverSalesGenerationResult(claim)]++; } catch { result.deferred++; } }
   return result;

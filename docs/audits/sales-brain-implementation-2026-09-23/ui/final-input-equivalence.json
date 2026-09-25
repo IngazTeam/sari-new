@@ -1,7 +1,7 @@
 {
-  "verifiedAt": "2026-09-25T18:41:54.110Z",
+  "verifiedAt": "2026-09-25T19:13:24.957Z",
   "reused": true,
-  "baselineCommit": "91f91fc98053791ba91ded291cd0239888edef82",
+  "baselineCommit": "c4b2388b96c67f82e2cf3a8a8a7e5d29eac611a2",
   "scope": "Reused 1084 Chromium component journeys and 109 screenshots. All client/shared/fixture/verifier source is unchanged; freshly compiled fixture and final production CSS match. No new browser run.",
   "fixtureSha256": "391bd1a1d09c46d928b365bf20fa91c6d7e8f2a4fd55340cabd50916a4b231e8",
   "styles": {

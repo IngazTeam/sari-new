@@ -618,6 +618,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' شملت الاختبارات تبديل إيصال الرد والتعلّم، وتزوير الهوية والبصمة والمسار، وفقد إقرارات الحفظ والعامل، والتزامن وانتهاء المهلة وتغير اختيار السوبر أدمن. الاختبارات محلية اصطناعية وليست اعتماداً إنتاجياً.','server/ai/sales-experiment-generation.mysql.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0116 يضيف إيصال الاسترجاع ومهلته وفهرسه دون استنتاج إيصالات للبيانات القديمة أو تغيير سقف المنصة. تحقق فعلي بالمحدّث من 0000–0115 ثم 0116 وإعادة التشغيل، مع حفظ التاريخ.','scripts/testing/verify-sales-generation-recovery-migration.cjs'],
 });
+Object.assign(entries, {
+ B045:[entries.B045[0]+' تحفظ المحاولات الجديدة هوية المزوّد ومفتاح حجزها المتوقع قبل حجز الميزانية. يمر المعرف نفسه عبر OpenAI وZahyPi مع رفض التعارض ومنع المحاولة الثانية؛ لا تتحول استعادة المرجع المالي إلى صلاحية إرسال.','server/ai/provider-lifecycle-pentest.test.ts'],
+ B062:[entries.B062[0]+' تستعاد الحجوزات الجديدة غير المربوطة من الهوية الدقيقة بقراءة السجل وعامل الخلفية؛ يفحص المتجر والمهمة والمزوّد والمعرف ويحافظ على الرصيد والفترة والسعر الأصليين. السجلات القديمة بلا هوية تبقى غير محسومة، ولا تعني التكلفة الفارغة صفرًا.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبارات فقد إقرار حجز المال قبل الالتزام وبعده، والتزامن بين القراءة والعامل، وفساد هوية الحجز، وقراءة التكلفة قبل بوابة الإرسال مع التولي البشري، والتوافق مع سجلات v1 واسترجاعها.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0117 يضيف المفتاح المتوقع مع تفرده دون backfill. اختبر المحدّث 118 ترحيلًا وحفظ التاريخ والسقف المركزي ورفض التكرار وإعادة التشغيل الآمنة. يلزم تحديث الويب والعمال مع الترحيل؛ لم ينفذ نشر.','scripts/testing/verify-sales-generation-budget-link-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

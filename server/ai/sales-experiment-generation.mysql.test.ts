@@ -14,7 +14,8 @@ import { runAiSettlementBatch } from './budget-settlement';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import * as settings from '../db_ai_settings';
 import { claimSalesGenerationRecoveries, recoverSalesGenerationResult, runSalesGenerationRecoveryBatch } from './sales-generation-recovery';
-import { loadSalesGenerationRecovery } from './sales-experiment-generation';
+import { loadSalesGenerationRecovery, reconcileSalesGenerationReservations } from './sales-experiment-generation';
+import { aiBudgetReservationKey } from './budget-ledger';
 
 const config = vi.hoisted(() => ({ unix: null as number | null, provider: 'openai' as 'openai' | 'zahypi', model: '', enabled: true, actualModel: 'synthetic-model', finish: 'stop', usage: true, text: 'رد اصطناعي للاختبار فقط.' }));
 vi.mock('../db_ai_settings', () => ({ getOpenAiApiKey: async () => 'synthetic-key', getActiveModel: async () => config.model, logAiUsage: async () => {}, estimateCost: () => 0,
@@ -163,14 +164,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?' }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?' }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -375,5 +376,111 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       await query('UPDATE ai_sales_experiment_generations SET lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE merchant_id=?', [owner.merchantId]); return original();
     });
     expect(await generate()).toMatchObject({ state: 'blocked' }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['OpenAI', 'ZahyPi'])('uses the persisted identity for the %s transport and budget reservation', async () => {
+    const r = await generate(), [row] = await query('SELECT * FROM ai_sales_experiment_generations WHERE id=?', [r.generationId]), [budget] = await ledger();
+    const s = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot;
+    expect(s.version).toBe('sales-turn-generation-authorization.v2'); expect(s.providerRequestId).toBe(budget.request_id);
+    expect(row.expected_reservation_key).toBe(aiBudgetReservationKey(`merchant:${owner.merchantId}`, s.providerRequestId));
+    expect(row.reservation_key).toBe(row.expected_reservation_key); expect(r.reservationLink).toBe('linked');
+    const headers = vi.mocked(fetch).mock.calls[0][1]!.headers as any; expect(headers['X-Client-Request-Id'] ?? headers['X-Trace-Id']).toBe(s.providerRequestId);
+    expect(s.providerRequestId).not.toBe(input.requestId); expect(s.providerRequestId).not.toBe(row.claim_token);
+  });
+  it.each(['OpenAI', 'ZahyPi'])('retains the %s held cost when budget commit acknowledgement is lost', async () => {
+    await failCommit('reserve', 'after'); const r = await generate(); vi.restoreAllMocks();
+    expect(r).toMatchObject({ state: 'blocked', reservationLink: 'linked', cost: { state: 'reserved' }, dispatchAllowed: false });
+    expect(r.cost && 'heldMicroUsd' in r.cost && r.cost.heldMicroUsd).toBeGreaterThan(0); expect(await ledger()).toHaveLength(1);
+    await closeDb(); expect(await generate()).toEqual(r); expect(await reconcileSalesGenerationReservations()).toMatchObject({ linked: 0 }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['OpenAI', 'ZahyPi'])('does not invent a %s reservation after a rolled-back budget write', async () => {
+    await failCommit('reserve', 'before'); const r = await generate(); vi.restoreAllMocks();
+    expect(r).toMatchObject({ state: 'blocked', reservationLink: 'not_observed', cost: null }); expect(await ledger()).toHaveLength(0);
+    expect(await reconcileSalesGenerationReservations()).toMatchObject({ inspected: 0 }); await generate(); expect(fetch).not.toHaveBeenCalled();
+  });
+  async function unlinked() {
+    await failCommit('bind', 'before', 1); const r = await generate(); vi.restoreAllMocks();
+    expect(r).toMatchObject({ state: 'blocked', cost: { state: 'unknown' } });
+    // Represents a process stopped before the final historical read repaired its committed reservation.
+    await query('UPDATE ai_sales_experiment_generations SET reservation_key=NULL WHERE id=?', [r.generationId]);
+    return r;
+  }
+  it('repairs an unlinked budget row in the background after reconnect without touching balances or transport', async () => {
+    const r = await unlinked(), before = await query('SELECT * FROM ai_budget_periods WHERE scope_key=?', [`merchant:${owner.merchantId}`]);
+    await closeDb(); expect(await runSalesGenerationRecoveryBatch()).toEqual({ claimed: 0, saved: 0, skipped: 0, deferred: 0 });
+    expect(await get(r.generationId)).toMatchObject({ reservationLink: 'linked', cost: { state: 'unknown' }, state: 'blocked' });
+    expect(await query('SELECT * FROM ai_budget_periods WHERE scope_key=?', [`merchant:${owner.merchantId}`])).toEqual(before); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('serializes background and historical budget linking without duplicating the reservation', async () => {
+    const r = await unlinked(); await Promise.all([get(r.generationId), get(r.generationId), reconcileSalesGenerationReservations(), reconcileSalesGenerationReservations()]);
+    expect(await get(r.generationId)).toMatchObject({ reservationLink: 'linked', cost: { state: 'unknown' } }); expect(await ledger()).toHaveLength(1); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['before', 'after'] as const)('recovers a lost financial-link acknowledgement %s commit without provider activity', async when => {
+    const r = await unlinked(); await failCommit('link', when); expect(await reconcileSalesGenerationReservations()).toMatchObject({ deferred: 1 }); vi.restoreAllMocks();
+    const [row] = await query('SELECT * FROM ai_sales_experiment_generations WHERE id=?', [r.generationId]); expect(row.reservation_key !== null).toBe(when === 'after');
+    await query('UPDATE ai_sales_experiment_generations SET recovery_next_at=NULL WHERE id=?', [r.generationId]);
+    expect(await reconcileSalesGenerationReservations()).toMatchObject({ linked: when === 'before' ? 1 : 0 });
+    expect(await get(r.generationId)).toMatchObject({ reservationLink: 'linked', cost: { state: 'unknown' } }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['request_id', 'provider', 'model', 'task_type', 'state', 'scope_key'])('rejects a mismatched financial ledger %s and defers its repair', async field => {
+    const r = await unlinked(), [budget] = await ledger();
+    await query(`UPDATE ai_usage_reservations SET ${field}=? WHERE reservation_key=?`, [field === 'state' ? 'released' : field === 'scope_key' ? 'global' : 'unrelated-identity', budget.reservation_key]);
+    await expect(get(r.generationId)).rejects.toThrow(); expect(await reconcileSalesGenerationReservations()).toMatchObject({ linked: 0, deferred: 1 });
+    expect(await reconcileSalesGenerationReservations()).toMatchObject({ inspected: 0 });
+    const [row] = await query('SELECT reservation_key FROM ai_sales_experiment_generations WHERE id=?', [r.generationId]); expect(row.reservation_key).toBeNull(); expect(fetch).not.toHaveBeenCalled();
+    await query(`UPDATE ai_usage_reservations SET ${field}=? WHERE reservation_key=?`, [budget[field], budget.reservation_key]);
+  });
+  it.each(['revoked', 'deleted-source', 'changed-owner', 'disabled-provider'])('recovers original cost after %s without reauthorizing generation', async mode => {
+    const r = await unlinked(); if (mode === 'revoked') await revoke(); if (mode === 'deleted-source') await query('DELETE FROM conversations WHERE id=?', [conversationId]);
+    if (mode === 'changed-owner') await query('UPDATE merchants SET userId=? WHERE id=?', [other.userId, owner.merchantId]); if (mode === 'disabled-provider') config.enabled = false;
+    expect(await reconcileSalesGenerationReservations()).toMatchObject({ linked: 1 }); expect(await get(r.generationId)).toMatchObject({ cost: { state: 'unknown' }, dispatchAllowed: false, generationAllowed: false });
+    await generate(); expect(fetch).not.toHaveBeenCalled(); if (mode === 'changed-owner') await query('UPDATE merchants SET userId=? WHERE id=?', [owner.userId, owner.merchantId]);
+  });
+  it.each([['OpenAI', false], ['OpenAI', true], ['ZahyPi', false], ['ZahyPi', true]] as const)('allows %s pre-dispatch budget linking and honors human takeover=%s', async (_provider, human) => {
+    const original = settings.getZahyPiRuntimeConfig;
+    vi.spyOn(settings, 'getZahyPiRuntimeConfig').mockImplementationOnce(async () => {
+      const pool = (await getPool())!, originalConnection = pool.getConnection.bind(pool);
+      vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+        const c = await originalConnection(); let reserved = false;
+        return new Proxy(c, { get(target, key) {
+          if (key === 'execute') return async (...args: any[]) => { if (String(args[0]).includes('INSERT INTO ai_usage_reservations')) reserved = true; return (target.execute as any)(...args); };
+          if (key === 'commit') return async () => { await target.commit(); if (reserved) { reserved = false; await reconcileSalesGenerationReservations(); if (human) await query('UPDATE conversations SET human_takeover=1 WHERE id=?', [conversationId]); } };
+          const value = (target as any)[key]; return typeof value === 'function' ? value.bind(target) : value;
+        } }) as any;
+      }); return original();
+    });
+    expect(await generate()).toMatchObject({ reservationLink: 'linked', cost: { state: human ? 'unknown' : 'settled' } }); expect(fetch).toHaveBeenCalledTimes(human ? 0 : 1);
+  });
+  it.each(['expected key', 'rehashed request ID'])('rejects damaged persisted budget authority: %s', async mode => {
+    const r = await unlinked();
+    if (mode === 'expected key') await query('UPDATE ai_sales_experiment_generations SET expected_reservation_key=? WHERE id=?', ['f'.repeat(64), r.generationId]);
+    else {
+      const [row] = await query('SELECT snapshot FROM ai_sales_experiment_generations WHERE id=?', [r.generationId]);
+      const s = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot; s.providerRequestId = randomUUID();
+      await query('UPDATE ai_sales_experiment_generations SET snapshot=?,authorization_digest=? WHERE id=?', [JSON.stringify(s), policyArtifactDigest(s), r.generationId]);
+    }
+    await expect(get(r.generationId)).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
+  });
+  async function legacy(generationId: number) {
+    const [row] = await query('SELECT * FROM ai_sales_experiment_generations WHERE id=?', [generationId]);
+    const s = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot; delete s.providerRequestId; s.version = 'sales-turn-generation-authorization.v1';
+    const authorizationDigest = policyArtifactDigest(s), response = { text: row.response_text, metadata: row.response_metadata === null ? null : typeof row.response_metadata === 'string' ? JSON.parse(row.response_metadata) : row.response_metadata };
+    const providerReceipt = row.provider_receipt === null ? null : typeof row.provider_receipt === 'string' ? JSON.parse(row.provider_receipt) : row.provider_receipt;
+    await query('UPDATE ai_sales_experiment_generations SET snapshot=?,authorization_digest=?,expected_reservation_key=NULL,response_digest=?,provider_receipt_digest=? WHERE id=?',
+      [JSON.stringify(s), authorizationDigest, row.response_digest ? policyArtifactDigest({ authorizationDigest, reservationKey: row.reservation_key, response }) : null,
+        providerReceipt ? policyArtifactDigest({ authorizationDigest, reservationKey: row.reservation_key, receipt: providerReceipt }) : null, generationId]);
+  }
+  it.each(['OpenAI', 'ZahyPi'])('preserves a linked legacy %s response and charge without inventing a new identity', async () => {
+    const r = await generate(); await legacy(r.generationId);
+    expect(await get(r.generationId)).toMatchObject({ state: 'responded', reservationLink: 'linked', snapshot: { version: 'sales-turn-generation-authorization.v1' }, cost: { state: 'settled' } });
+    await generate(); expect(fetch).toHaveBeenCalledOnce();
+  });
+  it('does not guess a legacy unlinked budget from matching route, amount or timestamps', async () => {
+    const r = await unlinked(); await legacy(r.generationId);
+    expect(await get(r.generationId)).toMatchObject({ reservationLink: 'legacy_unresolved', cost: null }); expect(await reconcileSalesGenerationReservations()).toMatchObject({ inspected: 0 });
+    expect(await ledger()).toHaveLength(1); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('still recovers a legacy ZahyPi job with an existing receipt and reservation', async () => {
+    const { r } = await pendingZahyPi(); await legacy(r.generationId);
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
   });
 });
