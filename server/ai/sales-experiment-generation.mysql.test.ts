@@ -16,6 +16,9 @@ import * as settings from '../db_ai_settings';
 import { claimSalesGenerationRecoveries, recoverSalesGenerationResult, runSalesGenerationRecoveryBatch } from './sales-generation-recovery';
 import { loadSalesGenerationRecovery, reconcileSalesGenerationReservations } from './sales-experiment-generation';
 import { aiBudgetReservationKey } from './budget-ledger';
+import { prepareSalesGenerationOutputReview, recordSalesGenerationOutputReview, getSalesGenerationOutputReviews } from './sales-generation-output-review';
+import { salesReplyReviewRubricDigest, type RecordSalesReplyReviewInput } from './sales-generation-output-review-contract';
+import { refusalAcknowledgement } from './response-validator';
 
 const config = vi.hoisted(() => ({ unix: null as number | null, provider: 'openai' as 'openai' | 'zahypi', model: '', enabled: true, actualModel: 'synthetic-model', finish: 'stop', usage: true, text: 'رد اصطناعي للاختبار فقط.' }));
 vi.mock('../db_ai_settings', () => ({ getOpenAiApiKey: async () => 'synthetic-key', getActiveModel: async () => config.model, logAiUsage: async () => {}, estimateCost: () => 0,
@@ -32,7 +35,7 @@ vi.mock('./checkout-agreements', async original => {
 describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through real adapters and MySQL', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner, users: number[], initialModel: string;
   let seeded: Awaited<ReturnType<typeof seedApprovedSalesPlan>>, launch: Awaited<ReturnType<typeof authorizeSalesExperimentLaunch>>;
-  let input: GenerateSalesExperimentTurnInput, conversationId: number, incomingMessageId: number;
+  let input: GenerateSalesExperimentTurnInput, conversationId: number, incomingMessageId: number, customerMessage: string;
   const query = async (sql: string, args: any[] = []): Promise<any> => (await (await getPool())!.execute(sql, args))[0];
   const generate = (value = input, merchant = owner.merchantId, actor = owner.userId) => generateSalesExperimentTurn(merchant, actor, value);
   const get = (generationId: number, merchant = owner.merchantId) => getSalesExperimentGeneration(merchant, { generationId });
@@ -53,7 +56,8 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       reviewId: p.basis.reviewId, reviewDigest: p.basis.reviewDigest, reason: 'Authorize a synthetic independently reviewed plan for isolated tests.', reviewedBoundPlanAndDecision: true, understandsNoMessagesSent: true });
     config.unix = Math.ceil(Date.parse(p.basis.window.enrollmentStartsAt) / 1000) + 60;
     conversationId = Number((await query("INSERT INTO conversations (merchantId,customerPhone,status,deal_stage) VALUES (?,'966500000988','active','new')", [owner.merchantId])).insertId);
-    incomingMessageId = Number((await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text','أريد معرفة العرض المناسب',?)", [conversationId, new Date(config.unix * 1000).toISOString().slice(0, 19).replace('T', ' ')])).insertId);
+    customerMessage = ctx.task.name.includes('refusal review') ? 'لا أريد الشراء' : 'أريد معرفة العرض المناسب';
+    incomingMessageId = Number((await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text',?,?)", [conversationId, customerMessage, new Date(config.unix * 1000).toISOString().slice(0, 19).replace('T', ' ')])).insertId);
     const a = await assignSalesExperimentCustomer(owner.merchantId, { conversationId, incomingMessageId, protocolId: seeded.protocol.protocolId, launchId: launch.launchId, launchDigest: launch.launchDigest });
     if (a.kind !== 'assigned') throw Error('Missing fixture assignment');
     const baseSystemPrompt = 'PRIVATE_SERVER_CONTEXT: معلومات النشاط المعتمدة.';
@@ -81,7 +85,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       expect(h['X-Client-Request-Id'] ?? h['X-Trace-Id']).toBe(reservation.request_id);
       const body = JSON.parse(init.body), messages = config.provider === 'openai' ? body.messages : body.input.messages;
       expect(messages[0].content).toContain(input.baseSystemPrompt); expect(messages[0].content).toContain('سياسة البيع المشتركة v1');
-      expect(messages.at(-1)).toEqual({ role: 'user', content: 'أريد معرفة العرض المناسب' }); expect(messages[1]).toEqual(input.contextMessages![0]);
+      expect(messages.at(-1)).toEqual({ role: 'user', content: customerMessage }); expect(messages[1]).toEqual(input.contextMessages![0]);
       const usage = { prompt_tokens: 5, completion_tokens: 7, total_tokens: 12 };
       if (config.provider === 'openai') {
         return Response.json({ id: 'chatcmpl-fixture', model: config.actualModel, choices: [{ message: { content: config.text }, finish_reason: config.finish }], ...(config.usage ? { usage } : {}) });
@@ -164,14 +168,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?' }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews' }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -482,5 +486,127 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
   it('still recovers a legacy ZahyPi job with an existing receipt and reservation', async () => {
     const { r } = await pendingZahyPi(); await legacy(r.generationId);
     expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
+  });
+  const reviewContext = (generationId: number) => ({ generationId, baseSystemPrompt: input.baseSystemPrompt, contextMessages: input.contextMessages });
+  const history = (generationId: number, merchant = owner.merchantId) => getSalesGenerationOutputReviews(merchant, { generationId });
+  const recordReview = (value: RecordSalesReplyReviewInput, merchant = owner.merchantId, actor = owner.userId) => recordSalesGenerationOutputReview(merchant, actor, value);
+  async function reviewFixture() {
+    const r = await generate(), prepared = await prepareSalesGenerationOutputReview(owner.merchantId, reviewContext(r.generationId));
+    vi.mocked(fetch).mockClear();
+    const value: RecordSalesReplyReviewInput = { ...reviewContext(r.generationId), requestId: randomUUID(), basisDigest: prepared.basisDigest,
+      rubricDigest: salesReplyReviewRubricDigest, expectedRevision: prepared.expectedRevision,
+      checks: { answersQuestion: true, groundedInBusiness: true, appropriateNextStep: true, respectsCustomerDecision: true, noUnverifiedCommitment: true, languageAndClarity: true },
+      quote: config.text, rationale: 'Human judgment about the exact synthetic saved answer and its appropriate next step.', reviewedEntireResponse: true, understandsNoMessageSent: true };
+    return { r, prepared, value };
+  }
+  it.each(['OpenAI', 'ZahyPi'])('persists an exact %s original-output review without any additional provider call or delivery', async () => {
+    const { r, prepared, value } = await reviewFixture(), before = await ledger(), result = await recordReview(value);
+    expect(prepared.reviewCurrentAtRead).toBe(false); expect(result).toMatchObject({ snapshot: { outcome: 'approved', revision: 1, basis: { responseText: config.text } }, dispatchAllowed: false, exposureRecorded: false });
+    expect((await prepareSalesGenerationOutputReview(owner.merchantId, reviewContext(r.generationId))).reviewCurrentAtRead).toBe(true);
+    expect((await history(r.generationId)).history).toHaveLength(1); expect(await ledger()).toEqual(before); expect(fetch).not.toHaveBeenCalled();
+    expect(await get(r.generationId)).toMatchObject({ assessment: 'human_review_recorded', outputReview: { reviewId: result.reviewId, outcome: 'approved', eligibility: 'not_checked', dispatchAllowed: false } });
+    expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    const raw = JSON.stringify(await query('SELECT * FROM ai_sales_generation_output_reviews WHERE merchant_id=?', [owner.merchantId]));
+    expect(raw).not.toContain('PRIVATE_SERVER_CONTEXT'); expect(raw).not.toContain('PRIVATE_SERVER_HISTORY'); expect(raw).not.toContain('synthetic-key');
+  });
+  it('recovers a saved review after reconnection and serializes identical concurrent requests', async () => {
+    const { r, value } = await reviewFixture(), results = await Promise.all([recordReview(value), recordReview(value), recordReview(value)]);
+    expect(new Set(results.map(row => row.reviewId)).size).toBe(1); await closeDb(); expect(await recordReview(value)).toMatchObject({ reviewId: results[0].reviewId, reused: true });
+    expect((await history(r.generationId)).history).toHaveLength(1); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('prevents competing judgments from overwriting the same review revision', async () => {
+    const { r, value } = await reviewFixture();
+    const results = await Promise.allSettled([recordReview(value), recordReview({ ...value, requestId: randomUUID(), checks: { ...value.checks, answersQuestion: false } })]);
+    expect(results.filter(row => row.status === 'fulfilled')).toHaveLength(1); expect((await history(r.generationId)).history).toHaveLength(1); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('keeps a rejected revision after a later human reassessment', async () => {
+    const { r, value } = await reviewFixture();
+    await recordReview({ ...value, checks: { ...value.checks, answersQuestion: false } });
+    await recordReview({ ...value, requestId: randomUUID(), expectedRevision: 1 });
+    expect((await history(r.generationId)).history.map(v => v.snapshot.outcome)).toEqual(['approved', 'rejected']); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['before', 'after'] as const)('preserves review retry after a lost acknowledgement %s commit', async when => {
+    const { r, value } = await reviewFixture(); await failCommit('review', when); await expect(recordReview(value)).rejects.toThrow(); vi.restoreAllMocks();
+    expect((await history(r.generationId)).history).toHaveLength(when === 'after' ? 1 : 0);
+    expect(await recordReview(value)).toMatchObject({ reused: when === 'after', snapshot: { revision: 1 } }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['quote', 'rationale', 'checks', 'context', 'prompt', 'actor'])('rejects changes to review %s under a saved request ID', async mode => {
+    const { value } = await reviewFixture(); await recordReview(value);
+    const changed = mode === 'quote' ? { quote: 'changed' } : mode === 'rationale' ? { rationale: 'A completely different justification for this recorded review.' }
+      : mode === 'checks' ? { checks: { ...value.checks, groundedInBusiness: false } } : mode === 'context' ? { contextMessages: [] } : mode === 'prompt' ? { baseSystemPrompt: 'changed' } : {};
+    await expect(recordReview({ ...value, ...changed }, owner.merchantId, mode === 'actor' ? other.userId : owner.userId)).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['source', 'route', 'disabled', 'revoked', 'human', 'processed', 'owner', 'window', 'new-inbound', 'deleted', 'handoff'])('blocks new final-output review after %s drift but keeps its historical receipt', async mode => {
+    const { r, value } = await reviewFixture(); const saved = await recordReview(value);
+    if (mode === 'source') await query("UPDATE messages SET content='changed' WHERE id=?", [incomingMessageId]);
+    if (mode === 'route') config.model += '-changed'; if (mode === 'disabled') config.enabled = false; if (mode === 'revoked') await revoke();
+    if (mode === 'human') await query('UPDATE conversations SET human_takeover=1 WHERE id=?', [conversationId]);
+    if (mode === 'processed') await query('UPDATE messages SET isProcessed=1 WHERE id=?', [incomingMessageId]);
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [other.userId, owner.merchantId]);
+    if (mode === 'window') config.unix! += 365 * 86400;
+    if (mode === 'new-inbound') await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','new question')", [conversationId]);
+    if (mode === 'deleted') await query('DELETE FROM conversations WHERE id=?', [conversationId]);
+    if (mode === 'handoff') await query('UPDATE conversations SET handoff_version=handoff_version+1 WHERE id=?', [conversationId]);
+    await expect(prepareSalesGenerationOutputReview(owner.merchantId, reviewContext(r.generationId))).rejects.toThrow();
+    await expect(recordReview({ ...value, requestId: randomUUID(), expectedRevision: 1 })).rejects.toThrow();
+    expect(await recordReview(value)).toMatchObject({ reviewId: saved.reviewId, reused: true, eligibility: 'not_checked', dispatchAllowed: false });
+    expect(await get(r.generationId)).toMatchObject({ assessment: 'human_review_recorded', outputReview: { eligibility: 'not_checked', dispatchAllowed: false } });
+    expect((await history(r.generationId)).history).toHaveLength(1); expect(fetch).not.toHaveBeenCalled();
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [owner.userId, owner.merchantId]);
+  });
+  it('isolates final-output review history and writes by merchant and current owner', async () => {
+    const { r, value } = await reviewFixture(); await expect(history(r.generationId, other.merchantId)).rejects.toThrow();
+    await expect(recordReview(value, other.merchantId, other.userId)).rejects.toThrow(); await expect(recordReview(value, owner.merchantId, other.userId)).rejects.toThrow();
+    expect((await history(r.generationId)).history).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['quote', 'basis', 'context', 'prompt'])('rejects a mismatched final-review %s before writing', async mode => {
+    const { r, value } = await reviewFixture(), changed = mode === 'quote' ? { quote: 'not in original output' } : mode === 'basis' ? { basisDigest: 'f'.repeat(64) }
+      : mode === 'context' ? { contextMessages: [] } : { baseSystemPrompt: 'not the original context' };
+    await expect(recordReview({ ...value, ...changed })).rejects.toThrow(); expect((await history(r.generationId)).history).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['تم إنشاء طلبك الآن', 'تواصل معي على private@example.test', '[أدخل السعر]'])('cannot approve an unsafe original output: %s', async response => {
+    config.text = response; const { prepared, value } = await reviewFixture(); expect(prepared.evidence.gate.some(v => v.severity === 'critical')).toBe(true);
+    expect(await recordReview(value)).toMatchObject({ snapshot: { outcome: 'rejected', basis: { responseText: response } } }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([false, true])('refusal review only accepts the exact no-pressure acknowledgement: %s', async correct => {
+    config.text = correct ? refusalAcknowledgement(customerMessage) : 'لدينا عرض رائع، أكمل الطلب الآن';
+    const { value } = await reviewFixture(); expect(await recordReview(value)).toMatchObject({ snapshot: { outcome: correct ? 'approved' : 'rejected' } }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['invalid', 'uncertain'])('does not prepare an incomplete %s response for review', async state => {
+    if (state === 'invalid') config.finish = 'length'; else vi.mocked(fetch).mockRejectedValue(Error('synthetic timeout'));
+    const r = await generate(); await expect(prepareSalesGenerationOutputReview(owner.merchantId, reviewContext(r.generationId))).rejects.toThrow(); expect(fetch).toHaveBeenCalledOnce();
+  });
+  it.each(['snapshot', 'outcome', 'digest', 'actor', 'revision'])('detects stored final-review %s corruption', async field => {
+    const { r, value } = await reviewFixture(), saved = await recordReview(value);
+    if (field === 'snapshot') await query("UPDATE ai_sales_generation_output_reviews SET snapshot=JSON_SET(snapshot,'$.basis.responseText','injected') WHERE id=?", [saved.reviewId]);
+    if (field === 'outcome') await query("UPDATE ai_sales_generation_output_reviews SET outcome='rejected' WHERE id=?", [saved.reviewId]);
+    if (field === 'digest') await query('UPDATE ai_sales_generation_output_reviews SET review_digest=? WHERE id=?', ['f'.repeat(64), saved.reviewId]);
+    if (field === 'actor') await query('UPDATE ai_sales_generation_output_reviews SET actor_user_id=? WHERE id=?', [other.userId, saved.reviewId]);
+    if (field === 'revision') await query('UPDATE ai_sales_generation_output_reviews SET revision=2 WHERE id=?', [saved.reviewId]);
+    await expect(history(r.generationId)).rejects.toThrow(); await expect(recordReview(value)).rejects.toThrow(); await expect(get(r.generationId)).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('rejects a final review when the observation window closes while the transaction is running', async () => {
+    const { r, value } = await reviewFixture(), pool = (await getPool())!, original = pool.getConnection.bind(pool);
+    vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+      const c = await original(); return new Proxy(c, { get(target, key) {
+        if (key === 'execute') return async (...args: any[]) => {
+          const result = await (target.execute as any)(...args);
+          if (String(args[0]).includes('ORDER BY revision DESC LIMIT 20')) await target.query('SET timestamp=?', [config.unix! + 365 * 86400]);
+          return result;
+        };
+        const v = (target as any)[key]; return typeof v === 'function' ? v.bind(target) : v;
+      } }) as any;
+    });
+    await expect(recordReview(value)).rejects.toThrow(); vi.restoreAllMocks(); expect((await history(r.generationId)).history).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['judgment', 'quote', 'identity'])('rejects a rehashed but internally inconsistent review %s', async mode => {
+    const { r, value } = await reviewFixture(), saved = await recordReview(value);
+    const s = structuredClone(saved.snapshot);
+    if (mode === 'judgment') s.checks.answersQuestion = false;
+    if (mode === 'quote') s.quote = 'An excerpt that never appeared in the reviewed response.';
+    if (mode === 'identity') s.basis.generationId++; // Rehash the nested basis too; the cross-identity constraint must reject it.
+    s.basisDigest = policyArtifactDigest(s.basis);
+    await query('UPDATE ai_sales_generation_output_reviews SET snapshot=?,basis_digest=?,review_digest=? WHERE id=?', [JSON.stringify(s), s.basisDigest, policyArtifactDigest(s), saved.reviewId]);
+    await expect(history(r.generationId)).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
   });
 });

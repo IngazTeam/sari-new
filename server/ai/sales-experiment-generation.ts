@@ -14,6 +14,7 @@ import { callGPT4, type ChatMessage } from './openai';
 import { AiBudgetError, aiBudgetReservationKey, type AiBudgetAttempt, type AiCompletionMetadata } from './budget-ledger';
 import { parseReplyProviderJobReceipt, type AiProviderJobReceipt } from './provider-job-receipt';
 import { getPool } from '../db/connection';
+import { latestSalesReplyReviewReceipt } from './sales-generation-output-review-store';
 
 const id = z.number().int().positive().safe(), flags = { generationAllowed: false as const, dispatchAllowed: false as const, exposureRecorded: false as const };
 const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
@@ -76,20 +77,34 @@ async function receipt(c: PoolConnection, row: any) {
     cost = r ? { state: String(r.state), priceVersion: String(r.price_version), heldMicroUsd: r.state === 'settled' ? 0 : Number(r.reserved_micro_usd),
       settledMicroUsd: r.settled_micro_usd === null ? null : Number(r.settled_micro_usd) } : { state: 'unavailable' };
   }
+  const outputReview = await latestSalesReplyReviewReceipt(c, Number(row.merchant_id), Number(row.id));
   return { generationId: id.parse(Number(row.id)), authorizationDigest: String(row.authorization_digest), ...parsed,
     state: row.state as 'dispatching' | 'responded' | 'invalid' | 'blocked' | 'uncertain', actorPresent: row.actor_user_id !== null,
     responseDigest: row.response_digest as string | null, failureCode: row.failure_code as string | null, cost,
     reservationLink: row.reservation_key ? 'linked' as const : row.expected_reservation_key ? 'not_observed' as const : 'legacy_unresolved' as const,
-    assessment: 'not_assessed' as const, eligibility: 'not_checked' as const, ...flags };
+    outputReview, assessment: outputReview ? 'human_review_recorded' as const : 'not_assessed' as const, eligibility: 'not_checked' as const, ...flags };
 }
 type Input = z.infer<typeof generateSalesExperimentTurnInput>;
 export type SalesGenerationClaim = Readonly<{ merchant: number; generationId: number; token: string; authorizationDigest: string; recoveryToken?: string }>;
 type Claim = SalesGenerationClaim;
-async function current(c: PoolConnection, merchant: number, input: Input) {
+async function current(c: PoolConnection, merchant: number, input: Pick<Input, 'turnId' | 'turnDigest' | 'baseSystemPrompt' | 'contextMessages'>) {
   const turn = await loadSalesExperimentTurnPrompt(c, merchant, input);
   if (turn.kind !== 'resolved') return conflict();
   const messages: ChatMessage[] = [{ role: 'system', content: turn.systemPrompt }, ...input.contextMessages, { role: 'user', content: turn.customerMessage }];
   return { turn, messages, inputDigest: policyArtifactDigest({ messages, recipe: salesGenerationRecipe }) };
+}
+/** Internal review composition under the merchant lock. Returns evidence, never a transport permit. */
+export async function loadSalesGenerationReviewSource(c: PoolConnection, merchant: number, generationId: number,
+  context: Pick<Input, 'baseSystemPrompt' | 'contextMessages'>) {
+  const owner = await lock(c, merchant), row = await load(c, merchant, generationId), s = authorization(row).snapshot;
+  if (row.state !== 'responded' || row.actor_user_id === null || owner !== s.actorUserId) return conflict();
+  const checked = await current(c, merchant, { ...context, turnId: s.turnId, turnDigest: s.turnDigest });
+  if (checked.inputDigest !== s.inputDigest || checked.turn.snapshot.promptDigest !== s.promptDigest
+    || checked.turn.snapshot.routeDigest !== s.routeDigest || Date.parse(checked.turn.checkedAt) < Date.parse(s.authorizedAt)) return conflict();
+  return { generationId, authorizationDigest: String(row.authorization_digest), responseDigest: String(row.response_digest),
+    responseText: String(row.response_text), snapshot: s, turn: checked.turn.snapshot, customerMessage: checked.turn.customerMessage,
+    lastAssistantMessage: context.contextMessages.filter(m => m.role === 'assistant').at(-1)?.content,
+    checkedAt: checked.turn.checkedAt };
 }
 async function claimed(c: PoolConnection, claim: Claim) {
   const owner = await lock(c, claim.merchant), row = await load(c, claim.merchant, claim.generationId);

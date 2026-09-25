@@ -624,6 +624,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبارات فقد إقرار حجز المال قبل الالتزام وبعده، والتزامن بين القراءة والعامل، وفساد هوية الحجز، وقراءة التكلفة قبل بوابة الإرسال مع التولي البشري، والتوافق مع سجلات v1 واسترجاعها.','server/ai/sales-experiment-generation.mysql.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0117 يضيف المفتاح المتوقع مع تفرده دون backfill. اختبر المحدّث 118 ترحيلًا وحفظ التاريخ والسقف المركزي ورفض التكرار وإعادة التشغيل الآمنة. يلزم تحديث الويب والعمال مع الترحيل؛ لم ينفذ نشر.','scripts/testing/verify-sales-generation-budget-link-migration.cjs'],
 });
+Object.assign(entries, {
+ B006:[entries.B006[0]+' أضيفت مراجعة بشرية متينة للنص الأصلي في تجربة المبيعات، بستة معايير واقتباس وسبب، مرتبطة ببصمة الرد وسياقه مع فحص حتمي للمخالفات الحرجة. لا تسمح الموافقة البشرية بتجاوز مخالفة حرجة أو تولي بشري أو تغير المصدر. لا تزال واجهة هذه المراجعة وربطها بالإرسال مفتوحين.','server/ai/sales-generation-output-review.ts'],
+ B045:[entries.B045[0]+' يحفظ قرار مراجعة النص الأصلي بإصدارات وطلب ثابت، ويفصل الملخص التاريخي عن صلاحية الإرسال. يعاد فحص النص والتفويض والمصدر والمزوّد والمهلة قبل حفظ قرار جديد؛ لا إعادة كتابة للنص ولا طلب نموذج إضافي.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبرت مراجعة الرد مع المزوّدين المصطنعين: تنافس القرارات، فقد إقرار الحفظ، عزل المتاجر، تغيّر السياق، انتهاء النافذة داخل المعاملة، رفض تجاوز البوابة الحتمية، وفساد الأدلة حتى بعد إعادة حساب البصمة. سجل التوليد يعرض حكمًا بشريًا محفوظًا مع بقاء الأهلية غير مفحوصة.','server/ai/sales-generation-output-review-pentest.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0118 يضيف سجل مراجعات الرد دون اعتماد تلقائي أو تغيير النصوص والميزانية. اختبر المحدّث 119 ترحيلًا وحفظ 16 جدولًا ورفض خمس مخالفات وإعادة آمنة. جاهزية التشغيل تتطلب الجدول وفهارسه؛ لم ينفذ نشر.','scripts/testing/verify-sales-generation-output-review-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

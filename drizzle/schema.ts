@@ -4230,6 +4230,17 @@ export const aiSalesExperimentGenerations = mysqlTable('ai_sales_experiment_gene
   uniqueIndex('uq_sales_generation_reservation').on(table.reservationKey), index('idx_sales_generation_recovery').on(table.state, table.recoveryNextAt),
   uniqueIndex('uq_sales_generation_expected_reservation').on(table.expectedReservationKey)]);
 
+export const aiSalesGenerationOutputReviews = mysqlTable('ai_sales_generation_output_reviews', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  generationId: bigint('generation_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentGenerations.id, { onDelete: 'cascade' }),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  revision: bigint({ mode: 'number', unsigned: true }).notNull(), requestId: char('request_id', { length: 36 }).notNull(),
+  payloadDigest: char('payload_digest', { length: 64 }).notNull(), basisDigest: char('basis_digest', { length: 64 }).notNull(),
+  reviewDigest: char('review_digest', { length: 64 }).notNull(), snapshot: json().notNull(), outcome: varchar({ length: 16 }).notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_reply_review_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_reply_review_revision').on(table.generationId, table.revision)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

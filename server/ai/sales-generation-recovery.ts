@@ -9,7 +9,11 @@ export async function assertSalesGenerationRecoverySchema() {
   await assertRuntimeSchema('sales generation recovery', [{ table: 'ai_sales_experiment_generations',
     columns: ['expected_reservation_key', 'provider_receipt', 'provider_receipt_digest', 'recovery_token', 'recovery_lease_until', 'recovery_next_at', 'recovery_attempts', 'recovery_last_error'],
     uniqueIndexes: [{ name: 'PRIMARY', columns: ['id'] }, { name: 'uq_sales_generation_reservation', columns: ['reservation_key'] },
-      { name: 'uq_sales_generation_expected_reservation', columns: ['expected_reservation_key'] }] }]);
+      { name: 'uq_sales_generation_expected_reservation', columns: ['expected_reservation_key'] }] },
+    { table: 'ai_sales_generation_output_reviews', columns: ['merchant_id', 'generation_id', 'actor_user_id', 'revision', 'request_id',
+      'payload_digest', 'basis_digest', 'review_digest', 'snapshot', 'outcome'],
+      uniqueIndexes: [{ name: 'uq_sales_reply_review_request', columns: ['merchant_id', 'request_id'] },
+        { name: 'uq_sales_reply_review_revision', columns: ['generation_id', 'revision'] }] }]);
 }
 export async function claimSalesGenerationRecoveries(limit = 5): Promise<SalesGenerationClaim[]> {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5) throw Error('Invalid sales recovery batch');

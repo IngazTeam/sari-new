@@ -1,0 +1,24 @@
+{
+  "scope": "Local synthetic validation. Final reports exclusively from the frozen staged source.",
+  "attempts": [
+    {
+      "kind": "first-focused",
+      "passed": 188,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "626f2f2c7057ee1088fd3429045d07a9b77f78fdd3301bc3a4678ef696ea8e87"
+    },
+    {
+      "kind": "focused-final",
+      "passed": 192,
+      "failed": 0,
+      "skipped": 0,
+      "result": "Added generation-history review summary and four cases for expiry inside the transaction and rehashed inconsistent evidence.",
+      "logSha256": "ffe7d5e03bd3b035f1823bb0b518242124f03d351a386dc67547a99acbcb8198"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "19be986adfd9aacc396042812a1d537166aa8672e4c57dca89b06a5cf5ef3ea9"
+    }
+  ]
+}
