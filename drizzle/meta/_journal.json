@@ -813,6 +813,13 @@
       "when": 1793404800000,
       "tag": "0115_sales_experiment_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1793491200000,
+      "tag": "0116_sales_generation_recovery",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,46 @@
+{
+  "scope": "Synthetic local validation. Final reports exclusively from the frozen staged source snapshot.",
+  "attempts": [
+    {
+      "kind": "first-provider-and-worker-units",
+      "passed": 98,
+      "failed": 0,
+      "logSha256": "aec747c6e1e1e848276c45eabc4ecf33ecfb121c5aa6616946ae14d4ea3a2984"
+    },
+    {
+      "kind": "first-database",
+      "passed": 162,
+      "failed": 1,
+      "result": "A new test used the reserved MySQL keyword delayed as a SQL alias. Changed the test alias to is_delayed; production SQL was unaffected.",
+      "logSha256": "3e29f4768d602e147ed74ac793d2dd3b3e7102ca41151f00df742f3d064a5063"
+    },
+    {
+      "kind": "focused-final",
+      "passed": 82,
+      "failed": 0,
+      "skipped": 0,
+      "result": "Includes the corrected database assertion, one added original-request/recovery race, and five worker batch-boundary cases.",
+      "logSha256": "cc198deebe7e03d9e339e9dbc9c1b1377204fc80b23cad3734e1e988f33780a8"
+    },
+    {
+      "kind": "review-follow-up",
+      "result": "Review found that saved output could strand usage if persisting usage failed before settlement. Persist recovered usage before saving output; two added before/after-commit failure cases keep recovery pending until usage is acknowledged."
+    },
+    {
+      "kind": "focused-usage-correction",
+      "passed": 2,
+      "failed": 0,
+      "filteredOut": 73,
+      "selection": "Two named regression cases only; the final full run has no skipped tests",
+      "logSha256": "dd46c0e1a18f6a21192194c358fdc220e0a0bf5a54f5776bd394856a84a01e58"
+    },
+    {
+      "kind": "first-full",
+      "logSha256": "7b86099f768a649553369ad241890aa805009970c869a8d270c192bf1f15138c"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "1e76e1b62d26c595911e90bc97e6f96b19eb6cac9f3659a0ff1044ddc6a9e51c"
+    }
+  ]
+}

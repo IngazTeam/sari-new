@@ -12,6 +12,7 @@ import { getActiveModel } from '../db_ai_settings';
 import { resolveZahyPiRuntimeConfig, runWithZahyPiContext } from './zahypi-client';
 import { callGPT4, type ChatMessage } from './openai';
 import { AiBudgetError, type AiBudgetAttempt, type AiCompletionMetadata } from './budget-ledger';
+import { parseReplyProviderJobReceipt, type AiProviderJobReceipt } from './provider-job-receipt';
 
 const id = z.number().int().positive().safe(), flags = { generationAllowed: false as const, dispatchAllowed: false as const, exposureRecorded: false as const };
 const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
@@ -38,11 +39,23 @@ function authorization(row: any) {
       if (row.state === 'responded' && (!validText(response.text) || !evaluationCompletion.safeParse(response.metadata).success
         || response.metadata.finishReason !== 'stop' || response.metadata.model !== s.observedModel)) return conflict();
     } else if (row.response_digest !== null || response.text !== null || response.metadata !== null) return conflict();
+    providerReceipt(row, s);
     return { snapshot: s, response };
   } catch { return conflict(); }
 }
 function validText(text: unknown): text is string { return typeof text === 'string' && text.trim().length > 0 && text.length <= 32000; }
 function responseDigest(row: any, response: unknown) { return policyArtifactDigest({ authorizationDigest: row.authorization_digest, reservationKey: row.reservation_key, response }); }
+function receiptDigest(row: any, value: unknown) {
+  return policyArtifactDigest({ authorizationDigest: row.authorization_digest, reservationKey: row.reservation_key, receipt: value });
+}
+function providerReceipt(row: any, s: z.infer<typeof salesGenerationSnapshot>) {
+  if (row.provider_receipt === null) { if (row.provider_receipt_digest !== null) return conflict(); return null; }
+  const raw = decode(row.provider_receipt), r = parseReplyProviderJobReceipt(raw);
+  if (!row.reservation_key || s.provider !== 'zahypi' || r.tenantId !== `merchant:${s.merchantId}`
+    || receiptDigest(row, raw) !== row.provider_receipt_digest || receiptDigest(row, r) !== row.provider_receipt_digest
+    || policyArtifactDigest({ provider: s.provider, model: s.model, route: r.configFingerprint }) !== s.routeDigest) return conflict();
+  return r;
+}
 async function load(c: PoolConnection, merchant: number, generationId: number) {
   const [rows] = await c.execute<any[]>('SELECT * FROM ai_sales_experiment_generations WHERE merchant_id=? AND id=? FOR UPDATE', [merchant, generationId]);
   if (rows.length !== 1) return conflict(); authorization(rows[0]); return rows[0];
@@ -64,7 +77,8 @@ async function receipt(c: PoolConnection, row: any) {
     assessment: 'not_assessed' as const, eligibility: 'not_checked' as const, ...flags };
 }
 type Input = z.infer<typeof generateSalesExperimentTurnInput>;
-type Claim = { merchant: number; generationId: number; token: string; authorizationDigest: string };
+export type SalesGenerationClaim = Readonly<{ merchant: number; generationId: number; token: string; authorizationDigest: string; recoveryToken?: string }>;
+type Claim = SalesGenerationClaim;
 async function current(c: PoolConnection, merchant: number, input: Input) {
   const turn = await loadSalesExperimentTurnPrompt(c, merchant, input);
   if (turn.kind !== 'resolved') return conflict();
@@ -74,6 +88,12 @@ async function current(c: PoolConnection, merchant: number, input: Input) {
 async function claimed(c: PoolConnection, claim: Claim) {
   const owner = await lock(c, claim.merchant), row = await load(c, claim.merchant, claim.generationId);
   if (row.claim_token !== claim.token || row.authorization_digest !== claim.authorizationDigest) return conflict(); return { row, owner, snapshot: authorization(row).snapshot };
+}
+async function recoveryLease(c: PoolConnection, claim: Claim) {
+  if (!claim.recoveryToken) return;
+  const [rows] = await c.execute<any[]>(`SELECT id FROM ai_sales_experiment_generations WHERE id=? AND recovery_token=?
+    AND recovery_lease_until>UTC_TIMESTAMP(3)`, [claim.generationId, claim.recoveryToken]);
+  if (rows.length !== 1) return conflict();
 }
 async function attemptOwned(c: PoolConnection, claim: Claim, attempt: AiBudgetAttempt, s: z.infer<typeof salesGenerationSnapshot>) {
   if (attempt.scopeKey !== `merchant:${claim.merchant}` || attempt.provider !== s.provider || attempt.model !== s.model || attempt.taskType !== salesGenerationRecipe.taskType) return conflict();
@@ -94,7 +114,26 @@ async function bind(claim: Claim, input: Input, attempt: AiBudgetAttempt) {
     await c.execute('UPDATE ai_sales_experiment_generations SET reservation_key=? WHERE id=?', [attempt.reservationKey, claim.generationId]);
   });
 }
-async function save(claim: Claim, attempt: AiBudgetAttempt, text: string, metadata: AiCompletionMetadata | undefined) {
+/** Durable receipt before polling; retries only local storage, including an uncertain commit acknowledgement. */
+async function accepted(claim: Claim, value: AiProviderJobReceipt, attempt: AiBudgetAttempt) {
+  const r = parseReplyProviderJobReceipt(value);
+  for (let retry = 0; retry < 3; retry++) {
+    try {
+      await checkoutTransaction(async c => {
+        const { row, snapshot: s } = await claimed(c, claim); await attemptOwned(c, claim, attempt, s);
+        if (row.reservation_key !== attempt.reservationKey || r.traceId !== attempt.requestId) return conflict();
+        const digest = receiptDigest(row, r);
+        providerReceipt({ ...row, provider_receipt: r, provider_receipt_digest: digest }, s);
+        if (row.provider_receipt !== null) { if (row.provider_receipt_digest !== digest) return conflict(); return; }
+        if (!['dispatching', 'uncertain'].includes(row.state)) return conflict();
+        await c.execute(`UPDATE ai_sales_experiment_generations SET provider_receipt=?,provider_receipt_digest=?,
+          recovery_next_at=TIMESTAMPADD(SECOND,90,UTC_TIMESTAMP(3)) WHERE id=?`, [JSON.stringify(r), digest, claim.generationId]);
+      });
+      return;
+    } catch (error) { if (retry === 2 || error instanceof SalesExperimentGenerationConflict) throw error; }
+  }
+}
+export async function saveSalesGenerationResponse(claim: Claim, attempt: AiBudgetAttempt, text: string, metadata: AiCompletionMetadata | undefined) {
   const parsed = evaluationCompletion.safeParse(metadata), response = { text: validText(text) ? text : null, metadata: parsed.success ? parsed.data : null };
   // Retry local persistence only. Never ask the provider to generate again after an uncertain save.
   for (let retry = 0; retry < 3; retry++) {
@@ -102,6 +141,7 @@ async function save(claim: Claim, attempt: AiBudgetAttempt, text: string, metada
       await checkoutTransaction(async c => {
         const { row, snapshot: s } = await claimed(c, claim); await attemptOwned(c, claim, attempt, s);
         if (row.reservation_key !== attempt.reservationKey) return conflict();
+        await recoveryLease(c, claim);
         const digest = responseDigest(row, response);
         if (['responded', 'invalid'].includes(row.state)) { if (row.response_digest !== digest) return conflict(); return; }
         if (!['dispatching', 'uncertain'].includes(row.state)) return conflict();
@@ -113,6 +153,18 @@ async function save(claim: Claim, attempt: AiBudgetAttempt, text: string, metada
       return;
     } catch (error) { if (retry === 2 || error instanceof SalesExperimentGenerationConflict) throw error; }
   }
+}
+/** Loads only already accepted work. Revoked sources may retain historical output, never a send permission. */
+export async function loadSalesGenerationRecovery(claim: Claim) {
+  if (!claim.recoveryToken) return conflict();
+  return checkoutTransaction(async c => {
+    const { row, snapshot: s } = await claimed(c, claim); await recoveryLease(c, claim);
+    if (!['dispatching', 'uncertain'].includes(row.state)) return null;
+    const r = providerReceipt(row, s); if (!r) return conflict();
+    const attempt: AiBudgetAttempt = { reservationKey: row.reservation_key, requestId: r.traceId, scopeKey: r.tenantId,
+      provider: 'zahypi', model: s.model, taskType: r.taskType };
+    await attemptOwned(c, claim, attempt, s); return { receipt: r, attempt };
+  });
 }
 async function fail(claim: Claim, error: unknown) {
   await checkoutTransaction(async c => {
@@ -171,7 +223,8 @@ export async function generateSalesExperimentTurn(merchantId: number, actorUserI
         if (actual.digest !== d.snapshot.routeDigest) return conflict();
         await callGPT4(d.messages, { merchantId: merchant, model: d.snapshot.model, taskType: 'sari.reply',
           temperature: salesGenerationRecipe.temperature, maxTokens: salesGenerationRecipe.maxTokens, noRetry: true,
-          lifecycle: { beforeDispatch: attempt => bind(d.claim, input, attempt), afterResponse: (text, attempt, metadata) => save(d.claim, attempt, text, metadata) } });
+          lifecycle: { beforeDispatch: attempt => bind(d.claim, input, attempt), afterJobAccepted: (receipt, attempt) => accepted(d.claim, receipt, attempt),
+            afterResponse: (text, attempt, metadata) => saveSalesGenerationResponse(d.claim, attempt, text, metadata) } });
       });
     } catch (error) { await fail(d.claim, error); }
   }

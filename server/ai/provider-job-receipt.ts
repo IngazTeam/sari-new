@@ -8,9 +8,19 @@ const receiptSchema = z.object({
   tenantId: z.string().regex(/^merchant:[1-9]\d{0,15}$/),
   taskType: z.literal('sari.learning.pattern-analysis'), configFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
-export type AiProviderJobReceipt = Readonly<z.infer<typeof receiptSchema>>;
-export function parseProviderJobReceipt(value: unknown): AiProviderJobReceipt {
+const replyReceiptSchema = receiptSchema.extend({ taskType: z.literal('sari.reply') });
+export type LearningProviderJobReceipt = Readonly<z.infer<typeof receiptSchema>>;
+export type ReplyProviderJobReceipt = Readonly<z.infer<typeof replyReceiptSchema>>;
+export type AiProviderJobReceipt = LearningProviderJobReceipt | ReplyProviderJobReceipt;
+// Keep each consumer's trust boundary task-specific. Only the provider adapter accepts both.
+export function parseProviderJobReceipt(value: unknown): LearningProviderJobReceipt {
   return Object.freeze(receiptSchema.parse(value));
+}
+export function parseReplyProviderJobReceipt(value: unknown): ReplyProviderJobReceipt {
+  return Object.freeze(replyReceiptSchema.parse(value));
+}
+export function parseAcceptedProviderJobReceipt(value: unknown): AiProviderJobReceipt {
+  return Object.freeze(z.union([receiptSchema, replyReceiptSchema]).parse(value));
 }
 export function providerRouteFingerprint(config: { baseUrl: string; projectId: string; model: string;
   source: string; generation?: number; taskTypes?: readonly string[]; taskTypesHash?: string }): string {

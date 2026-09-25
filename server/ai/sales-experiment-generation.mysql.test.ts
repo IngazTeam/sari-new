@@ -13,6 +13,8 @@ import { resolveSariTaskType } from './task-catalog';
 import { runAiSettlementBatch } from './budget-settlement';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import * as settings from '../db_ai_settings';
+import { claimSalesGenerationRecoveries, recoverSalesGenerationResult, runSalesGenerationRecoveryBatch } from './sales-generation-recovery';
+import { loadSalesGenerationRecovery } from './sales-experiment-generation';
 
 const config = vi.hoisted(() => ({ unix: null as number | null, provider: 'openai' as 'openai' | 'zahypi', model: '', enabled: true, actualModel: 'synthetic-model', finish: 'stop', usage: true, text: 'رد اصطناعي للاختبار فقط.' }));
 vi.mock('../db_ai_settings', () => ({ getOpenAiApiKey: async () => 'synthetic-key', getActiveModel: async () => config.model, logAiUsage: async () => {}, estimateCost: () => 0,
@@ -161,14 +163,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'" }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?' }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -237,6 +239,135 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       await query('UPDATE ai_sales_experiment_generations SET snapshot=?,authorization_digest=? WHERE id=?', [JSON.stringify(snapshot), policyArtifactDigest(snapshot), row.id]); return original();
     });
     await expect(generate()).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
+  });
+  const dueRecovery = () => query('UPDATE ai_sales_experiment_generations SET recovery_next_at=UTC_TIMESTAMP(3) WHERE merchant_id=?', [owner.merchantId]);
+  async function pendingZahyPi() {
+    const original = vi.mocked(fetch).getMockImplementation()!; let job: any;
+    vi.mocked(fetch).mockImplementation(async (...args) => {
+      if ((args[1] as any).method === 'POST') {
+        job = await (await original(...args)).json(); return Response.json({ job_id: job.job_id, status: 'queued' });
+      }
+      const [row] = await query('SELECT provider_receipt FROM ai_sales_experiment_generations WHERE merchant_id=?', [owner.merchantId]);
+      expect(row.provider_receipt).not.toBeNull(); throw Error('Synthetic worker lost while awaiting accepted job');
+    });
+    const r = await generate(); expect(r).toMatchObject({ state: 'uncertain', cost: { state: 'unknown' } });
+    config.unix = null; await dueRecovery();
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      expect(init?.method).toBe('GET'); expect(String(url).endsWith(`/jobs/${job.job_id}`)).toBe(true); expect(init?.body).toBeUndefined(); return Response.json(job);
+    });
+    return { r, job };
+  }
+  it('recovers ZahyPi accepted output after disconnect using one GET and the original held budget', async () => {
+    const { r } = await pendingZahyPi(); await closeDb();
+    expect(await runSalesGenerationRecoveryBatch()).toEqual({ claimed: 1, saved: 1, skipped: 0, deferred: 0 });
+    expect(await get(r.generationId)).toMatchObject({ state: 'responded', response: { text: config.text }, cost: { state: 'settled' }, dispatchAllowed: false, exposureRecorded: false });
+    await generate(); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ claimed: 0 });
+    expect(vi.mocked(fetch).mock.calls.filter(c => c[1]?.method === 'POST')).toHaveLength(1); expect(fetch).toHaveBeenCalledTimes(3); expect(await ledger()).toHaveLength(1);
+    expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+  });
+  it.each(['before', 'after'] as const)('retries ZahyPi acceptance persistence locally after two failures %s commit', async when => {
+    await failCommit('receipt', when, 2); expect(await generate()).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
+    expect(fetch).toHaveBeenCalledOnce(); const [row] = await query('SELECT provider_receipt FROM ai_sales_experiment_generations WHERE merchant_id=?', [owner.merchantId]); expect(row.provider_receipt).not.toBeNull();
+  });
+  it('does not guess a ZahyPi job when all receipt saves fail before commit', async () => {
+    await failCommit('receipt', 'before'); const r = await generate(); vi.restoreAllMocks(); config.unix = null; await dueRecovery();
+    expect(r).toMatchObject({ state: 'uncertain', cost: { state: 'unknown' } }); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ claimed: 0 }); await generate(); expect(fetch).toHaveBeenCalledOnce();
+  });
+  it('serializes ZahyPi recovery claims and fences a stale worker after lease replacement', async () => {
+    const { r } = await pendingZahyPi(), batches = await Promise.all([claimSalesGenerationRecoveries(), claimSalesGenerationRecoveries()]);
+    expect(batches.flat()).toHaveLength(1); const first = batches.flat()[0];
+    await query('UPDATE ai_sales_experiment_generations SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE id=?', [r.generationId]); await dueRecovery();
+    const [second] = await claimSalesGenerationRecoveries(); expect(second.recoveryToken).not.toBe(first.recoveryToken);
+    expect(await recoverSalesGenerationResult(first)).toBe('deferred'); expect(fetch).toHaveBeenCalledTimes(2);
+    expect(await recoverSalesGenerationResult(second)).toBe('saved'); expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  it('skips ZahyPi recovery when the original in-flight request saves the same accepted job first', async () => {
+    const original = vi.mocked(fetch).getMockImplementation()!; let job: any, finish!: (response: Response) => void, entered!: () => void;
+    const waiting = new Promise<void>(resolve => { entered = resolve; });
+    vi.mocked(fetch).mockImplementation(async (...args) => {
+      if (args[1]?.method === 'POST') { job = await (await original(...args)).json(); return Response.json({ job_id: job.job_id, status: 'queued' }); }
+      return new Promise<Response>(resolve => { finish = resolve; entered(); });
+    });
+    const generation = generate(); await waiting; config.unix = null;
+    await dueRecovery(); expect(await claimSalesGenerationRecoveries()).toHaveLength(0);
+    await query('UPDATE ai_sales_experiment_generations SET lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE merchant_id=?', [owner.merchantId]);
+    const [claim] = await claimSalesGenerationRecoveries(); expect(claim).toBeDefined();
+    finish(Response.json(job)); expect(await generation).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
+    expect(await recoverSalesGenerationResult(claim)).toBe('skipped'); expect(fetch).toHaveBeenCalledTimes(2); expect(await ledger()).toHaveLength(1);
+  });
+  it.each(['before', 'after'] as const)('retains ZahyPi recovery after claim acknowledgement is lost %s commit', async when => {
+    const { r } = await pendingZahyPi(); await failCommit('recover', when);
+    await expect(claimSalesGenerationRecoveries()).rejects.toThrow(); vi.restoreAllMocks(); expect(fetch).toHaveBeenCalledTimes(2);
+    if (when === 'after') {
+      expect(await claimSalesGenerationRecoveries()).toHaveLength(0);
+      await query('UPDATE ai_sales_experiment_generations SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE id=?', [r.generationId]); await dueRecovery();
+    }
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  it.each(['tenant', 'task', 'trace', 'fingerprint', 'digest', 'reservation', 'claim', 'actor'])('refuses ZahyPi recovery with altered %s before HTTP', async mode => {
+    const { r } = await pendingZahyPi(); const [claim] = await claimSalesGenerationRecoveries();
+    const [row] = await query('SELECT * FROM ai_sales_experiment_generations WHERE id=?', [r.generationId]);
+    const receipt = typeof row.provider_receipt === 'string' ? JSON.parse(row.provider_receipt) : row.provider_receipt;
+    if (mode === 'tenant') receipt.tenantId = `merchant:${other.merchantId}`;
+    if (mode === 'task') receipt.taskType = 'sari.learning.pattern-analysis';
+    if (mode === 'trace') receipt.traceId = randomUUID();
+    if (mode === 'fingerprint') receipt.configFingerprint = 'f'.repeat(64);
+    if (['tenant', 'task', 'trace', 'fingerprint'].includes(mode)) await query('UPDATE ai_sales_experiment_generations SET provider_receipt=?,provider_receipt_digest=? WHERE id=?',
+      [JSON.stringify(receipt), policyArtifactDigest({ authorizationDigest: row.authorization_digest, reservationKey: row.reservation_key, receipt }), r.generationId]);
+    if (mode === 'digest') await query("UPDATE ai_sales_experiment_generations SET provider_receipt_digest=REPEAT('f',64) WHERE id=?", [r.generationId]);
+    if (mode === 'reservation') await query('UPDATE ai_usage_reservations SET request_id=? WHERE reservation_key=?', [randomUUID(), row.reservation_key]);
+    if (mode === 'claim') (claim as any).token = randomUUID();
+    if (mode === 'actor') (claim as any).merchant = other.merchantId;
+    await expect(loadSalesGenerationRecovery(claim)).rejects.toThrow(); expect(await recoverSalesGenerationResult(claim)).toBe('deferred'); expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it.each(['disabled', 'provider', 'route'])('honors ZahyPi administrator %s changes during recovery', async mode => {
+    const { r } = await pendingZahyPi(); if (mode === 'disabled') config.enabled = false; if (mode === 'provider') config.provider = 'openai'; if (mode === 'route') config.model += '-changed';
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ deferred: 1 }); expect(fetch).toHaveBeenCalledTimes(2);
+    expect(await get(r.generationId)).toMatchObject({ state: 'uncertain', cost: { state: 'unknown' } });
+  });
+  it.each(['revoked', 'source-deleted', 'owner-changed'])('retains ZahyPi recovered historical output after %s without customer delivery', async mode => {
+    const { r } = await pendingZahyPi(); if (mode === 'revoked') await revoke(); if (mode === 'source-deleted') await query('DELETE FROM conversations WHERE id=?', [conversationId]);
+    if (mode === 'owner-changed') await query('UPDATE merchants SET userId=? WHERE id=?', [other.userId, owner.merchantId]);
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(await get(r.generationId)).toMatchObject({ state: 'responded', dispatchAllowed: false, eligibility: 'not_checked' });
+    if (mode === 'owner-changed') await query('UPDATE merchants SET userId=? WHERE id=?', [owner.userId, owner.merchantId]);
+  });
+  it('defers a still running ZahyPi job with bounded backoff and no additional generation', async () => {
+    const { job } = await pendingZahyPi(); job.status = 'running'; expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ deferred: 1 });
+    const [row] = await query('SELECT recovery_attempts,recovery_token,recovery_next_at>UTC_TIMESTAMP(3) AS is_delayed,recovery_last_error FROM ai_sales_experiment_generations WHERE merchant_id=?', [owner.merchantId]);
+    expect(row).toMatchObject({ recovery_attempts: 1, recovery_token: null, is_delayed: 1, recovery_last_error: 'provider_lookup_deferred' });
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ claimed: 0 }); job.status = 'completed'; await dueRecovery(); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 });
+    expect(vi.mocked(fetch).mock.calls.filter(c => c[1]?.method === 'POST')).toHaveLength(1);
+  });
+  it('stores an unreviewed ZahyPi output as invalid and still settles its original usage', async () => {
+    const { r, job } = await pendingZahyPi(); job.route = 'unreviewed-model';
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(await get(r.generationId)).toMatchObject({ state: 'invalid', cost: { state: 'settled' }, dispatchAllowed: false });
+    expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ claimed: 0 });
+  });
+  it('fences ZahyPi recovery that loses its lease during HTTP while retaining billed usage', async () => {
+    const { r, job } = await pendingZahyPi(); const [claim] = await claimSalesGenerationRecoveries();
+    vi.mocked(fetch).mockImplementation(async () => { await query('UPDATE ai_sales_experiment_generations SET recovery_lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE id=?', [r.generationId]); return Response.json(job); });
+    expect(await recoverSalesGenerationResult(claim)).toBe('deferred'); expect(await get(r.generationId)).toMatchObject({ state: 'uncertain' });
+    expect((await ledger())[0].usage_prompt_tokens).toBe(5); expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  it.each(['before', 'after'] as const)('recovers ZahyPi output safely after response commit failure %s commit', async when => {
+    const { r } = await pendingZahyPi(); await failCommit('save', when); const result = await runSalesGenerationRecoveryBatch(); vi.restoreAllMocks();
+    expect(result).toMatchObject(when === 'before' ? { deferred: 1 } : { saved: 1 });
+    if (when === 'before') { expect((await ledger())[0].usage_prompt_tokens).toBe(5); await dueRecovery(); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); }
+    expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'settled' } }); expect(vi.mocked(fetch).mock.calls.filter(c => c[1]?.method === 'POST')).toHaveLength(1);
+  });
+  it('retains recovered ZahyPi output when settlement fails and reconciles without another GET', async () => {
+    const { r } = await pendingZahyPi(); await failCommit('settle', 'before'); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); vi.restoreAllMocks();
+    expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'unknown' } });
+    await query('UPDATE ai_usage_reservations SET settlement_next_at=UTC_TIMESTAMP(3) WHERE scope_key=?', [`merchant:${owner.merchantId}`]); await runAiSettlementBatch();
+    expect(await get(r.generationId)).toMatchObject({ cost: { state: 'settled' } }); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ claimed: 0 }); expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  it.each(['before', 'after'] as const)('keeps ZahyPi recovery pending until usage persistence is acknowledged %s commit', async when => {
+    const { r } = await pendingZahyPi(); await failCommit('usage', when); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ deferred: 1 }); vi.restoreAllMocks();
+    expect(await get(r.generationId)).toMatchObject({ state: 'uncertain', response: { text: null, metadata: null }, cost: { state: 'unknown' } });
+    expect((await ledger())[0].usage_received_at !== null).toBe(when === 'after');
+    await dueRecovery(); expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 });
+    expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
+    expect(vi.mocked(fetch).mock.calls.filter(c => c[1]?.method === 'POST')).toHaveLength(1); expect(await ledger()).toHaveLength(1);
   });
   it('does not contact a provider after the generation claim lease expires', async () => {
     const original = settings.getZahyPiRuntimeConfig;
