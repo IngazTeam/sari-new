@@ -4127,6 +4127,16 @@ export const aiSalesExperimentWithdrawals = mysqlTable('ai_sales_experiment_with
 }, table => [uniqueIndex('uq_sales_withdrawal_request').on(table.merchantId, table.requestId),
   uniqueIndex('uq_sales_withdrawal_protocol').on(table.protocolId)]);
 
+export const aiSalesExperimentCohorts = mysqlTable('ai_sales_experiment_cohorts', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentProtocols.id, { onDelete: 'cascade' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  protocolDigest: char('protocol_digest', { length: 64 }).notNull(), cohortDigest: char('cohort_digest', { length: 64 }).notNull(),
+  snapshot: json().notNull(), actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_cohort_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_cohort_protocol').on(table.protocolId)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

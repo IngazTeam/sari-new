@@ -94,10 +94,15 @@ export async function getSalesExperimentProtocol(merchantId: number, value: { pr
   const merchant = identity.parse(merchantId), input = salesExperimentProtocolInput.parse(value);
   return checkoutTransaction(async c => {
     await lockMerchant(c, merchant);
-    const [rows] = await c.execute<any[]>('SELECT * FROM ai_sales_experiment_protocols WHERE id=? AND merchant_id=? FOR SHARE', [input.protocolId, merchant]);
-    if (rows.length !== 1) conflict();
-    return receipt(c, rows[0]);
+    return loadSalesExperimentProtocol(c, merchant, input.protocolId);
   });
+}
+
+/** Historical read inside the caller's transaction. Caller holds the merchant lock; this is not a freshness gate. */
+export async function loadSalesExperimentProtocol(c: PoolConnection, merchant: number, protocolId: number) {
+  const [rows] = await c.execute<any[]>('SELECT * FROM ai_sales_experiment_protocols WHERE id=? AND merchant_id=? FOR SHARE', [identity.parse(protocolId), identity.parse(merchant)]);
+  if (rows.length !== 1) conflict();
+  return receipt(c, rows[0]);
 }
 
 export async function getSalesExperimentProtocolHistory(merchantId: number, value: { beforeId?: number; limit?: number }) {

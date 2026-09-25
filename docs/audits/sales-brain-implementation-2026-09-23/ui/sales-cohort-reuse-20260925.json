@@ -1,0 +1,29 @@
+{
+  "reused": true,
+  "verifiedAt": "2026-09-25T10:36:44.544Z",
+  "baselineHead": "aa4a265f6b309a9fbd91c725660522ca5ba8f877",
+  "sourceSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-sales-cohort-20260925",
+  "originalUiVerifiedAt": "2026-09-25T10:03:21.027Z",
+  "originalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-protocol-ui-20260925",
+  "reportSha256": "f61c608d7fd9f239aa2c845aa7f64271d327e16ed68c6814bb5500d08401c38e",
+  "sourceCheck": "No changes in any tracked client/shared/fixture file relative to baseline HEAD; prior verifier hashes and freshly built CSS match.",
+  "styles": {
+    "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
+    "index-CGnTyVcZ.css": "7ca65c50d71af387b16e22b23c1885f287b380e3c5ff55506db8a0899f2b4a78"
+  },
+  "verifiers": {
+    "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
+    "scripts/testing/verify-appointment-reminders-ui.cjs": "954940cd78ce77ec3ad34f6b05280006c58680f0427bebccd731a889673891b4",
+    "scripts/testing/verify-booking-calendar-ui.cjs": "b84f8309bb480a21c0e2b64fcd7bcdf347f7d8fa84eb1441ef37aa8ce7eca761",
+    "scripts/testing/verify-booking-cancellation-ui.cjs": "8050130d8b0042d2dccae15306df567782f3e4de87328ba20d6eb9e528b86203",
+    "scripts/testing/verify-booking-consent-ui.cjs": "721e5bc60aeed210eb521ab4d98af73bb9d6361d1069a039faebfc5c5879b58d",
+    "scripts/testing/verify-booking-reschedule-ui.cjs": "9e51f8a5ade79bac8fbf584fefd18c645e0258c0c247c7e9f6d0b888b251c70d",
+    "scripts/testing/verify-calendar-ui.cjs": "954f85b25df86fba713358a3cc455fe2ba81046bac7b1bc3097e66664d6ab8d0",
+    "scripts/testing/verify-learning-policy-evaluation-ui.cjs": "064558b79794074c25d7d5dfe9ccc1b4abbbc8f89577a0d63cea85f0cf919dce",
+    "scripts/testing/verify-learning-policy-review-ui.cjs": "e8aedc7fdd00f30ef4d39f915e02ce5aa946501129ec586f3f2eee5179456b98",
+    "scripts/testing/verify-learning-status-ui.cjs": "619dd3fcf726658990b80264ecbf25b8c0f6d516dde019f03f7493763dd08707",
+    "scripts/testing/verify-sales-brain-ui.cjs": "00650b97c8b31ad67fbbee3827b5af51a9bb03e20a7bf06c14b901457e96d10f",
+    "scripts/testing/verify-sales-protocol-ui.cjs": "cde208c3ae37b507e72806c64a10164c19f0fdcb71eee1e22688cc9b2fc2ee37"
+  },
+  "scope": "Previous 933 Chromium component scenarios and 78 screenshots reused for unchanged UI. No fresh browser run, authenticated production test or Safari/device claim."
+}

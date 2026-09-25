@@ -43,6 +43,8 @@ import { evaluationHistoryInput, outputHistoryInput, outputRecordInput } from '.
 import { LearningPolicyOutputReviewConflict } from './ai/learning-policy-output-review-store';
 import { registerSalesExperimentProtocolInput, salesExperimentProtocolInput, salesExperimentProtocolHistoryInput, withdrawSalesExperimentProtocolInput } from './ai/sales-experiment-protocol-contract';
 import { registerSalesExperimentProtocol, getSalesExperimentProtocol, getSalesExperimentProtocolHistory, withdrawSalesExperimentProtocol, SalesExperimentProtocolConflict } from './ai/sales-experiment-protocol';
+import { freezeSalesCohortInput, readSalesCohortInput, inspectSalesCohortInput } from './ai/sales-experiment-cohort-contract';
+import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, SalesCohortConflict } from './ai/sales-experiment-cohort';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -337,6 +339,18 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  freezeSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(freezeSalesCohortInput).mutation(async ({ ctx, input }) => {
+    try { return await freezeSalesExperimentCohort(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesCohortConflict || error instanceof SalesExperimentProtocolConflict || error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales cohort changed or is unavailable' }); }
+  }),
+  getSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(readSalesCohortInput).query(async ({ ctx, input }) => {
+    try { return await getSalesExperimentCohort(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales cohort changed or is unavailable' }); }
+  }),
+  inspectSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(inspectSalesCohortInput).query(async ({ ctx, input }) => {
+    try { return await inspectSalesExperimentCohort(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales cohort changed or is unavailable' }); }
+  }),
   registerSalesExperimentProtocol: permissionProcedure('bot_settings.manage').input(registerSalesExperimentProtocolInput).mutation(async ({ ctx, input }) => {
     try { return await registerSalesExperimentProtocol(ctx.merchantId, ctx.user.id, input); }
     catch (error) { throw new TRPCError({ code: error instanceof SalesExperimentProtocolConflict || error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales experiment protocol changed or is unavailable' }); }

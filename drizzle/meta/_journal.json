@@ -771,6 +771,13 @@
       "when": 1792886400000,
       "tag": "0109_sales_experiment_protocols",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1792972800000,
+      "tag": "0110_sales_experiment_cohorts",
+      "breakpoints": true
     }
   ]
 }
