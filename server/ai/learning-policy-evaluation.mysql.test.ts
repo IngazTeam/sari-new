@@ -11,6 +11,8 @@ import { startLearningPolicyEvaluation,getLearningPolicyEvaluation,advanceLearni
 import { clearZahyPiRuntimeConfigCache } from './zahypi-client';
 import { resolveSariTaskType } from './task-catalog';
 import { runAiSettlementBatch } from './budget-settlement';
+import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from './learning-policy-output-review';
+import { outputReviewRubricDigest } from './learning-policy-output-review-contract';
 import * as settings from '../db_ai_settings';
 const config=vi.hoisted(()=>({provider:'openai' as 'openai'|'zahypi',enabled:true,model:'',actualModel:'fixture-snapshot',finish:'stop',usage:true}));
 vi.mock('../db_ai_settings',()=>({getOpenAiApiKey:async()=>'synthetic-key',getActiveModel:async()=>config.model,logAiUsage:async()=>{},estimateCost:()=>0,
@@ -72,6 +74,15 @@ describe.skipIf(!process.env.DATABASE_URL)('durable evaluation through real adap
     expect(JSON.stringify(view)).not.toContain('synthetic-key');expect(JSON.stringify(view)).not.toContain('Private synthetic source');
     expect(await query('SELECT * FROM ai_learning_proposals WHERE id=?',[proposalId])).toEqual(before);
     await advance(run.runId,0);expect(fetch).toHaveBeenCalledTimes(64);
+    const packet=await getLearningPolicyOutputReview(owner.merchantId,{runId:run.runId});
+    expect(packet.pairs).toHaveLength(32);
+    const reviewed=await recordLearningPolicyOutputReview(owner.merchantId,owner.userId,{runId:run.runId,requestId:randomUUID(),runDigest:packet.runDigest!,
+      rubricDigest:outputReviewRubricDigest,expectedRevision:0,reviewedAllOutputs:true,cases:packet.pairs.map(pair=>({caseId:pair.caseId,
+        baseline:{verdict:'pass',quote:pair.baseline.response,reason:'Synthetic human judgment for the stored provider fixture.'},
+        candidate:{verdict:'pass',quote:pair.candidate.response,reason:'Synthetic human judgment for the stored provider fixture.'},preference:'tie'}))});
+    expect(reviewed).toMatchObject({outcome:'inconclusive',ties:32,activationAllowed:false});
+    expect(await get(run.runId)).toMatchObject({assessment:'human_review_recorded',outputReview:{id:reviewed.id}});
+    expect(fetch).toHaveBeenCalledTimes(64);expect(await query('SELECT * FROM ai_learning_proposals WHERE id=?',[proposalId])).toEqual(before);
   },30000);
   it('deduplicates run creation, rejects changed identity and allows only one active run',async()=>{
     const request=input(),runs=await Promise.all(Array.from({length:4},()=>start(request)));expect(new Set(runs.map(r=>r.runId)).size).toBe(1);

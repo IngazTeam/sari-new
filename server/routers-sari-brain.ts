@@ -36,6 +36,9 @@ import { policyCandidateInput, policyCandidateVersionInput } from './ai/learning
 import { getLearningPolicyCandidate, getLearningPolicyCandidateVersion, createLearningPolicyCandidate, LearningPolicyCandidateConflict } from './ai/learning-policy-candidates';
 import { evaluationStartInput, evaluationRunInput, evaluationAdvanceInput } from './ai/learning-policy-evaluation-contract';
 import { startLearningPolicyEvaluation, getLearningPolicyEvaluation, advanceLearningPolicyEvaluation, cancelLearningPolicyEvaluation, LearningPolicyEvaluationConflict } from './ai/learning-policy-evaluation';
+import { outputReviewInput, outputReviewReadInput } from './ai/learning-policy-output-review-contract';
+import { getLearningPolicyOutputReview, recordLearningPolicyOutputReview } from './ai/learning-policy-output-review';
+import { LearningPolicyOutputReviewConflict } from './ai/learning-policy-output-review-store';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -330,6 +333,14 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getLearningPolicyOutputReview: permissionProcedure('bot_settings.manage').input(outputReviewReadInput).query(async ({ ctx, input }) => {
+    try { return await getLearningPolicyOutputReview(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Learning policy output review changed or is unavailable' }); }
+  }),
+  recordLearningPolicyOutputReview: permissionProcedure('bot_settings.manage').input(outputReviewInput).mutation(async ({ ctx, input }) => {
+    try { return await recordLearningPolicyOutputReview(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof LearningPolicyOutputReviewConflict || error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Learning policy output review changed or is unavailable' }); }
+  }),
   startLearningPolicyEvaluation: permissionProcedure('bot_settings.manage').input(evaluationStartInput).mutation(async ({ctx,input})=>{
     try{return await startLearningPolicyEvaluation(ctx.merchantId,ctx.user.id,input);}
     catch(error){throw new TRPCError({code:error instanceof LearningPolicyEvaluationConflict||error instanceof LearningPolicyCandidateConflict?'PRECONDITION_FAILED':'CONFLICT',message:'Learning policy evaluation changed or is unavailable'});}

@@ -10,6 +10,7 @@ import { providerRouteFingerprint } from './provider-job-receipt';
 import { resolveZahyPiRuntimeConfig, runWithZahyPiContext, type ZahyPiRuntimeConfig } from './zahypi-client';
 import { callGPT4 } from './openai';
 import { AiBudgetError, type AiBudgetAttempt, type AiCompletionMetadata } from './budget-ledger';
+import { latestOutputReviewReceipt } from './learning-policy-output-review-store';
 
 const identity=z.number().int().positive().safe(),decode=(value:any)=>typeof value==='string'?JSON.parse(value):value;
 export class LearningPolicyEvaluationConflict extends Error {
@@ -30,8 +31,12 @@ function routeFor(config:Omit<ZahyPiRuntimeConfig,'apiKey'>,openaiModel:string){
     route:provider==='zahypi'?providerRouteFingerprint(config):'openai-chat-completions'})};
 }
 async function freshRoute(){return routeFor(await getZahyPiRuntimeMetadata(),await getActiveModel());}
-const receipt=(row:any)=>({runId:Number(row.id),candidateId:Number(row.candidate_id),state:row.state as 'running'|'completed'|'halted'|'cancelled',
-  provider:row.provider as 'openai'|'zahypi',model:String(row.model),assessment:'not_assessed' as const,activationAllowed:false as const});
+async function receipt(c:PoolConnection,merchantId:number,row:any){
+  const outputReview=await latestOutputReviewReceipt(c,merchantId,Number(row.id));
+  return {runId:Number(row.id),candidateId:Number(row.candidate_id),state:row.state as 'running'|'completed'|'halted'|'cancelled',
+    provider:row.provider as 'openai'|'zahypi',model:String(row.model),outputReview,
+    assessment:outputReview?'human_review_recorded' as const:'not_assessed' as const,activationAllowed:false as const};
+}
 
 export async function startLearningPolicyEvaluation(merchantId:number,actorUserId:number,value:z.infer<typeof evaluationStartInput>){
   const merchant=identity.parse(merchantId),actor=identity.parse(actorUserId),input=evaluationStartInput.parse(value);
@@ -39,7 +44,7 @@ export async function startLearningPolicyEvaluation(merchantId:number,actorUserI
   return checkoutTransaction(async c=>{
     await lockMerchant(c,merchant);
     const [existing]=await c.execute<any[]>('SELECT * FROM ai_learning_policy_evaluations WHERE merchant_id=? AND request_id=? FOR UPDATE',[merchant,input.requestId]);
-    if(existing.length){if(existing[0].payload_digest!==payloadDigest)conflict();return {...receipt(existing[0]),reused:true};}
+    if(existing.length){if(existing[0].payload_digest!==payloadDigest)conflict();return {...await receipt(c,merchant,existing[0]),reused:true};}
     const bundle=await requireCurrentLearningPolicyCandidate(c,merchant,input.candidateId,input.artifactDigest);
     const [active]=await c.execute<any[]>("SELECT id FROM ai_learning_policy_evaluations WHERE merchant_id=? AND state='running' LIMIT 1 FOR UPDATE",[merchant]);
     if(active.length)conflict();
@@ -49,7 +54,7 @@ export async function startLearningPolicyEvaluation(merchantId:number,actorUserI
       VALUES (?,?,?,?,?,?,?,?,?,?)`,[merchant,input.candidateId,input.requestId,payloadDigest,input.artifactDigest,route.digest,route.provider,route.model,JSON.stringify(evaluationRecipe),actor]);
     for(const sample of samples)await c.execute(`INSERT INTO ai_learning_policy_evaluation_samples (run_id,ordinal,case_id,arm,input_digest) VALUES (?,?,?,?,?)`,
       [saved.insertId,sample.ordinal,sample.caseId,sample.arm,sample.inputDigest]);
-    return {...receipt({id:saved.insertId,candidate_id:input.candidateId,state:'running',...route}),reused:false};
+    return {...await receipt(c,merchant,{id:saved.insertId,candidate_id:input.candidateId,state:'running',...route}),reused:false};
   });
 }
 
@@ -62,7 +67,7 @@ export async function getLearningPolicyEvaluation(merchantId:number,value:z.infe
         ON r.reservation_key=s.reservation_key AND r.scope_key=?
       WHERE s.run_id=? ORDER BY s.ordinal`,[`merchant:${merchant}`,input.runId]);
     for(const s of samples)if(s.response_digest!==null&&policyArtifactDigest({text:s.response_text,metadata:s.response_metadata===null?null:decode(s.response_metadata)})!==s.response_digest)conflict();
-    return {...receipt(run),artifactDigest:String(run.artifact_digest),observedModel:run.observed_model as string|null,recipe:decode(run.recipe),
+    return {...await receipt(c,merchant,run),artifactDigest:String(run.artifact_digest),observedModel:run.observed_model as string|null,recipe:decode(run.recipe),
       completedSamples:samples.filter(s=>s.state==='responded').length,totalSamples:evaluationRecipe.totalSamples,
       samples:samples.map(s=>({ordinal:Number(s.ordinal),caseId:String(s.case_id),arm:s.arm as 'baseline'|'candidate',state:String(s.state),
         inputDigest:String(s.input_digest),response:s.response_text as string|null,metadata:s.response_metadata===null?null:decode(s.response_metadata),
@@ -77,7 +82,7 @@ export async function cancelLearningPolicyEvaluation(merchantId:number,value:z.i
   return checkoutTransaction(async c=>{
     await lockMerchant(c,merchant);const run=await loadRun(c,merchant,input.runId);
     if(run.state==='running'){await c.execute("UPDATE ai_learning_policy_evaluations SET state='cancelled' WHERE id=?",[input.runId]);run.state='cancelled';}
-    return receipt(run);
+    return receipt(c,merchant,run);
   });
 }
 

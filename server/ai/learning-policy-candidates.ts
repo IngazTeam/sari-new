@@ -3,6 +3,7 @@ import type { PoolConnection } from 'mysql2/promise';
 import { checkoutTransaction } from './checkout-agreements';
 import { getLearningPolicySourceSnapshot, LearningPolicyReviewConflict } from './learning-policy-review';
 import { learningPolicyProposalInput, learningPolicyReviewSuiteDigest } from './learning-policy-review-contract';
+import { latestOutputReviewReceipt } from './learning-policy-output-review-store';
 import { buildLearningPolicyCandidateBundle, buildLearningPolicyEvaluationBaseline, candidateProposal,
   policyArtifactDigest, policyCandidateInput, policyCandidateVersionInput, type LearningPolicyCandidateBundle, type PolicyCandidateInput } from './learning-policy-evaluation-bundle';
 
@@ -43,11 +44,17 @@ function readBundle(row: any): LearningPolicyCandidateBundle {
   } catch { return conflict(); }
 }
 
-/** Caller holds the merchant lock; the returned artifact is bound to the latest review and renderer. */
-export async function requireCurrentLearningPolicyCandidate(connection: PoolConnection, merchantId: number, candidateId: number, artifactDigest: string) {
+/** Historical artifact only; this helper does not attest current eligibility. */
+export async function loadLearningPolicyCandidateArtifact(connection: PoolConnection, merchantId: number, candidateId: number, artifactDigest: string) {
   const [rows] = await connection.execute<any[]>('SELECT * FROM ai_learning_policy_candidates WHERE id=? AND merchant_id=? FOR SHARE', [candidateId, merchantId]);
   const row = rows[0]; if (!row || row.artifact_digest !== artifactDigest) conflict();
-  const bundle = readBundle(row), basis = await currentBasis(connection, merchantId, Number(row.proposal_id));
+  return { row, bundle: readBundle(row) };
+}
+
+/** Caller holds the merchant lock; the returned artifact is bound to the latest review and renderer. */
+export async function requireCurrentLearningPolicyCandidate(connection: PoolConnection, merchantId: number, candidateId: number, artifactDigest: string) {
+  const { row, bundle } = await loadLearningPolicyCandidateArtifact(connection, merchantId, candidateId, artifactDigest);
+  const basis = await currentBasis(connection, merchantId, Number(row.proposal_id));
   const [latest] = await connection.execute<any[]>('SELECT id FROM ai_learning_policy_candidates WHERE merchant_id=? AND proposal_id=? ORDER BY version DESC LIMIT 1 FOR SHARE', [merchantId, row.proposal_id]);
   if (!basis.eligible || Number(latest[0]?.id) !== candidateId || Number(basis.review.id) !== Number(row.review_id)
     || basis.source.sourceDigest !== row.source_digest || policyArtifactDigest(buildLearningPolicyEvaluationBaseline()) !== row.baseline_digest) conflict();
@@ -68,12 +75,14 @@ export async function getLearningPolicyCandidate(merchantId: number, value: { pr
     const [evaluations] = await connection.execute<any[]>(`SELECT e.id,e.candidate_id,e.state,e.provider,e.model,e.created_at
       FROM ai_learning_policy_evaluations e JOIN ai_learning_policy_candidates c ON c.id=e.candidate_id AND c.merchant_id=e.merchant_id
       WHERE e.merchant_id=? AND c.proposal_id=? ORDER BY e.id DESC LIMIT 20`, [merchant,input.proposalId]);
+    for (const row of evaluations) row.outputReview = await latestOutputReviewReceipt(connection, merchant, Number(row.id));
     return { proposalId: input.proposalId, sourceDigest: basis.source.sourceDigest, baselineDigest,
       reviewId: basis.review ? Number(basis.review.id) : null, expectedVersion: Number(latest?.version || 0),
       canCreate: basis.eligible && !current && Number(latest?.version || 0) < Number.MAX_SAFE_INTEGER, activationAllowed: false as const,
       latestCandidate: latest ? { ...receipt(latest), current, bundle } : null,
       evaluationRuns: evaluations.map(row=>({runId:Number(row.id),candidateId:Number(row.candidate_id),state:String(row.state),
-        provider:String(row.provider),model:String(row.model),createdAt:row.created_at,assessment:'not_assessed' as const,activationAllowed:false as const})),
+        provider:String(row.provider),model:String(row.model),createdAt:row.created_at,outputReview:row.outputReview,
+        assessment:row.outputReview?'human_review_recorded' as const:'not_assessed' as const,activationAllowed:false as const})),
       history: rows.map(row => ({ ...receipt(row), current: current && row.id === latest.id,
         actorUserId: row.actor_user_id === null ? null : Number(row.actor_user_id), createdAt: row.created_at })) };
   });

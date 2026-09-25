@@ -109,6 +109,8 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
     uniqueIndexes: [{ name: 'uq_learning_candidate_request', columns: ['merchant_id','request_id'] },
       { name: 'uq_learning_candidate_version', columns: ['merchant_id','proposal_id','version'] }] },
   { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' },
+  { table: 'ai_learning_policy_output_reviews', columns: ['run_id','revision','request_id','payload_digest','run_digest','rubric_digest','review_digest','review','outcome','actor_user_id'],
+    uniqueIndexes: [{ name: 'uq_output_review_request', columns: ['merchant_id','request_id'] }, { name: 'uq_output_review_revision', columns: ['merchant_id','run_id','revision'] }] },
   { table:'ai_learning_policy_evaluations',columns:['merchant_id','candidate_id','request_id','payload_digest','artifact_digest','route_digest','provider','model','recipe','state'],
     uniqueIndexes:[{name:'uq_policy_eval_request',columns:['merchant_id','request_id']}] },
   { table:'ai_learning_policy_evaluation_samples',columns:['run_id','ordinal','input_digest','state','claim_token','reservation_key','response_text','response_metadata','response_digest'],

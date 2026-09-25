@@ -1,0 +1,23 @@
+CREATE TABLE `ai_learning_policy_output_reviews` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `merchant_id` int NOT NULL,
+  `run_id` bigint unsigned NOT NULL,
+  `revision` bigint unsigned NOT NULL,
+  `request_id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `run_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `rubric_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `review_digest` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `review` json NOT NULL,
+  `outcome` varchar(16) NOT NULL,
+  `actor_user_id` int DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_output_review_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_output_review_revision` (`merchant_id`,`run_id`,`revision`),
+  CONSTRAINT `fk_output_review_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_output_review_run` FOREIGN KEY (`run_id`) REFERENCES `ai_learning_policy_evaluations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_output_review_actor` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_output_review_revision` CHECK (`revision` BETWEEN 1 AND 9007199254740991),
+  CONSTRAINT `ck_output_review_outcome` CHECK (`outcome` IN ('passed','failed','inconclusive'))
+);

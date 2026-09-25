@@ -4088,6 +4088,21 @@ export const aiLearningPolicyEvaluationSamples = mysqlTable('ai_learning_policy_
 },table=>[primaryKey({columns:[table.runId,table.ordinal]}),uniqueIndex('uq_policy_eval_sample').on(table.runId,table.caseId,table.arm),
   uniqueIndex('uq_policy_eval_reservation').on(table.reservationKey),check('ck_policy_eval_sample_state',sql`${table.ordinal}<64 AND ${table.arm} IN ('baseline','candidate') AND ${table.state} IN ('queued','dispatching','responded','invalid','uncertain','blocked')`)]);
 
+export const aiLearningPolicyOutputReviews = mysqlTable('ai_learning_policy_output_reviews', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  runId: bigint('run_id', { mode: 'number', unsigned: true }).notNull().references(() => aiLearningPolicyEvaluations.id, { onDelete: 'cascade' }),
+  revision: bigint({ mode: 'number', unsigned: true }).notNull(),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  runDigest: char('run_digest', { length: 64 }).notNull(), rubricDigest: char('rubric_digest', { length: 64 }).notNull(),
+  reviewDigest: char('review_digest', { length: 64 }).notNull(), review: json().notNull(), outcome: varchar({ length: 16 }).notNull(),
+  actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_output_review_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_output_review_revision').on(table.merchantId, table.runId, table.revision),
+  check('ck_output_review_revision', sql`${table.revision} BETWEEN 1 AND 9007199254740991`),
+  check('ck_output_review_outcome', sql`${table.outcome} IN ('passed','failed','inconclusive')`)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
