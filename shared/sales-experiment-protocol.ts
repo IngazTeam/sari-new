@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { salesSectorPlaybookSchema } from './sales-sector-playbooks';
+import { salesExperimentSample, salesSampleCalculation, matchesSalesSampleCalculation } from './sales-experiment-sample';
 
 const identity = z.number().int().positive().safe();
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -30,12 +31,7 @@ export const salesExperimentDesign = z.object({
     refunds: z.literal('deduct_from_net_revenue'), humanAssistance: z.literal('report_separately'),
     currencies: z.literal('report_separately'), orderDeduplication: z.literal('canonical_order_across_sources'),
   }).strict(),
-  sample: z.object({
-    minimumCustomersPerArm: z.number().int().min(30).max(1_000_000),
-    baselineConversionBps: z.number().int().min(1).max(9999),
-    minimumAbsoluteLiftBps: z.number().int().min(1).max(9999),
-    alphaBps: z.literal(500), powerBps: z.literal(8000), calculationReference: rationale,
-  }).strict(),
+  sample: salesExperimentSample,
   window: z.object({
     enrollmentStartsAt: utcInstant, enrollmentEndsAt: utcInstant,
     observationDays: z.number().int().min(1).max(180), decisionNotBefore: utcInstant,
@@ -69,8 +65,10 @@ export const salesExperimentProtocolSnapshot = z.object({
   candidate: z.object({ id: identity, artifactDigest: digest, baselineDigest: digest, sourceDigest: digest, preparationReviewId: identity }).strict(),
   sector: z.object({ revision: z.number().int().nonnegative().safe(), playbook: salesSectorPlaybookSchema, digest }).strict(),
   design: salesExperimentDesign, sampleAdequacy: z.literal('not_independently_verified'),
+  sampleCalculation: salesSampleCalculation.optional(),
   cohortExecution: z.literal('not_implemented'), activationAllowed: z.literal(false),
-}).strict().refine(value => Date.parse(value.registeredAt) < Date.parse(value.design.window.enrollmentStartsAt), 'Registration must precede enrollment');
+}).strict().refine(value => Date.parse(value.registeredAt) < Date.parse(value.design.window.enrollmentStartsAt), 'Registration must precede enrollment')
+  .refine(value => !value.sampleCalculation || matchesSalesSampleCalculation(value.sampleCalculation, value.design.sample), 'Sample calculation must match the frozen design');
 export const salesExperimentWithdrawalSnapshot = z.object({
   version: z.literal('sales-experiment-withdrawal.v1'), merchantId: identity, protocolId: identity, protocolDigest: digest,
   reason: rationale, winner: z.null(),

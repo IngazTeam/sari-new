@@ -4,6 +4,7 @@ import { checkoutTransaction } from './checkout-agreements';
 import { requireCurrentLearningPolicyCandidate } from './learning-policy-candidates';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { getSalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
+import { calculateSalesExperimentSample } from '../../shared/sales-experiment-sample';
 import { salesExperimentProtocolSnapshot, salesExperimentWithdrawalSnapshot, registerSalesExperimentProtocolInput, salesExperimentProtocolInput,
   salesExperimentProtocolHistoryInput, withdrawSalesExperimentProtocolInput,
   type RegisterSalesExperimentProtocolInput, type WithdrawSalesExperimentProtocolInput } from './sales-experiment-protocol-contract';
@@ -67,6 +68,9 @@ export async function registerSalesExperimentProtocol(merchantId: number, actorU
       if (existing[0].payload_digest !== payloadDigest) conflict();
       return { ...await receipt(c, existing[0]), reused: true };
     }
+    // Historical retries precede the new planning gate: recover an old receipt without rewriting it.
+    const sampleCalculation = calculateSalesExperimentSample(input.design.sample);
+    if (sampleCalculation.status !== 'meets_calculated_floor') conflict();
     const candidate = await requireCurrentLearningPolicyCandidate(c, merchant, input.candidateId, input.artifactDigest);
     const sector = await sectorSnapshot(c, merchant);
     if (sector.revision !== input.expectedSectorRevision) conflict();
@@ -79,7 +83,7 @@ export async function registerSalesExperimentProtocol(merchantId: number, actorU
     const protocol = salesExperimentProtocolSnapshot.parse({ version: 'sales-experiment-protocol.v1', merchantId: merchant, registeredAt,
       candidate: { id: input.candidateId, artifactDigest: input.artifactDigest, baselineDigest: candidate.baselineDigest,
         sourceDigest: candidate.sourceDigest, preparationReviewId: candidate.reviewId },
-      sector, design: input.design, sampleAdequacy: 'not_independently_verified', cohortExecution: 'not_implemented',
+      sector, design: input.design, sampleAdequacy: 'not_independently_verified', sampleCalculation, cohortExecution: 'not_implemented',
       activationAllowed: false });
     const protocolDigest = policyArtifactDigest(protocol);
     const [saved] = await c.execute<any>(`INSERT INTO ai_sales_experiment_protocols

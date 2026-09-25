@@ -1,0 +1,103 @@
+{
+  "scope": "Python standard-library numerical oracle for the stated normal approximation; not an independent study approval.",
+  "generator": "scripts/testing/reference-sales-sample.py",
+  "sha256": "e127ad9ce2f0a36254eb14f055c69c916f4638b7aceb94d39a0526c4c7dbe4dc",
+  "cases": [
+    {
+      "baseline": 1000,
+      "lift": 300,
+      "powerFloor": 1774,
+      "approximationFloor": 100,
+      "powerAtFloor": 0.8000054040436977,
+      "powerBeforeFloor": 0.79978406551377
+    },
+    {
+      "baseline": 5000,
+      "lift": 500,
+      "powerFloor": 1565,
+      "approximationFloor": 23,
+      "powerAtFloor": 0.8000822542348276,
+      "powerBeforeFloor": 0.7998313482577782
+    },
+    {
+      "baseline": 5000,
+      "lift": 100,
+      "powerFloor": 39240,
+      "approximationFloor": 21,
+      "powerAtFloor": 0.8000070433661919,
+      "powerBeforeFloor": 0.799997048821921
+    },
+    {
+      "baseline": 100,
+      "lift": 50,
+      "powerFloor": 7750,
+      "approximationFloor": 1000,
+      "powerAtFloor": 0.8000207661993861,
+      "powerBeforeFloor": 0.7999701511717472
+    },
+    {
+      "baseline": 100,
+      "lift": 10,
+      "powerFloor": 163095,
+      "approximationFloor": 1000,
+      "powerAtFloor": 0.8000009197494287,
+      "powerBeforeFloor": 0.7999985151797981
+    },
+    {
+      "baseline": 1,
+      "lift": 1,
+      "powerFloor": 235430,
+      "approximationFloor": 100000,
+      "powerAtFloor": 0.8000001780178602,
+      "powerBeforeFloor": 0.7999985122481913
+    },
+    {
+      "baseline": 9998,
+      "lift": 1,
+      "powerFloor": 235430,
+      "approximationFloor": 100000,
+      "powerAtFloor": 0.8000001780179034,
+      "powerBeforeFloor": 0.7999985122482345
+    },
+    {
+      "baseline": 1,
+      "lift": 8000,
+      "powerFloor": 5,
+      "approximationFloor": 100000,
+      "powerAtFloor": 0.8592828324335304,
+      "powerBeforeFloor": 0.7274190853860051
+    },
+    {
+      "baseline": 9980,
+      "lift": 10,
+      "powerFloor": 23511,
+      "approximationFloor": 10000,
+      "powerAtFloor": 0.8000143413544086,
+      "powerBeforeFloor": 0.7999976599816336
+    },
+    {
+      "baseline": 1000,
+      "lift": 1,
+      "powerFloor": 141342622,
+      "approximationFloor": 100,
+      "powerAtFloor": 0.8000000023506881,
+      "powerBeforeFloor": 0.7999999995760927
+    },
+    {
+      "baseline": 1,
+      "lift": 9998,
+      "powerFloor": 2,
+      "approximationFloor": 100000,
+      "powerAtFloor": 0.9762547757725366,
+      "powerBeforeFloor": 0
+    },
+    {
+      "baseline": 100,
+      "lift": 5000,
+      "powerFloor": 11,
+      "approximationFloor": 1000,
+      "powerAtFloor": 0.8073447237068703,
+      "powerBeforeFloor": 0.763234270463616
+    }
+  ]
+}

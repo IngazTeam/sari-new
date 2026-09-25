@@ -14,7 +14,7 @@ module.exports=async(page,origin,output,results)=>{
  const fill=async()=>{
   await page.click('[data-protocol-start]');await page.waitForSelector('[data-protocol-editor]');
   await set({title:'Value comparison plan',hypothesis:'Explain matching offer value clearly to improve verified conversion.',qualificationRule:'Include customers with a recorded relevant need before assignment.',exclusions:'Exclude tests, refusals and opportunities already paid before assignment.'});
-  await next(1);await set({minimumCustomersPerArm:'500',baselinePercent:'١٠',liftPercentagePoints:'3',calculationReference:'Independent power calculation attached for this exact baseline and effect.'});
+  await next(1);await set({minimumCustomersPerArm:'2000',baselinePercent:'١٠',liftPercentagePoints:'3',calculationReference:'Independent power calculation attached for this exact baseline and effect.'});
   await next(2);const dates=await page.evaluate(()=>{const iso=days=>new Date(Date.now()+days*86400000).toISOString().slice(0,16);return {enrollmentStartsAt:iso(2),enrollmentEndsAt:iso(32),decisionNotBefore:iso(46)};});
   await set({...dates,observationDays:'14',safetyTriggers:'Withdraw after a factual, consent, payment or privacy safety regression.'});await next(3);
   assert.equal(await page.$eval('[data-protocol-save]',n=>n.disabled),true);await page.focus('[data-protocol-attestation]');await page.keyboard.press('Space');
@@ -34,6 +34,17 @@ module.exports=async(page,origin,output,results)=>{
    results.push({width,lang,mode:'protocol_four_steps_keyboard_explicit_registration_complete_record',passed:true});
   }
   await page.setViewport({width:375,height:812});
+  for(const lang of ['ar','en']) {
+   await visit('ready',lang);await fill();await page.click('[data-protocol-back]');await page.click('[data-protocol-back]');
+   await set({minimumCustomersPerArm:'500'});await page.waitForSelector('[data-sample-status="insufficient"]');assert.equal(await page.$eval('[data-protocol-next]',n=>n.disabled),true);
+   await check();await(await page.$('[data-protocol-sample-check]')).screenshot({path:path.join(output,`sales-sample-insufficient-${lang}-375.png`)});
+   await set({minimumCustomersPerArm:'1773'});assert.equal(await page.$eval('[data-protocol-next]',n=>n.disabled),true);
+   await set({minimumCustomersPerArm:'١٧٧٤'});await page.waitForSelector('[data-sample-status="meets_calculated_floor"]');assert.equal(await page.$eval('[data-protocol-next]',n=>n.disabled),false);
+   await set({minimumCustomersPerArm:'1000000',baselinePercent:'50',liftPercentagePoints:'0.01'});await page.waitForSelector('[data-sample-status="exceeds_platform_limit"]');assert.equal(await page.$eval('[data-protocol-next]',n=>n.disabled),true);
+   await set({baselinePercent:'',liftPercentagePoints:'<script>'});await page.waitForSelector('[data-sample-status="incomplete"]');assert.equal(await page.$eval('[data-protocol-next]',n=>n.disabled),true);
+   assert.equal((await writes()).length,0);await check();results.push({width:375,lang,mode:'protocol_sample_threshold_sparse_limits_and_invalid_input',passed:true});
+  }
+  await visit('legacy-sample');await page.click('[data-protocol-read="45"]');await page.waitForSelector('[data-sample-legacy]');await page.waitForSelector('[data-sample-status="insufficient"]');assert.equal((await writes()).length,0);await check();results.push({width:375,mode:'protocol_legacy_insufficient_sample_is_readable_and_not_rewritten',passed:true});
   for(const mode of ['unknown','outage','receipt-mismatch']){
    await visit(mode);await fill();await page.click('[data-protocol-save]');await page.waitForSelector('[data-protocol-uncertain]');await page.waitForFunction(()=>!document.querySelector('[data-protocol-retry]').disabled);
    assert.equal((await writes()).length,1);assert.equal(await page.$('[data-protocol-discard]'),null);assert.equal(await page.$eval('[data-protocol-attestation]',n=>n.disabled),true);
@@ -68,9 +79,10 @@ module.exports=async(page,origin,output,results)=>{
   await page.click('[data-protocol-history-next]');await page.waitForSelector('[data-protocol-history-id="25"]');ids.push(...await page.$$eval('[data-protocol-history-id]',nodes=>nodes.map(n=>Number(n.dataset.protocolHistoryId))));
   await page.click('[data-protocol-history-next]');await page.waitForSelector('[data-protocol-history-id="5"]');ids.push(...await page.$$eval('[data-protocol-history-id]',nodes=>nodes.map(n=>Number(n.dataset.protocolHistoryId))));assert.deepEqual(ids,Array.from({length:45},(_,i)=>45-i));
   await page.click('[data-protocol-read="1"]');await page.waitForSelector('[data-protocol-summary]');assert.equal((await writes()).length,0);await check();results.push({width:375,mode:'protocol_history_keyset_pages_and_complete_historical_record',passed:true});
-  for(const mode of ['unsupported','record-error','xss']){
+  for(const mode of ['unsupported','record-error','xss','corrupt-sample']){
    await visit(mode);await page.click('[data-protocol-read="45"]');await page.waitForSelector('[data-protocol-record]');
    if(mode==='unsupported')await page.waitForSelector('[data-protocol-unsupported]');
+   if(mode==='corrupt-sample'){await page.waitForSelector('[data-protocol-unsupported]');assert.equal(await page.$('[data-protocol-summary]'),null);}
    if(mode==='record-error'){await page.waitForSelector('[data-protocol-record] [role=alert]');await page.click('[data-protocol-record-refresh]');await page.waitForSelector('[data-protocol-summary]');}
    if(mode==='xss'){await page.waitForSelector('[data-protocol-summary]');assert.equal(await page.$('[data-protocol-panel] img'),null);assert.equal(await page.evaluate(()=>window.__protocolXss),undefined);}
    assert.equal((await writes()).length,0);await check();results.push({width:375,mode:`protocol_${mode}_safe_record_display`,passed:true});

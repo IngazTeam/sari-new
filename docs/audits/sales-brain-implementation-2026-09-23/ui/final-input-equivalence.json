@@ -1,12 +1,12 @@
 {
-  "scope": "Fresh Chromium component verification: 1002 passing scenarios, 87 screenshots, real components and final CSS with API fixtures and external network blocked. Not authenticated production, physical iPhone or Safari.",
+  "scope": "Fresh Chromium component verification: 1006 passing scenarios, 89 screenshots, real components and final CSS with API fixtures and external network blocked. Not authenticated production, physical iPhone or Safari.",
   "reused": false,
-  "verifiedAt": "2026-09-25T12:17:12.347Z",
-  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-cohort-inspection-20260925",
-  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-cohort-inspection-20260925",
+  "verifiedAt": "2026-09-25T13:12:13.510Z",
+  "testedSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-sample-size-20260925",
+  "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-sample-size-20260925",
   "inputs": {
-    "fixture": "9b3dc7218c711febd1d022a5e12610432a0ecb23d2e12c0a4cb8db40e6da6e0d",
-    "report": "1ddf25a24d5c38a85923ee7f43ee67bc38e4df7d8b33ffff098a36bad6daf0dd",
+    "fixture": "019794a0098237ed6df1bb9d3095ac40c62882d1369a2bd9f284c98648ad87a9",
+    "report": "9fc437e8e87227f1949158eca04d4abdf12f362124b66a02a8c4710d23c33a15",
     "verifiers": {
       "scripts/testing/verify-ai-capabilities-ui.cjs": "fdf1417040fc2eb2cbe675d00db8bafa684bf2223a14ab49221a3a9aa12b3b7f",
       "scripts/testing/verify-appointment-reminders-ui.cjs": "954940cd78ce77ec3ad34f6b05280006c58680f0427bebccd731a889673891b4",
@@ -21,7 +21,7 @@
       "scripts/testing/verify-sales-brain-ui.cjs": "e630ee85fa78030323ac4d2ff127030c3d681db1e0c70d7741577e441b6ea168",
       "scripts/testing/verify-sales-cohort-inspection-ui.cjs": "b73ed7969ca1e8ae2ae58050a022eb65b11a660873459bb28216c9500d0dcbb6",
       "scripts/testing/verify-sales-cohort-ui.cjs": "eb17c1dc743ff01f4b4a1de7efda9d977d2b9cb29e823567338fbbb9d73bd087",
-      "scripts/testing/verify-sales-protocol-ui.cjs": "cde208c3ae37b507e72806c64a10164c19f0fdcb71eee1e22688cc9b2fc2ee37"
+      "scripts/testing/verify-sales-protocol-ui.cjs": "1d580da8f1dc7b0ca65d0127414d075ea79ec52470955df1866d6778b2738e57"
     },
     "styles": {
       "App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",

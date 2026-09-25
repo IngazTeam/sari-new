@@ -1,6 +1,7 @@
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '../../../server/routers';
 import { salesExperimentDesign, salesExperimentProtocolSnapshot, salesExperimentWithdrawalSnapshot } from '../../../shared/sales-experiment-protocol';
+import { calculateSalesExperimentSample, salesExperimentSample } from '../../../shared/sales-experiment-sample';
 
 export type ProtocolRecord = inferRouterOutputs<AppRouter>['sariBrain']['getSalesExperimentProtocol'];
 export type ProtocolDraft = {
@@ -24,6 +25,12 @@ export function percentToBasisPoints(value: string) {
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 }
 const integer = (value: string) => /^\d{1,7}$/.test(digits(value)) ? Number(digits(value)) : NaN;
+export function protocolSamplePreview(draft: ProtocolDraft) {
+  const parsed = salesExperimentSample.safeParse({ minimumCustomersPerArm: integer(draft.minimumCustomersPerArm),
+    baselineConversionBps: percentToBasisPoints(draft.baselinePercent), minimumAbsoluteLiftBps: percentToBasisPoints(draft.liftPercentagePoints),
+    alphaBps: 500, powerBps: 8000, calculationReference: 'Planning preview only; no independent review asserted.' });
+  return parsed.success ? calculateSalesExperimentSample(parsed.data) : null;
+}
 /** The input is explicitly labelled UTC. Never let browser timezone/DST reinterpret it. */
 export const protocolUtcInput = (value: string) => /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value}:00.000Z` : '';
 export function validateProtocolDraft(draft: ProtocolDraft, now = Date.now()) {
@@ -49,6 +56,8 @@ export function validateProtocolDraft(draft: ProtocolDraft, now = Date.now()) {
     else invalid.add((last === 'baselineConversionBps' ? 'baselinePercent' : last === 'minimumAbsoluteLiftBps' ? 'liftPercentagePoints' : last) as keyof ProtocolDraft);
   }
   if (Date.parse(protocolUtcInput(draft.enrollmentStartsAt)) <= now) invalid.add('enrollmentStartsAt');
+  const sampleCalculation = protocolSamplePreview(draft);
+  if (sampleCalculation && sampleCalculation.status !== 'meets_calculated_floor') invalid.add('minimumCustomersPerArm');
   return { design: result.success && invalid.size === 0 ? result.data : null, invalid };
 }
 export function compatibleProtocolRecord(value: ProtocolRecord | undefined, id: number): value is ProtocolRecord {

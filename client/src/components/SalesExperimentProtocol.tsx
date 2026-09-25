@@ -151,7 +151,7 @@ function ProtocolRecordView({ protocolId, active, onLock, onWithdraw }: { protoc
     {query.isError && <p role="alert">{t('merchantUx.salesProtocol.refreshFailed')}</p>}
     {!query.isError && !query.isLoading && !readable && <p role="alert" data-protocol-unsupported>{t('merchantUx.salesProtocol.unsupported')}</p>}
     {readable && <><p data-protocol-state={data.state}>{data.state === 'registered' ? t('merchantUx.salesProtocol.registered') : t('merchantUx.salesProtocol.withdrawn')}</p>
-      <ProtocolDesignSummary design={data.protocol.design} />
+      <ProtocolDesignSummary design={data.protocol.design} sampleRecorded={!!data.protocol.sampleCalculation} />
       <details className="rounded-lg border p-3"><summary className="min-h-11 cursor-pointer py-2 font-medium">{t('merchantUx.salesProtocol.source')}</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2">
         {[[t('merchantUx.salesProtocol.created'), data.protocol.registeredAt], [t('merchantUx.salesProtocol.candidate'), data.protocol.candidate.id],
           [t('merchantUx.salesProtocol.artifact'), data.protocol.candidate.artifactDigest], [t('merchantUx.salesProtocol.baseline'), data.protocol.candidate.baselineDigest],

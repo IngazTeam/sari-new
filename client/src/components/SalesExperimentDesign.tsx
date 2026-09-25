@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { protocolStepFields, validateProtocolDraft, type ProtocolDraft } from '@/lib/sales-experiment-form';
+import { protocolStepFields, protocolSamplePreview, validateProtocolDraft, type ProtocolDraft } from '@/lib/sales-experiment-form';
+import { calculateSalesExperimentSample, type SalesSampleCalculation } from '../../../shared/sales-experiment-sample';
 import type { SalesExperimentDesign } from '../../../shared/sales-experiment-protocol';
 
 export function useProtocolLabels() {
@@ -20,7 +21,7 @@ export function ProtocolRules() {
   return <div className="space-y-2 rounded-lg border bg-muted/30 p-3" data-protocol-rules><h4 className="font-semibold">{t('merchantUx.salesProtocol.fixedRules')}</h4>
     <p>{t('merchantUx.salesProtocol.allocation')}</p><p>{t('merchantUx.salesProtocol.measurement')}</p><p>{t('merchantUx.salesProtocol.revenue')}</p><p>{t('merchantUx.salesProtocol.stopping')}</p></div>;
 }
-export function ProtocolDesignSummary({ design }: { design: SalesExperimentDesign }) {
+export function ProtocolDesignSummary({ design, sampleRecorded }: { design: SalesExperimentDesign; sampleRecorded?: boolean }) {
   const { t, i18n } = useTranslation(), labels = useProtocolLabels();
   const date = (value: string) => new Intl.DateTimeFormat(i18n.language.startsWith('ar') ? 'ar-SA-u-ca-gregory' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value)) + ' UTC';
   const populations = { all: t('merchantUx.salesProtocol.all'), new: t('merchantUx.salesProtocol.new'), returning: t('merchantUx.salesProtocol.returning') };
@@ -33,7 +34,24 @@ export function ProtocolDesignSummary({ design }: { design: SalesExperimentDesig
   return <div className="space-y-4" data-protocol-summary><dl className="grid min-w-0 gap-3 sm:grid-cols-2">{(Object.keys(values) as Array<keyof ProtocolDraft>).map(key =>
     <div key={key} className={`min-w-0 rounded-lg border p-3 ${['hypothesis','qualificationRule','exclusions','calculationReference','safetyTriggers'].includes(key) ? 'sm:col-span-2' : ''}`}>
       <dt className="text-xs font-medium text-muted-foreground">{labels[key]}</dt><dd dir="auto" className="mt-1 whitespace-pre-wrap" data-protocol-summary-field={key}>{values[key]}</dd>
-    </div>)}</dl><p className="text-muted-foreground">{t('merchantUx.salesProtocol.sampleScope')}</p><ProtocolRules /></div>;
+    </div>)}</dl><ProtocolSampleAssessment calculation={calculateSalesExperimentSample(design.sample)} recorded={sampleRecorded} /><ProtocolRules /></div>;
+}
+export function ProtocolSampleAssessment({ calculation, recorded }: { calculation: SalesSampleCalculation | null; recorded?: boolean }) {
+  const { t, i18n } = useTranslation(), number = (n: number) => new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-SA' : 'en-GB').format(n);
+  return <section className="min-w-0 space-y-2 rounded-lg border p-3" data-protocol-sample-check data-sample-status={calculation?.status ?? 'incomplete'} aria-live="polite">
+    <h5 className="font-semibold">{t('merchantUx.salesProtocol.sampleCheckTitle')}</h5>
+    {!calculation ? <p>{t('merchantUx.salesProtocol.sampleIncomplete')}</p> : <>
+      <p>{t('merchantUx.salesProtocol.sampleRequired', { countPerArm: number(calculation.requiredPerArm), total: number(calculation.requiredTotal) })}</p>
+      <p>{t('merchantUx.salesProtocol.sampleTarget', { baseline: number(calculation.baselineConversionBps / 100), target: number(calculation.targetConversionBps / 100) })}</p>
+      <p data-sample-verdict>{calculation.status === 'meets_calculated_floor' ? t('merchantUx.salesProtocol.sampleMeets') : calculation.status === 'exceeds_platform_limit' ? t('merchantUx.salesProtocol.sampleOverLimit') : t('merchantUx.salesProtocol.sampleShortfall', { countPerArm: number(calculation.shortfallPerArm) })}</p>
+      {recorded === false && <p data-sample-legacy>{t('merchantUx.salesProtocol.sampleLegacy')}</p>}
+      {recorded === true && <p>{t('merchantUx.salesProtocol.sampleRecorded')}</p>}
+      <details className="rounded-md border p-3"><summary className="min-h-11 cursor-pointer py-2">{t('merchantUx.salesProtocol.sampleMethodTitle')}</summary>
+        <p>{t('merchantUx.salesProtocol.sampleMethod', { powerFloor: number(calculation.powerFloorPerArm), approximationFloor: number(calculation.approximationFloorPerArm) })}</p>
+        <p className="mt-2 text-muted-foreground">{t('merchantUx.salesProtocol.sampleAssumptions')}</p></details>
+    </>}
+    <p className="text-muted-foreground">{t('merchantUx.salesProtocol.sampleScope')}</p>
+  </section>;
 }
 export function ProtocolDraftFields({ draft, step, disabled, onChange }: {
   draft: ProtocolDraft; step: number; disabled: boolean; onChange: (key: keyof ProtocolDraft, value: string) => void;
@@ -58,6 +76,7 @@ export function ProtocolDraftFields({ draft, step, disabled, onChange }: {
         <p id={`${fieldId}-hint`} className={`text-xs ${error ? 'text-destructive' : 'text-muted-foreground'}`}>{error ? t('merchantUx.salesProtocol.invalid') : hint}</p>
       </div>;
     })}</div>
+    {step === 1 && <ProtocolSampleAssessment calculation={protocolSamplePreview(draft)} />}
   </fieldset>;
 }
 export function ProtocolDiscard({ confirmed, onConfirm, onDiscard, disabled }: { confirmed: boolean; onConfirm: (value: boolean) => void; onDiscard: () => void; disabled: boolean }) {

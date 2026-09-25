@@ -12,6 +12,7 @@ import { updateSalesSectorSettings } from './sales-sector-settings';
 import { registerSalesExperimentProtocol, getSalesExperimentProtocol, getSalesExperimentProtocolHistory, withdrawSalesExperimentProtocol } from './sales-experiment-protocol';
 import type { RegisterSalesExperimentProtocolInput } from './sales-experiment-protocol-contract';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { calculateSalesExperimentSample } from '../../shared/sales-experiment-sample';
 
 describe.skipIf(!process.env.DATABASE_URL)('immutable sales experiment preregistration on MySQL', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner, users: number[], signalId: number, proposalId: number;
@@ -58,6 +59,50 @@ describe.skipIf(!process.env.DATABASE_URL)('immutable sales experiment preregist
     await expect(register({ ...input, design: { ...input.design, title: 'Altered measurement plan' } })).rejects.toThrow();
     await expect(registerSalesExperimentProtocol(owner.merchantId, other.userId, input)).rejects.toThrow();
     expect(await query('SELECT id FROM ai_sales_experiment_protocols WHERE merchant_id=?', [owner.merchantId])).toHaveLength(1);
+  });
+  it.each([500, 1773])('rejects an underpowered count %i even when called directly', async count => {
+    input.design.sample.minimumCustomersPerArm = count;
+    await expect(register()).rejects.toThrow();
+    expect(await query('SELECT id FROM ai_sales_experiment_protocols WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+  });
+  it('freezes the exact sample calculation at its ceiling without claiming independent approval', async () => {
+    input.design.sample.minimumCustomersPerArm = 1774;
+    const saved = await register(), replay = await register(), loaded = await get(saved.protocolId);
+    expect(saved.protocol.sampleCalculation).toEqual(calculateSalesExperimentSample(input.design.sample));
+    expect(loaded.protocol.sampleCalculation).toEqual(saved.protocol.sampleCalculation);
+    expect(replay).toMatchObject({ reused: true, activationAllowed: false, protocol: { sampleAdequacy: 'not_independently_verified', sampleCalculation: { requiredPerArm: 1774, requiredTotal: 3548, status: 'meets_calculated_floor' } } });
+  });
+  it('rejects a sample beyond the supported ceiling without clamping or writing', async () => {
+    Object.assign(input.design.sample, { minimumCustomersPerArm: 1000000, baselineConversionBps: 5000, minimumAbsoluteLiftBps: 1 });
+    await expect(register()).rejects.toThrow();
+    expect(await query('SELECT id FROM ai_sales_experiment_protocols WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+  });
+  it('applies the expected-count guard for sparse proportions before persistence', async () => {
+    Object.assign(input.design.sample, { minimumCustomersPerArm: 30, baselineConversionBps: 1, minimumAbsoluteLiftBps: 8000 });
+    await expect(register()).rejects.toThrow(); input.design.sample.minimumCustomersPerArm = 100000;
+    expect((await register()).protocol.sampleCalculation).toMatchObject({ approximationFloorPerArm: 100000, requiredPerArm: 100000 });
+  });
+  it('reads and replays an insufficient legacy record unchanged after source drift and withdrawal', async () => {
+    const saved = await register(), legacy: any = structuredClone(saved.protocol); delete legacy.sampleCalculation;
+    input.design.sample.minimumCustomersPerArm = 500; legacy.design = structuredClone(input.design);
+    const digest = policyArtifactDigest(legacy), payload = policyArtifactDigest({ actor: owner.userId, input });
+    await query('UPDATE ai_sales_experiment_protocols SET protocol=?,protocol_digest=?,payload_digest=? WHERE id=?', [JSON.stringify(legacy), digest, payload, saved.protocolId]);
+    const before = await query('SELECT protocol,protocol_digest,payload_digest FROM ai_sales_experiment_protocols WHERE id=?', [saved.protocolId]);
+    expect((await get(saved.protocolId)).protocol.sampleCalculation).toBeUndefined();
+    expect(await register()).toMatchObject({ reused: true, protocol: { design: input.design } });
+    await query("UPDATE sari_learning_signals SET customer_message='Changed evidence' WHERE id=?", [signalId]);
+    await withdraw(withdrawal({ ...saved, protocolDigest: digest }));
+    expect(await register()).toMatchObject({ reused: true, state: 'withdrawn', activationAllowed: false });
+    expect(await query('SELECT protocol,protocol_digest,payload_digest FROM ai_sales_experiment_protocols WHERE id=?', [saved.protocolId])).toEqual(before);
+    await expect(register({ ...input, requestId: randomUUID() })).rejects.toThrow();
+  });
+  it.each(['required', 'target', 'version', 'scope', 'authority', 'unknown'])('rejects altered %s calculation even with a recomputed protocol digest', async mode => {
+    const saved = await register(), protocol: any = structuredClone(saved.protocol), calc = protocol.sampleCalculation;
+    if (mode === 'required') calc.requiredPerArm--; if (mode === 'target') calc.targetConversionBps++;
+    if (mode === 'version') calc.version = 'v2'; if (mode === 'scope') calc.scope = 'independent_approval';
+    if (mode === 'authority') calc.activationAllowed = true; if (mode === 'unknown') calc.winner = 'candidate';
+    await query('UPDATE ai_sales_experiment_protocols SET protocol=?,protocol_digest=? WHERE id=?', [JSON.stringify(protocol), policyArtifactDigest(protocol), saved.protocolId]);
+    await expect(get(saved.protocolId)).rejects.toThrow(); await expect(register()).rejects.toThrow();
   });
   it('permits only one registered protocol under competing registrations', async () => {
     const results = await Promise.allSettled(Array.from({ length: 6 }, () => register({ ...input, requestId: randomUUID() })));

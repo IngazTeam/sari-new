@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T12:16:57.810Z",
+  "generatedAt": "2026-09-25T13:11:49.962Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -89,7 +89,9 @@
     "sales-protocol-review-ar-1440.png",
     "sales-protocol-review-ar-375.png",
     "sales-protocol-review-en-1440.png",
-    "sales-protocol-review-en-375.png"
+    "sales-protocol-review-en-375.png",
+    "sales-sample-insufficient-ar-375.png",
+    "sales-sample-insufficient-en-375.png"
   ],
   "fixtureApi": true,
   "externalRequestsBlocked": true,
@@ -522,6 +524,23 @@
     },
     {
       "width": 375,
+      "lang": "ar",
+      "mode": "protocol_sample_threshold_sparse_limits_and_invalid_input",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "protocol_sample_threshold_sparse_limits_and_invalid_input",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_legacy_insufficient_sample_is_readable_and_not_rewritten",
+      "passed": true
+    },
+    {
+      "width": 375,
       "mode": "protocol_unknown_same_request_recovery",
       "passed": true
     },
@@ -648,6 +667,11 @@
     {
       "width": 375,
       "mode": "protocol_xss_safe_record_display",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "protocol_corrupt-sample_safe_record_display",
       "passed": true
     },
     {

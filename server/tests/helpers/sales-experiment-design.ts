@@ -14,7 +14,7 @@ export function syntheticSalesExperimentDesign(now = Date.now()): SalesExperimen
       refundCutoff: 'fixed_decision_time', netRevenue: 'captured_minus_verified_refunds',
       analysis: 'intention_to_treat_by_merchant_and_sector', refunds: 'deduct_from_net_revenue', humanAssistance: 'report_separately',
       currencies: 'report_separately', orderDeduplication: 'canonical_order_across_sources' },
-    sample: { minimumCustomersPerArm: 500, baselineConversionBps: 1000, minimumAbsoluteLiftBps: 300,
+    sample: { minimumCustomersPerArm: 2000, baselineConversionBps: 1000, minimumAbsoluteLiftBps: 300,
       alphaBps: 500, powerBps: 8000, calculationReference: 'Synthetic calculation reference, not validated statistical power evidence.' },
     window: { enrollmentStartsAt: iso(2), enrollmentEndsAt: iso(32), observationDays: 14, decisionNotBefore: iso(46) },
     stopping: { success: 'fixed_window_and_minimum_sample', insufficientSample: 'inconclusive_no_extension',

@@ -1,0 +1,14 @@
+{
+  "scope": "First focused attempt failed because disposable MySQL on 127.0.0.1:33087 was stopped. The same focused tests passed after restart. No assertions or timeouts were relaxed. Final evidence uses the complete final run.",
+  "first": {
+    "passed": 86,
+    "failed": 115,
+    "cause": "ECONNREFUSED 127.0.0.1:33087",
+    "logSha256": "af1ac13f5021da682d0b712efe6e24e174dc80ffabc901367f119a29ed9c29b8"
+  },
+  "focusedRecheck": {
+    "passed": 201,
+    "failed": 0,
+    "logSha256": "eac51045c7a7c7bcd5c51d4c32be850e36d2f6900a790941e70be359be009290"
+  }
+}
