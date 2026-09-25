@@ -5,6 +5,7 @@ import type { AppRouter } from '../../../server/routers';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { supportedLearningPolicyReviewSuiteDigest } from '@/lib/learning-policy-review-version';
+import { LearningPolicyEvaluation } from './LearningPolicyEvaluation';
 
 type Submission = inferRouterInputs<AppRouter>['sariBrain']['recordLearningPolicyReview'];
 type CaseId = Submission['cases'][number]['caseId'];
@@ -24,11 +25,11 @@ export function LearningPolicyReview({ proposalId }: { proposalId: number }) {
       aria-expanded={opened} aria-controls={id} data-policy-review-open onClick={() => { setMounted(true); setOpened(value => !value); }}>
       {opened ? t('merchantUx.policyReview.close') : t('merchantUx.policyReview.open')}
     </Button>
-    <div id={id} hidden={!opened}>{mounted && <LearningPolicyReviewPanel key={proposalId} proposalId={proposalId} />}</div>
+    <div id={id} hidden={!opened}>{mounted && <LearningPolicyReviewPanel key={proposalId} proposalId={proposalId} active={opened} />}</div>
   </div>;
 }
 
-export function LearningPolicyReviewPanel({ proposalId }: { proposalId: number }) {
+export function LearningPolicyReviewPanel({ proposalId, active = true }: { proposalId: number; active?: boolean }) {
   const { t, i18n } = useTranslation(), formId = useId();
   const query = trpc.sariBrain.getLearningPolicyReview.useQuery({ proposalId }, { retry: false, staleTime: 0, refetchOnWindowFocus: false });
   const mutation = trpc.sariBrain.recordLearningPolicyReview.useMutation({ retry: false });
@@ -211,6 +212,7 @@ export function LearningPolicyReviewPanel({ proposalId }: { proposalId: number }
           </dl>
         </details>)}
       </details>}
+      {data!.canReview && <LearningPolicyEvaluation proposalId={proposalId} active={active} />}
     </>}
   </section>;
 }

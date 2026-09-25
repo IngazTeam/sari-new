@@ -1,7 +1,8 @@
 const fs = require('fs'), path = require('path'), http = require('http'), assert = require('assert/strict');
 const esbuild = require('esbuild'), puppeteer = require('puppeteer-core');
 const onlyPolicyReview = process.argv.includes('--only-policy-review');
-const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
+const onlyEvaluation = process.argv.includes('--only-evaluation');
+const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
 async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
   await esbuild.build({ entryPoints: [path.resolve('scripts/testing/fixtures/brain-ui-entry.tsx')], outfile: path.join(dir, 'fixture.js'), bundle: true, platform: 'browser', jsx: 'automatic',
@@ -27,8 +28,9 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
-    await require('./verify-learning-policy-review-ui.cjs')(page, origin, output, results);
-    if (!onlyPolicyReview) {
+    if (!onlyPolicyReview) await require('./verify-learning-policy-evaluation-ui.cjs')(page, origin, output, results);
+    if (!onlyEvaluation) await require('./verify-learning-policy-review-ui.cjs')(page, origin, output, results);
+    if (!onlyPolicyReview && !onlyEvaluation) {
     await require('./verify-learning-status-ui.cjs')(page, origin, output, results);
     await require('./verify-appointment-reminders-ui.cjs')(page, origin, output, results);
     await require('./verify-ai-capabilities-ui.cjs')(page, origin, output, results);

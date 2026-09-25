@@ -1,5 +1,6 @@
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
 import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
+import { evaluationFixture } from './learning-policy-evaluation-ui-trpc';
 import { bookingCalendarFixture } from './booking-calendar-ui-trpc';
 import { bookingCancellationFixture } from './booking-cancellation-ui-trpc';
 import { useEffect, useMemo, useState } from 'react';
@@ -189,6 +190,7 @@ export const trpc = {
     } },
   },
   sariBrain: {
+    ...evaluationFixture,
     getFollowupPolicy: { useQuery: () => {
       const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
       const data = useMemo(() => ({ policy: (window as any).__followupInput?.policy || defaultFollowupPolicy,
