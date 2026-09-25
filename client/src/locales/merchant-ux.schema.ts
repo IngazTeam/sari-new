@@ -1,3 +1,4 @@
+import type { SalesCohortCopy } from './sales-cohort';
 export const serviceFormCopyKeys = [
   'created', 'updated', 'createFailed', 'updateFailed', 'loading', 'back',
   'editTitle', 'addTitle', 'editDescription', 'addDescription', 'basicInfo',
@@ -65,6 +66,7 @@ import type { LearningPolicyReviewCopy } from './learning-policy-review';
 import type { LearningPolicyEvaluationCopy } from './learning-policy-evaluation';
 import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 export type MerchantUxCopy = {
+  salesCohort: SalesCohortCopy;
   salesProtocol: SalesExperimentProtocolCopy;
   policyReview: LearningPolicyReviewCopy;
   policyEvaluation: LearningPolicyEvaluationCopy;

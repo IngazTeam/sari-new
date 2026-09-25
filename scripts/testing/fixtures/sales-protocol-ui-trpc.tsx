@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { getSalesSectorPlaybook, salesSectorPlaybooks } from '../../../shared/sales-sector-playbooks';
 import { registerSalesExperimentProtocolInput, withdrawSalesExperimentProtocolInput } from '../../../shared/sales-experiment-protocol';
 import { syntheticSalesExperimentDesign } from '../../../server/tests/helpers/sales-experiment-design';
-const mode = new URL(location.href).searchParams.get('case')?.replace('protocol-', '') || 'ready';
+const rawMode = new URL(location.href).searchParams.get('case') || '';
+const mode = rawMode.startsWith('cohort-') ? 'cohort' : rawMode.replace('protocol-', '') || 'ready';
 const win = window as any, listeners = new Set<() => void>(), records = new Map<number, any>();
 const state = { sectorRevision: 0, candidateId: 4, revoked: false, newest: 45, registration: null as any, withdrawal: null as any };
 const emit = () => listeners.forEach(listener => listener());
@@ -20,7 +21,7 @@ function record(id: number, registered = false) {
       reason: mode === 'xss' ? malicious : 'Historical safety withdrawal with its original immutable reason.', winner: null, actorUserId: 7, createdAt: registeredAt } };
 }
 if (['history', 'xss', 'history-error', 'standalone'].includes(mode)) for (let id = 1; id <= 45; id++) records.set(id, record(id));
-if (mode.startsWith('withdraw') || ['existing','unsupported','record-error'].includes(mode)) records.set(45, record(45, true));
+if (mode.startsWith('withdraw') || ['existing','unsupported','record-error','cohort'].includes(mode)) records.set(45, record(45, true));
 function value(kind: string, input: any) {
   if (kind === 'candidate') return { proposalId: 16, reviewId: 2, sourceDigest: 'a'.repeat(64), baselineDigest: 'b'.repeat(64), expectedVersion: 1,
     canCreate: false, activationAllowed: false, latestCandidate: mode === 'missing' ? null : { id: state.candidateId, version: state.candidateId - 3, current: mode !== 'stale', artifactDigest: 'c'.repeat(64), activationAllowed: false, bundle: { version: 'sales-style-candidate.v1' } }, evaluationRuns: [] };
@@ -78,3 +79,5 @@ win.__protocolAddHistory = () => { records.set(++state.newest, record(state.newe
 export const protocolBasisFixture = { getLearningPolicyCandidate: query('candidate'), getSalesSector: query('sector') };
 export const salesProtocolFixture = { getSalesExperimentProtocolHistory: query('history'), getSalesExperimentProtocol: query('record'),
   registerSalesExperimentProtocol: mutation('register'), withdrawSalesExperimentProtocol: mutation('withdraw') };
+
+export const cohortProtocolRecord = () => structuredClone(records.get(45));

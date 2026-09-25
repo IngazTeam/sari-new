@@ -8,7 +8,7 @@ import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { seedCohortProtocol, syntheticCohortRules } from '../tests/helpers/sales-cohort';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
-import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort } from './sales-experiment-cohort';
+import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, prepareSalesExperimentCohort } from './sales-experiment-cohort';
 import { withdrawSalesExperimentProtocol } from './sales-experiment-protocol';
 import { updateSalesSectorSettings } from './sales-sector-settings';
 
@@ -47,6 +47,31 @@ describe.skipIf(!process.env.DATABASE_URL)('frozen sales cohort and authoritativ
   });
   afterEach(async () => { expect(fetch).not.toHaveBeenCalled(); vi.restoreAllMocks(); vi.unstubAllGlobals(); await cleanupDisposableMerchants([owner.userId, other.userId]); });
   afterAll(closeDb);
+  const prepare = () => prepareSalesExperimentCohort(owner.merchantId, { protocolId: seed.protocol.protocolId });
+  it('distinguishes a missing definition from a frozen historical record without writes', async () => {
+    expect(await prepare()).toMatchObject({ status: 'available', canFreeze: true, frozen: null, activationAllowed: false, experimentStarted: false });
+    expect(await query('SELECT id FROM ai_sales_experiment_cohorts WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    const frozen = await freeze(); expect(await prepare()).toMatchObject({ status: 'already_frozen', canFreeze: false, frozen: { cohortId: frozen.cohortId } });
+  });
+  it('preparation rejects foreign and nonexistent protocols instead of treating them as unconfigured', async () => {
+    await expect(prepareSalesExperimentCohort(other.merchantId, { protocolId: seed.protocol.protocolId })).rejects.toThrow();
+    await expect(prepareSalesExperimentCohort(owner.merchantId, { protocolId: 2147483647 })).rejects.toThrow();
+  });
+  it.each(['source', 'sector', 'window', 'withdrawn'] as const)('preparation explains blocked %s using current authoritative data', async mode => {
+    if (mode === 'source') await query("UPDATE sari_learning_signals SET customer_message='Changed evidence' WHERE id=?", [seed.signalId]);
+    if (mode === 'sector') await updateSalesSectorSettings({ merchantId: owner.merchantId, actorUserId: owner.userId, expectedRevision: 0, playbookId: 'training' });
+    if (mode === 'window') { await elapsed(); vi.spyOn(Date, 'now').mockReturnValue(Date.now() - 100 * 86400000); }
+    if (mode === 'withdrawn') await withdrawSalesExperimentProtocol(owner.merchantId, owner.userId, { protocolId: seed.protocol.protocolId, protocolDigest: seed.protocol.protocolDigest, requestId: randomUUID(), reason: 'A safety regression requires this plan to be withdrawn.' });
+    expect(await prepare()).toMatchObject({ canFreeze: false, frozen: null, status: mode === 'window' ? 'window_started' : mode === 'withdrawn' ? 'withdrawn' : 'source_changed' });
+  });
+  it('never converts a corrupt frozen record to an available empty form', async () => {
+    await freeze(); await query("UPDATE ai_sales_experiment_cohorts SET cohort_digest=? WHERE protocol_id=?", ['a'.repeat(64), seed.protocol.protocolId]);
+    await expect(prepare()).rejects.toThrow();
+  });
+  it('retains preparation history after withdrawal without granting new authority', async () => {
+    const frozen = await freeze(); await withdrawSalesExperimentProtocol(owner.merchantId, owner.userId, { protocolId: seed.protocol.protocolId, protocolDigest: seed.protocol.protocolDigest, requestId: randomUUID(), reason: 'A safety regression requires this plan to be withdrawn.' });
+    expect(await prepare()).toMatchObject({ status: 'already_frozen', canFreeze: false, frozen: { cohortId: frozen.cohortId, eligibility: 'not_checked' } });
+  });
   it('freezes the complete definition once and returns the same receipt under concurrent replay', async () => {
     const value = input(), results = await Promise.all(Array.from({ length: 5 }, () => freeze(value)));
     expect(new Set(results.map(r => r.cohortId)).size).toBe(1); expect(results.filter(r => !r.reused)).toHaveLength(1);

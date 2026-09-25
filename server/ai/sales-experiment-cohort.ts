@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
 import { checkoutTransaction } from './checkout-agreements';
 import { loadSalesExperimentProtocol } from './sales-experiment-protocol';
-import { requireCurrentLearningPolicyCandidate } from './learning-policy-candidates';
+import { requireCurrentLearningPolicyCandidate, LearningPolicyCandidateConflict } from './learning-policy-candidates';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { getSalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
 import { cohortPhone, evaluateSalesCohort, freezeSalesCohortInput, inspectSalesCohortInput, readSalesCohortInput, salesCohortSnapshot,
@@ -79,6 +79,31 @@ export async function freezeSalesExperimentCohort(merchantId: number, actorUserI
 export async function getSalesExperimentCohort(merchantId: number, value: { protocolId: number }) {
   const merchant = id.parse(merchantId), input = readSalesCohortInput.parse(value);
   return checkoutTransaction(async c => { await lockMerchant(c, merchant); return load(c, merchant, input.protocolId); });
+}
+
+/** An absent definition is a successful owned read, never a swallowed storage error. */
+export async function prepareSalesExperimentCohort(merchantId: number, value: { protocolId: number }) {
+  const merchant = id.parse(merchantId), input = readSalesCohortInput.parse(value);
+  return checkoutTransaction(async c => {
+    await lockMerchant(c, merchant);
+    const record = await loadSalesExperimentProtocol(c, merchant, input.protocolId);
+    const [rows] = await c.execute<any[]>('SELECT id FROM ai_sales_experiment_cohorts WHERE merchant_id=? AND protocol_id=? FOR SHARE', [merchant, input.protocolId]);
+    const frozen = rows.length ? await load(c, merchant, input.protocolId) : null;
+    const preparedAt = await clock(c);
+    let status: 'available' | 'already_frozen' | 'withdrawn' | 'window_started' | 'source_changed' = 'available';
+    if (frozen) status = 'already_frozen';
+    else if (record.state !== 'registered') status = 'withdrawn';
+    else if (Date.parse(preparedAt) >= Date.parse(record.protocol.design.window.enrollmentStartsAt)) status = 'window_started';
+    else {
+      try { await currentProtocol(c, merchant, input.protocolId, record.protocolDigest); }
+      catch (error) {
+        if (!(error instanceof SalesCohortConflict) && !(error instanceof LearningPolicyCandidateConflict)) throw error;
+        status = 'source_changed';
+      }
+    }
+    return { protocolId: input.protocolId, protocolDigest: record.protocolDigest, preparedAt, status, frozen,
+      canFreeze: status === 'available', activationAllowed: false as const, experimentStarted: false as const };
+  });
 }
 
 /** Point-in-time inspection only. Never assigns an arm, writes a denominator or dispatches a reply. */

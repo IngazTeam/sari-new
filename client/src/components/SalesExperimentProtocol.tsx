@@ -1,3 +1,4 @@
+import { SalesCohortQualification } from './SalesCohortQualification';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { inferRouterInputs } from '@trpc/server';
@@ -137,13 +138,15 @@ function ProtocolRecordView({ protocolId, active, onLock, onWithdraw }: { protoc
   const { t } = useTranslation(), id = useId(), heading = useRef<HTMLHeadingElement>(null);
   const query = trpc.sariBrain.getSalesExperimentProtocol.useQuery({ protocolId }, options), [reason, setReason] = useState(''), [attested, setAttested] = useState(false);
   const data = query.data, readable = !query.isError && !query.isLoading && compatibleProtocolRecord(data, protocolId);
-  const eligible = readable && data.state === 'registered' && active && !query.isFetching;
+  const [cohortLock, setCohortLock] = useState(false), lockCohort = useCallback((value: boolean) => setCohortLock(value), []);
+  const lastRecord = useRef<ProtocolRecord | null>(null); if (readable) lastRecord.current = data;
+  const eligible = readable && data.state === 'registered' && active && !query.isFetching && !cohortLock;
   useEffect(() => { heading.current?.focus(); }, []);
-  useEffect(() => { onLock(!!reason); return () => onLock(false); }, [reason, onLock]);
+  useEffect(() => { onLock(!!reason || cohortLock); return () => onLock(false); }, [reason, cohortLock, onLock]);
   useEffect(() => { setAttested(false); if (data?.state === 'withdrawn') setReason(''); }, [data?.protocolDigest, data?.state, query.isError]);
   return <section className="min-w-0 space-y-4 rounded-lg border p-3" data-protocol-record aria-busy={query.isFetching}>
     <h4 ref={heading} tabIndex={-1} className="text-base font-semibold focus-visible:outline">{t('merchantUx.salesProtocol.reference', { id: protocolId })}</h4><p className="text-muted-foreground">{t('merchantUx.salesProtocol.recordScope')}</p>
-    <Button type="button" variant="outline" className="min-h-11" data-protocol-record-refresh disabled={!active || query.isFetching} onClick={() => { setAttested(false); void query.refetch(); }}>{t('merchantUx.policyEvaluation.refresh')}</Button>
+    <Button type="button" variant="outline" className="min-h-11" data-protocol-record-refresh disabled={!active || query.isFetching || cohortLock} onClick={() => { setAttested(false); void query.refetch(); }}>{t('merchantUx.policyEvaluation.refresh')}</Button>
     {query.isLoading && <p role="status">{t('merchantUx.policyEvaluation.loading')}</p>}
     {query.isError && <p role="alert">{t('merchantUx.salesProtocol.refreshFailed')}</p>}
     {!query.isError && !query.isLoading && !readable && <p role="alert" data-protocol-unsupported>{t('merchantUx.salesProtocol.unsupported')}</p>}
@@ -163,5 +166,6 @@ function ProtocolRecordView({ protocolId, active, onLock, onWithdraw }: { protoc
         <Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal" data-protocol-withdraw disabled={!eligible || !attested || reason.trim().length < 30} onClick={() => { if (eligible && attested && reason.trim().length >= 30) onWithdraw(data, reason.trim()); }}>{t('merchantUx.salesProtocol.withdraw')}</Button>
       </div>}
     </>}
+    {lastRecord.current && <SalesCohortQualification record={lastRecord.current} active={active && readable && !query.isFetching && !reason} onLock={lockCohort} />}
   </section>;
 }

@@ -1,0 +1,40 @@
+{
+  "scope": "The first database run timed out in one existing multi-process appointment test. No source, assertions or timeout was changed. A focused unchanged rerun and then the complete database group passed. Final evidence counts use the successful complete run only.",
+  "sourceChanged": false,
+  "timeoutChanged": false,
+  "firstDatabaseAttempt": {
+    "startedAt": "2026-09-25T11:02:07.566Z",
+    "passed": 2280,
+    "failed": 1,
+    "reportSha256": "19277c9cb54d3bfb93df2a7186a652f7adf6095fb9bab6d294c7363b1a74b3b9",
+    "failures": [
+      {
+        "file": "server/appointment-creation-requests.mysql.test.ts",
+        "name": "durable appointment creation identity on MySQL shares the same durable identity across independent worker processes",
+        "durationMs": 5130.3252,
+        "message": "Test timed out in 5000ms",
+        "stack": [
+          "Error: STACK_TRACE_ERROR\n    at task (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1784:27)\n    at Object.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1817:16)\n    at Object.<anonymous> (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1563:28)\n    at chain (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:599:14)\n    at C:/Users/ingaz/Herd/sari/.tmp/brain-cohort-ui-20260925/server/appointment-creation-requests.mysql.test.ts:111:5\n    at file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1889:40\n    at runWithSuite (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2258:8)\n    at Object.collect (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1889:10)\n    at Object.collect (file:///C:/Users/ingaz/Herd/sari/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:54)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)"
+        ]
+      }
+    ]
+  },
+  "focusedRecheck": {
+    "passed": 37,
+    "failed": 0,
+    "reportSha256": "d12937492291f804a7883ccc4784b834c283d9cd3c53edf178a14a6c9a21df43",
+    "tests": [
+      {
+        "name": "durable appointment creation identity on MySQL shares the same durable identity across independent worker processes",
+        "status": "passed",
+        "durationMs": 3182.3262
+      }
+    ]
+  },
+  "finalDatabaseAttempt": {
+    "startedAt": "2026-09-25T11:12:18.595Z",
+    "passed": 2281,
+    "failed": 0,
+    "reportSha256": "fceb68584ee3e57a5e072c40139bbcf6a25922f4fd03aefbfbd9f1f14c67911c"
+  }
+}

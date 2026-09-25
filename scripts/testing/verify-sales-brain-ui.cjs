@@ -2,8 +2,9 @@ const fs = require('fs'), path = require('path'), http = require('http'), assert
 const esbuild = require('esbuild'), puppeteer = require('puppeteer-core');
 const onlyPolicyReview = process.argv.includes('--only-policy-review');
 const onlyEvaluation = process.argv.includes('--only-evaluation');
+const onlyCohort = process.argv.includes('--only-cohort');
 const onlyProtocol = process.argv.includes('--only-protocol');
-const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
+const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
 async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
   await esbuild.build({ entryPoints: [path.resolve('scripts/testing/fixtures/brain-ui-entry.tsx')], outfile: path.join(dir, 'fixture.js'), bundle: true, platform: 'browser', jsx: 'automatic',
@@ -29,10 +30,11 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
-    if (onlyProtocol || !onlyPolicyReview && !onlyEvaluation) await require('./verify-sales-protocol-ui.cjs')(page, origin, output, results);
-    if (!onlyPolicyReview && !onlyProtocol) await require('./verify-learning-policy-evaluation-ui.cjs')(page, origin, output, results);
-    if (!onlyEvaluation && !onlyProtocol) await require('./verify-learning-policy-review-ui.cjs')(page, origin, output, results);
-    if (!onlyPolicyReview && !onlyEvaluation && !onlyProtocol) {
+    if (onlyCohort || !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-cohort-ui.cjs')(page, origin, output, results);
+    if (!onlyCohort && (onlyProtocol || !onlyPolicyReview && !onlyEvaluation)) await require('./verify-sales-protocol-ui.cjs')(page, origin, output, results);
+    if (!onlyCohort && !onlyPolicyReview && !onlyProtocol) await require('./verify-learning-policy-evaluation-ui.cjs')(page, origin, output, results);
+    if (!onlyCohort && !onlyEvaluation && !onlyProtocol) await require('./verify-learning-policy-review-ui.cjs')(page, origin, output, results);
+    if (!onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) {
     await require('./verify-learning-status-ui.cjs')(page, origin, output, results);
     await require('./verify-appointment-reminders-ui.cjs')(page, origin, output, results);
     await require('./verify-ai-capabilities-ui.cjs')(page, origin, output, results);

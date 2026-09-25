@@ -1,3 +1,4 @@
+import { salesCohortFixture } from './sales-cohort-ui-trpc';
 import { bookingRescheduleFixture } from './booking-reschedule-ui-trpc';
 import { learningPolicyReviewFixture } from './learning-policy-review-ui-trpc';
 import { evaluationFixture } from './learning-policy-evaluation-ui-trpc';
@@ -193,6 +194,7 @@ export const trpc = {
   sariBrain: {
     ...evaluationFixture,
     ...salesProtocolFixture,
+    ...salesCohortFixture,
     getFollowupPolicy: { useQuery: () => {
       const [revision, setRevision] = useState(0), [retry, setRetry] = useState(false);
       const data = useMemo(() => ({ policy: (window as any).__followupInput?.policy || defaultFollowupPolicy,
@@ -223,7 +225,7 @@ export const trpc = {
             (window as any).__sectorInput = input; setState('success'); options.onSuccess(); } }, 50);
         } };
     } },
-    ...(mode.startsWith('protocol-') ? protocolBasisFixture : {}),
+    ...((mode.startsWith('protocol-') || mode.startsWith('cohort-')) ? protocolBasisFixture : {}),
     getLearningPolicyReview: learningPolicyReviewFixture.query,
     recordLearningPolicyReview: learningPolicyReviewFixture.mutation,
     getLearningAnalysisStatus:{useQuery:()=>{

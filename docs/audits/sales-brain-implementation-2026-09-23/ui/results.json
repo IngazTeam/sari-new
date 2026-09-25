@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T09:58:46.909Z",
+  "generatedAt": "2026-09-25T11:23:47.125Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -77,6 +77,10 @@
     "policy-history-runs-en-1440.png",
     "relay-review-1440.png",
     "relay-review-375.png",
+    "sales-cohort-review-ar-1440.png",
+    "sales-cohort-review-ar-375.png",
+    "sales-cohort-review-en-1440.png",
+    "sales-cohort-review-en-375.png",
     "sales-protocol-review-ar-1440.png",
     "sales-protocol-review-ar-375.png",
     "sales-protocol-review-en-1440.png",
@@ -86,6 +90,181 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "cohort_keyboard_normalized_review_explicit_freeze_immutable_receipt",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_unknown_identical_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_outage_identical_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_receipt-mismatch_identical_request_recovery",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_loading_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_fetching_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_read-error_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_unsupported_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_withdrawn_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_window_started_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_source_changed_no_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_read_recovery_without_write",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_frozen_safe_historical_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_deleted-actor_safe_historical_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_xss_safe_historical_record",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_definite_rejection_preserves_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_committed_receipt_survives_refresh_failure",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_same_tick_double_click_once",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_edit_requires_new_attestation",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_collapse_and_parent_refresh_preserve_locked_draft",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_changed_source_requires_explicit_discard",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_revoked_access_keeps_draft_and_clears_consent",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_failed_read_never_reuses_old_authority",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "cohort_withdrawal_draft_blocks_cohort_editor",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

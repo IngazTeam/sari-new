@@ -44,7 +44,7 @@ import { LearningPolicyOutputReviewConflict } from './ai/learning-policy-output-
 import { registerSalesExperimentProtocolInput, salesExperimentProtocolInput, salesExperimentProtocolHistoryInput, withdrawSalesExperimentProtocolInput } from './ai/sales-experiment-protocol-contract';
 import { registerSalesExperimentProtocol, getSalesExperimentProtocol, getSalesExperimentProtocolHistory, withdrawSalesExperimentProtocol, SalesExperimentProtocolConflict } from './ai/sales-experiment-protocol';
 import { freezeSalesCohortInput, readSalesCohortInput, inspectSalesCohortInput } from './ai/sales-experiment-cohort-contract';
-import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, SalesCohortConflict } from './ai/sales-experiment-cohort';
+import { freezeSalesExperimentCohort, getSalesExperimentCohort, inspectSalesExperimentCohort, prepareSalesExperimentCohort, SalesCohortConflict } from './ai/sales-experiment-cohort';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -342,6 +342,10 @@ export const sariBrainRouter = router({
   freezeSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(freezeSalesCohortInput).mutation(async ({ ctx, input }) => {
     try { return await freezeSalesExperimentCohort(ctx.merchantId, ctx.user.id, input); }
     catch (error) { throw new TRPCError({ code: error instanceof SalesCohortConflict || error instanceof SalesExperimentProtocolConflict || error instanceof LearningPolicyCandidateConflict ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales cohort changed or is unavailable' }); }
+  }),
+  prepareSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(readSalesCohortInput).query(async ({ ctx, input }) => {
+    try { return await prepareSalesExperimentCohort(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales cohort changed or is unavailable' }); }
   }),
   getSalesExperimentCohort: permissionProcedure('bot_settings.manage').input(readSalesCohortInput).query(async ({ ctx, input }) => {
     try { return await getSalesExperimentCohort(ctx.merchantId, input); }
