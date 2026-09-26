@@ -4367,6 +4367,16 @@ export const aiSalesOrderFacts = mysqlTable('ai_sales_order_facts', {
     OR (${t.attributionState}='attributed' AND ${t.nextAt} IS NULL AND ${t.attribution} IS NOT NULL AND ${t.attributionDigest} IS NOT NULL)
     OR (${t.attributionState} IN ('unassigned','review') AND ${t.nextAt} IS NULL AND ${t.attribution} IS NULL AND ${t.attributionDigest} IS NULL))`)]);
 
+export const aiSalesOrderLinks = mysqlTable('ai_sales_order_links', {
+  id:bigint({mode:'number',unsigned:true}).autoincrement().primaryKey(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  orderFactId:bigint('order_fact_id',{mode:'number',unsigned:true}).notNull(),orderFactDigest:char('order_fact_digest',{length:64}).notNull(),
+  orderKey:char('order_key',{length:64}).notNull(),sourceRowId:int('source_row_id').notNull(),localOrderId:int('local_order_id').notNull(),
+  linkDigest:char('link_digest',{length:64}).notNull(),snapshot:json().notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},t=>[uniqueIndex('uq_sales_link_fact').on(t.merchantId,t.orderFactId),uniqueIndex('uq_sales_link_order').on(t.merchantId,t.orderKey),
+  uniqueIndex('uq_sales_link_local').on(t.merchantId,t.localOrderId)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

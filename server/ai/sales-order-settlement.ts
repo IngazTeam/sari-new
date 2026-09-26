@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { assertSalesOrderFactSchema } from './sales-order-facts';
 import { assertSalesPaymentFactSchema } from './sales-payment-facts';
-import { readSalesOrderFact } from './sales-order-fact-contract';
+import { readSalesOrderFact,SalesOrderEvidenceConflict } from './sales-order-fact-contract';
+import { assertSalesOrderLinkSchema } from './sales-order-links';
+import { readSalesOrderLink } from './sales-order-link-contract';
 import { buildSalesOrderSettlement, inspectSalesOrderSettlementInput, SALES_ORDER_SETTLEMENT_LIMIT } from './sales-order-settlement-contract';
 
 export class SalesOrderSettlementAccessDenied extends Error {}
@@ -27,12 +29,22 @@ export async function inspectSalesOrderSettlement(actorUserId: number, value: z.
     const [orders] = await c.execute<any[]>('SELECT * FROM ai_sales_order_facts WHERE merchant_id=? AND id=? FOR SHARE', [input.merchantId,input.factId]);
     if (orders.length !== 1) throw new SalesOrderSettlementNotReady();
     const order = readSalesOrderFact(orders[0]);
+    let linkRow:any,localOrderId=order.snapshot.localOrderId;
+    if(order.snapshot.provider==='zid'){
+      await assertSalesOrderLinkSchema();
+      const [links]=await c.execute<any[]>('SELECT * FROM ai_sales_order_links WHERE merchant_id=? AND order_fact_id=? FOR SHARE',[input.merchantId,order.factId]);
+      if(links.length>1)throw new SalesOrderEvidenceConflict();
+      if(links.length){linkRow=links[0];localOrderId=readSalesOrderLink(linkRow,orders[0]).snapshot.localOrderId;
+        const [conflicts]=await c.execute<any[]>('SELECT id FROM ai_sales_order_facts WHERE merchant_id=? AND local_order_id=? FOR SHARE',[input.merchantId,localOrderId]);
+        if(conflicts.length)throw new SalesOrderEvidenceConflict();
+      }
+    }
     // An external ID must never be treated as a local primary key, even when both numbers match.
-    const payments = order.snapshot.provider === 'local'
+    const payments = localOrderId!==null
       ? (await c.execute<any[]>(`SELECT * FROM ai_sales_payment_facts WHERE merchant_id=? AND target_kind='order'
-          AND target_id=? ORDER BY id LIMIT ${SALES_ORDER_SETTLEMENT_LIMIT+1} FOR SHARE`, [input.merchantId,order.snapshot.localOrderId]))[0]
+          AND target_id=? ORDER BY id LIMIT ${SALES_ORDER_SETTLEMENT_LIMIT+1} FOR SHARE`, [input.merchantId,localOrderId]))[0]
       : [];
-    const result = buildSalesOrderSettlement(orders[0], payments);
+    const result = buildSalesOrderSettlement(orders[0], payments,linkRow);
     await c.rollback(); return result;
   } catch (error) {
     try { await c.rollback(); } catch { reusable = false; c.destroy(); }

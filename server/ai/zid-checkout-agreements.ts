@@ -12,6 +12,7 @@ import { matchZidSelection, zidSelectionSchema, type ParsedZidOrder } from '../a
 import { assertCheckoutIdentity, checkoutTransaction, wasCheckoutOfferDelivered, type CheckoutIdentity } from './checkout-agreements';
 import { currentInboundExecution } from '../messaging/inbound-context';
 import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
+import { linkZidOrderProjection } from './sales-order-links';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { decryptSecret } from '../security/secrets';
 
@@ -267,6 +268,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
       items: s.items.map(item => ({ id: item.zidProductId, sku: item.sku, name: item.name, quantity: item.quantity, price: item.priceMinor / 100 })),
       orderUrl: result.url, zidData: JSON.stringify(response.order) }, observedAt);
       if (!projected?.sariOrderId) throw new Error('Projection unavailable');
+      await linkZidOrderProjection(input.merchantId,quoteId,s.options.storeId,String(result.id));
       await pool.execute('UPDATE sales_quotations SET projection_pending = 0 WHERE id = ? AND merchant_id = ?', [quoteId, input.merchantId]); }
     catch { console.warn('[ZidCheckout] Order projection requires reconciliation', { merchantId: input.merchantId, quoteId }); }
     return resultText(result);

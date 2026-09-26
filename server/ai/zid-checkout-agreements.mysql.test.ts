@@ -8,7 +8,8 @@ import type { CheckoutIdentity } from './checkout-agreements';
 import { listZidReconciliations, reconcileZidCheckout } from './zid-checkout-reconciliation';
 import { readSalesOrderFact } from './sales-order-fact-contract';
 
-const mocks = vi.hoisted(() => ({ settings: vi.fn(), payments: vi.fn(), shipping: vi.fn(), create: vi.fn(), save: vi.fn(), view: vi.fn(), project: vi.fn() }));
+const mocks = vi.hoisted(() => ({ settings: vi.fn(), payments: vi.fn(), shipping: vi.fn(), create: vi.fn(), save: vi.fn(), view: vi.fn(), project: vi.fn(), link:vi.fn() }));
+vi.mock('./sales-order-links',()=>({linkZidOrderProjection:mocks.link}));
 vi.mock('../db_zid', () => ({ default: { getZidSettings: mocks.settings } }));
 vi.mock('../db', () => ({ getPool: async()=> (await import('../db/connection')).getPool(), saveZidOrder: mocks.save, getZidProducts: vi.fn(), upsertNormalizedOrdersFromZid: mocks.project }));
 vi.mock('../integrations/zid/zidClient', () => ({ ZidClient: class {
@@ -41,6 +42,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.shipping.mockResolvedValue({ shipping_methods: [shipping] });
     mocks.create.mockResolvedValue(response()); mocks.save.mockResolvedValue({ id: 1, sariOrderId: 1 });
     mocks.project.mockResolvedValue({ sourceOrders: 1, projectedOrders: 1, acceptedOrders: 1 });
+    mocks.link.mockReset().mockResolvedValue({kind:'linked',linkId:1});
     mocks.view.mockReset();
   });
   afterEach(async () => {vi.restoreAllMocks();await cleanupDisposableMerchants([fixture.userId]);});
@@ -349,6 +351,18 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
   it('keeps a store-scoped source without a local projection pending',async()=>{
     const {input}=await unknown();mocks.project.mockResolvedValueOnce({sourceOrders:1,projectedOrders:0,acceptedOrders:1});
     expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+  });
+  it('retains projection repair after a failed identity link without repeating POST',async()=>{
+    const q=await offer();mocks.link.mockRejectedValueOnce(Error('link storage failure'));const consent=await incoming();
+    await acceptZidCheckout(consent,q.id);expect((await quotes())[0].projection_pending).toBe(1);
+    await acceptZidCheckout(consent,q.id);expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.link).toHaveBeenCalledWith(fixture.merchantId,q.id,'11','999');
+  });
+  it('keeps reconciliation pending until the verified local identity is durable',async()=>{
+    const {input}=await unknown();mocks.link.mockRejectedValueOnce(Error('link storage failure'));
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(false);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
   });
   it('keeps a saved source without a linked local order pending after creation',async()=>{
     const q=await offer();mocks.save.mockResolvedValueOnce({id:1,sariOrderId:null});await acceptZidCheckout(await incoming(),q.id);

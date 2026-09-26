@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundle';
 import { readSalesOrderFact, SalesOrderEvidenceConflict } from './sales-order-fact-contract';
 import { readSalesPaymentFact } from './sales-payment-fact-contract';
+import { readSalesOrderLink } from './sales-order-link-contract';
 
 export const inspectSalesOrderSettlementInput = z.object({
   merchantId: z.number().int().positive().safe(),
@@ -15,16 +16,18 @@ export class SalesOrderSettlementLimitExceeded extends Error {}
 /** Evidence-only financial view. Missing evidence is not unpaid, zero revenue or no refund.
  * Never merge providers by phone, invoice value, quotation number or external ID alone.
  */
-export function buildSalesOrderSettlement(orderRow: unknown, paymentRows: unknown[]) {
+export function buildSalesOrderSettlement(orderRow: unknown, paymentRows: unknown[], linkRow?: unknown) {
   const order = readSalesOrderFact(orderRow), o = order.snapshot;
+  const link=linkRow==null?null:readSalesOrderLink(linkRow,orderRow);
+  const localOrderId=o.localOrderId??link?.snapshot.localOrderId??null;
   if (paymentRows.length > SALES_ORDER_SETTLEMENT_LIMIT) throw new SalesOrderSettlementLimitExceeded();
   const events = paymentRows.map(readSalesPaymentFact).sort((a,b) => a.snapshot.event === b.snapshot.event
     ? a.factId-b.factId : a.snapshot.event === 'captured' ? -1 : 1);
   const conflict = (): never => { throw new SalesOrderEvidenceConflict(); };
-  if (o.provider !== 'local' && events.length) return conflict();
+  if (localOrderId===null && events.length) return conflict();
   for (const event of events) {
     const p = event.snapshot;
-    if (p.merchantId !== o.merchantId || p.targetKind !== 'order' || p.targetId !== o.localOrderId
+    if (p.merchantId !== o.merchantId || p.targetKind !== 'order' || p.targetId !== localOrderId
       || p.customerKey !== o.customerKey || p.currency !== o.currency
       || Date.parse(p.verifiedAt) < Date.parse(o.observedAt)) return conflict();
   }
@@ -38,11 +41,12 @@ export function buildSalesOrderSettlement(orderRow: unknown, paymentRows: unknow
   const basis = {
     version: 'sales-order-settlement.v1' as const,
     merchantId: o.merchantId, orderFactId: order.factId, orderFactDigest: order.factDigest,
-    orderKey: o.orderKey, quotationId: o.quotationId, provider: o.provider, localOrderId: o.localOrderId,
+    orderKey: o.orderKey, quotationId: o.quotationId, provider: o.provider, localOrderId,
+    projectionLink:link?{linkId:link.linkId,linkDigest:link.linkDigest,linkedAt:link.snapshot.linkedAt}:null,
     createdObservedAt: o.observedAt, currency: o.currency, quotedAmountMinor: o.quotedAmountMinor,
     amountBasis: o.amountBasis,
-    identityBasis: o.provider === 'local' ? 'merchant_and_local_order' as const : 'external_link_unverified' as const,
-    financialState: o.provider !== 'local' ? 'external_link_unverified' as const : refund ? 'full_refund_observed' as const
+    identityBasis: o.provider === 'local' ? 'merchant_and_local_order' as const : link?'verified_zid_store_projection' as const:'external_link_unverified' as const,
+    financialState: localOrderId===null ? 'external_link_unverified' as const : refund ? 'full_refund_observed' as const
       : capture ? 'capture_observed' as const : 'payment_not_measured' as const,
     capturedMinor: capture?.snapshot.amountMinor ?? null,
     refundedMinor: refund?.snapshot.amountMinor ?? null,

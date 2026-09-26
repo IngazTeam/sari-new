@@ -5,6 +5,7 @@ import { upsertNormalizedOrdersFromZid } from '../db';
 import { normalizeZidOrder } from '../integrations/zid-commerce-normalization';
 import { checkoutTransaction } from './checkout-agreements';
 import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
+import { linkZidOrderProjection } from './sales-order-links';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { validateZidCheckoutResult, zidCheckoutProvider, type ZidCheckoutSnapshot, type ZidCheckoutResult } from './zid-checkout-agreements';
 
@@ -109,6 +110,7 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
   try {
     const projection = await upsertNormalizedOrdersFromZid(input.merchantId, [normalized]);
     if (projection.sourceOrders !== 1 || projection.projectedOrders !== 1) throw new Error('Projection unavailable');
+    await linkZidOrderProjection(input.merchantId,input.quotationId,snapshot.options.storeId,String(result.id));
     await pool.execute('UPDATE sales_quotations SET projection_pending = 0 WHERE id = ? AND merchant_id = ?', [input.quotationId, input.merchantId]);
     projectionPending = false;
   } catch {

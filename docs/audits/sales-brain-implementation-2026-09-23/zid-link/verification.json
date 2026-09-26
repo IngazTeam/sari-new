@@ -1,0 +1,73 @@
+{
+  "baseline": "9f568827564bbc21909cfe87515e3206df4284fd",
+  "frozenAt": "2026-09-26T16:07:35.449Z",
+  "sourceFiles": [
+    "drizzle/0128_sales_order_projection_links.sql",
+    "drizzle/meta/_journal.json",
+    "drizzle/schema.ts",
+    "server/ai/sales-order-link-contract.ts",
+    "server/ai/sales-order-links.ts",
+    "server/ai/sales-order-links.mysql.test.ts",
+    "server/ai/sales-order-link-pentest.test.ts",
+    "server/ai/sales-order-settlement-contract.ts",
+    "server/ai/sales-order-settlement.ts",
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-checkout-reconciliation.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "server/cron/schema-validator.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs",
+    "scripts/testing/verify-sales-order-links-migration.cjs"
+  ],
+  "scope": "Immutable Zid creation-to-local-projection links and read-only canonical Tap capture/refund settlement. Actual MySQL, mocked Zid transport, blocked external network; no production payment, message or deployment.",
+  "attempts": [
+    {
+      "kind": "focused",
+      "passed": 222,
+      "failed": 0,
+      "sha256": "ee9896932a4b2707ba269d24e31a8dce588a30a9bbe0d65ba92a99a66782bce7"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_zid_link_20260926_test",
+      "migrations": 129,
+      "newMigrations": 1,
+      "sha256": "e2ae210ff365681284e9d119f313069f51958340ed27cfd030a15000686caebc"
+    },
+    {
+      "kind": "populated-upgrade-and-replay",
+      "passed": true,
+      "sha256": "7a44fe10c25ce1ea36af94c27f7e454dab69233e54af0d752b66a0d3c3d69592"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "707ac5e04b7b5f49f4b263f331fc9383a17ef47bd0fdad7362b7f24f2154eaf5"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "crossSourcePaymentLinkProven": "New explicit-store Zid projection to canonical Tap evidence only",
+    "historicalStoreIdentityResolved": false,
+    "otherZidPaymentGatewaysProven": false,
+    "catalogStoreIsolationProven": false,
+    "sourceCompletenessProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "partialRefundsSupported": false,
+    "humanAssistanceMeasured": false,
+    "experimentAttributionRecomputed": false,
+    "causalityProven": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "67 new acceptance cases: 34 MySQL projection-link cases, 31 adversarial contract cases and two pending-link checkout recovery cases. No previous acceptance case removed."
+}

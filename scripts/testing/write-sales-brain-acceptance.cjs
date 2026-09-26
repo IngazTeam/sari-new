@@ -724,6 +724,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبرت هوية الطلب عبر متجرين، وإعادة الحدث المتزامنة، والإلغاء القديم، وتعارض الهوية والروابط، والتنبيه بعد تبديل المتجر، ومنع تسجيل webhook غير مطابق. الاختبارات محلية مع قناة واتساب محاكاة.','server/zid-order-store-pentest.test.ts'],
  B065:[entries.B065[0]+' يضيف الترحيل 0127 هوية المتجر إلى الطلب والتنبيه ويفصل تفرد المصدر بحسب المتجر. اجتاز الترقية من 0126 ببيانات قديمة وإعادة SQL والتعافي بعد DDL جزئي، مع حفظ سبعة جداول وعدم ملء التاريخ بالتخمين.','scripts/testing/verify-zid-order-store-migration.cjs'],
 });
+Object.assign(entries, {
+ B019:[entries.B019[0]+' أضيف سجل مستقل ثابت يربط دليل إنشاء زد بنسخته المحلية الجديدة عبر النشاط والمتجر ورقم الطلب والمعرّف المحلي المحمي، مع تحقق العميل والعملة والمبلغ عند الربط. لا يغير دليل الإنشاء الأصلي ولا يملأ التاريخ الملتبس بالتخمين.','server/ai/sales-order-links.mysql.test.ts'],
+ B042:[entries.B042[0]+' أصبحت قراءة التسوية تقبل قبض Tap واسترجاعه المرتبطين بهذا الرابط المثبت، وترفض معرّف زد الرقمي أو الهاتف أو المبلغ وحدها كربط مالي. حالة paid في زد لا تتحول إلى قبض Tap.','server/ai/sales-order-link-pentest.test.ts'],
+ B064:[entries.B064[0]+' اختبرت رحلتا الإنشاء والمصالحة الفعليتان إلى الربط ثم القبض والاسترجاع، مع تزامن الربط وفقد إقرار الحفظ وعزل المتاجر والتجار وفساد الأدلة وحذف المصادر ومنع ازدواج الهوية المحلية. المزوّد محاكى والشبكة الخارجية محجوبة.','server/ai/sales-order-links.mysql.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0128 يضيف سجل الروابط دون تعديل الحقائق القديمة، مع تفرد الدليل والهوية والهدف المحلي. فُحصت ترقية 0127 وإعادة SQL والمحدّث وحفظ ثمانية جداول وبقاء السقف العالمي.','scripts/testing/verify-sales-order-links-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

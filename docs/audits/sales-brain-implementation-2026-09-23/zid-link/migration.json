@@ -1,0 +1,26 @@
+{
+  "verifiedAt": "2026-09-26T16:08:23.436Z",
+  "database": "sari_order_links_migration_1790438881619_test",
+  "scope": "Actual updater 0127 to 0128 with legacy source and creation evidence preserved; no link backfill; updater and SQL replay.",
+  "migrations": 129,
+  "preservedTables": [
+    "orders",
+    "zid_orders",
+    "zid_order_notification_outbox",
+    "sales_quotations",
+    "ai_sales_order_facts",
+    "ai_sales_payment_facts",
+    "order_payments",
+    "ai_budget_policies"
+  ],
+  "initiallyEmpty": true,
+  "rejectedConstraints": [
+    "fact",
+    "order-key",
+    "local-target"
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "4ca79276d4236be457db78e3210d59e769965b4fa8b795a904388aa4d853a4df",
+  "passed": true
+}
