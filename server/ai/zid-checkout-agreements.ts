@@ -13,6 +13,7 @@ import { assertCheckoutIdentity, checkoutTransaction, wasCheckoutOfferDelivered,
 import { currentInboundExecution } from '../messaging/inbound-context';
 import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { decryptSecret } from '../security/secrets';
 
 const optionSchema = z.object({ id: z.number().int().positive(), name: z.string().min(1), feesMinor: z.number().int().nonnegative() });
 type Options = { storeId: string; payment: z.infer<typeof optionSchema>; shipping: z.infer<typeof optionSchema> };
@@ -26,8 +27,43 @@ const changed = 'تغيرت تفاصيل الطلب أو انتهت صلاحية
 
 export async function zidCheckoutProvider(merchantId: number) {
   const settings = await dbZid.getZidSettings(merchantId);
-  if (!settings?.isActive || !settings.accessToken || !settings.managerToken || !settings.storeId) throw new Error('Zid identity unavailable');
-  return { storeId: String(settings.storeId), client: new ZidClient({ clientId: '', clientSecret: '', redirectUri: '',
+  if (settings?.isActive !== 1 || settings.merchantId !== merchantId || !settings.accessToken || !settings.managerToken
+    || !settings.storeId || !Number.isSafeInteger(settings.id)) throw new Error('Zid identity unavailable');
+  const token = (value: string | null | undefined) => decryptSecret(value)?.trim().replace(/^Bearer\s+/i, '') || '';
+  const expected = { id: settings.id, storeId: settings.storeId, accessToken: token(settings.accessToken), managerToken: token(settings.managerToken) };
+  let source: 'canonical' | 'legacy' | undefined;
+  const assertCurrent = async (connection: PoolConnection) => {
+    // The parent lock also fences a new canonical row while a legacy connection
+    // is in use: child inserts must acquire the foreign-key parent lock.
+    const [merchants] = await connection.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR UPDATE", [merchantId]);
+    if (merchants.length !== 1) throw new Error('Zid connection changed');
+    const [canonical] = await connection.execute<any[]>(`SELECT id,is_active,access_token,settings FROM platform_integrations
+      WHERE merchant_id=? AND platform_type='zid' FOR SHARE`, [merchantId]);
+    let current: typeof expected, kind: 'canonical' | 'legacy';
+    if (canonical.length) {
+      const row = canonical[0];
+      if (canonical.length !== 1 || row.is_active !== 1) throw new Error('Zid connection changed');
+      let config: Record<string, unknown>;
+      try { config = decode<Record<string, unknown>>(row.settings); } catch { throw new Error('Zid connection changed'); }
+      if (!config || typeof config.storeId !== 'string' || typeof config.managerToken !== 'string') throw new Error('Zid connection changed');
+      kind = 'canonical';
+      current = { id: row.id, storeId: config.storeId, accessToken: token(config.managerToken), managerToken: token(row.access_token) };
+    } else {
+      const [legacy] = await connection.execute<any[]>(`SELECT id,is_active,store_id,access_token,manager_token FROM zid_settings
+        WHERE merchant_id=? FOR SHARE`, [merchantId]);
+      const row = legacy[0];
+      if (legacy.length !== 1 || row.is_active !== 1) throw new Error('Zid connection changed');
+      kind = 'legacy';
+      current = { id: row.id, storeId: row.store_id, accessToken: token(row.access_token), managerToken: token(row.manager_token) };
+    }
+    if ((source && source !== kind) || !current.accessToken || !current.managerToken
+      || current.id !== expected.id || current.storeId !== expected.storeId
+      || current.accessToken !== expected.accessToken || current.managerToken !== expected.managerToken) throw new Error('Zid connection changed');
+    source = kind;
+  };
+  // Detect an adapter read racing reconnect/token rotation before using its tokens.
+  await checkoutTransaction(assertCurrent);
+  return { storeId: String(settings.storeId), assertCurrent, client: new ZidClient({ clientId: '', clientSecret: '', redirectUri: '',
     accessToken: settings.accessToken, managerToken: settings.managerToken }) };
 }
 
@@ -109,12 +145,14 @@ export async function prepareZidCheckout(input: CheckoutIdentity, raw: ParsedZid
     if (busy.length) return uncertain;
     const [existing] = await connection.execute<any[]>(`SELECT * FROM sales_quotations WHERE merchant_id = ? AND source_message_id = ?`, [input.merchantId, input.incomingMessageId]);
     if (existing.length) {
+      await providerContext.assertCurrent(connection);
       if (existing[0].external_provider !== 'zid') return changed;
       if (existing[0].execution_state === 'succeeded') return resultText(decode<Result>(existing[0].external_result));
       if (existing[0].status !== 'sent') return changed;
       return quoteText(existing[0].id, decode<Snapshot>(existing[0].external_snapshot));
     }
     const snapshot = await snapshotFor(connection, input.merchantId, raw, options);
+    await providerContext.assertCurrent(connection);
     await connection.execute(`UPDATE sales_quotations SET status = 'expired' WHERE merchant_id = ? AND conversation_id = ?
       AND status IN ('sent', 'viewed') AND external_provider = 'zid'`, [input.merchantId, input.conversationId]);
     const [insert] = await connection.execute<any>(`INSERT INTO sales_quotations
@@ -187,6 +225,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     const finalSource = await assertCheckoutIdentity(connection, input);
     if (finalSource.content !== initial.consentContent || !isOrderConfirmation(finalSource.content)
       || !await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, marker(quoteId))) return { text: changed };
+    await providerContext.assertCurrent(connection);
     const attemptId = randomUUID();
     const [claim] = await connection.execute<any>(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing',
       execution_attempt_id = ?, execution_started_at = UTC_TIMESTAMP(3)

@@ -31,6 +31,8 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
   // platform_integrations is the canonical source for all current Zid flows.
   // The legacy shape is retained only as an adapter for the order automation.
   const integration = await getIntegrationByType(merchantId, 'zid');
+  // A canonical disconnect must never reactivate stale legacy credentials.
+  if (integration && integration.isActive !== 1) return undefined;
   if (integration?.isActive === 1) {
     const credentials = await getValidZidApiCredentials({ merchantId });
     let integrationSettings: Record<string, unknown> = {};

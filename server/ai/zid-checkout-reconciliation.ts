@@ -93,6 +93,7 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
       ||policyArtifactDigest(decode<ZidCheckoutSnapshot>(q.external_snapshot))!==policyArtifactDigest(snapshot)) {
       throw new Error('Checkout changed during reconciliation');
     }
+    await provider.assertCurrent(connection);
     if (q.execution_state === 'succeeded') {
       if (decode<ZidCheckoutResult>(q.external_result).id !== result.id) throw new Error('Checkout result is immutable');
       return;

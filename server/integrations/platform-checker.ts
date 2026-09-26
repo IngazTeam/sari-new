@@ -65,7 +65,6 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
       .where(and(
         eq(platformIntegrations.merchantId, merchantId),
         eq(platformIntegrations.platformType, 'zid'),
-        eq(platformIntegrations.isActive, 1),
       ))
       .limit(1);
     const [legacyZid] = canonicalZid ? [] : await db!
@@ -76,7 +75,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
         eq(zidSettings.isActive, 1),
       ))
       .limit(1);
-    const zid = canonicalZid || legacyZid;
+    const zid = canonicalZid ? (canonicalZid.isActive === 1 ? canonicalZid : undefined) : legacyZid;
     if (zid) {
       existingPlatforms.push({
         platform: 'zid',

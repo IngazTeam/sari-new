@@ -1,0 +1,82 @@
+{
+  "baseline": "ff37db61f8aaf4a4c0fe4cd52849e1b08e4fd8b0",
+  "frozenAt": "2026-09-26T14:54:14.593Z",
+  "sourceFiles": [
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "server/ai/zid-provider-authority.mysql.test.ts",
+    "server/ai/zid-checkout-reconciliation.ts",
+    "server/db_zid.ts",
+    "server/integrations/platform-checker.ts",
+    "server/auth.zidConvergence.test.ts",
+    "server/auth.zidTokenRefresh.test.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs"
+  ],
+  "scope": "Zid connection authority through offer, create claim and reconciliation; canonical disable blocks legacy fallback. Local SQL and mocked providers with external network blocked. No store-scoped projection or deployment claim.",
+  "attempts": [
+    {
+      "kind": "before-fix",
+      "failed": 9,
+      "excludedByNameFilter": 101,
+      "accepted": false,
+      "sha256": "9952fd9451f02c607bdd52ce646f1e5740d6182896091d7e1e02392c06dac4e9"
+    },
+    {
+      "kind": "initial-fix",
+      "passed": 108,
+      "failed": 2,
+      "accepted": false,
+      "reason": "Two old fixtures supplied settings without persisted row identity; fixtures updated to match their actual rows.",
+      "sha256": "dc87e7abb653a22bfba1037bafbcfcf32dd7661f4247782a22b0738bacb1b13b"
+    },
+    {
+      "kind": "expanded",
+      "passed": 132,
+      "failed": 4,
+      "accepted": false,
+      "reason": "Existing signup fixtures reused phone numbers; changed only synthetic fixture numbers.",
+      "sha256": "3984361b8b245bfd5b2ff7c04ef935fbcaedfa60c4f387cf9255928d7f5ce7a9"
+    },
+    {
+      "kind": "focused-before-final-two-cases",
+      "passed": 136,
+      "failed": 0,
+      "sha256": "d4556c53618c39938ed2b23ba94635e253b02a30bf926dc235d7619a9fb794b8"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_zid_provider_20260926_test",
+      "migrations": 127,
+      "newMigrations": 0,
+      "sha256": "6164aa195e3a3570e437174a5fb36a23225c1c5e71bb2b520f3e1823084bb975"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "41e17a92a0593691dea210213babde10529671c16800a47074de7658bd8f1242"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "crossSourceAliasesProven": false,
+    "sourceCompletenessProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "partialRefundsSupported": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "cancellationAfterClaimImplemented": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "31 new cases plus 6 existing convergence/refresh cases newly included in acceptance. No previous acceptance case removed."
+}

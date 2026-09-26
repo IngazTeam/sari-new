@@ -1,9 +1,9 @@
 {
   "reused": true,
-  "baselineCommit": "1ef10ae55a1da41666e803fbeaa3a5f1ce51d464",
+  "baselineCommit": "ff37db61f8aaf4a4c0fe4cd52849e1b08e4fd8b0",
   "freshScenarios": 0,
   "sourceFilesVerified": 565,
   "sourceTreeSha256": "057e409560d6446182d44035d7a5eff0d83f03e8ab47ffd543888c1eef186cea",
   "resultsSha256": "33573a69cd9d9c53190fa48afdb5743e786c8853817224b22a587fff58a461e6",
-  "scope": "No UI behavior, client/shared strings, fixtures or browser verifier changed. Prior 82 review/send component journeys are historical evidence only; no fresh browser or full 1166-scenario claim."
+  "scope": "Client/shared sources, strings, fixtures and browser verifier are unchanged. Server integration detection now excludes disabled canonical Zid connections, verified in SQL tests. Prior 82 component journeys are historical evidence only; no fresh browser or full 1166-scenario claim."
 }

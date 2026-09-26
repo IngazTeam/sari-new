@@ -171,6 +171,8 @@ const database = [
   'server/ai/sales-playbook.mysql.test.ts',
   'server/knowledge/sales-knowledge.mysql.test.ts', 'server/knowledge/lifecycle.mysql.test.ts',
   'server/ai/zid-checkout-agreements.mysql.test.ts',
+  'server/ai/zid-provider-authority.mysql.test.ts',
+  'server/auth.zidConvergence.test.ts', 'server/auth.zidTokenRefresh.test.ts',
   'server/ai/sales-sector-settings.mysql.test.ts',
   'server/messaging/inbound.mysql.test.ts', 'server/messaging/inbound-process.mysql.test.ts',
 ];

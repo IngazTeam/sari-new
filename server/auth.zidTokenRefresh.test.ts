@@ -39,7 +39,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid token refresh lifecycle (databas
       email: `zid-refresh-${nonce}@example.test`,
       passwordHash: '$2b$10$test.only.hash.not.used.for.login',
       businessName: 'Zid Refresh Store',
-      phone: '+966500000008',
+      phone: `+9665${(Number.parseInt(nonce.slice(0, 8), 16) % 100_000_000).toString().padStart(8, '0')}`,
       acceptedTerms: true,
       acceptedPrivacy: true,
       marketingConsent: false,

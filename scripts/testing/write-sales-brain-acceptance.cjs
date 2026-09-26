@@ -715,6 +715,10 @@ Object.assign(entries, {
  B016:[entries.B016[0]+' أغلقت فجوة اعتماد زد قبل POST: يعاد ربط العميل والمحادثة والمصدر والمزوّد والعملة وتفاصيل الاتفاق ونص الموافقة بعد قراءة خيارات المزوّد، وترفض آثار محاولة قديمة على عرض جاهز. تقفل رسالة الموافقة حتى تثبيت الحجز، وتراجع الصلاحية الزمنية في UPDATE الفعلي وتتحقق نتيجته.','server/ai/zid-checkout-agreements.mysql.test.ts'],
  B064:[entries.B064[0]+' أثبتت 12 حالة قبل الإصلاح أن POST كان ينفذ بعد تغير الاتفاق أو الموافقة أثناء انتظار الخيارات. تغطي 25 حالة جديدة المنع قبل الاتصال، وعدم تسريب نتيجة تغيرت هويتها، والحجز المتزامن، وانتظار الكتالوج، وقفل الموافقة، وانتهاء العرض وفقد إقرار حجز التنفيذ. لا اتصال إنتاجي.','server/ai/zid-checkout-agreements.mysql.test.ts'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' يمنع الاتصال الرئيسي المعطل استخدام مفاتيح زد القديمة، وتطابق هوية الاتصال والمتجر والمفاتيح الفعلية قبل خيارات المزوّد وعند حفظ العرض وحجز التنفيذ واعتماد التسوية. تثبت أقفال SQL السلطة حتى commit وتمنع إدخال اتصال بديل أثناء اعتماد الاتصال القديم.','server/ai/zid-provider-authority.mysql.test.ts'],
+ B064:[entries.B064[0]+' أثبتت 9 حالات خلل صلاحية الاتصال قبل الإصلاح؛ تغطي 31 حالة جديدة تعطيل وتبديل الاتصال والمفاتيح وانتظار الشبكة والكتالوج وأقفال اتصالات SQL متنافسة. أضيفت اختبارات التوافق وتجديد المفاتيح الستة القائمة إلى القبول بعد إصلاح تصادم أرقامها الاصطناعية.','server/ai/zid-checkout-agreements.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

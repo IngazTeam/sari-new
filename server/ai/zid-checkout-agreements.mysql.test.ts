@@ -34,7 +34,9 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     identity = { merchantId: fixture.merchantId, conversationId: c.insertId, incomingMessageId: m.insertId, customerPhone: phone };
     await query(`INSERT INTO zid_products (merchant_id, zid_product_id, zid_sku, name_ar, price, quantity)
       VALUES (?, 'Z1', 'SKU1', 'سماعة', 100, 10)`, [fixture.merchantId]);
-    mocks.settings.mockResolvedValue({ isActive: 1, storeId: '11', accessToken: 'fixture-only', managerToken: 'fixture-only' });
+    const settings = await query(`INSERT INTO zid_settings (merchant_id,store_id,access_token,manager_token,is_active)
+      VALUES (?,'11','fixture-only','fixture-only',1)`, [fixture.merchantId]);
+    mocks.settings.mockResolvedValue({ id: settings.insertId, merchantId: fixture.merchantId, isActive: 1, storeId: '11', accessToken: 'fixture-only', managerToken: 'fixture-only' });
     mocks.payments.mockResolvedValue({ payment_methods: [payment] });
     mocks.shipping.mockResolvedValue({ shipping_methods: [shipping] });
     mocks.create.mockResolvedValue(response()); mocks.save.mockResolvedValue({ id: 1 });
@@ -66,6 +68,61 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     return { q: saved, remote, input: { merchantId: fixture.merchantId, actorUserId: fixture.userId, quotationId: q.id, orderId: 999, reviewed: true as const } };
   }
   const orderFacts=()=>query('SELECT * FROM ai_sales_order_facts WHERE merchant_id=? ORDER BY id',[fixture.merchantId]);
+  it.each(['inactive','deleted','store','authorization','manager','canonical-disabled','canonical-replaced','merchant-disabled'])
+    ('provider authority: refuses %s changes during options before POST',async mode=>{
+      const q=await offer(),consent=await incoming();mocks.payments.mockImplementationOnce(async()=>{
+        if(mode==='inactive')await query('UPDATE zid_settings SET is_active=0 WHERE merchant_id=?',[fixture.merchantId]);
+        if(mode==='deleted')await query('DELETE FROM zid_settings WHERE merchant_id=?',[fixture.merchantId]);
+        if(mode==='store')await query("UPDATE zid_settings SET store_id='12' WHERE merchant_id=?",[fixture.merchantId]);
+        if(mode==='authorization')await query("UPDATE zid_settings SET manager_token='changed' WHERE merchant_id=?",[fixture.merchantId]);
+        if(mode==='manager')await query("UPDATE zid_settings SET access_token='changed' WHERE merchant_id=?",[fixture.merchantId]);
+        if(mode.startsWith('canonical-'))await query(`INSERT INTO platform_integrations (merchant_id,platform_type,is_active,access_token,settings)
+          VALUES (?,'zid',?,'fixture-only',?)`,[fixture.merchantId,mode==='canonical-disabled'?0:1,JSON.stringify({storeId:'11',managerToken:'fixture-only'})]);
+        if(mode==='merchant-disabled')await query("UPDATE merchants SET status='suspended' WHERE id=?",[fixture.merchantId]);
+        return {payment_methods:[payment]};
+      });
+      await acceptZidCheckout(consent,q.id).catch(()=>undefined);
+      expect(mocks.create).not.toHaveBeenCalled();expect(mocks.save).not.toHaveBeenCalled();expect(await orderFacts()).toHaveLength(0);
+      expect((await quotes())[0]).toMatchObject({execution_state:'ready',execution_attempt_id:null});
+    });
+  it.each(['new','replayed'])('provider authority: rejects a %s offer if the connection was revoked during options',async mode=>{
+    if(mode==='replayed')await offer();
+    mocks.shipping.mockImplementationOnce(async()=>{
+      await query('UPDATE zid_settings SET is_active=0 WHERE merchant_id=?',[fixture.merchantId]);return {shipping_methods:[shipping]};
+    });
+    await expect(prepareZidCheckout(identity,selection())).rejects.toThrow('Zid connection changed');
+    expect(await quotes()).toHaveLength(mode==='new'?0:1);expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it.each(['store','credentials'])('provider authority: rejects a stale adapter %s read before requesting options',async mode=>{
+    const q=await offer(),consent=await incoming();mocks.payments.mockClear();mocks.shipping.mockClear();
+    await query(mode==='store'?"UPDATE zid_settings SET store_id='12' WHERE merchant_id=?":"UPDATE zid_settings SET manager_token='rotated' WHERE merchant_id=?",[fixture.merchantId]);
+    await expect(acceptZidCheckout(consent,q.id)).rejects.toThrow('Zid connection changed');
+    expect(mocks.payments).not.toHaveBeenCalled();expect(mocks.shipping).not.toHaveBeenCalled();expect(mocks.create).not.toHaveBeenCalled();
+    expect((await quotes())[0].execution_state).toBe('ready');
+  });
+  it('provider authority: rechecks after waiting for the catalog, before claiming execution',async()=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let changed=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,key){if(key==='execute')return async(sql:any,args:any)=>{
+      const result=await target.execute(sql,args);if(!changed&&String(sql).includes('FROM zid_products')){changed=true;await query('UPDATE zid_settings SET is_active=0 WHERE merchant_id=?',[fixture.merchantId]);}return result;
+    };const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await expect(acceptZidCheckout(consent,q.id)).rejects.toThrow('Zid connection changed');
+    expect(changed).toBe(true);expect(mocks.create).not.toHaveBeenCalled();expect((await quotes())[0].execution_state).toBe('ready');
+  });
+  it('provider authority: a changed connection during reconciliation cannot certify or project the GET result',async()=>{
+    const {input,remote}=await unknown();mocks.view.mockImplementationOnce(async()=>{
+      await query('UPDATE zid_settings SET is_active=0 WHERE merchant_id=?',[fixture.merchantId]);return remote;
+    });
+    await expect(reconcileZidCheckout(input)).rejects.toThrow('Zid connection changed');
+    expect(mocks.project).not.toHaveBeenCalled();expect(await orderFacts()).toHaveLength(0);expect((await quotes())[0].execution_state).toBe('unknown');
+  });
+  it('provider authority: retains a verified dispatched result if the connection is disabled after claim commit',async()=>{
+    const q=await offer(),consent=await incoming();mocks.create.mockImplementationOnce(async()=>{
+      await query('UPDATE zid_settings SET is_active=0 WHERE merchant_id=?',[fixture.merchantId]);return response();
+    });
+    expect(await acceptZidCheckout(consent,q.id)).toContain('FIXTURE-999');
+    expect(await orderFacts()).toHaveLength(1);expect((await quotes())[0].execution_state).toBe('succeeded');
+    expect(await acceptZidCheckout(consent,q.id)).toContain('FIXTURE-999');expect(mocks.create).toHaveBeenCalledOnce();
+  });
   it.each(['phone','conversation','source','provider','currency','snapshot-address','snapshot-store','consent','attempt','result','order-key','consent-text'])
     ('claim authority: refuses %s changes during payment-option lookup before any POST',async mode=>{
       const q=await offer(),consent=await incoming();
@@ -189,7 +246,10 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
   });
   it.each(['same','different'])('order evidence: scopes a repeated order number to the %s store',async kind=>{
     const q=await offer();await acceptZidCheckout(await incoming(),q.id);const [first]=await orderFacts();
-    const store=kind==='same'?'11':'12';mocks.settings.mockResolvedValue({isActive:1,storeId:store,accessToken:'fixture-only',managerToken:'fixture-only'});
+    const store=kind==='same'?'11':'12';
+    await query('UPDATE zid_settings SET store_id=? WHERE merchant_id=?',[store,fixture.merchantId]);
+    const [settings]=await query('SELECT id FROM zid_settings WHERE merchant_id=?',[fixture.merchantId]);
+    mocks.settings.mockResolvedValue({id:settings.id,merchantId:fixture.merchantId,isActive:1,storeId:store,accessToken:'fixture-only',managerToken:'fixture-only'});
     mocks.create.mockResolvedValue({order:{...response().order,store_id:Number(store)}});
     identity=await incoming('أريد شراء سماعة أخرى');const text=await prepareZidCheckout(identity,selection()),second=(await quotes()).at(-1);
     const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text});await stageInteraction(reply);await finishInteractionDelivery(reply,true);
@@ -361,7 +421,11 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
   });
   it.each(['store', 'shipping fee', 'method id', 'expiry', 'human', 'newer message'])('revalidates %s before the external write', async change => {
     const q = await offer(), consent = await incoming();
-    if (change === 'store') mocks.settings.mockResolvedValue({ isActive: 1, storeId: '12', accessToken: 'fixture', managerToken: 'fixture' });
+    if (change === 'store') {
+      await query("UPDATE zid_settings SET store_id='12' WHERE merchant_id=?",[fixture.merchantId]);
+      const [settings]=await query('SELECT id FROM zid_settings WHERE merchant_id=?',[fixture.merchantId]);
+      mocks.settings.mockResolvedValue({ id:settings.id, merchantId:fixture.merchantId, isActive: 1, storeId: '12', accessToken: 'fixture-only', managerToken: 'fixture-only' });
+    }
     if (change === 'shipping fee') mocks.shipping.mockResolvedValue({ shipping_methods: [{ ...shipping, fees: 20 }] });
     if (change === 'method id') mocks.payments.mockResolvedValue({ payment_methods: [{ ...payment, id: 22 }] });
     if (change === 'expiry') await query('UPDATE sales_quotations SET offer_expires_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) WHERE id = ?', [q.id]);

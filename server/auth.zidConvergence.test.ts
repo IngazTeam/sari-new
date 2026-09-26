@@ -34,7 +34,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid canonical/legacy convergence (da
       email: `zid-convergence-${nonce}@example.test`,
       passwordHash: '$2b$10$test.only.hash.not.used.for.login',
       businessName: 'Zid Convergence Store',
-      phone: '+966500000007',
+      phone: `+9665${(Number.parseInt(nonce.slice(0, 8), 16) % 100_000_000).toString().padStart(8, '0')}`,
       acceptedTerms: true,
       acceptedPrivacy: true,
       marketingConsent: false,
