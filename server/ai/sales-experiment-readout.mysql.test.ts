@@ -9,6 +9,7 @@ import { applyTapOrderPaymentState } from '../payment/order-payment-state';
 import { attributeSalesPaymentFact } from './sales-payment-attribution';
 import { inspectSalesExperimentReadout,SalesExperimentReadoutAccessDenied,SalesExperimentReadoutNotReady } from './sales-experiment-readout';
 import { withdrawSalesExperimentProtocol } from './sales-experiment-protocol';
+import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundle';
 
 const state = vi.hoisted(() => ({unix:null as number|null,arm:0}));
 vi.mock('node:crypto', async original => ({...await original<typeof import('node:crypto')>(),randomInt:() => state.arm}));
@@ -202,6 +203,76 @@ describe.skipIf(!process.env.DATABASE_URL)('experiment readout against real paym
     await admin();await capture();await attribute();const before=await facts();let failed=0;
     await expect(report({failRollback:()=>failed++})).rejects.toThrow('Synthetic uncertain read rollback');expect(failed).toBe(2);
     expect(await facts()).toEqual(before);expect((await report()).paymentEvidence.groups[0].capturedMinor).toBe(23000);expect(fetch).not.toHaveBeenCalled();
+  });
+
+  const staff=(r:Awaited<ReturnType<typeof report>>)=>r.staffEvidence.arms[0];
+  async function staffMessage(sender='merchant',conversation=conversationId,direction='outgoing',at=state.unix!){
+    return query('INSERT INTO messages (conversationId,direction,sender_type,messageType,content,externalId,createdAt) VALUES (?,?,?,\'text\',\'PRIVATE STAFF CONTENT\',?,?)',
+      [conversation,direction,sender,'private-staff-'+randomUUID(),new Date(at*1000).toISOString().slice(0,19).replace('T',' ')]);
+  }
+  it('staff evidence: excludes AI and incoming messages while separating unknown outgoing authors',async()=>{
+    await admin();for(const role of ['merchant','merchant','unknown','customer','assistant'])await staffMessage(role);await staffMessage('merchant',conversationId,'incoming');
+    const before=await query('SELECT * FROM messages WHERE conversationId=? ORDER BY id',[conversationId]);
+    const r=await report();expect(staff(r)).toMatchObject({assignedCustomers:1,customersWithRecordedStaffMessages:1,customersWithUnknownOutgoingMessages:1,
+      messages:{staffWithinWindow:2,unknownWithinWindow:2,staffAtBoundary:0,unknownAtBoundary:0}});
+    expect(await query('SELECT * FROM messages WHERE conversationId=? ORDER BY id',[conversationId])).toEqual(before);
+    for(const secret of [phone,'PRIVATE STAFF CONTENT','private-staff-'])expect(JSON.stringify(r)).not.toContain(secret);
+    expect(r.humanAssistance).toBe('unmeasured');expect(fetch).not.toHaveBeenCalled();
+  });
+  it('staff evidence: a live takeover with no successful message is not assistance',async()=>{
+    await admin();await query('UPDATE conversations SET human_takeover=1,human_takeover_at=UTC_TIMESTAMP() WHERE id=?',[conversationId]);
+    expect(staff(await report())).toMatchObject({customersWithRecordedStaffMessages:0,customersWithUnavailableConversationIdentity:0});
+  });
+  it('staff evidence: unions real registered conversations for the same normalized customer',async()=>{
+    await admin();const conv=await query("INSERT INTO conversations (merchantId,customerPhone,status,deal_stage) VALUES (?,?,'active','new')",[owner.merchantId,'+'+phone]);
+    const incoming=await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text','أريد عرضًا مناسبًا',?)",[conv.insertId,new Date(state.unix!*1000).toISOString().slice(0,19).replace('T',' ')]);
+    const reused=await assignSalesExperimentCustomer(owner.merchantId,{protocolId:seeded.protocol.protocolId,launchId:launch.launchId,launchDigest:launch.launchDigest,conversationId:conv.insertId,incomingMessageId:incoming.insertId});
+    expect(reused.kind).toBe('assigned');if(reused.kind==='assigned')expect(reused.receipt.assignmentId).toBe(assignment.assignmentId);
+    await staffMessage();await staffMessage('merchant',conv.insertId);
+    expect(staff(await report())).toMatchObject({assignedCustomers:1,customersWithRecordedStaffMessages:1,messages:{staffWithinWindow:2}});
+  });
+  it.each(['deleted','changed','missing-binding'])('staff evidence: %s identity does not remove the denominator or produce a staff count',async kind=>{
+    await admin();await staffMessage();const before=await report();
+    if(kind==='deleted')await query('DELETE FROM conversations WHERE id=?',[conversationId]);
+    else if(kind==='changed')await query("UPDATE conversations SET customerPhone='966555555555' WHERE id=?",[conversationId]);
+    else await query('DELETE FROM ai_sales_experiment_assignment_conversations WHERE assignment_id=?',[assignment.assignmentId]);
+    const after=await report();expect(staff(after)).toMatchObject({assignedCustomers:1,customersWithRecordedStaffMessages:0,customersWithUnavailableConversationIdentity:1});
+    expect(after.evidenceSetDigest).not.toBe(before.evidenceSetDigest);expect(after.outcomeEvidence.decision.blockers).toContain('human_assistance_unmeasured');
+  });
+  it('staff evidence: excludes unregistered and foreign conversations even when the phone matches',async()=>{
+    await admin();for(const merchant of [owner.merchantId,reviewer.merchantId]){
+      const conv=await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')",[merchant,phone]);await staffMessage('merchant',conv.insertId);
+    }
+    expect(staff(await report()).customersWithRecordedStaffMessages).toBe(0);
+  });
+  it('staff evidence: a foreign conversation reference cannot expose another tenant message',async()=>{
+    await admin();const conv=await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')",[reviewer.merchantId,phone]);await staffMessage('merchant',conv.insertId);
+    await query('UPDATE ai_sales_experiment_assignment_conversations SET conversation_reference=? WHERE assignment_id=?',[conv.insertId,assignment.assignmentId]);
+    expect(staff(await report())).toMatchObject({customersWithRecordedStaffMessages:0,customersWithUnavailableConversationIdentity:1});
+  });
+  it('staff evidence: rejects a corrupted frozen customer binding',async()=>{
+    await admin();await staffMessage();await query("UPDATE ai_sales_experiment_assignment_conversations SET customer_key=REPEAT('b',64) WHERE assignment_id=?",[assignment.assignmentId]);
+    await expect(report()).rejects.toThrow();
+  });
+  it('staff evidence: keeps a concurrent message insertion out of the current snapshot',async()=>{
+    await admin();const g=gate(),reading=report({pause:g.pause});try{await g.atRead;await staffMessage();}finally{g.resume();}
+    const old=await reading,next=await report();expect(staff(old).customersWithRecordedStaffMessages).toBe(0);expect(staff(next).customersWithRecordedStaffMessages).toBe(1);
+    expect(next.evidenceSetDigest).not.toBe(old.evidenceSetDigest);
+  });
+  it('staff evidence: keeps identity and message retention in the same snapshot',async()=>{
+    await admin();await staffMessage();const g=gate(),reading=report({pause:g.pause});try{await g.atRead;await query('DELETE FROM conversations WHERE id=?',[conversationId]);}finally{g.resume();}
+    expect(staff(await reading)).toMatchObject({customersWithRecordedStaffMessages:1,customersWithUnavailableConversationIdentity:0});
+    expect(staff(await report())).toMatchObject({customersWithRecordedStaffMessages:0,customersWithUnavailableConversationIdentity:1});
+  });
+  it('staff evidence: preserves second precision ambiguity at both millisecond observation boundaries',async()=>{
+    await admin();const s={...assignment.snapshot,assignedAt:new Date(Date.parse(assignment.snapshot.assignedAt)+500).toISOString(),
+      observationEndsAt:new Date(Date.parse(assignment.snapshot.observationEndsAt)+500).toISOString()};
+    await query('UPDATE ai_sales_experiment_assignments SET snapshot=?,assignment_digest=?,observation_ends_at=? WHERE id=?',
+      [JSON.stringify(s),hash(s),s.observationEndsAt.slice(0,23).replace('T',' '),assignment.assignmentId]);
+    await staffMessage('merchant',conversationId,'outgoing',Math.floor(Date.parse(s.assignedAt)/1000));
+    await staffMessage('unknown',conversationId,'outgoing',Math.floor(Date.parse(s.observationEndsAt)/1000));state.unix=Date.parse(s.decisionNotBefore)/1000;
+    expect(staff(await report())).toMatchObject({customersWithRecordedStaffMessages:0,customersWithUnknownOutgoingMessages:0,customersWithBoundaryMessages:1,
+      messages:{staffWithinWindow:0,unknownWithinWindow:0,staffAtBoundary:1,unknownAtBoundary:1}});
   });
 
 

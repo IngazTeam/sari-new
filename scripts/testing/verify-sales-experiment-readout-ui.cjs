@@ -32,7 +32,7 @@ async function main() {
     const read=async()=>{await page.click('[data-readout-read]');await page.waitForSelector('[data-readout-result]');};
     const check=async()=>{
       const state=await page.$eval('[data-readout-page]',node=>({overflow:document.documentElement.scrollWidth>innerWidth,
-        raw:/salesReadout\.|salesOutcome\.|salesEvidence\.|merchantUx\.|\{\{/.test(node.innerText),private:node.innerText.includes('private server'),
+        raw:/salesReadout\.|salesOutcome\.|salesStaff\.|salesEvidence\.|merchantUx\.|\{\{/.test(node.innerText),private:node.innerText.includes('private server'),
         controls:[...node.querySelectorAll('input,button,summary,a')].filter(n=>n.getClientRects().length).map(n=>({height:n.getBoundingClientRect().height,font:parseFloat(getComputedStyle(n).fontSize),input:n.tagName==='INPUT',label:n.tagName!=='INPUT'||!!document.querySelector(`label[for="${CSS.escape(n.id)}"]`)}))}));
       assert.equal(state.overflow,false);assert.equal(state.raw,false);assert.equal(state.private,false);assert.ok(state.controls.every(n=>n.height>=44&&n.label));assert.ok(state.controls.filter(n=>n.input).every(n=>n.font>=16));
       assert.deepEqual(await page.evaluate(()=>window.__readoutWrites),[]);assert.equal(await page.evaluate(()=>window.__readoutXss),undefined);
@@ -48,6 +48,9 @@ async function main() {
       await page.focus('[data-outcome-counts] summary');await page.keyboard.press('Enter');
       await page.focus('[data-outcome-planning] summary');await page.keyboard.press('Enter');
       await page.focus('[data-outcome-decision] summary');await page.keyboard.press('Enter');await check();
+      await page.focus('[data-staff-details] summary');await page.keyboard.press('Enter');await check();
+      assert.equal(await page.$eval('[data-staff-details]',n=>n.open),true);
+      assert.equal(await page.$eval('[data-staff-arm=baseline] [data-staff-metric=staffMessages]',n=>n.textContent),lang==='ar'?'٢':'2');
       assert.equal(await page.$eval('[data-readout-exposure-arm=baseline] [data-readout-metric=acceptanceBefore]',n=>n.textContent),lang==='ar'?'١':'1');
       assert.equal(await page.$eval('[data-readout-orders-link]',n=>n.getAttribute('href')),'/admin/sales-evidence?merchantId=1');
       if([375,1440].includes(width))await page.screenshot({path:path.join(output,`readout-${lang}-${width}.png`),fullPage:true});record('normalized_keyboard_details_responsive',{width,lang});
@@ -56,10 +59,29 @@ async function main() {
         await (await page.$('[data-readout-finance=baseline-SAR-order]')).screenshot({path:path.join(output,'readout-ar-mobile-finance.png')});
         await (await page.$('[data-readout-exposure-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-exposure.png')});
         await (await page.$('[data-outcome-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-outcome.png')});
+        await (await page.$('[data-staff-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-staff.png')});
       }
       await set({protocol:'5'});assert.equal(await page.$('[data-readout-result]'),null);assert.equal((await page.evaluate(()=>window.__readoutReads)).length,1);record('protocol_edit_discards_previous_read',{width,lang});
     }
     await page.setViewport({width:375,height:812,isMobile:true,hasTouch:true});
+    for(const lang of ['ar','en'])for(const mode of ['staff-mixed','staff-unknown','staff-missing','staff-boundary']){
+      await visit(mode,lang);await read();await page.click('[data-staff-details] summary');await check();
+      const metric=async key=>page.$eval(`[data-staff-arm=baseline] [data-staff-metric=${key}]`,n=>n.textContent);
+      assert.equal(await metric('withStaff'),mode==='staff-mixed'?(lang==='ar'?'١':'1'):(lang==='ar'?'٠':'0'));
+      if(mode==='staff-mixed')assert.equal(await metric('staffMessages'),lang==='ar'?'٢':'2');
+      if(mode==='staff-unknown')assert.equal(await metric('unknownCustomers'),lang==='ar'?'١':'1');
+      if(mode==='staff-missing')assert.equal(await metric('unavailableCustomers'),lang==='ar'?'١':'1');
+      if(mode==='staff-boundary')for(const key of ['boundaryCustomers','staffBoundary','unknownBoundary'])assert.equal(await metric(key),lang==='ar'?'١':'1');
+      await page.click('[data-outcome-decision] summary');assert.ok(await page.$('[data-outcome-blocker=human_assistance_unmeasured]'));
+      assert.match(await page.$eval('[data-staff-limit]',n=>n.textContent),lang==='ar'?/وليست قياسًا/:/not a measurement/);
+      record('staff_message_evidence_'+mode,{lang,width:375});
+    }
+    await visit('staff-refresh','en');await read();assert.equal(await page.$eval('[data-staff-arm=baseline] [data-staff-metric=withStaff]',n=>n.textContent),'1');
+    await page.click('[data-readout-refresh]');await page.waitForSelector('[data-readout-loading]');assert.equal(await page.$('[data-readout-staff]'),null);
+    await page.waitForSelector('[data-readout-staff]');await page.click('[data-staff-details] summary');
+    assert.equal(await page.$eval('[data-staff-arm=baseline] [data-staff-metric=withStaff]',n=>n.textContent),'0');
+    assert.equal(await page.$eval('[data-staff-arm=baseline] [data-staff-metric=unavailableCustomers]',n=>n.textContent),'1');
+    await check();record('staff_identity_loss_refresh_discards_prior_counts');
     for(const lang of ['ar','en'])for(const mode of ['outcome-mixed','bookings-only','before-decision','pending','empty','withdrawn','minimum']){
       await visit(mode,lang);await read();await page.click('[data-outcome-decision] summary');await page.click('[data-outcome-planning] summary');
       for(const el of await page.$$('[data-outcome-counts] summary'))await el.click();await check();
@@ -109,7 +131,7 @@ async function main() {
     await page.click('[data-readout-prev]');await page.click('[data-readout-prev]');assert.equal(await page.$eval('[data-readout-prev]',n=>n.disabled),true);assert.equal((await page.evaluate(()=>window.__readoutReads)).length,1);record('all_financial_cards_paginated_without_slicing_denominator');
     await visit('many-refresh','en');await read();await page.click('[data-readout-next]');await page.click('[data-readout-next]');await page.click('[data-readout-refresh]');await page.waitForSelector('[data-readout-loading]');await page.waitForSelector('[data-readout-result]');
     assert.equal(await page.$$eval('[data-readout-finance]',n=>n.length),1);assert.match(await page.$eval('[data-readout-page-count]',n=>n.textContent),/Cards 1–1 of 1/);record('new_snapshot_resets_financial_page');
-    for(const mode of ['FORBIDDEN','UNAUTHORIZED','PRECONDITION_FAILED','INTERNAL_SERVER_ERROR','foreign','wrong-protocol','unsupported','inconsistent','outcome-inconsistent','xss']){
+    for(const mode of ['FORBIDDEN','UNAUTHORIZED','PRECONDITION_FAILED','INTERNAL_SERVER_ERROR','foreign','wrong-protocol','unsupported','inconsistent','outcome-inconsistent','staff-inconsistent','xss']){
       await visit(mode);await page.click('[data-readout-read]');await page.waitForSelector('[data-readout-error]');assert.equal(await page.$('[data-readout-result]'),null);await check();record(`${mode}_safe_error`);
     }
     for(const code of ['FORBIDDEN','UNAUTHORIZED','INTERNAL_SERVER_ERROR']){

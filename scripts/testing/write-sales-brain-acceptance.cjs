@@ -770,6 +770,11 @@ Object.assign(entries, {
  B046:[entries.B046[0]+' أضيف عرض حساب العملاء ومقامه وتفاصيل الاسترجاع والحجوزات فقط، والنسبة الوصفية للسجل، وأسباب عدم أهلية الاعتماد. غياب سجل الطلب لا يسمى خسارة، والحساب لا يثبت اكتمال المصادر أو تفوق سياسة ولا يستبدل الاستدلال الإحصائي.','client/src/pages/admin/SalesExperimentEvidence.tsx'],
  B064:[entries.B064[0]+' يتحقق عقد العرض من اتحاد أعداد العملاء مع مجموعات المال وتسلسل القبض، وحالة النافذة والانسحاب والموانع، ويرفض إسقاط مانع اعتماد أو إدخال نسبة مبكرة. اختبارات SQL تثبت تعدد الطلبات والعملات والحجوزات والاسترداد وبقاء اللقطة متسقة أثناء التغيير.','server/ai/sales-experiment-readout.mysql.test.ts'],
 });
+Object.assign(entries, {
+ B046:[entries.B046[0]+' تعرض التجربة الآن أعداد الردود البشرية المسجلة في المحادثات المرتبطة بالتخصيص، مع فصل الكاتب المجهول والوقت عند حدود المتابعة وفقد هوية المحادثة. لا تُنسب مبيعات للموظف من وقت الرسالة أو حالة التدخل وحدهما؛ إسناد المساعدة البشرية للنتائج ما زال مفتوحًا.','server/ai/sales-experiment-readout-staff-pentest.test.ts'],
+ B062:[entries.B062[0]+' لا يعد رد الذكاء الاصطناعي الذي راجعه موظف ردًا بشريًا، ولا يعني غياب رسالة موظف بيعًا ذاتيًا. يعتمد العرض على المحادثات المسجلة وفحص الهوية الحالية مع إظهار حدود التاريخ والاحتفاظ؛ لا اكتمال للمصادر ولا قياس سببي.','server/ai/sales-experiment-readout-staff.ts'],
+ B064:[entries.B064[0]+' تختبر MySQL بقاء هوية المحادثة ورسائلها في لقطة واحدة أثناء الإدخال والحذف، وعزل التاجر والهوية وتوحيد العميل عبر محادثاته المسجلة. يرفض عقد العرض ادعاء قياس المساعدة أو اكتمالها من أعداد الرسائل.','server/ai/sales-experiment-readout.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

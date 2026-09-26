@@ -4,6 +4,7 @@ const root=process.cwd(),output=path.resolve(withUi?'.tmp/sales-experiment-reado
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
+  'server/ai/sales-experiment-readout-staff-pentest.test.ts',
   'server/ai/sales-experiment-readout-outcomes-pentest.test.ts','server/sales-experiment-sample-pentest.test.ts',
   'server/ai/sales-experiment-readout-exposures-pentest.test.ts','server/ai/sales-experiment-exposure-pentest.test.ts',
   'server/ai/sales-experiment-readout-pentest.test.ts','server/sales-experiment-readout-access-pentest.test.ts',
@@ -24,6 +25,7 @@ if(withUi)unit.push('server/sales-experiment-readout-ui-pentest.test.ts','server
 const extra=['server/ai/sales-experiment-readout-contract.ts','server/ai/sales-experiment-readout.ts','server/tests/helpers/sales-readout.ts',
   'server/ai/sales-experiment-readout-exposures.ts','shared/sales-experiment-exposure-readout.ts',
   'server/ai/sales-experiment-readout-outcomes.ts','shared/sales-experiment-outcome-readout.ts',
+  'server/ai/sales-experiment-readout-staff.ts','shared/sales-experiment-staff-readout.ts',
   'scripts/testing/verify-sales-experiment-readout.cjs',...unit,...database];
 if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
   'scripts/testing/verify-sales-experiment-readout-ui.cjs','scripts/testing/fixtures/sales-experiment-readout-ui-entry.tsx','scripts/testing/fixtures/sales-experiment-readout-data.ts');

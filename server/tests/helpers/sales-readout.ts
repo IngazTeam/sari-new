@@ -57,5 +57,12 @@ export function readoutFixture() {
       delivery:{id:n,merchant_id:1,generation_id:n,message_reference:n,actor_user_id:1,request_id:authorization.requestId,basis_digest:authorization.basisDigest,
         authorization_digest:authorizationDigest,state:'dispatching',dispatch_started_at:dispatch,snapshot:authorization}};
   }
-  return {protocol,assignment,capture,refund,exposure,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[],exposures:[] as any[],deliveries:[] as any[]}};
+  function binding(a=assignment(),conversation=a.id,n=conversation){
+    return {id:n,merchant_id:1,protocol_id:4,conversation_reference:conversation,assignment_id:a.id,customer_key:a.customer_key,
+      current_conversation_id:conversation,current_customer_phone:phone(a.id)};
+  }
+  function staffMessage(n=1,conversation=1,sender='merchant',at='2026-09-04T00:00:00.000Z'){
+    return {id:n,conversationId:conversation,direction:'outgoing',sender_type:sender,created_utc:at};
+  }
+  return {protocol,assignment,capture,refund,exposure,binding,staffMessage,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[],exposures:[] as any[],deliveries:[] as any[],conversationBindings:[] as any[],staffMessages:[] as any[]}};
 }

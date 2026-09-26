@@ -4,7 +4,7 @@ import { policyArtifactDigest as hash } from '../../../server/ai/learning-policy
 
 export const readoutModes=['mixed','empty','unmeasured','refund','late','pending','review','unassigned','huge','live','withdrawn','minimum','many',
   'exposure-before','exposure-at','exposure-flight','exposure-after','exposure-mock','exposure-regression','exposure-declined','exposure-pending',
-  'outcome-mixed','bookings-only','before-decision'] as const;
+  'outcome-mixed','bookings-only','before-decision','staff-mixed','staff-unknown','staff-missing','staff-boundary'] as const;
 export function salesReadoutFixture(mode:string='mixed'){
   const f=readoutFixture(),a=f.rows.assignments[0],c=f.capture(a);
   let readAt=readoutDates.read;
@@ -41,6 +41,21 @@ export function salesReadoutFixture(mode:string='mixed'){
     const s={version:'sales-experiment-withdrawal.v1',merchantId:1,protocolId:4,protocolDigest:f.protocol.protocol_digest,
       reason:'Withdraw the synthetic experiment without claiming a winning policy.',winner:null};
     f.protocol.state='withdrawn';f.rows.withdrawals=[{merchant_id:1,protocol_id:4,withdrawal:s,withdrawal_digest:hash(s)}];
+  }
+  f.rows.conversationBindings=f.rows.assignments.map(a=>f.binding(a));
+  if(mode==='staff-mixed'||mode==='mixed'){
+    f.rows.conversationBindings.push(f.binding(a,99));
+    f.rows.staffMessages=[f.staffMessage(),f.staffMessage(2,99),f.staffMessage(3,2,'unknown')];
+  }
+  if(mode==='staff-unknown')f.rows.staffMessages=[f.staffMessage(1,1,'unknown')];
+  if(mode==='staff-missing'){
+    Object.assign(f.rows.conversationBindings[0],{current_conversation_id:null,current_customer_phone:null});
+  }
+  if(mode==='staff-boundary'){
+    a.snapshot.assignedAt='2026-09-03T00:00:01.500Z';a.snapshot.observationEndsAt='2026-09-17T00:00:01.500Z';
+    a.observation_utc=a.snapshot.observationEndsAt;a.assignment_digest=hash(a.snapshot);
+    f.rows.payments=[];f.rows.exposures=[];f.rows.deliveries=[];
+    f.rows.staffMessages=[f.staffMessage(1,1,'merchant','2026-09-03T00:00:01.000Z'),f.staffMessage(2,1,'unknown','2026-09-17T00:00:01.000Z')];
   }
   return {...buildSalesExperimentReadout({merchantId:1,protocolId:4},f.rows,readAt),consistency:'single_database_snapshot' as const};
 }

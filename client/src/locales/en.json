@@ -8850,5 +8850,23 @@
     "blockGuardrails": "Margin, refunds, opt-outs and other guardrails have not been fully measured.",
     "blockInference": "Statistical inference on a fully measured outcome has not been performed.",
     "blockReview": "An independent result review under the frozen plan is required before policy activation."
+  },
+  "salesStaff": {
+    "title": "Recorded staff replies",
+    "help": "This section checks outgoing message roles in conversations registered to the experiment, within each customer's observation window. An AI reply reviewed by a staff member is not counted as a staff reply.",
+    "withStaff": "Customers with a recorded staff reply within the window",
+    "withoutStaff": "Customers without a recorded staff reply within the window",
+    "noProof": "No recorded reply does not prove a sale had no human assistance. The uncertainty groups below can overlap; do not add them to create a new denominator.",
+    "details": "Message details and evidence limits",
+    "unknownCustomers": "Customers with outgoing messages of unknown authorship",
+    "boundaryCustomers": "Customers with messages at window boundaries",
+    "unavailableCustomers": "Customers with conversation identity unavailable for verification",
+    "staffMessages": "Staff replies recorded within the window",
+    "unknownMessages": "Unknown-author messages within the window",
+    "staffBoundary": "Staff replies at window boundaries",
+    "unknownBoundary": "Unknown-author messages at window boundaries",
+    "boundaryHelp": "Message time is stored to the second. If that second overlaps the start or end of observation, the message is reported at the boundary rather than counted inside the window.",
+    "identityHelp": "The check uses saved conversation bindings and the current customer identity. A deleted conversation, changed number or missing binding is a gap. This does not establish complete history or rule out earlier identity changes.",
+    "salesLimit": "These are conversation record counts, not a measurement of staff-assisted sales. Message time may refer to an earlier send attempt; it does not prove acceptance, delivery or precedence over payment. A takeover flag alone is not evidence of actual assistance."
   }
 }

@@ -86,6 +86,7 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
       </dl><p className="mt-3 text-sm leading-7">{r.enrollmentClosed?t('salesReadout.enrollmentClosed'):t('salesReadout.enrollmentNotClosed')} · {r.decisionTimeReached?t('salesReadout.decisionReached'):t('salesReadout.decisionPending')}</p>
     </details>
     <ReadoutOutcomes report={r} locale={locale}/>
+    <ReadoutStaff report={r} locale={locale}/>
     <section data-readout-exposures className="space-y-3" aria-label={t('salesReadout.exposureTitle')}>
       <h3 className="text-lg font-semibold">{t('salesReadout.exposureTitle')}</h3>
       <p className="text-sm leading-7 text-muted-foreground">{t('salesReadout.exposureHelp')}</p>
@@ -155,6 +156,32 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
     </details>
     <Button asChild variant="outline" className="min-h-11 h-auto whitespace-normal"><Link data-readout-orders-link href={`/admin/sales-evidence?merchantId=${r.merchantId}`}>{t('salesEvidence.openMerchant')}</Link></Button>
   </div>;
+}
+function ReadoutStaff({report:r,locale}:{report:SalesReadoutView;locale:string}){
+  const {t}=useTranslation(),number=(n:number)=>new Intl.NumberFormat(locale).format(n);
+  const metric=(label:string,n:number,marker:string)=><div key={marker} className="min-w-0 space-y-1 rounded-lg bg-muted/30 p-3">
+    <dt className="text-sm text-muted-foreground leading-6">{label}</dt><dd data-staff-metric={marker} className="text-lg font-semibold">{number(n)}</dd></div>;
+  return <section data-readout-staff className="space-y-3" aria-label={t('salesStaff.title')}>
+    <h3 className="text-lg font-semibold">{t('salesStaff.title')}</h3><p className="text-sm leading-7 text-muted-foreground">{t('salesStaff.help')}</p>
+    <div className="grid items-start gap-4 lg:grid-cols-2">{r.staffEvidence.arms.map(a=><article key={a.arm} data-staff-arm={a.arm} className="min-w-0 rounded-xl border p-4 space-y-3">
+      <h4 className="font-semibold">{a.arm==='baseline'?t('salesReadout.baseline'):t('salesReadout.candidate')}</h4>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        {metric(t('salesStaff.withStaff'),a.customersWithRecordedStaffMessages,'withStaff')}
+        {metric(t('salesStaff.withoutStaff'),a.customersWithoutRecordedStaffMessages,'withoutStaff')}
+      </dl><p className="text-sm leading-7">{t('salesStaff.noProof')}</p>
+      <details data-staff-details><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesStaff.details')}</summary>
+        <dl className="grid gap-3 pt-2 sm:grid-cols-2">
+          {metric(t('salesStaff.unknownCustomers'),a.customersWithUnknownOutgoingMessages,'unknownCustomers')}
+          {metric(t('salesStaff.boundaryCustomers'),a.customersWithBoundaryMessages,'boundaryCustomers')}
+          {metric(t('salesStaff.unavailableCustomers'),a.customersWithUnavailableConversationIdentity,'unavailableCustomers')}
+          {metric(t('salesStaff.staffMessages'),a.messages.staffWithinWindow,'staffMessages')}
+          {metric(t('salesStaff.unknownMessages'),a.messages.unknownWithinWindow,'unknownMessages')}
+          {metric(t('salesStaff.staffBoundary'),a.messages.staffAtBoundary,'staffBoundary')}
+          {metric(t('salesStaff.unknownBoundary'),a.messages.unknownAtBoundary,'unknownBoundary')}
+        </dl><p className="mt-3 text-sm leading-7">{t('salesStaff.boundaryHelp')}</p><p className="mt-2 text-sm leading-7">{t('salesStaff.identityHelp')}</p>
+      </details>
+    </article>)}</div><p data-staff-limit className="rounded-lg border bg-muted/30 p-4 text-sm leading-7">{t('salesStaff.salesLimit')}</p>
+  </section>;
 }
 function ReadoutOutcomes({report:r,locale}:{report:SalesReadoutView;locale:string}){
   const {t}=useTranslation(),m=r.outcomeEvidence,n=(value:number)=>new Intl.NumberFormat(locale).format(value);
