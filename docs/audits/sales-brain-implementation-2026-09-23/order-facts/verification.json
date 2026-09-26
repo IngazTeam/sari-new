@@ -1,0 +1,95 @@
+{
+  "baseline": "b6defe9e26b87b7f19bd2fbb020943267d384d12",
+  "frozenAt": "2026-09-26T12:44:17.432Z",
+  "sourceFiles": [
+    "drizzle/0126_sales_order_facts.sql",
+    "drizzle/meta/_journal.json",
+    "drizzle/schema.ts",
+    "server/ai/sales-order-fact-contract.ts",
+    "server/ai/sales-order-facts.ts",
+    "server/ai/sales-order-attribution.ts",
+    "server/ai/sales-order-fact-pentest.test.ts",
+    "server/ai/sales-order-worker-pentest.test.ts",
+    "server/ai/sales-order-attribution.mysql.test.ts",
+    "server/sales-order-attribution-access-pentest.test.ts",
+    "server/ai/checkout-agreements.ts",
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-checkout-reconciliation.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "server/messaging/inbound-worker.ts",
+    "server/routers-inbound-operations.ts",
+    "server/learning-recovery-bootstrap-pentest.test.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs",
+    "scripts/testing/verify-sales-order-facts-migration.cjs"
+  ],
+  "scope": "Synthetic local agreement, verified Zid result and experiment attribution with blocked external network; no deployment or real provider persuasion measurement.",
+  "migrationInputEquivalence": {
+    "upgradeInputSha256": "60751d2d2ca7979eb2cee8d99b5cfd9ee1acf0543e9d89e70fdff2ed0d6e7a70",
+    "frozenInputSha256": "c8581d84434f02f8c1a9269b5036f8470303e754ef85382089f28d3215c6305d",
+    "lfNormalizedSha256": "60751d2d2ca7979eb2cee8d99b5cfd9ee1acf0543e9d89e70fdff2ed0d6e7a70",
+    "scope": "Upgrade proof hashes original LF input. Git checkout-index produces CRLF on Windows; normalization proves content equivalence, while full acceptance ran the frozen snapshot and source blob checks verify Git identity."
+  },
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 176,
+      "failed": 48,
+      "accepted": false,
+      "reason": "Existing Zid test mock omitted getPool required by runtime schema readiness. Fixed mock only; production guard retained.",
+      "sha256": "3ae9946f17351154baa48c08f3b65478fdbf7efebc46629fc2af7b7b06fcf67f"
+    },
+    {
+      "kind": "focused-after-mock-repair",
+      "passed": 224,
+      "failed": 0,
+      "sha256": "5f3d5d9c7a0a3511b14dadf79b7b277902ea338e0e06b5006ffcb316080a3f07"
+    },
+    {
+      "kind": "expanded-focused",
+      "passed": 234,
+      "failed": 0,
+      "sha256": "d423facffb21b1d827688330db6893e518b04778475787910e32610faee2736c"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_order_facts_final_20260926_test",
+      "migrations": 127,
+      "newMigrations": 1,
+      "sha256": "6164aa195e3a3570e437174a5fb36a23225c1c5e71bb2b520f3e1823084bb975"
+    },
+    {
+      "kind": "migration-upgrade-and-replay",
+      "report": "order-facts/migration.json",
+      "sha256": "52acd93b6dc5990f257625bf6d50ccaf728253fcea12b5fc757d7720d0c38948"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "7f351b47eb03583070753ed72301a725456f4bade314748c25e6ded3a76634bb"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "paymentMeasuredByOrderFact": false,
+    "crossSourceAliasesProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "deliveryMeasured": false,
+    "readingMeasured": false,
+    "sourceCompletenessProven": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "123 additional unique cases: contract 59, worker 20, API access 6, worker startup recovery 1, local SQL journeys 23, additional Zid SQL journeys 14. No prior test removed."
+}

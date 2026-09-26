@@ -4,6 +4,8 @@ import { getPool } from '../db/connection';
 import { upsertNormalizedOrdersFromZid } from '../db';
 import { normalizeZidOrder } from '../integrations/zid-commerce-normalization';
 import { checkoutTransaction } from './checkout-agreements';
+import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
+import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { validateZidCheckoutResult, zidCheckoutProvider, type ZidCheckoutSnapshot, type ZidCheckoutResult } from './zid-checkout-agreements';
 
 const decode = <T>(value: unknown): T => typeof value === 'string' ? JSON.parse(value) : value as T;
@@ -56,6 +58,7 @@ export async function listZidReconciliations(merchantId: number, beforeId?: numb
 
 export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchema>) {
   const input = requestSchema.parse(rawInput);
+  await assertSalesOrderFactSchema();
   const pool = await getPool(); if (!pool) throw new Error('Checkout storage unavailable');
   // Scope before touching provider credentials or making any request.
   const [rows] = await pool.execute<any[]>(`SELECT *,
@@ -84,7 +87,10 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
     const [current] = await connection.execute<any[]>('SELECT * FROM sales_quotations WHERE id = ? AND merchant_id = ? FOR UPDATE',
       [input.quotationId, input.merchantId]);
     const q = current[0];
-    if (!q || q.execution_attempt_id !== initial.execution_attempt_id || decode<ZidCheckoutSnapshot>(q.external_snapshot).digest !== snapshot.digest) {
+    if (!q || q.execution_attempt_id !== initial.execution_attempt_id || q.customer_phone!==initial.customer_phone
+      ||q.conversation_id!==initial.conversation_id||q.source_message_id!==initial.source_message_id||q.consent_message_id!==initial.consent_message_id
+      ||q.external_provider!=='zid'||q.status!=='accepted'
+      ||policyArtifactDigest(decode<ZidCheckoutSnapshot>(q.external_snapshot))!==policyArtifactDigest(snapshot)) {
       throw new Error('Checkout changed during reconciliation');
     }
     if (q.execution_state === 'succeeded') {
@@ -96,6 +102,7 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
     await connection.execute(`UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ?, external_order_key = ?,
       external_reconciliation = ?, projection_pending = 1 WHERE id = ? AND merchant_id = ?`,
     [JSON.stringify(result), `${snapshot.options.storeId}:${result.id}`, JSON.stringify(proof), input.quotationId, input.merchantId]);
+    await recordSalesOrderFact(connection,input.merchantId,input.quotationId,'zid_get_reconciliation');
   });
   let projectionPending = true;
   try {

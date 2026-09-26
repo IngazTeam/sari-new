@@ -5,6 +5,11 @@ import { inboundHealth, listInboundReviews, resolveInboundReview } from './messa
 import { inspectSalesPaymentTimelineInput, SalesPaymentTimelineLimitExceeded } from './ai/sales-payment-timeline-contract';
 
 export const inboundOperationsRouter = router({
+  salesOrderAttributionHealth: adminProcedure.query(async ({ctx}) => {
+    const {salesOrderAttributionHealth,SalesOrderHealthAccessDenied} = await import('./ai/sales-order-attribution');
+    try { return await salesOrderAttributionHealth(ctx.user.id); }
+    catch(error) { throw new TRPCError({code:error instanceof SalesOrderHealthAccessDenied ? 'FORBIDDEN' : 'INTERNAL_SERVER_ERROR',message:'تعذر قراءة حالة إسناد الطلبات'}); }
+  }),
   salesPaymentTimeline: adminProcedure.input(inspectSalesPaymentTimelineInput).query(async ({ctx,input}) => {
     const {inspectSalesPaymentTimeline,SalesPaymentTimelineAccessDenied,SalesPaymentTimelineNotReady} = await import('./ai/sales-payment-timeline');
     try { return await inspectSalesPaymentTimeline(ctx.user.id,input); }

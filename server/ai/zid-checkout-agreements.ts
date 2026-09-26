@@ -11,6 +11,8 @@ import { isOrderConfirmation, isOrderRejection, parseZidOrderMessage } from '../
 import { matchZidSelection, zidSelectionSchema, type ParsedZidOrder } from '../automation/zid-order-contract';
 import { assertCheckoutIdentity, checkoutTransaction, wasCheckoutOfferDelivered, type CheckoutIdentity } from './checkout-agreements';
 import { currentInboundExecution } from '../messaging/inbound-context';
+import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
+import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 
 const optionSchema = z.object({ id: z.number().int().positive(), name: z.string().min(1), feesMinor: z.number().int().nonnegative() });
 type Options = { storeId: string; payment: z.infer<typeof optionSchema>; shipping: z.infer<typeof optionSchema> };
@@ -127,6 +129,7 @@ export async function prepareZidCheckout(input: CheckoutIdentity, raw: ParsedZid
 }
 
 export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number): Promise<string> {
+  await assertSalesOrderFactSchema();
   // Read and validate authority BEFORE any provider call; retries use persisted results.
   const initial = await checkoutTransaction(async connection => {
     const source = await assertCheckoutIdentity(connection, input);
@@ -181,9 +184,19 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
       address: s.selection.address!, products: s.items.map(p => ({ sku: p.sku, quantity: p.quantity })),
       paymentMethodId: s.options.payment.id, shippingMethodId: s.options.shipping.id, isPaymentLink: true });
     const result = validateZidCheckoutResult(response.order, s.options.storeId, input.customerPhone);
-    const [saved] = await pool.execute<any>(`UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ?,
+    const saved = await checkoutTransaction(async connection => {
+      const [current]=await connection.execute<any[]>('SELECT * FROM sales_quotations WHERE id=? AND merchant_id=? FOR UPDATE',[quoteId,input.merchantId]);
+      const q=current[0];
+      if(!q||q.customer_phone!==input.customerPhone||Number(q.conversation_id)!==input.conversationId||Number(q.consent_message_id)!==input.incomingMessageId
+        ||Number(q.source_message_id)!==initial.sourceMessageId
+        ||q.execution_attempt_id!==claimed.attemptId||q.external_provider!=='zid'||q.status!=='accepted'
+        ||policyArtifactDigest(decode<Snapshot>(q.external_snapshot))!==policyArtifactDigest(s))throw Error('Zid agreement changed during execution');
+      const [write] = await connection.execute<any>(`UPDATE sales_quotations SET execution_state = 'succeeded', external_result = ?,
       external_order_key = ?, projection_pending = 1 WHERE id = ? AND merchant_id = ? AND execution_state = 'processing'
       AND execution_attempt_id = ?`, [JSON.stringify(result), `${s.options.storeId}:${result.id}`, quoteId, input.merchantId, claimed.attemptId]);
+      if(write.affectedRows===1)await recordSalesOrderFact(connection,input.merchantId,quoteId,'zid_create_response');
+      return write;
+    });
     if (saved.affectedRows !== 1) return uncertain; // A concurrent reconciliation owns the durable result.
     // The provider result is durable first. Local projection failure cannot trigger a second POST.
     try { const projected = await saveZidOrder(input.merchantId, { zidOrderId: String(result.id), zidOrderNumber: result.code,

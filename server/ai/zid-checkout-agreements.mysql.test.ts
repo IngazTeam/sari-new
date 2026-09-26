@@ -6,10 +6,11 @@ import { buildReplyPlan } from '../messaging/reply-plan';
 import { prepareZidCheckout, acceptZidCheckout, handleZidCheckout } from './zid-checkout-agreements';
 import type { CheckoutIdentity } from './checkout-agreements';
 import { listZidReconciliations, reconcileZidCheckout } from './zid-checkout-reconciliation';
+import { readSalesOrderFact } from './sales-order-fact-contract';
 
 const mocks = vi.hoisted(() => ({ settings: vi.fn(), payments: vi.fn(), shipping: vi.fn(), create: vi.fn(), save: vi.fn(), view: vi.fn(), project: vi.fn() }));
 vi.mock('../db_zid', () => ({ default: { getZidSettings: mocks.settings } }));
-vi.mock('../db', () => ({ saveZidOrder: mocks.save, getZidProducts: vi.fn(), upsertNormalizedOrdersFromZid: mocks.project }));
+vi.mock('../db', () => ({ getPool: async()=> (await import('../db/connection')).getPool(), saveZidOrder: mocks.save, getZidProducts: vi.fn(), upsertNormalizedOrdersFromZid: mocks.project }));
 vi.mock('../integrations/zid/zidClient', () => ({ ZidClient: class {
   getPaymentMethods = mocks.payments; getShippingMethods = mocks.shipping; createOrderFromWhatsApp = mocks.create;
   getOrderForReconciliation = mocks.view;
@@ -40,7 +41,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.project.mockResolvedValue({ sourceOrders: 1, projectedOrders: 1, acceptedOrders: 1 });
     mocks.view.mockReset();
   });
-  afterEach(async () => cleanupDisposableMerchants([fixture.userId]));
+  afterEach(async () => {vi.restoreAllMocks();await cleanupDisposableMerchants([fixture.userId]);});
   afterAll(closeDb);
   const quotes = () => query('SELECT * FROM sales_quotations WHERE merchant_id = ? ORDER BY id', [fixture.merchantId]);
   async function incoming(content = 'نعم') {
@@ -64,6 +65,75 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.view.mockResolvedValue(remote);
     return { q: saved, remote, input: { merchantId: fixture.merchantId, actorUserId: fixture.userId, quotationId: q.id, orderId: 999, reviewed: true as const } };
   }
+  const orderFacts=()=>query('SELECT * FROM ai_sales_order_facts WHERE merchant_id=? ORDER BY id',[fixture.merchantId]);
+  it('order evidence: freezes the verified store and quote exactly once without payment or a guessed local alias',async()=>{
+    const q=await offer(),consent=await incoming();await acceptZidCheckout(consent,q.id);const [row]=await orderFacts(),f=readSalesOrderFact(row);
+    expect(f.snapshot).toMatchObject({provider:'zid',quotationId:q.id,orderReference:'999',localOrderId:null,quotedAmountMinor:23000,origin:'zid_create_response',paymentEvidence:'not_measured'});
+    await acceptZidCheckout(consent,q.id);expect(await orderFacts()).toEqual([row]);expect(mocks.create).toHaveBeenCalledOnce();
+    for(const secret of [phone,'Synthetic Recipient','Synthetic Street','fixture-only','https://fixture.zid.store/pay/999'])expect(JSON.stringify(row)).not.toContain(secret);
+    expect(await query('SELECT id FROM ai_sales_payment_facts WHERE merchant_id=?',[fixture.merchantId])).toHaveLength(0);
+  });
+  it('order evidence: an unknown result records no order, then a correlated GET freezes one proof',async()=>{
+    const {input}=await unknown();expect(await orderFacts()).toHaveLength(0);await reconcileZidCheckout(input);const [row]=await orderFacts();
+    expect(readSalesOrderFact(row).snapshot.origin).toBe('zid_get_reconciliation');await reconcileZidCheckout(input);expect(await orderFacts()).toEqual([row]);expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it('order evidence: projection repair cannot create a second or backdated fact',async()=>{
+    const q=await offer();mocks.save.mockRejectedValueOnce(Error('Synthetic projection failure'));await acceptZidCheckout(await incoming(),q.id);
+    const [row]=await orderFacts(),[saved]=await quotes();expect(saved.projection_pending).toBe(1);
+    mocks.view.mockResolvedValue({order:{...response().order,products:[{id:'Z1',sku:'SKU1',quantity:2}],histories:[{comment:`SARY-CHECKOUT:${saved.execution_attempt_id}`}]}});
+    await reconcileZidCheckout({merchantId:fixture.merchantId,actorUserId:fixture.userId,quotationId:q.id,orderId:999,reviewed:true});
+    expect(await orderFacts()).toEqual([row]);expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it('order evidence: failed atomic evidence save leaves the external effect unknown and never repeats POST',async()=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(sql:any,args:any)=>{if(String(sql).includes('INSERT INTO ai_sales_order_facts'))throw Error('Synthetic fact failure');return target.execute(sql,args);};
+      const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await acceptZidCheckout(consent,q.id);vi.restoreAllMocks();expect((await quotes())[0].execution_state).toBe('unknown');expect(await orderFacts()).toHaveLength(0);
+    await acceptZidCheckout(consent,q.id);expect(mocks.create).toHaveBeenCalledOnce();
+    const [saved]=await quotes();mocks.view.mockResolvedValue({order:{...response().order,products:[{id:'Z1',sku:'SKU1',quantity:2}],histories:[{comment:`SARY-CHECKOUT:${saved.execution_attempt_id}`}]}});
+    await reconcileZidCheckout({merchantId:fixture.merchantId,actorUserId:fixture.userId,quotationId:q.id,orderId:999,reviewed:true});expect(await orderFacts()).toHaveLength(1);
+  });
+  it.each(['same','different'])('order evidence: scopes a repeated order number to the %s store',async kind=>{
+    const q=await offer();await acceptZidCheckout(await incoming(),q.id);const [first]=await orderFacts();
+    const store=kind==='same'?'11':'12';mocks.settings.mockResolvedValue({isActive:1,storeId:store,accessToken:'fixture-only',managerToken:'fixture-only'});
+    mocks.create.mockResolvedValue({order:{...response().order,store_id:Number(store)}});
+    identity=await incoming('أريد شراء سماعة أخرى');const text=await prepareZidCheckout(identity,selection()),second=(await quotes()).at(-1);
+    const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text});await stageInteraction(reply);await finishInteractionDelivery(reply,true);
+    const consent=await incoming();await acceptZidCheckout(consent,second.id);await acceptZidCheckout(consent,second.id);
+    expect(await orderFacts()).toHaveLength(kind==='same'?1:2);expect((await quotes()).at(-1).execution_state).toBe(kind==='same'?'unknown':'succeeded');
+    if(kind==='different')expect((await orderFacts())[1].order_key).not.toBe(first.order_key);expect(mocks.create).toHaveBeenCalledTimes(2);
+  });
+  it.each(['before','after'])('order evidence: lost result commit %s acknowledgment never retries provider creation',async when=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let hit=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();let wrote=false;return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(sql:any,args:any)=>{const r=await target.execute(sql,args);if(String(sql).includes('INSERT INTO ai_sales_order_facts'))wrote=true;return r;};
+      if(key==='commit')return async()=>{if(wrote&&!hit){hit=true;if(when==='after')await target.commit();throw Error('Synthetic lost result commit');}return target.commit();};
+      const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await acceptZidCheckout(consent,q.id);vi.restoreAllMocks();expect(hit).toBe(true);expect(await orderFacts()).toHaveLength(when==='after'?1:0);
+    await acceptZidCheckout(consent,q.id);expect(mocks.create).toHaveBeenCalledOnce();const [saved]=await quotes();
+    mocks.view.mockResolvedValue({order:{...response().order,products:[{id:'Z1',sku:'SKU1',quantity:2}],histories:[{comment:`SARY-CHECKOUT:${saved.execution_attempt_id}`}]}});
+    await reconcileZidCheckout({merchantId:fixture.merchantId,actorUserId:fixture.userId,quotationId:q.id,orderId:999,reviewed:true});expect(await orderFacts()).toHaveLength(1);expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it('order evidence: replay of a pre-upgrade successful quote cannot invent creation time',async()=>{
+    const q=await offer(),consent=await incoming();await acceptZidCheckout(consent,q.id);await query('DELETE FROM ai_sales_order_facts WHERE merchant_id=?',[fixture.merchantId]);
+    await acceptZidCheckout(consent,q.id);expect(await orderFacts()).toHaveLength(0);expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it.each(['phone','source','consent','snapshot'])('order evidence: refuses %s drift while provider POST is in flight',async mode=>{
+    const q=await offer(),consent=await incoming();mocks.create.mockImplementationOnce(async()=>{
+      if(mode==='phone')await query("UPDATE sales_quotations SET customer_phone='966500009999' WHERE id=?",[q.id]);
+      if(mode==='source')await query('UPDATE sales_quotations SET source_message_id=source_message_id+100000 WHERE id=?',[q.id]);
+      if(mode==='consent')await query('UPDATE sales_quotations SET consent_message_id=consent_message_id+100000 WHERE id=?',[q.id]);
+      if(mode==='snapshot')await query("UPDATE sales_quotations SET external_snapshot=JSON_SET(external_snapshot,'$.options.storeId','12') WHERE id=?",[q.id]);return response();
+    });
+    await acceptZidCheckout(consent,q.id);expect((await quotes())[0].execution_state).toBe('unknown');expect(await orderFacts()).toHaveLength(0);expect(mocks.create).toHaveBeenCalledOnce();expect(mocks.save).not.toHaveBeenCalled();
+  });
+  it('order evidence: a reconciliation GET cannot certify consent changed during the request',async()=>{
+    const {input,remote}=await unknown();mocks.view.mockImplementationOnce(async()=>{
+      await query('UPDATE sales_quotations SET consent_message_id=consent_message_id+100000 WHERE id=?',[input.quotationId]);return remote;
+    });
+    await expect(reconcileZidCheckout(input)).rejects.toThrow('changed');expect(await orderFacts()).toHaveLength(0);expect((await quotes())[0].execution_state).toBe('unknown');expect(mocks.create).toHaveBeenCalledOnce();
+  });
   it('reconciles a lost remote response from GET evidence exactly once without another POST', async () => {
     const { q, input } = await unknown();
     expect(mocks.create.mock.calls[0][0].checkoutReference).toBe(`SARY-CHECKOUT:${q.execution_attempt_id}`);

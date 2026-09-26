@@ -38,6 +38,8 @@ export async function startInboundWorker() {
     stops.push(await startOrdinaryReplyUsageRecoveryWorker());
     const { startSalesPaymentAttributionWorker } = await import('../ai/sales-payment-attribution');
     stops.push(await startSalesPaymentAttributionWorker());
+    const { startSalesOrderAttributionWorker } = await import('../ai/sales-order-attribution');
+    stops.push(await startSalesOrderAttributionWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

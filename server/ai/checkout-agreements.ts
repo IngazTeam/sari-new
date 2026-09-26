@@ -9,6 +9,7 @@ import { isSalesRefusal, isShortAffirmation, normalizeCustomerText } from './cus
 import { invoiceApprovalSchema, type InvoiceMarginProof } from '../../shared/checkout-margin';
 import { checkoutCouponCommand, calculateCheckoutDiscount, type CheckoutDiscount } from '../../shared/checkout-discount';
 import { readCheckoutDiscount, sameCheckoutDiscount, consumeCheckoutDiscount } from './checkout-discount';
+import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
 
 // The model proposes identifiers and quantities only. Prices and authority come from SQL.
 export const checkoutSelectionSchema = z.array(z.object({
@@ -186,6 +187,7 @@ export async function prepareCheckoutCouponQuote(input:CheckoutIdentity):Promise
 }
 
 export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: number): Promise<CheckoutResult> {
+  await assertSalesOrderFactSchema();
   return checkoutTransaction(async connection => {
     const source = await assertCheckoutIdentity(connection, input);
     const [quotes] = await connection.execute<any[]>(`SELECT *, offer_expires_at > UTC_TIMESTAMP(3) AS valid
@@ -217,6 +219,7 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
       old.totalMinor, `Quotation ${marker(quotationId)}: agreed product amount; billing/tax/delivery and coupon availability require review before payment. Stock not reserved.`,
       old.version===2?old.discount.code:null,old.version===2?old.catalogSubtotalMinor:null,old.version===2?old.discount.amountMinor:null]);
     await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, order_id = ? WHERE id = ?`, [input.incomingMessageId, order.insertId, quotationId]);
+    await recordSalesOrderFact(connection,input.merchantId,quotationId,'local_agreement');
     return { kind: 'order', quotationId, orderId: order.insertId, text: orderText(order.insertId), reused: false };
   });
 }
