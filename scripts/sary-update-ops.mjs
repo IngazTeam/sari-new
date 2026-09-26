@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
-export function managedRelease(processes, expected) {
+export function managedRelease(processes, expected, allowStopped = false) {
   const apps = processes.filter(app => ['sari', 'sari-inbound'].includes(app.name));
   const directories = [...new Set(apps.map(app => app.pm2_env?.pm_cwd))];
   if (!apps.some(app => app.name === 'sari') || apps.filter(app => app.name === 'sari-inbound').length !== 1
@@ -13,7 +13,7 @@ export function managedRelease(processes, expected) {
     throw new Error('PM2_RELEASE_IDENTITY_MISSING');
   }
   const directory = directories[0];
-  if ((expected && directory !== expected) || apps.some(app => app.pm2_env.status !== 'online'
+  if ((expected && directory !== expected) || apps.some(app => !(allowStopped ? ['online', 'stopped'] : ['online']).includes(app.pm2_env.status)
     || app.pm2_env.pm_exec_path !== `${directory}/dist/${app.name === 'sari' ? 'index' : 'worker'}.js`)) {
     throw new Error('PM2_RELEASE_MISMATCH');
   }
@@ -87,7 +87,7 @@ async function main([action, ...args]) {
   if (action === 'pm2-current' || action === 'pm2-match') {
     let input = '';
     for await (const chunk of process.stdin) input += chunk;
-    const directory = managedRelease(JSON.parse(input), args[0]);
+    const directory = managedRelease(JSON.parse(input), args[0], action === 'pm2-current');
     if (action === 'pm2-current') process.stdout.write(directory);
   } else if (action === 'migrate') {
     await import('../server/_core/loadEnv.ts');

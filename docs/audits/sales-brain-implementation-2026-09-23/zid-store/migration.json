@@ -1,0 +1,37 @@
+{
+  "verifiedAt": "2026-09-26T15:36:03.047Z",
+  "database": "sari_zid_store_migration_1790436943540_test",
+  "scope": "Actual updater 0126 to 0127 with populated legacy orders/outbox; interrupted additive DDL replay, updater and complete SQL replay.",
+  "migrations": 128,
+  "preservedTables": [
+    "orders",
+    "zid_orders",
+    "zid_order_notification_outbox",
+    "sales_quotations",
+    "order_payments",
+    "ai_sales_order_facts",
+    "ai_budget_policies"
+  ],
+  "unknownHistory": true,
+  "duplicateRejected": true,
+  "sourceRows": 3,
+  "uniqueIndexes": [
+    {
+      "INDEX_NAME": "PRIMARY",
+      "columns_list": "id"
+    },
+    {
+      "INDEX_NAME": "zid_orders_merchant_store_order_unique",
+      "columns_list": "merchant_id,zid_store_id,zid_order_id"
+    }
+  ],
+  "partialDdlPrefixes": [
+    4,
+    8,
+    12
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "495e3e40b22c5e51e28b7488f57171c4b396e152da4b8628950b950bdc16f803",
+  "passed": true
+}

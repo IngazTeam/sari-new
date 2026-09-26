@@ -6,7 +6,7 @@ import {
   sendMerchantWhatsApp,
   WhatsAppDeliveryStateError,
 } from '../channels/whatsapp/service';
-import { normalizeZidOrderExternalId, normalizeZidPhone } from './zid-commerce-normalization';
+import { normalizeZidOrderExternalId, normalizeZidPhone, requireZidOrderStoreId } from './zid-commerce-normalization';
 import { parseZidSettings } from './zid-settings';
 
 const MAX_ATTEMPTS = 8;
@@ -31,6 +31,8 @@ type NotificationContext = RowDataPacket & {
   currency: string | null;
   integrationActive: number | null;
   integrationSettings: string | null;
+  orderStoreId: string;
+  legacyIdentity: number;
 };
 
 type NotificationHealthRow = RowDataPacket & {
@@ -52,18 +54,20 @@ async function ensureOutboxSchema(): Promise<void> {
   await assertRuntimeSchema('Zid order notification outbox', [
     {
       table: 'zid_order_notification_outbox',
-      columns: ['merchant_id', 'zid_order_id', 'event_key', 'status', 'attempts', 'available_at', 'claimed_at'],
+      columns: ['merchant_id', 'zid_order_id', 'zid_store_id', 'event_key', 'status', 'attempts', 'available_at', 'claimed_at'],
     },
     { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'status'] },
+    { table: 'zid_orders', columns: ['zid_store_id'] },
   ]);
 }
 
-export function createZidOrderNotificationEventKey(merchantId: number, externalOrderId: unknown): string {
+export function createZidOrderNotificationEventKey(merchantId: number, externalOrderId: unknown, storeIdValue: unknown): string {
   if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
   const orderId = normalizeZidOrderExternalId(externalOrderId);
+  const storeId = requireZidOrderStoreId(storeIdValue);
   return crypto
     .createHash('sha256')
-    .update(`zid-order-created:v1\0${merchantId}\0${orderId}`, 'utf8')
+    .update(JSON.stringify(['zid-order-created:v2', merchantId, storeId, orderId]), 'utf8')
     .digest('hex');
 }
 
@@ -74,18 +78,20 @@ function deliveryIdempotencyKey(merchantId: number, eventKey: string): string {
 export async function enqueueZidOrderCreatedNotification(input: {
   merchantId: number;
   externalOrderId: unknown;
+  storeId: unknown;
 }): Promise<string> {
   await ensureOutboxSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const orderId = normalizeZidOrderExternalId(input.externalOrderId);
-  const eventKey = createZidOrderNotificationEventKey(input.merchantId, orderId);
+  const storeId = requireZidOrderStoreId(input.storeId);
+  const eventKey = createZidOrderNotificationEventKey(input.merchantId, orderId, storeId);
   await pool.execute(
     `INSERT INTO zid_order_notification_outbox
-       (merchant_id, zid_order_id, event_key, status, attempts, available_at)
-     VALUES (?, ?, ?, 'pending', 0, NOW(3))
+       (merchant_id, zid_order_id, zid_store_id, event_key, status, attempts, available_at)
+     VALUES (?, ?, ?, ?, 'pending', 0, NOW(3))
      ON DUPLICATE KEY UPDATE event_key = VALUES(event_key)`,
-    [input.merchantId, orderId, eventKey],
+    [input.merchantId, orderId, storeId, eventKey],
   );
   return eventKey;
 }
@@ -256,13 +262,15 @@ async function dispatchOutboxRow(row: NotificationRow): Promise<void> {
   const pool = await getPool();
   if (!pool) throw new RetriableNotificationError('database_unavailable');
   const [rows] = await pool.execute<NotificationContext[]>(
-    `SELECT m.status AS merchantStatus, m.phone AS merchantPhone,
+    `SELECT m.status AS merchantStatus, m.phone AS merchantPhone, outbox.zid_store_id AS orderStoreId,
             zo.zid_order_number AS orderNumber, zo.total_amount AS totalAmount, zo.currency,
+            EXISTS(SELECT 1 FROM zid_orders old WHERE old.merchant_id=outbox.merchant_id
+              AND old.zid_order_id=outbox.zid_order_id AND old.zid_store_id='') AS legacyIdentity,
             pi.is_active AS integrationActive, pi.settings AS integrationSettings
        FROM zid_order_notification_outbox outbox
        INNER JOIN merchants m ON m.id = outbox.merchant_id
        LEFT JOIN zid_orders zo
-         ON zo.merchant_id = outbox.merchant_id AND zo.zid_order_id = outbox.zid_order_id
+         ON zo.merchant_id = outbox.merchant_id AND zo.zid_order_id = outbox.zid_order_id AND zo.zid_store_id = outbox.zid_store_id
        LEFT JOIN platform_integrations pi
          ON pi.merchant_id = outbox.merchant_id AND pi.platform_type = 'zid'
       WHERE outbox.id = ? AND outbox.status = 'processing' LIMIT 1`,
@@ -278,11 +286,16 @@ async function dispatchOutboxRow(row: NotificationRow): Promise<void> {
     || !settings.autoSync
     || !settings.syncOrders
     || !settings.notifyMerchantOrders
+    || !context.orderStoreId || context.orderStoreId !== settings.storeId
   ) {
     await setTerminalStatus(row.id, 'suppressed', 'merchant_opt_out_or_inactive');
     return;
   }
   if (context.totalAmount === null) throw new RetriableNotificationError('order_unavailable');
+  if (context.legacyIdentity) {
+    await setTerminalStatus(row.id, 'manual_review', 'legacy_store_identity_unverified');
+    return;
+  }
   const recipient = normalizeZidPhone(context.merchantPhone);
   if (!recipient) throw new RetriableNotificationError('merchant_phone_unavailable');
 

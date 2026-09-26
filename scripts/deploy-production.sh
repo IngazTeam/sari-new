@@ -196,6 +196,22 @@ run_post_migration_checks() {
 
 log "running count-only preflights against backup $SARI_BACKUP_ID"
 run_pre_migration_checks
+# Older writers and notification workers cannot interpret store-scoped orders.
+# Determine the old release before DDL; unknown state also requires quiescence.
+previous_release=''
+current_link="$release_root/current"
+if [ -e "$current_link" ] && [ ! -L "$current_link" ]; then
+  die 'current release pointer exists but is not a symlink'
+fi
+if [ -L "$current_link" ]; then previous_release="$(readlink -f "$current_link")"; fi
+if ! pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" writers-compatible 2>/dev/null; then
+  for managed_name in sari sari-inbound; do
+    if pm2 describe "$managed_name" >/dev/null 2>&1; then pm2 stop "$managed_name"; fi
+  done
+  pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" stopped
+  pm2 save
+  log 'old writers stopped; migration failure requires roll-forward to a compatible release'
+fi
 corepack pnpm db:migrate
 run_post_migration_checks
 
@@ -244,6 +260,7 @@ pm2_release_matches() {
 
 activate_pm2_release() {
   local target_release="$1"
+  node "$release_dir/scripts/zid-order-release.mjs" compatible "$target_release" || return 1
   mkdir -p "$target_release/logs"
   chmod 750 "$target_release/logs"
   local managed_apps="sari"

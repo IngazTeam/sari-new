@@ -79,7 +79,7 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
   const result = verifyZidReconciliation(detail, { snapshot, phone: initial.customer_phone,
     attemptId: initial.execution_attempt_id, orderId: input.orderId });
   // Preserve current payment/status during projection repair, never invent 'pending'.
-  const normalized = normalizeZidOrder((detail as { order: unknown }).order, fetchedAt);
+  const normalized = normalizeZidOrder((detail as { order: unknown }).order, fetchedAt, snapshot.options.storeId);
   const proof = { version: 1, actorUserId: input.actorUserId, verifiedAt: fetchedAt.toISOString(),
     orderId: result.id, attemptId: initial.execution_attempt_id,
     evidenceHash: createHash('sha256').update(JSON.stringify(detail)).digest('hex') };
@@ -108,7 +108,7 @@ export async function reconcileZidCheckout(rawInput: z.infer<typeof requestSchem
   let projectionPending = true;
   try {
     const projection = await upsertNormalizedOrdersFromZid(input.merchantId, [normalized]);
-    if (projection.sourceOrders !== 1) throw new Error('Projection unavailable');
+    if (projection.sourceOrders !== 1 || projection.projectedOrders !== 1) throw new Error('Projection unavailable');
     await pool.execute('UPDATE sales_quotations SET projection_pending = 0 WHERE id = ? AND merchant_id = ?', [input.quotationId, input.merchantId]);
     projectionPending = false;
   } catch {

@@ -47,7 +47,8 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'woocommerce_webhook_registrations', columns: ['merchant_id', 'topic', 'webhook_id'] },
   { table: 'woocommerce_webhook_receipts', columns: ['merchant_id', 'delivery_id', 'status', 'available_at'] },
   { table: 'zid_webhooks', columns: ['payload_hash', 'attempt_count', 'claimed_at'] },
-  { table: 'zid_order_notification_outbox', columns: ['event_key', 'status', 'available_at', 'claimed_at'] },
+  { table: 'zid_orders', columns: ['zid_store_id'], uniqueIndexes: [{ name: 'zid_orders_merchant_store_order_unique', columns: ['merchant_id','zid_store_id','zid_order_id'] }] },
+  { table: 'zid_order_notification_outbox', columns: ['zid_store_id', 'event_key', 'status', 'available_at', 'claimed_at'] },
   { table: 'zid_oauth_states', columns: ['state_hash', 'session_hash', 'expires_at', 'consumed_at'] },
   { table: 'merchants', columns: [
     'timezone', 'integration_source', 'provision_idempotency_hash', 'provision_payload_hash',

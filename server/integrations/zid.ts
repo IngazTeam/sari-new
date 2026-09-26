@@ -46,6 +46,7 @@ import {
   fetchAllZidOrders,
 } from './zid-commerce-sync';
 import { parseZidSettings } from './zid-settings';
+import { requireZidOrderStoreId } from './zid-commerce-normalization';
 import {
   acknowledgeZidOrderNotificationIncidents,
   getZidOrderNotificationHealth,
@@ -389,7 +390,10 @@ export const zidRouter = router({
               merchantId: merchant.id,
               syncType: 'orders',
               task: async () => {
-                const sourceOrders = await fetchAllZidOrders({ credentials: apiCredentials });
+                // Bind this response to the store proven by the same credential pair,
+                // even if a reconnect changes the selected integration meanwhile.
+                const store = await fetchZidStoreIdentity({ credentials: apiCredentials });
+                const sourceOrders = await fetchAllZidOrders({ credentials: apiCredentials, storeId: store.storeId });
                 const persisted = await upsertNormalizedOrdersFromZid(merchant.id, sourceOrders);
                 return { total: sourceOrders.length, result: persisted };
               },
@@ -563,6 +567,7 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
     case 'order.created':
     case 'order.updated':
       if (settings.syncOrders) {
+        requireZidOrderStoreId(payload?.store_id, requireZidOrderStoreId(settings.storeId));
         await upsertOrderFromZid(merchantId, payload);
         await recordCompletedZidSync(merchantId, 'orders');
       }

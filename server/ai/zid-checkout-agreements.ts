@@ -260,13 +260,13 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     });
     if (saved.affectedRows !== 1) return uncertain; // A concurrent reconciliation owns the durable result.
     // The provider result is durable first. Local projection failure cannot trigger a second POST.
-    try { const projected = await saveZidOrder(input.merchantId, { zidOrderId: String(result.id), zidOrderNumber: result.code,
+    try { const projected = await saveZidOrder(input.merchantId, { zidStoreId: s.options.storeId, zidOrderId: String(result.id), zidOrderNumber: result.code,
       customerName: s.selection.customerName, customerPhone: input.customerPhone, totalAmount: result.totalMinor / 100,
       currency: 'SAR', status: response.order.order_status?.code ?? 'pending',
       paymentStatus: (response.order as { payment_status?: string }).payment_status,
       items: s.items.map(item => ({ id: item.zidProductId, sku: item.sku, name: item.name, quantity: item.quantity, price: item.priceMinor / 100 })),
       orderUrl: result.url, zidData: JSON.stringify(response.order) }, observedAt);
-      if (!projected) throw new Error('Projection unavailable');
+      if (!projected?.sariOrderId) throw new Error('Projection unavailable');
       await pool.execute('UPDATE sales_quotations SET projection_pending = 0 WHERE id = ? AND merchant_id = ?', [quoteId, input.merchantId]); }
     catch { console.warn('[ZidCheckout] Order projection requires reconciliation', { merchantId: input.merchantId, quoteId }); }
     return resultText(result);

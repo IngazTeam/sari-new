@@ -1,4 +1,8 @@
+import { createHash } from 'node:crypto';
+import { normalizeZidStoreId } from './zid-api';
+
 export type NormalizedZidOrder = {
+  storeId: string;
   externalId: string;
   orderNumber: string | null;
   customerName: string | null;
@@ -64,6 +68,20 @@ function requiredExternalId(value: unknown, kind: 'order' | 'customer'): string 
 
 export function normalizeZidOrderExternalId(value: unknown): string {
   return requiredExternalId(value, 'order');
+}
+
+/** Order identity is explicit provider evidence, never the currently selected connection by inference. */
+export function requireZidOrderStoreId(value: unknown, expected?: unknown): string {
+  if (typeof value === 'number' && !Number.isSafeInteger(value)) throw new ZidCommerceSyncError('invalid_order');
+  const storeId = normalizeZidStoreId(value);
+  if (!storeId || (expected !== undefined && storeId !== normalizeZidStoreId(expected))) throw new ZidCommerceSyncError('invalid_order');
+  return storeId;
+}
+
+export function zidOrderProjectionId(storeId: unknown, orderId: unknown): string {
+  return 'zid:v2:' + createHash('sha256').update(JSON.stringify([
+    requireZidOrderStoreId(storeId), normalizeZidOrderExternalId(orderId),
+  ])).digest('hex');
 }
 
 export function formatZidOrderSyncTime(value: Date): string {
@@ -195,7 +213,7 @@ function normalizedItems(order: Record<string, any>): string {
   }));
 }
 
-export function normalizeZidOrder(value: unknown, now = new Date()): NormalizedZidOrder {
+export function normalizeZidOrder(value: unknown, now = new Date(), expectedStoreId?: string): NormalizedZidOrder {
   const order = record(value);
   const customer = record(order.customer);
   const billingAddress = record(order.billing_address);
@@ -207,6 +225,7 @@ export function normalizeZidOrder(value: unknown, now = new Date()): NormalizedZ
   const shipping = record(order.shipping);
   const shippingMethod = record(shipping.method);
   return {
+    storeId: requireZidOrderStoreId(order.store_id, expectedStoreId),
     externalId: requiredExternalId(order.id, 'order'),
     orderNumber: text(String(order.invoice_number ?? order.code ?? order.order_number ?? order.reference_id ?? ''), 100),
     customerName: text(customer.name ?? order.customer_name ?? billingAddress.name, 255),

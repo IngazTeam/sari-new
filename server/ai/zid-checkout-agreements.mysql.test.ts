@@ -39,7 +39,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.settings.mockResolvedValue({ id: settings.insertId, merchantId: fixture.merchantId, isActive: 1, storeId: '11', accessToken: 'fixture-only', managerToken: 'fixture-only' });
     mocks.payments.mockResolvedValue({ payment_methods: [payment] });
     mocks.shipping.mockResolvedValue({ shipping_methods: [shipping] });
-    mocks.create.mockResolvedValue(response()); mocks.save.mockResolvedValue({ id: 1 });
+    mocks.create.mockResolvedValue(response()); mocks.save.mockResolvedValue({ id: 1, sariOrderId: 1 });
     mocks.project.mockResolvedValue({ sourceOrders: 1, projectedOrders: 1, acceptedOrders: 1 });
     mocks.view.mockReset();
   });
@@ -345,6 +345,15 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
   it('does not report a unavailable DB projection as completed', async () => {
     const { input } = await unknown(); mocks.project.mockResolvedValueOnce({ sourceOrders: 0, projectedOrders: 0, acceptedOrders: 0 });
     expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+  });
+  it('keeps a store-scoped source without a local projection pending',async()=>{
+    const {input}=await unknown();mocks.project.mockResolvedValueOnce({sourceOrders:1,projectedOrders:0,acceptedOrders:1});
+    expect((await reconcileZidCheckout(input)).projectionPending).toBe(true);
+  });
+  it('keeps a saved source without a linked local order pending after creation',async()=>{
+    const q=await offer();mocks.save.mockResolvedValueOnce({id:1,sariOrderId:null});await acceptZidCheckout(await incoming(),q.id);
+    expect((await quotes())[0].projection_pending).toBe(1);
+    expect(mocks.save.mock.calls.at(-1)?.[1].zidStoreId).toBe('11');
   });
   it('does not overwrite a different late result after a slow provider GET', async () => {
     const { q, input, remote } = await unknown();

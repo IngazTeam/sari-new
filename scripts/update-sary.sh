@@ -9,6 +9,7 @@ ulimit -c 0
 die() { printf '[update] %s\n' "$*" >&2; exit 1; }
 phase=PREPARATION
 activation_attempted=0
+writers_quiesced=0
 previous_release=''
 source_dir=/var/www/sari
 runtime_dir=/home/sari-deploy/.local/sari-runtime
@@ -25,6 +26,7 @@ pm() {
 matches() { pm jlist | "$node_bin" "$ops" pm2-match "$1"; }
 activate() {
   local target="$1"
+  "$node_bin" "$source_dir/scripts/zid-order-release.mjs" compatible "$target" || return 1
   pm startOrReload "$target/ecosystem.config.cjs" --only sari,sari-inbound \
     --interpreter "$node_bin" --update-env || return 1
   if matches "$target"; then return 0; fi
@@ -47,6 +49,8 @@ failed() {
     fi
   elif [ "$phase" = PUBLIC_CHECK ]; then
     echo 'NEW_RELEASE_RUNNING_LOCALLY; PUBLIC_ROUTE_REQUIRES_ATTENTION'
+  elif [ "$writers_quiesced" -eq 1 ]; then
+    echo 'WRITERS_STOPPED; RETAIN_DATABASE_AND_ROLL_FORWARD_WITH_COMPATIBLE_RELEASE'
   fi
   exit "$result"
 }
@@ -94,6 +98,8 @@ phase=INSTALL_AND_BUILD
 build_task test install --frozen-lockfile
 env -i HOME=/root PATH="$runtime_path" NODE_ENV=test SARI_ENV_FILE=/dev/null \
   "$node_bin" --test scripts/sary-update-ops.test.mjs
+env -i HOME=/root PATH="$runtime_path" NODE_ENV=test SARI_ENV_FILE=/dev/null \
+  "$node_bin" --test scripts/zid-order-release.test.mjs
 build_task test check
 build_task production build
 test -s dist/index.js
@@ -113,6 +119,15 @@ env -i HOME=/root PATH="$runtime_path" SARI_BACKUP_SOURCE="$release_dir" \
   bash "$release_dir/scripts/backup-sary.sh"
 
 phase=MIGRATIONS_AND_CHECKS
+# 0127 changes the meaning of order identity. Drain old PM2 writers before DDL,
+# and persist their stopped state so a restart cannot resurrect incompatible code.
+if ! "$node_bin" "$release_dir/scripts/zid-order-release.mjs" compatible "$previous_release" 2>/dev/null; then
+  writers_quiesced=1
+  pm stop sari
+  pm stop sari-inbound
+  pm jlist | "$node_bin" "$release_dir/scripts/zid-order-release.mjs" stopped
+  pm save
+fi
 runuser -u sari-deploy -- env -i HOME=/home/sari-deploy PATH="$runtime_path" \
   NODE_ENV=production SARI_ENV_FILE=/var/www/.env SARI_DB_POOL_SIZE=2 \
   "$node_bin" --import tsx "$ops" migrate

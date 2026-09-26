@@ -3,6 +3,7 @@ import { requestZidApi, type ZidApiCredentials } from './zid-api';
 import {
   normalizeZidCustomer,
   normalizeZidOrder,
+  requireZidOrderStoreId,
   ZidCommerceSyncError,
   type NormalizedZidCustomer,
   type NormalizedZidOrder,
@@ -32,9 +33,11 @@ function validatedTotal(value: number): number {
 
 export async function fetchAllZidOrders(input: {
   credentials: ZidApiCredentials;
+  storeId: string;
   fetchImpl?: typeof fetch;
   now?: Date;
 }): Promise<NormalizedZidOrder[]> {
+  const storeId = requireZidOrderStoreId(input.storeId);
   const records: NormalizedZidOrder[] = [];
   const seenIds = new Set<string>();
   const syncStartedAt = input.now || new Date();
@@ -55,7 +58,7 @@ export async function fetchAllZidOrders(input: {
     if (rawCount > MAX_RECORDS) throw new ZidCommerceSyncError('limit');
     if (rawCount > expectedTotal) throw new ZidCommerceSyncError('invalid_page');
     for (const order of parsed.data.orders) {
-      const normalized = normalizeZidOrder(order, syncStartedAt);
+      const normalized = normalizeZidOrder(order, syncStartedAt, storeId);
       if (seenIds.has(normalized.externalId)) continue;
       seenIds.add(normalized.externalId);
       records.push(normalized);

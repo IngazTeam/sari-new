@@ -7,7 +7,7 @@ export type ZidIntegrationSettings = Record<string, unknown> & {
   notifyMerchantOrders: boolean;
 };
 
-export type ZidWebhookPolicy = Pick<
+export type ZidWebhookPolicy = { storeId?: string } & Pick<
   ZidIntegrationSettings,
   'valid' | 'autoSync' | 'syncProducts' | 'syncOrders' | 'notifyMerchantOrders'
 >;
@@ -68,6 +68,7 @@ export function parseZidSettings(value: string | null | undefined): ZidIntegrati
 
 export function zidWebhookPolicy(settings: ZidIntegrationSettings): ZidWebhookPolicy {
   return {
+    ...(typeof settings.storeId === 'string' && /^[1-9]\d{0,19}$/.test(settings.storeId) ? {storeId: settings.storeId} : {}),
     valid: settings.valid,
     autoSync: settings.autoSync,
     syncProducts: settings.syncProducts,

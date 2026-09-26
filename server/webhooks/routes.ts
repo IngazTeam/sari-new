@@ -5,7 +5,7 @@ import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cl
 import { verifyGreenWebhookAuthorization } from './greenapi-auth';
 import { updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { handleSallaWebhook } from './salla';
-import { parseZidWebhookPayload, processZidWebhook } from './zid-webhook';
+import { assertZidWebhookOrderStore, parseZidWebhookPayload, processZidWebhook } from './zid-webhook';
 import { isZidWebhookEventEnabled } from '../integrations/zid-settings';
 import {
   authenticateZidWebhook,
@@ -223,6 +223,11 @@ router.post('/zid/:endpointId', async (req: Request & { rawBody?: Buffer }, res:
       return res.status(200).json({ message: 'Webhook event disabled or unsupported' });
     }
 
+    try {
+      assertZidWebhookOrderStore(payload, principal.policy);
+    } catch {
+      return res.status(400).json({ error: 'Invalid webhook order identity' });
+    }
     const claim = await claimZidWebhook({
       merchantId: principal.merchantId,
       rawBody: req.rawBody,

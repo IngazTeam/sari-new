@@ -719,6 +719,11 @@ Object.assign(entries, {
  B016:[entries.B016[0]+' يمنع الاتصال الرئيسي المعطل استخدام مفاتيح زد القديمة، وتطابق هوية الاتصال والمتجر والمفاتيح الفعلية قبل خيارات المزوّد وعند حفظ العرض وحجز التنفيذ واعتماد التسوية. تثبت أقفال SQL السلطة حتى commit وتمنع إدخال اتصال بديل أثناء اعتماد الاتصال القديم.','server/ai/zid-provider-authority.mysql.test.ts'],
  B064:[entries.B064[0]+' أثبتت 9 حالات خلل صلاحية الاتصال قبل الإصلاح؛ تغطي 31 حالة جديدة تعطيل وتبديل الاتصال والمفاتيح وانتظار الشبكة والكتالوج وأقفال اتصالات SQL متنافسة. أضيفت اختبارات التوافق وتجديد المفاتيح الستة القائمة إلى القبول بعد إصلاح تصادم أرقامها الاصطناعية.','server/ai/zid-checkout-agreements.mysql.test.ts'],
 });
+Object.assign(entries, {
+ B019:[entries.B019[0]+' أصبحت طلبات زد الجديدة وإسقاطاتها وتنبيهاتها معزولة بحسب المتجر؛ يشترط الإدخال store_id صريحًا ومطابقًا للاتصال. يبقى التاريخ مجهول المتجر محفوظًا دون تخمين أو إنشاء إسقاط مكرر، ولم يعتمد بعد الربط المالي بدليل الطلب.','server/ai/zid-order-store.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبرت هوية الطلب عبر متجرين، وإعادة الحدث المتزامنة، والإلغاء القديم، وتعارض الهوية والروابط، والتنبيه بعد تبديل المتجر، ومنع تسجيل webhook غير مطابق. الاختبارات محلية مع قناة واتساب محاكاة.','server/zid-order-store-pentest.test.ts'],
+ B065:[entries.B065[0]+' يضيف الترحيل 0127 هوية المتجر إلى الطلب والتنبيه ويفصل تفرد المصدر بحسب المتجر. اجتاز الترقية من 0126 ببيانات قديمة وإعادة SQL والتعافي بعد DDL جزئي، مع حفظ سبعة جداول وعدم ملء التاريخ بالتخمين.','scripts/testing/verify-zid-order-store-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

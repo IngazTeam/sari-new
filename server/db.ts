@@ -301,6 +301,8 @@ import {
   formatZidOrderSyncTime,
   normalizeZidOrder,
   normalizeZidOrderExternalId,
+  requireZidOrderStoreId,
+  zidOrderProjectionId,
   normalizeZidPhone,
   type NormalizedZidCustomer,
   type NormalizedZidOrder,
@@ -308,6 +310,7 @@ import {
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { privacyHash } from './accounts/privacy-hash';
 import { isFutureDatabaseTime, databaseTimeEpoch } from './db/time';
+import { assertRuntimeSchema } from './db/schema-readiness';
 
 // Type aliases for tables that don't export their own types
 type BotSettings = InferSelectModel<typeof botSettings>;
@@ -7575,21 +7578,30 @@ export async function upsertOrderFromZid(
 }
 
 /** Persist validated Zid source orders and their usable Sari projections atomically. */
+async function assertZidOrderStoreSchema() {
+  await assertRuntimeSchema('Zid store-scoped orders', [{ table: 'zid_orders', columns: ['zid_store_id'],
+    uniqueIndexes: [{ name: 'zid_orders_merchant_store_order_unique', columns: ['merchant_id','zid_store_id','zid_order_id'] }] }]);
+}
+
 export async function upsertNormalizedOrdersFromZid(
   merchantId: number,
   normalizedOrders: NormalizedZidOrder[],
 ): Promise<{ sourceOrders: number; projectedOrders: number; acceptedOrders: number }> {
   const db = await getDb();
   if (!db) return { sourceOrders: 0, projectedOrders: 0, acceptedOrders: 0 };
+  await assertZidOrderStoreSchema();
   let projectedOrders = 0;
   let acceptedOrders = 0;
   await db.transaction(async tx => {
     for (const zidOrder of normalizedOrders) {
+      const storeId = requireZidOrderStoreId(zidOrder.storeId);
+      if (zidOrder.externalId !== normalizeZidOrderExternalId(zidOrder.externalId)) throw new Error('INVALID_ZID_ORDER');
       // Upsert the uniquely constrained source row first. InnoDB keeps the
       // duplicate-key row lock until commit, serializing concurrent webhook
       // projections for the same merchant/order without a global lock.
       const sourceData = {
         merchantId,
+        zidStoreId: storeId,
         zidOrderId: zidOrder.externalId,
         zidOrderNumber: zidOrder.orderNumber,
         customerName: zidOrder.customerName,
@@ -7610,8 +7622,9 @@ export async function upsertNormalizedOrdersFromZid(
       await tx.insert(zidOrders).values(sourceData).onDuplicateKeyUpdate({
         set: { zidOrderId: sql`${zidOrders.zidOrderId}` },
       });
-      await tx.update(zidOrders).set(sourceData).where(and(
+      await tx.update(zidOrders).set({ ...sourceData, zidOrderId: sql`${zidOrders.zidOrderId}` }).where(and(
         eq(zidOrders.merchantId, merchantId),
+        eq(zidOrders.zidStoreId, storeId),
         eq(zidOrders.zidOrderId, zidOrder.externalId),
         or(isNull(zidOrders.lastSyncedAt), lte(zidOrders.lastSyncedAt, zidOrder.lastSyncedAt)),
       ));
@@ -7619,25 +7632,34 @@ export async function upsertNormalizedOrdersFromZid(
       const sourceRow = await tx.select().from(zidOrders)
         .where(and(
           eq(zidOrders.merchantId, merchantId),
+          eq(zidOrders.zidStoreId, storeId),
           eq(zidOrders.zidOrderId, zidOrder.externalId),
         ))
         .limit(1);
       const canonical = sourceRow[0];
+      // MySQL's existing collation may match case variants. Never let one
+      // external identity acquire another identity's projection through it.
+      if (canonical && canonical.zidOrderId !== zidOrder.externalId) throw new Error('ZID_ORDER_IDENTITY_CONFLICT');
       if (canonical?.lastSyncedAt === zidOrder.lastSyncedAt) acceptedOrders += 1;
       const canonicalAmount = Number(canonical?.totalAmount);
       const canonicalAmountCents = Number.isFinite(canonicalAmount)
         ? Math.round(canonicalAmount * 100)
         : null;
       const canonicalPhone = normalizeZidPhone(canonical?.customerPhone);
+      // Preserve ambiguous history without silently duplicating its local order.
+      const legacy = await tx.select({id:zidOrders.id}).from(zidOrders).where(and(
+        eq(zidOrders.merchantId,merchantId), eq(zidOrders.zidOrderId,zidOrder.externalId), eq(zidOrders.zidStoreId,''),
+      )).limit(1);
       if (
         canonical
+        && !legacy.length
         && canonicalPhone
         && canonicalAmountCents !== null
         && canonicalAmountCents >= 0
         && canonicalAmountCents <= 2_147_483_647
         && (canonical.currency === 'SAR' || canonical.currency === 'USD')
       ) {
-        const namespacedExternalId = `zid:${zidOrder.externalId}`;
+        const namespacedExternalId = zidOrderProjectionId(storeId, zidOrder.externalId);
         const projection = {
           merchantId,
           sallaOrderId: namespacedExternalId,
@@ -7650,15 +7672,24 @@ export async function upsertNormalizedOrdersFromZid(
           currency: canonical.currency as 'SAR' | 'USD',
           status: canonical.projectionStatus,
         };
-        await tx.insert(orders).values({
-          ...projection,
-          ...(canonical.orderDate ? { createdAt: canonical.orderDate } : {}),
-        }).onDuplicateKeyUpdate({ set: projection });
+        let createdProjection = false;
+        try {
+          await tx.insert(orders).values({ ...projection, ...(canonical.orderDate ? { createdAt: canonical.orderDate } : {}) });
+          createdProjection = true;
+        } catch (error: any) {
+          if ((error?.code || error?.cause?.code) !== 'ER_DUP_ENTRY') throw error;
+        }
         const projectionRow = await tx.select({ id: orders.id }).from(orders).where(and(
           eq(orders.merchantId, merchantId),
           eq(orders.sallaOrderId, namespacedExternalId),
-        )).limit(1);
+        )).limit(1).for('update');
         if (!projectionRow[0]) throw new Error('ZID_ORDER_PROJECTION_MISSING');
+        // A legacy/custom alias may occupy the same string. It cannot establish
+        // ownership; only this insertion or this source's existing link can.
+        if (!createdProjection && canonical.sariOrderId !== projectionRow[0].id) {
+          throw new Error('ZID_ORDER_PROJECTION_CONFLICT');
+        }
+        await tx.update(orders).set(projection).where(and(eq(orders.id, projectionRow[0].id), eq(orders.merchantId, merchantId)));
         await tx.update(zidOrders).set({ sariOrderId: projectionRow[0].id }).where(eq(zidOrders.id, canonical.id));
         projectedOrders += 1;
       }
@@ -7671,9 +7702,12 @@ export async function cancelOrderFromZid(
   merchantId: number,
   externalIdValue: unknown,
   occurredAt = new Date(),
+  storeIdValue?: unknown,
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  const storeId = requireZidOrderStoreId(storeIdValue);
+  await assertZidOrderStoreSchema();
   const externalId = normalizeZidOrderExternalId(externalIdValue);
   const eventTime = formatZidOrderSyncTime(occurredAt);
   await db.transaction(async tx => {
@@ -7683,7 +7717,9 @@ export async function cancelOrderFromZid(
       lastSyncedAt: eventTime,
     }).where(and(
       eq(zidOrders.merchantId, merchantId),
+      eq(zidOrders.zidStoreId, storeId),
       eq(zidOrders.zidOrderId, externalId),
+      sql`BINARY ${zidOrders.zidOrderId} = BINARY ${externalId}`,
       or(isNull(zidOrders.lastSyncedAt), lte(zidOrders.lastSyncedAt, eventTime)),
     ));
     const current = await tx.select({
@@ -7692,7 +7728,9 @@ export async function cancelOrderFromZid(
       lastSyncedAt: zidOrders.lastSyncedAt,
     }).from(zidOrders).where(and(
       eq(zidOrders.merchantId, merchantId),
+      eq(zidOrders.zidStoreId, storeId),
       eq(zidOrders.zidOrderId, externalId),
+      sql`BINARY ${zidOrders.zidOrderId} = BINARY ${externalId}`,
     )).limit(1);
     if (
       current[0]?.sariOrderId
@@ -7702,6 +7740,7 @@ export async function cancelOrderFromZid(
       await tx.update(orders).set({ status: 'cancelled' }).where(and(
         eq(orders.id, current[0].sariOrderId),
         eq(orders.merchantId, merchantId),
+        eq(orders.sallaOrderId, zidOrderProjectionId(storeId, externalId)),
       ));
     }
   });
@@ -9284,6 +9323,7 @@ export async function linkZidProductToSariProduct(
 export async function saveZidOrder(merchantId: number, orderData: any, observedAt = new Date()) {
   const db = await getDb();
   if (!db) return null;
+  const storeId = requireZidOrderStoreId(orderData?.zidStoreId);
   const externalId = typeof orderData?.zidOrderId === 'string'
     ? orderData.zidOrderId.trim()
     : String(orderData?.zidOrderId ?? '');
@@ -9295,7 +9335,7 @@ export async function saveZidOrder(merchantId: number, orderData: any, observedA
   // never create a structurally incomplete row.
   if (orderData.totalAmount === undefined || orderData.totalAmount === null) {
     if (orderData.status !== 'cancelled') return null;
-    await cancelOrderFromZid(merchantId, externalId);
+    await cancelOrderFromZid(merchantId, externalId, observedAt, storeId);
   } else {
     let items: unknown[] = [];
     if (Array.isArray(orderData.items)) items = orderData.items;
@@ -9308,6 +9348,7 @@ export async function saveZidOrder(merchantId: number, orderData: any, observedA
       }
     }
     const normalized = normalizeZidOrder({
+      store_id: storeId,
       id: externalId,
       invoice_number: orderData.zidOrderNumber,
       order_total: orderData.totalAmount,
@@ -9328,6 +9369,7 @@ export async function saveZidOrder(merchantId: number, orderData: any, observedA
 
   const saved = await db.select().from(zidOrders).where(and(
     eq(zidOrders.merchantId, merchantId),
+    eq(zidOrders.zidStoreId, storeId),
     eq(zidOrders.zidOrderId, externalId),
   )).limit(1);
   return saved[0] || null;
@@ -9386,9 +9428,11 @@ export async function getZidOrderById(id: number) {
 /**
  * Get Zid order by Zid order ID
  */
-export async function getZidOrderByZidId(merchantId: number, zidOrderId: string) {
+export async function getZidOrderByZidId(merchantId: number, zidOrderId: string, storeIdValue: unknown) {
   const db = await getDb();
   if (!db) return null;
+  const storeId = requireZidOrderStoreId(storeIdValue);
+  await assertZidOrderStoreSchema();
 
   const result = await db
     .select()
@@ -9396,7 +9440,9 @@ export async function getZidOrderByZidId(merchantId: number, zidOrderId: string)
     .where(
       and(
         eq(zidOrders.merchantId, merchantId),
-        eq(zidOrders.zidOrderId, zidOrderId)
+        eq(zidOrders.zidStoreId, storeId),
+        eq(zidOrders.zidOrderId, zidOrderId),
+        sql`BINARY ${zidOrders.zidOrderId} = BINARY ${zidOrderId}`
       )
     )
     .limit(1);
@@ -9414,10 +9460,17 @@ export async function linkZidOrderToSariOrder(
   const db = await getDb();
   if (!db) return;
 
-  await db
-    .update(zidOrders)
-    .set({ sariOrderId })
-    .where(eq(zidOrders.id, zidOrderId));
+  await assertZidOrderStoreSchema();
+  await db.transaction(async tx => {
+    const [source] = await tx.select().from(zidOrders).where(eq(zidOrders.id, zidOrderId)).limit(1).for('update');
+    if (!source || (source.sariOrderId !== null && source.sariOrderId !== sariOrderId)) throw new Error('ZID_ORDER_PROJECTION_CONFLICT');
+    const alias = zidOrderProjectionId(source.zidStoreId, source.zidOrderId);
+    const [projection] = await tx.select({ id: orders.id }).from(orders).where(and(
+      eq(orders.id, sariOrderId), eq(orders.merchantId, source.merchantId), eq(orders.sallaOrderId, alias),
+    )).limit(1).for('update');
+    if (!projection) throw new Error('ZID_ORDER_PROJECTION_CONFLICT');
+    await tx.update(zidOrders).set({ sariOrderId }).where(eq(zidOrders.id, source.id));
+  });
 }
 
 /**

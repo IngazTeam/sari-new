@@ -7,13 +7,18 @@ const destination = resolve('docs/audits/sales-brain-implementation-2026-09-23')
 const sourceRootFlag = process.argv.indexOf('--source-root');
 if (sourceRootFlag >= 0 && !process.argv[sourceRootFlag + 1]) throw new Error('--source-root requires a tested source snapshot');
 const sourceRoot = sourceRootFlag < 0 ? process.cwd() : resolve(process.argv[sourceRootFlag + 1]);
+// Source-equivalent test snapshots may precede deployment-only tooling changes.
+// Keep original report bytes and record their actual root instead of rewriting results.
+const reportRootFlag = process.argv.indexOf('--report-source-root');
+if (reportRootFlag >= 0 && !process.argv[reportRootFlag + 1]) throw new Error('--report-source-root requires the original test snapshot');
+const reportSourceRoot = reportRootFlag < 0 ? sourceRoot : resolve(process.argv[reportRootFlag + 1]);
 mkdirSync(destination, { recursive: true });
 const reports = ['unit', 'database', 'regression', 'legacy-sales', 'budget', 'security'].map(name => {
   const raw = JSON.parse(readFileSync(resolve(`.tmp/sales-brain-evidence/${name}.json`), 'utf8'));
   if (!raw.success || raw.numFailedTests || raw.numFailedTestSuites) throw new Error(`Acceptance report ${name} contains failures`);
   return { name, passed: raw.numPassedTests, failed: raw.numFailedTests, pending: raw.numPendingTests,
     startedAt: new Date(raw.startTime).toISOString(), tests: raw.testResults.flatMap(file => file.assertionResults.map(test => ({
-      file: file.name.replaceAll('\\', '/').replace(`${sourceRoot.replaceAll('\\', '/')}/`, '').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
+      file: file.name.replaceAll('\\', '/').replace(`${reportSourceRoot.replaceAll('\\', '/')}/`, '').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
       name: test.fullName, status: test.status, durationMs: test.duration,
     }))) };
 });
@@ -58,6 +63,7 @@ const verification = Object.fromEntries(['build', 'types', 'translations', 'sche
   return [name, { log: file, sha256: createHash('sha256').update(content).digest('hex'), output: content.trim().slice(-2500) }];
 }));
 const evidence = { generatedAt: new Date().toISOString(),
+  reportSourceRoot,
   baselineHead: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim(),
   capturedFrom: sourceRootFlag < 0 ? 'Staged source scope verified against working files before commit' : 'Independent source snapshot of the staged commit; unrelated working-tree edits excluded', node: process.version,
   lockfileSha256: createHash('sha256').update(readFileSync(resolve(sourceRoot,'pnpm-lock.yaml'))).digest('hex'), sourceHashes, sourceGitBlobs, reports,

@@ -2755,6 +2755,7 @@ export const zidOrders = mysqlTable("zid_orders", {
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 
 	// Zid Order Info
+	zidStoreId: varchar("zid_store_id", { length: 20 }).default('').notNull(), // Empty only for unassigned historical rows.
 	zidOrderId: varchar("zid_order_id", { length: 255 }).notNull(),
 	zidOrderNumber: varchar("zid_order_number", { length: 255 }),
 
@@ -2792,7 +2793,7 @@ export const zidOrders = mysqlTable("zid_orders", {
 	(table) => [
 		index("zid_orders_merchant_id_idx").on(table.merchantId),
 		index("zid_orders_zid_order_id_idx").on(table.zidOrderId),
-		uniqueIndex("zid_orders_merchant_order_unique").on(table.merchantId, table.zidOrderId),
+		uniqueIndex("zid_orders_merchant_store_order_unique").on(table.merchantId, table.zidStoreId, table.zidOrderId),
 		index("zid_orders_sari_order_id_idx").on(table.sariOrderId),
 		index("zid_orders_customer_phone_idx").on(table.customerPhone),
 	]);
@@ -2803,6 +2804,7 @@ export const zidOrderNotificationOutbox = mysqlTable("zid_order_notification_out
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	zidOrderId: varchar("zid_order_id", { length: 255 }).notNull(),
+	zidStoreId: varchar("zid_store_id", { length: 20 }).default('').notNull(),
 	eventKey: varchar("event_key", { length: 64 }).notNull(),
 	status: mysqlEnum(['pending', 'processing', 'delivered', 'failed', 'suppressed', 'manual_review']).default('pending').notNull(),
 	attempts: int().default(0).notNull(),

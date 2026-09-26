@@ -1,0 +1,117 @@
+{
+  "baseline": "0b7574beda02139b9aa8a9512871611f4c87662e",
+  "frozenAt": "2026-09-26T15:31:35.425Z",
+  "finalFrozenAt": "2026-09-26T15:43:25.497Z",
+  "sourceFiles": [
+    "drizzle/0127_zid_order_store_identity.sql",
+    "drizzle/meta/_journal.json",
+    "drizzle/schema.ts",
+    "server/db.ts",
+    "server/cron/schema-validator.ts",
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "server/ai/zid-checkout-reconciliation.ts",
+    "server/ai/zid-order-store.mysql.test.ts",
+    "server/integrations/zid-commerce-normalization.ts",
+    "server/integrations/zid-commerce-sync.ts",
+    "server/integrations/zid-order-notification-outbox.ts",
+    "server/integrations/zid-settings.ts",
+    "server/integrations/zid.ts",
+    "server/webhooks/zid-webhook.ts",
+    "server/webhooks/routes.ts",
+    "server/zid-commerce-sync-pentest.test.ts",
+    "server/zid-order-webhook-pentest.test.ts",
+    "server/zid-order-notification-outbox-pentest.test.ts",
+    "server/zid-order-store-pentest.test.ts",
+    "scripts/testing/verify-zid-order-store-migration.cjs",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs",
+    "scripts/update-sary.sh",
+    "scripts/deploy-production.sh",
+    "scripts/sary-update-ops.mjs",
+    "scripts/zid-order-release.mjs",
+    "scripts/zid-order-release.test.mjs",
+    "scripts/zid-order-store-capability.json",
+    "scripts/testing/write-sales-brain-evidence.mjs"
+  ],
+  "runtimeEquivalence": {
+    "files": 1728,
+    "fullSuiteSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-zid-store-20260926",
+    "finalSnapshot": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\brain-zid-store-final-20260926",
+    "scope": "All 1728 tracked server/client/shared/drizzle inputs, build manifests and isolation runners matched byte-for-byte. Full suites and build checks predate deployment-only guards; those were tested separately from the final snapshot."
+  },
+  "scope": "Zid store-scoped source, local projection, cancellation, webhook and merchant notifications. Historical identity remains unknown. SQL and mocked WhatsApp with external network blocked; no payment evidence link or deployment claim.",
+  "attempts": [
+    {
+      "kind": "before-fix",
+      "failed": 3,
+      "accepted": false,
+      "sha256": "1971b36b9a2c3fad42f194649e175a6768fea533e8394cccd7093483586b2f29"
+    },
+    {
+      "kind": "initial-focused",
+      "passed": 188,
+      "failed": 6,
+      "accepted": false,
+      "reason": "Synthetic SQL fixtures omitted required items, named a nonexistent integration column and expected pending instead of the existing new-to-processing mapping.",
+      "sha256": "7403ba7f39ef4c070af66ebb67843eba460e8a7d9f3f17fa15376b043e948a17"
+    },
+    {
+      "kind": "focused",
+      "passed": 194,
+      "failed": 0,
+      "scope": "Before final byte-exact cancellation/lookup assertions; these are included in final full acceptance.",
+      "sha256": "61a48c809d835416a3203529ba732b876bba2dc045c19f8d69d1850ec9327a08"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_zid_store_20260926_test",
+      "migrations": 128,
+      "newMigrations": 1,
+      "sha256": "ec98e975030631fe4206ff67874e49f2d777257013115ca531324f44ecb6273c"
+    },
+    {
+      "kind": "populated-upgrade-and-replay",
+      "passed": true,
+      "sha256": "c9f0642b983a885db3ca7981b6cb07ceb958041e840a55dce8261663f3d11a13"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "9b5e0158daa59eca2a23b2f8d2652dc86780aefb236225d55bacaab2339360fa"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    },
+    {
+      "kind": "final-deployment-behavior",
+      "passed": 20,
+      "sha256": "34dd2938d2819b67f0cebeb8bfdc6a0b5676bccaabb2dcac4ef288297f716f5a"
+    },
+    {
+      "kind": "final-deployment-security",
+      "passed": 11,
+      "sha256": "e354d83ab75a2961c3f43013a9d59d88ac70055b2c0c7df64154d601fa0ac691"
+    }
+  ],
+  "acceptanceLimits": {
+    "crossSourcePaymentLinkProven": false,
+    "historicalStoreIdentityResolved": false,
+    "catalogStoreIsolationProven": false,
+    "sourceCompletenessProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "partialRefundsSupported": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "45 new acceptance cases: 24 SQL identity/notification cases, 19 ingress/sync cases and two pending projection cases. No previous acceptance case removed."
+}
