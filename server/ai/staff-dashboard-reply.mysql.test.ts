@@ -119,9 +119,9 @@ describe.skipIf(!process.env.DATABASE_URL)('authenticated dashboard staff reply 
     mocks.send.mockImplementationOnce(async()=>{await q("UPDATE conversations SET customerPhone='966500003399' WHERE id=?",[conv]);return {accepted:true,status:'sent',providerMessageId:`staff-receipt-${f.merchantId}`};});
     expect(await send()).toEqual({success:true,status:'accepted',persisted:false});expect(await facts()).toHaveLength(1);expect(await messages()).toEqual([]);
   });
-  it.each(['group','legacy'])('preserves the explicit unmeasured %s compatibility path',async kind=>{
+  it.each(['group','legacy'])('reserves the unmeasured %s path even without a compatibility sender',async kind=>{
     if(kind==='group')await q("UPDATE conversations SET customerPhone='group_120363123' WHERE id=?",[conv]);else await q('DELETE FROM whatsapp_instances WHERE id=?',[instance]);
-    expect(await send()).toBeNull();expect(await attempts()).toEqual([]);expect(mocks.send).not.toHaveBeenCalled();
+    expect(await send()).toEqual({success:false,status:'pending',persisted:false});expect(await attempts()).toHaveLength(1);expect(mocks.send).not.toHaveBeenCalled();
   });
   it('missing schema prevents ownership changes and provider calls',async()=>{
     vi.spyOn(readiness,'assertRuntimeSchema').mockRejectedValueOnce(Error('missing schema'));await expect(send()).rejects.toThrow('missing schema');

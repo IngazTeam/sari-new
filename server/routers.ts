@@ -1596,8 +1596,7 @@ export const appRouter = router({
     sendReply: permissionProcedure('conversations.reply')
       .input(staffDashboardReplyInput)
       .mutation(async ({ input, ctx }) => {
-        const tracked=await routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input);
-        if(tracked)return tracked;
+        return routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input,async target=>{
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -1609,7 +1608,8 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
         }
 
-        // FIX-3: Fallback chain — try new whatsapp_instances first, then legacy connection_requests
+        if(conversation.customerPhone!==target.customerPhone)throw new TRPCError({code:'CONFLICT'});
+        // Explicit compatibility transport; the request is already durably reserved.
         const waInstance = await getPrimaryWhatsAppInstance(merchant.id);
         let waInstanceId: string, waToken: string, waApiUrl: string;
 
@@ -1655,7 +1655,7 @@ export const appRouter = router({
 
         // Save to DB
         const { createMessage } = await import('./db');
-        await createMessage({
+        const saved=await createMessage({
           conversationId: input.conversationId,
           direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
           messageType: 'text',
@@ -1663,7 +1663,8 @@ export const appRouter = router({
           externalId: result.messageId || null,
         });
 
-        return { success: true, messageId: result.messageId };
+        return { success: true, persisted: Boolean(saved) };
+        });
       }),
 
     // Reserve validated voice bytes before upload; the client supplies no storage URL or key.

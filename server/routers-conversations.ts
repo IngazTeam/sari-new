@@ -136,8 +136,7 @@ export const conversationsRouter = router({
     sendReply: permissionProcedure('conversations.reply')
         .input(staffDashboardReplyInput)
         .mutation(async ({ input, ctx }) => {
-            const tracked=await routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input);
-            if(tracked)return tracked;
+            return routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input,async target=>{
             const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -149,7 +148,8 @@ export const conversationsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
             }
 
-            // FIX-3: Fallback chain — try new whatsapp_instances first, then legacy connection_requests
+            if(conversation.customerPhone!==target.customerPhone)throw new TRPCError({code:'CONFLICT'});
+            // Explicit compatibility transport; the request is already durably reserved.
             const { getPrimaryWhatsAppInstance, getWhatsAppConnectionRequestByMerchantId: getLegacyConn } = await import('./db');
             const instance = await getPrimaryWhatsAppInstance(merchant.id);
             let waInstanceId: string, waToken: string, waApiUrl: string;
@@ -195,7 +195,7 @@ export const conversationsRouter = router({
             }
 
             // Save to DB
-            await createMessage({
+            const saved=await createMessage({
                 conversationId: input.conversationId,
                 direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
                 messageType: 'text',
@@ -203,7 +203,8 @@ export const conversationsRouter = router({
                 externalId: result.messageId || null,
             });
 
-            return { success: true, messageId: result.messageId };
+            return { success: true, persisted: Boolean(saved) };
+            });
         }),
 
     // ── Sync conversations from Green API (recover missed data) ──

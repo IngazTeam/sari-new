@@ -14,9 +14,22 @@ import { dashboardStaffBasis,dashboardStaffAcceptance,readDashboardStaffBasis,re
 import { staffDashboardReplyInput,type StaffDashboardReplyInput,type StaffDashboardReplyResult } from '../../shared/staff-dashboard-reply';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channels/whatsapp/types';
+import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilitySnapshot,staffCompatibilityCustomer,staffCompatibilityResult } from './staff-dashboard-compatibility';
 
 const id=z.number().int().positive().safe();
 const unavailable=():never=>{throw Error('Staff reply unavailable');};
+export type StaffCompatibilitySend=(target:{customerPhone:string})=>Promise<{success:boolean;persisted:boolean}>;
+async function reserveCompatibility(c:PoolConnection,merchant:number,actor:number,input:StaffDashboardReplyInput,conv:any){
+  const [saved]=await c.execute<any>(`INSERT INTO ai_sales_staff_replies
+    (merchant_id,actor_user_id,conversation_id,request_id,instance_id,ownership_version,customer_phone,reply_text,next_reconcile_at)
+    VALUES (?,?,?,?,0,?,?,?,NULL)`,[merchant,actor,input.conversationId,input.requestId,conv.handoff_version,conv.customerPhone,input.message]);
+  const basis=staffCompatibilitySnapshot.parse({version:'staff-text-compatibility.v1',sourceId:Number(saved.insertId),merchantId:merchant,actorUserId:actor,
+    conversationId:input.conversationId,requestId:input.requestId,ownershipVersion:conv.handoff_version,customerKey:staffCompatibilityCustomer(merchant,conv.customerPhone),
+    replyDigest:hash(input.message),scope:'unmeasured_compatibility',result:null});
+  const [updated]=await c.execute<any>('UPDATE ai_sales_staff_replies SET basis=?,basis_digest=? WHERE id=? AND merchant_id=?',[JSON.stringify(basis),hash(basis),basis.sourceId,merchant]);
+  if(updated.affectedRows!==1)return unavailable();
+  return {id:basis.sourceId,compatibility:true as const,basis,customer_phone:conv.customerPhone,fresh:true};
+}
 export async function assertDashboardStaffSchema(){
   await assertSalesStaffAcceptanceSchema();
   await assertRuntimeSchema('dashboard staff replies',[{table:'ai_sales_staff_replies',
@@ -38,19 +51,23 @@ async function reserve(merchant:number,actor:number,input:StaffDashboardReplyInp
   return checkoutTransaction(async c=>{
     await authorizeDashboardStaff(c,merchant,actor);
     const [prior]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE merchant_id=? AND request_id=?',[merchant,input.requestId]);
-    if(prior.length){const b=readDashboardStaffBasis(prior[0]);
+    if(prior.length){
+      if(isStaffTextCompatibility(prior[0])){const b=readStaffTextCompatibility(prior[0]);
+        if(b.actorUserId!==actor||b.conversationId!==input.conversationId||b.replyDigest!==hash(input.message))return unavailable();
+        return {id:b.sourceId,compatibility:true as const,basis:b,customer_phone:prior[0].customer_phone,fresh:false};}
+      const b=readDashboardStaffBasis(prior[0]);
       if(b.actorUserId!==actor||b.conversationId!==input.conversationId||b.replyDigest!==hash(input.message))return unavailable();
       return {...prior[0],fresh:false};
     }
     const [convs]=await c.execute<any[]>('SELECT * FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[input.conversationId,merchant]);
     const conv=convs[0];if(convs.length!==1)return unavailable();
     // Group and legacy-connection sends retain their existing unmeasured compatibility path.
-    if(typeof conv.customerPhone==='string'&&(conv.customerPhone.startsWith('group_')||conv.customerPhone.endsWith('@g.us')))return null;
+    if(typeof conv.customerPhone==='string'&&(conv.customerPhone.startsWith('group_')||conv.customerPhone.endsWith('@g.us')))return reserveCompatibility(c,merchant,actor,input,conv);
     const customerKey=staffPhoneKey(merchant,conv.customerPhone);
     const [accounts]=await c.execute<any[]>("SELECT * FROM whatsapp_instances WHERE merchant_id=? AND is_primary=1 AND status='active' FOR SHARE",[merchant]);
     if(!accounts.length){
       const [registered]=await c.execute<any[]>('SELECT id FROM whatsapp_instances WHERE merchant_id=? LIMIT 1 FOR SHARE',[merchant]);
-      if(registered.length)return unavailable();return null;
+      if(registered.length)return unavailable();return reserveCompatibility(c,merchant,actor,input,conv);
     }
     if(accounts.length!==1)return unavailable();const a=accounts[0];
     const config:WhatsAppProviderConfig={provider:a.provider||'green_api',instanceId:String(a.instance_id),token:decryptSecret(a.token),apiUrl:a.api_url,phoneNumberId:a.phone_number_id,providerAccountId:a.provider_account_id};
@@ -139,10 +156,28 @@ export async function reconcileDashboardStaff(merchant:number,replyId:number):Pr
     return {success:true,status:'accepted',persisted:Boolean(projected)};
   });
 }
-/** Null is explicit compatibility coverage: legacy accounts or groups, never a failure fallback. */
-export async function trySendDashboardStaff(merchant:number,actor:number,raw:StaffDashboardReplyInput){
+/** Reserve every request before any transport, including the unmeasured compatibility sender. */
+export async function trySendDashboardStaff(merchant:number,actor:number,raw:StaffDashboardReplyInput,compatibilitySend?:StaffCompatibilitySend):Promise<StaffDashboardReplyResult>{
   id.parse(merchant);id.parse(actor);const input=staffDashboardReplyInput.parse(raw);await assertDashboardStaffSchema();
-  const r=await reserve(merchant,actor,input);if(!r)return null;
+  const r=await reserve(merchant,actor,input);
+  if('compatibility' in r&&r.compatibility){
+    if(r.basis.result)return r.basis.result;
+    if(r.fresh&&compatibilitySend){
+      try{const sent=await compatibilitySend({customerPhone:r.customer_phone});
+        if(sent.success!==true)return {success:false,status:'pending',persisted:false};
+        const result=staffCompatibilityResult.parse({success:true,status:'accepted',persisted:sent.persisted});
+        await checkoutTransaction(async c=>{
+          await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
+          const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE id=? AND merchant_id=? FOR UPDATE',[r.id,merchant]);
+          if(rows.length!==1||hash(readStaffTextCompatibility(rows[0]))!==hash(r.basis))return unavailable();
+          const basis=staffCompatibilitySnapshot.parse({...r.basis,result});
+          const [saved]=await c.execute<any>("UPDATE ai_sales_staff_replies SET status='accepted',basis=?,basis_digest=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(basis),hash(basis),r.id,merchant]);
+          if(saved.affectedRows!==1)return unavailable();
+        });return result;
+      }catch{ /* An unknown transport or commit result must never trigger a second send. */ }
+    }
+    return {success:false,status:'pending',persisted:false};
+  }
   if(r.fresh){
     destroySession(merchant,input.conversationId);
     await sendMerchantWhatsApp({merchantId:merchant,instanceRecordId:r.instance_id,idempotencyKey:staffDashboardKey(merchant,r.id),

@@ -801,6 +801,10 @@ Object.assign(entries, {
  B063:[entries.B063[0]+' تعرض واجهة التقرير قبول الفريق باللغتين مع تفاصيل مطوية للمصادر والاستبعادات والدفع، وتمنع أرقام المقارنة القديمة أثناء التحديث أو بعد تعثر إسناد المال. غياب دليل مؤهل لا يسمى بيعًا ذاتيًا؛ عرض الجوال ولوحة المفاتيح والتحقق من العقد مغطى.','scripts/testing/verify-sales-experiment-readout-ui.cjs'],
  B064:[entries.B064[0]+' اختبرت أنواع القبول الثلاثة والعبث بالأدلة وتفرد المصدر والإيصال والهوية، وحدود الوقت بالمللي ثانية، وتوحيد العميل وترتيب أول دفع عبر العملات والحجوزات والاسترداد. MySQL يربط التقرير بنقل النص والصوت المحفوظين ويختبر القراءة المتزامنة مع الإدخال والحذف دون إرسال جديد.','server/ai/sales-experiment-readout-staff-transport-pentest.test.ts'],
 });
+Object.assign(entries, {
+ B059:[entries.B059[0]+' أُغلق تجاوز سجل المحاولات في رد النص للمجموعات والاتصال القديم: يحجز UUID قبل استدعاء النقل، ويرتبط النص والمحادثة والموظف بالتاجر. فقد إقرار الحفظ والتنافس وإعادة الاتصال وتبدل الوجهة أو تسجيل الحساب لا يسمح بإعادة النقل للطلب نفسه. نتيجة التوافق منفصلة عن أدلة قبول المزوّد ولا يجمعها عامل الاستعادة.','server/ai/staff-dashboard-compatibility.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبرت صلاحيات ووجهة مساري الرد النصي المتوازيين، وحالات النتيجة غير الصالحة وفقد الحجز أو حفظ النتيجة والعبث بسجل التوافق. ترجع الواجهة عدم حفظ الرسالة عند غياب إسقاطها بدل ادعاء نجاح التخزين. لم تُختبر اتصالات المجموعات أو الحسابات القديمة لدى مزوّد إنتاجي.','server/staff-dashboard-reply-access-pentest.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
