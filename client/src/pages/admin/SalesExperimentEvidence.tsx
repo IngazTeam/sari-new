@@ -3,6 +3,7 @@ import { Link,useSearch } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { FlaskConical,RefreshCw } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { StaffTransportReadout } from '@/components/StaffTransportReadout';
 import { Button } from '@/components/ui/button';
 import { Card,CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,7 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
     </details>
     <ReadoutOutcomes report={r} locale={locale}/>
     <ReadoutStaff report={r} locale={locale}/>
+    <StaffTransportReadout report={r} locale={locale}/>
     <section data-readout-exposures className="space-y-3" aria-label={t('salesReadout.exposureTitle')}>
       <h3 className="text-lg font-semibold">{t('salesReadout.exposureTitle')}</h3>
       <p className="text-sm leading-7 text-muted-foreground">{t('salesReadout.exposureHelp')}</p>

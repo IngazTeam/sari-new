@@ -1,9 +1,10 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const withUi=process.argv.includes('--with-ui');
-const withVoice=process.argv.includes('--staff-voice');
+const withStaffTransport=process.argv.includes('--staff-transport');
+const withVoice=process.argv.includes('--staff-voice')||withStaffTransport;
 const withDashboardStaff=process.argv.includes('--dashboard-staff')||withVoice;
 const withStaffAcceptance=process.argv.includes('--staff-acceptance')||withDashboardStaff;
-const root=process.cwd(),output=path.resolve(withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
+const root=process.cwd(),output=path.resolve(withStaffTransport?'.tmp/staff-transport-readout-verification':withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -52,6 +53,12 @@ if(withVoice){
 }
 if(withStaffAcceptance)extra.push('server/ai/sales-staff-acceptance-contract.ts','server/ai/sales-staff-acceptance.ts',
   'drizzle/0130_sales_staff_acceptances.sql','scripts/testing/verify-sales-staff-acceptance-migration.cjs');
+if(withStaffTransport){
+  unit.push('server/ai/sales-experiment-readout-staff-transport-pentest.test.ts');
+  database.push('server/ai/sales-experiment-readout-staff-transport.mysql.test.ts');
+  extra.push(...unit,...database,'server/ai/sales-experiment-readout-staff-transport.ts','shared/sales-staff-transport-readout.ts',
+    'client/src/components/StaffTransportReadout.tsx','server/tests/helpers/staff-readout.ts');
+}
 if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
   'scripts/testing/verify-sales-experiment-readout-ui.cjs','scripts/testing/fixtures/sales-experiment-readout-ui-entry.tsx','scripts/testing/fixtures/sales-experiment-readout-data.ts');
 function manifest(){
@@ -121,7 +128,7 @@ try{
       tests:r.testResults.flatMap(f=>f.assertionResults.map(t=>({file:path.relative(root,f.name).replaceAll('\\','/'),name:t.fullName,status:t.status})))};
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
-    scope:withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
+    scope:withStaffTransport?'staff_acceptance_readout_and_affected_regression_not_full_release_acceptance':withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
     checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),migrationReport,productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));

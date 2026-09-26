@@ -64,5 +64,5 @@ export function readoutFixture() {
   function staffMessage(n=1,conversation=1,sender='merchant',at='2026-09-04T00:00:00.000Z'){
     return {id:n,conversationId:conversation,direction:'outgoing',sender_type:sender,created_utc:at};
   }
-  return {protocol,assignment,capture,refund,exposure,binding,staffMessage,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[],exposures:[] as any[],deliveries:[] as any[],conversationBindings:[] as any[],staffMessages:[] as any[]}};
+  return {protocol,assignment,capture,refund,exposure,binding,staffMessage,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[],exposures:[] as any[],deliveries:[] as any[],conversationBindings:[] as any[],staffMessages:[] as any[],staffAcceptances:[] as any[]}};
 }

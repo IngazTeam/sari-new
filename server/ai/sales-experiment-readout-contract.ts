@@ -6,6 +6,7 @@ import { readSalesPaymentFact, readSalesPaymentAttribution } from './sales-payme
 import { buildSalesReadoutExposures } from './sales-experiment-readout-exposures';
 import { buildSalesReadoutOutcomes } from './sales-experiment-readout-outcomes';
 import { buildSalesReadoutStaff } from './sales-experiment-readout-staff';
+import { buildSalesReadoutStaffTransport } from './sales-experiment-readout-staff-transport';
 
 const id = z.number().int().positive().safe();
 const utc = z.string().datetime({ precision: 3 }).refine(v => Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v);
@@ -28,12 +29,13 @@ type Capture = { fact: Fact; assignment: Assignment; refund?: Fact };
 /** Recorded ITT evidence only. No model, transport, writes, statistical winner or activation. */
 export function buildSalesExperimentReadout(value: z.input<typeof salesExperimentReadoutInput>, rows: {
   protocol: any; withdrawals: any[]; assignments: any[]; payments: any[]; exposures: any[]; deliveries: any[];
-  conversationBindings:any[];staffMessages:any[];
+  conversationBindings:any[];staffMessages:any[];staffAcceptances:any[];
 }, readAt: string) {
   const input = salesExperimentReadoutInput.parse(value), now = Date.parse(utc.parse(readAt));
   if (rows.assignments.length > SALES_READOUT_ASSIGNMENT_LIMIT || rows.payments.length > SALES_READOUT_PAYMENT_LIMIT
     || rows.exposures.length > SALES_READOUT_EXPOSURE_LIMIT || rows.deliveries.length > SALES_READOUT_EXPOSURE_LIMIT
-    || rows.conversationBindings.length > SALES_READOUT_STAFF_LIMIT || rows.staffMessages.length > SALES_READOUT_STAFF_LIMIT)
+    || rows.conversationBindings.length > SALES_READOUT_STAFF_LIMIT || rows.staffMessages.length > SALES_READOUT_STAFF_LIMIT
+    || rows.staffAcceptances.length > SALES_READOUT_STAFF_LIMIT)
     throw new SalesExperimentReadoutLimitExceeded();
   const p = readSalesExperimentProtocolRow(rows.protocol), protocolDigest = String(rows.protocol.protocol_digest);
   if (Number(rows.protocol.id) !== input.protocolId || p.merchantId !== input.merchantId || Date.parse(p.registeredAt) > now) conflict();
@@ -146,12 +148,14 @@ export function buildSalesExperimentReadout(value: z.input<typeof salesExperimen
   const exposure=buildSalesReadoutExposures(assignments,rows.exposures,rows.deliveries,
     Array.from(matched.values()).map(c=>({assignmentId:c.assignment.assignmentId,capturedAt:c.fact.snapshot.verifiedAt})),blocked,now);
   const staff=buildSalesReadoutStaff(assignments,rows.conversationBindings,rows.staffMessages,now);
+  const staffTransport=buildSalesReadoutStaffTransport(input.merchantId,assignments,rows.conversationBindings,rows.staffAcceptances,
+    Array.from(matched.values()).map(c=>({assignmentId:c.assignment.assignmentId,capturedAt:c.fact.snapshot.verifiedAt})),blocked,now);
   return {
-    version:'sales-experiment-readout.v4' as const, ...input, protocolDigest, protocolState:rows.protocol.state as 'registered'|'withdrawn',
+    version:'sales-experiment-readout.v5' as const, ...input, protocolDigest, protocolState:rows.protocol.state as 'registered'|'withdrawn',
     sector:p.sector.playbook.id, sectorDigest:p.sector.digest, readAt,
     population:'all_recorded_assigned_qualified_customers' as const, completeWithinRecordedPopulation:true as const,
     limits:{ assignments:SALES_READOUT_ASSIGNMENT_LIMIT,merchantPaymentFacts:SALES_READOUT_PAYMENT_LIMIT,exposures:SALES_READOUT_EXPOSURE_LIMIT,
-      conversationBindings:SALES_READOUT_STAFF_LIMIT,registeredConversationMessages:SALES_READOUT_STAFF_LIMIT },
+      conversationBindings:SALES_READOUT_STAFF_LIMIT,registeredConversationMessages:SALES_READOUT_STAFF_LIMIT,merchantStaffAcceptances:SALES_READOUT_STAFF_LIMIT },
     window:w, enrollmentClosed, decisionTimeReached, arms,
     sampleStatus:arms.some(a => a.sampleShortfall > 0) ? enrollmentClosed ? 'insufficient_no_extension' as const : 'accruing' as const : 'recorded_minimum_reached' as const,
     paymentEvidence:{ status:blocked ? 'unresolved_attribution' as const : matched.size ? 'observed' as const : 'unmeasured' as const,
@@ -160,14 +164,16 @@ export function buildSalesExperimentReadout(value: z.input<typeof salesExperimen
     partialRefunds:'not_supported_by_source' as const, humanAssistance:'unmeasured' as const, exposure:'recorded_transport_chronology' as const,
     exposureEvidence:exposure.summary,
     staffEvidence:staff.summary,
+    staffTransportEvidence:staffTransport.summary,
     outcomeEvidence:buildSalesReadoutOutcomes(p.design,rows.protocol.state==='withdrawn',arms,Array.from(matched.values()).map(c=>({
       assignmentId:c.assignment.assignmentId,arm:c.assignment.snapshot.arm,targetKind:c.fact.snapshot.targetKind,
       refundedBeforeCutoff:!!c.refund&&Date.parse(c.refund.snapshot.verifiedAt)<Date.parse(w.decisionNotBefore),
     })),enrollmentClosed,decisionTimeReached,blocked),
     primaryMetric:'not_established' as const, causality:'unmeasured' as const, winner:null, learningAllowed:false as const, activationAllowed:false as const,
-    evidenceSetDigest:hash({ version:'sales-experiment-readout-basis.v4',...input,protocolDigest,state:rows.protocol.state,
+    evidenceSetDigest:hash({ version:'sales-experiment-readout-basis.v5',...input,protocolDigest,state:rows.protocol.state,
       exposures:exposure.evidence,
       staff:staff.evidence,
+      staffTransport:staffTransport.evidence,
       withdrawalDigest:rows.withdrawals[0]?.withdrawal_digest ?? null,
       assignments:assignments.map(a => [a.assignmentId,a.assignmentDigest]),
       payments:related.sort((a,b) => a.factId-b.factId).map(f => [f.factId,f.factDigest,f.row.attribution_state,f.row.attribution_digest]) }),

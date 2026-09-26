@@ -5,6 +5,7 @@ import { assertSalesPaymentFactSchema } from './sales-payment-facts';
 import { buildSalesExperimentReadout, salesExperimentReadoutInput, SALES_READOUT_ASSIGNMENT_LIMIT, SALES_READOUT_PAYMENT_LIMIT, SALES_READOUT_EXPOSURE_LIMIT } from './sales-experiment-readout-contract';
 import { assertSalesExperimentExposureSchema } from './sales-experiment-exposure';
 import { SALES_READOUT_STAFF_LIMIT } from './sales-experiment-readout-contract';
+import { assertSalesStaffAcceptanceSchema } from './sales-staff-acceptance';
 
 export class SalesExperimentReadoutAccessDenied extends Error {}
 export class SalesExperimentReadoutNotReady extends Error {}
@@ -23,6 +24,7 @@ export async function inspectSalesExperimentReadout(actorUserId:number,value:z.i
     if (actors.length!==1) throw new SalesExperimentReadoutAccessDenied();
     await assertSalesPaymentFactSchema();
     await assertSalesExperimentExposureSchema();
+    await assertSalesStaffAcceptanceSchema();
     const [protocols]=await c.execute<any[]>('SELECT * FROM ai_sales_experiment_protocols WHERE merchant_id=? AND id=?',[input.merchantId,input.protocolId]);
     if (protocols.length!==1) throw new SalesExperimentReadoutNotReady();
     const [withdrawals]=await c.execute<any[]>('SELECT * FROM ai_sales_experiment_withdrawals WHERE merchant_id=? AND protocol_id=? LIMIT 2',[input.merchantId,input.protocolId]);
@@ -44,7 +46,10 @@ export async function inspectSalesExperimentReadout(actorUserId:number,value:z.i
       ON c.id=b.conversation_reference AND c.merchantId=b.merchant_id JOIN messages m ON m.conversationId=c.id
       WHERE b.merchant_id=? AND b.protocol_id=? AND m.direction='outgoing' AND m.sender_type<>'assistant'
       ORDER BY m.id LIMIT ${SALES_READOUT_STAFF_LIMIT+1}`,[input.merchantId,input.protocolId]);
-    const result={...buildSalesExperimentReadout(input,{protocol:protocols[0],withdrawals,assignments,payments,exposures,deliveries,conversationBindings,staffMessages},new Date(databaseTimeEpoch(clock.read_at)).toISOString()),
+    // Select the whole merchant ledger, including unbound/older/late observations.
+    // No source joins: deleting a message, conversation or outbox must not erase retained acceptance.
+    const [staffAcceptances]=await c.execute<any[]>(`SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? ORDER BY id LIMIT ${SALES_READOUT_STAFF_LIMIT+1}`,[input.merchantId]);
+    const result={...buildSalesExperimentReadout(input,{protocol:protocols[0],withdrawals,assignments,payments,exposures,deliveries,conversationBindings,staffMessages,staffAcceptances},new Date(databaseTimeEpoch(clock.read_at)).toISOString()),
       consistency:'single_database_snapshot' as const};
     await c.rollback(); return result;
   } catch(error) {

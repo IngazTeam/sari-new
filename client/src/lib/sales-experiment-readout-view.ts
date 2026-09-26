@@ -3,16 +3,17 @@ import { parseSalesEvidenceId } from './sales-order-report-view';
 import { salesExposureReadout } from '../../../shared/sales-experiment-exposure-readout';
 import { salesOutcomeReadout,salesOutcomeBlockers } from '../../../shared/sales-experiment-outcome-readout';
 import { salesStaffReadout } from '../../../shared/sales-experiment-staff-readout';
+import { salesStaffTransportReadout } from '../../../shared/sales-staff-transport-readout';
 
 const id=z.number().int().positive().safe(), count=z.number().int().nonnegative().safe();
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
 const utc=z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v);
 const arm=z.enum(['baseline','candidate']);
 const view=z.object({
-  version:z.literal('sales-experiment-readout.v4'),merchantId:id,protocolId:id,protocolDigest:digest,
+  version:z.literal('sales-experiment-readout.v5'),merchantId:id,protocolId:id,protocolDigest:digest,
   protocolState:z.enum(['registered','withdrawn']),sector:z.string().regex(/^[a-z][a-z0-9_]{1,63}$/),sectorDigest:digest,readAt:utc,
   population:z.literal('all_recorded_assigned_qualified_customers'),completeWithinRecordedPopulation:z.literal(true),
-  limits:z.object({assignments:z.literal(10000),merchantPaymentFacts:z.literal(20000),exposures:z.literal(20000),conversationBindings:z.literal(20000),registeredConversationMessages:z.literal(20000)}),
+  limits:z.object({assignments:z.literal(10000),merchantPaymentFacts:z.literal(20000),exposures:z.literal(20000),conversationBindings:z.literal(20000),registeredConversationMessages:z.literal(20000),merchantStaffAcceptances:z.literal(20000)}),
   window:z.object({enrollmentStartsAt:utc,enrollmentEndsAt:utc,observationDays:z.number().int().min(1).max(180),decisionNotBefore:utc}),
   enrollmentClosed:z.boolean(),decisionTimeReached:z.boolean(),
   arms:z.array(z.object({arm,assignedCustomers:count.max(10000),observationComplete:count,observationPending:count,
@@ -29,6 +30,7 @@ const view=z.object({
   exposureEvidence:salesExposureReadout,
   outcomeEvidence:salesOutcomeReadout,
   staffEvidence:salesStaffReadout,
+  staffTransportEvidence:salesStaffTransportReadout,
   primaryMetric:z.literal('not_established'),causality:z.literal('unmeasured'),winner:z.null(),learningAllowed:z.literal(false),activationAllowed:z.literal(false),
   evidenceSetDigest:digest,consistency:z.literal('single_database_snapshot'),
 });
@@ -53,6 +55,9 @@ export function readSalesReadoutView(value:unknown,request:SalesReadoutRequest):
   if(r.sampleStatus!==expected)return null;
   if(r.exposureEvidence.chronologyStatus!==r.paymentEvidence.status)return null;
   for(const a of r.staffEvidence.arms)if(a.assignedCustomers!==r.arms.find(g=>g.arm===a.arm)?.assignedCustomers)return null;
+  if(r.staffTransportEvidence.chronologyStatus!==r.paymentEvidence.status)return null;
+  for(const a of r.staffTransportEvidence.arms)if(a.assignedCustomers!==r.arms.find(g=>g.arm===a.arm)?.assignedCustomers
+    || (a.firstCapture?.customers??null)!==(r.exposureEvidence.arms.find(g=>g.arm===a.arm)?.firstCapture?.customers??null))return null;
   for(const e of r.exposureEvidence.arms){
     if(e.assignedCustomers!==r.arms.find(a=>a.arm===e.arm)?.assignedCustomers)return null;
     const groups=r.paymentEvidence.groups.filter(g=>g.arm===e.arm),customers=e.firstCapture?.customers??0;

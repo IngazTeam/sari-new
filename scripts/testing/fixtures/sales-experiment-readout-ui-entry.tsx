@@ -37,6 +37,8 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
     if(mode==='inconsistent')r.paymentEvidence.groups[0].netCurrentlyObservedMinor++;
     if(mode==='outcome-inconsistent')r.outcomeEvidence.decision.blockers=[];
     if(mode==='staff-inconsistent')r.staffEvidence.completeness='complete';
+    if(mode==='transport-inconsistent')r.staffTransportEvidence.salesAttribution='established';
+    if(mode==='transport-refresh')r=structuredClone(ordinal>1?__READOUT_FIXTURES__['transport-pending']:__READOUT_FIXTURES__['transport-mixed']);
     if(mode==='staff-refresh')r=structuredClone(ordinal>1?__READOUT_FIXTURES__['staff-missing']:__READOUT_FIXTURES__['staff-mixed']);
     if(mode==='outcome-refresh')r=structuredClone(ordinal>1?__READOUT_FIXTURES__.pending:__READOUT_FIXTURES__['outcome-mixed']);
     if(mode==='xss')r.sector='<img src=x onerror=window.__readoutXss=1>';

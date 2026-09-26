@@ -795,6 +795,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختُبرت صلاحية الصوت وتغيير بياناته وتلف الأدلة والتنافس وفقد الإقرارات والتنقية، مع محاكاة الرفع والنقل، وتسجيل Chromium فعلي بميكروفون اصطناعي؛ لا اختبار جهاز iPhone أو مزود إنتاجي.','server/ai/staff-dashboard-voice.mysql.test.ts'],
  B065:[entries.B065[0]+' يضيف الترحيل 0132 جدول الصوت ومصدر قبوله دون ترحيل التاريخ. اختبار قاعدة جديدة والترقية من 0131 وDDL جزئي وإعادته يشمل حفظ سبعة جداول وقيود التفرد ومصدر القبول والسقف العالمي 100 دولار.','scripts/testing/verify-staff-voice-migration.cjs'],
 });
+Object.assign(entries, {
+ B046:[entries.B046[0]+' أصبح تقرير التجربة يقرأ سجل قبول التصعيد والنص والصوت بهويته المثبتة، ويعرض مصادر القبول والاستبعادات وتسلسل الحجز والقبول مع أول تحقق من الدفع لكل عميل. لا ينسب مبيعات للرد أو يدعي تأليفًا بشريًا أو اكتمال التغطية؛ تبقى بوابة المساعدة البشرية مفتوحة.','server/ai/sales-experiment-readout-staff-transport.ts'],
+ B062:[entries.B062[0]+' يستخدم التقرير لقطة SQL واحدة لسجل القبول الكامل المحدود، ولا يعتمد على بقاء الرسالة أو الملف أو outbox أو المحادثة. يفصل تراجع الساعة والنافذة المتداخلة والهوية غير المرتبطة والمزوّد المحاكى؛ فشل إسناد الدفع يحجب المقارنة الزمنية.','server/ai/sales-experiment-readout-staff-transport.mysql.test.ts'],
+ B063:[entries.B063[0]+' تعرض واجهة التقرير قبول الفريق باللغتين مع تفاصيل مطوية للمصادر والاستبعادات والدفع، وتمنع أرقام المقارنة القديمة أثناء التحديث أو بعد تعثر إسناد المال. غياب دليل مؤهل لا يسمى بيعًا ذاتيًا؛ عرض الجوال ولوحة المفاتيح والتحقق من العقد مغطى.','scripts/testing/verify-sales-experiment-readout-ui.cjs'],
+ B064:[entries.B064[0]+' اختبرت أنواع القبول الثلاثة والعبث بالأدلة وتفرد المصدر والإيصال والهوية، وحدود الوقت بالمللي ثانية، وتوحيد العميل وترتيب أول دفع عبر العملات والحجوزات والاسترداد. MySQL يربط التقرير بنقل النص والصوت المحفوظين ويختبر القراءة المتزامنة مع الإدخال والحذف دون إرسال جديد.','server/ai/sales-experiment-readout-staff-transport-pentest.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
