@@ -1,0 +1,73 @@
+{
+  "baseline": "4c8c9c8cd91dd73a069cb9b7cd70e6578c52f417",
+  "frozenAt": "2026-09-26T14:10:19.613Z",
+  "sourceFiles": [
+    "server/ai/sales-order-settlement-contract.ts",
+    "server/ai/sales-order-settlement.ts",
+    "server/ai/sales-order-settlement-pentest.test.ts",
+    "server/sales-order-settlement-access-pentest.test.ts",
+    "server/ai/sales-order-attribution.mysql.test.ts",
+    "server/routers-inbound-operations.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs"
+  ],
+  "scope": "Read-only local order/capture/full-refund evidence diagnostics. Synthetic local SQL and blocked external network; no deployment or real provider persuasion measurement.",
+  "attempts": [
+    {
+      "kind": "initial-focused-database-unavailable",
+      "passed": 49,
+      "failed": 39,
+      "accepted": false,
+      "reason": "Disposable MySQL was stopped; ECONNREFUSED before fixture creation.",
+      "sha256": "bf169fca246de5eb25d38305d150f370293e7835a23c4bdc4f02dcb8a696da7a"
+    },
+    {
+      "kind": "focused-database-recovering",
+      "passed": 49,
+      "failed": 39,
+      "accepted": false,
+      "reason": "InnoDB recovery had not completed; ECONNREFUSED before fixture creation.",
+      "sha256": "0211314fd6f825a696346fe48825d29feaa0442979dd49b1d97f963d14f30f4a"
+    },
+    {
+      "kind": "focused-database-ready",
+      "passed": 88,
+      "failed": 0,
+      "sha256": "a22b5c0a39b18339b919d9763b5e75e1fe71254498a1c072b1be2113558533d8"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_order_settlement_20260926_test",
+      "migrations": 127,
+      "newMigrations": 0,
+      "sha256": "6164aa195e3a3570e437174a5fb36a23225c1c5e71bb2b520f3e1823084bb975"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "bc088169f502cc45c9f1d3ca3a3ceaea5f2c31de3ca1992d3f727dbbab4a4997"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "crossSourceAliasesProven": false,
+    "sourceCompletenessProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "partialRefundsSupported": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "experimentAttributionEvaluatedByThisView": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "65 added unique cases: evidence contract 37, API access 12, actual agreement/capture/refund SQL journeys 16. No prior test removed."
+}

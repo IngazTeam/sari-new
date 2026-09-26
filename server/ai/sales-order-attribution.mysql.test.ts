@@ -11,6 +11,8 @@ import { buildReplyPlan } from '../messaging/reply-plan';
 import { readSalesOrderFact,readSalesOrderAttribution } from './sales-order-fact-contract';
 import { attributeSalesOrderFact,runSalesOrderAttributionBatch,salesOrderAttributionHealth,SalesOrderHealthAccessDenied } from './sales-order-attribution';
 import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundle';
+import { applyTapOrderPaymentState } from '../payment/order-payment-state';
+import { inspectSalesOrderSettlement,SalesOrderSettlementAccessDenied,SalesOrderSettlementNotReady } from './sales-order-settlement';
 const state=vi.hoisted(()=>({unix:null as number|null,observedUnix:null as number|null}));
 vi.mock('../db_ai_settings',()=>({getActiveModel:async()=>'synthetic-model',getZahyPiRuntimeMetadata:async()=>({enabled:true,provider:'openai',model:'synthetic-model',source:'database'})}));
 vi.mock('./checkout-agreements',async original=>{const actual=await original<typeof import('./checkout-agreements')>();return {...actual,
@@ -19,6 +21,9 @@ vi.mock('./checkout-agreements',async original=>{const actual=await original<typ
 vi.mock('./sales-order-facts',async original=>{const actual=await original<typeof import('./sales-order-facts')>();return {...actual,
   recordSalesOrderFact:async(c:any,m:number,q:number,origin:any)=>{if(state.observedUnix!==null)await c.query('SET timestamp=?',[state.observedUnix]);
     try{return await actual.recordSalesOrderFact(c,m,q,origin);}finally{await c.query('SET timestamp=DEFAULT');}}};});
+vi.mock('./sales-payment-facts',async original=>{const actual=await original<typeof import('./sales-payment-facts')>();return {...actual,
+  recordTapSalesPaymentFact:async(c:any,m:number,p:number)=>{if(state.observedUnix!==null)await c.query('SET timestamp=?',[state.observedUnix+1]);
+    try{return await actual.recordTapSalesPaymentFact(c,m,p);}finally{await c.query('SET timestamp=DEFAULT');}}};});
 
 describe.skipIf(!process.env.DATABASE_URL)('prospective agreement order attribution on MySQL',()=>{
   let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,reviewer:typeof owner,users:number[],identity:CheckoutIdentity,productId:number;
@@ -129,5 +134,83 @@ describe.skipIf(!process.env.DATABASE_URL)('prospective agreement order attribut
   it('does not backfill an old accepted order on replay with a new observation timestamp',async()=>{
     const {consent,q}=await create();await query('DELETE FROM ai_sales_order_facts WHERE merchant_id=?',[owner.merchantId]);state.observedUnix!+=86400;
     expect((await acceptCheckoutQuote(consent,q.quotationId)).kind).toBe('order');expect(await facts()).toHaveLength(0);
+  });
+
+  const settlement=async(merchantId=owner.merchantId,factId?:number)=>inspectSalesOrderSettlement(reviewer.userId,{merchantId,factId:factId??(await facts())[0].id});
+  async function admin(){await query("UPDATE users SET role='admin' WHERE id=?",[reviewer.userId]);}
+  async function pay(orderId:number,amount=26000){
+    const charge='chg_order_view_'+randomUUID().replaceAll('-','');
+    const p=await query("INSERT INTO order_payments (merchant_id,order_id,customer_phone,amount,currency,status,tap_charge_id,metadata) VALUES (?,?,?,?,'SAR','pending',?,?)",
+      [owner.merchantId,orderId,'966599999999',amount,charge,JSON.stringify({conversationId:identity.conversationId,orderFactId:999999})]);
+    const input={paymentId:Number(p.insertId),tapChargeId:charge,expectedMerchantId:owner.merchantId,expectedAmount:amount,expectedCurrency:'SAR',providerStatus:'CAPTURED'};
+    await applyTapOrderPaymentState(input);return input;
+  }
+  it('inspects the actual agreement, capture and refund without conflating quoted value and revenue',async()=>{
+    await admin();const {order}=await create();
+    expect(await settlement()).toMatchObject({financialState:'payment_not_measured',observedNetMinor:null});
+    const p=await pay(order.orderId),captured=await settlement();
+    expect(captured).toMatchObject({financialState:'capture_observed',quotedAmountMinor:23000,capturedMinor:26000,refundedMinor:null,observedNetMinor:26000,invoiceDifferenceMinor:3000});
+    await applyTapOrderPaymentState({...p,providerStatus:'REFUNDED'});const refunded=await settlement();
+    expect(refunded).toMatchObject({financialState:'full_refund_observed',capturedMinor:26000,refundedMinor:26000,observedNetMinor:0,attribution:'not_evaluated'});
+    expect(refunded.evidenceSetDigest).not.toBe(captured.evidenceSetDigest);expect(refunded.events).toHaveLength(2);
+    expect(JSON.stringify(refunded)).not.toContain(phone);expect(JSON.stringify(refunded)).not.toContain('966599999999');expect(fetch).not.toHaveBeenCalled();
+  });
+  it('never merges two orders from the same customer or trusts payment metadata as an order alias',async()=>{
+    await admin();const first=await create(),second=await create();await pay(first.order.orderId);
+    const rows=await facts();expect((await settlement(owner.merchantId,rows[0].id)).capturedMinor).toBe(26000);
+    expect(await settlement(owner.merchantId,rows[1].id)).toMatchObject({financialState:'payment_not_measured',observedNetMinor:null});
+    expect(second.order.orderId).not.toBe(first.order.orderId);
+  });
+  it('retains exact identity after quote, order and financial source deletion',async()=>{
+    await admin();const {order,q}=await create(),p=await pay(order.orderId),before=await settlement();
+    await query("UPDATE orders SET customerPhone='966500009999',totalAmount=1 WHERE id=?",[order.orderId]);
+    await query('DELETE FROM order_payments WHERE id=?',[p.paymentId]);await query('DELETE FROM sales_quotations WHERE id=?',[q.quotationId]);await query('DELETE FROM orders WHERE id=?',[order.orderId]);
+    expect(await settlement()).toEqual(before);
+  });
+  it('does not mutate payment, order, attribution, quota or experiment state on repeated reads',async()=>{
+    await admin();const {order}=await create();await pay(order.orderId);
+    const tables=['ai_sales_order_facts','ai_sales_payment_facts','ai_sales_experiment_assignments','order_payments'];
+    const snapshot=async()=>Promise.all([...tables.map(t=>query(`SELECT * FROM ${t} WHERE merchant_id=? ORDER BY id`,[owner.merchantId])),
+      query('SELECT * FROM ai_usage_reservations ORDER BY reservation_key'),query('SELECT * FROM orders WHERE merchantId=? ORDER BY id',[owner.merchantId])]);
+    const before=await snapshot(),a=await settlement();expect(await settlement()).toEqual(a);expect(await snapshot()).toEqual(before);expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['user','inactive','wrong-merchant','missing-fact'])('denies %s order settlement access from current SQL authority',async mode=>{
+    const {order}=await create();await pay(order.orderId);if(mode!=='user')await admin();
+    if(mode==='inactive')await query("UPDATE users SET account_status='deletion_pending' WHERE id=?",[reviewer.userId]);
+    await expect(settlement(mode==='wrong-merchant'?reviewer.merchantId:owner.merchantId,mode==='missing-fact'?2147483647:undefined))
+      .rejects.toBeInstanceOf(['user','inactive'].includes(mode)?SalesOrderSettlementAccessDenied:SalesOrderSettlementNotReady);
+  });
+  it.each(['order-digest','payment-digest','customer-changed','currency-changed','refund-without-capture'])('rejects %s evidence without guessing an alias',async mode=>{
+    await admin();const {order}=await create();
+    if(mode==='customer-changed')await query("UPDATE orders SET customerPhone='966500009999' WHERE id=?",[order.orderId]);
+    const p=await pay(order.orderId);
+    if(mode==='order-digest')await query("UPDATE ai_sales_order_facts SET fact_digest=REPEAT('c',64) WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='payment-digest')await query("UPDATE ai_sales_payment_facts SET fact_digest=REPEAT('c',64) WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='currency-changed'){
+      const [row]=await query('SELECT * FROM ai_sales_payment_facts WHERE merchant_id=?',[owner.merchantId]);const s=typeof row.snapshot==='string'?JSON.parse(row.snapshot):row.snapshot;
+      s.currency='USD';await query('UPDATE ai_sales_payment_facts SET snapshot=?,fact_digest=? WHERE id=?',[JSON.stringify(s),hash(s),row.id]);
+    }
+    if(mode==='refund-without-capture'){await applyTapOrderPaymentState({...p,providerStatus:'REFUNDED'});await query("DELETE FROM ai_sales_payment_facts WHERE merchant_id=? AND event_type='captured'",[owner.merchantId]);}
+    await expect(settlement()).rejects.toThrow();expect((await query('SELECT status FROM order_payments WHERE id=?',[p.paymentId]))[0].status).toBe(mode==='refund-without-capture'?'refunded':'captured');
+  });
+  it('reconnects for the same immutable view without provider or worker activity',async()=>{
+    await admin();const {order}=await create();await pay(order.orderId);const before=await settlement();await closeDb();expect(await settlement()).toEqual(before);expect(fetch).not.toHaveBeenCalled();
+  });
+  it('returns a bounded observed view when a refund commits after its evidence read',async()=>{
+    await admin();const {order}=await create(),p=await pay(order.orderId),pool=(await getPool())!,get=pool.getConnection.bind(pool);
+    let entered!:()=>void,resume!:()=>void,once=true;const atRead=new Promise<void>(r=>{entered=r;}),continueRead=new Promise<void>(r=>{resume=r;});
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();if(!once)return c;once=false;
+      return new Proxy(c,{get(target,key){if(key==='execute')return async(sql:any,args:any)=>{const result=await target.execute(sql,args);
+        if(String(sql).includes("target_kind='order'")){entered();await continueRead;}return result;};const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    const reading=settlement();try{await atRead;await applyTapOrderPaymentState({...p,providerStatus:'REFUNDED'});}finally{resume();}
+    const before=await reading;vi.restoreAllMocks();expect(before).toMatchObject({financialState:'capture_observed',sourceCompleteness:'unmeasured'});
+    const after=await settlement();expect(after.financialState).toBe('full_refund_observed');expect(after.evidenceSetDigest).not.toBe(before.evidenceSetDigest);
+  });
+  it('destroys an uncertain read connection and recovers without mutating evidence',async()=>{
+    await admin();const {order}=await create();await pay(order.orderId);const before=await settlement(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let once=true,destroyed=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();if(!once)return c;once=false;
+      return new Proxy(c,{get(target,key){if(key==='rollback')return async()=>{throw Error('Lost read connection');};if(key==='destroy')return()=>{destroyed=true;target.destroy();};
+        const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await expect(settlement()).rejects.toThrow('Lost read connection');vi.restoreAllMocks();expect(destroyed).toBe(true);expect(await settlement()).toEqual(before);
   });
 });

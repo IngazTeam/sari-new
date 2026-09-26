@@ -705,6 +705,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' فُحصت ذرية الاتفاق والطلب والدليل، وفقد إقرار commit قبل الحفظ وبعده، وتنافس العمال، وتغير هوية الاتفاق أثناء POST/GET، وتكرار رقم طلب بين متجرين، وغياب الدفع والتعرض، والحدود الزمنية والصلاحيات والتلف.','server/ai/sales-order-attribution.mysql.test.ts'],
  B065:[entries.B065[0]+' يضيف الترحيل 0126 سجل أدلة الطلب دون تصنيع تاريخ قديم أو دمج افتراضي. فُحص المحدّث من 0125 وإعادته وإعادة SQL وحفظ ثمانية جداول ورفض خمسة خروق قيود وبقاء سقف المنصة 100 دولار.','scripts/testing/verify-sales-order-facts-migration.cjs'],
 });
+Object.assign(entries, {
+ B019:[entries.B019[0]+' أضيفت قراءة موحدة تربط دليل الاتفاق المحلي بأدلة قبض Tap والاسترجاع عبر النشاط ومعرف الطلب المحلي فقط، دون الاعتماد على الهاتف أو metadata. يبقى زد خارج هذا الربط حتى يعتمد رابط عبر المصادر.','server/ai/sales-order-settlement-pentest.test.ts'],
+ B042:[entries.B042[0]+' تعرض القراءة قيمة العرض ومبلغ القبض وفارق الفاتورة والاسترجاع الكامل المثبت، مع صافي الأدلة المرصودة فقط. غياب الدليل لا يعني عدم الدفع أو صفر الإيراد، والتقرير لا يعيد حساب إسناد التجربة أو يثبت السببية.','server/ai/sales-order-attribution.mysql.test.ts'],
+ B046:[entries.B046[0]+' يستطيع السوبر أدمن النشط فحص أدلة طلب واحد عبر API للقراءة فقط؛ بصمة مجموعة الأدلة تتغير عند ظهور استرجاع، وتبقى اكتمالية المصادر وحالة الطلب الحالية غير مقاستين. الواجهة والتقرير الجامع ما زالا مفتوحين.','server/sales-order-settlement-access-pentest.test.ts'],
+ B064:[entries.B064[0]+' اختبرت رحلة اتفاق محلي إلى قبض واسترجاع Tap، واختلاف مبلغ الفاتورة، وتكرار القراءة، وتعارض الهوية والبصمات، وحذف المصدر وإعادة الاتصال والاسترجاع المتزامن وفشل إنهاء اتصال القراءة؛ دون طلبات مزود أو تغيير مالي من الفاحص.','server/ai/sales-order-attribution.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

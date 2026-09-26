@@ -3,8 +3,16 @@ import { TRPCError } from '@trpc/server';
 import { adminProcedure, router } from './_core/trpc';
 import { inboundHealth, listInboundReviews, resolveInboundReview } from './messaging/operations';
 import { inspectSalesPaymentTimelineInput, SalesPaymentTimelineLimitExceeded } from './ai/sales-payment-timeline-contract';
+import { inspectSalesOrderSettlementInput, SalesOrderSettlementLimitExceeded } from './ai/sales-order-settlement-contract';
 
 export const inboundOperationsRouter = router({
+  salesOrderSettlement: adminProcedure.input(inspectSalesOrderSettlementInput).query(async ({ctx,input}) => {
+    const {inspectSalesOrderSettlement,SalesOrderSettlementAccessDenied,SalesOrderSettlementNotReady} = await import('./ai/sales-order-settlement');
+    try { return await inspectSalesOrderSettlement(ctx.user.id,input); }
+    catch(error) { throw new TRPCError({code:error instanceof SalesOrderSettlementAccessDenied ? 'FORBIDDEN'
+      : error instanceof SalesOrderSettlementNotReady || error instanceof SalesOrderSettlementLimitExceeded ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR',
+      message:'تعذر فحص أدلة الطلب والدفع'}); }
+  }),
   salesOrderAttributionHealth: adminProcedure.query(async ({ctx}) => {
     const {salesOrderAttributionHealth,SalesOrderHealthAccessDenied} = await import('./ai/sales-order-attribution');
     try { return await salesOrderAttributionHealth(ctx.user.id); }
