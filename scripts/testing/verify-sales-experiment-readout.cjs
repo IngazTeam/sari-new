@@ -4,6 +4,7 @@ const root=process.cwd(),output=path.resolve(withUi?'.tmp/sales-experiment-reado
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
+  'server/ai/sales-experiment-readout-exposures-pentest.test.ts','server/ai/sales-experiment-exposure-pentest.test.ts',
   'server/ai/sales-experiment-readout-pentest.test.ts','server/sales-experiment-readout-access-pentest.test.ts',
   'server/ai/sales-experiment-protocol-pentest.test.ts','server/ai/sales-experiment-assignment-pentest.test.ts',
   'server/ai/sales-payment-fact-pentest.test.ts','server/ai/sales-payment-timeline-pentest.test.ts',
@@ -13,12 +14,14 @@ const unit=[
   'server/sales-reply-recovery-access-pentest.test.ts',
 ];
 const database=[
+  'server/ai/sales-experiment-generation.mysql.test.ts',
   'server/ai/sales-experiment-readout.mysql.test.ts','server/ai/sales-payment-attribution.mysql.test.ts',
   'server/ai/sales-experiment-assignment.mysql.test.ts','server/ai/sales-experiment-protocol.mysql.test.ts',
   'server/ai/sales-order-report.mysql.test.ts',
 ];
 if(withUi)unit.push('server/sales-experiment-readout-ui-pentest.test.ts','server/sales-order-report-ui-pentest.test.ts','server/mobile-navigation-soft404-pentest.test.ts');
 const extra=['server/ai/sales-experiment-readout-contract.ts','server/ai/sales-experiment-readout.ts','server/tests/helpers/sales-readout.ts',
+  'server/ai/sales-experiment-readout-exposures.ts','shared/sales-experiment-exposure-readout.ts',
   'scripts/testing/verify-sales-experiment-readout.cjs',...unit,...database];
 if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
   'scripts/testing/verify-sales-experiment-readout-ui.cjs','scripts/testing/fixtures/sales-experiment-readout-ui-entry.tsx','scripts/testing/fixtures/sales-experiment-readout-data.ts');

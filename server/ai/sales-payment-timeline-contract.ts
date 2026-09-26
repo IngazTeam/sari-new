@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { readSalesPaymentAttribution, SalesPaymentEvidenceConflict } from './sales-payment-fact-contract';
-import { readSalesExperimentExposure } from './sales-experiment-exposure-contract';
+import { readSalesExperimentExposure, salesExposureCaptureTiming } from './sales-experiment-exposure-contract';
 
 const id = z.number().int().positive().safe();
 export const inspectSalesPaymentTimelineInput = z.object({ merchantId: id, factId: id }).strict();
@@ -28,11 +28,7 @@ export function buildSalesPaymentTimeline(factRow: any, captureRow: any, exposur
     }
     if (s.assignmentAt !== capture.assignedAt || ids.has(exposureId) || deliveries.has(s.deliveryId) || outboxes.has(s.outboxId)) conflict();
     ids.add(exposureId); deliveries.add(s.deliveryId); outboxes.add(s.outboxId);
-    const paidAt = Date.parse(capture.capturedAt), startedAt = Date.parse(s.dispatchStartedAt), acceptedAt = Date.parse(s.acceptanceObservedAt);
-    const timing = s.observationTiming === 'clock_regression' ? 'clock_regression' as const
-      : startedAt >= paidAt ? 'dispatch_at_or_after_capture' as const
-      : acceptedAt < paidAt ? 'acceptance_before_capture' as const
-      : acceptedAt === paidAt ? 'acceptance_at_capture' as const : 'in_flight_at_capture' as const;
+    const timing = salesExposureCaptureTiming(s,capture.capturedAt);
     return { exposureId, exposureDigest: String(row.exposure_digest), deliveryId: s.deliveryId,
       dispatchStartedAt: s.dispatchStartedAt, acceptanceObservedAt: s.acceptanceObservedAt, timing,
       provider: s.provider, styleApplied: s.styleApplied, styleReason: s.styleReason };

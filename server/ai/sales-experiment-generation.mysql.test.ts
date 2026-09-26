@@ -37,6 +37,7 @@ import { readSalesExperimentExposure } from './sales-experiment-exposure-contrac
 import { applyTapOrderPaymentState } from '../payment/order-payment-state';
 import { attributeSalesPaymentFact } from './sales-payment-attribution';
 import { inspectSalesPaymentTimeline, SalesPaymentTimelineAccessDenied, SalesPaymentTimelineNotReady } from './sales-payment-timeline';
+import { inspectSalesExperimentReadout } from './sales-experiment-readout';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
 const wa = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: wa.post } }));
@@ -557,6 +558,74 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     return {command,factId:Number(fact.id)};
   }
   const timeline=(factId:number)=>inspectSalesPaymentTimeline(other.userId,{merchantId:owner.merchantId,factId});
+  async function readout(pause?:{at:'assignments'|'exposures';run:()=>Promise<void>}){
+    const pool=(await getPool())!,get=pool.getConnection.bind(pool),at=config.unix;let once=true;
+    const spy=vi.spyOn(pool,'getConnection').mockImplementation(async()=>{
+      const c=await get();if(!once)return c;once=false;
+      return new Proxy(c,{get(target,key){
+        if(key==='query')return async(sql:any,args:any)=>{
+          if(String(sql)==='SELECT UTC_TIMESTAMP(3) AS read_at'){
+            await target.query('SET timestamp=?',[at]);try{return await target.query(sql,args);}finally{await target.query('SET timestamp=DEFAULT');}
+          }return target.query(sql,args);
+        };
+        if(key==='execute')return async(sql:any,args:any)=>{const result=await target.execute(sql,args);
+          if(pause&&String(sql).includes(`FROM ai_sales_experiment_${pause.at} WHERE merchant_id=? AND protocol_id=? ORDER BY`))await pause.run();return result;};
+        const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;
+      }}) as any;
+    });
+    try{return await inspectSalesExperimentReadout(other.userId,{merchantId:owner.merchantId,protocolId:seeded.protocol.protocolId});}
+    finally{spy.mockRestore();}
+  }
+  const exposedArm=(r:Awaited<ReturnType<typeof readout>>)=>r.exposureEvidence.arms.find(a=>a.assignedCustomers>0)!;
+  function readoutGate(){let release!:()=>void,entered!:()=>void;const wait=new Promise<void>(r=>release=r),ready=new Promise<void>(r=>entered=r);
+    return {ready,release,run:async()=>{entered();await wait;}};}
+  it.each(['OpenAI','ZahyPi'])('experiment exposure readout: %s actual reviewed transport chain and capture with no extra sends',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;await timelinePayment();
+    const saved=await exposures(),usage=await usageSubscription(),calls=wa.post.mock.calls.length,fetches=vi.mocked(fetch).mock.calls.length;
+    const report=await readout();expect(exposedArm(report)).toMatchObject({assignedCustomers:1,customersWithOrderedRealAcceptance:1,receipts:{recorded:1},firstCapture:{customers:1,acceptanceBefore:1}});
+    expect(report.paymentEvidence.groups[0].capturedMinor).toBe(15000);expect(report.consistency).toBe('single_database_snapshot');
+    expect(await readout()).toEqual(report);expect(await exposures()).toEqual(saved);expect(await usageSubscription()).toEqual(usage);
+    expect(wa.post.mock.calls.length).toBe(calls);expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
+    for(const secret of [config.text,'966500000988',f.token,f.account,'fixture-receipt'])expect(JSON.stringify(report)).not.toContain(secret);
+  });
+  it('experiment exposure readout: recovery after capture changes chronology without backdating acceptance',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));config.unix!+=10;await timelinePayment();
+    const before=await readout();expect(exposedArm(before).firstCapture?.noOrderedRealAcceptance).toBe(1);
+    config.unix!+=10;await dispatch(r);const after=await readout();expect(exposedArm(after).firstCapture).toMatchObject({inFlight:1,acceptanceBefore:0});
+    expect(after.evidenceSetDigest).not.toBe(before.evidenceSetDigest);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('experiment exposure readout: snapshot excludes concurrently recorded acceptance',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await timelinePayment();const g=readoutGate(),reading=readout({at:'assignments',run:g.run});
+    try{await g.ready;config.unix!+=10;await dispatch(r);}finally{g.release();}
+    expect(exposedArm(await reading).receipts.recorded).toBe(0);expect(exposedArm(await readout()).firstCapture?.dispatchAtOrAfter).toBe(1);
+  });
+  it.each(['retention','corruption'])('experiment exposure readout: %s after exposure read cannot mix delivery snapshots',async mode=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;await timelinePayment();
+    const g=readoutGate(),reading=readout({at:'exposures',run:g.run});
+    try{await g.ready;if(mode==='retention')await query('DELETE FROM ai_sales_reply_deliveries WHERE id=?',[r.deliveryId]);
+      else await query("UPDATE ai_sales_reply_deliveries SET authorization_digest=REPEAT('b',64) WHERE id=?",[r.deliveryId]);}finally{g.release();}
+    expect(exposedArm(await reading).firstCapture?.acceptanceBefore).toBe(1);
+    if(mode==='retention'){const next=await readout();expect(exposedArm(next).receipts.recorded).toBe(0);expect(exposedArm(next).assignedCustomers).toBe(1);}
+    else await expect(readout()).rejects.toThrow();
+  });
+  it.each(['digest','assignment','protocol','authority','dispatch','request','customer','future'])('experiment exposure readout: rejects corrupted %s exposure',async mode=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;await timelinePayment();const [row]=await exposures(),s=readSalesExperimentExposure(row);
+    if(mode==='digest')row.exposure_digest='b'.repeat(64);
+    else{
+      if(mode==='assignment')s.assignmentDigest='b'.repeat(64);if(mode==='protocol')s.protocolId++;
+      if(mode==='authority')s.authorizationDigest='b'.repeat(64);if(mode==='dispatch')s.dispatchStartedAt=new Date(Date.parse(s.dispatchStartedAt)-1).toISOString();
+      if(mode==='request')s.requestDigest='b'.repeat(64);if(mode==='customer')s.customerKey='b'.repeat(64);
+      if(mode==='future')s.acceptanceObservedAt=new Date((config.unix!+10)*1000).toISOString();row.exposure_digest=policyArtifactDigest(s);
+    }
+    await query('UPDATE ai_sales_experiment_exposures SET snapshot=?,exposure_digest=? WHERE id=?',[JSON.stringify(s),row.exposure_digest,row.id]);
+    await expect(readout()).rejects.toThrow();expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('experiment exposure readout: unresolved refund suppresses chronology but preserves acceptance and assignment',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;const p=await timelinePayment();
+    config.unix!+=10;await applyTapOrderPaymentState({...p.command,providerStatus:'REFUNDED'});
+    const report=await readout();expect(exposedArm(report)).toMatchObject({assignedCustomers:1,customersWithOrderedRealAcceptance:1,firstCapture:null});
+    expect(report.exposureEvidence.chronologyStatus).toBe('unresolved_attribution');expect(report.paymentEvidence.groups).toEqual([]);
+  });
   it.each(['OpenAI','ZahyPi'])('payment chronology: %s reviewed reply precedes capture without claiming delivery or sales causality',async()=>{
     const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;const payment=await timelinePayment();
     const before=await query('SELECT * FROM ai_sales_payment_facts WHERE merchant_id=?',[owner.merchantId]),saved=await exposures(),usage=await usageSubscription(),calls=wa.post.mock.calls.length;

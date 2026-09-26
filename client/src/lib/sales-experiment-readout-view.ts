@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { parseSalesEvidenceId } from './sales-order-report-view';
+import { salesExposureReadout } from '../../../shared/sales-experiment-exposure-readout';
 
 const id=z.number().int().positive().safe(), count=z.number().int().nonnegative().safe();
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
 const utc=z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v);
 const arm=z.enum(['baseline','candidate']);
 const view=z.object({
-  version:z.literal('sales-experiment-readout.v1'),merchantId:id,protocolId:id,protocolDigest:digest,
+  version:z.literal('sales-experiment-readout.v2'),merchantId:id,protocolId:id,protocolDigest:digest,
   protocolState:z.enum(['registered','withdrawn']),sector:z.string().regex(/^[a-z][a-z0-9_]{1,63}$/),sectorDigest:digest,readAt:utc,
   population:z.literal('all_recorded_assigned_qualified_customers'),completeWithinRecordedPopulation:z.literal(true),
-  limits:z.object({assignments:z.literal(10000),merchantPaymentFacts:z.literal(20000)}),
+  limits:z.object({assignments:z.literal(10000),merchantPaymentFacts:z.literal(20000),exposures:z.literal(20000)}),
   window:z.object({enrollmentStartsAt:utc,enrollmentEndsAt:utc,observationDays:z.number().int().min(1).max(180),decisionNotBefore:utc}),
   enrollmentClosed:z.boolean(),decisionTimeReached:z.boolean(),
   arms:z.array(z.object({arm,assignedCustomers:count.max(10000),observationComplete:count,observationPending:count,
@@ -22,7 +23,8 @@ const view=z.object({
       capturedMinor:id,refundedBeforeCutoffMinor:id.nullable(),refundedAtOrAfterCutoffMinor:id.nullable(),
       netAtCutoffObservedMinor:count,netCurrentlyObservedMinor:count})).max(20000)}),
   financialSource:z.literal('recorded_canonical_tap_payment_facts'),sourceCompleteness:z.literal('unmeasured'),
-  partialRefunds:z.literal('not_supported_by_source'),humanAssistance:z.literal('unmeasured'),exposure:z.literal('not_evaluated'),
+  partialRefunds:z.literal('not_supported_by_source'),humanAssistance:z.literal('unmeasured'),exposure:z.literal('recorded_transport_chronology'),
+  exposureEvidence:salesExposureReadout,
   primaryMetric:z.literal('not_established'),causality:z.literal('unmeasured'),winner:z.null(),learningAllowed:z.literal(false),activationAllowed:z.literal(false),
   evidenceSetDigest:digest,consistency:z.literal('single_database_snapshot'),
 });
@@ -45,6 +47,12 @@ export function readSalesReadoutView(value:unknown,request:SalesReadoutRequest):
     ||now<start&&a.assignedCustomers!==0||now<start+r.window.observationDays*day&&a.observationComplete!==0||r.decisionTimeReached&&a.observationPending!==0)return null;
   const expected=r.arms.some(a=>a.sampleShortfall>0)?r.enrollmentClosed?'insufficient_no_extension':'accruing':'recorded_minimum_reached';
   if(r.sampleStatus!==expected)return null;
+  if(r.exposureEvidence.chronologyStatus!==r.paymentEvidence.status)return null;
+  for(const e of r.exposureEvidence.arms){
+    if(e.assignedCustomers!==r.arms.find(a=>a.arm===e.arm)?.assignedCustomers)return null;
+    const groups=r.paymentEvidence.groups.filter(g=>g.arm===e.arm),customers=e.firstCapture?.customers??0;
+    if(customers>groups.reduce((n,g)=>n+g.customersWithCapture,0)||groups.some(g=>g.customersWithCapture>customers))return null;
+  }
   const unresolved=Object.values(r.paymentEvidence.unresolved).reduce((n,v)=>n+v,0),groups=r.paymentEvidence.groups;
   if(unresolved>20000||(r.paymentEvidence.status==='unresolved_attribution')!==(unresolved>0)
     ||r.paymentEvidence.status==='observed'&&groups.length===0||r.paymentEvidence.status!=='observed'&&groups.length>0)return null;

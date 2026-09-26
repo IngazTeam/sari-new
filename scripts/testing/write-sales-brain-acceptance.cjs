@@ -759,6 +759,12 @@ Object.assign(entries, {
  B046:[entries.B046[0].replace('واجهة هذا التقرير وقياس التدخل البشري والمصادر الأخرى ما زالت مفتوحة.','قياس التدخل البشري والمصادر الأخرى ما زالا مفتوحين.')+' اكتملت صفحة /admin/sales-experiments ضمن الإدارة، بروابط من قائمة الإدارة وتفاصيل التاجر ومعرّفات الخطة من سجل التجارب. تعرض المقام الكامل والمواعيد والأدلة المالية وبصماتها، وتصفح البطاقات المالية دون تغيير المقام أو جمع العملات. تخفي النتائج أثناء التحديث أو فقد الاتصال أو تغير النطاق أو رفض الصلاحية.','client/src/pages/admin/SalesExperimentEvidence.tsx'],
  B064:[entries.B064[0]+' أضيف تحقق للصفحة الفعلية باستخدام hooks tRPC وReact Query مع نقل محاكى، بالعربية والإنجليزية وعروض 320–1440 بكسل. يشمل السباقات وسحب الصلاحية وفقد الاتصال ومفاتيح الترجمة والتصفح ولوحة المفاتيح والحركة المخفضة، مع إعادة فحص صفحة أدلة الطلبات. لا اختبار iPhone/Safari فعلي أو إنتاج مسجل الدخول.','scripts/testing/verify-sales-experiment-readout-ui.cjs'],
 });
+Object.assign(entries, {
+ B042:[entries.B042[0]+' رُبط تقرير التجربة بقبول النقل المسجل وتفويض الرد وتخصيص العميل ضمن لقطة SQL واحدة. يفصل النقل التجريبي وتراجع الساعة ويقارن الردود بأول قبض لكل عميل دون مضاعفة العملاء أو ادعاء التسليم أو القراءة أو السببية.','server/ai/sales-experiment-readout-exposures-pentest.test.ts'],
+ B045:[entries.B045[0]+' لا يغيّر وجود قبول واتساب مقام التجربة أو العينة؛ تعرض تغطية القبول منفصلة عن مجموعات المال، وتحجب مقارنة الدفع عند وجود إسناد غير محسوم. يتجاوز حد السجلات بالرفض لا بالاقتطاع.','server/ai/sales-experiment-readout-exposures.ts'],
+ B046:[entries.B046[0]+' تعرض الصفحة تغطية قبول الردود وفئات توقيتها قبل أول قبض، مع تفاصيل قابلة للفتح بالعربية والإنجليزية. الفئات حصرية للعملاء وتشمل من لا يملكون قبولًا فعليًا متسقًا؛ لا فائز أو معدل أثر سببي.','client/src/pages/admin/SalesExperimentEvidence.tsx'],
+ B064:[entries.B064[0]+' اختبارات SQL تربط السلسلة الفعلية للمراجعة والتفويض والنقل بوقائع الدفع؛ تشمل قبولًا متأخرًا وحذفًا أو تلفًا متزامنًا دون خلط لقطات القراءة، مع نواقل نموذج وواتساب محاكاة وشبكة خارجية محظورة.','server/ai/sales-experiment-generation.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

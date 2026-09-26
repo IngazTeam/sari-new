@@ -85,6 +85,37 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
         {metric(t('salesReadout.decisionTime'),date(r.window.decisionNotBefore)+' UTC','decision')}
       </dl><p className="mt-3 text-sm leading-7">{r.enrollmentClosed?t('salesReadout.enrollmentClosed'):t('salesReadout.enrollmentNotClosed')} · {r.decisionTimeReached?t('salesReadout.decisionReached'):t('salesReadout.decisionPending')}</p>
     </details>
+    <section data-readout-exposures className="space-y-3" aria-label={t('salesReadout.exposureTitle')}>
+      <h3 className="text-lg font-semibold">{t('salesReadout.exposureTitle')}</h3>
+      <p className="text-sm leading-7 text-muted-foreground">{t('salesReadout.exposureHelp')}</p>
+      <div className="grid gap-4 lg:grid-cols-2">{r.exposureEvidence.arms.map(e=><article key={e.arm} data-readout-exposure-arm={e.arm} className="min-w-0 rounded-xl border p-4 space-y-3">
+        <h4 className="font-semibold">{armNames[e.arm]}</h4><dl className="grid gap-3 sm:grid-cols-2">
+          {metric(t('salesReadout.acceptedCustomers'),number(e.customersWithOrderedRealAcceptance),'acceptedCustomers')}
+          {metric(t('salesReadout.noAcceptance'),number(e.customersWithoutOrderedRealAcceptance),'noAcceptance')}
+          {e.arm==='candidate'&&metric(t('salesReadout.candidateStyle'),number(e.customersWithCandidateStyleAcceptance),'candidateStyle')}
+        </dl><details data-readout-receipts><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesReadout.receipts')}</summary>
+          <dl className="grid gap-3 pt-2 sm:grid-cols-2">
+            {metric(t('salesReadout.recordedReceipts'),number(e.receipts.recorded),'recordedReceipts')}
+            {metric(t('salesReadout.orderedReceipts'),number(e.receipts.orderedReal),'orderedReceipts')}
+            {metric(t('salesReadout.regressedReceipts'),number(e.receipts.clockRegressionReal),'regressedReceipts')}
+            {metric(t('salesReadout.syntheticReceipts'),number(e.receipts.synthetic),'syntheticReceipts')}
+          </dl><p className="mt-3 text-sm leading-7">{t('salesReadout.receiptsHelp')}</p>
+        </details>
+        <details data-readout-chronology><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesReadout.chronologyTitle')}</summary>
+          <p className="pt-2 text-sm leading-7">{t('salesReadout.chronologyHelp')}</p>
+          {e.firstCapture===null?<p data-readout-chronology-blocked className="pt-3 text-sm leading-7">{t('salesReadout.chronologyBlocked')}</p>
+            :e.firstCapture.customers===0?<p data-readout-chronology-empty className="pt-3 text-sm leading-7">{t('salesReadout.chronologyEmpty')}</p>
+            :<><dl className="grid gap-3 pt-3 sm:grid-cols-2">
+              {metric(t('salesReadout.firstCaptureCustomers'),number(e.firstCapture.customers),'firstCaptureCustomers')}
+              {metric(t('salesReadout.acceptanceBefore'),number(e.firstCapture.acceptanceBefore),'acceptanceBefore')}
+              {metric(t('salesReadout.acceptanceAt'),number(e.firstCapture.acceptanceAt),'acceptanceAt')}
+              {metric(t('salesReadout.inFlight'),number(e.firstCapture.inFlight),'inFlight')}
+              {metric(t('salesReadout.dispatchAfter'),number(e.firstCapture.dispatchAtOrAfter),'dispatchAfter')}
+              {metric(t('salesReadout.noOrderedReceipt'),number(e.firstCapture.noOrderedRealAcceptance),'noOrderedReceipt')}
+            </dl>{e.arm==='candidate'&&<p className="pt-3 text-sm leading-7" data-readout-style-before>{t('salesReadout.styleBefore',{value:number(e.firstCapture.candidateStyleBefore)})}</p>}</>}
+        </details>
+      </article>)}</div>
+    </section>
     <section className="space-y-3" aria-label={t('salesReadout.payments')}><h3 className="text-lg font-semibold">{t('salesReadout.payments')}</h3>
       <p className="text-sm leading-7 text-muted-foreground">{t('salesReadout.moneyHelp')}</p>
       {r.paymentEvidence.status==='unresolved_attribution'?<div data-readout-unresolved role="status" className="rounded-xl border p-4 space-y-3">

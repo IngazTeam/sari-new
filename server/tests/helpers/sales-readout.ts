@@ -5,6 +5,7 @@ import { syntheticSalesExperimentDesign } from './sales-experiment-design';
 export const readoutDates = { registered:'2026-09-01T00:00:00.000Z',assigned:'2026-09-03T00:00:01.000Z',paid:'2026-09-04T00:00:00.000Z',read:'2026-10-18T00:00:00.000Z' };
 export function readoutFixture() {
   const d='a'.repeat(64),playbook=getSalesSectorPlaybook('general');
+  const phone=(n:number)=>'966500'+String(n).padStart(6,'0');
   const p={ version:'sales-experiment-protocol.v1',merchantId:1,registeredAt:readoutDates.registered,
     candidate:{id:2,artifactDigest:d,baselineDigest:d,sourceDigest:d,preparationReviewId:3},
     sector:{revision:0,playbook,digest:hash(playbook)},design:syntheticSalesExperimentDesign(Date.parse(readoutDates.registered)),
@@ -12,7 +13,7 @@ export function readoutFixture() {
   const protocol={id:4,merchant_id:1,candidate_id:2,artifact_digest:d,protocol_digest:hash(p),protocol:p,state:'registered'};
   function assignment(n=1,arm:'baseline'|'candidate'='baseline') {
     const s={version:'sales-experiment-assignment.v1',merchantId:1,protocolId:4,protocolDigest:protocol.protocol_digest,
-      launchId:5,launchDigest:d,cohortId:6,cohortDigest:d,customerKey:hash({customer:n}),candidateId:2,artifactDigest:d,baselineDigest:d,sectorDigest:hash(playbook),
+      launchId:5,launchDigest:d,cohortId:6,cohortDigest:d,customerKey:hash({version:'sales-experiment-customer.v1',merchantId:1,phone:phone(n)}),candidateId:2,artifactDigest:d,baselineDigest:d,sectorDigest:hash(playbook),
       arm,allocation:'server_crypto_random_50_50.v1',conversationId:n,incomingMessageId:n,messageDigest:d,sourceDigest:d,population:'new',
       messageReceivedAt:'2026-09-03T00:00:00.000Z',qualifiedAt:readoutDates.assigned,assignedAt:readoutDates.assigned,
       ...p.design.window,observationEndsAt:'2026-09-17T00:00:01.000Z',scope:'enrollment_only',dispatchAllowed:false,exposureRecorded:false};
@@ -35,5 +36,26 @@ export function readoutFixture() {
     const t={...c.attribution,event:'refunded',factId:c.id+10000,factDigest:hash(s),verifiedAt:at,includedAtCutoff:included,signedNetMinor:included ? -Number(s.amountMinor) : 0};
     return {...c,id:t.factId,event_type:'refunded',snapshot:s,fact_digest:hash(s),attribution:t,attribution_digest:hash(t)};
   }
-  return {protocol,assignment,capture,refund,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[]}};
+  function exposure(a=assignment(),n=1,start=-2000,accept=-1000,extra:Record<string,unknown>={}){
+    const dispatch=new Date(Date.parse(readoutDates.paid)+start).toISOString();
+    const b={version:'sales-reply-delivery-basis.v1',merchantId:1,generationId:n,actorUserId:1,reviewId:n,reviewDigest:d,
+      reviewBasisDigest:d,reviewRevision:1,conversationId:a.id,incomingMessageId:n,responseText:'Synthetic reviewed reply',
+      recipient:phone(a.id),instanceRecordId:1,provider:extra.provider??'green_api',accountDigest:d,
+      observationEndsAt:a.snapshot.observationEndsAt,inboundReceivedAt:new Date(Date.parse(dispatch)-60000).toISOString()};
+    const authorization={version:'sales-reply-delivery-authorization.v1',basis:b,basisDigest:hash(b),requestId:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,
+      reason:'Explicit authorization of a synthetic reviewed response.',authorizedAt:new Date(Date.parse(dispatch)-1000).toISOString(),
+      expiresAt:new Date(Date.parse(dispatch)+110000).toISOString(),allowSendCustomerMessage:true,reviewedExactRecipientAndResponse:true,scope:'one_reviewed_text_reply'};
+    const authorizationDigest=hash(authorization);
+    const s={version:'sales-experiment-transport-exposure.v1',merchantId:1,protocolId:4,assignmentId:a.id,assignmentDigest:a.assignment_digest,
+      customerKey:a.customer_key,arm:a.arm,turnId:n,turnDigest:d,artifactDigest:d,baselineDigest:d,sectorDigest:hash(playbook),
+      styleApplied:a.arm==='candidate',styleReason:a.arm==='candidate'?'candidate_style':'baseline_arm',
+      generationId:n,generationDigest:d,responseDigest:d,reviewId:n,reviewDigest:d,deliveryId:n,authorizationDigest,outboxId:n,requestDigest:hash({to:b.recipient,kind:'text',text:b.responseText,salesReplyGuard:{deliveryId:n,authorizationDigest}}),
+      provider:b.provider,providerMessageDigest:d,conversationId:a.id,incomingMessageId:n,assignmentAt:a.snapshot.assignedAt,dispatchStartedAt:dispatch,
+      observationEndsAt:a.snapshot.observationEndsAt,acceptanceObservedAt:new Date(Date.parse(readoutDates.paid)+accept).toISOString(),
+      observationTiming:accept<start?'clock_regression':'ordered',humanReviewed:true,scope:'provider_acceptance_only',...extra};
+    return {row:{id:n,merchant_id:1,protocol_id:4,assignment_id:a.id,delivery_id:n,outbox_id:n,exposure_digest:hash(s),snapshot:s},
+      delivery:{id:n,merchant_id:1,generation_id:n,message_reference:n,actor_user_id:1,request_id:authorization.requestId,basis_digest:authorization.basisDigest,
+        authorization_digest:authorizationDigest,state:'dispatching',dispatch_started_at:dispatch,snapshot:authorization}};
+  }
+  return {protocol,assignment,capture,refund,exposure,rows:{protocol,withdrawals:[] as any[],assignments:[assignment()],payments:[] as any[],exposures:[] as any[],deliveries:[] as any[]}};
 }

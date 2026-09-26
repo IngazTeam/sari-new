@@ -23,6 +23,13 @@ export const salesExperimentExposureSnapshot = z.object({
     || s.styleReason === 'baseline_arm' && s.arm !== 'baseline') ctx.addIssue({ code: 'custom', message: 'Invalid transport exposure evidence' });
 });
 export type SalesExperimentExposureSnapshot = z.infer<typeof salesExperimentExposureSnapshot>;
+export function salesExposureCaptureTiming(s:SalesExperimentExposureSnapshot,capturedAt:string) {
+  const paid=Date.parse(capturedAt),started=Date.parse(s.dispatchStartedAt),accepted=Date.parse(s.acceptanceObservedAt);
+  return s.observationTiming==='clock_regression'?'clock_regression' as const
+    :started>=paid?'dispatch_at_or_after_capture' as const
+    :accepted<paid?'acceptance_before_capture' as const
+    :accepted===paid?'acceptance_at_capture' as const:'in_flight_at_capture' as const;
+}
 export function readSalesExperimentExposure(row: any) {
   const raw = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot;
   const s = salesExperimentExposureSnapshot.parse(raw);

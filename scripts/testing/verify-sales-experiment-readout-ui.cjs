@@ -43,15 +43,28 @@ async function main() {
       assert.deepEqual(await page.evaluate(()=>window.__readoutReads),[{merchantId:1,protocolId:4}]);assert.equal(await page.$$eval('[data-readout-arm]',n=>n.length),2);assert.equal(await page.$$eval('[data-readout-finance]',n=>n.length),3);
       await page.focus('[data-readout-window] summary');await page.keyboard.press('Enter');assert.equal(await page.$eval('[data-readout-window]',n=>n.open),true);
       await page.focus('[data-readout-counts] summary');await page.keyboard.press('Enter');await page.click('[data-readout-identity] summary');await check();
+      await page.focus('[data-readout-receipts] summary');await page.keyboard.press('Enter');
+      await page.focus('[data-readout-chronology] summary');await page.keyboard.press('Enter');await check();
+      assert.equal(await page.$eval('[data-readout-exposure-arm=baseline] [data-readout-metric=acceptanceBefore]',n=>n.textContent),lang==='ar'?'١':'1');
       assert.equal(await page.$eval('[data-readout-orders-link]',n=>n.getAttribute('href')),'/admin/sales-evidence?merchantId=1');
       if([375,1440].includes(width))await page.screenshot({path:path.join(output,`readout-${lang}-${width}.png`),fullPage:true});record('normalized_keyboard_details_responsive',{width,lang});
       if(width===375&&lang==='ar'){
         await (await page.$('[data-readout-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-arm.png')});
         await (await page.$('[data-readout-finance=baseline-SAR-order]')).screenshot({path:path.join(output,'readout-ar-mobile-finance.png')});
+        await (await page.$('[data-readout-exposure-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-exposure.png')});
       }
       await set({protocol:'5'});assert.equal(await page.$('[data-readout-result]'),null);assert.equal((await page.evaluate(()=>window.__readoutReads)).length,1);record('protocol_edit_discards_previous_read',{width,lang});
     }
     await page.setViewport({width:375,height:812,isMobile:true,hasTouch:true});
+    for(const lang of ['ar','en'])for(const [mode,marker]of [['before','acceptanceBefore'],['at','acceptanceAt'],['flight','inFlight'],['after','dispatchAfter'],['mock','noOrderedReceipt'],['regression','noOrderedReceipt'],['declined','acceptanceBefore'],['pending',null]]){
+      await visit('exposure-'+mode,lang);await read();
+      const arm='[data-readout-exposure-arm=candidate]';
+      await page.click(arm+' [data-readout-chronology] summary');await page.click(arm+' [data-readout-receipts] summary');await check();
+      if(marker)assert.equal(await page.$eval(arm+` [data-readout-metric=${marker}]`,n=>n.textContent),lang==='ar'?'١':'1');
+      else {assert.ok(await page.$(arm+' [data-readout-chronology-blocked]'));assert.equal(await page.$(arm+' [data-readout-metric=firstCaptureCustomers]'),null);}
+      assert.equal(await page.$eval(arm+' [data-readout-metric=noAcceptance]',n=>n.textContent),['mock','regression'].includes(mode)?(lang==='ar'?'٢':'2'):(lang==='ar'?'١':'1'));
+      record('exposure_chronology_'+mode,{lang,width:375});
+    }
     for(const mode of ['empty','unmeasured','refund','late','pending','review','unassigned','huge','live','withdrawn','minimum']){
       await visit(mode,'en');await read();await check();
       if(['pending','review','unassigned'].includes(mode)){assert.ok(await page.$('[data-readout-unresolved]'));assert.equal(await page.$('[data-readout-finance]'),null);}
