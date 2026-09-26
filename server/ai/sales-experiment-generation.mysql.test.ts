@@ -29,6 +29,8 @@ import { sendMerchantWhatsApp, updateWhatsAppDeliveryStatus } from '../channels/
 import { salesReplyDeliveryKey } from './sales-reply-delivery-contract';
 import { claimSalesReplyProjections, recoverSalesReplyProjection, runSalesReplyRecoveryBatch, salesReplyRecoveryHealth } from './sales-reply-recovery';
 import { purgeCompletedInboundPayloads } from '../messaging/retention';
+import { reserveSalesReplyUsage } from './sales-reply-usage';
+import { checkoutTransaction } from './checkout-agreements';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
 const wa = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: wa.post } }));
@@ -49,12 +51,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner, users: number[], initialModel: string;
   let seeded: Awaited<ReturnType<typeof seedApprovedSalesPlan>>, launch: Awaited<ReturnType<typeof authorizeSalesExperimentLaunch>>;
   let input: GenerateSalesExperimentTurnInput, conversationId: number, incomingMessageId: number, customerMessage: string;
+  let usagePlanIds: number[] = [];
   const query = async (sql: string, args: any[] = []): Promise<any> => (await (await getPool())!.execute(sql, args))[0];
   const generate = (value = input, merchant = owner.merchantId, actor = owner.userId) => generateSalesExperimentTurn(merchant, actor, value);
   const get = (generationId: number, merchant = owner.merchantId) => getSalesExperimentGeneration(merchant, { generationId });
   const ledger = () => query('SELECT * FROM ai_usage_reservations WHERE scope_key=?', [`merchant:${owner.merchantId}`]);
   const revoke = () => revokeSalesExperimentLaunch(owner.merchantId, owner.userId, { launchId: launch.launchId, launchDigest: launch.launchDigest, requestId: randomUUID(), reason: 'Stop the synthetic generation after reviewing current safety conditions.' });
   beforeEach(async ctx => {
+    usagePlanIds = [];
     config.unix = null; config.provider = ctx.task.name.includes('ZahyPi') ? 'zahypi' : 'openai'; config.enabled = true;
     config.model = initialModel = `turn-fixture-${randomUUID()}`; config.actualModel = 'synthetic-model'; config.finish = 'stop'; config.usage = true; config.text = 'رد اصطناعي للاختبار فقط.';
     clearZahyPiRuntimeConfigCache(); vi.stubEnv('ZAHYPI_ALLOWED_ORIGINS', 'https://api.zahypi.test');
@@ -87,6 +91,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       await query("UPDATE ai_budget_periods SET reserved_micro_usd=reserved_micro_usd-?,spent_micro_usd=spent_micro_usd-? WHERE scope_key='global' AND period_start=?", [p.reserved_micro_usd, p.spent_micro_usd, p.period_start]);
     for (const table of ['ai_usage_reservations', 'ai_budget_periods', 'ai_budget_policies']) await query(`DELETE FROM ${table} WHERE scope_key=?`, [`merchant:${owner.merchantId}`]);
     await query('DELETE FROM ai_price_cards WHERE model=?', [initialModel]); await cleanupDisposableMerchants(users);
+    for (const planId of usagePlanIds) await query('DELETE FROM subscription_plans WHERE id=?', [planId]);
   });
   afterAll(closeDb);
   function transport() {
@@ -564,6 +569,145 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     instanceId: f.instanceRecordId, providerAccount: f.account, eventId: `ordinary-${incomingMessageId}`, conversationId,
     incomingMessageId, to: '966500000988', text: 'الرد العادي المنافس' });
   const projectionRow = async () => (await query('SELECT * FROM ai_sales_reply_deliveries WHERE merchant_id=?', [owner.merchantId]))[0];
+  const usageSubscription = async () => (await query('SELECT * FROM merchant_subscriptions WHERE merchant_id=? ORDER BY id LIMIT 1', [owner.merchantId]))[0];
+  async function usageFixture(limit = 2) {
+    const f = await deliveryFixture(), r = await f.auth();
+    const planId = Number((await query("INSERT INTO subscription_plans (name,name_en,monthly_price,yearly_price,max_customers,message_limit) VALUES ('Synthetic reply usage','Synthetic reply usage',1,10,100,?)", [limit])).insertId);
+    usagePlanIds.push(planId); await query("UPDATE merchant_subscriptions SET plan_id=?,status='active' WHERE merchant_id=?", [planId,owner.merchantId]);
+    return {f,r,subscription:await usageSubscription(),planId};
+  }
+  it('reply usage: reserves before provider IO and charges two units once with projected history', async () => {
+    const {r}=await usageFixture();
+    wa.post.mockImplementation(async()=>{expect(await projectionRow()).toMatchObject({usage_state:'held',usage_units:2});expect((await usageSubscription()).messages_used).toBe(0);
+      return {status:200,data:{idMessage:'fixture-receipt'}};});
+    await Promise.all([dispatch(r),dispatch(r),dispatch(r)]);
+    expect(await projectionRow()).toMatchObject({usage_state:'charged',projection_state:'projected'});expect((await usageSubscription()).messages_used).toBe(2);
+    await closeDb();await dispatch(r);expect((await usageSubscription()).messages_used).toBe(2);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each([0,1])('reply usage: refuses insufficient capacity %s before provider IO', async limit => {
+    const {r}=await usageFixture(limit);expect((await dispatch(r)).transport).toBe('suppressed');
+    expect(wa.post).not.toHaveBeenCalled();expect(await projectionRow()).toMatchObject({usage_state:'pending',state:'authorized'});expect((await usageSubscription()).messages_used).toBe(0);
+  });
+  it.each(['missing','foreign','cancelled','expired','trial-ended','future-start','future-reset','no-plan','invalid-count','overflow','invalid-limit'])('reply usage: rejects %s subscription evidence', async mode => {
+    const {r,planId}=await usageFixture();
+    if(mode==='missing')await query('UPDATE merchants SET current_subscription_id=NULL WHERE id=?',[owner.merchantId]);
+    if(mode==='foreign')await query('UPDATE merchant_subscriptions SET merchant_id=? WHERE merchant_id=?',[other.merchantId,owner.merchantId]);
+    if(mode==='cancelled')await query("UPDATE merchant_subscriptions SET status='cancelled' WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='expired')await query("UPDATE merchant_subscriptions SET end_date='2000-01-01' WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='trial-ended')await query("UPDATE merchant_subscriptions SET status='trial',trial_ends_at='2000-01-01' WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='future-start')await query("UPDATE merchant_subscriptions SET start_date='2037-01-01' WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='future-reset')await query("UPDATE merchant_subscriptions SET last_reset_at='2037-01-01' WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='no-plan')await query('UPDATE merchant_subscriptions SET plan_id=NULL WHERE merchant_id=?',[owner.merchantId]);
+    if(mode==='invalid-count')await query('UPDATE merchant_subscriptions SET messages_used=-1 WHERE merchant_id=?',[owner.merchantId]);
+    if(mode==='overflow')await query('UPDATE merchant_subscriptions SET messages_used=2147483646 WHERE merchant_id=?',[owner.merchantId]);
+    if(mode==='invalid-limit')await query('UPDATE subscription_plans SET message_limit=-2 WHERE id=?',[planId]);
+    expect((await dispatch(r)).transport).toBe('suppressed');expect(wa.post).not.toHaveBeenCalled();expect((await projectionRow()).usage_state).toBe('pending');
+  });
+  it.each(['trial','unlimited'])('reply usage: permits %s while still recording exact usage', async mode => {
+    const {r}=await usageFixture(-1);if(mode==='trial')await query("UPDATE merchant_subscriptions SET status='trial',plan_id=NULL WHERE merchant_id=?",[owner.merchantId]);
+    await dispatch(r);expect(wa.post).toHaveBeenCalledOnce();expect((await usageSubscription()).messages_used).toBe(2);
+  });
+  it.each(['before','after'] as const)('reply usage: lost final dispatch acknowledgement %s commit never starts provider IO', async when => {
+    const {r}=await usageFixture();await failCommit('dispatch',when);await dispatch(r);vi.restoreAllMocks();
+    expect(wa.post).not.toHaveBeenCalled();expect((await usageSubscription()).messages_used).toBe(0);
+    expect((await projectionRow()).usage_state).toBe(when==='before'?'pending':'released');
+  });
+  it.each(['before','after'] as const)('reply usage: settlement acknowledgement lost %s commit cannot double-charge', async when => {
+    const {r}=await usageFixture();await failCommit('projection',when);await expect(dispatch(r)).rejects.toThrow();vi.restoreAllMocks();
+    expect((await usageSubscription()).messages_used).toBe(when==='before'?0:2);expect((await projectionRow()).usage_state).toBe(when==='before'?'held':'charged');
+    await dispatch(r);expect((await usageSubscription()).messages_used).toBe(2);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reply usage: unresolved transport holds capacity without billing or a second send', async () => {
+    const {r}=await usageFixture();wa.post.mockRejectedValue(Error('Synthetic connection lost'));await dispatch(r);await dispatch(r);
+    expect(await projectionRow()).toMatchObject({usage_state:'held',usage_units:2});expect((await usageSubscription()).messages_used).toBe(0);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reply usage: a definitive provider rejection releases capacity without charging', async () => {
+    const {r}=await usageFixture();wa.post.mockResolvedValue({status:400,data:{error:'synthetic rejection'}});await dispatch(r);
+    expect((await projectionRow()).usage_state).toBe('released');expect((await usageSubscription()).messages_used).toBe(0);await dispatch(r);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['reset','deleted','replacement','cancelled'])('reply usage: late recovery respects the original %s subscription period', async mode => {
+    const {r,subscription}=await usageFixture();await sendMerchantWhatsApp(deliveryInput(r));
+    if(mode==='reset')await query("UPDATE merchant_subscriptions SET messages_used=7,last_reset_at='2030-01-01' WHERE id=?",[subscription.id]);
+    if(mode==='deleted')await query('DELETE FROM merchant_subscriptions WHERE id=?',[subscription.id]);
+    if(mode==='cancelled')await query("UPDATE merchant_subscriptions SET status='cancelled' WHERE id=?",[subscription.id]);
+    let replacement=0;
+    if(mode==='replacement'){await query("UPDATE merchant_subscriptions SET status='cancelled' WHERE id=?",[subscription.id]);
+      replacement=Number((await query("INSERT INTO merchant_subscriptions (merchant_id,status,billing_cycle,start_date,end_date) VALUES (?,'active','monthly',UTC_TIMESTAMP(),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 7 DAY))",[owner.merchantId])).insertId);
+      await query('UPDATE merchants SET current_subscription_id=? WHERE id=?',[replacement,owner.merchantId]);}
+    await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r));await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r));
+    expect((await projectionRow()).usage_state).toBe(['reset','deleted'].includes(mode)?'historical':'charged');
+    if(mode!=='deleted')expect((await usageSubscription()).messages_used).toBe(mode==='reset'?7:2);
+    if(replacement)expect((await query('SELECT messages_used FROM merchant_subscriptions WHERE id=?',[replacement]))[0].messages_used).toBe(0);
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['usage_digest','usage_subscription_id','usage_period_start','usage_reserved_at'])('reply usage: corrupted %s cannot alter counters or history', async column => {
+    const {r}=await usageFixture();await sendMerchantWhatsApp(deliveryInput(r));
+    const value=column==='usage_digest'?'f'.repeat(64):column==='usage_subscription_id'?999999:'2030-01-01';
+    await query(`UPDATE ai_sales_reply_deliveries SET ${column}=? WHERE merchant_id=?`,[value,owner.merchantId]);
+    await expect(reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r))).rejects.toThrow();
+    expect((await usageSubscription()).messages_used).toBe(0);expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(0);
+  });
+  it('reply usage: existing legacy transport history never invents a subscription charge', async () => {
+    const {r}=await usageFixture();await sendMerchantWhatsApp(deliveryInput(r));
+    await query("UPDATE ai_sales_reply_deliveries SET usage_state='legacy',usage_subscription_id=NULL,usage_period_start=NULL,usage_units=0,usage_reserved_at=NULL,usage_digest=NULL WHERE merchant_id=?",[owner.merchantId]);
+    await dispatch(r);expect((await usageSubscription()).messages_used).toBe(0);expect((await projectionRow()).usage_state).toBe('legacy');
+  });
+  it('reply usage: a dispatching record missing its reservation cannot bypass settlement', async () => {
+    const {r}=await usageFixture();await sendMerchantWhatsApp(deliveryInput(r));
+    await query("UPDATE ai_sales_reply_deliveries SET usage_state='pending',usage_subscription_id=NULL,usage_period_start=NULL,usage_units=0,usage_reserved_at=NULL,usage_digest=NULL WHERE merchant_id=?",[owner.merchantId]);
+    await expect(dispatch(r)).rejects.toThrow();expect((await usageSubscription()).messages_used).toBe(0);
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(0);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['authorization','subscription'])('reply usage: final %s expiry after quota reads rolls back the consumed authorization', async mode => {
+    const {r}=await usageFixture();
+    if(mode==='subscription')await query('UPDATE merchant_subscriptions SET end_date=? WHERE merchant_id=?',[new Date((config.unix!+1)*1000).toISOString().slice(0,19).replace('T',' '),owner.merchantId]);
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{if(String(args[0]).includes("SET usage_state='held'"))await target.query('SET timestamp=?',[config.unix!+(mode==='authorization'?120:2)]);
+        return (target.execute as any)(...args);};const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;}}) as any;});
+    await dispatch(r);vi.restoreAllMocks();expect(wa.post).not.toHaveBeenCalled();expect(await projectionRow()).toMatchObject({state:'authorized',usage_state:'pending'});
+  });
+  it.each(['before-projection','after-projection'])('reply usage: delivery failure %s does not erase a proven accepted send', async mode => {
+    const {r,f}=await usageFixture();await sendMerchantWhatsApp(deliveryInput(r));
+    if(mode==='after-projection')await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r));
+    await updateWhatsAppDeliveryStatus({provider:'green_api',providerAccount:f.account,providerMessageId:'fixture-receipt',status:'failed'});
+    await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r));await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r));
+    expect((await usageSubscription()).messages_used).toBe(2);expect((await projectionRow()).usage_state).toBe('charged');expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['failed','rejected'])('reply usage: a worker lease expiring during %s settlement rolls back usage changes', async mode => {
+    const {r,f}=await usageFixture();if(mode==='rejected')wa.post.mockResolvedValue({status:400,data:{}});
+    await sendMerchantWhatsApp(deliveryInput(r));config.unix=null;
+    if(mode==='failed')await updateWhatsAppDeliveryStatus({provider:'green_api',providerAccount:f.account,providerMessageId:'fixture-receipt',status:'failed'});
+    await dueProjection();const [claim]=await claimSalesReplyProjections();
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{if(String(args[0]).includes('SET usage_state=?,usage_settled_at=')){
+        await target.execute('UPDATE ai_sales_reply_deliveries SET projection_lease_until=TIMESTAMPADD(MICROSECOND,1000,UTC_TIMESTAMP(3)) WHERE id=?',[claim.deliveryId]);await target.query('SELECT SLEEP(0.02)');
+      }return (target.execute as any)(...args);};const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;}}) as any;});
+    expect(await recoverSalesReplyProjection(claim)).toBe('deferred');vi.restoreAllMocks();
+    expect((await projectionRow()).usage_state).toBe('held');expect((await usageSubscription()).messages_used).toBe(0);expect(wa.post).toHaveBeenCalledOnce();
+    await dueProjection();await runSalesReplyRecoveryBatch();expect((await projectionRow()).usage_state).toBe(mode==='failed'?'charged':'released');
+    expect((await usageSubscription()).messages_used).toBe(mode==='failed'?2:0);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each([2,4])('reply usage: SQL reservations for distinct replies share capacity %s under contention', async limit => {
+    const {r}=await usageFixture(limit), first=await projectionRow();
+    // This fixture isolates quota storage from generation quality. It grants no channel authority.
+    const [source]=await query('SELECT t.* FROM ai_sales_experiment_turns t JOIN ai_sales_experiment_generations g ON g.turn_id=t.id WHERE g.id=?',[r.authorization.basis.generationId]);
+    const turn=await query("INSERT INTO ai_sales_experiment_turns (merchant_id,protocol_id,assignment_id,conversation_reference,message_reference,request_id,payload_digest,turn_digest,snapshot) VALUES (?,?,?,?,?,?,?,?,'{}')",
+      [owner.merchantId,source.protocol_id,source.assignment_id,conversationId,incomingMessageId+1000000,randomUUID(),'a'.repeat(64),'b'.repeat(64)]);
+    const generation=await query("INSERT INTO ai_sales_experiment_generations (merchant_id,turn_id,actor_user_id,request_id,payload_digest,authorization_digest,snapshot,state,claim_token) VALUES (?,?,?,?,?,?,'{}','uncertain',?)",
+      [owner.merchantId,turn.insertId,owner.userId,randomUUID(),'a'.repeat(64),'b'.repeat(64),randomUUID()]);
+    const second=await query("INSERT INTO ai_sales_reply_deliveries (merchant_id,generation_id,message_reference,actor_user_id,request_id,payload_digest,basis_digest,authorization_digest,snapshot,state,usage_state) VALUES (?,?,?,?,?,?,?,?,'{}','authorized','pending')",
+      [owner.merchantId,generation.insertId,incomingMessageId+1000000,owner.userId,randomUUID(),'a'.repeat(64),'b'.repeat(64),'c'.repeat(64)]);
+    const reserve=(deliveryId:number)=>checkoutTransaction(async c=>{await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[owner.merchantId]);
+      await c.execute("UPDATE ai_sales_reply_deliveries SET state='dispatching',dispatch_started_at=UTC_TIMESTAMP(3) WHERE id=?",[deliveryId]);
+      const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_reply_deliveries WHERE id=? FOR UPDATE',[deliveryId]);
+      await reserveSalesReplyUsage(c,rows[0],r.authorization.expiresAt);});
+    const results=await Promise.allSettled([reserve(first.id),reserve(Number(second.insertId))]);
+    expect(results.filter(v=>v.status==='fulfilled')).toHaveLength(limit/2);
+    expect((await query("SELECT SUM(usage_units) AS held FROM ai_sales_reply_deliveries WHERE merchant_id=? AND usage_state='held'",[owner.merchantId]))[0].held).toBe(String(limit));
+    expect((await usageSubscription()).messages_used).toBe(0);expect(wa.post).not.toHaveBeenCalled();
+  });
   const dueProjection = () => query('UPDATE ai_sales_reply_deliveries SET projection_next_at=UTC_TIMESTAMP(3),projection_lease_until=NULL,projection_token=NULL WHERE merchant_id=? AND projection_state=\'pending\'', [owner.merchantId]);
   async function recoveryFixture(provider: 'green_api'|'meta_cloud' = 'green_api', accepted = true) {
     const f = await deliveryFixture(provider), r = await f.auth();

@@ -657,6 +657,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبارات محلية للعامل الدوري والإغلاق المنظم وفقد إقرار الحجز والحفظ، والحجز المنتهي والعامل القديم وتلف الإيصال وتنقية جسمه وحذف المصدر والاسترجاع من عملية جديدة.','server/ai/sales-reply-recovery-pentest.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0121 يحفظ تاريخ التفويض والنقل ويضيف حالة استرجاع منفصلة وقيود المهلة والاكتمال، دون منح إذن إرسال أو إعلان نجاح تاريخي. سقف 100 دولار لم يتغير.','scripts/testing/verify-sales-reply-recovery-migration.cjs'],
 });
+Object.assign(entries, {
+ B045:[entries.B045[0]+' يحجز مسار الرد المعتمد وحدتي رسائل من الاشتراك الحالي قبل اتصال النقل، مع احتساب حجوزاته المعلقة وفحص الحد والتواريخ في آخر كتابة. توحيد الحجز مع كل مسارات الإرسال العادية ما زال مفتوحًا.','server/ai/sales-reply-usage.ts'],
+ B062:[entries.B062[0]+' تُسوّى وحدتا الواردة والصادرة مرة واحدة من إيصال النقل الموافق، وتُحفظ الفترة والاشتراك الأصليان عند التعافي. الغموض يبقي الحجز دون احتساب مؤكد، والرفض المؤكد يحرره.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B064:[entries.B064[0]+' أضيف فحص نفاد السعة وتنافس حجوزتين وفساد هوية التسوية وتغيّر الاشتراك والفترة وفقد إقرار الحفظ والانتهاء بعد الأقفال. أصلح مفتاح الرد ذي المعرّفين القصيرين دون تغيير المفاتيح السابقة المقبولة.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B065:[entries.B065[0]+' يضيف الترحيل 0122 حالات استخدام منفصلة؛ يحفظ اشتراكات ونقلًا تاريخيًا دون فرض احتساب قديم. تحققت القيود والإعادة على MySQL محلي. لا ترحيل إنتاجي.','scripts/testing/verify-sales-reply-usage-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

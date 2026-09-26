@@ -31,4 +31,8 @@ export const salesReplyDeliveryAuthorization = z.object({
   }
 });
 export type SalesReplyDeliveryIdentity = z.infer<typeof salesReplyDeliveryIdentity>;
-export const salesReplyDeliveryKey = (merchant: number, deliveryId: number) => `sales_reply:${merchant}:${deliveryId}`;
+export const salesReplyDeliveryKey = (merchant: number, deliveryId: number) => {
+  const key = `sales_reply:${merchant}:${deliveryId}`;
+  // Preserve every previously valid key; single-digit identities never met the channel minimum.
+  return key.length < 16 ? `${key}:v1` : key;
+};

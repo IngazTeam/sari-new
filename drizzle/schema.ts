@@ -4265,11 +4265,25 @@ export const aiSalesReplyDeliveries = mysqlTable('ai_sales_reply_deliveries', {
   projectionAttempts: int('projection_attempts', { unsigned: true }).notNull().default(0),
   projectionLastError: varchar('projection_last_error', { length: 40 }),
   projectionCompletedAt: datetime('projection_completed_at', { mode: 'string', fsp: 3 }),
+  usageState: varchar('usage_state', { length: 16 }).notNull().default('legacy'),
+  usageSubscriptionId: int('usage_subscription_id'),
+  usagePeriodStart: datetime('usage_period_start', { mode: 'string', fsp: 3 }),
+  usageUnits: int('usage_units', { unsigned: true }).notNull().default(0),
+  usageReservedAt: datetime('usage_reserved_at', { mode: 'string', fsp: 3 }),
+  usageDigest: char('usage_digest', { length: 64 }),
+  usageSettledAt: datetime('usage_settled_at', { mode: 'string', fsp: 3 }),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_sales_reply_delivery_request').on(table.merchantId, table.requestId),
   uniqueIndex('uq_sales_reply_delivery_generation').on(table.merchantId, table.generationId),
   uniqueIndex('uq_sales_reply_delivery_message').on(table.merchantId, table.messageReference),
   index('idx_sales_reply_projection_due').on(table.state,table.projectionState,table.projectionNextAt,table.projectionLeaseUntil),
+  index('idx_sales_reply_usage_holds').on(table.merchantId,table.usageSubscriptionId,table.usagePeriodStart,table.usageState),
+  check('ck_sales_reply_usage', sql`(${table.usageState} IN ('legacy','pending') AND ${table.usageUnits}=0 AND ${table.usageSubscriptionId} IS NULL
+    AND ${table.usagePeriodStart} IS NULL AND ${table.usageReservedAt} IS NULL AND ${table.usageDigest} IS NULL AND ${table.usageSettledAt} IS NULL)
+    OR (${table.usageState} IN ('held','charged','historical','released') AND ${table.usageUnits}=2 AND ${table.usageSubscriptionId}>0
+      AND ${table.usageSubscriptionId} IS NOT NULL AND ${table.usagePeriodStart} IS NOT NULL AND ${table.usageReservedAt} IS NOT NULL
+      AND ${table.usageDigest} IS NOT NULL AND CHAR_LENGTH(${table.usageDigest})=64
+      AND ((${table.usageState}='held' AND ${table.usageSettledAt} IS NULL) OR (${table.usageState}<>'held' AND ${table.usageSettledAt} IS NOT NULL)))`),
   check('ck_sales_reply_projection', sql`(${table.projectionState}='pending' AND ${table.projectionNextAt} IS NOT NULL AND ${table.projectionCompletedAt} IS NULL
     AND ((${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL) OR (${table.projectionToken} IS NOT NULL AND ${table.projectionLeaseUntil} IS NOT NULL)))
     OR (${table.projectionState}='projected' AND ${table.projectionNextAt} IS NULL AND ${table.projectionCompletedAt} IS NOT NULL AND ${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL)

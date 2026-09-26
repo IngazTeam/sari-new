@@ -855,6 +855,13 @@
       "when": 1793923200000,
       "tag": "0121_sales_reply_projection_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1794009600000,
+      "tag": "0122_sales_reply_usage",
+      "breakpoints": true
     }
   ]
 }

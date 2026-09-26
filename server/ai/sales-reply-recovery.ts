@@ -3,11 +3,13 @@ import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { reconcileSalesReplyConversation, SalesReplyDeliveryConflict } from './sales-reply-delivery';
+import { assertSalesReplyUsageSchema } from './sales-reply-usage';
 
 const claimSchema = z.object({ merchantId: z.number().int().positive().safe(), deliveryId: z.number().int().positive().safe(),
   authorizationDigest: z.string().regex(/^[a-f0-9]{64}$/), token: z.string().uuid(), attempt: z.number().int().min(1).max(8) }).strict();
 export type SalesReplyProjectionClaim = z.infer<typeof claimSchema>;
 export async function assertSalesReplyRecoverySchema() {
+  await assertSalesReplyUsageSchema();
   await assertRuntimeSchema('sales reply projection recovery', [
     { table: 'ai_sales_reply_deliveries', columns: ['projection_state','projection_token','projection_lease_until','projection_next_at',
       'projection_attempts','projection_last_error','projection_completed_at'], checkConstraints: ['ck_sales_reply_projection'] },

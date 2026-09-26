@@ -8,6 +8,7 @@ import { loadCurrentSalesReplyReviewBasis } from './sales-reply-review-workspace
 import { readSalesReplyReview } from './sales-generation-output-review-store';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { lockReplySource, reserveReviewedReply, ownsReviewedReply } from './reply-reservation';
+import { assertSalesReplyUsageSchema, reserveSalesReplyUsage, settleSalesReplyUsage } from './sales-reply-usage';
 import { authorizeSalesReplyDeliveryInput, prepareSalesReplyDeliveryInput, salesReplyDeliveryAuthorization,
   salesReplyDeliveryBasis, salesReplyDeliveryId as id, salesReplyDeliveryIdentity, salesReplyDeliveryKey,
   type SalesReplyDeliveryIdentity } from './sales-reply-delivery-contract';
@@ -125,6 +126,7 @@ export async function prepareSalesReplyDelivery(merchantId: number, actorUserId:
 }
 export async function authorizeSalesReplyDelivery(merchantId: number, actorUserId: number, value: z.infer<typeof authorizeSalesReplyDeliveryInput>) {
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = authorizeSalesReplyDeliveryInput.parse(value);
+  await assertSalesReplyUsageSchema();
   const payload = policyArtifactDigest({ version: 'sales-reply-delivery-request.v1', actor, input });
   return checkoutTransaction(async c => {
     await lock(c, merchant);
@@ -140,8 +142,8 @@ export async function authorizeSalesReplyDelivery(merchantId: number, actorUserI
       requestId: input.requestId, reason: input.reason, authorizedAt, expiresAt: new Date(Math.min(start + 120_000, Date.parse(b.observationEndsAt), Date.parse(b.inboundReceivedAt) + 86_400_000)).toISOString(),
       allowSendCustomerMessage: true, reviewedExactRecipientAndResponse: true, scope: 'one_reviewed_text_reply' });
     const [inserted] = await c.execute<any>(`INSERT INTO ai_sales_reply_deliveries
-      (merchant_id,generation_id,message_reference,actor_user_id,request_id,payload_digest,basis_digest,authorization_digest,snapshot,state)
-      VALUES (?,?,?,?,?,?,?,?,?,'authorized')`, [merchant, input.generationId, b.incomingMessageId, actor, input.requestId, payload,
+      (merchant_id,generation_id,message_reference,actor_user_id,request_id,payload_digest,basis_digest,authorization_digest,snapshot,state,usage_state)
+      VALUES (?,?,?,?,?,?,?,?,?,'authorized','pending')`, [merchant, input.generationId, b.incomingMessageId, actor, input.requestId, payload,
       current.basisDigest, policyArtifactDigest(snapshot), JSON.stringify(snapshot)]);
     const receipt = (await load(c, merchant, Number(inserted.insertId))).receipt;
     await reserveReviewedReply(c, { merchantId: merchant, conversationId: b.conversationId, incomingMessageId: b.incomingMessageId,
@@ -161,6 +163,7 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
   const parsed = salesReplyDeliveryIdentity.safeParse(input.salesReplyGuard);
   if (!parsed.success || input.retryFailed || input.idempotencyKey !== salesReplyDeliveryKey(input.merchantId, parsed.data.deliveryId)) return false;
   try {
+    await assertSalesReplyUsageSchema();
     return await checkoutTransaction(async c => {
       await lock(c, id.parse(input.merchantId)); const { row, receipt } = await load(c, input.merchantId, parsed.data.deliveryId);
       const s = receipt.authorization, b = s.basis;
@@ -176,7 +179,10 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
       const [updated] = await c.execute<any>(`UPDATE ai_sales_reply_deliveries SET state='dispatching',dispatch_started_at=UTC_TIMESTAMP(3)
         WHERE merchant_id=? AND id=? AND state='authorized' AND UTC_TIMESTAMP(3)>=? AND UTC_TIMESTAMP(3)<?`,
         [b.merchantId, receipt.deliveryId, checkedAt.slice(0, 23).replace('T', ' '), s.expiresAt.slice(0, 23).replace('T', ' ')]);
-      return Number(updated.affectedRows) === 1;
+      if (Number(updated.affectedRows) !== 1) return false;
+      const reserved = await load(c, input.merchantId, receipt.deliveryId);
+      await reserveSalesReplyUsage(c, reserved.row, reserved.receipt.authorization.expiresAt);
+      return true;
     });
   } catch { return false; }
 }
@@ -184,6 +190,7 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
 export async function reconcileSalesReplyConversation(merchantId: number, value: SalesReplyDeliveryIdentity, recoveryToken?: string) {
   const merchant = id.parse(merchantId), input = salesReplyDeliveryIdentity.parse(value);
   if (recoveryToken !== undefined) z.string().uuid().parse(recoveryToken);
+  await assertSalesReplyUsageSchema();
   return checkoutTransaction(async c => {
     await lock(c, merchant); const { row: authorizationRow, receipt } = await load(c, merchant, input.deliveryId);
     if (receipt.authorizationDigest !== input.authorizationDigest) return conflict();
@@ -201,6 +208,7 @@ export async function reconcileSalesReplyConversation(merchantId: number, value:
       if (Number(saved.affectedRows) !== 1) return conflict();
     };
     const result = await history(c, receipt), b = receipt.authorization.basis;
+    await settleSalesReplyUsage(c, authorizationRow, result.transport, result.providerMessageId, recoveryToken);
     if (!['accepted', 'delivered', 'read'].includes(result.transport)) return { ...result, outgoingMessageId: null };
     await lockReplySource(c, merchant, b.conversationId, b.incomingMessageId);
     if (!await ownsReviewedReply(c, { ...input, merchantId: merchant, conversationId: b.conversationId,

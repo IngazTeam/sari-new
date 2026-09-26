@@ -1,0 +1,51 @@
+{
+  "scope": "Local synthetic verification; final acceptance from the frozen staged source only.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 25,
+      "failed": 6,
+      "notSelected": 272,
+      "result": "Five failures exposed production transport keys shorter than the channel minimum for single-digit merchant and delivery IDs. One test incorrectly threw an HTTP response instead of returning the provider HTTP 400 response. Fixed short production keys without changing previously valid keys; corrected the response fixture.",
+      "logSha256": "9edcf6a7a1938d12116e0289435bf8cdccb2eb4aeeacbd18dda2213c84daae88"
+    },
+    {
+      "kind": "corrected-focused",
+      "passed": 379,
+      "failed": 0,
+      "result": "All generation, reviewed delivery, recovery, worker bootstrap and key contract cases passed. Additional quota contention, final expiry and missing-reservation cases followed.",
+      "logSha256": "9a81c8e00a6ecbf8528a9b35c14f4f2da0547e8232d1103d934af94802518e59"
+    },
+    {
+      "kind": "pre-lease-focused",
+      "passed": 38,
+      "failed": 0,
+      "notSelected": 272,
+      "result": "All then-current usage cases passed on a fresh local database beginning with single-digit identities.",
+      "logSha256": "b1dfa98148103d820488fc7c5881ec894f0f9aa80c94f545254d8fd142ff9ab2"
+    },
+    {
+      "kind": "superseded-full",
+      "result": "Stopped only the owned test runner tree after source review identified that failed/rejected transport settlement also needed the final recovery lease fence. Added two behavioral cases; superseded partial results are excluded. All suites restart from a new frozen snapshot and clean disposable database.",
+      "logSha256": "a86832b91ad30738c929adf9cf2edc2798a7290f3725474beed976c253d4485f"
+    },
+    {
+      "kind": "final-focused",
+      "passed": 40,
+      "failed": 0,
+      "notSelected": 272,
+      "result": "Final usage cases, including rollback and later recovery for leases expiring during failed/rejected transport settlement, passed. The 272 unselected baseline cases are included in the final full run.",
+      "logSha256": "9fea2b4b2369288542ca11e527c486c8c68e7fd412f3481526a42c4f264e4852"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "1f7ec8626b239323d9c4946f2b762546b05c08fb2f27472405d38873f74b1761"
+    },
+    {
+      "kind": "ui-equivalence",
+      "reused": true,
+      "inputsChecked": 39,
+      "screenshotsChecked": 113
+    }
+  ]
+}
