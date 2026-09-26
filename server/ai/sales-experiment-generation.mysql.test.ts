@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
@@ -32,6 +33,7 @@ import { claimSalesReplyProjections, recoverSalesReplyProjection, runSalesReplyR
 import { purgeCompletedInboundPayloads } from '../messaging/retention';
 import { reserveSalesReplyUsage } from './sales-reply-usage';
 import { checkoutTransaction } from './checkout-agreements';
+import { readSalesExperimentExposure } from './sales-experiment-exposure-contract';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
 const wa = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: wa.post } }));
@@ -531,6 +533,112 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     return { ...f, value, reviewValue: f.value, instanceRecordId, prepare, auth, prepared, account, token };
   }
   const deliveryIdentity = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => ({ deliveryId: r.deliveryId, authorizationDigest: r.authorizationDigest });
+  const exposures = () => query('SELECT * FROM ai_sales_experiment_exposures WHERE merchant_id=?', [owner.merchantId]);
+  it('transport exposure: catches an old worker projection after migration during rolling activation',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);
+    await query('DELETE FROM ai_sales_experiment_exposures WHERE merchant_id=?',[owner.merchantId]);
+    await query('UPDATE ai_sales_reply_deliveries SET projection_attempts=8 WHERE merchant_id=?',[owner.merchantId]);config.unix=null;
+    const results=await Promise.all([runSalesReplyRecoveryBatch(),runSalesReplyRecoveryBatch()]);
+    expect(results.reduce((n,v)=>n+v.claimed,0)).toBe(1);expect(results.reduce((n,v)=>n+v.projected,0)).toBe(1);
+    expect(await exposures()).toHaveLength(1);expect((await projectionRow()).projection_attempts).toBe(1);
+    expect((await runSalesReplyRecoveryBatch()).claimed).toBe(0);expect((await usageSubscription()).messages_used).toBe(2);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('transport exposure: projects from one verified receipt even if retention follows that read',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);let pruned=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{const result=await (target.execute as any)(...args);
+        if(!pruned&&String(args[0]).startsWith('SELECT * FROM whatsapp_message_deliveries')) {
+          pruned=true;await target.execute('UPDATE whatsapp_message_deliveries SET request_json=NULL WHERE merchant_id=?',[owner.merchantId]);
+        }return result;};const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;
+    }}) as any;});
+    expect(await reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r))).toMatchObject({exposureRecorded:true,outgoingMessageId:expect.any(Number)});
+    vi.restoreAllMocks();expect(pruned).toBe(true);expect(await exposures()).toHaveLength(1);expect((await usageSubscription()).messages_used).toBe(2);
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['green_api','meta_cloud'] as const)('transport exposure: records exact frozen assignment and original reply for %s once', async provider => {
+    const f=await deliveryFixture(provider), r=await f.auth(); expect(await exposures()).toHaveLength(0);
+    expect((await deliveryRead(r)).exposureRecorded).toBe(false); await dispatch(r);
+    const saved=await exposures();expect(saved).toHaveLength(1); const s=readSalesExperimentExposure(saved[0]);
+    expect(s).toMatchObject({merchantId:owner.merchantId,generationId:f.r.generationId,deliveryId:r.deliveryId,
+      authorizationDigest:r.authorizationDigest,conversationId,incomingMessageId,provider,scope:'provider_acceptance_only',humanReviewed:true});
+    const [assignment]=await query('SELECT * FROM ai_sales_experiment_assignments WHERE merchant_id=?',[owner.merchantId]);
+    expect(s).toMatchObject({assignmentId:Number(assignment.id),assignmentDigest:assignment.assignment_digest,arm:assignment.arm,customerKey:assignment.customer_key});
+    for(const secret of [config.text,'966500000988',f.token,f.account,input.baseSystemPrompt,'fixture-receipt'])expect(JSON.stringify(saved)).not.toContain(secret);
+    await Promise.all([dispatch(r),dispatch(r),dispatch(r)]);expect(await exposures()).toEqual(saved);expect(wa.post).toHaveBeenCalledOnce();
+    expect(fetch).not.toHaveBeenCalled();expect((await deliveryRead(r)).exposureRecorded).toBe(true);
+  });
+  it.each(['not_attempted','unknown','rejected','suppressed'] as const)('transport exposure: does not invent acceptance from %s',async mode=>{
+    const f=await deliveryFixture(),r=await f.auth();
+    if(mode==='unknown')wa.post.mockRejectedValue(Error('synthetic disconnect'));
+    if(mode==='rejected')wa.post.mockResolvedValue({status:400,data:{error:'synthetic rejection'}});
+    if(mode==='suppressed')await revoke();
+    const result=mode==='not_attempted'?await deliveryRead(r):await dispatch(r);
+    expect(result).toMatchObject({transport:mode,exposureRecorded:false});expect(await exposures()).toHaveLength(0);
+  });
+  it.each(['delivered','read','failed'] as const)('transport exposure: preserves acceptance when the callback is %s before local projection',async status=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));
+    expect(await exposures()).toHaveLength(0); // A status read must not write attribution.
+    await deliveryRead(r);expect(await exposures()).toHaveLength(0);
+    await updateWhatsAppDeliveryStatus({provider:'green_api',providerAccount:f.account,providerMessageId:'fixture-receipt',status});
+    expect(await dispatch(r)).toMatchObject({transport:status,exposureRecorded:true});const saved=await exposures();
+    await dispatch(r);expect(await exposures()).toEqual(saved);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['before','after'] as const)('transport exposure: recovers a lost projection commit %s acknowledgement atomically',async when=>{
+    const f=await deliveryFixture(),r=await f.auth();await failCommit('projection',when);
+    await expect(dispatch(r)).rejects.toThrow();vi.restoreAllMocks();expect(await exposures()).toHaveLength(when==='before'?0:1);
+    await dispatch(r);expect(await exposures()).toHaveLength(1);expect((await usageSubscription()).messages_used).toBe(2);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('transport exposure: late recovery uses the original dispatch window after revocation',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));await revoke();
+    config.unix=Math.ceil(Date.parse(r.authorization.basis.observationEndsAt)/1000)+60;
+    expect((await dispatch(r)).exposureRecorded).toBe(true);const s=readSalesExperimentExposure((await exposures())[0]);
+    expect(Date.parse(s.acceptanceObservedAt)).toBeGreaterThan(Date.parse(s.observationEndsAt));
+    expect(Date.parse(s.dispatchStartedAt)).toBeLessThan(Date.parse(s.observationEndsAt));expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['generation','turn','assignment','review'] as const)('transport exposure: refuses corrupted %s evidence without partial accounting',async kind=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));
+    const tables={generation:['ai_sales_experiment_generations','authorization_digest'],turn:['ai_sales_experiment_turns','turn_digest'],
+      assignment:['ai_sales_experiment_assignments','assignment_digest'],review:['ai_sales_generation_output_reviews','review_digest']};
+    const [table,column]=tables[kind];await query(`UPDATE ${table} SET ${column}=? WHERE merchant_id=?`,['f'.repeat(64),owner.merchantId]);
+    await expect(dispatch(r)).rejects.toThrow();expect(await exposures()).toHaveLength(0);expect((await usageSubscription()).messages_used).toBe(0);
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['digest','merchant','delivery','assignment','outbox','rehashed-authority'] as const)('transport exposure: rejects damaged saved %s binding',async kind=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);const [row]=await exposures();
+    if(kind==='rehashed-authority') {const s=readSalesExperimentExposure(row);s.authorizationDigest='f'.repeat(64);
+      await query('UPDATE ai_sales_experiment_exposures SET snapshot=?,exposure_digest=? WHERE id=?',[JSON.stringify(s),policyArtifactDigest(s),row.id]);}
+    else {const column={digest:'exposure_digest',merchant:'merchant_id',delivery:'delivery_id',assignment:'assignment_id',outbox:'outbox_id'}[kind];
+      // Foreign-key-bound columns are changed inside the signed snapshot, not by disabling SQL constraints.
+      if(kind==='merchant'||kind==='delivery') {const s=readSalesExperimentExposure(row);(s as any)[kind==='merchant'?'merchantId':'deliveryId']++;
+        await query('UPDATE ai_sales_experiment_exposures SET snapshot=?,exposure_digest=? WHERE id=?',[JSON.stringify(s),policyArtifactDigest(s),row.id]);}
+      else await query(`UPDATE ai_sales_experiment_exposures SET ${column}=? WHERE id=?`,[kind==='digest'?'f'.repeat(64):Number(row[column])+1,row.id]);}
+    await expect(deliveryRead(r)).rejects.toThrow();await expect(dispatch(r)).rejects.toThrow();expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('transport exposure: migration backfill requeues SQL repair without changing allocation or sending again',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);
+    const allocation=await query('SELECT * FROM ai_sales_experiment_assignments WHERE merchant_id=?',[owner.merchantId]);
+    await query('DELETE FROM ai_sales_experiment_exposures WHERE merchant_id=?',[owner.merchantId]);
+    const migration=readFileSync('drizzle/0124_sales_experiment_exposures.sql','utf8').split('--> statement-breakpoint')[1];await query(migration);
+    config.unix=null;expect((await runSalesReplyRecoveryBatch()).projected).toBe(1);expect(await exposures()).toHaveLength(1);
+    expect(await query('SELECT * FROM ai_sales_experiment_assignments WHERE merchant_id=?',[owner.merchantId])).toEqual(allocation);
+    expect((await usageSubscription()).messages_used).toBe(2);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['accepted','failed'] as const)('transport exposure: rolls back %s evidence if the recovery lease expires during insertion',async mode=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));config.unix=null;await dueProjection();
+    if(mode==='failed')await updateWhatsAppDeliveryStatus({provider:'green_api',providerAccount:f.account,providerMessageId:'fixture-receipt',status:'failed'});
+    const [claim]=await claimSalesReplyProjections(),pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{const result=await (target.execute as any)(...args);
+        if(String(args[0]).includes('INSERT INTO ai_sales_experiment_exposures')) {
+          await target.execute('UPDATE ai_sales_reply_deliveries SET projection_lease_until=TIMESTAMPADD(MICROSECOND,1000,UTC_TIMESTAMP(3)) WHERE id=?',[claim.deliveryId]);
+          await target.query('SELECT SLEEP(0.02)');
+        }return result;};const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;
+    }}) as any;});
+    await expect(reconcileSalesReplyConversation(owner.merchantId,deliveryIdentity(r),claim.token)).rejects.toThrow();vi.restoreAllMocks();
+    expect(await exposures()).toHaveLength(0);expect((await usageSubscription()).messages_used).toBe(0);
+    await dueProjection();await runSalesReplyRecoveryBatch();expect(await exposures()).toHaveLength(1);expect(wa.post).toHaveBeenCalledOnce();
+  });
   it.each(['green_api', 'meta_cloud'] as const)('public reply send: explicit %s message, replay and read-only recovery', async provider => {
     const f=await deliveryFixture(provider), args={generationId:f.r.generationId,instanceRecordId:f.instanceRecordId};
     const choose=await getSalesReplySendWorkspace(owner.merchantId,owner.userId,{generationId:f.r.generationId});
@@ -540,7 +648,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     for(const secret of [f.token,f.account,'accountDigest','authorizationDigest','PRIVATE_SERVER','providerMessageId'])expect(JSON.stringify(ready)).not.toContain(secret);
     expect(wa.post).not.toHaveBeenCalled();
     expect(await query('SELECT id FROM ai_sales_reply_deliveries WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);
-    const r=await submitSalesReplySend(owner.merchantId,owner.userId,f.value);expect(r).toMatchObject({transport:'accepted',exposureRecorded:false,requestId:f.value.requestId});
+    const r=await submitSalesReplySend(owner.merchantId,owner.userId,f.value);expect(r).toMatchObject({transport:'accepted',exposureRecorded:true,requestId:f.value.requestId});
     expect(await submitSalesReplySend(owner.merchantId,owner.userId,f.value)).toEqual(r);
     await updateWhatsAppDeliveryStatus({provider,providerAccount:f.account,providerMessageId:'fixture-receipt',status:'read'});
     expect(await getSalesReplySendWorkspace(owner.merchantId,owner.userId,args)).toMatchObject({stage:'recorded',preview:null,receipt:{transport:'read'}});
@@ -600,7 +708,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     expect(wa.post).not.toHaveBeenCalled(); expect(JSON.stringify(r)).not.toContain(f.token);
     const results = await Promise.all([dispatch(r), dispatch(r), dispatch(r)]);
     expect(results.some(x => x.transport === 'accepted')).toBe(true); expect(wa.post).toHaveBeenCalledOnce();
-    expect(await dispatch(r)).toMatchObject({ state: 'dispatching', transport: 'accepted', providerMessageId: 'fixture-receipt', exposureRecorded: false });
+    expect(await dispatch(r)).toMatchObject({ state: 'dispatching', transport: 'accepted', providerMessageId: 'fixture-receipt', exposureRecorded: true });
     const payload = wa.post.mock.calls[0][1]; expect(provider === 'green_api' ? payload.message : payload.text.body).toBe(config.text);
     expect(await updateWhatsAppDeliveryStatus({ provider, providerAccount: 'wrong-account', providerMessageId: 'fixture-receipt', status: 'read' })).toBe('not_found');
     expect(await updateWhatsAppDeliveryStatus({ provider, providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'delivered' })).toBe('updated');
@@ -897,7 +1005,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     const f = await deliveryFixture(), r = await f.auth(); await failCommit('projection', when);
     await expect(dispatch(r)).rejects.toThrow(); vi.restoreAllMocks(); expect(wa.post).toHaveBeenCalledOnce();
     const repaired = await reconcileSalesReplyConversation(owner.merchantId, deliveryIdentity(r));
-    expect(repaired).toMatchObject({ transport: 'accepted', outgoingMessageId: expect.any(Number), exposureRecorded: false });
+    expect(repaired).toMatchObject({ transport: 'accepted', outgoingMessageId: expect.any(Number), exposureRecorded: true });
     expect(await dispatch(r)).toEqual(repaired); expect(wa.post).toHaveBeenCalledOnce();
     const messages = await query("SELECT * FROM messages WHERE conversationId=? AND direction='outgoing'", [conversationId]);
     expect(messages).toHaveLength(1); expect(messages[0]).toMatchObject({ content: config.text, aiResponse: config.text, sender_type: 'assistant', isProcessed: 1 });

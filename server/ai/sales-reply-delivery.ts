@@ -10,6 +10,7 @@ import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { lockReplySource, reserveReviewedReply, ownsReviewedReply } from './reply-reservation';
 import { assertSalesReplyUsageSchema, reserveSalesReplyUsage, settleSalesReplyUsage } from './sales-reply-usage';
 import { lockReplyUsageCapacity } from './reply-usage-quota';
+import { assertSalesExperimentExposureSchema, loadSalesReplyExposure, recordSalesReplyExposure } from './sales-experiment-exposure';
 import { replySendReadInput, replySendReceipt, replySendWorkspace, type ReplySendSubmission } from '../../shared/sales-reply-send';
 import { authorizeSalesReplyDeliveryInput, prepareSalesReplyDeliveryInput, salesReplyDeliveryAuthorization,
   salesReplyDeliveryBasis, salesReplyDeliveryId as id, salesReplyDeliveryIdentity, salesReplyDeliveryKey,
@@ -89,7 +90,7 @@ async function load(c: PoolConnection, merchant: number, deliveryId: number) {
   const [rows] = await c.execute<any[]>('SELECT * FROM ai_sales_reply_deliveries WHERE merchant_id=? AND id=? FOR UPDATE', [merchant, deliveryId]);
   if (rows.length !== 1) return conflict(); return { row: rows[0], receipt: readSalesReplyDeliveryRecord(rows[0]) };
 }
-function sendInput(receipt: ReturnType<typeof readSalesReplyDeliveryRecord>): SendMerchantWhatsAppInput {
+function sendInput(receipt: Pick<ReturnType<typeof readSalesReplyDeliveryRecord>, 'authorization' | 'deliveryId' | 'authorizationDigest'>): SendMerchantWhatsAppInput {
   const b = receipt.authorization.basis;
   return { merchantId: b.merchantId, instanceRecordId: b.instanceRecordId, to: b.recipient, text: b.responseText, kind: 'text',
     idempotencyKey: salesReplyDeliveryKey(b.merchantId, receipt.deliveryId),
@@ -111,8 +112,8 @@ async function outbox(c: PoolConnection, receipt: ReturnType<typeof readSalesRep
   } catch { return conflict(); }
   return row;
 }
-async function history(c: PoolConnection, receipt: ReturnType<typeof readSalesReplyDeliveryRecord>) {
-  const row = await outbox(c, receipt);
+async function history(c: PoolConnection, receipt: ReturnType<typeof readSalesReplyDeliveryRecord>, observedOutbox?: any) {
+  const row = observedOutbox === undefined ? await outbox(c, receipt) : observedOutbox;
   let transport: 'not_attempted' | 'unknown' | 'suppressed' | 'rejected' | 'accepted' | 'delivered' | 'read' | 'failed' = receipt.state === 'authorized' ? 'not_attempted' : 'unknown';
   if (row) {
     transport = 'unknown';
@@ -122,7 +123,8 @@ async function history(c: PoolConnection, receipt: ReturnType<typeof readSalesRe
     if (receipt.state === 'dispatching' && row.provider_message_id && ['sent', 'delivered', 'read'].includes(row.status))
       transport = row.status === 'sent' ? 'accepted' : row.status;
   }
-  return { ...receipt, transport, providerMessageId: receipt.state === 'dispatching' && row?.provider_message_id ? String(row.provider_message_id) : null };
+  return { ...receipt, transport, providerMessageId: receipt.state === 'dispatching' && row?.provider_message_id ? String(row.provider_message_id) : null,
+    exposureRecorded: await loadSalesReplyExposure(c,receipt) !== null };
 }
 /** Internal evidence; the public workspace returns only the customer-facing projection. */
 export async function prepareSalesReplyDelivery(merchantId: number, actorUserId: number, value: z.infer<typeof prepareSalesReplyDeliveryInput>) {
@@ -132,6 +134,7 @@ export async function prepareSalesReplyDelivery(merchantId: number, actorUserId:
 export async function authorizeSalesReplyDelivery(merchantId: number, actorUserId: number, value: z.infer<typeof authorizeSalesReplyDeliveryInput>) {
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = authorizeSalesReplyDeliveryInput.parse(value);
   await assertSalesReplyUsageSchema();
+  await assertSalesExperimentExposureSchema();
   const payload = policyArtifactDigest({ version: 'sales-reply-delivery-request.v1', actor, input });
   return checkoutTransaction(async c => {
     await requireOwner(c, merchant, actor);
@@ -169,6 +172,7 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
   if (!parsed.success || input.retryFailed || input.idempotencyKey !== salesReplyDeliveryKey(input.merchantId, parsed.data.deliveryId)) return false;
   try {
     await assertSalesReplyUsageSchema();
+    await assertSalesExperimentExposureSchema();
     return await checkoutTransaction(async c => {
       await lock(c, id.parse(input.merchantId)); const { row, receipt } = await load(c, input.merchantId, parsed.data.deliveryId);
       const s = receipt.authorization, b = s.basis;
@@ -196,6 +200,7 @@ export async function reconcileSalesReplyConversation(merchantId: number, value:
   const merchant = id.parse(merchantId), input = salesReplyDeliveryIdentity.parse(value);
   if (recoveryToken !== undefined) z.string().uuid().parse(recoveryToken);
   await assertSalesReplyUsageSchema();
+  await assertSalesExperimentExposureSchema();
   return checkoutTransaction(async c => {
     await lock(c, merchant); const { row: authorizationRow, receipt } = await load(c, merchant, input.deliveryId);
     if (receipt.authorizationDigest !== input.authorizationDigest) return conflict();
@@ -212,9 +217,20 @@ export async function reconcileSalesReplyConversation(merchantId: number, value:
         [merchant,input.deliveryId,recoveryToken ?? null,recoveryToken ?? null]);
       if (Number(saved.affectedRows) !== 1) return conflict();
     };
-    const result = await history(c, receipt), b = receipt.authorization.basis;
+    // Bind accounting, attribution and projection to the same validated observation. A second unlocked
+    // outbox read could race a callback/retention pass and mark projection complete without attribution.
+    const observedOutbox = await outbox(c,receipt);
+    const result = await history(c, receipt, observedOutbox), b = receipt.authorization.basis;
     await settleSalesReplyUsage(c, authorizationRow, result.transport, result.providerMessageId, recoveryToken);
-    if (!['accepted', 'delivered', 'read'].includes(result.transport)) return { ...result, outgoingMessageId: null };
+    result.exposureRecorded = await recordSalesReplyExposure(c,receipt,authorizationRow,observedOutbox,result.transport);
+    if (!['accepted', 'delivered', 'read'].includes(result.transport)) {
+      if (recoveryToken !== undefined) {
+        const [live] = await c.execute<any[]>(`SELECT id FROM ai_sales_reply_deliveries WHERE id=? AND merchant_id=?
+          AND projection_state='pending' AND projection_token=? AND projection_lease_until>UTC_TIMESTAMP(3)`, [input.deliveryId,merchant,recoveryToken]);
+        if (live.length !== 1) return conflict();
+      }
+      return { ...result, outgoingMessageId: null };
+    }
     await lockReplySource(c, merchant, b.conversationId, b.incomingMessageId);
     if (!await ownsReviewedReply(c, { ...input, merchantId: merchant, conversationId: b.conversationId,
       incomingMessageId: b.incomingMessageId, responseText: b.responseText })) return conflict();
@@ -258,7 +274,7 @@ function publicMessage(b: z.infer<typeof salesReplyDeliveryBasis>, basisDigest: 
 function publicReceipt(r: Awaited<ReturnType<typeof history>>) {
   return replySendReceipt.parse({ ...publicMessage(r.authorization.basis, r.authorization.basisDigest),
     deliveryId: r.deliveryId, requestId: r.authorization.requestId, authorizedAt: r.authorization.authorizedAt,
-    transport: r.transport, exposureRecorded: false });
+    transport: r.transport, exposureRecorded: r.exposureRecorded });
 }
 /** Read-only status recovery, including after a lost browser acknowledgement. Never dispatches. */
 export async function getSalesReplySendWorkspace(merchantId: number, actorUserId: number, value: z.infer<typeof replySendReadInput>) {

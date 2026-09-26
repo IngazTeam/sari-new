@@ -39,6 +39,8 @@ async function load(c: PoolConnection, merchant: number, input: z.infer<typeof r
   if (rows.length !== 1) return conflict();
   const saved = receipt(rows[0]); if (saved.turnDigest !== input.turnDigest) return conflict(); return saved;
 }
+/** Frozen historical evidence under the caller's merchant lock; never a current-use permit. */
+export const loadSalesExperimentTurnHistory = load;
 const blocked = (reason: string) => ({ kind: 'blocked' as const, reason, selectionCurrentAtRead: false as const, ...flags });
 
 /** Checks continued use, not enrollment. Never runs the frozen recruitment predicates a second time. */

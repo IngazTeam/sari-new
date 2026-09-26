@@ -4,12 +4,14 @@ import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { reconcileSalesReplyConversation, SalesReplyDeliveryConflict } from './sales-reply-delivery';
 import { assertSalesReplyUsageSchema } from './sales-reply-usage';
+import { assertSalesExperimentExposureSchema } from './sales-experiment-exposure';
 
 const claimSchema = z.object({ merchantId: z.number().int().positive().safe(), deliveryId: z.number().int().positive().safe(),
   authorizationDigest: z.string().regex(/^[a-f0-9]{64}$/), token: z.string().uuid(), attempt: z.number().int().min(1).max(8) }).strict();
 export type SalesReplyProjectionClaim = z.infer<typeof claimSchema>;
 export async function assertSalesReplyRecoverySchema() {
   await assertSalesReplyUsageSchema();
+  await assertSalesExperimentExposureSchema();
   await assertRuntimeSchema('sales reply projection recovery', [
     { table: 'ai_sales_reply_deliveries', columns: ['projection_state','projection_token','projection_lease_until','projection_next_at',
       'projection_attempts','projection_last_error','projection_completed_at'], checkConstraints: ['ck_sales_reply_projection'] },
@@ -26,6 +28,15 @@ export async function claimSalesReplyProjections(limit = 10): Promise<SalesReply
   const c = await pool.getConnection();
   try {
     await c.beginTransaction();
+    // Old workers can complete projection after migration but before a rolling activation finishes.
+    // Catch those rows in bounded batches too; a completed row with evidence is never requeued.
+    const [legacy] = await c.execute<any[]>(`SELECT d.id FROM ai_sales_reply_deliveries d
+      WHERE d.state='dispatching' AND d.projection_state='projected'
+        AND NOT EXISTS (SELECT 1 FROM ai_sales_experiment_exposures e WHERE e.merchant_id=d.merchant_id AND e.delivery_id=d.id)
+      ORDER BY d.id LIMIT ${limit} FOR UPDATE SKIP LOCKED`);
+    for (const row of legacy) await c.execute(`UPDATE ai_sales_reply_deliveries SET projection_state='pending',
+      projection_next_at=UTC_TIMESTAMP(3),projection_attempts=0,projection_completed_at=NULL,projection_last_error=NULL
+      WHERE id=? AND state='dispatching' AND projection_state='projected'`, [row.id]);
     const [rows] = await c.execute<any[]>(`SELECT id,merchant_id,authorization_digest,projection_attempts FROM ai_sales_reply_deliveries
       WHERE state='dispatching' AND projection_state='pending' AND projection_next_at<=UTC_TIMESTAMP(3)
         AND (projection_lease_until IS NULL OR projection_lease_until<=UTC_TIMESTAMP(3))
@@ -64,7 +75,7 @@ async function release(claim: SalesReplyProjectionClaim, reason: RecoveryReason,
   return terminal || claim.attempt >= 8 ? 'review' as const : 'deferred' as const;
 }
 
-/** Local SQL recovery only. No provider lookup, generation, send, exposure or learning. */
+/** Local SQL recovery, including proven transport attribution. No provider lookup, generation, send or learning. */
 export async function recoverSalesReplyProjection(value: SalesReplyProjectionClaim) {
   const claim = claimSchema.parse(value);
   try {

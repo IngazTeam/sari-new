@@ -12,7 +12,7 @@ const message = z.object({ generationId: id, actorUserId: id, instanceRecordId: 
 export const replySendPreview = message.extend({ checkedAt: z.string().datetime(), expiresAt: z.string().datetime() });
 export const replySendReceipt = message.extend({ deliveryId: id, requestId: z.string().uuid(), authorizedAt: z.string().datetime(),
   transport: z.enum(['not_attempted', 'unknown', 'suppressed', 'rejected', 'accepted', 'delivered', 'read', 'failed']),
-  exposureRecorded: z.literal(false),
+  exposureRecorded: z.boolean(),
 });
 export const replySendWorkspace = z.object({ generationId: id, actorUserId: id,
   stage: z.enum(['choose_account', 'ready', 'unavailable', 'capacity_unavailable', 'recorded']),

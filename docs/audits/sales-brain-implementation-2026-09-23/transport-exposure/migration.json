@@ -1,0 +1,37 @@
+{
+  "verifiedAt": "2026-09-26T10:39:05.558Z",
+  "database": "sari_sales_exposure_1790419126535_test",
+  "scope": "Actual updater applies 0000–0123; seeds authorized/projected transport history; applies 0124 and safely reruns. Only projected SQL recovery is requeued; no exposure or send is invented.",
+  "migrations": 125,
+  "preservedTables": [
+    "ai_learning_proposals",
+    "ai_learning_policy_reviews",
+    "ai_learning_policy_candidates",
+    "ai_learning_policy_evaluations",
+    "ai_learning_policy_output_reviews",
+    "ai_sales_experiment_protocols",
+    "ai_sales_experiment_cohorts",
+    "ai_sales_experiment_reviews",
+    "ai_sales_experiment_launches",
+    "ai_sales_experiment_launch_revocations",
+    "ai_sales_experiment_assignments",
+    "ai_sales_experiment_assignment_conversations",
+    "ai_sales_experiment_turns",
+    "ai_budget_policies",
+    "ai_price_cards",
+    "ai_sales_experiment_generations",
+    "ai_sales_generation_output_reviews"
+  ],
+  "historicalDeliveries": 2,
+  "preservedDeliveryAuthority": true,
+  "requeued": true,
+  "initiallyEmpty": true,
+  "rejectedUniqueIndexes": [
+    "delivery",
+    "outbox"
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "95693cdafa61bc5e659133d60dff8949c449c2e75517239ad44cdca11dcc8edb",
+  "passed": true
+}

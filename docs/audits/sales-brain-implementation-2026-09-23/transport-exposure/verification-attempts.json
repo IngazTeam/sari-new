@@ -1,0 +1,81 @@
+{
+  "scope": "Local synthetic verification; final complete test inventory from the frozen staged source.",
+  "attempts": [
+    {
+      "kind": "initial-types",
+      "result": "One type error after changing the historical exposure flag to boolean; narrowed sendInput to the authority fields it consumes.",
+      "sha256": "1ec6c0d452b442b81f66c17c6c45a3f89b9da72e0d0616e915056f5f3a056d2a"
+    },
+    {
+      "kind": "initial-focused",
+      "passed": 470,
+      "failed": 14,
+      "result": "The prospective test clock reset to real time in recovery. Preserve actual observation time with an explicit clock_regression flag; do not erase accepted receipts or fabricate monotonic timestamps.",
+      "sha256": "01332db9338e6d62477397932f950a4224a51f772e3de4b88d92447209dfe3ea"
+    },
+    {
+      "kind": "corrected-focused",
+      "passed": 112,
+      "failed": 0,
+      "notSelected": 306,
+      "sha256": "3ad0889dc1422feb140ab12553324b3bc4a052a391a5e9ac0fac1c3720243232"
+    },
+    {
+      "kind": "interrupted-full",
+      "result": "Stopped the owned runner during database tests after review found a second unlocked outbox read. No partial report used for final acceptance.",
+      "sha256": "d63aa6abf42095e1e45445d4e687f99d0e099a3b81dc1943e3be5de70934bb0c"
+    },
+    {
+      "kind": "final-source-correction",
+      "reason": "One validated outbox observation shared by usage, attribution and projection; regression test for retention immediately after that read.",
+      "files": [
+        "server/ai/sales-reply-delivery.ts",
+        "server/ai/sales-experiment-generation.mysql.test.ts"
+      ],
+      "at": "2026-09-26T10:35:30.917Z"
+    },
+    {
+      "kind": "fresh-final-database",
+      "database": "sari_exposure_final_20260926_test",
+      "sha256": "95ead4fd7c0cb41c1902acfb856639501e65bb459dc61b8d6a829be9cf902e00"
+    },
+    {
+      "kind": "pre-rollout-correction-full",
+      "sha256": "c9f3f58f26886d737867754bdc0d684143514304aa7a61011279732ffca8a7ff"
+    },
+    {
+      "kind": "rolling-focused",
+      "passed": 71,
+      "failed": 0,
+      "notSelected": 307,
+      "sha256": "ddaf8a69b86bfa83e78b50287a57db3a02857c14b4449154bd51a8c81bd5e507"
+    },
+    {
+      "kind": "final-rollout-correction",
+      "reason": "Bounded catch-up for a legacy worker finishing projection after migration during rolling activation; concurrent-worker regression.",
+      "files": [
+        "server/ai/sales-reply-recovery.ts",
+        "server/ai/sales-experiment-generation.mysql.test.ts"
+      ],
+      "at": "2026-09-26T10:47:28.659Z"
+    },
+    {
+      "kind": "final-full",
+      "sha256": "d00228ecd9790a46497243e7cdd2a1a496fbe0f69d075659c11fa627767ef4f5"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    },
+    {
+      "kind": "affected-component-ui",
+      "scenarios": 82,
+      "screenshots": 8,
+      "sha256": "fc22fecbaf2ef38b335ef821abf0ad8d230004da52f6c9b80a2445effd7c383b"
+    },
+    {
+      "kind": "upgrade-and-rerun",
+      "sha256": "11d449d5e399f8198d05f5a190ec48b57199d8c25af9e33b8484fee223dd15cb"
+    }
+  ]
+}

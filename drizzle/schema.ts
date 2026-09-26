@@ -4318,6 +4318,19 @@ export const aiSalesReplyDeliveries = mysqlTable('ai_sales_reply_deliveries', {
     OR (${table.projectionState}='projected' AND ${table.projectionNextAt} IS NULL AND ${table.projectionCompletedAt} IS NOT NULL AND ${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL)
     OR (${table.projectionState}='review' AND ${table.projectionNextAt} IS NULL AND ${table.projectionCompletedAt} IS NULL AND ${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL)`) ]);
 
+export const aiSalesExperimentExposures = mysqlTable('ai_sales_experiment_exposures', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  deliveryId: bigint('delivery_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesReplyDeliveries.id, { onDelete: 'cascade' }),
+  protocolId: bigint('protocol_id', { mode: 'number', unsigned: true }).notNull(),
+  assignmentId: bigint('assignment_id', { mode: 'number', unsigned: true }).notNull(),
+  outboxId: bigint('outbox_id', { mode: 'number', unsigned: true }).notNull(),
+  exposureDigest: char('exposure_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_exposure_delivery').on(table.merchantId,table.deliveryId),
+  uniqueIndex('uq_sales_exposure_outbox').on(table.merchantId,table.outboxId),
+  index('idx_sales_exposure_assignment').on(table.merchantId,table.protocolId,table.assignmentId,table.id)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

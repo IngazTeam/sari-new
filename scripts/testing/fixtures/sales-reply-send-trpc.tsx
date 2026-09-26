@@ -31,7 +31,8 @@ export const replySendFixture = {
     await new Promise(r=>setTimeout(r,mode==='slow'?400:25));
     if(mode==='outage')throw Error('private connection');
     saved={generationId:v.generationId,actorUserId:actor,instanceRecordId:v.instanceRecordId,basisDigest:v.basisDigest,recipient:'966500000988',responseText:text,
-      deliveryId:41,requestId:v.requestId,authorizedAt:'2026-09-26T00:00:00.000Z',transport:['not_attempted','unknown-status','suppressed','rejected','delivered','read','failed'].includes(mode)?(mode==='unknown-status'?'unknown':mode) as any:'accepted',exposureRecorded:false};emit();
+      deliveryId:41,requestId:v.requestId,authorizedAt:'2026-09-26T00:00:00.000Z',transport:['not_attempted','unknown-status','suppressed','rejected','delivered','read','failed'].includes(mode)?(mode==='unknown-status'?'unknown':mode) as any:'accepted',
+      exposureRecorded:!['not_attempted','unknown-status','suppressed','rejected'].includes(mode)};emit();
     if(mode==='unknown')throw Error('private lost acknowledgement');
     if(mode.startsWith('mismatch-')) { const r:any=structuredClone(saved);r[mode.replace('mismatch-','')]=mode==='mismatch-recipient'?'966500000999':999;return r; }
     return saved;
