@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
@@ -26,6 +27,8 @@ import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
 import { stageInteraction, finishInteractionDelivery, runInteractionJob } from './interaction-jobs';
 import { sendMerchantWhatsApp, updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { salesReplyDeliveryKey } from './sales-reply-delivery-contract';
+import { claimSalesReplyProjections, recoverSalesReplyProjection, runSalesReplyRecoveryBatch, salesReplyRecoveryHealth } from './sales-reply-recovery';
+import { purgeCompletedInboundPayloads } from '../messaging/retention';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
 const wa = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: wa.post } }));
@@ -178,14 +181,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review' | 'delivery' | 'dispatch' | 'projection', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review' | 'delivery' | 'dispatch' | 'projection' | 'projection-claim', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews', delivery: 'INSERT INTO ai_sales_reply_deliveries', dispatch: "SET state='dispatching',dispatch_started_at", projection: 'SET outgoing_message_reference=?' }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews', delivery: 'INSERT INTO ai_sales_reply_deliveries', dispatch: "SET state='dispatching',dispatch_started_at", projection: 'SET outgoing_message_reference=?', 'projection-claim': 'SET projection_token=?' }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -560,6 +563,102 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
   const ordinaryPlan = (f: Awaited<ReturnType<typeof deliveryFixture>>) => buildReplyPlan({ merchantId: owner.merchantId,
     instanceId: f.instanceRecordId, providerAccount: f.account, eventId: `ordinary-${incomingMessageId}`, conversationId,
     incomingMessageId, to: '966500000988', text: 'الرد العادي المنافس' });
+  const projectionRow = async () => (await query('SELECT * FROM ai_sales_reply_deliveries WHERE merchant_id=?', [owner.merchantId]))[0];
+  const dueProjection = () => query('UPDATE ai_sales_reply_deliveries SET projection_next_at=UTC_TIMESTAMP(3),projection_lease_until=NULL,projection_token=NULL WHERE merchant_id=? AND projection_state=\'pending\'', [owner.merchantId]);
+  async function recoveryFixture(provider: 'green_api'|'meta_cloud' = 'green_api', accepted = true) {
+    const f = await deliveryFixture(provider), r = await f.auth();
+    if (!accepted) wa.post.mockRejectedValue(Error('Synthetic transport uncertainty'));
+    await sendMerchantWhatsApp(deliveryInput(r)); config.unix = null; await dueProjection();
+    return {f,r};
+  }
+  it.each(['green_api','meta_cloud'] as const)('projection worker: repairs accepted %s transport once without another provider request', async provider => {
+    const {r} = await recoveryFixture(provider), budget = await ledger();
+    expect(await runSalesReplyRecoveryBatch()).toEqual({claimed:1,projected:1,review:0,deferred:0,skipped:0});
+    expect(await projectionRow()).toMatchObject({projection_state:'projected',projection_attempts:1,projection_token:null,projection_next_at:null});
+    expect((await runSalesReplyRecoveryBatch()).claimed).toBe(0); expect((await dispatch(r)).outgoingMessageId).toEqual(expect.any(Number));
+    expect(wa.post).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled(); expect(await ledger()).toEqual(budget); expect(await runInteractionJob()).toBe(false);
+  });
+  it('projection worker: never consumes or sends an unattempted authorization', async () => {
+    const f=await deliveryFixture();await f.auth();config.unix=null;await dueProjection();
+    expect((await runSalesReplyRecoveryBatch()).claimed).toBe(0);expect(wa.post).not.toHaveBeenCalled();expect((await projectionRow()).state).toBe('authorized');
+  });
+  it('projection worker: recovers from durable SQL in a fresh process with no test transport mocks', async () => {
+    await recoveryFixture();
+    const code="import {assertDisposableDatabase} from './server/tests/helpers/disposable-merchant.ts';assertDisposableDatabase();const {runSalesReplyRecoveryBatch}=await import('./server/ai/sales-reply-recovery.ts');const {closeDb}=await import('./server/db/connection.ts');try{console.log('RECOVERED:'+JSON.stringify(await runSalesReplyRecoveryBatch()));}finally{await closeDb();}";
+    const output=execFileSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{encoding:'utf8',windowsHide:true,timeout:30000,env:process.env});
+    const match=output.match(/RECOVERED:(\{[^\n]+\})/);expect(match).not.toBeNull();expect(JSON.parse(match![1])).toMatchObject({projected:1,claimed:1});
+    expect((await projectionRow()).projection_state).toBe('projected');expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('projection worker: serializes claims and fences the expired holder after a replacement', async () => {
+    await recoveryFixture();const batches=await Promise.all([claimSalesReplyProjections(),claimSalesReplyProjections(),claimSalesReplyProjections()]);
+    expect(batches.flat()).toHaveLength(1);const old=batches.flat()[0];await dueProjection();const [current]=await claimSalesReplyProjections();
+    expect(current.token).not.toBe(old.token);expect(await recoverSalesReplyProjection(old)).toBe('skipped');
+    expect(await recoverSalesReplyProjection(current)).toBe('projected');expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['before','after'] as const)('projection worker: recovers lost projection acknowledgement %s commit', async when => {
+    await recoveryFixture();await failCommit('projection',when);const result=await runSalesReplyRecoveryBatch();vi.restoreAllMocks();
+    expect(result[when==='before'?'deferred':'skipped']).toBe(1);
+    if(when==='before'){await dueProjection();expect((await runSalesReplyRecoveryBatch()).projected).toBe(1);}
+    expect((await projectionRow()).projection_state).toBe('projected');expect(wa.post).toHaveBeenCalledOnce();
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(1);
+  });
+  it.each(['before','after'] as const)('projection worker: recovers claim acknowledgement lost %s commit without writing history prematurely', async when => {
+    await recoveryFixture();await failCommit('projection-claim',when);await expect(claimSalesReplyProjections()).rejects.toThrow();vi.restoreAllMocks();
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(0);
+    if(when==='after')expect(await claimSalesReplyProjections()).toEqual([]);
+    await dueProjection();expect((await runSalesReplyRecoveryBatch()).projected).toBe(1);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('projection worker: backs off uncertainty and parks the eighth attempt for review without resending', async () => {
+    await recoveryFixture('green_api',false);expect((await runSalesReplyRecoveryBatch()).deferred).toBe(1);
+    expect(await claimSalesReplyProjections()).toEqual([]);
+    expect(await projectionRow()).toMatchObject({projection_state:'pending',projection_attempts:1,projection_last_error:'transport_unknown'});
+    await query('UPDATE ai_sales_reply_deliveries SET projection_attempts=7 WHERE merchant_id=?',[owner.merchantId]);await dueProjection();
+    expect((await runSalesReplyRecoveryBatch()).review).toBe(1);expect(await projectionRow()).toMatchObject({projection_state:'review',projection_next_at:null,projection_token:null});
+    expect(await claimSalesReplyProjections()).toEqual([]);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('projection worker: retires an expired eighth lease instead of claiming a ninth attempt', async () => {
+    await recoveryFixture();await query('UPDATE ai_sales_reply_deliveries SET projection_attempts=8 WHERE merchant_id=?',[owner.merchantId]);
+    expect(await claimSalesReplyProjections()).toEqual([]);expect(await projectionRow()).toMatchObject({projection_state:'review',projection_last_error:'attempts_exhausted'});
+  });
+  it.each(['invalid','f'.repeat(64)])('projection worker: parks corrupt authorization digest %s without poisoning future batches', async digest => {
+    await recoveryFixture();await query('UPDATE ai_sales_reply_deliveries SET authorization_digest=? WHERE merchant_id=?',[digest,owner.merchantId]);
+    expect((await runSalesReplyRecoveryBatch()).projected).toBe(0);expect(await projectionRow()).toMatchObject({projection_state:'review',projection_last_error:'evidence_unavailable'});
+    expect(await claimSalesReplyProjections()).toEqual([]);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['request-corrupt','retained-body-purged','failed','source-deleted'] as const)('projection worker: does not manufacture history from %s', async mode => {
+    const {f}=await recoveryFixture();
+    if(mode==='request-corrupt')await query("UPDATE whatsapp_message_deliveries SET request_json=JSON_OBJECT('text','Forged') WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='retained-body-purged'){await query('UPDATE whatsapp_message_deliveries SET status_updated_at=TIMESTAMPADD(DAY,-31,UTC_TIMESTAMP()) WHERE merchant_id=?',[owner.merchantId]);await purgeCompletedInboundPayloads();}
+    if(mode==='failed')await updateWhatsAppDeliveryStatus({provider:'green_api',providerAccount:f.account,providerMessageId:'fixture-receipt',status:'failed'});
+    if(mode==='source-deleted')await query('DELETE FROM messages WHERE id=?',[incomingMessageId]);
+    const result=await runSalesReplyRecoveryBatch();expect(result.projected).toBe(0);expect(result.review+result.deferred).toBe(1);
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(0);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['merchant','digest','token'] as const)('projection worker: refuses forged claim %s without disturbing its real owner', async mode => {
+    await recoveryFixture();const [claim]=await claimSalesReplyProjections(),forged={...claim};
+    if(mode==='merchant')forged.merchantId=other.merchantId;if(mode==='digest')forged.authorizationDigest='f'.repeat(64);if(mode==='token')forged.token=randomUUID();
+    expect(await recoverSalesReplyProjection(forged)).toBe('skipped');expect((await projectionRow()).projection_token).toBe(claim.token);
+    expect(await recoverSalesReplyProjection(claim)).toBe('projected');expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('projection worker: final SQL lease guard rolls back history if expiry occurs after the source read', async () => {
+    await recoveryFixture();const [claim]=await claimSalesReplyProjections();
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{if(String(args[0]).includes("SET projection_state='projected'")){
+        await target.execute('UPDATE ai_sales_reply_deliveries SET projection_lease_until=TIMESTAMPADD(MICROSECOND,1000,UTC_TIMESTAMP(3)) WHERE id=?',[claim.deliveryId]);
+        await target.query('SELECT SLEEP(0.02)');
+      }return (target.execute as any)(...args);};const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    expect(await recoverSalesReplyProjection(claim)).toBe('review');vi.restoreAllMocks();
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(0);
+    expect((await query('SELECT isProcessed FROM messages WHERE id=?',[incomingMessageId]))[0].isProcessed).toBe(0);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('projection health: uses current administrator authority and returns aggregate counts only', async () => {
+    await recoveryFixture();await expect(salesReplyRecoveryHealth(owner.userId)).rejects.toThrow();
+    await query("UPDATE users SET role='admin' WHERE id=?",[owner.userId]);
+    const health=await salesReplyRecoveryHealth(owner.userId);expect(health).toEqual([{status:'pending',count:1,due:1,oldestSeconds:0}]);
+    expect(JSON.stringify(health)).not.toContain(config.text);expect(JSON.stringify(health)).not.toContain('966500000988');
+    await query("UPDATE users SET account_status='deletion_pending' WHERE id=?",[owner.userId]);await expect(salesReplyRecoveryHealth(owner.userId)).rejects.toThrow();
+  });
   it.each(['ordinary-first', 'reviewed-first', 'concurrent'] as const)('shared reservation: elects one owner for %s', async mode => {
     const f = await deliveryFixture(), p = ordinaryPlan(f);
     if (mode === 'ordinary-first') { await stageInteraction(p); await expect(f.auth()).rejects.toThrow(); }

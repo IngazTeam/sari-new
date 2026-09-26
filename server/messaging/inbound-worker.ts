@@ -32,6 +32,8 @@ export async function startInboundWorker() {
     stops.push(await startAiSettlementWorker());
     const { startSalesGenerationRecoveryWorker } = await import('../ai/sales-generation-recovery');
     stops.push(await startSalesGenerationRecoveryWorker());
+    const { startSalesReplyRecoveryWorker } = await import('../ai/sales-reply-recovery');
+    stops.push(await startSalesReplyRecoveryWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

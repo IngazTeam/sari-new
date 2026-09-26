@@ -650,6 +650,13 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبارات سلوكية محلية لتنافس الردود وتغيير النص والمستلم والحساب والمفتاح والمصدر وخطة النقل، وفقد إقرار الإسقاط وفساد الرسالة المرجعية ومنع اختلاق سجل عند النقل المجهول.','server/ai/reply-reservation-pentest.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0120 يضيف حجز الرد والإسقاط داخل ai_interaction_jobs؛ يحفظ حالات التفاعل القديمة بوصفها legacy دون منحها إذن نقل، ويمنع SQL تشغيل السجلات reviewed_reserved في عامل التعلم. سقف المنصة 100 دولار محفوظ.','scripts/testing/verify-reply-reservation-migration.cjs'],
 });
+Object.assign(entries, {
+ B045:[entries.B045[0]+' أضيف عامل دوري لإسقاط المحادثة فقط، بحجوزات مهلة SQL ومنع التداخل وحد أقصى ثماني محاولات وتأخير متدرج. لا يتصل بالمزوّد أو يولد جوابًا أو يرسل رسالة؛ يحيل الغموض والتلف إلى مراجعة محفوظة.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B062:[entries.B062[0]+' يكتمل حفظ المحادثة وحالة الاسترجاع في المعاملة نفسها؛ يُفحص حجز العامل قبل القراءة وداخل كتابة الاكتمال. تحفظ الحالة بعد إعادة تشغيل العملية وفقد إقرار الالتزام دون رسالة ثانية أو تعرض مفترض.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B063:[entries.B063[0]+' أضيفت قراءة تشغيلية للسوبر أدمن بأعداد مجمعة فقط للحالات المؤجلة والمكتملة والمراجعة، مع إعادة فحص دور الحساب وحالته من SQL؛ لا نصوص أو أرقام أو مفاتيح. لا توجد واجهة قرار إرسال بعد.','server/sales-reply-recovery-access-pentest.test.ts'],
+ B064:[entries.B064[0]+' اختبارات محلية للعامل الدوري والإغلاق المنظم وفقد إقرار الحجز والحفظ، والحجز المنتهي والعامل القديم وتلف الإيصال وتنقية جسمه وحذف المصدر والاسترجاع من عملية جديدة.','server/ai/sales-reply-recovery-pentest.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0121 يحفظ تاريخ التفويض والنقل ويضيف حالة استرجاع منفصلة وقيود المهلة والاكتمال، دون منح إذن إرسال أو إعلان نجاح تاريخي. سقف 100 دولار لم يتغير.','scripts/testing/verify-sales-reply-recovery-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

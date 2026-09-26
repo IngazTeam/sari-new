@@ -181,11 +181,25 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
   } catch { return false; }
 }
 /** Repairs local history from a proven receipt only; never sends or starts learning. */
-export async function reconcileSalesReplyConversation(merchantId: number, value: SalesReplyDeliveryIdentity) {
+export async function reconcileSalesReplyConversation(merchantId: number, value: SalesReplyDeliveryIdentity, recoveryToken?: string) {
   const merchant = id.parse(merchantId), input = salesReplyDeliveryIdentity.parse(value);
+  if (recoveryToken !== undefined) z.string().uuid().parse(recoveryToken);
   return checkoutTransaction(async c => {
     await lock(c, merchant); const { row: authorizationRow, receipt } = await load(c, merchant, input.deliveryId);
     if (receipt.authorizationDigest !== input.authorizationDigest) return conflict();
+    if (recoveryToken !== undefined) {
+      const [owned] = await c.execute<any[]>(`SELECT id FROM ai_sales_reply_deliveries WHERE id=? AND merchant_id=?
+        AND projection_state='pending' AND projection_token=? AND projection_lease_until>UTC_TIMESTAMP(3)`, [input.deliveryId,merchant,recoveryToken]);
+      if (owned.length !== 1) return conflict();
+    }
+    const complete = async () => {
+      const [saved] = await c.execute<any>(`UPDATE ai_sales_reply_deliveries SET projection_state='projected',projection_token=NULL,
+        projection_lease_until=NULL,projection_next_at=NULL,projection_last_error=NULL,
+        projection_completed_at=COALESCE(projection_completed_at,UTC_TIMESTAMP(3)) WHERE merchant_id=? AND id=?
+        AND (? IS NULL OR (projection_state='pending' AND projection_token=? AND projection_lease_until>UTC_TIMESTAMP(3)))`,
+        [merchant,input.deliveryId,recoveryToken ?? null,recoveryToken ?? null]);
+      if (Number(saved.affectedRows) !== 1) return conflict();
+    };
     const result = await history(c, receipt), b = receipt.authorization.basis;
     if (!['accepted', 'delivered', 'read'].includes(result.transport)) return { ...result, outgoingMessageId: null };
     await lockReplySource(c, merchant, b.conversationId, b.incomingMessageId);
@@ -200,7 +214,7 @@ export async function reconcileSalesReplyConversation(merchantId: number, value:
         || Number(message.conversationId) !== b.conversationId || message.direction !== 'outgoing' || message.sender_type !== 'assistant'
         || message.messageType !== 'text' || message.content !== b.responseText || message.aiResponse !== b.responseText
         || Number(message.isProcessed) !== 1 || message.voiceUrl || message.imageUrl || message.mediaUrl) return conflict();
-      return { ...result, outgoingMessageId: Number(reference) };
+      await complete(); return { ...result, outgoingMessageId: Number(reference) };
     }
     const [inserted] = await c.execute<any>(`INSERT INTO messages
       (conversationId,direction,sender_type,messageType,content,isProcessed,aiResponse,externalId,createdAt)
@@ -212,7 +226,7 @@ export async function reconcileSalesReplyConversation(merchantId: number, value:
     // Late recovery must not move a newer conversation backwards or pretend it happened now.
     await c.execute('UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?',
       [authorizationRow.dispatch_started_at, authorizationRow.dispatch_started_at, b.conversationId, merchant]);
-    return { ...result, outgoingMessageId: Number(inserted.insertId) };
+    await complete(); return { ...result, outgoingMessageId: Number(inserted.insertId) };
   });
 }
 /** Uses only the saved exact reply. Unknown/failed attempts never acquire another transport key. */

@@ -4258,10 +4258,22 @@ export const aiSalesReplyDeliveries = mysqlTable('ai_sales_reply_deliveries', {
   requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
   basisDigest: char('basis_digest', { length: 64 }).notNull(), authorizationDigest: char('authorization_digest', { length: 64 }).notNull(),
   snapshot: json().notNull(), state: varchar({ length: 16 }).notNull(), dispatchStartedAt: datetime('dispatch_started_at', { mode: 'string', fsp: 3 }),
+  projectionState: varchar('projection_state', { length: 16 }).notNull().default('pending'),
+  projectionToken: char('projection_token', { length: 36 }),
+  projectionLeaseUntil: datetime('projection_lease_until', { mode: 'string', fsp: 3 }),
+  projectionNextAt: datetime('projection_next_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`),
+  projectionAttempts: int('projection_attempts', { unsigned: true }).notNull().default(0),
+  projectionLastError: varchar('projection_last_error', { length: 40 }),
+  projectionCompletedAt: datetime('projection_completed_at', { mode: 'string', fsp: 3 }),
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_sales_reply_delivery_request').on(table.merchantId, table.requestId),
   uniqueIndex('uq_sales_reply_delivery_generation').on(table.merchantId, table.generationId),
-  uniqueIndex('uq_sales_reply_delivery_message').on(table.merchantId, table.messageReference)]);
+  uniqueIndex('uq_sales_reply_delivery_message').on(table.merchantId, table.messageReference),
+  index('idx_sales_reply_projection_due').on(table.state,table.projectionState,table.projectionNextAt,table.projectionLeaseUntil),
+  check('ck_sales_reply_projection', sql`(${table.projectionState}='pending' AND ${table.projectionNextAt} IS NOT NULL AND ${table.projectionCompletedAt} IS NULL
+    AND ((${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL) OR (${table.projectionToken} IS NOT NULL AND ${table.projectionLeaseUntil} IS NOT NULL)))
+    OR (${table.projectionState}='projected' AND ${table.projectionNextAt} IS NULL AND ${table.projectionCompletedAt} IS NOT NULL AND ${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL)
+    OR (${table.projectionState}='review' AND ${table.projectionNextAt} IS NULL AND ${table.projectionCompletedAt} IS NULL AND ${table.projectionToken} IS NULL AND ${table.projectionLeaseUntil} IS NULL)`) ]);
 
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),

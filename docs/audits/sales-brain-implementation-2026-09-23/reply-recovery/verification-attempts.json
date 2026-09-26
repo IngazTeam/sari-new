@@ -1,0 +1,30 @@
+{
+  "scope": "Local synthetic verification; final acceptance from the frozen staged source only.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 304,
+      "failed": 0,
+      "result": "Focused recovery, generation, administrator access and worker bootstrap checks passed before three additional recovery cases were added.",
+      "logSha256": "6bd287f6efb68ef3921e3141a09f44b523ec2309a1431401cd4ff20e6b3adda6"
+    },
+    {
+      "kind": "final-focused",
+      "passed": 22,
+      "failed": 0,
+      "notSelected": 250,
+      "result": "All final recovery database cases passed, including a fresh Node process with no transport mocks. The 250 unselected baseline cases are included in the final full run.",
+      "logSha256": "6176a19384182dbd3dced02b7d4e8c6e52a8903fa81e73e5c234722f28121423"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "31f87fffde171e0b429b0657b00d3b5aa5a5c7f1bc9db65dbe1209f39968b526"
+    },
+    {
+      "kind": "ui-equivalence",
+      "reused": true,
+      "inputsChecked": 39,
+      "screenshotsChecked": 113
+    }
+  ]
+}

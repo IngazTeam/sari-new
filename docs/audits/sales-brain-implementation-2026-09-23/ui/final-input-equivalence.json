@@ -1,6 +1,6 @@
 {
   "reused": true,
-  "baselineCommit": "368618b72865da73ec75447ba1f42ae180283707",
+  "baselineCommit": "beb969e6dad38d0ad3234d4b39f759e97f7bde92",
   "generatedAt": "2026-09-26T05:33:12.262Z",
   "scope": "Reused 1126 local Chrome component journeys and 113 screenshots. Client/shared/fixture/verifier sources are unchanged; a fresh compiled fixture and production CSS match the previous full browser run byte for byte. No new browser run or physical iPhone acceptance.",
   "inputs": {
@@ -160,5 +160,5 @@
     "sales-sample-insufficient-ar-375.png": "ae0b49d1a720a3585512964908f3b7d36c476d14d3234ff3dc00155bd9b28c66",
     "sales-sample-insufficient-en-375.png": "fc5337e57b624af0c7ee0df677100d5bc6d92a71c8df31449d129bd935182b1b"
   },
-  "verifiedAt": "2026-09-26T06:54:15.435Z"
+  "verifiedAt": "2026-09-26T07:28:20.442Z"
 }
