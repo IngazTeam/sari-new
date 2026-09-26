@@ -1,538 +1,906 @@
 {
-  "generatedAt": "2026-09-26T10:35:21.785Z",
+  "generatedAt": "2026-09-26T18:31:24.675Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
-  "screenshots": [
-    "reply-review-ar-1440.png",
-    "reply-review-ar-375.png",
-    "reply-review-en-1440.png",
-    "reply-review-en-375.png",
-    "reply-send-ar-1440.png",
-    "reply-send-ar-375.png",
-    "reply-send-en-1440.png",
-    "reply-send-en-375.png"
-  ],
   "fixtureApi": true,
   "externalRequestsBlocked": true,
-  "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
+  "scope": "130 fresh component scenarios: 48 sales evidence report using real tRPC/React Query with simulated transport; 82 reply review/send with mocked API. Not full dashboard navigation, physical iPhone/Safari, real providers or production acceptance.",
+  "sourceReports": [
+    {
+      "name": "sales-order-report",
+      "path": "../order-report-ui/sales-order-report-results.json",
+      "sha256": "42d3d278f429b3ece6c37e56a5d3c6763f0ab4509b7bea09efc6a28753584007",
+      "generatedAt": "2026-09-26T18:28:54.134Z"
+    },
+    {
+      "name": "reply-review-and-send",
+      "path": "../ui/reply-review-and-send-results.json",
+      "sha256": "db0481ca5fa4d42f2ec54aa1b5a3ffaf12eeac1d218a84260b6993fe58465055",
+      "generatedAt": "2026-09-26T18:30:58.976Z"
+    }
+  ],
   "results": [
     {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 320,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 320,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 320,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 320,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 375,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 375,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 375,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 375,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 390,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 390,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 390,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 390,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 768,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 768,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 768,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 768,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 1440,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 1440,
+      "lang": "en",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "empty_bounded_truthful_display",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "unmeasured_bounded_truthful_display",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "refund_bounded_truthful_display",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "huge_bounded_truthful_display",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "limit_bounded_truthful_display",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "FORBIDDEN_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "UNAUTHORIZED_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "PRECONDITION_FAILED_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "foreign_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "range-mismatch_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "unsupported_no_stale_report_or_error_leak",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "untrusted_text_escaped",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "FORBIDDEN_refresh_hides_cached_data_then_recovers",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "UNAUTHORIZED_refresh_hides_cached_data_then_recovers",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_refresh_hides_cached_data_then_recovers",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "window_refocus_rechecks_authority",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "refresh_replaces_snapshot_without_adding_totals",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "merchant_change_aborts_old_request",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "merchant": "1e3"
+      },
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "from": "0"
+      },
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "from": "4",
+        "through": "3"
+      },
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "through": "9007199254740992"
+      },
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "range_edit_hides_old_report",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "contextual_navigation_discards_old_scope",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "offline_refresh_hides_cache_until_verified_again",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "loading_disables_refresh",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
+      "mode": "reduced_motion_no_spinner_animation",
+      "passed": true,
+      "componentGroup": "sales-order-report"
+    },
+    {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 320,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 320,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 375,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 375,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 768,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 768,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 1440,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_responsive_save_and_receipt",
       "width": 1440,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_unknown_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_outage_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_mismatch-actor_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_mismatch-request_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_mismatch-checks_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_mismatch-outcome_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_mismatch-quote_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_retry-forbidden_stable_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_conflict",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_refresh-error",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_critical",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_slow",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_basis_preserves_draft_and_locks_save",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_actor_preserves_draft_and_locks_save",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_permission_preserves_draft_and_locks_save",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_error_preserves_draft_and_locks_save",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_hide_refresh_discard_pagination",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_manager_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_stale_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_expired_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_invalid_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_uncertain_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_blocked_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_dispatching_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_foreign_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_unsupported_read_only",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_empty",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_read-error",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_loading",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_fetching",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_escaped_untrusted_text",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_review_keyboard_focus_and_no_default_approval",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 320,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 320,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 375,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 375,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 768,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 768,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 1440,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_responsive_explicit_send",
       "width": 1440,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_unknown_read_only_recovery",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_mismatch-actorUserId_read_only_recovery",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_mismatch-requestId_read_only_recovery",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_mismatch-recipient_read_only_recovery",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_mismatch-responseText_read_only_recovery",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_absent_receipt_does_not_disprove_inflight_request",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_not_attempted_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_unknown-status_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_suppressed_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_rejected_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_delivered_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_read_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_failed_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_slow_never_resends",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_actor_locks_confirmation",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_basis_locks_confirmation",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_permission_locks_confirmation",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_error_locks_confirmation",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_expired_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_quota_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_unavailable_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_no-account_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_loading_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_read-error_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_fetching_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_foreign_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_malformed_no_send",
       "width": 390,
       "lang": "en",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_account_change_and_hide_reset_confirmation",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_escaped_recipient_and_message",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     },
     {
       "mode": "reply_send_keyboard_and_explicit_checks",
       "width": 390,
       "lang": "ar",
-      "passed": true
+      "passed": true,
+      "componentGroup": "reply-review-and-send"
     }
   ],
   "errors": [],
-  "selection": {
-    "command": "verify-sales-brain-ui.cjs --only-reply-review",
-    "freshScenarios": 82,
-    "priorFullSuite": {
-      "baselineCommit": "c3a181c94440bc68fa107bc3338bf6c2a35b0f4d",
-      "scenarios": 1166,
-      "reportSha256": "89bff8c071797050f3dd510923faec26873d7636398087844487b4a966d81aa2",
-      "otherScenariosNotRerun": 1084
-    },
-    "scope": "Fresh browser verification of the affected review/send components only. Remaining baseline journeys are historical, not claimed as rerun or included in this report.",
-    "changedUiSources": [
-      "scripts/testing/fixtures/sales-reply-send-trpc.tsx",
-      "shared/sales-reply-send.ts"
-    ],
-    "serverCorrectionAfterUi": {
-      "files": [
-        "server/ai/sales-reply-delivery.ts",
-        "server/ai/sales-experiment-generation.mysql.test.ts",
-        "server/ai/sales-reply-recovery.ts"
-      ],
-      "unchangedUiFilesVerified": 565,
-      "uiSourceTreeSha256": "bff2e4e2697f2ac1057ae6fb6638dccdd628a5c3e1eeb7a94a752e28a76b6626",
-      "scope": "Only server delivery/recovery code and its SQL regression test changed. Browser fixture/client/shared/verifier source hashes match the browser-tested snapshot."
-    }
-  }
+  "screenshots": [
+    "../order-report-ui/report-ar-1440.png",
+    "../order-report-ui/report-ar-375.png",
+    "../order-report-ui/report-en-1440.png",
+    "../order-report-ui/report-en-375.png",
+    "../ui/reply-review-ar-1440.png",
+    "../ui/reply-review-ar-375.png",
+    "../ui/reply-review-en-1440.png",
+    "../ui/reply-review-en-375.png",
+    "../ui/reply-send-ar-1440.png",
+    "../ui/reply-send-ar-375.png",
+    "../ui/reply-send-en-1440.png",
+    "../ui/reply-send-en-375.png"
+  ]
 }

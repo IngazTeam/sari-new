@@ -18,7 +18,7 @@ const reports = ['unit', 'database', 'regression', 'legacy-sales', 'budget', 'se
   if (!raw.success || raw.numFailedTests || raw.numFailedTestSuites) throw new Error(`Acceptance report ${name} contains failures`);
   return { name, passed: raw.numPassedTests, failed: raw.numFailedTests, pending: raw.numPendingTests,
     startedAt: new Date(raw.startTime).toISOString(), tests: raw.testResults.flatMap(file => file.assertionResults.map(test => ({
-      file: file.name.replaceAll('\\', '/').replace(`${reportSourceRoot.replaceAll('\\', '/')}/`, '').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
+      file: file.name.replaceAll('\\', '/').replace(`${reportSourceRoot.replaceAll('\\', '/')}/`, '').replace(`${sourceRoot.replaceAll('\\', '/')}/`, '').replace(`${process.cwd().replaceAll('\\', '/')}/`, ''),
       name: test.fullName, status: test.status, durationMs: test.duration,
     }))) };
 });

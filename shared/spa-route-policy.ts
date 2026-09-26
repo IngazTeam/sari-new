@@ -184,6 +184,7 @@ export const SPA_ROUTE_TEMPLATES = [
   "/merchant/my-subscription",
   "/admin/dashboard",
   "/admin/privacy-requests",
+  "/admin/sales-evidence",
   "/admin/campaigns",
   "/admin/merchants",
   "/admin/merchants/:id",

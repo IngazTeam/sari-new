@@ -233,6 +233,10 @@ export default function MerchantDetails() {
       </div>
 
       {/* Merchant Info */}
+      <Button type="button" variant="outline" className="min-h-11 whitespace-normal"
+        onClick={() => setLocation(`/admin/sales-evidence?merchantId=${merchant.id}`)}>
+        {t('salesEvidence.openMerchant')}
+      </Button>
       <div className="grid gap-6 md:grid-cols-2">
         {/* Basic Info */}
         <Card>
