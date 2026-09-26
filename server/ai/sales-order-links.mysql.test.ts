@@ -8,6 +8,7 @@ import { salesOrderIdentity,readSalesOrderFact } from './sales-order-fact-contra
 import { linkZidOrderProjection } from './sales-order-links';
 import { readSalesOrderLink } from './sales-order-link-contract';
 import { inspectSalesOrderSettlement } from './sales-order-settlement';
+import { inspectSalesOrderReport } from './sales-order-report';
 import { applyTapOrderPaymentState } from '../payment/order-payment-state';
 import { prepareZidCheckout,acceptZidCheckout } from './zid-checkout-agreements';
 import { reconcileZidCheckout } from './zid-checkout-reconciliation';
@@ -77,6 +78,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable Zid order links and Tap evid
     expect((await query('SELECT projection_pending FROM sales_quotations WHERE id=?',[quote.id]))[0].projection_pending).toBe(0);
     expect(await view(fact.id)).toMatchObject({identityBasis:'verified_zid_store_projection',financialState:'payment_not_measured'});
     const payment=await pay((await sources())[0].sari_order_id);expect(await view(fact.id)).toMatchObject({financialState:'capture_observed',capturedMinor:23000});
+    expect(await inspectSalesOrderReport(owner.userId,{merchantId:owner.merchantId})).toMatchObject({counts:{recordedOrders:1,zidOrders:1,captureObserved:1},amounts:{observedNetMinor:23000}});
     await applyTapOrderPaymentState({...payment,providerStatus:'REFUNDED'});expect(await view(fact.id)).toMatchObject({financialState:'full_refund_observed',observedNetMinor:0});
     expect((await facts())[0].fact_digest).toBe(fact.fact_digest);expect(provider.create).toHaveBeenCalledTimes(1);expect(fetch).not.toHaveBeenCalled();
   });
@@ -158,6 +160,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable Zid order links and Tap evid
     const f=await seed();await f.link();const [s]=await sources();await pay(s.sari_order_id);
     await query("INSERT INTO ai_sales_order_facts (merchant_id,quotation_id,provider,local_order_id,order_key,fact_digest,snapshot) VALUES (?,999,'local',?,REPEAT('b',64),REPEAT('b',64),'{}')",[owner.merchantId,s.sari_order_id]);
     await expect(view(f.factId)).rejects.toThrow();
+    await expect(inspectSalesOrderReport(owner.userId,{merchantId:owner.merchantId,fromFactId:f.factId,throughFactId:f.factId})).rejects.toThrow();
   });
   it('holds the source projection stable until link commit and retains its historical identity afterwards',async()=>{
     const f=await seed(),[s]=await sources(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let once=true;

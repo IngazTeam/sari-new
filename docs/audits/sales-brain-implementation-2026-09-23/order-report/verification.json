@@ -1,0 +1,81 @@
+{
+  "baseline": "842b341ca64a361d1eb407120ee3983a0f1bb236",
+  "frozenAt": "2026-09-26T17:31:05.663Z",
+  "sourceFiles": [
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs",
+    "server/routers-inbound-operations.ts",
+    "server/ai/sales-order-links.mysql.test.ts",
+    "server/ai/sales-order-report.ts",
+    "server/ai/sales-order-report-contract.ts",
+    "server/ai/sales-order-report-pentest.test.ts",
+    "server/ai/sales-order-report.mysql.test.ts",
+    "server/sales-order-report-access-pentest.test.ts"
+  ],
+  "scope": "Read-only bounded aggregate of immutable order/payment evidence in one MySQL consistent snapshot. Actual local agreement/Tap processing and mocked Zid creation/reconciliation. No production traffic, deployment or new UI.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 89,
+      "failed": 2,
+      "unhandledErrors": 1,
+      "accepted": false,
+      "reason": "Invalid manager-role fixture and merchant lock blocking concurrent order creation; timed-out test caused a closed-connection follow-up rejection.",
+      "sha256": "18d0150713b4df362a7f76f18e1690de16c3be6a5d856c6bb7edd1f673a224ff"
+    },
+    {
+      "kind": "initial-types",
+      "accepted": false,
+      "reason": "Set iteration and BigInt literal incompatible with current TypeScript target; source syntax corrected without changing build target.",
+      "sha256": "db2a8d2a7a5ac49c45fcbb1e06d59f9dacae327d96d921d2ba5a454a8f9b7598"
+    },
+    {
+      "kind": "focused-after-fix",
+      "passed": 91,
+      "failed": 0,
+      "sha256": "62921115895c572c6bb894606b899f27a5d9c1c2ae048a8839eec2c7b205a344"
+    },
+    {
+      "kind": "focused-final",
+      "passed": 92,
+      "failed": 0,
+      "sha256": "b91b3fb115e878660e2aa2c4c6f6ed01d218d53e058e5945ce79bda43277358b"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_order_report_20260926_test",
+      "migrations": 130,
+      "newMigrations": 0,
+      "sha256": "cb36e9926435c22673fe262a19fc2e60fe5d651669727dd7e21d3164af7fe86e"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "cbc3f748d00a8458172916246f49e060748c83930a6c82dfd29d9435b03c5a6a"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "boundedSnapshotAggregateProven": true,
+    "allMerchantOrdersCovered": false,
+    "realProviderContractMeasured": false,
+    "reportUiImplemented": false,
+    "partialRefundsSupported": false,
+    "otherPaymentSourcesProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "humanAssistanceMeasured": false,
+    "businessLiftMeasured": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "58 new cases: 20 MySQL aggregate cases, 26 contract cases and 12 access cases. Existing Zid creation/reconciliation journeys also exercise the aggregate. No previous case removed."
+}

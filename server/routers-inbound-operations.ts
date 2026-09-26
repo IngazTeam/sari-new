@@ -4,8 +4,16 @@ import { adminProcedure, router } from './_core/trpc';
 import { inboundHealth, listInboundReviews, resolveInboundReview } from './messaging/operations';
 import { inspectSalesPaymentTimelineInput, SalesPaymentTimelineLimitExceeded } from './ai/sales-payment-timeline-contract';
 import { inspectSalesOrderSettlementInput, SalesOrderSettlementLimitExceeded } from './ai/sales-order-settlement-contract';
+import { salesOrderReportInput, SalesOrderReportLimitExceeded } from './ai/sales-order-report-contract';
 
 export const inboundOperationsRouter = router({
+  salesOrderReport: adminProcedure.input(salesOrderReportInput).query(async ({ctx,input}) => {
+    const {inspectSalesOrderReport,SalesOrderReportAccessDenied,SalesOrderReportNotReady} = await import('./ai/sales-order-report');
+    try { return await inspectSalesOrderReport(ctx.user.id,input); }
+    catch(error) { throw new TRPCError({code:error instanceof SalesOrderReportAccessDenied ? 'FORBIDDEN'
+      : error instanceof SalesOrderReportNotReady || error instanceof SalesOrderReportLimitExceeded || error instanceof SalesOrderSettlementLimitExceeded ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR',
+      message:'تعذر قراءة تقرير أدلة المبيعات'}); }
+  }),
   salesOrderSettlement: adminProcedure.input(inspectSalesOrderSettlementInput).query(async ({ctx,input}) => {
     const {inspectSalesOrderSettlement,SalesOrderSettlementAccessDenied,SalesOrderSettlementNotReady} = await import('./ai/sales-order-settlement');
     try { return await inspectSalesOrderSettlement(ctx.user.id,input); }

@@ -737,6 +737,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' فُحص تبديل متجر زد ودفعات المزامنة الفارغة وتزامن الإنشاء والحذف والمخزون وrollback عند التصادم وقراءة API على MySQL وعرض سعر من الكتالوج المتزامن. أُصلحت أسماء أعمدة API التي كشفها الاختبار الحقيقي.','server/ai/zid-catalog-store.mysql.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0129 يضيف نطاق متجر الكتالوج وخصائص المخزون والخيارات، ويحفظ الصفوف السابقة دون تخمين هوية. يتطلب كتّابًا وقراءً يفهمون النطاق الجديد؛ تمنع علامة التوافق الجديدة تفعيل أو استعادة الإصدار الأقدم بعد الترحيل.','scripts/testing/verify-zid-catalog-migration.cjs'],
 });
+Object.assign(entries, {
+ B039:[entries.B039[0]+' أضيف تقرير مجمع للطلبات ذات أدلة إنشاء محفوظة، يجمع قبض Tap والاسترجاع الكامل عبر هوية الطلب المحلي أو رابط زد المعتمد فقط؛ يرفض ازدواج الهوية حتى خارج نطاق التقرير المطلوب.','server/ai/sales-order-report.mysql.test.ts'],
+ B042:[entries.B042[0]+' يجمع التقرير الأدلة المرصودة من لقطة MySQL واحدة، ويُبقي غياب القبض والاسترجاع مجهولًا. لا يستنتج ربح تجربة أو تحويلًا أو خسارة من هذا التجميع، ولا يعد السجل كامل مبيعات النشاط.','server/ai/sales-order-report-pentest.test.ts'],
+ B046:[entries.B046[0]+' يستطيع السوبر أدمن النشط قراءة تقرير حتى 200 دليل طلب ضمن نطاق معرّفات صريح، مع إجماليات وأعداد وبصمة أدلة. تجاوز الحد يرفض التقرير بدل قطع الإجماليات؛ الواجهة والمصادر المالية الأخرى والاسترجاع الجزئي ما زالت مفتوحة.','server/ai/sales-order-report.ts'],
+ B064:[entries.B064[0]+' اختُبر التقرير مع اتفاقات وقبض واسترجاع فعلي داخل التطبيق، وتزامن إضافة وحذف الدليل واسترجاع المال، وسحب صلاحية المسؤول وفقد الاتصال والتجاوز الرقمي وعزل الأنشطة والروابط المتعارضة.','server/ai/sales-order-report.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
