@@ -765,6 +765,11 @@ Object.assign(entries, {
  B046:[entries.B046[0]+' تعرض الصفحة تغطية قبول الردود وفئات توقيتها قبل أول قبض، مع تفاصيل قابلة للفتح بالعربية والإنجليزية. الفئات حصرية للعملاء وتشمل من لا يملكون قبولًا فعليًا متسقًا؛ لا فائز أو معدل أثر سببي.','client/src/pages/admin/SalesExperimentEvidence.tsx'],
  B064:[entries.B064[0]+' اختبارات SQL تربط السلسلة الفعلية للمراجعة والتفويض والنقل بوقائع الدفع؛ تشمل قبولًا متأخرًا وحذفًا أو تلفًا متزامنًا دون خلط لقطات القراءة، مع نواقل نموذج وواتساب محاكاة وشبكة خارجية محظورة.','server/ai/sales-experiment-generation.mysql.test.ts'],
 });
+Object.assign(entries, {
+ B045:[entries.B045[0]+' يحسب التقرير بسطًا وصفيًا للعملاء ذوي الطلب المقبوض غير المسترد بالكامل قبل القطع، مرة واحدة عبر العملات والطلبات، مع مقام كامل واستبعاد الحجوزات وفق التعريف المسجل. يحجب النسب قبل إكمال النافذة أو بعد الانسحاب، ويعرض الحد المسجل والحد الحسابي الموجود دون تعديل الخطة.','server/ai/sales-experiment-readout-outcomes-pentest.test.ts'],
+ B046:[entries.B046[0]+' أضيف عرض حساب العملاء ومقامه وتفاصيل الاسترجاع والحجوزات فقط، والنسبة الوصفية للسجل، وأسباب عدم أهلية الاعتماد. غياب سجل الطلب لا يسمى خسارة، والحساب لا يثبت اكتمال المصادر أو تفوق سياسة ولا يستبدل الاستدلال الإحصائي.','client/src/pages/admin/SalesExperimentEvidence.tsx'],
+ B064:[entries.B064[0]+' يتحقق عقد العرض من اتحاد أعداد العملاء مع مجموعات المال وتسلسل القبض، وحالة النافذة والانسحاب والموانع، ويرفض إسقاط مانع اعتماد أو إدخال نسبة مبكرة. اختبارات SQL تثبت تعدد الطلبات والعملات والحجوزات والاسترداد وبقاء اللقطة متسقة أثناء التغيير.','server/ai/sales-experiment-readout.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

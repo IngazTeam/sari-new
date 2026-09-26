@@ -111,6 +111,36 @@ describe.skipIf(!process.env.DATABASE_URL)('experiment readout against real paym
     await applyTapOrderPaymentState({...p,providerStatus:'REFUNDED'});await attribute((await facts())[1]);const r=await report();
     expect(r).toMatchObject({decisionTimeReached:true,sampleStatus:'insufficient_no_extension',winner:null,learningAllowed:false});
     expect(r.paymentEvidence.groups[0]).toMatchObject({netAtCutoffObservedMinor:23000,netCurrentlyObservedMinor:0,refundedAtOrAfterCutoffMinor:23000});
+    expect(r.outcomeEvidence.arms[0]).toMatchObject({outcomes:{customersWithRetainedOrderAtCutoff:1},recordedRatio:{numerator:1,denominator:1}});
+  });
+  it('counts one actual customer across captured orders, currencies and bookings under the frozen order rule',async()=>{
+    await admin();for(const options of [{},{currency:'USD'},{booking:true}]){await capture(options);const all=await facts();await attribute(all.at(-1));}
+    const early=await report();expect(early.outcomeEvidence.arms[0]).toMatchObject({assignedCustomers:1,recordedRatio:null,
+      outcomes:{customersWithOrderCapture:1,customersWithRetainedOrderAtCutoff:1,customersWithBookingCaptureOnly:0}});
+    state.unix=Date.parse(assignment.snapshot.decisionNotBefore)/1000;const final=await report();
+    expect(final.outcomeEvidence.arms[0].recordedRatio).toEqual({numerator:1,denominator:1});expect(final.paymentEvidence.groups).toHaveLength(3);
+    expect(final.outcomeEvidence.decision.blockers).toContain('sample_below_registered_minimum');expect(final.winner).toBeNull();expect(fetch).not.toHaveBeenCalled();
+  });
+  it('does not convert a real captured booking into an order conversion',async()=>{
+    await admin();await capture({booking:true});await attribute();state.unix=Date.parse(assignment.snapshot.decisionNotBefore)/1000;
+    const r=await report();expect(r.outcomeEvidence.arms[0]).toMatchObject({outcomes:{customersWithOrderCapture:0,customersWithRetainedOrderAtCutoff:0,customersWithBookingCaptureOnly:1},recordedRatio:{numerator:0,denominator:1}});
+    expect(r.paymentEvidence.groups[0].capturedMinor).toBe(23000);expect(r.primaryMetric).toBe('not_established');
+  });
+  it('a retained second order prevents a fully refunded first order from removing the customer',async()=>{
+    await admin();const first=await capture();await attribute();const second=await capture({currency:'USD'});await attribute((await facts()).at(-1));
+    state.unix!+=60;await applyTapOrderPaymentState({...first,providerStatus:'REFUNDED'});
+    expect((await report()).outcomeEvidence.arms.every(a=>a.outcomes===null)).toBe(true);
+    await attribute((await facts()).at(-1));expect((await report()).outcomeEvidence.arms[0].outcomes).toMatchObject({customersWithOrderCapture:1,customersWithRetainedOrderAtCutoff:1,customersWithOnlyFullyRefundedOrdersAtCutoff:0});
+    await applyTapOrderPaymentState({...second,providerStatus:'REFUNDED'});await attribute((await facts()).at(-1));
+    state.unix=Date.parse(assignment.snapshot.decisionNotBefore)/1000;
+    expect((await report()).outcomeEvidence.arms[0]).toMatchObject({outcomes:{customersWithOnlyFullyRefundedOrdersAtCutoff:1,customersWithRetainedOrderAtCutoff:0},recordedRatio:{numerator:0,denominator:1}});
+  });
+  it('withdrawal after the decision clock removes ratio visibility without erasing recorded counts',async()=>{
+    await admin();await capture();await attribute();state.unix=Date.parse(assignment.snapshot.decisionNotBefore)/1000;
+    const before=await report();expect(before.outcomeEvidence.arms[0].recordedRatio).toEqual({numerator:1,denominator:1});
+    await withdrawSalesExperimentProtocol(owner.merchantId,owner.userId,{protocolId:seeded.protocol.protocolId,protocolDigest:seeded.protocol.protocolDigest,requestId:randomUUID(),reason:'Withdraw the synthetic result without approving a policy from incomplete sources.'});
+    const after=await report();expect(after.outcomeEvidence.arms[0].outcomes).toEqual(before.outcomeEvidence.arms[0].outcomes);
+    expect(after.outcomeEvidence.arms[0].recordedRatio).toBeNull();expect(after.outcomeEvidence.decision.blockers).toContain('withdrawn');
   });
   it('preserves evidence across source deletion, launch revocation and protocol withdrawal',async()=>{
     await admin();const p=await capture();await attribute();const before=await report(),old=await facts();
@@ -136,12 +166,16 @@ describe.skipIf(!process.env.DATABASE_URL)('experiment readout against real paym
   it('uses one snapshot while refund and attribution commit during the read',async()=>{
     await admin();const p=await capture();await attribute();const g=gate(),reading=report({pause:g.pause});
     try{await g.atRead;state.unix!+=60;await applyTapOrderPaymentState({...p,providerStatus:'REFUNDED'});await attribute((await facts())[1]);}finally{g.resume();}
-    expect((await reading).paymentEvidence.groups[0].netCurrentlyObservedMinor).toBe(23000);
-    expect((await report()).paymentEvidence.groups[0].netCurrentlyObservedMinor).toBe(0);
+    const earlier=await reading,later=await report();
+    expect(earlier.paymentEvidence.groups[0].netCurrentlyObservedMinor).toBe(23000);expect(later.paymentEvidence.groups[0].netCurrentlyObservedMinor).toBe(0);
+    expect(earlier.outcomeEvidence.arms[0].outcomes?.customersWithRetainedOrderAtCutoff).toBe(1);
+    expect(later.outcomeEvidence.arms[0].outcomes?.customersWithRetainedOrderAtCutoff).toBe(0);
   });
   it('does not combine a new attribution with the old backlog snapshot',async()=>{
     await admin();await capture();const g=gate(),reading=report({pause:g.pause});try{await g.atRead;await attribute();}finally{g.resume();}
-    expect((await reading).paymentEvidence.status).toBe('unresolved_attribution');expect((await report()).paymentEvidence.status).toBe('observed');
+    const earlier=await reading,later=await report();
+    expect(earlier.paymentEvidence.status).toBe('unresolved_attribution');expect(later.paymentEvidence.status).toBe('observed');
+    expect(earlier.outcomeEvidence.arms[0].outcomes).toBeNull();expect(later.outcomeEvidence.arms[0].outcomes?.customersWithRetainedOrderAtCutoff).toBe(1);
   });
   it('does not block new enrollment or mix it into the running denominator',async()=>{
     await admin();const g=gate(),reading=report({pause:g.pause});

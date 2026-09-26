@@ -32,7 +32,7 @@ async function main() {
     const read=async()=>{await page.click('[data-readout-read]');await page.waitForSelector('[data-readout-result]');};
     const check=async()=>{
       const state=await page.$eval('[data-readout-page]',node=>({overflow:document.documentElement.scrollWidth>innerWidth,
-        raw:/salesReadout\.|salesEvidence\.|merchantUx\.|\{\{/.test(node.innerText),private:node.innerText.includes('private server'),
+        raw:/salesReadout\.|salesOutcome\.|salesEvidence\.|merchantUx\.|\{\{/.test(node.innerText),private:node.innerText.includes('private server'),
         controls:[...node.querySelectorAll('input,button,summary,a')].filter(n=>n.getClientRects().length).map(n=>({height:n.getBoundingClientRect().height,font:parseFloat(getComputedStyle(n).fontSize),input:n.tagName==='INPUT',label:n.tagName!=='INPUT'||!!document.querySelector(`label[for="${CSS.escape(n.id)}"]`)}))}));
       assert.equal(state.overflow,false);assert.equal(state.raw,false);assert.equal(state.private,false);assert.ok(state.controls.every(n=>n.height>=44&&n.label));assert.ok(state.controls.filter(n=>n.input).every(n=>n.font>=16));
       assert.deepEqual(await page.evaluate(()=>window.__readoutWrites),[]);assert.equal(await page.evaluate(()=>window.__readoutXss),undefined);
@@ -45,6 +45,9 @@ async function main() {
       await page.focus('[data-readout-counts] summary');await page.keyboard.press('Enter');await page.click('[data-readout-identity] summary');await check();
       await page.focus('[data-readout-receipts] summary');await page.keyboard.press('Enter');
       await page.focus('[data-readout-chronology] summary');await page.keyboard.press('Enter');await check();
+      await page.focus('[data-outcome-counts] summary');await page.keyboard.press('Enter');
+      await page.focus('[data-outcome-planning] summary');await page.keyboard.press('Enter');
+      await page.focus('[data-outcome-decision] summary');await page.keyboard.press('Enter');await check();
       assert.equal(await page.$eval('[data-readout-exposure-arm=baseline] [data-readout-metric=acceptanceBefore]',n=>n.textContent),lang==='ar'?'١':'1');
       assert.equal(await page.$eval('[data-readout-orders-link]',n=>n.getAttribute('href')),'/admin/sales-evidence?merchantId=1');
       if([375,1440].includes(width))await page.screenshot({path:path.join(output,`readout-${lang}-${width}.png`),fullPage:true});record('normalized_keyboard_details_responsive',{width,lang});
@@ -52,10 +55,30 @@ async function main() {
         await (await page.$('[data-readout-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-arm.png')});
         await (await page.$('[data-readout-finance=baseline-SAR-order]')).screenshot({path:path.join(output,'readout-ar-mobile-finance.png')});
         await (await page.$('[data-readout-exposure-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-exposure.png')});
+        await (await page.$('[data-outcome-arm=baseline]')).screenshot({path:path.join(output,'readout-ar-mobile-outcome.png')});
       }
       await set({protocol:'5'});assert.equal(await page.$('[data-readout-result]'),null);assert.equal((await page.evaluate(()=>window.__readoutReads)).length,1);record('protocol_edit_discards_previous_read',{width,lang});
     }
     await page.setViewport({width:375,height:812,isMobile:true,hasTouch:true});
+    for(const lang of ['ar','en'])for(const mode of ['outcome-mixed','bookings-only','before-decision','pending','empty','withdrawn','minimum']){
+      await visit(mode,lang);await read();await page.click('[data-outcome-decision] summary');await page.click('[data-outcome-planning] summary');
+      for(const el of await page.$$('[data-outcome-counts] summary'))await el.click();await check();
+      if(mode==='outcome-mixed'){
+        assert.equal(await page.$eval('[data-outcome-arm=baseline] [data-outcome-metric=retained]',n=>n.textContent),lang==='ar'?'١':'1');
+        assert.equal(await page.$eval('[data-outcome-arm=baseline] [data-outcome-metric=assigned]',n=>n.textContent),lang==='ar'?'٣':'3');
+        assert.match(await page.$eval('[data-outcome-arm=baseline] [data-outcome-ratio]',n=>n.textContent),lang==='ar'?/٣٣٫٣٣/:/33\.33/);
+        for(const marker of ['refundedOnly','noOrder','bookingOnly'])assert.equal(await page.$eval(`[data-outcome-arm=baseline] [data-outcome-metric=${marker}]`,n=>n.textContent),lang==='ar'?'١':'1');
+      }
+      if(mode==='bookings-only')assert.equal(await page.$eval('[data-outcome-arm=baseline] [data-outcome-metric=retained]',n=>n.textContent),lang==='ar'?'٠':'0');
+      if(['before-decision','pending','empty','withdrawn'].includes(mode))assert.equal(await page.$('[data-outcome-ratio]'),null);
+      if(mode==='pending'){assert.equal(await page.$$eval('[data-outcome-blocked]',nodes=>nodes.length),2);assert.equal(await page.$('[data-outcome-metric=retained]'),null);}
+      for(const reason of ['source_completeness_unverified','partial_refunds_unsupported','human_assistance_unmeasured','guardrails_unmeasured','statistical_inference_missing','independent_result_review_required'])assert.ok(await page.$(`[data-outcome-blocker=${reason}]`));
+      if(mode==='minimum')assert.equal(await page.$('[data-outcome-blocker=sample_below_registered_minimum]'),null);
+      record('recorded_order_outcome_'+mode,{lang,width:375});
+    }
+    await visit('outcome-refresh','en');await read();assert.ok(await page.$('[data-outcome-ratio]'));
+    await page.click('[data-readout-refresh]');await page.waitForSelector('[data-readout-loading]');assert.equal(await page.$('[data-outcome-ratio]'),null);
+    await page.waitForSelector('[data-outcome-blocked]');assert.equal(await page.$('[data-outcome-ratio]'),null);await check();record('unresolved_refresh_removes_old_outcome_ratios');
     for(const lang of ['ar','en'])for(const [mode,marker]of [['before','acceptanceBefore'],['at','acceptanceAt'],['flight','inFlight'],['after','dispatchAfter'],['mock','noOrderedReceipt'],['regression','noOrderedReceipt'],['declined','acceptanceBefore'],['pending',null]]){
       await visit('exposure-'+mode,lang);await read();
       const arm='[data-readout-exposure-arm=candidate]';
@@ -86,7 +109,7 @@ async function main() {
     await page.click('[data-readout-prev]');await page.click('[data-readout-prev]');assert.equal(await page.$eval('[data-readout-prev]',n=>n.disabled),true);assert.equal((await page.evaluate(()=>window.__readoutReads)).length,1);record('all_financial_cards_paginated_without_slicing_denominator');
     await visit('many-refresh','en');await read();await page.click('[data-readout-next]');await page.click('[data-readout-next]');await page.click('[data-readout-refresh]');await page.waitForSelector('[data-readout-loading]');await page.waitForSelector('[data-readout-result]');
     assert.equal(await page.$$eval('[data-readout-finance]',n=>n.length),1);assert.match(await page.$eval('[data-readout-page-count]',n=>n.textContent),/Cards 1–1 of 1/);record('new_snapshot_resets_financial_page');
-    for(const mode of ['FORBIDDEN','UNAUTHORIZED','PRECONDITION_FAILED','INTERNAL_SERVER_ERROR','foreign','wrong-protocol','unsupported','inconsistent','xss']){
+    for(const mode of ['FORBIDDEN','UNAUTHORIZED','PRECONDITION_FAILED','INTERNAL_SERVER_ERROR','foreign','wrong-protocol','unsupported','inconsistent','outcome-inconsistent','xss']){
       await visit(mode);await page.click('[data-readout-read]');await page.waitForSelector('[data-readout-error]');assert.equal(await page.$('[data-readout-result]'),null);await check();record(`${mode}_safe_error`);
     }
     for(const code of ['FORBIDDEN','UNAUTHORIZED','INTERNAL_SERVER_ERROR']){

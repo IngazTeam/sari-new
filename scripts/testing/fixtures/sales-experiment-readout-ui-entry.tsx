@@ -35,6 +35,8 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
     if(mode==='wrong-protocol')r.protocolId++;
     if(mode==='unsupported')r.version='v2';
     if(mode==='inconsistent')r.paymentEvidence.groups[0].netCurrentlyObservedMinor++;
+    if(mode==='outcome-inconsistent')r.outcomeEvidence.decision.blockers=[];
+    if(mode==='outcome-refresh')r=structuredClone(ordinal>1?__READOUT_FIXTURES__.pending:__READOUT_FIXTURES__['outcome-mixed']);
     if(mode==='xss')r.sector='<img src=x onerror=window.__readoutXss=1>';
     observer.next({result:{data:r}});observer.complete();
   },mode==='slow'||mode==='race'&&input.protocolId===4&&input.merchantId===1?1300:ordinal>1?350:20);

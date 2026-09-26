@@ -4,6 +4,7 @@ import { readSalesExperimentAssignmentRow } from './sales-experiment-assignment'
 import { readSalesExperimentProtocolRow, readSalesExperimentWithdrawalRow } from './sales-experiment-protocol';
 import { readSalesPaymentFact, readSalesPaymentAttribution } from './sales-payment-fact-contract';
 import { buildSalesReadoutExposures } from './sales-experiment-readout-exposures';
+import { buildSalesReadoutOutcomes } from './sales-experiment-readout-outcomes';
 
 const id = z.number().int().positive().safe();
 const utc = z.string().datetime({ precision: 3 }).refine(v => Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v);
@@ -141,7 +142,7 @@ export function buildSalesExperimentReadout(value: z.input<typeof salesExperimen
   const exposure=buildSalesReadoutExposures(assignments,rows.exposures,rows.deliveries,
     Array.from(matched.values()).map(c=>({assignmentId:c.assignment.assignmentId,capturedAt:c.fact.snapshot.verifiedAt})),blocked,now);
   return {
-    version:'sales-experiment-readout.v2' as const, ...input, protocolDigest, protocolState:rows.protocol.state as 'registered'|'withdrawn',
+    version:'sales-experiment-readout.v3' as const, ...input, protocolDigest, protocolState:rows.protocol.state as 'registered'|'withdrawn',
     sector:p.sector.playbook.id, sectorDigest:p.sector.digest, readAt,
     population:'all_recorded_assigned_qualified_customers' as const, completeWithinRecordedPopulation:true as const,
     limits:{ assignments:SALES_READOUT_ASSIGNMENT_LIMIT,merchantPaymentFacts:SALES_READOUT_PAYMENT_LIMIT,exposures:SALES_READOUT_EXPOSURE_LIMIT },
@@ -152,8 +153,12 @@ export function buildSalesExperimentReadout(value: z.input<typeof salesExperimen
     financialSource:'recorded_canonical_tap_payment_facts' as const, sourceCompleteness:'unmeasured' as const,
     partialRefunds:'not_supported_by_source' as const, humanAssistance:'unmeasured' as const, exposure:'recorded_transport_chronology' as const,
     exposureEvidence:exposure.summary,
+    outcomeEvidence:buildSalesReadoutOutcomes(p.design,rows.protocol.state==='withdrawn',arms,Array.from(matched.values()).map(c=>({
+      assignmentId:c.assignment.assignmentId,arm:c.assignment.snapshot.arm,targetKind:c.fact.snapshot.targetKind,
+      refundedBeforeCutoff:!!c.refund&&Date.parse(c.refund.snapshot.verifiedAt)<Date.parse(w.decisionNotBefore),
+    })),enrollmentClosed,decisionTimeReached,blocked),
     primaryMetric:'not_established' as const, causality:'unmeasured' as const, winner:null, learningAllowed:false as const, activationAllowed:false as const,
-    evidenceSetDigest:hash({ version:'sales-experiment-readout-basis.v2',...input,protocolDigest,state:rows.protocol.state,
+    evidenceSetDigest:hash({ version:'sales-experiment-readout-basis.v3',...input,protocolDigest,state:rows.protocol.state,
       exposures:exposure.evidence,
       withdrawalDigest:rows.withdrawals[0]?.withdrawal_digest ?? null,
       assignments:assignments.map(a => [a.assignmentId,a.assignmentDigest]),

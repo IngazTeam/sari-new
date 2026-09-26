@@ -85,6 +85,7 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
         {metric(t('salesReadout.decisionTime'),date(r.window.decisionNotBefore)+' UTC','decision')}
       </dl><p className="mt-3 text-sm leading-7">{r.enrollmentClosed?t('salesReadout.enrollmentClosed'):t('salesReadout.enrollmentNotClosed')} · {r.decisionTimeReached?t('salesReadout.decisionReached'):t('salesReadout.decisionPending')}</p>
     </details>
+    <ReadoutOutcomes report={r} locale={locale}/>
     <section data-readout-exposures className="space-y-3" aria-label={t('salesReadout.exposureTitle')}>
       <h3 className="text-lg font-semibold">{t('salesReadout.exposureTitle')}</h3>
       <p className="text-sm leading-7 text-muted-foreground">{t('salesReadout.exposureHelp')}</p>
@@ -154,4 +155,47 @@ function ReadoutResult({report:r}:{report:SalesReadoutView}){
     </details>
     <Button asChild variant="outline" className="min-h-11 h-auto whitespace-normal"><Link data-readout-orders-link href={`/admin/sales-evidence?merchantId=${r.merchantId}`}>{t('salesEvidence.openMerchant')}</Link></Button>
   </div>;
+}
+function ReadoutOutcomes({report:r,locale}:{report:SalesReadoutView;locale:string}){
+  const {t}=useTranslation(),m=r.outcomeEvidence,n=(value:number)=>new Intl.NumberFormat(locale).format(value);
+  const percent=(numerator:number,denominator:number)=>new Intl.NumberFormat(locale,{style:'percent',maximumFractionDigits:2}).format(numerator/denominator);
+  const item=(label:string,value:string,key:string)=><div key={key} className="min-w-0 space-y-1 rounded-lg bg-muted/30 p-3"><dt className="text-sm leading-6 text-muted-foreground">{label}</dt><dd data-outcome-metric={key} className="text-lg font-semibold">{value}</dd></div>;
+  const blockers={withdrawn:t('salesOutcome.blockWithdrawn'),enrollment_open:t('salesOutcome.blockEnrollment'),observation_pending:t('salesOutcome.blockObservation'),
+    decision_time_pending:t('salesOutcome.blockDecision'),empty_arm:t('salesOutcome.blockEmpty'),sample_below_registered_minimum:t('salesOutcome.blockMinimum'),
+    sample_plan_below_calculated_floor:t('salesOutcome.blockPlan'),sample_below_calculated_floor:t('salesOutcome.blockCalculated'),attribution_unresolved:t('salesOutcome.blockAttribution'),
+    source_completeness_unverified:t('salesOutcome.blockSources'),partial_refunds_unsupported:t('salesOutcome.blockPartialRefunds'),human_assistance_unmeasured:t('salesOutcome.blockHuman'),
+    guardrails_unmeasured:t('salesOutcome.blockGuardrails'),statistical_inference_missing:t('salesOutcome.blockInference'),independent_result_review_required:t('salesOutcome.blockReview')};
+  return <section data-readout-outcomes className="space-y-3" aria-label={t('salesOutcome.title')}>
+    <h3 className="text-lg font-semibold">{t('salesOutcome.title')}</h3><p className="text-sm leading-7 text-muted-foreground">{t('salesOutcome.definition')}</p>
+    <p data-outcome-scope className="rounded-lg bg-muted/30 p-3 text-sm leading-7">{t('salesOutcome.scope')}</p>
+    <div className="grid items-start gap-4 lg:grid-cols-2">{m.arms.map(a=><article data-outcome-arm={a.arm} key={a.arm} className="min-w-0 rounded-xl border p-4 space-y-3">
+      <h4 className="font-semibold">{a.arm==='baseline'?t('salesReadout.baseline'):t('salesReadout.candidate')}</h4>
+      {!a.outcomes?<p data-outcome-blocked className="text-sm leading-7">{t('salesOutcome.blocked')}</p>:<>
+        <dl className="grid gap-3 sm:grid-cols-2">{item(t('salesOutcome.retained'),n(a.outcomes.customersWithRetainedOrderAtCutoff),'retained')}
+          {item(t('salesOutcome.denominator'),n(a.assignedCustomers),'assigned')}</dl>
+        {a.recordedRatio?<p data-outcome-ratio className="rounded-lg bg-muted/40 p-3 leading-7">{t('salesOutcome.ratio',{ratio:percent(a.recordedRatio.numerator,a.recordedRatio.denominator),numerator:n(a.recordedRatio.numerator),denominator:n(a.recordedRatio.denominator)})}</p>
+          :<p data-outcome-withheld className="text-sm leading-7">{a.assignedCustomers===0?t('salesOutcome.noDenominator'):t('salesOutcome.ratioWithheld')}</p>}
+        <details data-outcome-counts><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesOutcome.counts')}</summary>
+          <dl className="grid gap-3 pt-3 sm:grid-cols-2">{item(t('salesOutcome.captured'),n(a.outcomes.customersWithOrderCapture),'captured')}
+            {item(t('salesOutcome.refundedOnly'),n(a.outcomes.customersWithOnlyFullyRefundedOrdersAtCutoff),'refundedOnly')}
+            {item(t('salesOutcome.noOrder'),n(a.outcomes.customersWithoutRecordedOrderCapture),'noOrder')}
+            {item(t('salesOutcome.bookingOnly'),n(a.outcomes.customersWithBookingCaptureOnly),'bookingOnly')}</dl>
+          <p className="mt-3 text-sm leading-7">{t('salesOutcome.countHelp')}</p>
+        </details></>}
+    </article>)}</div>
+    <details data-outcome-planning className="rounded-lg border p-4"><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesOutcome.planning')}</summary>
+      <dl className="grid gap-3 pt-3 sm:grid-cols-2 lg:grid-cols-3">
+        {item(t('salesOutcome.baseline'),percent(m.planning.baselineConversionBps,10000),'baseline')}
+        {item(t('salesOutcome.lift'),t('salesOutcome.points',{value:n(m.planning.minimumAbsoluteLiftBps/100)}),'lift')}
+        {item(t('salesOutcome.alpha'),percent(m.planning.alphaBps,10000),'alpha')}
+        {item(t('salesOutcome.power'),percent(m.planning.powerBps,10000),'power')}
+        {item(t('salesOutcome.registeredMinimum'),n(m.planning.minimumCustomersPerArm),'registeredMinimum')}
+        {item(t('salesOutcome.calculatedMinimum'),n(m.planning.calculation.requiredPerArm),'calculatedMinimum')}
+      </dl><p className="mt-3 text-sm leading-7">{t('salesOutcome.planningHelp')}</p>
+    </details>
+    <details data-outcome-decision className="rounded-lg border p-4"><summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline focus-visible:outline-2">{t('salesOutcome.decision')}</summary>
+      <p className="pt-2 text-sm leading-7">{t('salesOutcome.decisionHelp')}</p>
+      <ul className="list-disc space-y-2 ps-5 pt-3 text-sm leading-7">{m.decision.blockers.map(reason=><li data-outcome-blocker={reason} key={reason}>{blockers[reason]}</li>)}</ul>
+    </details>
+  </section>;
 }

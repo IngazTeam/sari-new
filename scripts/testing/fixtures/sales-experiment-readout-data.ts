@@ -1,12 +1,20 @@
 import { buildSalesExperimentReadout } from '../../../server/ai/sales-experiment-readout-contract';
 import { readoutFixture,readoutDates } from '../../../server/tests/helpers/sales-readout';
+import { policyArtifactDigest as hash } from '../../../server/ai/learning-policy-evaluation-bundle';
 
 export const readoutModes=['mixed','empty','unmeasured','refund','late','pending','review','unassigned','huge','live','withdrawn','minimum','many',
-  'exposure-before','exposure-at','exposure-flight','exposure-after','exposure-mock','exposure-regression','exposure-declined','exposure-pending'] as const;
+  'exposure-before','exposure-at','exposure-flight','exposure-after','exposure-mock','exposure-regression','exposure-declined','exposure-pending',
+  'outcome-mixed','bookings-only','before-decision'] as const;
 export function salesReadoutFixture(mode:string='mixed'){
   const f=readoutFixture(),a=f.rows.assignments[0],c=f.capture(a);
   let readAt=readoutDates.read;
-  if(mode.startsWith('exposure-')){
+  if(mode==='outcome-mixed'){
+    const b=f.assignment(2),d=f.assignment(3),refunded=f.capture(d,4);f.rows.assignments.push(b,d,f.assignment(4,'candidate'));
+    f.rows.payments=[c,f.refund(c),f.capture(a,2,{currency:'USD'}),f.capture(b,3,{targetKind:'booking'}),refunded,f.refund(refunded)];
+  }
+  else if(mode==='bookings-only')f.rows.payments=[f.capture(a,1,{targetKind:'booking'})];
+  else if(mode==='before-decision'){f.rows.payments=[c];readAt=new Date(Date.parse(f.protocol.protocol.design.window.decisionNotBefore)-1).toISOString();}
+  else if(mode.startsWith('exposure-')){
     const b=f.assignment(2,'candidate');f.rows.assignments.push(b,f.assignment(3,'candidate'));f.rows.payments=[f.capture(b)];
     const [start,accept]=mode==='exposure-at'?[-1,0]:mode==='exposure-flight'?[-1,1]:mode==='exposure-after'?[1,2]:mode==='exposure-regression'?[-1,-2]:[-2,-1];
     const e=f.exposure(b,1,start,accept,mode==='exposure-mock'?{provider:'mock'}:mode==='exposure-declined'?{styleApplied:false,styleReason:'customer_declined'}:{});
@@ -29,10 +37,12 @@ export function salesReadoutFixture(mode:string='mixed'){
     f.rows.payments=[c,cp,usd,f.refund(cp),f.refund(c,f.protocol.protocol.design.window.decisionNotBefore)];
     for(const e of [f.exposure(a,1),f.exposure(b,2,-1,1)]){f.rows.exposures.push(e.row);f.rows.deliveries.push(e.delivery);}
   }
-  const result={...buildSalesExperimentReadout({merchantId:1,protocolId:4},f.rows,readAt),consistency:'single_database_snapshot' as const};
-  // Display-only state variant: production withdrawal evidence is verified in SQL tests.
-  if(mode==='withdrawn')result.protocolState='withdrawn';
-  return result;
+  if(mode==='withdrawn'){
+    const s={version:'sales-experiment-withdrawal.v1',merchantId:1,protocolId:4,protocolDigest:f.protocol.protocol_digest,
+      reason:'Withdraw the synthetic experiment without claiming a winning policy.',winner:null};
+    f.protocol.state='withdrawn';f.rows.withdrawals=[{merchant_id:1,protocol_id:4,withdrawal:s,withdrawal_digest:hash(s)}];
+  }
+  return {...buildSalesExperimentReadout({merchantId:1,protocolId:4},f.rows,readAt),consistency:'single_database_snapshot' as const};
 }
 if(process.argv[1]?.replaceAll('\\','/').endsWith('/sales-experiment-readout-data.ts')){
   process.stdout.write(JSON.stringify(Object.fromEntries(readoutModes.map(mode=>[mode,salesReadoutFixture(mode)]))));

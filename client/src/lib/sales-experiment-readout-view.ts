@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { parseSalesEvidenceId } from './sales-order-report-view';
 import { salesExposureReadout } from '../../../shared/sales-experiment-exposure-readout';
+import { salesOutcomeReadout,salesOutcomeBlockers } from '../../../shared/sales-experiment-outcome-readout';
 
 const id=z.number().int().positive().safe(), count=z.number().int().nonnegative().safe();
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
 const utc=z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v);
 const arm=z.enum(['baseline','candidate']);
 const view=z.object({
-  version:z.literal('sales-experiment-readout.v2'),merchantId:id,protocolId:id,protocolDigest:digest,
+  version:z.literal('sales-experiment-readout.v3'),merchantId:id,protocolId:id,protocolDigest:digest,
   protocolState:z.enum(['registered','withdrawn']),sector:z.string().regex(/^[a-z][a-z0-9_]{1,63}$/),sectorDigest:digest,readAt:utc,
   population:z.literal('all_recorded_assigned_qualified_customers'),completeWithinRecordedPopulation:z.literal(true),
   limits:z.object({assignments:z.literal(10000),merchantPaymentFacts:z.literal(20000),exposures:z.literal(20000)}),
@@ -25,6 +26,7 @@ const view=z.object({
   financialSource:z.literal('recorded_canonical_tap_payment_facts'),sourceCompleteness:z.literal('unmeasured'),
   partialRefunds:z.literal('not_supported_by_source'),humanAssistance:z.literal('unmeasured'),exposure:z.literal('recorded_transport_chronology'),
   exposureEvidence:salesExposureReadout,
+  outcomeEvidence:salesOutcomeReadout,
   primaryMetric:z.literal('not_established'),causality:z.literal('unmeasured'),winner:z.null(),learningAllowed:z.literal(false),activationAllowed:z.literal(false),
   evidenceSetDigest:digest,consistency:z.literal('single_database_snapshot'),
 });
@@ -63,6 +65,22 @@ export function readSalesReadoutView(value:unknown,request:SalesReadoutRequest):
     identities.add(key);captures+=g.capturedPayments;
     if(BigInt(g.capturedMinor)-BigInt(g.refundedBeforeCutoffMinor??0)!==BigInt(g.netAtCutoffObservedMinor)
       ||BigInt(g.netAtCutoffObservedMinor)-BigInt(g.refundedAtOrAfterCutoffMinor??0)!==BigInt(g.netCurrentlyObservedMinor))return null;
+  }
+  const m=r.outcomeEvidence,unresolvedMetric=r.paymentEvidence.status==='unresolved_attribution';
+  if((m.status==='unresolved_attribution')!==unresolvedMetric||m.planning.minimumCustomersPerArm!==r.arms[0].minimumCustomers)return null;
+  const showRates=r.protocolState!=='withdrawn'&&!unresolvedMetric&&r.enrollmentClosed&&r.decisionTimeReached&&r.arms.every(a=>a.observationPending===0);
+  if((m.rates==='descriptive_recorded_only')!==showRates)return null;
+  const blockers=salesOutcomeBlockers({withdrawn:r.protocolState==='withdrawn',enrollmentClosed:r.enrollmentClosed,decisionTimeReached:r.decisionTimeReached,
+    unresolved:unresolvedMetric,arms:r.arms,minimum:m.planning.minimumCustomersPerArm,calculatedMinimum:m.planning.calculation.requiredPerArm});
+  if(JSON.stringify(m.decision.blockers)!==JSON.stringify(blockers))return null;
+  for(const a of m.arms){
+    if(a.assignedCustomers!==r.arms.find(g=>g.arm===a.arm)?.assignedCustomers)return null;
+    const o=a.outcomes;if(!o)continue;
+    const orders=groups.filter(g=>g.arm===a.arm&&g.targetKind==='order');
+    if(orders.some(g=>g.customersWithCapture>o.customersWithOrderCapture||g.customersWithRetainedCaptureAtCutoff>o.customersWithRetainedOrderAtCutoff)
+      ||o.customersWithOrderCapture>orders.reduce((n,g)=>n+g.customersWithCapture,0)
+      ||o.customersWithRetainedOrderAtCutoff>orders.reduce((n,g)=>n+g.customersWithRetainedCaptureAtCutoff,0)
+      ||o.customersWithOrderCapture+o.customersWithBookingCaptureOnly!==r.exposureEvidence.arms.find(g=>g.arm===a.arm)?.firstCapture?.customers)return null;
   }
   return captures<=20000?r:null;
 }
