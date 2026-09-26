@@ -1,0 +1,63 @@
+{
+  "scope": "Local synthetic verification. Final acceptance exclusively from the frozen staged source.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 284,
+      "failed": 3,
+      "result": "Found and fixed a merchant/outbox lock inversion in historical reads. Provider-change receipt correctly failed strict proof; adjusted expectation. Disabled-account fixture initially violated the existing active-primary constraint.",
+      "logSha256": "2d708dafe74460643c9a5b3a5cfe086626dbec6b6efa3cb20d882ceed1aa459c"
+    },
+    {
+      "kind": "second-focused",
+      "passed": 289,
+      "failed": 2,
+      "result": "The lock inversion and provider-change cases passed. Two new disabled-user/merchant fixtures used unsupported enum values; corrected them to deletion_pending/suspended.",
+      "logSha256": "faa51f0edf976d23b1b3edcf091f591a11fd0fa6050819ed4b81286a53564746"
+    },
+    {
+      "kind": "superseded-full",
+      "result": "Stopped the owned full-test runner during its database phase after code review found a final clock/write race. Added an atomic SQL time predicate and two tests, created a fresh disposable database, and reran all suites from a new frozen snapshot. Partial results are excluded from final acceptance.",
+      "logSha256": "84708ed9ccacbb501e8ec50131a8467b7dcc4a004ae80cc8dd32701630a20cd5"
+    },
+    {
+      "kind": "intermediate-new-db",
+      "passed": 48,
+      "failed": 2,
+      "notSelected": 182,
+      "result": "Two concurrent-send cases were suppressed. The authorization guard still locked the outbox after the merchant parent; removed that lock too and added a deterministic competing-parent-FK test. The second full runner was stopped before database acceptance.",
+      "logSha256": "570e3663cdbf9605e1787bc6ab69a35af76f8f19f7b2d03baab1002cb90359a2"
+    },
+    {
+      "kind": "concurrency-diagnostic",
+      "iterations": 20,
+      "result": "Forty isolated provider cases passed during diagnostic repetition; this did not replace the deterministic lock-order regression test or final full verification.",
+      "logSha256": "6d1805d427c0316734bcef8686c54555cdc61eda70f1718139ed106ab3b4fb06"
+    },
+    {
+      "kind": "focused-new-db-final",
+      "passed": 51,
+      "failed": 0,
+      "notSelected": 182,
+      "result": "Name-filtered new delivery cases; all baseline cases are included in the final full run.",
+      "logSha256": "52d9bc30ec6eed8df331bcbbf17b2c8a588d42a6a774fcf17fa252e57c6ff1bd"
+    },
+    {
+      "kind": "focused-unit-final",
+      "passed": 66,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "c328ddfb09a67d9ebbb376bbae0b6d65714a64e970f5d291cf053531c2899a94"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "1fbc9e7839512274b489c55fc774f458e424ceddf95313975971046a1988c70f"
+    },
+    {
+      "kind": "ui-equivalence",
+      "reused": true,
+      "inputsChecked": 39,
+      "screenshotsChecked": 113
+    }
+  ]
+}

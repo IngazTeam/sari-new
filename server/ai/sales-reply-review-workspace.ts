@@ -24,7 +24,7 @@ async function history(c: PoolConnection, merchant: number, generationId: number
   const [rows] = await c.execute<any[]>(`SELECT * FROM ai_sales_generation_output_reviews WHERE merchant_id=? AND generation_id=? ORDER BY revision DESC LIMIT ${limit}`, [merchant, generationId]);
   return rows.map(receipt);
 }
-async function basis(c: PoolConnection, merchant: number, generationId: number) {
+export async function loadCurrentSalesReplyReviewBasis(c: PoolConnection, merchant: number, generationId: number) {
   const source = await loadCurrentSalesGenerationReviewSource(c, merchant, generationId), s = source.snapshot, t = source.current;
   const responseText = source.response.text!, refusal = t.snapshot.effectiveIntent === 'declined' || isSalesRefusal(t.customerMessage);
   const gate = refusal && responseText === refusalAcknowledgement(t.customerMessage) ? []
@@ -36,7 +36,7 @@ async function basis(c: PoolConnection, merchant: number, generationId: number) 
     turnId: s.turnId, turnDigest: s.turnDigest, sourceDigest: t.snapshot.sourceDigest, promptDigest: s.promptDigest, contextDigest: s.contextDigest,
     routeDigest: s.routeDigest, observationEndsAt: s.observationEndsAt, rubricDigest: salesReplyReviewRubricDigest, gate: violations,
     customerMessage: t.customerMessage, lastAssistantMessage: t.lastAssistantMessage });
-  return { evidence, digest: policyArtifactDigest(evidence), checkedAt: t.checkedAt };
+  return { evidence, digest: policyArtifactDigest(evidence), checkedAt: t.checkedAt, source };
 }
 export async function listSalesReplyReviews(merchantId: number, value: z.input<typeof replyReviewListInput>) {
   const merchant = id.parse(merchantId), input = replyReviewListInput.parse(value);
@@ -56,8 +56,8 @@ export async function getSalesReplyReviewWorkspace(merchantId: number, actorUser
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = replyReviewReadInput.parse(value);
   return checkoutTransaction(async c => {
     const owner = await lock(c, merchant), saved = await loadSalesGenerationReviewRecord(c, merchant, input.generationId), reviews = await history(c, merchant, input.generationId);
-    let current: Awaited<ReturnType<typeof basis>> | null = null;
-    if (saved.state === 'responded' && owner === actor) { try { current = await basis(c, merchant, input.generationId); } catch { /* A failed freshness read never permits a new review. */ } }
+    let current: Awaited<ReturnType<typeof loadCurrentSalesReplyReviewBasis>> | null = null;
+    if (saved.state === 'responded' && owner === actor) { try { current = await loadCurrentSalesReplyReviewBasis(c, merchant, input.generationId); } catch { /* A failed freshness read never permits a new review. */ } }
     return replyReviewWorkspace.parse({ generationId: input.generationId, actorUserId: actor, state: saved.state, responseText: saved.response.text,
       canReview: !!current, stage: owner !== actor ? 'owner_required' : saved.state !== 'responded' ? 'incomplete' : current ? 'ready' : 'source_unavailable',
       basis: current ? { digest: current.digest, rubricDigest: salesReplyReviewRubricDigest, customerMessage: current.evidence.customerMessage,
@@ -73,7 +73,7 @@ export async function submitSalesReplyReview(merchantId: number, actorUserId: nu
     const [prior] = await c.execute<any[]>('SELECT * FROM ai_sales_generation_output_reviews WHERE merchant_id=? AND request_id=? FOR UPDATE', [merchant, input.requestId]);
     if (prior.length) { if (prior[0].payload_digest !== payload) return conflict(); return receipt(prior[0]); }
     if (owner !== actor || input.rubricDigest !== salesReplyReviewRubricDigest) return conflict();
-    const current = await basis(c, merchant, input.generationId), reviews = await history(c, merchant, input.generationId), revision = reviews[0]?.revision ?? 0;
+    const current = await loadCurrentSalesReplyReviewBasis(c, merchant, input.generationId), reviews = await history(c, merchant, input.generationId), revision = reviews[0]?.revision ?? 0;
     if (revision !== input.expectedRevision || revision >= Number.MAX_SAFE_INTEGER || input.basisDigest !== current.digest || !current.evidence.responseText.includes(input.quote)) return conflict();
     const [clock] = await c.execute<any[]>("SELECT DATE_FORMAT(UTC_TIMESTAMP(3),'%Y-%m-%dT%H:%i:%s.%fZ') AS now");
     const reviewedAt = String(clock[0].now).replace(/(\.\d{3})\d{3}Z$/, '$1Z');

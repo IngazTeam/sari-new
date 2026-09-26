@@ -42,6 +42,15 @@ describe('provider outcome classification', () => {
   }
 });
 describe('durable delivery boundaries', () => {
+  it('refuses reviewed reply keys without the separate server-owned authorization', async () => {
+    expect(await sendMerchantWhatsApp({ ...input, idempotencyKey: 'sales_reply:20:42' })).toMatchObject({ accepted: false, errorCode: 'sales_reply_suppressed' });
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('never resets a failed reviewed reply to queued even when retryFailed is requested', async () => {
+    mocks.execute.mockRejectedValueOnce({ code: 'ER_DUP_ENTRY' }).mockResolvedValueOnce([[{ status: 'failed', error_code: 'http_400' }]]);
+    expect(await sendMerchantWhatsApp({ ...input, idempotencyKey: 'sales_reply:20:42', retryFailed: true })).toMatchObject({ accepted: false, duplicate: true });
+    expect(mocks.execute).toHaveBeenCalledTimes(2); expect(mocks.post).not.toHaveBeenCalled();
+  });
   it('refuses booking notice keys without the server-owned claim guard', async () => {
     expect(await sendMerchantWhatsApp({...input,idempotencyKey:'booking_notice:20:42'})).toMatchObject({accepted:false,errorCode:'booking_notice_suppressed'});
     expect(mocks.post).not.toHaveBeenCalled();

@@ -103,7 +103,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
           fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
-          salesOfferGuard: input.salesOfferGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard })]
+          salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard })]
     );
     reserved = true;
   } catch (error: any) {
@@ -115,7 +115,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     );
     const existing = (rows as any[])?.[0];
     if (!existing) throw error;
-    if (existing.status === 'failed' && input.retryFailed
+    if (existing.status === 'failed' && input.retryFailed && !input.idempotencyKey.startsWith('sales_reply:') && !input.salesReplyGuard
         && existing.error_code !== 'provider_unreachable'
         && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(
@@ -191,6 +191,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   }
   // Authority checks may wait on SQL locks; an expired worker must not send afterwards.
   if (execution) await execution.assertOwned();
+  if (input.idempotencyKey.startsWith('sales_reply:') || input.salesReplyGuard) {
+    const { canDispatchSalesReply } = await import('../../ai/sales-reply-delivery');
+    if (!await canDispatchSalesReply(input, config)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='sales_reply_suppressed',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: 'sales_reply_suppressed' };
+    }
+  }
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,

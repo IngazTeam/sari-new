@@ -4241,6 +4241,19 @@ export const aiSalesGenerationOutputReviews = mysqlTable('ai_sales_generation_ou
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex('uq_sales_reply_review_request').on(table.merchantId, table.requestId), uniqueIndex('uq_sales_reply_review_revision').on(table.generationId, table.revision)]);
 
+export const aiSalesReplyDeliveries = mysqlTable('ai_sales_reply_deliveries', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  generationId: bigint('generation_id', { mode: 'number', unsigned: true }).notNull().references(() => aiSalesExperimentGenerations.id, { onDelete: 'cascade' }),
+  messageReference: int('message_reference').notNull(), actorUserId: int('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  requestId: char('request_id', { length: 36 }).notNull(), payloadDigest: char('payload_digest', { length: 64 }).notNull(),
+  basisDigest: char('basis_digest', { length: 64 }).notNull(), authorizationDigest: char('authorization_digest', { length: 64 }).notNull(),
+  snapshot: json().notNull(), state: varchar({ length: 16 }).notNull(), dispatchStartedAt: datetime('dispatch_started_at', { mode: 'string', fsp: 3 }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_reply_delivery_request').on(table.merchantId, table.requestId),
+  uniqueIndex('uq_sales_reply_delivery_generation').on(table.merchantId, table.generationId),
+  uniqueIndex('uq_sales_reply_delivery_message').on(table.merchantId, table.messageReference)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

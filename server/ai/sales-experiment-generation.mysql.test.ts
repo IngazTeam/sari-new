@@ -21,6 +21,12 @@ import { salesReplyReviewRubricDigest, type RecordSalesReplyReviewInput } from '
 import { refusalAcknowledgement } from './response-validator';
 import { getSalesReplyReviewWorkspace, listSalesReplyReviews, submitSalesReplyReview } from './sales-reply-review-workspace';
 import type { ReplyReviewSubmission } from '../../shared/sales-reply-review';
+import { prepareSalesReplyDelivery, authorizeSalesReplyDelivery, dispatchReviewedSalesReply, getSalesReplyDelivery, canDispatchSalesReply } from './sales-reply-delivery';
+import { sendMerchantWhatsApp, updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
+import { salesReplyDeliveryKey } from './sales-reply-delivery-contract';
+import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
+const wa = vi.hoisted(() => ({ post: vi.fn() }));
+vi.mock('axios', () => ({ default: { post: wa.post } }));
 
 const config = vi.hoisted(() => ({ unix: null as number | null, provider: 'openai' as 'openai' | 'zahypi', model: '', enabled: true, actualModel: 'synthetic-model', finish: 'stop', usage: true, text: 'رد اصطناعي للاختبار فقط.' }));
 vi.mock('../db_ai_settings', () => ({ getOpenAiApiKey: async () => 'synthetic-key', getActiveModel: async () => config.model, logAiUsage: async () => {}, estimateCost: () => 0,
@@ -170,14 +176,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review' | 'delivery' | 'dispatch', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews' }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews', delivery: 'INSERT INTO ai_sales_reply_deliveries', dispatch: "SET state='dispatching',dispatch_started_at" }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -499,6 +505,205 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
       quote: config.text, rationale: 'Human judgment against the authoritative customer question and current business evidence.', reviewedEntireResponse: true, understandsNoMessageSent: true };
     return { r, w, value };
   }
+  async function deliveryFixture(provider: 'green_api' | 'meta_cloud' = 'green_api') {
+    const f = await publicFixture(); await publicSubmit(f.value);
+    const account = `fixture-${randomUUID()}`, token = `private-wa-${randomUUID()}`;
+    const instanceRecordId = Number((await query(`INSERT INTO whatsapp_instances
+      (merchant_id,instance_id,token,status,is_primary,provider,api_url,phone_number_id,provider_account_id)
+      VALUES (?,?,?,'active',1,?,'https://api.green-api.com','1234567890','test-account')`, [owner.merchantId, account, token, provider])).insertId);
+    const prepare = () => prepareSalesReplyDelivery(owner.merchantId, owner.userId, { generationId: f.r.generationId, instanceRecordId });
+    const prepared = await prepare();
+    const value = { generationId: f.r.generationId, instanceRecordId, requestId: randomUUID(), basisDigest: prepared.basisDigest,
+      reason: 'Explicitly authorize this exact reviewed reply to the verified synthetic recipient.', allowSendCustomerMessage: true as const, reviewedExactRecipientAndResponse: true as const };
+    wa.post.mockReset(); wa.post.mockResolvedValue({ status: 200, data: { idMessage: 'fixture-receipt', messages: [{ id: 'fixture-receipt' }] } });
+    const auth = () => authorizeSalesReplyDelivery(owner.merchantId, owner.userId, value);
+    return { ...f, value, reviewValue: f.value, instanceRecordId, prepare, auth, prepared, account, token };
+  }
+  const deliveryIdentity = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => ({ deliveryId: r.deliveryId, authorizationDigest: r.authorizationDigest });
+  const dispatch = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => dispatchReviewedSalesReply(owner.merchantId, deliveryIdentity(r));
+  const deliveryRead = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => getSalesReplyDelivery(owner.merchantId, deliveryIdentity(r));
+  function deliveryInput(r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>): SendMerchantWhatsAppInput {
+    const b = r.authorization.basis;
+    return { merchantId: b.merchantId, instanceRecordId: b.instanceRecordId, to: b.recipient, text: b.responseText, kind: 'text',
+      idempotencyKey: salesReplyDeliveryKey(b.merchantId, r.deliveryId), salesReplyGuard: deliveryIdentity(r) };
+  }
+  it.each(['green_api', 'meta_cloud'] as const)('reviewed delivery: sends %s once and separates acceptance, delivery and read receipts', async provider => {
+    const f = await deliveryFixture(provider), budget = await ledger(), r = await f.auth();
+    expect(r).toMatchObject({ state: 'authorized', transport: 'not_attempted', dispatchAllowed: false, exposureRecorded: false });
+    expect(wa.post).not.toHaveBeenCalled(); expect(JSON.stringify(r)).not.toContain(f.token);
+    const results = await Promise.all([dispatch(r), dispatch(r), dispatch(r)]);
+    expect(results.some(x => x.transport === 'accepted')).toBe(true); expect(wa.post).toHaveBeenCalledOnce();
+    expect(await dispatch(r)).toMatchObject({ state: 'dispatching', transport: 'accepted', providerMessageId: 'fixture-receipt', exposureRecorded: false });
+    const payload = wa.post.mock.calls[0][1]; expect(provider === 'green_api' ? payload.message : payload.text.body).toBe(config.text);
+    expect(await updateWhatsAppDeliveryStatus({ provider, providerAccount: 'wrong-account', providerMessageId: 'fixture-receipt', status: 'read' })).toBe('not_found');
+    expect(await updateWhatsAppDeliveryStatus({ provider, providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'delivered' })).toBe('updated');
+    expect((await deliveryRead(r)).transport).toBe('delivered');
+    await updateWhatsAppDeliveryStatus({ provider, providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'read' });
+    expect((await deliveryRead(r)).transport).toBe('read'); await revoke(); expect((await dispatch(r)).transport).toBe('read');
+    expect(wa.post).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled(); expect(await ledger()).toEqual(budget);
+    expect(await query('SELECT id FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+  });
+  it('reviewed delivery: only current v2 approval authorizes and concurrent UUID replay cannot create another attempt', async () => {
+    const f = await deliveryFixture(); const rows = await Promise.all([f.auth(), f.auth(), f.auth()]);
+    expect(rows[0]).toEqual(rows[1]); expect(rows[1]).toEqual(rows[2]); expect(wa.post).not.toHaveBeenCalled();
+    for (const value of [{ ...f.value, reason: 'Changed authorization meaning under the same UUID.' }, { ...f.value, requestId: randomUUID() }])
+      await expect(authorizeSalesReplyDelivery(owner.merchantId, owner.userId, value)).rejects.toThrow();
+    await expect(authorizeSalesReplyDelivery(other.merchantId, other.userId, f.value)).rejects.toThrow();
+    await expect(authorizeSalesReplyDelivery(owner.merchantId, other.userId, f.value)).rejects.toThrow();
+    await expect(getSalesReplyDelivery(other.merchantId, deliveryIdentity(rows[0]))).rejects.toThrow();
+    await expect(dispatchReviewedSalesReply(owner.merchantId, { ...deliveryIdentity(rows[0]), authorizationDigest: 'f'.repeat(64) })).rejects.toThrow();
+  });
+  it.each(['missing', 'rejected', 'legacy', 'corrupt', 'long'])('reviewed delivery: refuses %s output review before authorization', async mode => {
+    if (mode === 'long') config.text = 'أ'.repeat(4097);
+    const f = await publicFixture();
+    if (mode === 'legacy') { const review = await prepareSalesGenerationOutputReview(owner.merchantId, { generationId: f.r.generationId, baseSystemPrompt: input.baseSystemPrompt, contextMessages: input.contextMessages });
+      await recordSalesGenerationOutputReview(owner.merchantId, owner.userId, { ...f.value, basisDigest: review.basisDigest, baseSystemPrompt: input.baseSystemPrompt, contextMessages: input.contextMessages } as any); }
+    else if (mode !== 'missing') await publicSubmit({ ...f.value, quote: f.value.quote.slice(0, 1000), checks: { ...f.value.checks, groundedInBusiness: mode !== 'rejected' } });
+    if (mode === 'corrupt') await query("UPDATE ai_sales_generation_output_reviews SET review_digest=REPEAT('f',64) WHERE generation_id=?", [f.r.generationId]);
+    const instanceRecordId = Number((await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,provider) VALUES (?,'fixture','secret','active','green_api')", [owner.merchantId])).insertId);
+    await expect(prepareSalesReplyDelivery(owner.merchantId, owner.userId, { generationId: f.r.generationId, instanceRecordId })).rejects.toThrow();
+    expect(await query('SELECT id FROM ai_sales_reply_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  const deliveryDrifts = ['source', 'route', 'disabled', 'revoked', 'human', 'processed', 'owner', 'owner-disabled', 'merchant-disabled', 'window', 'new-inbound', 'outgoing', 'phone', 'account-token', 'account-provider', 'account-disabled', 'review-new', 'review-rejected', 'interaction', 'expired'] as const;
+  async function driftDelivery(mode: typeof deliveryDrifts[number], f: Awaited<ReturnType<typeof deliveryFixture>>) {
+    if (mode === 'source') await query("UPDATE messages SET content='New source' WHERE id=?", [incomingMessageId]);
+    if (mode === 'route') config.model += '-changed'; if (mode === 'disabled') config.enabled = false; if (mode === 'revoked') await revoke();
+    if (mode === 'human') await query('UPDATE conversations SET human_takeover=1 WHERE id=?', [conversationId]);
+    if (mode === 'processed') await query('UPDATE messages SET isProcessed=1 WHERE id=?', [incomingMessageId]);
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [other.userId, owner.merchantId]);
+    if (mode === 'owner-disabled') await query("UPDATE users SET account_status='deletion_pending' WHERE id=?", [owner.userId]);
+    if (mode === 'merchant-disabled') await query("UPDATE merchants SET status='suspended' WHERE id=?", [owner.merchantId]);
+    if (mode === 'window') config.unix! += 365 * 86400; if (mode === 'expired') config.unix! += 120;
+    if (mode === 'new-inbound' || mode === 'outgoing') await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,?,'text','New turn')", [conversationId, mode === 'new-inbound' ? 'incoming' : 'outgoing']);
+    if (mode === 'phone') await query("UPDATE conversations SET customerPhone='966500000999' WHERE id=?", [conversationId]);
+    if (mode === 'account-token') await query("UPDATE whatsapp_instances SET token='rotated-token' WHERE id=?", [f.instanceRecordId]);
+    if (mode === 'account-provider') await query("UPDATE whatsapp_instances SET provider='meta_cloud' WHERE id=?", [f.instanceRecordId]);
+    if (mode === 'account-disabled') await query("UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?", [f.instanceRecordId]);
+    if (mode === 'review-new' || mode === 'review-rejected') await publicSubmit({ ...f.reviewValue, requestId: randomUUID(), expectedRevision: 1,
+      checks: { ...f.reviewValue.checks, groundedInBusiness: mode !== 'review-rejected' } });
+    if (mode === 'interaction') await query('INSERT INTO ai_interaction_jobs (merchant_id,conversation_id,incoming_message_id,reply_text) VALUES (?,?,?,?)', [owner.merchantId, conversationId, incomingMessageId, 'Already staged']);
+  }
+  it.each(deliveryDrifts)('reviewed delivery: rechecks %s before provider I/O', async mode => {
+    const f = await deliveryFixture(), r = await f.auth(); await driftDelivery(mode, f);
+    if (mode === 'account-provider') await expect(dispatch(r)).rejects.toThrow();
+    else { const result = await dispatch(r); expect(['not_attempted', 'suppressed']).toContain(result.transport); }
+    expect(wa.post).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [owner.userId, owner.merchantId]);
+  });
+  it.each(['before', 'after'] as const)('reviewed delivery: recovers authorization acknowledgement lost %s commit without sending', async when => {
+    const f = await deliveryFixture(); await failCommit('delivery', when); await expect(f.auth()).rejects.toThrow(); vi.restoreAllMocks();
+    const r = await f.auth(); expect(await f.auth()).toEqual(r); expect(wa.post).not.toHaveBeenCalled();
+    expect(await query('SELECT id FROM ai_sales_reply_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(1);
+  });
+  it.each(['before', 'after'] as const)('reviewed delivery: never sends after dispatch acknowledgement lost %s commit', async when => {
+    const f = await deliveryFixture(), r = await f.auth(); await failCommit('dispatch', when); const result = await dispatch(r); vi.restoreAllMocks();
+    expect(result.transport).toBe('suppressed'); expect(wa.post).not.toHaveBeenCalled();
+    expect((await dispatch(r)).transport).toBe('suppressed'); expect(wa.post).not.toHaveBeenCalled();
+  });
+  it.each(['unknown', 'rejected', 'missing-receipt', 'persistence'])('reviewed delivery: preserves %s transport without a second provider call', async mode => {
+    const f = await deliveryFixture(), r = await f.auth();
+    if (mode === 'unknown') wa.post.mockRejectedValue(Error('Synthetic ambiguous network failure'));
+    if (mode === 'rejected') wa.post.mockResolvedValue({ status: 400, data: {} });
+    if (mode === 'missing-receipt') wa.post.mockResolvedValue({ status: 200, data: {} });
+    if (mode === 'persistence') { const pool = (await getPool())!, execute = pool.execute.bind(pool);
+      vi.spyOn(pool, 'execute').mockImplementation((...args: any[]) => { if (String(args[0]).includes('SET provider_message_id = ?')) return Promise.reject(Error('Synthetic save failure')); return (execute as any)(...args); }); }
+    expect((await dispatch(r)).transport).toBe(mode === 'rejected' ? 'rejected' : 'unknown');
+    await dispatch(r); await sendMerchantWhatsApp({ ...deliveryInput(r), retryFailed: true }); expect(wa.post).toHaveBeenCalledOnce();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['recipient', 'text', 'guard', 'instance', 'media', 'message', 'provider'])('reviewed delivery: rejects forged %s transport payload or receipt', async field => {
+    const f = await deliveryFixture(), r = await f.auth(), input = deliveryInput(r);
+    const cfg: WhatsAppProviderConfig = { provider: 'green_api', instanceId: f.account, token: f.token, apiUrl: 'https://api.green-api.com', phoneNumberId: '1234567890', providerAccountId: 'test-account' };
+    const changed = field === 'recipient' ? { to: '966500000999' } : field === 'text' ? { text: 'Unreviewed' } : field === 'guard' ? { salesReplyGuard: { ...deliveryIdentity(r), authorizationDigest: 'f'.repeat(64) } }
+      : field === 'instance' ? { instanceRecordId: f.instanceRecordId + 1 } : field === 'media' ? { mediaUrl: 'https://example.test/image.png' } : field === 'message' ? { messageId: incomingMessageId } : {};
+    expect(await canDispatchSalesReply({ ...input, ...changed }, field === 'provider' ? { ...cfg, token: 'changed' } : cfg)).toBe(false);
+    expect(wa.post).not.toHaveBeenCalled(); expect((await deliveryRead(r)).state).toBe('authorized');
+    await dispatch(r); const [out] = await query('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId]);
+    const request = typeof out.request_json === 'string' ? JSON.parse(out.request_json) : out.request_json;
+    if (field === 'provider') await query("UPDATE whatsapp_message_deliveries SET provider='meta_cloud' WHERE id=?", [out.id]);
+    else { const bad = field === 'recipient' ? { to: '966500000999' } : field === 'text' ? { text: 'Replaced text' } : field === 'guard' ? { salesReplyGuard: { ...deliveryIdentity(r), deliveryId: r.deliveryId + 1 } } : { extra: 'unbound' };
+      await query('UPDATE whatsapp_message_deliveries SET request_json=? WHERE id=?', [JSON.stringify({ ...request, ...bad }), out.id]); }
+    await expect(deliveryRead(r)).rejects.toThrow(); await expect(dispatch(r)).rejects.toThrow(); expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reviewed delivery: rechecks expiry after the final outbox read', async () => {
+    const f = await deliveryFixture(), r = await f.auth(), pool = (await getPool())!, original = pool.getConnection.bind(pool);
+    vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+      const c = await original(); let current = false;
+      return new Proxy(c, { get(target, key) {
+        if (key === 'execute') return async (...args: any[]) => {
+          if (String(args[0]).startsWith('SELECT * FROM whatsapp_instances')) current = true;
+          const result = await (target.execute as any)(...args);
+          if (current && String(args[0]).startsWith('SELECT * FROM whatsapp_message_deliveries')) await target.query('SET timestamp=?', [config.unix! + 120]);
+          return result;
+        }; const value = (target as any)[key]; return typeof value === 'function' ? value.bind(target) : value;
+      } }) as any;
+    });
+    expect((await dispatch(r)).transport).toBe('suppressed'); expect(wa.post).not.toHaveBeenCalled();
+  });
+  it('reviewed delivery: a deleted outbox never renews a consumed authorization', async () => {
+    const f = await deliveryFixture(), r = await f.auth(); await dispatch(r);
+    await query('DELETE FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId]);
+    expect((await dispatch(r)).transport).toBe('unknown'); expect(wa.post).toHaveBeenCalledOnce();
+    expect(await sendMerchantWhatsApp(deliveryInput(r))).toMatchObject({ accepted: false, errorCode: 'sales_reply_suppressed' });
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reviewed delivery: account deletion preserves historical acceptance without permitting another send', async () => {
+    const f = await deliveryFixture(), r = await f.auth(); await dispatch(r);
+    await query('DELETE FROM whatsapp_instances WHERE id=?', [f.instanceRecordId]);
+    expect((await deliveryRead(r)).transport).toBe('accepted'); await dispatch(r); expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reviewed delivery: rejects preparation after the conservative inbound freshness window', async () => {
+    const f = await deliveryFixture(); config.unix! += 86400;
+    await expect(f.prepare()).rejects.toThrow(); await expect(f.auth()).rejects.toThrow(); expect(wa.post).not.toHaveBeenCalled();
+  });
+  it('reviewed delivery: a provider failure callback is a delivery failure, not an unsent or retryable reply', async () => {
+    const f = await deliveryFixture(), r = await f.auth(); await dispatch(r);
+    await updateWhatsAppDeliveryStatus({ provider: 'green_api', providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'failed', errorCode: 'recipient_unreachable' });
+    expect((await dispatch(r)).transport).toBe('failed'); expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['expiry', 'clock-rollback'])('reviewed delivery: atomically refuses %s between final clock read and authorization consumption', async mode => {
+    const f = await deliveryFixture(), r = await f.auth(), pool = (await getPool())!, original = pool.getConnection.bind(pool);
+    vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+      const c = await original();
+      return new Proxy(c, { get(target, key) {
+        if (key === 'execute') return async (...args: any[]) => {
+          if (String(args[0]).includes("SET state='dispatching',dispatch_started_at")) await target.query('SET timestamp=?', [config.unix! + (mode === 'expiry' ? 120 : -1)]);
+          return (target.execute as any)(...args);
+        }; const value = (target as any)[key]; return typeof value === 'function' ? value.bind(target) : value;
+      } }) as any;
+    });
+    expect(await dispatch(r)).toMatchObject({ transport: 'suppressed', state: 'authorized' }); expect(wa.post).not.toHaveBeenCalled();
+  });
+  it('reviewed delivery: consumes once while a concurrent channel reservation holds the outbox before its merchant FK lock', async () => {
+    const f = await deliveryFixture(), r = await f.auth(), send = deliveryInput(r), pool = (await getPool())!;
+    await query(`INSERT INTO whatsapp_message_deliveries (merchant_id,instance_id,provider,idempotency_key,direction,status,request_json)
+      VALUES (?,?,'green_api',?,'outgoing','queued',?)`, [owner.merchantId, f.instanceRecordId, send.idempotencyKey,
+      JSON.stringify({ to: send.to, kind: send.kind, text: send.text, salesReplyGuard: send.salesReplyGuard })]);
+    const held = await pool.getConnection(), original = pool.getConnection.bind(pool);
+    let locked!: () => void; const merchantLocked = new Promise<void>(resolve => { locked = resolve; });
+    await held.beginTransaction();
+    try {
+      await held.execute('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key=? FOR UPDATE', [owner.merchantId, send.idempotencyKey]);
+      vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+        const c = await original();
+        return new Proxy(c, { get(target, key) {
+          if (key === 'execute') return async (...args: any[]) => {
+            const result = await (target.execute as any)(...args);
+            if (String(args[0]).startsWith('SELECT userId,status FROM merchants')) locked();
+            return result;
+          }; const value = (target as any)[key]; return typeof value === 'function' ? value.bind(target) : value;
+        } }) as any;
+      });
+      const consume = canDispatchSalesReply(send, { provider: 'green_api', instanceId: f.account, token: f.token,
+        apiUrl: 'https://api.green-api.com', phoneNumberId: '1234567890', providerAccountId: 'test-account' });
+      await merchantLocked;
+      const parent = held.execute('SELECT id FROM merchants WHERE id=? FOR SHARE', [owner.merchantId]).then(() => true, () => false);
+      expect(await Promise.all([consume, parent])).toEqual([true, true]);
+      expect(wa.post).not.toHaveBeenCalled();
+    } finally { await held.rollback(); held.release(); }
+    expect((await deliveryRead(r)).state).toBe('dispatching');
+  });
   it.each(['OpenAI', 'ZahyPi'])('public workspace loads %s original output without exposing private prompt or history', async () => {
     const { r, w, value } = await publicFixture(), before = await ledger();
     expect(w.basis).toMatchObject({ customerMessage, lastAssistantMessage: '' });

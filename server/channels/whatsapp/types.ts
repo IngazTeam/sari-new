@@ -52,6 +52,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   replyGuard?: { conversationId: number; version: number; incomingMessageId?: number };
   escalationGuard?: import('../../ai/escalation-relay').EscalationTransportGuard;
   salesOfferGuard?: import('../../ai/sales-offer-delivery').SalesOfferTransportGuard;
+  salesReplyGuard?: import('../../ai/sales-reply-delivery').SalesReplyTransportGuard;
   appointmentReminderGuard?: import('../../appointment-reminders').AppointmentReminderGuard;
   bookingNoticeGuard?: import('../../booking-reschedule-notification').BookingNoticeGuard;
 };

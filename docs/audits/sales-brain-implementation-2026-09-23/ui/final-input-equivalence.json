@@ -1,8 +1,8 @@
 {
-  "reused": false,
-  "baselineCommit": "df63396cad33814e89494c13c7bceaeafcdbb878",
+  "reused": true,
+  "baselineCommit": "b21dada24f9a641b6eb8451c3c2825725a423852",
   "generatedAt": "2026-09-26T05:33:12.262Z",
-  "scope": "Fresh full component browser run from the frozen staged source; mocked API, local Chrome, external requests blocked. Not physical iPhone or authenticated production acceptance.",
+  "scope": "Reused 1126 local Chrome component journeys and 113 screenshots. Client/shared/fixture/verifier sources are unchanged; a fresh compiled fixture and production CSS match the previous full browser run byte for byte. No new browser run or physical iPhone acceptance.",
   "inputs": {
     ".tmp/brain-ui/fixture.js": "6ad12dafbb752590363a57fcbceeba92af0b62850867ebd650e6a59c1598cffb",
     "dist/public/assets/App-DLwovza8.css": "3dc10ea95decc3893ca4b21c4f7ddf0751f822cae4a5d3572e130cd6fb742df4",
@@ -159,5 +159,6 @@
     "sales-protocol-review-en-375.png": "a4e91e22710165c99b5b2d8b47a78a39b7190fa1575e02449e7cd07e1df9f96f",
     "sales-sample-insufficient-ar-375.png": "ae0b49d1a720a3585512964908f3b7d36c476d14d3234ff3dc00155bd9b28c66",
     "sales-sample-insufficient-en-375.png": "fc5337e57b624af0c7ee0df677100d5bc6d92a71c8df31449d129bd935182b1b"
-  }
+  },
+  "verifiedAt": "2026-09-26T06:14:43.499Z"
 }

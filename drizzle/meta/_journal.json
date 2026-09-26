@@ -834,6 +834,13 @@
       "when": 1793664000000,
       "tag": "0118_sales_generation_output_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1793750400000,
+      "tag": "0119_sales_reply_deliveries",
+      "breakpoints": true
     }
   ]
 }

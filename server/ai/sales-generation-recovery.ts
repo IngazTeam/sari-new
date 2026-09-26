@@ -13,7 +13,12 @@ export async function assertSalesGenerationRecoverySchema() {
     { table: 'ai_sales_generation_output_reviews', columns: ['merchant_id', 'generation_id', 'actor_user_id', 'revision', 'request_id',
       'payload_digest', 'basis_digest', 'review_digest', 'snapshot', 'outcome'],
       uniqueIndexes: [{ name: 'uq_sales_reply_review_request', columns: ['merchant_id', 'request_id'] },
-        { name: 'uq_sales_reply_review_revision', columns: ['generation_id', 'revision'] }] }]);
+        { name: 'uq_sales_reply_review_revision', columns: ['generation_id', 'revision'] }] },
+    { table: 'ai_sales_reply_deliveries', columns: ['merchant_id', 'generation_id', 'message_reference', 'actor_user_id', 'request_id',
+      'payload_digest', 'basis_digest', 'authorization_digest', 'snapshot', 'state', 'dispatch_started_at'],
+      uniqueIndexes: [{ name: 'uq_sales_reply_delivery_request', columns: ['merchant_id', 'request_id'] },
+        { name: 'uq_sales_reply_delivery_generation', columns: ['merchant_id', 'generation_id'] },
+        { name: 'uq_sales_reply_delivery_message', columns: ['merchant_id', 'message_reference'] }] }]);
 }
 export async function claimSalesGenerationRecoveries(limit = 5): Promise<SalesGenerationClaim[]> {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5) throw Error('Invalid sales recovery batch');
