@@ -7,6 +7,11 @@ import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
  */
 
 import { z } from "zod";
+import { replyReviewListInput, replyReviewReadInput, replyReviewSubmitInput } from '../shared/sales-reply-review';
+import { listSalesReplyReviews, getSalesReplyReviewWorkspace, submitSalesReplyReview } from './ai/sales-reply-review-workspace';
+import { SalesReplyReviewConflict } from './ai/sales-generation-output-review-store';
+import { SalesExperimentGenerationConflict } from './ai/sales-experiment-generation';
+import { SalesExperimentTurnConflict } from './ai/sales-experiment-turn';
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
@@ -344,6 +349,21 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  listSalesReplyReviews: permissionProcedure('bot_settings.manage').input(replyReviewListInput).query(async ({ ctx, input }) => {
+    try { return await listSalesReplyReviews(ctx.merchantId, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales reply review is unavailable' }); }
+  }),
+  getSalesReplyReviewWorkspace: permissionProcedure('bot_settings.manage').input(replyReviewReadInput).query(async ({ ctx, input }) => {
+    try { return await getSalesReplyReviewWorkspace(ctx.merchantId, ctx.user.id, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales reply review is unavailable' }); }
+  }),
+  submitSalesReplyReview: permissionProcedure('bot_settings.manage').input(replyReviewSubmitInput).mutation(async ({ ctx, input }) => {
+    if (ctx.merchantRole !== 'owner') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the current owner can record this review' });
+    try { return await submitSalesReplyReview(ctx.merchantId, ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SalesReplyReviewConflict || error instanceof SalesExperimentGenerationConflict
+      || error instanceof SalesExperimentTurnConflict || error instanceof SalesExperimentLaunchConflict || error instanceof LearningPolicyCandidateConflict
+      ? 'PRECONDITION_FAILED' : 'CONFLICT', message: 'Sales reply review changed or is unavailable' }); }
+  }),
   prepareSalesExperimentLaunch: permissionProcedure('bot_settings.manage').input(salesExperimentLaunchInput).query(async ({ ctx, input }) => {
     try { return { ...await prepareSalesExperimentLaunch(ctx.merchantId, input), operatorUserId: ctx.user.id }; }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales experiment launch authorization changed or is unavailable' }); }

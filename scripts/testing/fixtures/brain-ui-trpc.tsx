@@ -1,4 +1,5 @@
 import { launchFixtureApi } from './sales-launch-trpc';
+import { replyReviewFixture } from './sales-reply-review-trpc';
 import { salesCohortInspectionFixture } from './sales-cohort-inspection-trpc';
 import { planningReviewFixture } from './sales-planning-review-trpc';
 import { salesCohortFixture } from './sales-cohort-ui-trpc';
@@ -195,6 +196,7 @@ export const trpc = {
     } },
   },
   sariBrain: {
+    ...replyReviewFixture,
     ...launchFixtureApi,
     ...planningReviewFixture,
     ...evaluationFixture,

@@ -1,0 +1,45 @@
+{
+  "scope": "Local synthetic verification. Final evidence exclusively from the frozen staged source.",
+  "attempts": [
+    {
+      "kind": "initial-environment",
+      "result": "The disposable MySQL server was stopped; first focused DB attempts could not connect. Restarted only the loopback test server. No production operations."
+    },
+    {
+      "kind": "focused-complete",
+      "passed": 268,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "efa1ebfc7c54884d39d7e86ab7e02108c7380f1b71e3df25c988ab29bd36f55b"
+    },
+    {
+      "kind": "focused-new-public-cases",
+      "passed": 32,
+      "failed": 0,
+      "notSelected": 150,
+      "result": "Name-filtered pass includes six added expiry/tamper cases. Non-selected baseline cases are covered again by the final full run.",
+      "logSha256": "c551c4eb81e8f747e0d0cb0438b0efae16bcf64ba01cdf2f32894108420d3479"
+    },
+    {
+      "kind": "browser-harness-recovery",
+      "result": "Initial browser verifier waited on the real beforeunload guard after a saved receipt became visible while refresh was still running. Added explicit dialog handling to the verifier and restarted its own local processes. No application guard removed."
+    },
+    {
+      "kind": "browser-focused",
+      "passed": 42,
+      "screenshots": 4,
+      "errors": [],
+      "logSha256": "d4598425e3de8aa3022a797f354f2f74be42b2351d97febef2844595da96734c"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "8ccac905310686a2c37dcd601e6638cbd39250f505a610270f3df8ad152491a6"
+    },
+    {
+      "kind": "final-full-browser",
+      "passed": 1126,
+      "screenshots": 113,
+      "logSha256": "e35e1c2fc3dae2d66edd4422f1ce0293f7aea765650701347c041363219b18fa"
+    }
+  ]
+}

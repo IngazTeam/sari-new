@@ -1,13 +1,14 @@
 const fs = require('fs'), path = require('path'), http = require('http'), assert = require('assert/strict');
 const esbuild = require('esbuild'), puppeteer = require('puppeteer-core');
 const onlyLaunch = process.argv.includes('--only-launch');
+const onlyReplyReview = process.argv.includes('--only-reply-review');
 const onlyPlanningReview = process.argv.includes('--only-planning-review');
 const onlyPolicyReview = process.argv.includes('--only-policy-review');
 const onlyEvaluation = process.argv.includes('--only-evaluation');
 const onlyInspection = process.argv.includes('--only-inspection');
 const onlyCohort = process.argv.includes('--only-cohort');
 const onlyProtocol = process.argv.includes('--only-protocol');
-const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyLaunch ? '.tmp/launch-ui-targeted' : onlyPlanningReview ? '.tmp/planning-review-ui-targeted' : onlyInspection ? '.tmp/inspection-ui-targeted' : onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
+const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyReplyReview ? '.tmp/reply-review-ui-targeted' : onlyLaunch ? '.tmp/launch-ui-targeted' : onlyPlanningReview ? '.tmp/planning-review-ui-targeted' : onlyInspection ? '.tmp/inspection-ui-targeted' : onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
 async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
   await esbuild.build({ entryPoints: [path.resolve('scripts/testing/fixtures/brain-ui-entry.tsx')], outfile: path.join(dir, 'fixture.js'), bundle: true, platform: 'browser', jsx: 'automatic',
@@ -33,6 +34,8 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    if (onlyReplyReview || !onlyLaunch && !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-reply-review-ui.cjs')(page, origin, output, results);
+    if (!onlyReplyReview) {
     if (onlyLaunch || !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-launch-ui.cjs')(page, origin, output, results);
     if (!onlyLaunch) {
     if (onlyPlanningReview || !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-planning-review-ui.cjs')(page, origin, output, results);
@@ -713,6 +716,8 @@ async function main() {
     assert.equal(await page.$eval('#offer-fixture > details > summary svg',n=>getComputedStyle(n).transitionProperty),'none');
     await page.emulateMediaFeatures([]);results.push({width:320,mode:'offer_reduced_motion',passed:true});
     }
+    }
+    assert.deepEqual(errors, []);
     }
     assert.deepEqual(errors, []);
     const screenshots = fs.readdirSync(output).filter(name => name.endsWith('.png')).sort();

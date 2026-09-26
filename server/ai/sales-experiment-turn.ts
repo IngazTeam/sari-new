@@ -139,6 +139,25 @@ export async function getSalesExperimentTurn(merchantId: number, value: z.infer<
   return checkoutTransaction(async c => { await lockMerchant(c, merchant); return load(c, merchant, input); });
 }
 
+/** Current evidence for a human output review. Does not reconstruct or expose the private generation prompt. */
+export async function loadSalesTurnReviewEvidence(c: PoolConnection, merchant: number, input: z.infer<typeof readSalesExperimentTurnInput>) {
+  const saved = await load(c, merchant, input), s = saved.snapshot;
+  const current = await currentContext(c, merchant, { assignmentId: s.assignmentId, assignmentDigest: s.assignmentDigest,
+    conversationId: s.conversationId, incomingMessageId: s.incomingMessageId });
+  if (current.kind !== 'current' || !current.hasBinding || current.sourceDigest !== s.sourceDigest || current.messageDigest !== s.messageDigest
+    || current.handoffVersion !== s.handoffVersion) return conflict();
+  // Only the policy selection is rebuilt. The original base-prompt and full-history digests remain historical evidence.
+  const { basePromptDigest: _base, promptDigest: _prompt, ...policy } = selection(current, s.requestedIntent, '');
+  const a = current.assignment.snapshot;
+  if (a.arm !== s.arm || a.artifactDigest !== s.artifactDigest || a.baselineDigest !== s.baselineDigest || a.sectorDigest !== s.sectorDigest
+    || a.protocolId !== s.protocolId || a.launchId !== s.launchId || a.launchDigest !== s.launchDigest || a.assignedAt !== s.assignmentAt
+    || a.observationEndsAt !== s.observationEndsAt || current.launch.snapshot.basis.review.basis.routeDigest !== s.routeDigest
+    || Object.entries(policy).some(([key, value]) => s[key as keyof typeof policy] !== value)) return conflict();
+  const checkedAt = await clock(c);
+  if (Date.parse(checkedAt) < Date.parse(s.preparedAt) || Date.parse(checkedAt) >= Date.parse(s.observationEndsAt)) return conflict();
+  return { snapshot: s, customerMessage: current.content, lastAssistantMessage: current.lastAssistantMessage, checkedAt };
+}
+
 /** Rebuilds the exact selected fragment against fresh evidence. Still not permission to call AI or send WhatsApp. */
 export async function resolveSalesExperimentTurnPrompt(merchantId: number, value: z.infer<typeof resolveSalesExperimentTurnInput>) {
   const merchant = id.parse(merchantId), input = resolveSalesExperimentTurnInput.parse(value);

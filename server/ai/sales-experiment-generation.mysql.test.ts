@@ -19,6 +19,8 @@ import { aiBudgetReservationKey } from './budget-ledger';
 import { prepareSalesGenerationOutputReview, recordSalesGenerationOutputReview, getSalesGenerationOutputReviews } from './sales-generation-output-review';
 import { salesReplyReviewRubricDigest, type RecordSalesReplyReviewInput } from './sales-generation-output-review-contract';
 import { refusalAcknowledgement } from './response-validator';
+import { getSalesReplyReviewWorkspace, listSalesReplyReviews, submitSalesReplyReview } from './sales-reply-review-workspace';
+import type { ReplyReviewSubmission } from '../../shared/sales-reply-review';
 
 const config = vi.hoisted(() => ({ unix: null as number | null, provider: 'openai' as 'openai' | 'zahypi', model: '', enabled: true, actualModel: 'synthetic-model', finish: 'stop', usage: true, text: 'رد اصطناعي للاختبار فقط.' }));
 vi.mock('../db_ai_settings', () => ({ getOpenAiApiKey: async () => 'synthetic-key', getActiveModel: async () => config.model, logAiUsage: async () => {}, estimateCost: () => 0,
@@ -486,6 +488,108 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
   it('still recovers a legacy ZahyPi job with an existing receipt and reservation', async () => {
     const { r } = await pendingZahyPi(); await legacy(r.generationId);
     expect(await runSalesGenerationRecoveryBatch()).toMatchObject({ saved: 1 }); expect(await get(r.generationId)).toMatchObject({ state: 'responded', cost: { state: 'settled' } });
+  });
+  const publicRead = (generationId: number, actor = owner.userId) => getSalesReplyReviewWorkspace(owner.merchantId, actor, { generationId });
+  const publicSubmit = (value: ReplyReviewSubmission) => submitSalesReplyReview(owner.merchantId, owner.userId, value);
+  async function publicFixture() {
+    const r = await generate(), w = await publicRead(r.generationId); expect(w.canReview).toBe(true); vi.mocked(fetch).mockClear();
+    const value: ReplyReviewSubmission = { generationId: r.generationId, requestId: randomUUID(), basisDigest: w.basis!.digest,
+      rubricDigest: w.basis!.rubricDigest, expectedRevision: w.expectedRevision, checks: { answersQuestion: true, groundedInBusiness: true,
+        appropriateNextStep: true, respectsCustomerDecision: true, noUnverifiedCommitment: true, languageAndClarity: true },
+      quote: config.text, rationale: 'Human judgment against the authoritative customer question and current business evidence.', reviewedEntireResponse: true, understandsNoMessageSent: true };
+    return { r, w, value };
+  }
+  it.each(['OpenAI', 'ZahyPi'])('public workspace loads %s original output without exposing private prompt or history', async () => {
+    const { r, w, value } = await publicFixture(), before = await ledger();
+    expect(w.basis).toMatchObject({ customerMessage, lastAssistantMessage: '' });
+    const saved = await publicSubmit(value), after = await publicRead(r.generationId), list = await listSalesReplyReviews(owner.merchantId, {});
+    expect(saved).toMatchObject({ requestId: value.requestId, outcome: 'approved', dispatchAllowed: false, exposureRecorded: false, eligibility: 'not_checked' });
+    expect(after).toMatchObject({ expectedRevision: 1, reviewCurrentAtRead: true, history: [saved] });
+    expect(list.items).toEqual([{ generationId: r.generationId, state: 'responded', reviewOutcome: 'approved', revision: 1 }]);
+    const raw = JSON.stringify([w, saved, after, list]); expect(raw).not.toContain('PRIVATE_SERVER'); expect(raw).not.toContain('synthetic-key');
+    expect(raw).not.toContain('baseSystemPrompt'); expect(raw).not.toContain('contextMessages'); expect(await ledger()).toEqual(before);
+    expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('public workspace separates manager read from owner write and isolates tenant data', async () => {
+    const { r, value } = await publicFixture(); expect(await publicRead(r.generationId, other.userId)).toMatchObject({ canReview: false, stage: 'owner_required', basis: null });
+    await expect(submitSalesReplyReview(owner.merchantId, other.userId, value)).rejects.toThrow();
+    await expect(getSalesReplyReviewWorkspace(other.merchantId, other.userId, { generationId: r.generationId })).rejects.toThrow();
+    await expect(submitSalesReplyReview(other.merchantId, other.userId, value)).rejects.toThrow();
+    expect((await listSalesReplyReviews(other.merchantId, {})).items).toEqual([]); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['source', 'route', 'disabled', 'revoked', 'human', 'processed', 'owner', 'window', 'new-inbound', 'deleted', 'handoff'])('public workspace retains history but blocks a new review after %s drift', async mode => {
+    const { r, value } = await publicFixture(), saved = await publicSubmit(value);
+    if (mode === 'source') await query("UPDATE messages SET content='changed' WHERE id=?", [incomingMessageId]);
+    if (mode === 'route') config.model += '-changed'; if (mode === 'disabled') config.enabled = false; if (mode === 'revoked') await revoke();
+    if (mode === 'human') await query('UPDATE conversations SET human_takeover=1 WHERE id=?', [conversationId]);
+    if (mode === 'processed') await query('UPDATE messages SET isProcessed=1 WHERE id=?', [incomingMessageId]);
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [other.userId, owner.merchantId]);
+    if (mode === 'window') config.unix! += 365 * 86400;
+    if (mode === 'new-inbound') await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','new question')", [conversationId]);
+    if (mode === 'deleted') await query('DELETE FROM conversations WHERE id=?', [conversationId]);
+    if (mode === 'handoff') await query('UPDATE conversations SET handoff_version=handoff_version+1 WHERE id=?', [conversationId]);
+    expect(await publicRead(r.generationId)).toMatchObject({ canReview: false, reviewCurrentAtRead: false, history: [saved] });
+    await expect(publicSubmit({ ...value, requestId: randomUUID(), expectedRevision: 1 })).rejects.toThrow();
+    expect(await publicSubmit(value)).toEqual(saved); expect(fetch).not.toHaveBeenCalled();
+    if (mode === 'owner') await query('UPDATE merchants SET userId=? WHERE id=?', [owner.userId, owner.merchantId]);
+  });
+  it.each(['before', 'after'] as const)('public workspace recovers a lost save acknowledgement %s commit', async when => {
+    const { r, value } = await publicFixture(); await failCommit('review', when); await expect(publicSubmit(value)).rejects.toThrow(); vi.restoreAllMocks();
+    const result = await publicSubmit(value); expect((await publicRead(r.generationId)).history).toEqual([result]); expect(await publicSubmit(value)).toEqual(result); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('public workspace serializes competing reviewers and preserves request identity', async () => {
+    const { r, value } = await publicFixture(); const same = await Promise.all([publicSubmit(value), publicSubmit(value), publicSubmit(value)]);
+    expect(new Set(same.map(v => v.reviewId)).size).toBe(1);
+    await expect(publicSubmit({ ...value, rationale: 'Changed human justification under the same submitted request identity.' })).rejects.toThrow();
+    await expect(publicSubmit({ ...value, requestId: randomUUID() })).rejects.toThrow();
+    const next = await publicSubmit({ ...value, requestId: randomUUID(), expectedRevision: 1, checks: { ...value.checks, groundedInBusiness: false } });
+    expect(next).toMatchObject({ revision: 2, outcome: 'rejected' }); expect((await publicRead(r.generationId)).history).toHaveLength(2); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['تم إنشاء طلبك الآن', 'تواصل معي على private@example.test', '[أدخل السعر]'])('public review cannot pass an unsafe reply: %s', async response => {
+    config.text = response; const { w, value } = await publicFixture(); expect(w.basis!.gate.some(g => g.severity === 'critical')).toBe(true);
+    expect(await publicSubmit(value)).toMatchObject({ outcome: 'rejected' }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([false, true])('public refusal review only accepts the exact acknowledgement: %s', async correct => {
+    config.text = correct ? refusalAcknowledgement(customerMessage) : 'لدينا عرض رائع، أكمل الطلب الآن';
+    const { value } = await publicFixture(); expect(await publicSubmit(value)).toMatchObject({ outcome: correct ? 'approved' : 'rejected' }); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['invalid', 'uncertain'])('public workspace retains incomplete %s attempts without a writable basis', async state => {
+    if (state === 'invalid') config.finish = 'length'; else vi.mocked(fetch).mockRejectedValue(Error('synthetic timeout'));
+    const r = await generate(); expect(await publicRead(r.generationId)).toMatchObject({ canReview: false, basis: null, stage: 'incomplete' }); expect(fetch).toHaveBeenCalledOnce();
+  });
+  it('public workspace shows old internal reviews as historical and requires a new current-turn basis', async () => {
+    const { r, value } = await reviewFixture(); const saved = await recordReview(value), w = await publicRead(r.generationId);
+    expect(w).toMatchObject({ canReview: true, reviewCurrentAtRead: false, expectedRevision: 1, history: [{ reviewId: saved.reviewId }] });
+    expect(w.basis!.digest).not.toBe(value.basisDigest); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('public list uses a bounded descending cursor and never returns response text', async () => {
+    const { r } = await publicFixture(); const first = await listSalesReplyReviews(owner.merchantId, { limit: 1 });
+    expect(first.items[0].generationId).toBe(r.generationId); expect(first.nextCursor).toBeNull();
+    expect(JSON.stringify(first)).not.toContain(config.text); expect((await listSalesReplyReviews(owner.merchantId, { beforeId: r.generationId, limit: 1 })).items).toEqual([]);
+    await expect(listSalesReplyReviews(owner.merchantId, { limit: 100 })).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('public review rechecks expiry inside its save transaction', async () => {
+    const { r, value } = await publicFixture(), pool = (await getPool())!, original = pool.getConnection.bind(pool);
+    vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
+      const c = await original(); return new Proxy(c, { get(target, key) {
+        if (key === 'execute') return async (...args: any[]) => {
+          const result = await (target.execute as any)(...args);
+          if (String(args[0]).includes('ORDER BY revision DESC LIMIT 20')) await target.query('SET timestamp=?', [config.unix! + 365 * 86400]);
+          return result;
+        }; const v = (target as any)[key]; return typeof v === 'function' ? v.bind(target) : v;
+      } }) as any;
+    });
+    await expect(publicSubmit(value)).rejects.toThrow(); vi.restoreAllMocks(); expect((await publicRead(r.generationId)).history).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['quote', 'basisDigest', 'rubricDigest', 'expectedRevision'])('public review rejects a changed %s before persistence', async field => {
+    const { r, value } = await publicFixture(); const change = field === 'quote' ? 'Not in the response' : field === 'expectedRevision' ? 7 : 'f'.repeat(64);
+    await expect(publicSubmit({ ...value, [field]: change })).rejects.toThrow(); expect((await publicRead(r.generationId)).history).toHaveLength(0); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('public review does not return a corrupted saved judgment as approved', async () => {
+    const { r, value } = await publicFixture(), saved = await publicSubmit(value);
+    await query("UPDATE ai_sales_generation_output_reviews SET snapshot=JSON_SET(snapshot,'$.checks.answersQuestion',false) WHERE id=?", [saved.reviewId]);
+    await expect(publicRead(r.generationId)).rejects.toThrow(); await expect(listSalesReplyReviews(owner.merchantId, {})).rejects.toThrow();
+    await expect(publicSubmit(value)).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
   });
   const reviewContext = (generationId: number) => ({ generationId, baseSystemPrompt: input.baseSystemPrompt, contextMessages: input.contextMessages });
   const history = (generationId: number, merchant = owner.merchantId) => getSalesGenerationOutputReviews(merchant, { generationId });

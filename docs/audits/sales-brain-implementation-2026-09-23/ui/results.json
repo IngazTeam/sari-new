@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T16:06:48.606Z",
+  "generatedAt": "2026-09-26T05:33:12.262Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -77,6 +77,10 @@
     "policy-history-runs-en-1440.png",
     "relay-review-1440.png",
     "relay-review-375.png",
+    "reply-review-ar-1440.png",
+    "reply-review-ar-375.png",
+    "reply-review-en-1440.png",
+    "reply-review-en-375.png",
     "sales-cohort-review-ar-1440.png",
     "sales-cohort-review-ar-375.png",
     "sales-cohort-review-en-1440.png",
@@ -117,6 +121,258 @@
   "externalRequestsBlocked": true,
   "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
   "results": [
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_responsive_save_and_receipt",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_unknown_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_outage_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_mismatch-actor_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_mismatch-request_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_mismatch-checks_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_mismatch-outcome_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_mismatch-quote_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_retry-forbidden_stable_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_conflict",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_refresh-error",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_critical",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_slow",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_basis_preserves_draft_and_locks_save",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_actor_preserves_draft_and_locks_save",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_permission_preserves_draft_and_locks_save",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_error_preserves_draft_and_locks_save",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_hide_refresh_discard_pagination",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_manager_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_stale_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_expired_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_invalid_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_uncertain_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_blocked_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_dispatching_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_foreign_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_unsupported_read_only",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_empty",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_read-error",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_loading",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_fetching",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_escaped_untrusted_text",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_review_keyboard_focus_and_no_default_approval",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
     {
       "width": 320,
       "lang": "ar",

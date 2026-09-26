@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
 import { checkoutTransaction } from './checkout-agreements';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
-import { loadSalesExperimentTurnPrompt } from './sales-experiment-turn';
+import { loadSalesExperimentTurnPrompt, loadSalesTurnReviewEvidence } from './sales-experiment-turn';
 import { generateSalesExperimentTurnInput, readSalesExperimentGenerationInput, salesGenerationRecipe, salesGenerationSnapshot,
   type GenerateSalesExperimentTurnInput } from './sales-experiment-generation-contract';
 import { evaluationCompletion } from './learning-policy-evaluation-contract';
@@ -85,6 +85,22 @@ async function receipt(c: PoolConnection, row: any) {
     outputReview, assessment: outputReview ? 'human_review_recorded' as const : 'not_assessed' as const, eligibility: 'not_checked' as const, ...flags };
 }
 type Input = z.infer<typeof generateSalesExperimentTurnInput>;
+/** Internal read for the public review workspace; caller must map an explicit public projection. */
+export async function loadSalesGenerationReviewRecord(c: PoolConnection, merchant: number, generationId: number) {
+  const row = await load(c, merchant, generationId);
+  return { generationId, state: row.state as 'dispatching' | 'responded' | 'invalid' | 'blocked' | 'uncertain',
+    authorizationDigest: String(row.authorization_digest), responseDigest: row.response_digest as string | null,
+    ...authorization(row), actorPresent: row.actor_user_id !== null };
+}
+export async function loadCurrentSalesGenerationReviewSource(c: PoolConnection, merchant: number, generationId: number) {
+  const owner = await lock(c, merchant), saved = await loadSalesGenerationReviewRecord(c, merchant, generationId), s = saved.snapshot;
+  if (saved.state !== 'responded' || !saved.actorPresent || owner !== s.actorUserId) return conflict();
+  const current = await loadSalesTurnReviewEvidence(c, merchant, { turnId: s.turnId, turnDigest: s.turnDigest });
+  if (current.snapshot.promptDigest !== s.promptDigest || current.snapshot.routeDigest !== s.routeDigest
+    || current.snapshot.conversationId !== s.conversationId || current.snapshot.incomingMessageId !== s.incomingMessageId
+    || current.snapshot.observationEndsAt !== s.observationEndsAt || Date.parse(current.checkedAt) < Date.parse(s.authorizedAt)) return conflict();
+  return { ...saved, current };
+}
 export type SalesGenerationClaim = Readonly<{ merchant: number; generationId: number; token: string; authorizationDigest: string; recoveryToken?: string }>;
 type Claim = SalesGenerationClaim;
 async function current(c: PoolConnection, merchant: number, input: Pick<Input, 'turnId' | 'turnDigest' | 'baseSystemPrompt' | 'contextMessages'>) {
