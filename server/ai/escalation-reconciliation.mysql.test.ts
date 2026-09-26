@@ -8,6 +8,7 @@ import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/h
 import { createSourcedEscalation, sendSourcedEscalationAlert, relayEscalationReply } from './escalation-relay';
 import { listEscalationRelays, reviewEscalationRelay, reconcileEscalationRelay, runEscalationReconciliationBatch } from './escalation-reconciliation';
 import { expireStaleEscalations } from '../db/learning';
+import { readStaffAcceptance } from './sales-staff-acceptance-contract';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation and review', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, conversationId: number, escalationId: number, relayId: number, instanceId: number, deliveryId: number;
@@ -19,6 +20,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation an
     conversationId, relayId, expectedRevision: item.revision, evidence: item.evidence, reviewed: true as const, note: 'راجعت سجل المحادثة، سأتابع الحالة.' }; };
   const due=() => query('UPDATE sales_escalation_relays SET created_at=TIMESTAMPADD(MINUTE,-3,UTC_TIMESTAMP()),next_reconcile_at=UTC_TIMESTAMP() WHERE id=?',[relayId]);
   const unknown=() => query("UPDATE whatsapp_message_deliveries SET status='queued',provider_message_id=NULL WHERE id=?",[deliveryId]);
+  const acceptances=()=>query('SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? ORDER BY id',[fixture.merchantId]);
   const failProjection=async () => {
     const pool=(await getPool())!, original=pool.getConnection.bind(pool);
     vi.spyOn(pool,'getConnection').mockImplementation(async () => {
@@ -34,7 +36,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation an
     conversationId=Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')",[fixture.merchantId,customer])).insertId);
     const sourceId=Number((await query("INSERT INTO messages (conversationId,direction,messageType,content,sender_type) VALUES (?,'incoming','text','هل يتوفر موعد مسائي؟','customer')",[conversationId])).insertId);
     instanceId=Number((await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,?,'fixture','active',1)",[fixture.merchantId,`reconcile-${fixture.merchantId}`])).insertId);
-    mock.instance.mockReset().mockResolvedValue({ id:instanceId,merchantId:fixture.merchantId,provider:'green_api',status:'active',instanceId:`fixture-${instanceId}`,token:'fixture' });
+    mock.instance.mockReset().mockResolvedValue({ id:instanceId,merchantId:fixture.merchantId,provider:'green_api',status:'active',instanceId:`reconcile-${fixture.merchantId}`,token:'fixture',apiUrl:'https://api.green-api.com' });
     mock.send.mockReset().mockImplementation(async () => ({ accepted:true,outcome:'accepted',providerMessageId:`reconcile-${fixture.merchantId}-${++seq}`,status:'sent' }));
     mock.teach.mockReset().mockImplementation(async input => (await vi.importActual<typeof import('../knowledge/merchant-teaching')>('../knowledge/merchant-teaching')).saveMerchantTeaching(input));
     escalationId=(await createSourcedEscalation({ merchantId:fixture.merchantId,conversationId,customerPhone:customer,incomingMessageId:sourceId,question:'هل يتوفر موعد مسائي؟' }))!;
@@ -173,5 +175,98 @@ describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation an
     expect(new Set([...first.items,...second.items,...third.items].map(i=>i.id)).size).toBe(21); expect(third.nextCursor).toBeNull();
     expect(await runEscalationReconciliationBatch()).toBe(20); expect(await runEscalationReconciliationBatch()).toBe(1); expect(await runEscalationReconciliationBatch()).toBe(0);
     expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: rolls back with failed projection and records the later verification clock, not the backdated message clock',async()=>{
+    expect(await acceptances()).toEqual([]);await due();
+    const [[clock]]=await (await getPool())!.query<any[]>('SELECT UTC_TIMESTAMP(3) AS now');await repair();
+    const [row]=await acceptances(),s=readStaffAcceptance(row);
+    expect(Date.parse(s.acceptanceObservedAt)).toBeGreaterThanOrEqual(new Date(clock.now).getTime());
+    expect(Date.parse(s.acceptanceObservedAt)-Date.parse(s.basis.reservedAt)).toBeGreaterThanOrEqual(0);
+    const [message]=await query("SELECT createdAt FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId]);
+    expect(Date.parse(s.acceptanceObservedAt)-new Date(message.createdAt).getTime()).toBeGreaterThan(120000);
+    expect(s).toMatchObject({scope:'provider_acceptance_only',timeBasis:'local_receipt_verification',observationTiming:'ordered'});expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: survives five reconcilers, reconnection and later delivery states with the same original clock',async()=>{
+    await Promise.all(Array.from({length:5},repair));const original=await acceptances();expect(original).toHaveLength(1);await closeDb();
+    for(const status of ['delivered','read','failed']){await query('UPDATE whatsapp_message_deliveries SET status=? WHERE id=?',[status,deliveryId]);await repair();expect(await acceptances()).toEqual(original);}
+    expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: later credential rotation does not rewrite already accepted historical evidence',async()=>{
+    await repair();const before=await acceptances();await query("UPDATE whatsapp_instances SET token='rotated-token' WHERE id=?",[instanceId]);
+    await repair();expect(await acceptances()).toEqual(before);expect(mock.send).not.toHaveBeenCalled();
+  });
+  it.each(['queued','failed'])('staff acceptance: no first acceptance from a %s row carrying a receipt',async status=>{
+    await query('UPDATE whatsapp_message_deliveries SET status=? WHERE id=?',[status,deliveryId]);await repair();expect(await acceptances()).toEqual([]);
+  });
+  it('staff acceptance: a legacy attempt remains unmeasured after successful projection today',async()=>{
+    await query('UPDATE sales_escalation_relays SET staff_basis=NULL,staff_basis_digest=NULL WHERE id=?',[relayId]);
+    expect(await repair()).toMatchObject({outcome:'accepted'});expect(await acceptances()).toEqual([]);
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'",[conversationId])).toHaveLength(1);
+  });
+  it.each(['author','reply','digest','half-basis','customer','provider'])('staff acceptance: rejects mutated pre-send %s evidence',async kind=>{
+    if(kind==='author')await query("UPDATE sales_escalation_relays SET author_phone='966500000099' WHERE id=?",[relayId]);
+    if(kind==='reply'){
+      await query("UPDATE sales_escalation_relays SET reply_text='Different reply' WHERE id=?",[relayId]);
+      await query("UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.text','Different reply') WHERE id=?",[deliveryId]);
+    }
+    if(kind==='digest')await query("UPDATE sales_escalation_relays SET staff_basis_digest=REPEAT('b',64) WHERE id=?",[relayId]);
+    if(kind==='half-basis')await query('UPDATE sales_escalation_relays SET staff_basis=NULL WHERE id=?',[relayId]);
+    if(kind==='customer'){
+      await query("UPDATE sari_escalation_queue SET customer_phone='966500000099' WHERE id=?",[escalationId]);
+      await query("UPDATE conversations SET customerPhone='966500000099' WHERE id=?",[conversationId]);
+      await query("UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.to','966500000099') WHERE id=?",[deliveryId]);
+    }
+    if(kind==='provider')await query("UPDATE whatsapp_message_deliveries SET provider='meta_cloud' WHERE id=?",[deliveryId]);
+    expect(await repair()).toMatchObject({outcome:'unresolved'});expect(await acceptances()).toEqual([]);expect(mock.teach).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: cannot replace a previously accepted provider receipt',async()=>{
+    await repair();const before=await acceptances();await query("UPDATE whatsapp_message_deliveries SET provider_message_id=CONCAT(provider_message_id,'-changed') WHERE id=?",[deliveryId]);
+    await expect(repair()).rejects.toThrow('evidence unavailable');expect(await acceptances()).toEqual(before);expect(mock.send).not.toHaveBeenCalled();
+  });
+  it.each(['acceptance_digest','snapshot','outbox_id','customer_key','acceptance_observed_at'])('staff acceptance: rejects corrupted immutable %s without writing a replacement',async column=>{
+    await repair();const row=(await acceptances())[0];
+    if(column==='snapshot')await query("UPDATE ai_sales_staff_acceptances SET snapshot=JSON_SET(snapshot,'$.scope','sales_success') WHERE id=?",[row.id]);
+    else if(column==='outbox_id')await query('UPDATE ai_sales_staff_acceptances SET outbox_id=outbox_id+100000 WHERE id=?',[row.id]);
+    else if(column==='acceptance_observed_at')await query('UPDATE ai_sales_staff_acceptances SET acceptance_observed_at=TIMESTAMPADD(SECOND,1,acceptance_observed_at) WHERE id=?',[row.id]);
+    else await query(`UPDATE ai_sales_staff_acceptances SET ${column}=REPEAT('b',64) WHERE id=?`,[row.id]);
+    const corrupted=await acceptances();await expect(repair()).rejects.toThrow();expect(await acceptances()).toEqual(corrupted);
+  });
+  it('staff acceptance: a storage failure prevents projection, answer and teaching and recovers without resend',async()=>{
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),execute=c.execute.bind(c);
+      vi.spyOn(c,'execute').mockImplementation(((sql:string,args:any[])=>{if(sql.includes('INSERT INTO ai_sales_staff_acceptances'))throw Error('acceptance storage failure');return execute(sql,args);}) as any);return c;});
+    await expect(repair()).rejects.toThrow('acceptance storage failure');vi.restoreAllMocks();
+    expect(await acceptances()).toEqual([]);expect((await list()).items[0].projected).toBe(false);expect(mock.teach).not.toHaveBeenCalled();
+    await repair();expect(await acceptances()).toHaveLength(1);expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: reviewer audit failure rolls back the acceptance as well as the message',async()=>{
+    const input=await review(),pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),execute=c.execute.bind(c);
+      vi.spyOn(c,'execute').mockImplementation(((sql:string,args:any[])=>{if(sql.includes('INSERT INTO sales_escalation_reviews'))throw Error('review storage failure');return execute(sql,args);}) as any);return c;});
+    await expect(reviewEscalationRelay(input)).rejects.toThrow('review storage failure');vi.restoreAllMocks();expect(await acceptances()).toEqual([]);
+    await reviewEscalationRelay(input);expect(await acceptances()).toHaveLength(1);
+  });
+  it('staff acceptance: lost commit acknowledgment preserves one acceptance and never resends',async()=>{
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);let injected=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),commit=c.commit.bind(c);
+      vi.spyOn(c,'commit').mockImplementation(async()=>{await commit();if(!injected){injected=true;throw Error('commit acknowledgment lost');}});return c;});
+    await expect(repair()).rejects.toThrow('acknowledgment lost');vi.restoreAllMocks();const before=await acceptances();expect(before).toHaveLength(1);
+    await closeDb();await repair();expect(await acceptances()).toEqual(before);expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: retains the exact regressed verification clock without promoting ordered chronology',async()=>{
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);const at=Date.now()/1000-3600;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),queryClock=c.query.bind(c);
+      vi.spyOn(c,'query').mockImplementation((async(sql:any,args:any)=>{
+        if(sql==='SELECT UTC_TIMESTAMP(3) AS now'){await queryClock('SET timestamp=?',[at]);try{return await queryClock(sql,args);}finally{await queryClock('SET timestamp=DEFAULT');}}
+        return queryClock(sql,args);
+      }) as any);return c;});
+    await repair();vi.restoreAllMocks();const s=readStaffAcceptance((await acceptances())[0]);expect(s.observationTiming).toBe('clock_regression');
+    expect(Date.parse(s.acceptanceObservedAt)).toBeLessThan(Date.parse(s.basis.reservedAt));
+  });
+  it('staff acceptance: source and conversation retention cannot erase or rebind the frozen evidence',async()=>{
+    await repair();const before=await acceptances(),s=readStaffAcceptance(before[0]);
+    await query('DELETE FROM whatsapp_message_deliveries WHERE merchant_id=?',[fixture.merchantId]);await query('DELETE FROM conversations WHERE id=?',[conversationId]);
+    expect(await acceptances()).toEqual(before);expect(readStaffAcceptance((await acceptances())[0])).toEqual(s);
+    expect(await query('SELECT id FROM sales_escalation_relays WHERE id=?',[relayId])).toEqual([]);
   });
 });

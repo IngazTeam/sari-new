@@ -3928,6 +3928,7 @@ export const salesEscalationRelays = mysqlTable('sales_escalation_relays', {
   ownershipVersion: int('ownership_version').notNull(),
   status: mysqlEnum(['reserved', 'accepted', 'unknown', 'failed', 'suppressed']).notNull().default('reserved'),
   providerMessageId: varchar('provider_message_id', { length: 255 }),
+  staffBasis: json('staff_basis'),staffBasisDigest:char('staff_basis_digest',{length:64}),
   reviewRevision: int('review_revision').notNull().default(0),
   reconciledAt: timestamp('reconciled_at', { mode: 'string' }),
   teachingRecordedAt: timestamp('teaching_recorded_at', { mode: 'string' }),
@@ -3936,6 +3937,20 @@ export const salesEscalationRelays = mysqlTable('sales_escalation_relays', {
   createdAt: timestamp('created_at', { mode: 'string' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow().onUpdateNow(),
 }, table => [uniqueIndex('uq_escalation_relay').on(table.merchantId, table.escalationId), index('idx_relay_reconcile').on(table.nextReconcileAt, table.id)]);
+
+// Immutable acceptance observations survive deletion of the source conversation, relay and outbox.
+export const salesStaffAcceptances=mysqlTable('ai_sales_staff_acceptances',{
+  id:bigint({mode:'number',unsigned:true}).autoincrement().primaryKey(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  sourceKind:varchar('source_kind',{length:24}).notNull(),sourceId:int('source_id').notNull(),
+  customerKey:char('customer_key',{length:64}).notNull(),outboxId:bigint('outbox_id',{mode:'number',unsigned:true}).notNull(),
+  providerMessageDigest:char('provider_message_digest',{length:64}).notNull(),acceptanceDigest:char('acceptance_digest',{length:64}).notNull(),snapshot:json().notNull(),
+  acceptanceObservedAt:datetime('acceptance_observed_at',{mode:'string',fsp:3}).notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},t=>[uniqueIndex('uq_staff_acceptance_source').on(t.merchantId,t.sourceKind,t.sourceId),
+  uniqueIndex('uq_staff_acceptance_outbox').on(t.merchantId,t.outboxId),uniqueIndex('uq_staff_acceptance_receipt').on(t.merchantId,t.providerMessageDigest),
+  index('idx_staff_acceptance_customer').on(t.merchantId,t.customerKey,t.acceptanceObservedAt),
+  check('ck_staff_acceptance_source',sql`${t.sourceKind} = 'escalation_relay'`)]);
 
 export const salesEscalationReviews = mysqlTable('sales_escalation_reviews', {
   id: int().autoincrement().primaryKey(),

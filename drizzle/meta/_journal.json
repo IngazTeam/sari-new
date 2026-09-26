@@ -911,6 +911,13 @@
       "when": 1794614400000,
       "tag": "0129_zid_catalog_store_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "5",
+      "when": 1794700800000,
+      "tag": "0130_sales_staff_acceptances",
+      "breakpoints": true
     }
   ]
 }

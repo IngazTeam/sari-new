@@ -9,6 +9,8 @@ import { createSourcedEscalation, sendSourcedEscalationAlert, relayEscalationRep
 import { transitionConversationOwnership } from './conversation-handoff';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import { markEscalationExhausted, markEscalationNotified, resolveEscalation } from '../db/learning';
+import { readStaffRelayBasis,readStaffAcceptance } from './sales-staff-acceptance-contract';
+import * as schemaReadiness from '../db/schema-readiness';
 
 describe.skipIf(!process.env.DATABASE_URL)('sourced escalation alert and relay lifecycle', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, conversationId: number, sourceId: number, escalationId: number, instanceId: number, alertId: string;
@@ -23,7 +25,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sourced escalation alert and relay l
     conversationId = Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')", [fixture.merchantId, customer])).insertId);
     sourceId = await incoming();
     instanceId = Number((await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,?,'fixture','active',1)", [fixture.merchantId, `relay-${fixture.merchantId}`])).insertId);
-    mock.instance.mockReset().mockResolvedValue({ id: instanceId, merchantId: fixture.merchantId, provider: 'green_api', status: 'active', instanceId: `fixture-${instanceId}`, token: 'fixture' });
+    mock.instance.mockReset().mockResolvedValue({ id: instanceId, merchantId: fixture.merchantId, provider: 'green_api', status: 'active', instanceId: `relay-${fixture.merchantId}`, token: 'fixture',apiUrl:'https://api.green-api.com' });
     mock.send.mockReset().mockImplementation(async () => ({ accepted: true, outcome: 'accepted', providerMessageId: `receipt-${fixture.merchantId}-${++receipt}`, status: 'sent' }));
     mock.teach.mockReset().mockResolvedValue({ accepted: true });
     escalationId = (await createSourcedEscalation({ merchantId: fixture.merchantId, conversationId, customerPhone: customer, incomingMessageId: sourceId, question: 'هل يتوفر موعد مسائي؟' }))!;
@@ -43,6 +45,67 @@ describe.skipIf(!process.env.DATABASE_URL)('sourced escalation alert and relay l
     expect(message.sender_type).toBe('merchant'); expect(message.content).toBe(input().replyText);
     expect(mock.teach).toHaveBeenCalledWith(expect.objectContaining({ question: 'هل يتوفر موعد مسائي؟', referenceId: escalationId, answer: input().replyText }));
     expect((await query('SELECT human_takeover FROM conversations WHERE id=?', [conversationId]))[0].human_takeover).toBe(1);
+  });
+  it('staff acceptance: freezes the basis before provider execution and records acceptance only after the receipt',async()=>{
+    mock.send.mockImplementationOnce(async()=>{
+      const [r]=await query('SELECT r.*,e.conversation_id,e.source_message_id,e.customer_phone FROM sales_escalation_relays r JOIN sari_escalation_queue e ON e.id=r.escalation_id WHERE r.merchant_id=?',[fixture.merchantId]);
+      expect(readStaffRelayBasis(r)).toMatchObject({source:'escalation_relay',authorBasis:'sourced_escalation_chain_phone',scope:'staff_reply_attempt_only'});
+      expect(await query('SELECT id FROM ai_sales_staff_acceptances WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
+      return {accepted:true,outcome:'accepted',providerMessageId:`staff-${fixture.merchantId}`,status:'sent'};
+    });
+    await relayEscalationReply(input());const [row]=await query('SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=?',[fixture.merchantId]);
+    expect(readStaffAcceptance(row).basis.conversationId).toBe(conversationId);expect(mock.send).toHaveBeenCalledOnce();
+  });
+  it('staff acceptance: rejects a provider change after the quoted alert without sending',async()=>{
+    const instance=await mock.instance();mock.instance.mockResolvedValue({...instance,provider:'meta_cloud'});
+    expect(await relayEscalationReply(input())).toMatchObject({accepted:false,status:'suppressed'});expect(mock.send).not.toHaveBeenCalled();
+    expect(await query('SELECT id FROM ai_sales_staff_acceptances WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
+  });
+  it.each(['instanceId','token','apiUrl','phoneNumberId','providerAccountId'])('staff acceptance: rejects loaded account drift in %s before provider execution',async field=>{
+    const account=await mock.instance();mock.instance.mockResolvedValue({...account,[field]:'changed-account-value'});
+    expect(await relayEscalationReply(input())).toMatchObject({accepted:false,status:'suppressed'});expect(mock.send).not.toHaveBeenCalled();
+  });
+  it.each(['token','instance_id','status'])('staff acceptance: rejects durable account %s drift after configuration was loaded',async column=>{
+    const account=await mock.instance();let mutationError:unknown;mock.instance.mockImplementationOnce(async()=>{
+      try{await query(`UPDATE whatsapp_instances SET ${column}=?${column==='status'?',is_primary=0':''} WHERE id=?`,[column==='status'?'inactive':'changed-account-value',instanceId]);}catch(error){mutationError=error;throw error;}return account;
+    });
+    const result=await relayEscalationReply(input());expect(mutationError).toBeUndefined();
+    expect(result).toMatchObject({accepted:false,status:'suppressed'});expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: compares decrypted credentials without persisting plaintext secrets',async()=>{
+    vi.stubEnv('FIELD_ENCRYPTION_KEY','synthetic-staff-credential-key-with-at-least-32-characters');
+    try{
+      const {encryptSecret}=await import('../security/secrets');await query('UPDATE whatsapp_instances SET token=? WHERE id=?',[encryptSecret('fixture'),instanceId]);
+      expect(await relayEscalationReply(input())).toMatchObject({accepted:true});
+      const [row]=await query('SELECT snapshot FROM ai_sales_staff_acceptances WHERE merchant_id=?',[fixture.merchantId]);
+      expect(JSON.stringify(row.snapshot)).not.toContain('"token"');expect(JSON.stringify(row.snapshot)).not.toContain('"apiUrl"');
+    }finally{vi.unstubAllEnvs();}
+  });
+  it('staff acceptance: rechecks the quoted alert inside the reservation transaction',async()=>{
+    const pool=(await getPool())!,execute=pool.execute.bind(pool);let changed=false;
+    vi.spyOn(pool,'execute').mockImplementation((async(sql:any,args:any)=>{
+      const result=await execute(sql,args);
+      if(!changed&&String(sql).includes('SELECT id,idempotency_key,request_json FROM whatsapp_message_deliveries')){
+        changed=true;await execute("UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.to','966500000099') WHERE merchant_id=? AND provider_message_id=?",[fixture.merchantId,alertId]);
+      }return result;
+    }) as any);
+    await expect(relayEscalationReply(input())).rejects.toThrow('evidence unavailable');vi.restoreAllMocks();expect(changed).toBe(true);
+    expect(await query('SELECT id FROM sales_escalation_relays WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
+    expect((await query('SELECT human_takeover FROM conversations WHERE id=?',[conversationId]))[0].human_takeover).toBe(0);expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('staff acceptance: missing schema blocks the first send before ownership or reservation changes',async()=>{
+    vi.spyOn(schemaReadiness,'assertRuntimeSchema').mockRejectedValueOnce(Error('staff migration required'));
+    await expect(relayEscalationReply(input())).rejects.toThrow('migration required');expect(mock.send).not.toHaveBeenCalled();
+    expect(await query('SELECT id FROM sales_escalation_relays WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
+    expect((await query('SELECT human_takeover FROM conversations WHERE id=?',[conversationId]))[0].human_takeover).toBe(0);
+  });
+  it('staff acceptance: rolls back ownership if the pre-send basis cannot be persisted',async()=>{
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),execute=c.execute.bind(c);
+      vi.spyOn(c,'execute').mockImplementation(((sql:string,args:any[])=>{if(sql.includes('SET staff_basis='))throw Error('basis storage failure');return execute(sql,args);}) as any);return c;});
+    await expect(relayEscalationReply(input())).rejects.toThrow('basis storage failure');vi.restoreAllMocks();
+    expect(await query('SELECT id FROM sales_escalation_relays WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
+    expect((await query('SELECT human_takeover FROM conversations WHERE id=?',[conversationId]))[0].human_takeover).toBe(0);expect(mock.send).not.toHaveBeenCalled();
   });
   it('serializes concurrent workers and survives a new database connection without another provider call', async () => {
     const results = await Promise.all(Array.from({ length: 5 }, () => relayEscalationReply(input())));
@@ -122,6 +185,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sourced escalation alert and relay l
     expect((await state()).status).toBe('pending'); expect(mock.teach).not.toHaveBeenCalled();
     expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'", [conversationId])).toHaveLength(0);
     expect((await relayEscalationReply(input())).accepted).toBe(false); expect(mock.send).toHaveBeenCalledTimes(1);
+    expect(await query('SELECT id FROM ai_sales_staff_acceptances WHERE merchant_id=?',[fixture.merchantId])).toEqual([]);
   });
   it.each(['takeover', 'new-message', 'removed-author'])('rechecks authority at transport after account loading: %s', async change => {
     const instance = await mock.instance(); mock.instance.mockImplementationOnce(async () => {

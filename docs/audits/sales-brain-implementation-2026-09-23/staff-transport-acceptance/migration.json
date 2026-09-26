@@ -1,0 +1,37 @@
+{
+  "verifiedAt": "2026-09-26T21:04:52.968Z",
+  "scope": "Isolated fresh migration and 0129-to-0130 upgrade, interrupted DDL, legacy preservation and complete replay. No production access.",
+  "migrationSha256": "9b81e2610cb6c43c94a193e1f4d9c205c31201f8d66db2963d95c8c754bdc46b",
+  "cases": [
+    {
+      "mode": "fresh",
+      "migrations": 131,
+      "initiallyEmpty": true,
+      "passed": true
+    },
+    {
+      "mode": "upgrade",
+      "migrations": 131,
+      "preservedTables": [
+        "sales_escalation_relays",
+        "sari_escalation_queue",
+        "messages",
+        "whatsapp_message_deliveries",
+        "ai_budget_policies"
+      ],
+      "legacyUnmeasured": true,
+      "initiallyEmpty": true,
+      "rejectedConstraints": [
+        "source",
+        "outbox",
+        "receipt",
+        "kind"
+      ],
+      "sourceDeletionPreservesAcceptance": true,
+      "rerunUnchanged": true,
+      "globalDailyMicroUsd": "100000000",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

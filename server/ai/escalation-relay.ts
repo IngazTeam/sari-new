@@ -5,7 +5,9 @@ import { transitionOwnershipInTransaction } from './conversation-handoff';
 import { destroySession } from './session-context';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
-import type { SendMerchantWhatsAppInput } from '../channels/whatsapp/types';
+import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channels/whatsapp/types';
+import { assertSalesStaffAcceptanceSchema,freezeStaffRelayBasis,staffRelayAccountIsCurrent } from './sales-staff-acceptance';
+import { readStaffRelayBasis } from './sales-staff-acceptance-contract';
 
 export type EscalationTransportGuard = { id: number; version: number; sourceMessageId: number; mode: 'alert' | 'relay' | 'exhaustion'; relayId?: number };
 const positive = (id: unknown): id is number => Number.isSafeInteger(id) && Number(id) > 0;
@@ -67,7 +69,7 @@ export async function createSourcedEscalation(data: { merchantId: number; conver
 }
 
 /** Final authority check inside the transport, after account lookup and outbox reservation. */
-export async function canDispatchEscalation(pool: Pick<Pool, 'execute'>, input: SendMerchantWhatsAppInput) {
+export async function canDispatchEscalation(pool: Pick<Pool, 'execute'>, input: SendMerchantWhatsAppInput, config:WhatsAppProviderConfig) {
   const g = input.escalationGuard;
   if (!g || !positive(g.id) || !positive(g.sourceMessageId) || !Number.isSafeInteger(g.version) || g.version < 0) return false;
   const [rows] = await pool.execute<any[]>(`SELECT e.*,c.customerPhone,c.human_takeover,c.handoff_version AS live_version,
@@ -85,7 +87,12 @@ export async function canDispatchEscalation(pool: Pick<Pool, 'execute'>, input: 
       || normalizeCampaignPhone(input.to) !== normalizeCampaignPhone(e.customerPhone)) return false;
     const [relays] = await pool.execute<any[]>(`SELECT * FROM sales_escalation_relays WHERE id=? AND merchant_id=? AND escalation_id=?
       AND ownership_version=? AND status='reserved' AND instance_id=?`, [g.relayId, input.merchantId, g.id, g.version, input.instanceRecordId ?? 0]);
-    return relays.length === 1 && input.text === relays[0].reply_text && await isPhoneInEscalationChain(input.merchantId, relays[0].author_phone);
+    if(relays.length!==1||input.text!==relays[0].reply_text)return false;
+    try{
+      const b=readStaffRelayBasis({...relays[0],conversation_id:e.conversation_id,source_message_id:e.source_message_id,customer_phone:e.customer_phone});
+      if(!b||b.provider!==config.provider||!await staffRelayAccountIsCurrent(pool,b,config))return false;
+    }catch{return false;}
+    return await isPhoneInEscalationChain(input.merchantId, relays[0].author_phone);
   }
   if (e.human_takeover || e.handoff_version !== g.version) return false;
   const [relays] = await pool.execute<any[]>('SELECT id FROM sales_escalation_relays WHERE merchant_id=? AND escalation_id=?', [input.merchantId, g.id]);
@@ -114,10 +121,11 @@ export async function relayEscalationReply(input: RelayInput): Promise<RelayResu
   const unavailable: RelayResult = { handled: false, accepted: false, status: 'unavailable' };
   if (![input.merchantId, input.instanceRecordId].every(positive) || !input.quotedMessageId || input.quotedMessageId.length > 255
     || !input.replyText?.trim() || input.replyText.length > 2000 || !normalizeCampaignPhone(input.merchantPhone)) return unavailable;
+  await assertSalesStaffAcceptanceSchema();
   const pool = await getPool(); if (!pool) throw new Error('Escalation storage unavailable');
   const { isPhoneInEscalationChain } = await import('./smart-escalation');
   if (!await isPhoneInEscalationChain(input.merchantId, input.merchantPhone)) return unavailable;
-  const [alerts] = await pool.execute<any[]>(`SELECT idempotency_key,request_json FROM whatsapp_message_deliveries
+  const [alerts] = await pool.execute<any[]>(`SELECT id,idempotency_key,request_json FROM whatsapp_message_deliveries
     WHERE merchant_id=? AND instance_id=? AND provider_message_id=? AND direction='outgoing' AND status IN ('sent','delivered','read')`,
   [input.merchantId, input.instanceRecordId!, input.quotedMessageId]);
   if (alerts.length !== 1) return unavailable;
@@ -148,6 +156,9 @@ export async function relayEscalationReply(input: RelayInput): Promise<RelayResu
     const [insert] = await c.execute<any>(`INSERT INTO sales_escalation_relays
       (merchant_id,escalation_id,instance_id,author_phone,quoted_message_id,reply_text,ownership_version) VALUES (?,?,?,?,?,?,?)`,
     [input.merchantId, guard.id, input.instanceRecordId, normalizeCampaignPhone(input.merchantPhone), input.quotedMessageId, input.replyText, ownership.version]);
+    await freezeStaffRelayBasis(c,{id:Number(insert.insertId),merchant_id:input.merchantId,escalation_id:guard.id,instance_id:input.instanceRecordId,
+      conversation_id:conversationId,source_message_id:e.source_message_id,customer_phone:e.customer_phone,
+      author_phone:normalizeCampaignPhone(input.merchantPhone),quoted_message_id:input.quotedMessageId,reply_text:input.replyText,ownership_version:ownership.version},Number(alert.id));
     return { id: Number(insert.insertId), ownership_version: ownership.version, conversationId, customerPhone: e.customer_phone, fresh: true, status: 'reserved' };
   });
   if (!reserved) return { handled: true, accepted: false, status: 'suppressed' };

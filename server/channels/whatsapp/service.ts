@@ -176,7 +176,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   }
   if (/^escalation_(?:alert|relay|exhaustion):/.test(input.idempotencyKey)) {
     const { canDispatchEscalation } = await import('../../ai/escalation-relay');
-    if (!await canDispatchEscalation(pool, input)) {
+    if (!await canDispatchEscalation(pool, input, config)) {
       await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='escalation_suppressed',status_updated_at=NOW()
         WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
       return { accepted: false, duplicate: false, status: 'failed', errorCode: 'escalation_suppressed' };

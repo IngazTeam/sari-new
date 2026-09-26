@@ -1,6 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const withUi=process.argv.includes('--with-ui');
-const root=process.cwd(),output=path.resolve(withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
+const withStaffAcceptance=process.argv.includes('--staff-acceptance');
+const root=process.cwd(),output=path.resolve(withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -22,11 +23,19 @@ const database=[
   'server/ai/sales-order-report.mysql.test.ts',
 ];
 if(withUi)unit.push('server/sales-experiment-readout-ui-pentest.test.ts','server/sales-order-report-ui-pentest.test.ts','server/mobile-navigation-soft404-pentest.test.ts');
+if(withStaffAcceptance){
+  unit.push('server/ai/sales-staff-acceptance-pentest.test.ts','server/core-team-access.test.ts',
+    'server/webhooks/greenapi-escalation.test.ts','server/ai/escalation-routing.test.ts','server/whatsapp-delivery-safety.test.ts');
+  database.push('server/ai/escalation-relay.mysql.test.ts','server/ai/escalation-reconciliation.mysql.test.ts',
+    'server/ai/conversation-handoff.mysql.test.ts','server/whatsappDeliverySafety.mysql.test.ts');
+}
 const extra=['server/ai/sales-experiment-readout-contract.ts','server/ai/sales-experiment-readout.ts','server/tests/helpers/sales-readout.ts',
   'server/ai/sales-experiment-readout-exposures.ts','shared/sales-experiment-exposure-readout.ts',
   'server/ai/sales-experiment-readout-outcomes.ts','shared/sales-experiment-outcome-readout.ts',
   'server/ai/sales-experiment-readout-staff.ts','shared/sales-experiment-staff-readout.ts',
   'scripts/testing/verify-sales-experiment-readout.cjs',...unit,...database];
+if(withStaffAcceptance)extra.push('server/ai/sales-staff-acceptance-contract.ts','server/ai/sales-staff-acceptance.ts',
+  'drizzle/0130_sales_staff_acceptances.sql','scripts/testing/verify-sales-staff-acceptance-migration.cjs');
 if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
   'scripts/testing/verify-sales-experiment-readout-ui.cjs','scripts/testing/fixtures/sales-experiment-readout-ui-entry.tsx','scripts/testing/fixtures/sales-experiment-readout-data.ts');
 function manifest(){
@@ -49,6 +58,15 @@ try{
   for(const file of [...unit,...database])if(!fs.existsSync(file))throw Error('Missing test '+file);
   const before=manifest(),startedAt=new Date().toISOString(),baseCommit=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
   const checks=[];
+  let migrationReport;
+  if(withStaffAcceptance){
+    const migrationOutput=path.join(output,'migration.json');
+    checks.push(run('staff-migration',['scripts/testing/verify-sales-staff-acceptance-migration.cjs'],{...process.env,
+      SARI_TEST_DATABASE_URL:process.env.SARI_STAFF_MIGRATION_DATABASE_URL,SARI_STAFF_MIGRATION_OUTPUT:migrationOutput}));
+    const bytes=fs.readFileSync(migrationOutput),report=JSON.parse(bytes);
+    if(!report.passed||!report.cases.length||report.cases.some(c=>!c.passed))throw Error('Incomplete staff migration report');
+    migrationReport={...report,reportSha256:sha(bytes)};
+  }
   for(const [name,files]of [['unit-security',unit],['database',database]]){
     checks.push(run(name,['scripts/testing/run-isolated.mjs',...(name==='database'?['--with-database','--no-file-parallelism']:[]),...files,
       '--reporter=default','--reporter=json',`--outputFile.json=${path.join(output,name+'.json')}`]));
@@ -84,8 +102,8 @@ try{
       tests:r.testResults.flatMap(f=>f.assertionResults.map(t=>({file:path.relative(root,f.name).replaceAll('\\','/'),name:t.fullName,status:t.status})))};
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
-    scope:'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
-    checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),productionAccess:false,network:'external_network_blocked'};
+    scope:withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
+    checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),migrationReport,productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));
 }catch(error){console.error(error.message);process.exitCode=1;}

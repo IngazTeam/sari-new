@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { checkoutTransaction } from './checkout-agreements';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
+import { assertSalesStaffAcceptanceSchema,recordStaffRelayAcceptance } from './sales-staff-acceptance';
+import { readStaffRelayBasis } from './sales-staff-acceptance-contract';
 
 const id = z.number().int().positive().safe();
 export const relayReviewSchema = z.object({ conversationId: id, relayId: id, expectedRevision: z.number().int().nonnegative(),
@@ -19,7 +21,9 @@ const relaySql = `SELECT r.*,e.conversation_id,e.question,e.customer_phone,e.sou
 /** A status or a manually supplied receipt alone is not evidence for this attempt. */
 function inspect(r: any, d: any) {
   const request = parse(d?.request_json), g = request?.escalationGuard;
-  const valid = Boolean(d && d.instance_id === r.instance_id && d.merchant_id === r.merchant_id && d.direction === 'outgoing'
+  let basisValid=true;
+  try{const b=readStaffRelayBasis(r);if(b&&d?.provider!==b.provider)basisValid=false;}catch{basisValid=false;}
+  const valid = Boolean(basisValid && d && d.instance_id === r.instance_id && d.merchant_id === r.merchant_id && d.direction === 'outgoing'
     && ['green_api', 'meta_cloud', ...(process.env.NODE_ENV === 'test' ? ['mock'] : [])].includes(d.provider)
     && request?.kind === 'text' && request?.text === r.reply_text && g?.mode === 'relay' && g?.id === r.escalation_id
     && g?.relayId === r.id && g?.sourceMessageId === r.source_message_id && g?.version === r.ownership_version
@@ -35,7 +39,7 @@ function inspect(r: any, d: any) {
   // Ignore worker bookkeeping times. Evidence changes invalidate an open review, even at the same review revision.
   const evidence = createHash('sha256').update(JSON.stringify([r.id,r.merchant_id,r.conversation_id,r.instance_id,r.reply_text,r.question,
     r.source_message_id,r.ownership_version,r.status,r.provider_message_id,r.customer_phone,r.customerPhone,
-    d?.id ?? null,d?.instance_id ?? null,d?.provider ?? null,d?.direction ?? null,d?.status ?? null,receipt,request])).digest('hex');
+    d?.id ?? null,d?.instance_id ?? null,d?.provider ?? null,d?.direction ?? null,d?.status ?? null,receipt,request,r.staff_basis_digest??null,r.staff_basis??null])).digest('hex');
   return { state, outcome, evidence, receipt: accepted ? receipt : null };
 }
 
@@ -51,11 +55,13 @@ async function loadLocked(c: PoolConnection, merchantId: number, relayId: number
 }
 
 async function settle(merchantId: number, relayId: number, review?: Review) {
+  await assertSalesStaffAcceptanceSchema();
   const record = await checkoutTransaction(async c => {
     const { r, d } = await loadLocked(c, merchantId, relayId, review?.conversationId);
     const proof = inspect(r, d);
     if (review && (r.review_revision !== review.expectedRevision || proof.evidence !== review.evidence)) throw new Error('Review evidence changed');
     if (proof.receipt) {
+      await recordStaffRelayAcceptance(c,r,d);
       const [messages] = await c.execute<any[]>('SELECT id,direction,content,sender_type FROM messages WHERE conversationId=? AND externalId=?', [r.conversation_id, proof.receipt]);
       if (messages.some(m => m.direction !== 'outgoing' || m.content !== r.reply_text || m.sender_type !== 'merchant')) throw new Error('Receipt projection conflict');
       if (!messages.length) await c.execute(`INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,sender_type,createdAt)
