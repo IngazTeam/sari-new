@@ -16,6 +16,8 @@ export async function purgeCompletedInboundPayloads(limit = 500): Promise<number
      AND NOT EXISTS (SELECT 1 FROM ai_interaction_jobs j WHERE j.usage_outbox_id=whatsapp_message_deliveries.id AND j.usage_state='held')
      AND NOT EXISTS (SELECT 1 FROM ai_sales_staff_replies s WHERE s.merchant_id=whatsapp_message_deliveries.merchant_id
        AND whatsapp_message_deliveries.idempotency_key=CONCAT('staff_reply:',s.merchant_id,':',s.id) AND s.status<>'accepted')
+     AND NOT EXISTS (SELECT 1 FROM ai_sales_staff_voices s WHERE s.merchant_id=whatsapp_message_deliveries.merchant_id
+       AND whatsapp_message_deliveries.idempotency_key=CONCAT('staff_voice:',s.merchant_id,':',s.id) AND s.status<>'accepted')
      AND NOT EXISTS (SELECT 1 FROM sales_escalation_relays s WHERE s.merchant_id=whatsapp_message_deliveries.merchant_id
        AND whatsapp_message_deliveries.idempotency_key=CONCAT('escalation_relay:',s.merchant_id,':',s.escalation_id) AND s.status<>'accepted')
      ORDER BY id LIMIT ${limit}`,

@@ -1,3 +1,5 @@
+import { staffVoiceInput } from '../shared/staff-dashboard-voice';
+import { routeDashboardStaffVoice } from './staff-dashboard-voice-route';
 import { abTestsRouter } from './routers-ab-tests';
 import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
 import { routeDashboardStaffReply } from './staff-dashboard-reply-route';
@@ -1664,16 +1666,13 @@ export const appRouter = router({
         return { success: true, messageId: result.messageId };
       }),
 
-    // Send a voice reply that was uploaded through the authenticated voice endpoint.
-    // The client passes an opaque storage key, never an arbitrary URL.
+    // Reserve validated voice bytes before upload; the client supplies no storage URL or key.
     sendVoiceReply: permissionProcedure('conversations.reply')
-      .input(z.object({
-        conversationId: z.number().int().positive(),
-        storageKey: z.string().min(1).max(500),
-        mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav']),
-        duration: z.number().positive().max(3600),
-      }))
+      .input(staffVoiceInput)
       .mutation(async ({ input, ctx }) => {
+        return routeDashboardStaffVoice(ctx.merchantId,ctx.user.id,input,async()=>{
+        // Explicit compatibility path for groups and accounts without a registered instance.
+        const bytes=decodeValidatedAudio(input.audioBase64,input.mimeType);
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -1682,11 +1681,6 @@ export const appRouter = router({
         const conversation = await getConversationById(input.conversationId);
         if (!conversation || conversation.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
-        }
-
-        const expectedPrefix = `audio/voice-${ctx.user.id}-`;
-        if (!input.storageKey.startsWith(expectedPrefix) || input.storageKey.includes('..')) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Invalid audio object' });
         }
 
         const waInstance = await getPrimaryWhatsAppInstance(merchant.id);
@@ -1708,8 +1702,8 @@ export const appRouter = router({
           waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
         }
 
-        const { storageGet } = await import('./storage');
-        const { url: audioUrl } = await storageGet(input.storageKey);
+        const { storagePut } = await import('./storage');
+        const { url: audioUrl } = await storagePut(`audio/voice-${ctx.user.id}-${(await import('node:crypto')).randomUUID()}.audio`,bytes,input.mimeType);
         const extensionByMime: Record<typeof input.mimeType, string> = {
           'audio/webm': 'webm',
           'audio/ogg': 'ogg',
@@ -1735,7 +1729,7 @@ export const appRouter = router({
         );
 
         if (!result.success || !result.messageId) {
-          console.error('[Dashboard] Voice provider rejected message:', result.error || 'missing message identifier');
+          console.error('[Dashboard] Voice compatibility transport was not accepted');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'فشل إرسال الرسالة الصوتية عبر مزود WhatsApp',
@@ -1758,10 +1752,11 @@ export const appRouter = router({
 
         } catch (persistenceError) {
           persisted = false;
-          console.error(`[Dashboard] Voice ${result.messageId} delivered but persistence failed:`, persistenceError);
+          console.error('[Dashboard] Voice compatibility projection failed');
         }
 
         return { success: true, messageId: result.messageId, persisted };
+        });
       }),
 
     // ── Sync conversations from Green API (recover missed data) ──

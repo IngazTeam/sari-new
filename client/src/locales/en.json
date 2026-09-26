@@ -8900,5 +8900,22 @@
     "reviewMessage": "We would love to hear about your experience with us. What did you like, and what could we improve?",
     "catalogLabel": "Choose a category",
     "catalogMessage": "Which product category interests you? I will review options that match your needs."
+  },
+  "staffVoice": {
+    "title": "Voice reply",
+    "start": "Record a voice reply",
+    "permission": "Waiting for microphone permission",
+    "recording": "Recording",
+    "review": "Review the recording before sending",
+    "sending": "Checking send result",
+    "cancel": "Cancel recording",
+    "stop": "Stop recording",
+    "send": "Send recording",
+    "check": "Check this attempt",
+    "retained": "The recording stays here until the send is accepted or you cancel it. Check an uncertain attempt before creating a new recording. Leaving the page loses the recording.",
+    "accepted": "The recording was accepted for sending and saved in the conversation.",
+    "pending": "Acceptance is not confirmed. Keep the recording and check this same attempt; it will not be resent automatically.",
+    "unavailable": "Unable to complete the voice send. Keep the recording and check this same attempt.",
+    "microphoneError": "Unable to start recording. Check microphone permission and browser support."
   }
 }

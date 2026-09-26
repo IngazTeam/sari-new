@@ -1,4 +1,5 @@
 import { trpc } from '@/lib/trpc';
+import { staffVoiceAttempt } from '@/lib/staff-voice-attempt';
 import { staffDashboardAttempt } from '@/lib/staff-dashboard-attempt';
 import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { EscalationReconciliation } from '@/components/EscalationReconciliation';
@@ -71,6 +72,7 @@ export default function Conversations() {
   const [currentPage, setCurrentPage] = useState(1);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [voiceBusy,setVoiceBusy]=useState(false);
   const selectedReplyConversation=useRef(selectedConversationId);
   selectedReplyConversation.current=selectedConversationId;
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,7 +84,7 @@ export default function Conversations() {
   >();
   const drafts = useRef<Record<number, string>>({});
   const selectConversation = (id: number | null) => {
-    if (isSending) return;
+    if (isSending || voiceBusy) return;
     if (selectedConversationId)
       drafts.current[selectedConversationId] = replyText;
     setReplyText(id ? drafts.current[id] || '' : '');
@@ -137,7 +139,7 @@ export default function Conversations() {
   );
   const { data: currentMerchant } = trpc.merchants.getCurrent.useQuery();
   const merchantTimezone = (currentMerchant as any)?.timezone || 'Asia/Riyadh';
-  const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
+
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
   const sendVoiceReplyMutation =
     trpc.conversations.sendVoiceReply.useMutation();
@@ -178,13 +180,16 @@ export default function Conversations() {
 
   const hasActiveFilter = stageFilter || needsHumanFilter;
 
-  const selectedConversation = conversations?.find(
+  const listedSelectedConversation = conversations?.find(
     c => c.id === selectedConversationId
   );
+  const voiceConversationSnapshot=useRef<typeof listedSelectedConversation>(undefined);
+  if(listedSelectedConversation)voiceConversationSnapshot.current=listedSelectedConversation;
+  const selectedConversation=listedSelectedConversation || (voiceBusy&&voiceConversationSnapshot.current?.id===selectedConversationId?voiceConversationSnapshot.current:undefined);
 
   // Send text reply
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedConversationId || isSending) return;
+    if (!replyText.trim() || !selectedConversationId || isSending || voiceBusy) return;
 
     setIsSending(true);
     try {
@@ -219,7 +224,7 @@ export default function Conversations() {
 
   // A shortcut prepares a draft; only the explicit send action contacts the customer.
   const handleQuickAction = (_action: string, data: QuickActionDraft) => {
-    if (!selectedConversationId || !data?.message || isSending) return;
+    if (!selectedConversationId || !data?.message || isSending || voiceBusy) return;
     if (replyText.trim()) {
       toast.warning(t('quickDrafts.existingDraft'), { position: 'top-center' });
       return;
@@ -332,6 +337,7 @@ export default function Conversations() {
               size="sm"
               variant="ghost"
               className="h-7 text-xs"
+              disabled={voiceBusy || isSending}
               onClick={() => {
                 setCurrentPage(1);
                 setStageFilter(undefined);
@@ -370,6 +376,7 @@ export default function Conversations() {
                 placeholder={t('conversationsPage.searchPlaceholder')}
                 aria-label="البحث في جميع المحادثات"
                 maxLength={200}
+                disabled={voiceBusy || isSending}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pr-10 h-9 text-sm"
@@ -475,7 +482,7 @@ export default function Conversations() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={currentPage <= 1 || isLoading || isSending}
+                disabled={currentPage <= 1 || isLoading || isSending || voiceBusy}
                 onClick={() => {
                   selectConversation(null);
                   setCurrentPage(page => page - 1);
@@ -495,7 +502,7 @@ export default function Conversations() {
                   !conversationsData ||
                   currentPage >= conversationsData.totalPages ||
                   isLoading ||
-                  isSending
+                  isSending || voiceBusy
                 }
                 onClick={() => {
                   selectConversation(null);
@@ -520,7 +527,7 @@ export default function Conversations() {
                       variant="ghost"
                       className="mw-chat-back"
                       aria-label="العودة إلى قائمة المحادثات"
-                      disabled={isSending}
+                      disabled={isSending || voiceBusy}
                       onClick={() => selectConversation(null)}
                     >
                       <ArrowRight />
@@ -866,6 +873,7 @@ export default function Conversations() {
                         selectedConversation.customerName || undefined
                       }
                       onSelectSuggestion={text => {
+                        if(isSending || voiceBusy)return;
                         setReplyText(text);
                       }}
                       compact
@@ -880,7 +888,7 @@ export default function Conversations() {
                     conversationId={selectedConversationId!}
                     customerPhone={selectedConversation.customerPhone}
                     onActionComplete={handleQuickAction}
-                    disabled={isSending}
+                    disabled={isSending || voiceBusy}
                   />
                 </CardContent>
               </details>
@@ -893,7 +901,7 @@ export default function Conversations() {
                       data-staff-draft
                       placeholder="اكتب رسالتك هنا..."
                       aria-label="رسالتك للعميل"
-                      disabled={isSending}
+                      disabled={isSending || voiceBusy}
                       value={replyText}
                       maxLength={4096}
                       style={{fontSize:16}}
@@ -918,7 +926,7 @@ export default function Conversations() {
                     size="icon"
                     data-staff-send
                     onClick={handleSendReply}
-                    disabled={!replyText.trim() || isSending}
+                    disabled={!replyText.trim() || isSending || voiceBusy}
                     className="shrink-0 h-[44px] w-[44px]"
                     aria-label={t('merchantUx.actions.sendMessage')}
                   >
@@ -934,80 +942,31 @@ export default function Conversations() {
                   key={`voice-${selectedConversation.id}`}
                 >
                   <summary className="cursor-pointer text-xs py-1">
-                    إرسال رسالة صوتية
+                    {t('staffVoice.title')}
                   </summary>
                   <VoiceRecorder
+                    disabled={isSending}
+                    onBusyChange={setVoiceBusy}
                     onRecordingComplete={async (audioBlob, duration) => {
-                      try {
-                        const supportedMimeTypes = [
-                          'audio/webm',
-                          'audio/ogg',
-                          'audio/mpeg',
-                          'audio/mp3',
-                          'audio/mp4',
-                          'audio/wav',
-                        ] as const;
-                        const normalizedMimeType = audioBlob.type.split(
-                          ';'
-                        )[0] as (typeof supportedMimeTypes)[number];
-                        if (!supportedMimeTypes.includes(normalizedMimeType)) {
-                          throw new Error(
-                            `Unsupported audio format: ${audioBlob.type}`
-                          );
+                      if(!selectedConversationId||isSending)return false;
+                      const conversationId=selectedConversationId;
+                      setIsSending(true);
+                      try{
+                        const attempt=await staffVoiceAttempt(currentMerchant?.id??0,conversationId,audioBlob,duration);
+                        const result=await sendVoiceReplyMutation.mutateAsync(attempt.input);
+                        if(!result.success){
+                          toast.warning(t('staffVoice.pending'),{position:'top-center'});
+                          return false;
                         }
-
-                        const dataUrl = await new Promise<string>(
-                          (resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onerror = () =>
-                              reject(
-                                reader.error ||
-                                  new Error('Failed to read audio recording')
-                              );
-                            reader.onload = () =>
-                              resolve(String(reader.result));
-                            reader.readAsDataURL(audioBlob);
-                          }
-                        );
-                        const audioBase64 = dataUrl.split(',')[1];
-                        if (!audioBase64)
-                          throw new Error('Audio recording is empty');
-
-                        toast.loading(
-                          t('conversationsPage.uploadingRecording')
-                        );
-                        const uploadResult =
-                          await uploadAudioMutation.mutateAsync({
-                            audioBase64,
-                            mimeType: normalizedMimeType,
-                            duration,
-                          });
-                        const sendResult =
-                          await sendVoiceReplyMutation.mutateAsync({
-                            conversationId: selectedConversationId!,
-                            storageKey: uploadResult.storageKey,
-                            mimeType: normalizedMimeType,
-                            duration,
-                          });
-
-                        toast.dismiss();
-                        if (sendResult.persisted) {
-                          toast.success(
-                            `تم إرسال الرسالة الصوتية ✓ (${uploadResult.size.toFixed(2)}MB)`
-                          );
-                        } else {
-                          toast.warning(
-                            'وصلت الرسالة إلى WhatsApp، لكن تعذر تحديث سجل المحادثة. لن نعيد الإرسال تلقائيًا.'
-                          );
-                        }
-                        utils.conversations.getMessages.invalidate({
-                          conversationId: selectedConversationId!,
-                        });
-                      } catch (error) {
-                        toast.dismiss();
-                        toast.error(t('toast.conversations.msg2'));
-                        console.error('Upload error:', error);
-                      }
+                        attempt.complete();
+                        if(result.persisted)toast.success(t('staffVoice.accepted'),{position:'top-center'});
+                        else toast.warning(t('staffDashboardReply.projectionPending'),{position:'top-center'});
+                        utils.conversations.getMessages.invalidate({conversationId});
+                        return true;
+                      }catch{
+                        toast.error(t('staffVoice.unavailable'),{position:'top-center'});
+                        return false;
+                      }finally{setIsSending(false);}
                     }}
                     onCancel={() => {
                       toast.info(t('toast.conversations.msg3'));

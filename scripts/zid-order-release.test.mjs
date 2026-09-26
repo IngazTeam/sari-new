@@ -15,7 +15,7 @@ test('accepts this built source capability and refuses older or relative targets
 test('a malformed or unrelated marker cannot authorize rollback',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-zid-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
   const file=path.join(root,'scripts/zid-order-store-capability.json');
-  for(const body of ['{','null','{"version":1,"capabilities":["zid-order-store-identity-0127"]}','{"version":1,"capabilities":[]}','{"version":2,"capabilities":["zid-order-store-identity-0127"]}']){
+  for(const body of ['{','null','{"version":1,"capabilities":["zid-order-store-identity-0127","zid-catalog-store-identity-0129"]}','{"version":1,"capabilities":["staff-voice-acceptance-0132"]}','{"version":1,"capabilities":["zid-order-store-identity-0127"]}','{"version":1,"capabilities":[]}','{"version":2,"capabilities":["zid-order-store-identity-0127"]}']){
     fs.writeFileSync(file,body);assert.throws(()=>assertZidOrderReleaseCompatible(root));
   }
   // Remove only the exact synthetic files created above, without recursive shell operations.

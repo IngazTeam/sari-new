@@ -22,11 +22,11 @@ export async function assertDashboardStaffSchema(){
   await assertRuntimeSchema('dashboard staff replies',[{table:'ai_sales_staff_replies',
     columns:['actor_user_id','request_id','basis','basis_digest','ownership_version','provider_message_id','projected_message_id','next_reconcile_at'],
     uniqueIndexes:[{name:'uq_staff_reply_request',columns:['merchant_id','request_id']}]},
-    {table:'ai_sales_staff_acceptances',checkConstraints:[{name:'ck_staff_acceptance_source',expression:"source_kind IN ('escalation_relay','dashboard_text')",enforced:true}]}],{cacheSuccess:false});
+    {table:'ai_sales_staff_acceptances',checkConstraints:[{name:'ck_staff_acceptance_source',expression:"source_kind IN ('escalation_relay','dashboard_text','dashboard_voice')",enforced:true}]}],{cacheSuccess:false});
 }
 async function clock(c:PoolConnection){const [[r]]=await c.query<any[]>('SELECT UTC_TIMESTAMP(3) AS now');return new Date(databaseTimeEpoch(r.now)).toISOString();}
 /** Locks the current persisted authority; never trusts a role supplied by the caller. */
-async function authorize(c:PoolConnection,merchant:number,actor:number){
+export async function authorizeDashboardStaff(c:PoolConnection,merchant:number,actor:number){
   const [m]=await c.execute<any[]>('SELECT userId,status FROM merchants WHERE id=? FOR UPDATE',[merchant]);
   const [u]=await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE',[actor]);
   if(m.length!==1||m[0].status==='suspended'||u.length!==1||u[0].account_status!=='active')return unavailable();
@@ -36,7 +36,7 @@ async function authorize(c:PoolConnection,merchant:number,actor:number){
 }
 async function reserve(merchant:number,actor:number,input:StaffDashboardReplyInput){
   return checkoutTransaction(async c=>{
-    await authorize(c,merchant,actor);
+    await authorizeDashboardStaff(c,merchant,actor);
     const [prior]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE merchant_id=? AND request_id=?',[merchant,input.requestId]);
     if(prior.length){const b=readDashboardStaffBasis(prior[0]);
       if(b.actorUserId!==actor||b.conversationId!==input.conversationId||b.replyDigest!==hash(input.message))return unavailable();
@@ -80,8 +80,8 @@ export async function canDispatchDashboardStaff(input:SendMerchantWhatsAppInput,
       if(r.status!=='reserved'||input.idempotencyKey!==staffDashboardKey(b.merchantId,b.sourceId)||input.instanceRecordId!==b.instanceRecordId
         ||guard.basisDigest!==hash(b)||input.kind!=='text'||hash(input.text)!==b.replyDigest||staffPhoneKey(b.merchantId,input.to)!==b.customerKey
         ||input.replyGuard||input.salesReplyGuard||input.escalationGuard||input.salesOfferGuard||input.bookingNoticeGuard||input.appointmentReminderGuard
-        ||input.followUpGuard||input.mediaUrl||input.fileName||input.template)return false;
-      await authorize(c,b.merchantId,b.actorUserId);
+        ||input.followUpGuard||input.staffVoiceGuard||input.mediaUrl||input.fileName||input.template)return false;
+      await authorizeDashboardStaff(c,b.merchantId,b.actorUserId);
       const [convs]=await c.execute<any[]>(`SELECT * FROM conversations WHERE id=? AND merchantId=? AND human_takeover=1 AND handoff_version=?
         AND (human_expires_at IS NULL OR human_expires_at>UTC_TIMESTAMP()) FOR SHARE`,[b.conversationId,b.merchantId,b.ownershipVersion]);
       return convs.length===1&&staffPhoneKey(b.merchantId,convs[0].customerPhone)===b.customerKey&&await staffRelayAccountIsCurrent(c as any,b,config);

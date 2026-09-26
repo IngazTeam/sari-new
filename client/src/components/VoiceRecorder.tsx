@@ -1,239 +1,74 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, X, Send } from 'lucide-react';
+import { Mic, Square, X, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 interface VoiceRecorderProps {
-  onRecordingComplete: (audioBlob: Blob, duration: number) => void;
+  onRecordingComplete: (audio: Blob, duration: number) => Promise<boolean>;
   onCancel?: () => void;
-  maxDuration?: number; // بالثواني، افتراضي 120 ثانية (2 دقيقة)
+  onBusyChange?: (busy: boolean) => void;
+  maxDuration?: number;
+  disabled?: boolean;
 }
-
-export function VoiceRecorder({ 
-  onRecordingComplete, 
-  onCancel,
-  maxDuration = 120 
-}: VoiceRecorderProps) {
-  const { t } = useTranslation();
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
-
-  // تنظيف عند إلغاء التحميل
-  useEffect(() => {
-    return () => {
-      stopRecording();
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
-
-  // بدء التسجيل
-  const startRecording = async () => {
-    try {
-      // طلب إذن الميكروفون
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100,
-        } 
-      });
-
-      // إنشاء MediaRecorder
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : 'audio/mp4';
-      
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      // حفظ البيانات
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
+export function VoiceRecorder({onRecordingComplete,onCancel,onBusyChange,maxDuration=120,disabled=false}:VoiceRecorderProps){
+  const {t}=useTranslation();
+  const [phase,setPhase]=useState<'idle'|'permission'|'recording'|'draft'|'sending'>('idle');
+  const [duration,setDuration]=useState(0),[audio,setAudio]=useState<Blob|null>(null),[preview,setPreview]=useState(''),[attempted,setAttempted]=useState(false);
+  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),timer=useRef<ReturnType<typeof setInterval>|null>(null);
+  const mounted=useRef(false),generation=useRef(0),locked=useRef(false),started=useRef(0),chunks=useRef<Blob[]>([]);
+  const busyCallback=useRef(onBusyChange);busyCallback.current=onBusyChange;
+  const clearTimer=()=>{if(timer.current)clearInterval(timer.current);timer.current=null;};
+  const stopTracks=()=>{stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;};
+  const discard=()=>{
+    generation.current++;clearTimer();const active=recorder.current;recorder.current=null;
+    if(active){active.ondataavailable=null;active.onstop=null;active.onerror=null;if(active.state!=='inactive')active.stop();}
+    stopTracks();chunks.current=[];locked.current=false;
+  };
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;discard();busyCallback.current?.(false);};},[]);
+  useEffect(()=>{if(!audio){setPreview('');return;}const url=URL.createObjectURL(audio);setPreview(url);return()=>URL.revokeObjectURL(url);},[audio]);
+  const reset=()=>{discard();setAudio(null);setDuration(0);setAttempted(false);setPhase('idle');busyCallback.current?.(false);};
+  const stop=()=>{const active=recorder.current;if(active&&active.state!=='inactive'){clearTimer();setDuration(Math.max(0.001,Math.min(maxDuration,(Date.now()-started.current)/1000)));active.stop();}};
+  const start=async()=>{
+    if(disabled||locked.current||phase!=='idle')return;locked.current=true;setPhase('permission');busyCallback.current?.(true);const own=++generation.current;
+    try{
+      const captured=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+      if(!mounted.current||own!==generation.current){captured.getTracks().forEach(track=>track.stop());return;}stream.current=captured;
+      const mimeType=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+      if(!mimeType)throw Error('Unsupported recorder');
+      const active=new MediaRecorder(captured,{mimeType});recorder.current=active;chunks.current=[];
+      active.ondataavailable=event=>{if(mounted.current&&own===generation.current&&event.data.size)chunks.current.push(event.data);};
+      active.onstop=()=>{stopTracks();clearTimer();if(!mounted.current||own!==generation.current)return;
+        const blob=new Blob(chunks.current,{type:mimeType});locked.current=false;
+        if(!blob.size||blob.size>16*1024*1024){reset();toast.error(t('staffVoice.unavailable'),{position:'top-center'});return;}
+        setAudio(blob);setPhase('draft');
       };
-
-      // عند انتهاء التسجيل
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        
-        // إيقاف جميع المسارات
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      // بدء التسجيل
-      mediaRecorder.start(100); // حفظ كل 100ms
-      setIsRecording(true);
-      startTimeRef.current = Date.now();
-
-      // بدء المؤقت
-      timerRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        setDuration(elapsed);
-
-        // إيقاف تلقائي عند الوصول للحد الأقصى
-        if (elapsed >= maxDuration) {
-          stopRecording();
-          toast.warning(`تم إيقاف التسجيل تلقائياً بعد ${maxDuration} ثانية`);
-        }
-      }, 100);
-
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      toast.error(t('compVoiceRecorderPage.text0'));
-    }
+      active.onerror=()=>{if(mounted.current&&own===generation.current){reset();toast.error(t('staffVoice.unavailable'),{position:'top-center'});}};
+      started.current=Date.now();active.start(100);setPhase('recording');setDuration(0);
+      timer.current=setInterval(()=>{const elapsed=(Date.now()-started.current)/1000;setDuration(Math.min(maxDuration,elapsed));if(elapsed>=maxDuration)stop();},100);
+    }catch{if(mounted.current&&own===generation.current){reset();toast.error(t('staffVoice.microphoneError'),{position:'top-center'});}}
   };
-
-  // إيقاف التسجيل
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
+  const send=async()=>{
+    if(disabled||locked.current||!audio||phase!=='draft')return;locked.current=true;setPhase('sending');setAttempted(true);
+    try{if(await onRecordingComplete(audio,duration)){if(mounted.current)reset();return;}}
+    catch{if(mounted.current)toast.error(t('staffVoice.unavailable'),{position:'top-center'});}
+    if(mounted.current){locked.current=false;setPhase('draft');}
   };
-
-  // إلغاء التسجيل
-  const cancelRecording = () => {
-    stopRecording();
-    setAudioBlob(null);
-    setDuration(0);
-    chunksRef.current = [];
-    onCancel?.();
-  };
-
-  // إرسال التسجيل
-  const sendRecording = () => {
-    if (audioBlob && duration > 0) {
-      onRecordingComplete(audioBlob, duration);
-      // إعادة تعيين
-      setAudioBlob(null);
-      setDuration(0);
-      chunksRef.current = [];
-    }
-  };
-
-  // تنسيق الوقت (MM:SS)
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // حساب النسبة المئوية للوقت
-  const progressPercentage = (duration / maxDuration) * 100;
-
-  return (
-    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-      {!isRecording && !audioBlob && (
-        <>
-          <Button
-            onClick={startRecording}
-            size="icon"
-            variant="default"
-            className="rounded-full h-12 w-12"
-          >
-            <Mic className="h-5 w-5" />
-          </Button>
-          <span className="text-sm text-muted-foreground">{t('voiceRecorder.auto_0')}</span>
-        </>
-      )}
-
-      {isRecording && (
-        <>
-          {/* مؤشر التسجيل */}
-          <div className="flex items-center gap-2 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium">{t('compVoiceRecorderPage.text1')}</span>
-            </div>
-            
-            {/* المؤقت */}
-            <div className="flex-1 flex items-center gap-2">
-              <div className="flex-1 h-2 bg-background rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-100"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
-              <span className="text-sm font-mono min-w-[3rem] text-right">
-                {formatTime(duration)}
-              </span>
-            </div>
-          </div>
-
-          {/* أزرار التحكم */}
-          <div className="flex gap-2">
-            <Button
-              onClick={cancelRecording}
-              size="icon"
-              variant="ghost"
-              className="h-10 w-10"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            <Button
-              onClick={stopRecording}
-              size="icon"
-              variant="destructive"
-              className="h-10 w-10"
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-          </div>
-        </>
-      )}
-
-      {audioBlob && !isRecording && (
-        <>
-          <div className="flex items-center gap-2 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 bg-green-500 rounded-full" />
-              <span className="text-sm font-medium">{t('compVoiceRecorderPage.text2')}</span>
-            </div>
-            <span className="text-sm text-muted-foreground">
-              ({formatTime(duration)})
-            </span>
-          </div>
-
-          {/* أزرار الإرسال/الإلغاء */}
-          <div className="flex gap-2">
-            <Button
-              onClick={cancelRecording}
-              size="icon"
-              variant="ghost"
-              className="h-10 w-10"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            <Button
-              onClick={sendRecording}
-              size="icon"
-              variant="default"
-              className="h-10 w-10"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
-        </>
-      )}
+  const cancel=()=>{if(disabled||phase==='sending')return;reset();onCancel?.();};
+  const time=`${Math.floor(duration/60).toString().padStart(2,'0')}:${Math.floor(duration%60).toString().padStart(2,'0')}`;
+  return <section data-voice-recorder data-voice-phase={phase} className="min-w-0 space-y-2 rounded-lg bg-muted p-3" aria-label={t('staffVoice.title')}>
+    <div className="flex flex-wrap items-center gap-2">
+      {phase==='idle'&&<Button type="button" data-voice-start size="icon" disabled={disabled} onClick={start} style={{minWidth:44,minHeight:44}} aria-label={t('staffVoice.start')}><Mic className="h-5 w-5"/></Button>}
+      {phase==='permission'&&<Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true"/>}
+      <span className={`min-w-0 text-sm ${phase==='draft'||phase==='sending'?'basis-full':'flex-1'}`} role="status">{phase==='idle'?t('staffVoice.start'):phase==='permission'?t('staffVoice.permission'):phase==='recording'?t('staffVoice.recording'):phase==='sending'?t('staffVoice.sending'):t('staffVoice.review')}</span>
+      {phase!=='idle'&&phase!=='permission'&&<span className="font-mono text-sm" dir="ltr">{time}</span>}
+      {phase!=='idle'&&<Button type="button" data-voice-cancel size="icon" variant="ghost" disabled={disabled||phase==='sending'} onClick={cancel} style={{minWidth:44,minHeight:44}} aria-label={t('staffVoice.cancel')}><X className="h-5 w-5"/></Button>}
+      {phase==='recording'&&<Button type="button" data-voice-stop size="icon" variant="destructive" onClick={stop} style={{minWidth:44,minHeight:44}} aria-label={t('staffVoice.stop')}><Square className="h-4 w-4"/></Button>}
+      {(phase==='draft'||phase==='sending')&&<Button type="button" data-voice-send disabled={disabled||phase==='sending'} onClick={send} style={{minHeight:44}} className="gap-2 whitespace-normal">
+        {phase==='sending'?<Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none"/>:<Send className="h-4 w-4"/>}{attempted?t('staffVoice.check'):t('staffVoice.send')}
+      </Button>}
     </div>
-  );
+    {preview&&<audio data-voice-preview controls src={preview} className="w-full min-w-0" preload="metadata"/>}
+    {audio&&<p className="text-xs leading-relaxed text-muted-foreground">{t('staffVoice.retained')}</p>}
+  </section>;
 }

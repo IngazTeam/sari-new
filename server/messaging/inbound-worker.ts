@@ -42,6 +42,8 @@ export async function startInboundWorker() {
     stops.push(await startSalesOrderAttributionWorker());
     const { startDashboardStaffRecoveryWorker } = await import('../ai/staff-dashboard-reply');
     stops.push(await startDashboardStaffRecoveryWorker());
+    const { startDashboardVoiceRecoveryWorker } = await import('../ai/staff-dashboard-voice');
+    stops.push(await startDashboardVoiceRecoveryWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

@@ -1,0 +1,794 @@
+{
+  "generatedAt": "2026-09-26T23:00:20.849Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "realReactQueryAndTrpc": true,
+  "externalRequestsBlocked": true,
+  "scope": "Actual Conversations component with simulated queries/mutations in Chromium, not production or physical iPhone/Safari.",
+  "results": [
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 320,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 375,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 430,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "ar",
+      "width": 1440,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reload_keeps_attempt",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "only_acceptance_releases_identity",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "storage_failure_blocks_send",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "pending_retry_same_identity",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 320,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 375,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 430,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_products",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_payment_link",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "book_appointment",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_location",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_hours",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "transfer_human",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_order_status",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_offer",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "request_review",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_is_reviewable_draft_only",
+      "lang": "en",
+      "width": 1440,
+      "id": "send_catalog",
+      "passed": true
+    },
+    {
+      "mode": "shortcut_preserves_existing_draft",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "explicit_shortcut_send_uses_durable_identity",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reload_keeps_attempt",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "only_acceptance_releases_identity",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "storage_failure_blocks_send",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "drafts-ar-375.png",
+    "drafts-en-375.png",
+    "staff-ar-1440.png",
+    "staff-ar-375.png",
+    "staff-en-1440.png",
+    "staff-en-375.png"
+  ]
+}

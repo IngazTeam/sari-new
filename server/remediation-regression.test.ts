@@ -53,7 +53,8 @@ describe('10/10 remediation regression guards', () => {
     const client = read('./client/src/pages/merchant/Conversations.tsx');
 
     expect(voiceSend).toContain('conversation.merchantId !== merchant.id');
-    expect(voiceSend).toContain('input.storageKey.startsWith(expectedPrefix)');
+    expect(voiceSend).toContain('.input(staffVoiceInput)');
+    expect(voiceSend).toContain('routeDashboardStaffVoice(ctx.merchantId,ctx.user.id,input,async()=>{');
     expect(voiceSend).not.toMatch(/audioUrl:\s*z\.string/);
     expect(voiceSend.indexOf('sendFileWithCredentials(')).toBeLessThan(voiceSend.indexOf('createMessage({'));
     expect(voiceSend).toContain('!result.success || !result.messageId');
