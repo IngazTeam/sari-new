@@ -1,4 +1,6 @@
 import { abTestsRouter } from './routers-ab-tests';
+import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
+import { routeDashboardStaffReply } from './staff-dashboard-reply-route';
 import { calendarReconciliationProcedures } from './routers-calendar-reconciliation';
 import { calendarAppointmentProcedures } from './routers-calendar-appointments';
 import { bookingCreationProcedure } from './routers-booking-creation';
@@ -1590,11 +1592,10 @@ export const appRouter = router({
 
     // Send reply from merchant dashboard
     sendReply: permissionProcedure('conversations.reply')
-      .input(z.object({
-        conversationId: z.number(),
-        message: z.string().min(1).max(5000),
-      }))
+      .input(staffDashboardReplyInput)
       .mutation(async ({ input, ctx }) => {
+        const tracked=await routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input);
+        if(tracked)return tracked;
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

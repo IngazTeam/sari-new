@@ -1,4 +1,11 @@
 {
+  "staffDashboardReply": {
+    "accepted": "WhatsApp accepted the message for sending.",
+    "pending": "Acceptance is not confirmed yet. Keep the text; trying again checks the same attempt without sending it twice.",
+    "failed": "This attempt was not accepted. Review the WhatsApp connection and reply permissions before creating a new message.",
+    "projectionPending": "WhatsApp accepted the message, but saving it to the conversation needs review. Do not send it again.",
+    "unavailable": "The attempt could not be verified. Keep the text and refresh the conversation before trying again."
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",
@@ -8868,5 +8875,30 @@
     "boundaryHelp": "Message time is stored to the second. If that second overlaps the start or end of observation, the message is reported at the boundary rather than counted inside the window.",
     "identityHelp": "The check uses saved conversation bindings and the current customer identity. A deleted conversation, changed number or missing binding is a gap. This does not establish complete history or rule out earlier identity changes.",
     "salesLimit": "These are conversation record counts, not a measurement of staff-assisted sales. Message time may refer to an earlier send attempt; it does not prove acceptance, delivery or precedence over payment. A takeover flag alone is not evidence of actual assistance."
+  },
+  "quickDrafts": {
+    "title": "Reply drafts",
+    "description": "Choose a draft to edit and review before sending. These shortcuts do not process payments, bookings or transfers.",
+    "existingDraft": "You already have a reply draft. Finish or clear it before choosing another.",
+    "productsLabel": "Understand the need",
+    "productsMessage": "What product or service are you looking for, and what matters most to you?",
+    "paymentLabel": "Payment details",
+    "paymentMessage": "Please share the order number or the items you want to buy so I can check the amount and suitable payment method.",
+    "bookingLabel": "Request an appointment",
+    "bookingMessage": "Which service do you need, and what day and time suit you? I will check availability before confirming an appointment.",
+    "locationLabel": "Find a branch",
+    "locationMessage": "Which city or area would you like to visit us in? I will check the suitable location for you.",
+    "hoursLabel": "Plan a visit",
+    "hoursMessage": "Which branch and day are you considering? I will check the opening hours for that visit.",
+    "followupLabel": "Personal follow-up",
+    "followupMessage": "I am here to help with your request. What would you like us to start with?",
+    "orderLabel": "Check an order",
+    "orderMessage": "Please share your order number so I can check its status and give you the available update.",
+    "offerLabel": "Understand the budget",
+    "offerMessage": "What is your budget and required quantity? I will review suitable options for you.",
+    "reviewLabel": "Ask for feedback",
+    "reviewMessage": "We would love to hear about your experience with us. What did you like, and what could we improve?",
+    "catalogLabel": "Choose a category",
+    "catalogMessage": "Which product category interests you? I will review options that match your needs."
   }
 }

@@ -1,7 +1,8 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const withUi=process.argv.includes('--with-ui');
-const withStaffAcceptance=process.argv.includes('--staff-acceptance');
-const root=process.cwd(),output=path.resolve(withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
+const withDashboardStaff=process.argv.includes('--dashboard-staff');
+const withStaffAcceptance=process.argv.includes('--staff-acceptance')||withDashboardStaff;
+const root=process.cwd(),output=path.resolve(withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -34,6 +35,14 @@ const extra=['server/ai/sales-experiment-readout-contract.ts','server/ai/sales-e
   'server/ai/sales-experiment-readout-outcomes.ts','shared/sales-experiment-outcome-readout.ts',
   'server/ai/sales-experiment-readout-staff.ts','shared/sales-experiment-staff-readout.ts',
   'scripts/testing/verify-sales-experiment-readout.cjs',...unit,...database];
+if(withDashboardStaff){
+  unit.push('server/ai/staff-dashboard-reply-pentest.test.ts','server/staff-dashboard-reply-access-pentest.test.ts',
+    'server/staff-dashboard-attempt-pentest.test.ts','server/learning-recovery-bootstrap-pentest.test.ts','server/conversations.test.ts');
+  database.push('server/ai/staff-dashboard-reply.mysql.test.ts','server/ai/ordinary-reply-usage.mysql.test.ts');
+  extra.push(...unit,...database,'server/ai/staff-dashboard-reply-contract.ts','server/ai/staff-dashboard-reply.ts','server/staff-dashboard-reply-route.ts',
+    'shared/staff-dashboard-reply.ts','client/src/lib/staff-dashboard-attempt.ts','drizzle/0131_staff_dashboard_replies.sql',
+    'scripts/testing/verify-staff-dashboard-migration.cjs','scripts/testing/verify-staff-dashboard-ui.cjs','scripts/testing/fixtures/staff-dashboard-ui-entry.tsx');
+}
 if(withStaffAcceptance)extra.push('server/ai/sales-staff-acceptance-contract.ts','server/ai/sales-staff-acceptance.ts',
   'drizzle/0130_sales_staff_acceptances.sql','scripts/testing/verify-sales-staff-acceptance-migration.cjs');
 if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
@@ -61,7 +70,7 @@ try{
   let migrationReport;
   if(withStaffAcceptance){
     const migrationOutput=path.join(output,'migration.json');
-    checks.push(run('staff-migration',['scripts/testing/verify-sales-staff-acceptance-migration.cjs'],{...process.env,
+    checks.push(run('staff-migration',[withDashboardStaff?'scripts/testing/verify-staff-dashboard-migration.cjs':'scripts/testing/verify-sales-staff-acceptance-migration.cjs'],{...process.env,
       SARI_TEST_DATABASE_URL:process.env.SARI_STAFF_MIGRATION_DATABASE_URL,SARI_STAFF_MIGRATION_OUTPUT:migrationOutput}));
     const bytes=fs.readFileSync(migrationOutput),report=JSON.parse(bytes);
     if(!report.passed||!report.cases.length||report.cases.some(c=>!c.passed))throw Error('Incomplete staff migration report');
@@ -85,7 +94,8 @@ try{
   const browserReports=[];
   if(withUi){
     for(const [name,script,variable]of [['readout-ui','scripts/testing/verify-sales-experiment-readout-ui.cjs','SALES_READOUT_UI_OUTPUT'],
-      ['order-report-ui','scripts/testing/verify-sales-order-report-ui.cjs','SALES_ORDER_REPORT_UI_OUTPUT']]){
+      ['order-report-ui','scripts/testing/verify-sales-order-report-ui.cjs','SALES_ORDER_REPORT_UI_OUTPUT'],
+      ...(withDashboardStaff?[['staff-dashboard-ui','scripts/testing/verify-staff-dashboard-ui.cjs','STAFF_DASHBOARD_UI_OUTPUT']]:[])]){
       const destination=path.join(output,name);checks.push(run(name,[script],{...env,[variable]:destination}));
       const report=JSON.parse(fs.readFileSync(path.join(destination,'results.json')));
       if(report.errors.length||!report.results.length||report.results.some(r=>r.passed!==true))throw Error('Incomplete browser report '+name);
@@ -102,7 +112,7 @@ try{
       tests:r.testResults.flatMap(f=>f.assertionResults.map(t=>({file:path.relative(root,f.name).replaceAll('\\','/'),name:t.fullName,status:t.status})))};
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
-    scope:withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
+    scope:withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
     checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),migrationReport,productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));

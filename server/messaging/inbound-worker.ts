@@ -40,6 +40,8 @@ export async function startInboundWorker() {
     stops.push(await startSalesPaymentAttributionWorker());
     const { startSalesOrderAttributionWorker } = await import('../ai/sales-order-attribution');
     stops.push(await startSalesOrderAttributionWorker());
+    const { startDashboardStaffRecoveryWorker } = await import('../ai/staff-dashboard-reply');
+    stops.push(await startDashboardStaffRecoveryWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

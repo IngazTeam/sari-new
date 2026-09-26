@@ -401,7 +401,7 @@ describe('real app router team boundaries', () => {
     expect(mocks.messages).not.toHaveBeenCalled();
   });
   it('blocks viewer sends, sync and order mutations before handlers run', async () => {
-    await expect(caller().conversations.sendReply({ conversationId: 4, message: 'forged' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(caller().conversations.sendReply({ conversationId: 4, message: 'forged',requestId:'00000000-0000-4000-8000-000000000001' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().conversations.syncFromWhatsApp()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().orders.cancel({ orderId: 1 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().orders.updateStatus({ orderId: 1, status: 'paid' })).rejects.toMatchObject({ code: 'FORBIDDEN' });

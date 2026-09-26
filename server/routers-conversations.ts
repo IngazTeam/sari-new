@@ -6,6 +6,8 @@
  */
 
 import { z } from "zod";
+import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
+import { routeDashboardStaffReply } from './staff-dashboard-reply-route';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
@@ -132,11 +134,10 @@ export const conversationsRouter = router({
 
     // Send reply from merchant dashboard
     sendReply: permissionProcedure('conversations.reply')
-        .input(z.object({
-            conversationId: z.number(),
-            message: z.string().min(1).max(5000),
-        }))
+        .input(staffDashboardReplyInput)
         .mutation(async ({ input, ctx }) => {
+            const tracked=await routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input);
+            if(tracked)return tracked;
             const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

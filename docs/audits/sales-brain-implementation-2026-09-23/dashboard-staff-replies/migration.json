@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-09-26T21:58:26.554Z",
+  "scope": "Synthetic fresh database and 0130-to-0131 upgrade, partial DDL, preservation, constraints, deletion and full replay. No production access.",
+  "migrationSha256": "e675c1900b6f13e2db39c9f1414e1e373e238ef3c4438942c93ad8c49cfefdd2",
+  "cases": [
+    {
+      "mode": "fresh",
+      "migrations": 132,
+      "empty": true,
+      "passed": true
+    },
+    {
+      "mode": "upgrade",
+      "migrations": 132,
+      "preservedTables": [
+        "sales_escalation_relays",
+        "sari_escalation_queue",
+        "messages",
+        "whatsapp_message_deliveries",
+        "ai_budget_policies",
+        "ai_sales_staff_acceptances"
+      ],
+      "initiallyEmpty": true,
+      "duplicateRequestRejected": true,
+      "unsupportedSourceRejected": true,
+      "sourceDeletionPreservesEvidence": true,
+      "rerunUnchanged": true,
+      "globalDailyMicroUsd": "100000000",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

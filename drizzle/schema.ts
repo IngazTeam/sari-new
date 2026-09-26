@@ -3950,7 +3950,18 @@ export const salesStaffAcceptances=mysqlTable('ai_sales_staff_acceptances',{
 },t=>[uniqueIndex('uq_staff_acceptance_source').on(t.merchantId,t.sourceKind,t.sourceId),
   uniqueIndex('uq_staff_acceptance_outbox').on(t.merchantId,t.outboxId),uniqueIndex('uq_staff_acceptance_receipt').on(t.merchantId,t.providerMessageDigest),
   index('idx_staff_acceptance_customer').on(t.merchantId,t.customerKey,t.acceptanceObservedAt),
-  check('ck_staff_acceptance_source',sql`${t.sourceKind} = 'escalation_relay'`)]);
+  check('ck_staff_acceptance_source',sql`${t.sourceKind} IN ('escalation_relay','dashboard_text')`)]);
+
+export const salesStaffReplies=mysqlTable('ai_sales_staff_replies',{
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  actorUserId:int('actor_user_id').notNull(),conversationId:int('conversation_id').notNull(),requestId:char('request_id',{length:36}).notNull(),
+  instanceId:int('instance_id').notNull(),ownershipVersion:int('ownership_version').notNull(),customerPhone:varchar('customer_phone',{length:64}).notNull(),
+  replyText:text('reply_text').notNull(),basis:json(),basisDigest:char('basis_digest',{length:64}),
+  status:mysqlEnum(['reserved','accepted','failed','suppressed']).notNull().default('reserved'),providerMessageId:varchar('provider_message_id',{length:255}),
+  projectedMessageId:int('projected_message_id'),nextReconcileAt:datetime('next_reconcile_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},t=>[uniqueIndex('uq_staff_reply_request').on(t.merchantId,t.requestId),index('idx_staff_reply_conversation').on(t.merchantId,t.conversationId,t.id),
+  index('idx_staff_reply_recovery').on(t.nextReconcileAt,t.id)]);
 
 export const salesEscalationReviews = mysqlTable('sales_escalation_reviews', {
   id: int().autoincrement().primaryKey(),

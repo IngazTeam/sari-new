@@ -1,4 +1,5 @@
 import { trpc } from '@/lib/trpc';
+import { staffDashboardAttempt } from '@/lib/staff-dashboard-attempt';
 import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { EscalationReconciliation } from '@/components/EscalationReconciliation';
 import { SalesOfferReview } from '@/components/SalesOfferReview';
@@ -46,7 +47,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { ConversationPreviewMode } from '@/components/ConversationPreviewMode';
 import { AISuggestions } from '@/components/AISuggestions';
-import { QuickActionsBar } from '@/components/QuickActions';
+import { QuickActionsBar, type QuickActionDraft } from '@/components/QuickActions';
 import { toast } from 'sonner';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { parseMerchantDate } from '@/lib/merchant-date';
@@ -70,6 +71,8 @@ export default function Conversations() {
   const [currentPage, setCurrentPage] = useState(1);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const selectedReplyConversation=useRef(selectedConversationId);
+  selectedReplyConversation.current=selectedConversationId;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   // Pipeline filter state (from SalesPipeline deep-links)
@@ -185,39 +188,43 @@ export default function Conversations() {
 
     setIsSending(true);
     try {
-      await sendReplyMutation.mutateAsync({
-        conversationId: selectedConversationId,
-        message: replyText.trim(),
-      });
-      setReplyText('');
-      toast.success('تم إرسال الرسالة ✓');
+      const text=replyText.trim(),conversationId=selectedConversationId;
+      const accepted=await sendDashboardText(conversationId,text);
+      if(!accepted)return;
+      if(selectedReplyConversation.current===conversationId)setReplyText(current=>current.trim()===text?'':current);
       // Refresh messages
       utils.conversations.getMessages.invalidate({
         conversationId: selectedConversationId,
       });
     } catch (error: any) {
-      toast.error(error.message || 'فشل إرسال الرسالة');
+      toast.error(t('staffDashboardReply.unavailable'), { position: 'top-center' });
     } finally {
       setIsSending(false);
     }
   };
 
-  // Send quick action message
-  const handleQuickAction = async (action: string, data?: any) => {
-    if (!selectedConversationId || !data?.message) return;
-
-    try {
-      await sendReplyMutation.mutateAsync({
-        conversationId: selectedConversationId,
-        message: data.message,
-      });
-      toast.success(`تم تنفيذ: ${action} ✓`);
-      utils.conversations.getMessages.invalidate({
-        conversationId: selectedConversationId,
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'فشل تنفيذ الإجراء');
+  const sendDashboardText=async(conversationId:number,message:string)=>{
+    const attempt=await staffDashboardAttempt(currentMerchant?.id??0,conversationId,message);
+    const result=await sendReplyMutation.mutateAsync({conversationId,message,requestId:attempt.requestId});
+    if(!result.success){
+      if('status' in result&&result.status!=='pending')toast.warning(t('staffDashboardReply.failed'), { position: 'top-center' });
+      else toast.warning(t('staffDashboardReply.pending'), { position: 'top-center' });
+      return false;
     }
+    attempt.complete();
+    if('persisted' in result&&!result.persisted)toast.warning(t('staffDashboardReply.projectionPending'), { position: 'top-center' });
+    else toast.success(t('staffDashboardReply.accepted'), { position: 'top-center' });
+    return true;
+  };
+
+  // A shortcut prepares a draft; only the explicit send action contacts the customer.
+  const handleQuickAction = (_action: string, data: QuickActionDraft) => {
+    if (!selectedConversationId || !data?.message || isSending) return;
+    if (replyText.trim()) {
+      toast.warning(t('quickDrafts.existingDraft'), { position: 'top-center' });
+      return;
+    }
+    setReplyText(data.message);
   };
 
   return (
@@ -387,6 +394,7 @@ export default function Conversations() {
                   {filteredConversations.map(conversation => (
                     <div
                       key={conversation.id}
+                      data-staff-conversation={conversation.id}
                       className={`px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
                         selectedConversationId === conversation.id
                           ? 'bg-muted'
@@ -872,6 +880,7 @@ export default function Conversations() {
                     conversationId={selectedConversationId!}
                     customerPhone={selectedConversation.customerPhone}
                     onActionComplete={handleQuickAction}
+                    disabled={isSending}
                   />
                 </CardContent>
               </details>
@@ -881,10 +890,13 @@ export default function Conversations() {
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <Textarea
+                      data-staff-draft
                       placeholder="اكتب رسالتك هنا..."
                       aria-label="رسالتك للعميل"
                       disabled={isSending}
                       value={replyText}
+                      maxLength={4096}
+                      style={{fontSize:16}}
                       onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => {
                         if (
@@ -896,7 +908,7 @@ export default function Conversations() {
                           handleSendReply();
                         }
                       }}
-                      className="min-h-[44px] max-h-[120px] resize-none text-sm"
+                      className="min-h-[44px] max-h-[120px] resize-none text-base md:text-base"
                       rows={1}
                       dir="auto"
                     />
@@ -904,6 +916,7 @@ export default function Conversations() {
                   <Button
                     type="button"
                     size="icon"
+                    data-staff-send
                     onClick={handleSendReply}
                     disabled={!replyText.trim() || isSending}
                     className="shrink-0 h-[44px] w-[44px]"

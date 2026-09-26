@@ -14,7 +14,7 @@ function accountConfig(account:any):WhatsAppProviderConfig{
     apiUrl:account.api_url,phoneNumberId:account.phone_number_id,providerAccountId:account.provider_account_id};
 }
 /** Recheck storage as well as the config already loaded by the transport. Never expose credentials. */
-export async function staffRelayAccountIsCurrent(pool:Pick<Pool,'execute'>,basis:StaffRelayBasis,config:WhatsAppProviderConfig){
+export async function staffRelayAccountIsCurrent(pool:Pick<Pool,'execute'>,basis:Pick<StaffRelayBasis,'merchantId'|'instanceRecordId'|'accountDigest'>,config:WhatsAppProviderConfig){
   const [rows]=await pool.execute<any[]>('SELECT * FROM whatsapp_instances WHERE id=? AND merchant_id=?',[basis.instanceRecordId,basis.merchantId]);
   if(rows.length!==1)return false;
   try{return staffAccountDigest(config)===basis.accountDigest&&staffAccountDigest(accountConfig(rows[0]))===basis.accountDigest;}catch{return false;}
