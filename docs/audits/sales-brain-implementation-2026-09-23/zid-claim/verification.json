@@ -1,0 +1,73 @@
+{
+  "baseline": "1ef10ae55a1da41666e803fbeaa3a5f1ce51d464",
+  "frozenAt": "2026-09-26T14:31:36.039Z",
+  "sourceFiles": [
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "scripts/testing/write-sales-brain-acceptance.cjs"
+  ],
+  "scope": "Pre-dispatch Zid claim identity and consent authority; local SQL with mocked external provider and blocked network. No deployment or cross-source order identity claim.",
+  "attempts": [
+    {
+      "kind": "reproduced-before-fix",
+      "passed": 0,
+      "failed": 12,
+      "excludedByNameFilter": 76,
+      "accepted": false,
+      "reason": "All twelve cases reached mocked provider POST after authority changed during option lookup.",
+      "sha256": "eb79e0f2add1947a912b560b61f28f5cf21a21f50c0c71dc8454bb6c085fe673"
+    },
+    {
+      "kind": "focused-after-fix",
+      "passed": 88,
+      "failed": 0,
+      "sha256": "0bfc81bbe51c84d9b905c2a8c4193536e564bda6d14a6bff174461a81fdaab88"
+    },
+    {
+      "kind": "expanded-focused",
+      "passed": 100,
+      "failed": 0,
+      "sha256": "30a52c38351cb765358e9386a997fa6f45a487a17fac448eaaa1e8e2d407dbd0"
+    },
+    {
+      "kind": "final-focused-with-consent-lock",
+      "passed": 101,
+      "failed": 0,
+      "sha256": "8e8f523047770b2cf7b6d8b9d8136370a282048cb4c0f76983b1b0c228175494"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_zid_claim_20260926_test",
+      "migrations": 127,
+      "newMigrations": 0,
+      "sha256": "6164aa195e3a3570e437174a5fb36a23225c1c5e71bb2b520f3e1823084bb975"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "a0693241e5453298e6c79b7f6ed3a2f0aab9704146c95b8b21b9b9ccc25d2319"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "crossSourceAliasesProven": false,
+    "sourceCompletenessProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "partialRefundsSupported": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "cancellationAfterClaimImplemented": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "25 additional unique MySQL cases: 12 reproduced authority changes, 4 stale claim states, 2 result identity conflicts, exact concurrent result, harmless quote changes, late consent edit, fresh expiry, consent row lock, 2 lost claim acknowledgments. No prior test removed."
+}

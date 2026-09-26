@@ -66,6 +66,99 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     return { q: saved, remote, input: { merchantId: fixture.merchantId, actorUserId: fixture.userId, quotationId: q.id, orderId: 999, reviewed: true as const } };
   }
   const orderFacts=()=>query('SELECT * FROM ai_sales_order_facts WHERE merchant_id=? ORDER BY id',[fixture.merchantId]);
+  it.each(['phone','conversation','source','provider','currency','snapshot-address','snapshot-store','consent','attempt','result','order-key','consent-text'])
+    ('claim authority: refuses %s changes during payment-option lookup before any POST',async mode=>{
+      const q=await offer(),consent=await incoming();
+      mocks.payments.mockImplementationOnce(async()=>{
+        if(mode==='phone')await query("UPDATE sales_quotations SET customer_phone='966500009999' WHERE id=?",[q.id]);
+        if(mode==='conversation')await query('UPDATE sales_quotations SET conversation_id=NULL WHERE id=?',[q.id]);
+        if(mode==='source')await query('UPDATE sales_quotations SET source_message_id=source_message_id+100000 WHERE id=?',[q.id]);
+        if(mode==='provider')await query('UPDATE sales_quotations SET external_provider=NULL WHERE id=?',[q.id]);
+        if(mode==='currency')await query("UPDATE sales_quotations SET currency='USD' WHERE id=?",[q.id]);
+        if(mode==='snapshot-address')await query("UPDATE sales_quotations SET external_snapshot=JSON_SET(external_snapshot,'$.selection.address.line1','Changed destination') WHERE id=?",[q.id]);
+        if(mode==='snapshot-store')await query("UPDATE sales_quotations SET external_snapshot=JSON_SET(external_snapshot,'$.options.storeId','12') WHERE id=?",[q.id]);
+        if(mode==='consent')await query('UPDATE sales_quotations SET consent_message_id=? WHERE id=?',[consent.incomingMessageId,q.id]);
+        if(mode==='attempt')await query("UPDATE sales_quotations SET execution_attempt_id='00000000-0000-4000-8000-000000000001' WHERE id=?",[q.id]);
+        if(mode==='result')await query("UPDATE sales_quotations SET external_result='{}' WHERE id=?",[q.id]);
+        if(mode==='order-key')await query("UPDATE sales_quotations SET external_order_key='11:999' WHERE id=?",[q.id]);
+        if(mode==='consent-text')await query("UPDATE messages SET content='لا، ألغ الطلب' WHERE id=?",[consent.incomingMessageId]);
+        return {payment_methods:[payment]};
+      });
+      await acceptZidCheckout(consent,q.id);expect(mocks.create).not.toHaveBeenCalled();expect(mocks.save).not.toHaveBeenCalled();
+      expect(await orderFacts()).toHaveLength(0);expect((await quotes())[0].execution_state).toBe('ready');
+    });
+  it.each(['started-at','reconciliation','projection','local-order'])('claim authority: does not overwrite stale %s evidence on a ready quote',async mode=>{
+    const q=await offer(),consent=await incoming();mocks.shipping.mockImplementationOnce(async()=>{
+      if(mode==='started-at')await query('UPDATE sales_quotations SET execution_started_at=UTC_TIMESTAMP(3) WHERE id=?',[q.id]);
+      if(mode==='reconciliation')await query("UPDATE sales_quotations SET external_reconciliation='{}' WHERE id=?",[q.id]);
+      if(mode==='projection')await query('UPDATE sales_quotations SET projection_pending=1 WHERE id=?',[q.id]);
+      if(mode==='local-order'){
+        const o=await query("INSERT INTO orders (merchantId,customerPhone,customerName,items,totalAmount,currency) VALUES (?,?,'Synthetic','[]',23000,'SAR')",[fixture.merchantId,phone]);
+        await query('UPDATE sales_quotations SET order_id=? WHERE id=?',[o.insertId,q.id]);
+      }return {shipping_methods:[shipping]};
+    });
+    await acceptZidCheckout(consent,q.id);expect(mocks.create).not.toHaveBeenCalled();expect(await orderFacts()).toHaveLength(0);
+  });
+  it.each(['phone','consent'])('claim authority: does not leak a succeeded %s result changed during the option read',async mode=>{
+    const q=await offer(),consent=await incoming();mocks.payments.mockImplementationOnce(async()=>{
+      await query("UPDATE sales_quotations SET status='accepted',execution_state='succeeded',consent_message_id=?,external_result=? WHERE id=?",
+        [mode==='consent'?consent.incomingMessageId+100000:consent.incomingMessageId,JSON.stringify({id:999,code:'PRIVATE',url:'https://fixture.zid.store/private',totalMinor:23000}),q.id]);
+      if(mode==='phone')await query("UPDATE sales_quotations SET customer_phone='966500009999' WHERE id=?",[q.id]);return {payment_methods:[payment]};
+    });
+    const text=await acceptZidCheckout(consent,q.id);expect(text).not.toContain('PRIVATE');expect(text).not.toContain('/private');expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it('claim authority: accepts the exact concurrent result for the same consent without a second POST',async()=>{
+    const q=await offer(),consent=await incoming();let inner='';mocks.payments.mockImplementationOnce(async()=>{
+      inner=await acceptZidCheckout(consent,q.id);return {payment_methods:[payment]};
+    });
+    expect(await acceptZidCheckout(consent,q.id)).toBe(inner);expect(mocks.create).toHaveBeenCalledOnce();expect(await orderFacts()).toHaveLength(1);
+  });
+  it('claim authority: permits a viewed quote and JSON key reordering without treating them as changed consent',async()=>{
+    const q=await offer(),consent=await incoming(),snapshot=typeof q.external_snapshot==='string'?JSON.parse(q.external_snapshot):q.external_snapshot;
+    mocks.payments.mockImplementationOnce(async()=>{
+      await query("UPDATE sales_quotations SET status='viewed',external_snapshot=? WHERE id=?",[JSON.stringify(Object.fromEntries(Object.entries(snapshot).reverse())),q.id]);return {payment_methods:[payment]};
+    });
+    expect(await acceptZidCheckout(consent,q.id)).toContain('FIXTURE-999');expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it('claim authority: rereads consent after a catalog lookup waits',async()=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let changed=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,key){if(key==='execute')return async(sql:any,args:any)=>{
+      const result=await target.execute(sql,args);if(!changed&&String(sql).includes('FROM zid_products')){changed=true;await query("UPDATE messages SET content='لا، ألغ الطلب' WHERE id=?",[consent.incomingMessageId]);}return result;};
+      const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await acceptZidCheckout(consent,q.id);vi.restoreAllMocks();expect(changed).toBe(true);expect(mocks.create).not.toHaveBeenCalled();expect((await quotes())[0].execution_state).toBe('ready');
+  });
+  it('claim authority: uses the actual claim statement clock after earlier expiry checks passed',async()=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let checked=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,key){if(key==='execute')return async(sql:any,args:any)=>{
+      if(String(sql).includes("SET status = 'accepted', consent_message_id")){
+        checked=true;await target.query('SET timestamp=?',[Math.floor(Date.now()/1000)+2*86400]);try{return await target.execute(sql,args);}finally{await target.query('SET timestamp=DEFAULT');}
+      }return target.execute(sql,args);};const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await acceptZidCheckout(consent,q.id);vi.restoreAllMocks();expect(checked).toBe(true);expect(mocks.create).not.toHaveBeenCalled();expect((await quotes())[0]).toMatchObject({execution_state:'ready',execution_attempt_id:null,consent_message_id:null});
+  });
+  it('claim authority: serializes a consent edit until the verified claim commits',async()=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let once=true,entered!:()=>void,resume!:()=>void;
+    const atConsent=new Promise<void>(r=>{entered=r;}),continueClaim=new Promise<void>(r=>{resume=r;});
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,key){if(key==='execute')return async(sql:any,args:any)=>{
+      const result=await target.execute(sql,args);if(once&&String(sql).includes('SELECT content FROM messages')&&String(sql).includes('FOR SHARE')){once=false;entered();await continueClaim;}return result;
+    };const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    const accepting=acceptZidCheckout(consent,q.id);let editor:any;
+    try{
+      await atConsent;editor=await get();await editor.query('SET SESSION innodb_lock_wait_timeout=1');
+      await expect(editor.execute("UPDATE messages SET content='لا، ألغ الطلب' WHERE id=?",[consent.incomingMessageId])).rejects.toMatchObject({code:'ER_LOCK_WAIT_TIMEOUT'});
+      expect(mocks.create).not.toHaveBeenCalled();
+    }finally{if(editor){await editor.query('SET SESSION innodb_lock_wait_timeout=DEFAULT');editor.release();}resume();}
+    expect(await accepting).toContain('FIXTURE-999');vi.restoreAllMocks();expect(mocks.create).toHaveBeenCalledOnce();expect(await orderFacts()).toHaveLength(1);
+  });
+  it.each(['before','after'])('claim authority: lost claim commit %s acknowledgment never sends an unconfirmed attempt',async when=>{
+    const q=await offer(),consent=await incoming(),pool=(await getPool())!,get=pool.getConnection.bind(pool);let hit=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();let claimed=false;return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(sql:any,args:any)=>{const result=await target.execute(sql,args);if(String(sql).includes("SET status = 'accepted', consent_message_id"))claimed=true;return result;};
+      if(key==='commit')return async()=>{if(claimed&&!hit){hit=true;if(when==='after')await target.commit();throw Error('Synthetic lost claim commit');}return target.commit();};
+      const v=(target as any)[key];return typeof v==='function'?v.bind(target):v;}}) as any;});
+    await expect(acceptZidCheckout(consent,q.id)).rejects.toThrow('Synthetic lost claim commit');vi.restoreAllMocks();expect(hit).toBe(true);expect(mocks.create).not.toHaveBeenCalled();
+    expect((await quotes())[0].execution_state).toBe(when==='after'?'processing':'ready');await acceptZidCheckout(consent,q.id);
+    expect(mocks.create).toHaveBeenCalledTimes(when==='after'?0:1);expect(await orderFacts()).toHaveLength(when==='after'?0:1);
+  });
   it('order evidence: freezes the verified store and quote exactly once without payment or a guessed local alias',async()=>{
     const q=await offer(),consent=await incoming();await acceptZidCheckout(consent,q.id);const [row]=await orderFacts(),f=readSalesOrderFact(row);
     expect(f.snapshot).toMatchObject({provider:'zid',quotationId:q.id,orderReference:'999',localOrderId:null,quotedAmountMinor:23000,origin:'zid_create_response',paymentEvidence:'not_measured'});

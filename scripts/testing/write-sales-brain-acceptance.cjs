@@ -711,6 +711,10 @@ Object.assign(entries, {
  B046:[entries.B046[0]+' يستطيع السوبر أدمن النشط فحص أدلة طلب واحد عبر API للقراءة فقط؛ بصمة مجموعة الأدلة تتغير عند ظهور استرجاع، وتبقى اكتمالية المصادر وحالة الطلب الحالية غير مقاستين. الواجهة والتقرير الجامع ما زالا مفتوحين.','server/sales-order-settlement-access-pentest.test.ts'],
  B064:[entries.B064[0]+' اختبرت رحلة اتفاق محلي إلى قبض واسترجاع Tap، واختلاف مبلغ الفاتورة، وتكرار القراءة، وتعارض الهوية والبصمات، وحذف المصدر وإعادة الاتصال والاسترجاع المتزامن وفشل إنهاء اتصال القراءة؛ دون طلبات مزود أو تغيير مالي من الفاحص.','server/ai/sales-order-attribution.mysql.test.ts'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' أغلقت فجوة اعتماد زد قبل POST: يعاد ربط العميل والمحادثة والمصدر والمزوّد والعملة وتفاصيل الاتفاق ونص الموافقة بعد قراءة خيارات المزوّد، وترفض آثار محاولة قديمة على عرض جاهز. تقفل رسالة الموافقة حتى تثبيت الحجز، وتراجع الصلاحية الزمنية في UPDATE الفعلي وتتحقق نتيجته.','server/ai/zid-checkout-agreements.mysql.test.ts'],
+ B064:[entries.B064[0]+' أثبتت 12 حالة قبل الإصلاح أن POST كان ينفذ بعد تغير الاتفاق أو الموافقة أثناء انتظار الخيارات. تغطي 25 حالة جديدة المنع قبل الاتصال، وعدم تسريب نتيجة تغيرت هويتها، والحجز المتزامن، وانتظار الكتالوج، وقفل الموافقة، وانتهاء العرض وفقد إقرار حجز التنفيذ. لا اتصال إنتاجي.','server/ai/zid-checkout-agreements.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

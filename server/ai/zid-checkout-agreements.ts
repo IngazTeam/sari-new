@@ -146,18 +146,30 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     if (!isOrderConfirmation(source.content)) return { text: 'لم أعتمد هذا الرد كتأكيد. اذكر التعديل المطلوب للمنتجات أو الكمية أو العنوان.' };
     if (!quote.valid || !['sent', 'viewed'].includes(quote.status) || quote.source_message_id >= input.incomingMessageId) return { text: changed };
     if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, marker(quoteId))) return { text: 'أحتاج موافقتك على آخر ملخص طلب أُرسل لك، قبل إنشاء الطلب.' };
-    return { snapshot: decode<Snapshot>(quote.external_snapshot), sourceMessageId: quote.source_message_id };
+    return { snapshot: decode<Snapshot>(quote.external_snapshot), sourceMessageId: quote.source_message_id, consentContent: source.content };
   });
   if ('text' in initial) return initial.text!;
   const providerContext = await zidCheckoutProvider(input.merchantId);
   const currentOptions = await optionsFor(providerContext.client, providerContext.storeId, initial.snapshot.selection.shippingMethodName);
   const claimed = await checkoutTransaction(async connection => {
-    await assertCheckoutIdentity(connection, input);
+    const source = await assertCheckoutIdentity(connection, input);
     const [rows] = await connection.execute<any[]>(`SELECT *, offer_expires_at > UTC_TIMESTAMP(3) AS valid FROM sales_quotations
       WHERE id = ? AND merchant_id = ? FOR UPDATE`, [quoteId, input.merchantId]);
     const q = rows[0];
+    // Provider option reads cross a transaction boundary. Rebind every authority
+    // field before replaying a result or claiming an irreversible remote create.
+    if (!q || q.customer_phone !== input.customerPhone || Number(q.conversation_id) !== input.conversationId
+      || Number(q.source_message_id) !== Number(initial.sourceMessageId) || q.external_provider !== 'zid' || q.currency !== 'SAR'
+      || source.content !== initial.consentContent || !isOrderConfirmation(source.content)) return { text: changed };
+    try {
+      if (policyArtifactDigest(decode<Snapshot>(q.external_snapshot)) !== policyArtifactDigest(initial.snapshot)) return { text: changed };
+    } catch { return { text: changed }; }
+    if (q.execution_state === 'succeeded' && (q.status !== 'accepted' || Number(q.consent_message_id) !== input.incomingMessageId)) return { text: changed };
     if (q?.execution_state === 'succeeded') return { text: resultText(decode<Result>(q.external_result)) };
-    if (!q || q.execution_state !== 'ready') return { text: uncertain };
+    if (q.execution_state !== 'ready') return { text: uncertain };
+    // A ready quote with an old effect/claim must not be overwritten with a fresh attempt.
+    if (q.consent_message_id != null || q.order_id != null || q.execution_attempt_id != null || q.execution_started_at != null
+      || q.external_result != null || q.external_order_key != null || q.external_reconciliation != null || Number(q.projection_pending) !== 0) return { text: changed };
     if (!q.valid || !['sent', 'viewed'].includes(q.status)) return { text: changed };
     if (!await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, marker(quoteId))) return { text: changed };
     let fresh: Snapshot;
@@ -167,10 +179,20 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
       await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quoteId]); return { text: changed };
     }
     await currentInboundExecution()?.assertOwned();
+    // Catalog locks or lease checks may have waited. Hold the consent row until
+    // claim commit so editing its text cannot race the final authority checks.
+    const [consents] = await connection.execute<any[]>(`SELECT content FROM messages
+      WHERE id = ? AND conversationId = ? AND direction = 'incoming' FOR SHARE`, [input.incomingMessageId,input.conversationId]);
+    if (consents.length !== 1 || String(consents[0].content || '') !== initial.consentContent) return { text: changed };
+    const finalSource = await assertCheckoutIdentity(connection, input);
+    if (finalSource.content !== initial.consentContent || !isOrderConfirmation(finalSource.content)
+      || !await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, marker(quoteId))) return { text: changed };
     const attemptId = randomUUID();
-    await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing',
+    const [claim] = await connection.execute<any>(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing',
       execution_attempt_id = ?, execution_started_at = UTC_TIMESTAMP(3)
-      WHERE id = ? AND execution_state = 'ready'`, [input.incomingMessageId, attemptId, quoteId]);
+      WHERE id = ? AND merchant_id = ? AND execution_state = 'ready' AND offer_expires_at > UTC_TIMESTAMP(3)`,
+    [input.incomingMessageId, attemptId, quoteId, input.merchantId]);
+    if (claim.affectedRows !== 1) return { text: changed };
     return { snapshot: fresh, attemptId };
   });
   if ('text' in claimed) return claimed.text!;
