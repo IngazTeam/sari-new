@@ -11,6 +11,8 @@ const units = [
   'server/ai/sales-reply-delivery-pentest.test.ts',
   'server/sales-reply-review-access-pentest.test.ts',
   'server/sales-reply-review-ui-pentest.test.ts',
+  'server/sales-reply-send-access-pentest.test.ts',
+  'server/sales-reply-send-ui-pentest.test.ts',
   'server/ai/sales-generation-output-review-pentest.test.ts',
   'server/ai/sales-provider-retrieval-pentest.test.ts',
   'server/ai/sales-generation-recovery-worker-pentest.test.ts',

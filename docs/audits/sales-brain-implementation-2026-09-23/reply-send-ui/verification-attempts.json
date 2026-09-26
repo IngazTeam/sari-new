@@ -1,0 +1,66 @@
+{
+  "scope": "Local synthetic verification; final acceptance from frozen staged source only.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 81,
+      "failed": 2,
+      "notSelected": 314,
+      "result": "Two fixture errors: suspended is not a user account_status enum, and an inactive WhatsApp account cannot remain primary. Corrected to deletion_pending and is_primary=0. No test removed.",
+      "sha256": "017a5263b1bfd0351f2988031ae4094df957f1e7a818384068152e24b3f54b67"
+    },
+    {
+      "kind": "corrected-focused",
+      "passed": 83,
+      "failed": 0,
+      "notSelected": 314,
+      "sha256": "a1c28b142bb22d700bc5dd0cf6cc66f2ed9fcc5193a6e6035a03f3c9ee214481"
+    },
+    {
+      "kind": "initial-component-ui",
+      "scenarios": 82,
+      "screenshots": 8,
+      "result": "Passed before the final confirmation binding and phone/button visual refinements. Superseded by the complete final UI run.",
+      "sha256": "fc22fecbaf2ef38b335ef821abf0ad8d230004da52f6c9b80a2445effd7c383b"
+    },
+    {
+      "kind": "final-full",
+      "database": "sari_reply_send_final_20260926_test",
+      "sha256": "e7f0b37b06ccc6540260eed083ced4f56c30ec326c6f148a58fce55142879944"
+    },
+    {
+      "kind": "fresh-database-migrations",
+      "sha256": "ba288a2dd5afff42220715790fa588de921ca52021c9acf46176ddb04e988715"
+    },
+    {
+      "kind": "full-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    },
+    {
+      "kind": "full-component-ui",
+      "scenarios": 1166,
+      "screenshots": 117,
+      "sha256": "607a1d20434a78148f2b6b716a9112ce01bf138ab5c4edfb9af61563b8795fc0"
+    },
+    {
+      "kind": "copy-only-correction",
+      "file": "client/src/locales/sales-reply-send.ts",
+      "originalGitBlob": "793a1194e88f4a061a6287487db57974cd35f0ce",
+      "finalGitBlob": "ae186a05be99c4d6af93bb6d30a24d36cd355e50",
+      "description": "Two rejected-status labels no longer attribute a local pre-provider rejection to the provider. No keys, interpolation, schema, logic, tests, or other source changed.",
+      "fullUiFixtureBeforeCorrectionSha256": "c931f81d47f421005c0d3c0d3226b10449d48e15742afe1363af8d11a6035fce",
+      "fullUiCompiledBeforeCorrection": true,
+      "finalTargetedUiRunsOn": "Working tree with every staged source matching the final snapshot; isolated fixture server and build output independent from the full UI run."
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    },
+    {
+      "kind": "final-affected-component-ui",
+      "scenarios": 82,
+      "screenshots": 8,
+      "sha256": "fc22fecbaf2ef38b335ef821abf0ad8d230004da52f6c9b80a2445effd7c383b"
+    }
+  ]
+}

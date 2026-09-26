@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-26T05:33:12.262Z",
+  "generatedAt": "2026-09-26T09:56:44.290Z",
   "browser": "Chrome/153.0.8010.54",
   "actualComponents": true,
   "screenshots": [
@@ -81,6 +81,10 @@
     "reply-review-ar-375.png",
     "reply-review-en-1440.png",
     "reply-review-en-375.png",
+    "reply-send-ar-1440.png",
+    "reply-send-ar-375.png",
+    "reply-send-en-1440.png",
+    "reply-send-en-375.png",
     "sales-cohort-review-ar-1440.png",
     "sales-cohort-review-ar-375.png",
     "sales-cohort-review-en-1440.png",
@@ -119,7 +123,7 @@
   ],
   "fixtureApi": true,
   "externalRequestsBlocked": true,
-  "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
+  "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari; full fresh run plus a final rerun of 82 review/send journeys after two copy-only status corrections; no logic or CSS changed",
   "results": [
     {
       "mode": "reply_review_responsive_save_and_receipt",
@@ -369,6 +373,246 @@
     },
     {
       "mode": "reply_review_keyboard_focus_and_no_default_approval",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_responsive_explicit_send",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_unknown_read_only_recovery",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_mismatch-actorUserId_read_only_recovery",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_mismatch-requestId_read_only_recovery",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_mismatch-recipient_read_only_recovery",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_mismatch-responseText_read_only_recovery",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_absent_receipt_does_not_disprove_inflight_request",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_not_attempted_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_unknown-status_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_suppressed_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_rejected_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_delivered_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_read_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_failed_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_slow_never_resends",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_actor_locks_confirmation",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_basis_locks_confirmation",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_permission_locks_confirmation",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_error_locks_confirmation",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_expired_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_quota_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_unavailable_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_no-account_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_loading_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_read-error_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_fetching_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_foreign_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_malformed_no_send",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_account_change_and_hide_reset_confirmation",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_escaped_recipient_and_message",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "reply_send_keyboard_and_explicit_checks",
       "width": 390,
       "lang": "ar",
       "passed": true
@@ -6456,5 +6700,25 @@
       "passed": true
     }
   ],
-  "errors": []
+  "errors": [],
+  "verificationPasses": {
+    "full": {
+      "generatedAt": "2026-09-26T10:07:45.743Z",
+      "sha256": "cee25dc44d3828a2c7ba6b0c411e1d4549d14cdf9bce9e1b85be3abe5028064a"
+    },
+    "finalAffectedComponents": {
+      "generatedAt": "2026-09-26T09:56:44.290Z",
+      "scenarios": 82,
+      "sha256": "3aed18e46e21803314c9e0ddb8c83c6baa817ae6e43135bf2aeee094cee56691"
+    },
+    "copyOnlyCorrection": {
+      "file": "client/src/locales/sales-reply-send.ts",
+      "originalGitBlob": "793a1194e88f4a061a6287487db57974cd35f0ce",
+      "finalGitBlob": "ae186a05be99c4d6af93bb6d30a24d36cd355e50",
+      "description": "Two rejected-status labels no longer attribute a local pre-provider rejection to the provider. No keys, interpolation, schema, logic, tests, or other source changed.",
+      "fullUiFixtureBeforeCorrectionSha256": "c931f81d47f421005c0d3c0d3226b10449d48e15742afe1363af8d11a6035fce",
+      "fullUiCompiledBeforeCorrection": true,
+      "finalTargetedUiRunsOn": "Working tree with every staged source matching the final snapshot; isolated fixture server and build output independent from the full UI run."
+    }
+  }
 }

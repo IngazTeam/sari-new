@@ -1,14 +1,12 @@
 import { z } from 'zod';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { replySendSubmitInput } from '../../shared/sales-reply-send';
 
 export const salesReplyDeliveryId = z.number().int().positive().safe();
 const id = salesReplyDeliveryId, digest = z.string().regex(/^[a-f0-9]{64}$/);
 const instant = z.string().datetime({ precision: 3 }).refine(v => Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v);
 export const prepareSalesReplyDeliveryInput = z.object({ generationId: id, instanceRecordId: id }).strict();
-export const authorizeSalesReplyDeliveryInput = prepareSalesReplyDeliveryInput.extend({
-  requestId: z.string().uuid().transform(v => v.toLowerCase()), basisDigest: digest, reason: z.string().trim().min(20).max(1200),
-  allowSendCustomerMessage: z.literal(true), reviewedExactRecipientAndResponse: z.literal(true),
-}).strict();
+export const authorizeSalesReplyDeliveryInput = replySendSubmitInput;
 export const salesReplyDeliveryIdentity = z.object({ deliveryId: id, authorizationDigest: digest }).strict();
 export const salesReplyDeliveryBasis = z.object({
   version: z.literal('sales-reply-delivery-basis.v1'), merchantId: id, generationId: id, actorUserId: id,

@@ -7,6 +7,8 @@ import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
  */
 
 import { z } from "zod";
+import { replySendReadInput, replySendSubmitInput } from '../shared/sales-reply-send';
+import { getSalesReplySendWorkspace, submitSalesReplySend } from './ai/sales-reply-delivery';
 import { replyReviewListInput, replyReviewReadInput, replyReviewSubmitInput } from '../shared/sales-reply-review';
 import { listSalesReplyReviews, getSalesReplyReviewWorkspace, submitSalesReplyReview } from './ai/sales-reply-review-workspace';
 import { SalesReplyReviewConflict } from './ai/sales-generation-output-review-store';
@@ -349,6 +351,17 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
 }
 
 export const sariBrainRouter = router({
+  getSalesReplySendWorkspace: permissionProcedure('bot_settings.manage').input(replySendReadInput).query(async ({ ctx, input }) => {
+    if (ctx.merchantRole !== 'owner') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the current owner can access reply sending' });
+    try { return await getSalesReplySendWorkspace(ctx.merchantId, ctx.user.id, input); }
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales reply send status is unavailable' }); }
+  }),
+  submitSalesReplySend: permissionProcedure('bot_settings.manage').input(replySendSubmitInput).mutation(async ({ ctx, input }) => {
+    if (ctx.merchantRole !== 'owner') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the current owner can send this reply' });
+    try { return await submitSalesReplySend(ctx.merchantId, ctx.user.id, input); }
+    // A failure may follow authorization or provider acceptance. Do not imply no message was sent.
+    catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales reply send outcome is unconfirmed' }); }
+  }),
   listSalesReplyReviews: permissionProcedure('bot_settings.manage').input(replyReviewListInput).query(async ({ ctx, input }) => {
     try { return await listSalesReplyReviews(ctx.merchantId, input); }
     catch { throw new TRPCError({ code: 'CONFLICT', message: 'Sales reply review is unavailable' }); }

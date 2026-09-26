@@ -22,6 +22,7 @@ import { salesReplyReviewRubricDigest, type RecordSalesReplyReviewInput } from '
 import { refusalAcknowledgement } from './response-validator';
 import { getSalesReplyReviewWorkspace, listSalesReplyReviews, submitSalesReplyReview } from './sales-reply-review-workspace';
 import type { ReplyReviewSubmission } from '../../shared/sales-reply-review';
+import { getSalesReplySendWorkspace, submitSalesReplySend } from './sales-reply-delivery';
 import { prepareSalesReplyDelivery, authorizeSalesReplyDelivery, dispatchReviewedSalesReply, getSalesReplyDelivery, canDispatchSalesReply, reconcileSalesReplyConversation } from './sales-reply-delivery';
 import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
 import { stageInteraction, finishInteractionDelivery, runInteractionJob } from './interaction-jobs';
@@ -530,6 +531,62 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     return { ...f, value, reviewValue: f.value, instanceRecordId, prepare, auth, prepared, account, token };
   }
   const deliveryIdentity = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => ({ deliveryId: r.deliveryId, authorizationDigest: r.authorizationDigest });
+  it.each(['green_api', 'meta_cloud'] as const)('public reply send: explicit %s message, replay and read-only recovery', async provider => {
+    const f=await deliveryFixture(provider), args={generationId:f.r.generationId,instanceRecordId:f.instanceRecordId};
+    const choose=await getSalesReplySendWorkspace(owner.merchantId,owner.userId,{generationId:f.r.generationId});
+    expect(choose).toMatchObject({stage:'choose_account',preview:null,receipt:null});
+    const ready=await getSalesReplySendWorkspace(owner.merchantId,owner.userId,args);
+    expect(ready).toMatchObject({stage:'ready',preview:{basisDigest:f.value.basisDigest,recipient:'966500000988',responseText:config.text}});
+    for(const secret of [f.token,f.account,'accountDigest','authorizationDigest','PRIVATE_SERVER','providerMessageId'])expect(JSON.stringify(ready)).not.toContain(secret);
+    expect(wa.post).not.toHaveBeenCalled();
+    expect(await query('SELECT id FROM ai_sales_reply_deliveries WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);
+    const r=await submitSalesReplySend(owner.merchantId,owner.userId,f.value);expect(r).toMatchObject({transport:'accepted',exposureRecorded:false,requestId:f.value.requestId});
+    expect(await submitSalesReplySend(owner.merchantId,owner.userId,f.value)).toEqual(r);
+    await updateWhatsAppDeliveryStatus({provider,providerAccount:f.account,providerMessageId:'fixture-receipt',status:'read'});
+    expect(await getSalesReplySendWorkspace(owner.merchantId,owner.userId,args)).toMatchObject({stage:'recorded',preview:null,receipt:{transport:'read'}});
+    expect(wa.post).toHaveBeenCalledOnce();expect(fetch).not.toHaveBeenCalled();expect((await usageSubscription()).messages_used).toBe(2);
+    expect(Object.keys(r).sort()).toEqual(['actorUserId','authorizedAt','basisDigest','deliveryId','exposureRecorded','generationId','instanceRecordId','recipient','requestId','responseText','transport'].sort());
+  });
+  it('public reply send: concurrent confirmations retain one request and one provider call',async()=>{
+    const f=await deliveryFixture();const results=await Promise.all([1,2,3].map(()=>submitSalesReplySend(owner.merchantId,owner.userId,f.value)));
+    expect(new Set(results.map(r=>r.deliveryId)).size).toBe(1);expect(wa.post).toHaveBeenCalledOnce();expect((await usageSubscription()).messages_used).toBe(2);
+  });
+  it.each(['foreign-tenant','foreign-actor','inactive-owner','inactive-merchant'])('public reply send: denies %s on preview, submission and saved request replay',async kind=>{
+    const f=await deliveryFixture();await f.auth();
+    if(kind==='inactive-owner')await query("UPDATE users SET account_status='deletion_pending' WHERE id=?",[owner.userId]);
+    if(kind==='inactive-merchant')await query("UPDATE merchants SET status='suspended' WHERE id=?",[owner.merchantId]);
+    const m=kind==='foreign-tenant'?other.merchantId:owner.merchantId,a=['foreign-tenant','foreign-actor'].includes(kind)?other.userId:owner.userId;
+    await expect(getSalesReplySendWorkspace(m,a,{generationId:f.r.generationId})).rejects.toThrow();
+    await expect(submitSalesReplySend(m,a,f.value)).rejects.toThrow();expect(wa.post).not.toHaveBeenCalled();
+  });
+  it.each(['rejected','unknown','not_attempted'])('public reply send: status recovery never sends %s again',async kind=>{
+    const f=await deliveryFixture();
+    if(kind==='not_attempted')await f.auth();
+    else {if(kind==='unknown')wa.post.mockRejectedValue(Error('synthetic transport lost'));else wa.post.mockResolvedValue({status:400,data:{error:'rejected'}});
+      expect((await submitSalesReplySend(owner.merchantId,owner.userId,f.value)).transport).toBe(kind);}
+    const calls=wa.post.mock.calls.length;
+    for(let i=0;i<3;i++)expect(await getSalesReplySendWorkspace(owner.merchantId,owner.userId,{generationId:f.r.generationId})).toMatchObject({stage:'recorded',receipt:{transport:kind}});
+    expect(wa.post.mock.calls.length).toBe(calls);expect((await usageSubscription()).messages_used).toBe(0);
+  });
+  it.each(['account','review','turn','quota'])('public reply send: stale %s cannot send using an earlier preview',async kind=>{
+    const f=await deliveryFixture(), args={generationId:f.r.generationId,instanceRecordId:f.instanceRecordId};
+    expect((await getSalesReplySendWorkspace(owner.merchantId,owner.userId,args)).stage).toBe('ready');
+    if(kind==='account')await query("UPDATE whatsapp_instances SET token='rotated-synthetic-token' WHERE id=?",[f.instanceRecordId]);
+    if(kind==='review'){const w=await publicRead(f.r.generationId);await publicSubmit({...f.reviewValue,expectedRevision:w.expectedRevision,requestId:randomUUID(),checks:{...f.reviewValue.checks,answersQuestion:false}});}
+    if(kind==='turn')await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','new turn')",[conversationId]);
+    if(kind==='quota')await query("UPDATE merchant_subscriptions SET status='cancelled' WHERE merchant_id=?",[owner.merchantId]);
+    if(kind==='quota'){expect((await getSalesReplySendWorkspace(owner.merchantId,owner.userId,args)).stage).toBe('capacity_unavailable');
+      expect((await submitSalesReplySend(owner.merchantId,owner.userId,f.value)).transport).toBe('suppressed');}
+    else await expect(submitSalesReplySend(owner.merchantId,owner.userId,f.value)).rejects.toThrow();
+    expect(wa.post).not.toHaveBeenCalled();
+  });
+  it('public reply send: preview does not list a foreign, inactive or unconfigured account',async()=>{
+    const f=await deliveryFixture();await query("UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?",[f.instanceRecordId]);
+    expect(await getSalesReplySendWorkspace(owner.merchantId,owner.userId,{generationId:f.r.generationId,instanceRecordId:f.instanceRecordId})).toMatchObject({stage:'unavailable',accounts:[],preview:null});
+    await query("UPDATE whatsapp_instances SET status='active',token='' WHERE id=?",[f.instanceRecordId]);
+    expect((await getSalesReplySendWorkspace(owner.merchantId,owner.userId,{generationId:f.r.generationId})).accounts).toEqual([]);
+    expect(wa.post).not.toHaveBeenCalled();
+  });
   const dispatch = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => dispatchReviewedSalesReply(owner.merchantId, deliveryIdentity(r));
   const deliveryRead = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => getSalesReplyDelivery(owner.merchantId, deliveryIdentity(r));
   function deliveryInput(r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>): SendMerchantWhatsAppInput {

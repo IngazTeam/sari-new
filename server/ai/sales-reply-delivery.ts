@@ -9,6 +9,8 @@ import { readSalesReplyReview } from './sales-generation-output-review-store';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { lockReplySource, reserveReviewedReply, ownsReviewedReply } from './reply-reservation';
 import { assertSalesReplyUsageSchema, reserveSalesReplyUsage, settleSalesReplyUsage } from './sales-reply-usage';
+import { lockReplyUsageCapacity } from './reply-usage-quota';
+import { replySendReadInput, replySendReceipt, replySendWorkspace, type ReplySendSubmission } from '../../shared/sales-reply-send';
 import { authorizeSalesReplyDeliveryInput, prepareSalesReplyDeliveryInput, salesReplyDeliveryAuthorization,
   salesReplyDeliveryBasis, salesReplyDeliveryId as id, salesReplyDeliveryIdentity, salesReplyDeliveryKey,
   type SalesReplyDeliveryIdentity } from './sales-reply-delivery-contract';
@@ -25,16 +27,19 @@ async function clock(c: PoolConnection) {
   const [rows] = await c.execute<any[]>("SELECT DATE_FORMAT(UTC_TIMESTAMP(3),'%Y-%m-%dT%H:%i:%s.%fZ') AS now");
   return z.string().datetime().parse(String(rows[0]?.now).replace(/(\.\d{3})\d{3}Z$/, '$1Z'));
 }
+async function requireOwner(c: PoolConnection, merchant: number, actor: number) {
+  const owner = await lock(c, merchant);
+  if (Number(owner.userId) !== actor || owner.status !== 'active') return conflict();
+  const [users] = await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE', [actor]);
+  if (users.length !== 1 || users[0].account_status !== 'active') return conflict();
+}
 function accountDigest(config: WhatsAppProviderConfig) {
   return policyArtifactDigest({ version: 'sales-reply-account.v1', provider: config.provider, instanceId: config.instanceId,
     token: config.token, apiUrl: config.apiUrl ?? null, phoneNumberId: config.phoneNumberId ?? null, providerAccountId: config.providerAccountId ?? null });
 }
 async function currentBasis(c: PoolConnection, merchant: number, actor: number, generationId: number, instanceRecordId: number,
   reserved?: { deliveryId: number; authorizationDigest: string }) {
-  const owner = await lock(c, merchant);
-  if (Number(owner.userId) !== actor || owner.status !== 'active') return conflict();
-  const [users] = await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE', [actor]);
-  if (users.length !== 1 || users[0].account_status !== 'active') return conflict();
+  await requireOwner(c, merchant, actor);
   const current = await loadCurrentSalesReplyReviewBasis(c, merchant, generationId), turn = current.source.current.snapshot;
   const [reviews] = await c.execute<any[]>('SELECT * FROM ai_sales_generation_output_reviews WHERE merchant_id=? AND generation_id=? ORDER BY revision DESC LIMIT 1 FOR SHARE', [merchant, generationId]);
   if (reviews.length !== 1) return conflict();
@@ -119,7 +124,7 @@ async function history(c: PoolConnection, receipt: ReturnType<typeof readSalesRe
   }
   return { ...receipt, transport, providerMessageId: receipt.state === 'dispatching' && row?.provider_message_id ? String(row.provider_message_id) : null };
 }
-/** Internal preparation only. No public route, worker, or automatic inbound activation. */
+/** Internal evidence; the public workspace returns only the customer-facing projection. */
 export async function prepareSalesReplyDelivery(merchantId: number, actorUserId: number, value: z.infer<typeof prepareSalesReplyDeliveryInput>) {
   const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = prepareSalesReplyDeliveryInput.parse(value);
   return checkoutTransaction(async c => ({ ...await currentBasis(c, merchant, actor, input.generationId, input.instanceRecordId), ...flags }));
@@ -129,7 +134,7 @@ export async function authorizeSalesReplyDelivery(merchantId: number, actorUserI
   await assertSalesReplyUsageSchema();
   const payload = policyArtifactDigest({ version: 'sales-reply-delivery-request.v1', actor, input });
   return checkoutTransaction(async c => {
-    await lock(c, merchant);
+    await requireOwner(c, merchant, actor);
     const [prior] = await c.execute<any[]>('SELECT * FROM ai_sales_reply_deliveries WHERE merchant_id=? AND request_id=? FOR UPDATE', [merchant, input.requestId]);
     if (prior.length) { if (prior[0].payload_digest !== payload) return conflict(); return history(c, readSalesReplyDeliveryRecord(prior[0])); }
     const current = await currentBasis(c, merchant, actor, input.generationId, input.instanceRecordId);
@@ -244,4 +249,50 @@ export async function dispatchReviewedSalesReply(merchantId: number, value: Sale
   try { await sendMerchantWhatsApp(sendInput(receipt)); }
   catch { /* Read the durable outbox; a transport exception does not permit another send. */ }
   return reconcileSalesReplyConversation(merchantId, value);
+}
+
+function publicMessage(b: z.infer<typeof salesReplyDeliveryBasis>, basisDigest: string) {
+  return { generationId: b.generationId, actorUserId: b.actorUserId, instanceRecordId: b.instanceRecordId,
+    basisDigest, recipient: b.recipient, responseText: b.responseText };
+}
+function publicReceipt(r: Awaited<ReturnType<typeof history>>) {
+  return replySendReceipt.parse({ ...publicMessage(r.authorization.basis, r.authorization.basisDigest),
+    deliveryId: r.deliveryId, requestId: r.authorization.requestId, authorizedAt: r.authorization.authorizedAt,
+    transport: r.transport, exposureRecorded: false });
+}
+/** Read-only status recovery, including after a lost browser acknowledgement. Never dispatches. */
+export async function getSalesReplySendWorkspace(merchantId: number, actorUserId: number, value: z.infer<typeof replySendReadInput>) {
+  const merchant = id.parse(merchantId), actor = id.parse(actorUserId), input = replySendReadInput.parse(value);
+  return checkoutTransaction(async c => {
+    await requireOwner(c, merchant, actor);
+    const [generations] = await c.execute<any[]>('SELECT id FROM ai_sales_experiment_generations WHERE merchant_id=? AND id=?', [merchant, input.generationId]);
+    if (generations.length !== 1) return conflict();
+    const base = { generationId: input.generationId, actorUserId: actor, accounts: [] as Array<{ id: number; phoneNumber: string | null; primary: boolean }>,
+      accountsTruncated: false, preview: null, receipt: null };
+    const [prior] = await c.execute<any[]>('SELECT * FROM ai_sales_reply_deliveries WHERE merchant_id=? AND generation_id=? FOR UPDATE', [merchant, input.generationId]);
+    if (prior.length) return replySendWorkspace.parse({ ...base, stage: 'recorded', receipt: publicReceipt(await history(c, readSalesReplyDeliveryRecord(prior[0]))) });
+    const [accounts] = await c.execute<any[]>(`SELECT id,phone_number,is_primary FROM whatsapp_instances
+      WHERE merchant_id=? AND status='active' AND token<>'' AND instance_id<>''
+        AND (provider<>'mock' OR ?=1) AND (provider<>'meta_cloud' OR COALESCE(phone_number_id,'')<>'')
+      ORDER BY is_primary DESC,id LIMIT 101`, [merchant, process.env.NODE_ENV === 'test' ? 1 : 0]);
+    base.accounts = accounts.slice(0,100).map(a => ({ id: Number(a.id), phoneNumber: a.phone_number, primary: Number(a.is_primary) === 1 }));
+    base.accountsTruncated = accounts.length > 100;
+    if (!input.instanceRecordId) return replySendWorkspace.parse({ ...base, stage: base.accounts.length ? 'choose_account' : 'unavailable' });
+    if (!base.accounts.some(a => a.id === input.instanceRecordId)) return replySendWorkspace.parse({ ...base, stage: 'unavailable' });
+    // An unavailable source is readable, but never becomes an editable or sendable preview.
+    let current: Awaited<ReturnType<typeof currentBasis>>;
+    try { current = await currentBasis(c, merchant, actor, input.generationId, input.instanceRecordId); }
+    catch { return replySendWorkspace.parse({ ...base, stage: 'unavailable' }); }
+    try { await assertSalesReplyUsageSchema(); await lockReplyUsageCapacity(c, merchant); }
+    catch { return replySendWorkspace.parse({ ...base, stage: 'capacity_unavailable' }); }
+    const b = current.basis;
+    return replySendWorkspace.parse({ ...base, stage: 'ready', preview: { ...publicMessage(b, current.basisDigest),
+      checkedAt: current.checkedAt, expiresAt: new Date(Math.min(Date.parse(b.observationEndsAt), Date.parse(b.inboundReceivedAt) + 86_400_000)).toISOString() } });
+  });
+}
+/** Explicit owner action only. Replays retain one authorization and one channel key. */
+export async function submitSalesReplySend(merchantId: number, actorUserId: number, value: ReplySendSubmission) {
+  const saved = await authorizeSalesReplyDelivery(merchantId, actorUserId, value);
+  const result = await dispatchReviewedSalesReply(merchantId, { deliveryId: saved.deliveryId, authorizationDigest: saved.authorizationDigest });
+  return publicReceipt(result);
 }

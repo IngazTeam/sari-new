@@ -1,6 +1,7 @@
 import type { SalesCohortInspectionCopy } from './sales-cohort-inspection';
 import type { SalesCohortCopy } from './sales-cohort';
 import type { SalesReplyReviewCopy } from './sales-reply-review';
+import type { SalesReplySendCopy } from './sales-reply-send';
 export const serviceFormCopyKeys = [
   'created', 'updated', 'createFailed', 'updateFailed', 'loading', 'back',
   'editTitle', 'addTitle', 'editDescription', 'addDescription', 'basicInfo',
@@ -73,6 +74,7 @@ export type MerchantUxCopy = {
   experimentLaunch: SalesExperimentLaunchCopy;
   experimentReview: SalesExperimentReviewCopy;
   replyReview: SalesReplyReviewCopy;
+  replySend: SalesReplySendCopy;
   cohortInspection: SalesCohortInspectionCopy;
   salesCohort: SalesCohortCopy;
   salesProtocol: SalesExperimentProtocolCopy;

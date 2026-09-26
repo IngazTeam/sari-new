@@ -37,6 +37,11 @@ import { ZidCheckoutReconciliation } from '../../../client/src/components/ZidChe
 import { SalesSectorSettings } from '../../../client/src/components/SalesSectorSettings';
 import { SalesExperimentProtocol } from '../../../client/src/components/SalesExperimentProtocol';
 import { SalesReplyReview } from '../../../client/src/components/SalesReplyReview';
+import { SalesReplySend } from '../../../client/src/components/SalesReplySend';
+function SalesReplySendFixture() {
+  const [locked,setLocked]=useState(false);
+  return <main className="mx-auto max-w-5xl p-3" data-send-locked={locked}><SalesReplySend generationId={21} reviewKey="review-v1" active onLockedChange={setLocked}/></main>;
+}
 function AiCapabilitiesFixture(){
   const mode=new URL(location.href).searchParams.get('case')||'';
   const [failed,setFailed]=useState(mode==='ai-capabilities-error'),[refreshing,setRefreshing]=useState(false);
@@ -59,6 +64,7 @@ async function render() {
   document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx, common: ar.common } }, en: { translation: { merchantUx: merchantUxEn, common: en.common } } }, interpolation: { escapeValue: false } });
   if(mode.startsWith('reply-review-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl p-3"><SalesReplyReview /></main>);return;}
+  if(mode.startsWith('reply-send-')){createRoot(document.getElementById('root')!).render(<SalesReplySendFixture/>);return;}
   if(mode.startsWith('protocol-') || (mode.startsWith('cohort-') || mode.startsWith('inspection-') || mode.startsWith('plan-review-') || mode.startsWith('launch-'))){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-6xl p-3">{(mode==='protocol-standalone'||(mode.startsWith('cohort-') || mode.startsWith('inspection-') || mode.startsWith('plan-review-') || mode.startsWith('launch-')))?<SalesExperimentProtocol/>:<LearningPolicyEvaluationPanel proposalId={16}/>}</main>);return;}
   if(mode.startsWith('evaluation-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-6xl p-3">{mode==='evaluation-close'?<LearningPolicyEvaluation proposalId={16}/>:<LearningPolicyEvaluationPanel proposalId={16}/>}</main>);return;}
   if(mode.startsWith('learning-review-')){createRoot(document.getElementById('root')!).render(<main className="mx-auto max-w-5xl p-3">{mode==='learning-review-card'?<LearningEvidenceCard/>:<LearningPolicyReviewPanel proposalId={16}/>}</main>);return;}

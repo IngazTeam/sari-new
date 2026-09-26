@@ -35,6 +35,7 @@ async function main() {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
     if (onlyReplyReview || !onlyLaunch && !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-reply-review-ui.cjs')(page, origin, output, results);
+    if (onlyReplyReview || !onlyLaunch && !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-reply-send-ui.cjs')(page, origin, output, results);
     if (!onlyReplyReview) {
     if (onlyLaunch || !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-launch-ui.cjs')(page, origin, output, results);
     if (!onlyLaunch) {

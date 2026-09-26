@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
+import { SalesReplySend } from './SalesReplySend';
 import { replyReviewCriteria, replyReviewList, type ReplyReviewReceipt, type ReplyReviewSubmission } from '../../../shared/sales-reply-review';
 import { buildReplyReviewSubmission, definiteFirstReplyReviewError, emptyReplyReviewDraft, matchingReplyReviewReceipt,
   replyReviewKey, reviewWorkspace, type ReplyReviewDraft } from '@/lib/sales-reply-review-state';
@@ -30,10 +31,11 @@ export function SalesReplyReviewPanel({ active }: { active: boolean }) {
   const [attested, setAttested] = useState(false), [acknowledged, setAcknowledged] = useState(false), [discard, setDiscard] = useState(false);
   const [busy, setBusy] = useState(false), [failure, setFailure] = useState<'unknown' | 'changed' | 'refresh' | null>(null), [saved, setSaved] = useState<ReplyReviewReceipt | null>(null);
   const pending = useRef<Pending | null>(null), inFlight = useRef(false), [now, setNow] = useState(Date.now());
-  const unknown = failure === 'unknown', locked = !!draft || busy || unknown;
+  const [sendLocked, setSendLocked] = useState(false);
+  const unknown = failure === 'unknown', locked = !!draft || busy || unknown || sendLocked;
   const key = workspace ? replyReviewKey(workspace) : '', changed = !!draft && (!workspace || key !== draftKey || !workspace.canReview);
   const expired = !!workspace?.basis && now >= Date.parse(workspace.basis.observationEndsAt);
-  const editable = active && !!workspace?.canReview && !read.isFetching && !busy && !failure && !changed && !expired;
+  const editable = active && !!workspace?.canReview && !read.isFetching && !busy && !sendLocked && !failure && !changed && !expired;
   const canBrowse = active && !!rows && !list.isFetching && !locked;
   const labels = {
     answersQuestion: t('merchantUx.replyReview.answersQuestion'), groundedInBusiness: t('merchantUx.replyReview.groundedInBusiness'),
@@ -135,6 +137,8 @@ export function SalesReplyReviewPanel({ active }: { active: boolean }) {
       {!draft && <Button type="button" className={control} data-reply-start disabled={!editable} onClick={() => { setDraft(emptyReplyReviewDraft()); setDraftKey(key); setSaved(null); }}>{t('merchantUx.replyReview.start')}</Button>}
       <details data-reply-history><summary className="flex min-h-11 cursor-pointer items-center font-semibold">{t('merchantUx.replyReview.history')} ({workspace.history.length})</summary>
         <div className="space-y-3">{workspace.reviewCurrentAtRead && <p>{t('merchantUx.replyReview.current')}</p>}{!workspace.history.length && <p>{t('merchantUx.replyReview.historyEmpty')}</p>}{workspace.history.map(receiptView)}</div></details>
+      {workspace.stage !== 'owner_required' && workspace.history.some(r => r.outcome === 'approved') && <SalesReplySend key={selected} generationId={selected}
+        active={active && !draft && !busy && !unknown && !read.isFetching} reviewKey={key} onLockedChange={setSendLocked} />}
     </div>)}
     {draft && <div className="min-w-0 space-y-4 rounded-xl border p-3 sm:p-5" data-reply-draft>
       <h3 ref={heading} tabIndex={-1} className="font-semibold">{t('merchantUx.replyReview.criteria')}</h3><p className="text-sm text-muted-foreground">{t('merchantUx.replyReview.draftHint')}</p>
