@@ -1,0 +1,61 @@
+{
+  "baseline": "727fe1b01db4f2cbff2132db6380dc397c0dc6fc",
+  "frozenAt": "2026-09-26T12:07:34.389Z",
+  "sourceFiles": [
+    "server/ai/sales-payment-timeline-contract.ts",
+    "server/ai/sales-payment-timeline.ts",
+    "server/ai/sales-payment-timeline-pentest.test.ts",
+    "server/sales-payment-timeline-access-pentest.test.ts",
+    "server/ai/sales-experiment-generation.mysql.test.ts",
+    "server/routers-inbound-operations.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs"
+  ],
+  "scope": "Local synthetic chronology diagnostics with blocked external network; no deployment or real provider persuasion measurement.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 86,
+      "excludedByNameFilter": 356,
+      "sha256": "eada7a8889be3aee11036dd21edb88ea3e0a318408b2d16910391a3e78dc08e9"
+    },
+    {
+      "kind": "expanded-focused",
+      "passed": 88,
+      "excludedByNameFilter": 356,
+      "sha256": "1523ff129e71fc1906284af562f9b05b75da904631b87738bc3c1f612b6f4a64"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_payment_timeline_20260926_test",
+      "migrations": 126,
+      "newMigrations": 0,
+      "sha256": "5f9aa8f27e04169cb107698cfb75db9b86faef6ea346131b304513f14c1e9f2c"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "336a592eba85ccc6213e6e5ef24289f73028cd1df083ddb1b0e99ecd0d6334cd"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ],
+  "acceptanceLimits": {
+    "deliveryMeasured": false,
+    "readingMeasured": false,
+    "sourceCompletenessProven": false,
+    "humanAssistanceMeasured": false,
+    "causalityProven": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "88 added parameterized assertions. Four API error variants serialize to the same full test name; the existing conservative file+name union counts them once, yielding 85 added unique names. All four assertion statuses must pass."
+}

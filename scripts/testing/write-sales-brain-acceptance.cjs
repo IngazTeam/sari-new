@@ -691,6 +691,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' فُحصت الحدود الزمنية، وتلف البصمات، والعزل، وحذف المصدر وتغييره، والتزامن، وفقد إقرار commit، وإيقاف العامل واستعادته، وحقن الربط بمحادثة عميل آخر. الفشل التحليلي لا يعكس الدفع المؤكد.','server/ai/sales-payment-worker-pentest.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0125 يضيف سجل أدلة الدفع دون backfill، مع تفرد الدفع والهدف المحلي وقيود حالة الإسناد. فُحصت ترقية 0124 وإعادة المُحدّث وحفظ السجلات القديمة والسقف العالمي.','scripts/testing/verify-sales-payment-facts-migration.cjs'],
 });
+Object.assign(entries, {
+ B042:[entries.B042[0]+' أضيف فحص زمني للرد والدفع يفرّق بين قبول النقل قبل القبض، والتزامن عند المللي ثانية نفسها، والإرسال الجاري، والرد اللاحق، وتراجع الساعة. الاسترجاع يرجع لوقت القبض الأصلي. لا يدعي وصول الرد أو قراءته أو سببيته.','server/ai/sales-payment-timeline-pentest.test.ts'],
+ B045:[entries.B045[0]+' لا يستبعد الفحص الزمني العملاء بلا إيصال ولا يغير المجموعة أو المقام؛ غياب الإيصال أو حذفه لا يثبت غياب التعرض، والنقل الاصطناعي منفصل. لا يُلخص أكثر من مئة إيصال على أنه تاريخ كامل.','server/ai/sales-payment-timeline-contract.ts'],
+ B046:[entries.B046[0]+' يقرأ السوبر أدمن النشط تسلسل أدلة دفعة واحدة عبر API دون بيانات الرسالة أو الهاتف. البصمة تتغير عند ظهور إيصال متأخر، وتبقى اكتمالية المصادر والمساعدة البشرية غير مقاستين. واجهة النتيجة والتقرير الجامع ما زالا مفتوحين.','server/sales-payment-timeline-access-pentest.test.ts'],
+ B064:[entries.B064[0]+' فُحصت الرحلة المحلية من التوليد والمراجعة والإرسال إلى Tap، والتوقيت قبل/بعد القبض، وتأخر الإسقاط والاسترجاع، وسحب الإذن وحذف المصدر، والملكية والبصمات وصلاحية SQL، وتزامن القراءة والإرسال وفقد اتصال القراءة. المزوّدون محاكون ولا إرسال إنتاجي.','server/ai/sales-experiment-generation.mysql.test.ts'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

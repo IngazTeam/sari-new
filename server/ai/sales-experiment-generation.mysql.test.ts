@@ -34,6 +34,9 @@ import { purgeCompletedInboundPayloads } from '../messaging/retention';
 import { reserveSalesReplyUsage } from './sales-reply-usage';
 import { checkoutTransaction } from './checkout-agreements';
 import { readSalesExperimentExposure } from './sales-experiment-exposure-contract';
+import { applyTapOrderPaymentState } from '../payment/order-payment-state';
+import { attributeSalesPaymentFact } from './sales-payment-attribution';
+import { inspectSalesPaymentTimeline, SalesPaymentTimelineAccessDenied, SalesPaymentTimelineNotReady } from './sales-payment-timeline';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
 const wa = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: wa.post } }));
@@ -48,6 +51,13 @@ vi.mock('./checkout-agreements', async original => {
     if (config.unix !== null) await c.query('SET timestamp=?', [config.unix]);
     try { return await run(c); } finally { if (config.unix !== null) await c.query('SET timestamp=DEFAULT'); }
   }) };
+});
+vi.mock('./sales-payment-facts', async original => {
+  const actual = await original<typeof import('./sales-payment-facts')>();
+  return { ...actual, recordTapSalesPaymentFact: async(c:any,m:number,p:number) => {
+    if(config.unix!==null) await c.query('SET timestamp=?',[config.unix]);
+    try { return await actual.recordTapSalesPaymentFact(c,m,p); } finally { await c.query('SET timestamp=DEFAULT'); }
+  } };
 });
 
 describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through real adapters and MySQL', () => {
@@ -534,6 +544,98 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
   }
   const deliveryIdentity = (r: Awaited<ReturnType<typeof authorizeSalesReplyDelivery>>) => ({ deliveryId: r.deliveryId, authorizationDigest: r.authorizationDigest });
   const exposures = () => query('SELECT * FROM ai_sales_experiment_exposures WHERE merchant_id=?', [owner.merchantId]);
+  async function timelinePayment() {
+    const order=await query("INSERT INTO orders (merchantId,customerPhone,customerName,items,totalAmount,currency) VALUES (?,'966500000988','Synthetic','[]',15000,'SAR')",[owner.merchantId]);
+    const charge='chg_timeline_'+randomUUID().replaceAll('-','');
+    const payment=await query("INSERT INTO order_payments (merchant_id,order_id,customer_phone,amount,currency,status,tap_charge_id) VALUES (?,?,'966500000988',15000,'SAR','pending',?)",[owner.merchantId,order.insertId,charge]);
+    const command={paymentId:Number(payment.insertId),tapChargeId:charge,expectedMerchantId:owner.merchantId,expectedAmount:15000,expectedCurrency:'SAR',providerStatus:'CAPTURED'};
+    await applyTapOrderPaymentState(command);
+    const [fact]=await query('SELECT * FROM ai_sales_payment_facts WHERE merchant_id=? AND payment_id=?',[owner.merchantId,payment.insertId]);
+    await query('UPDATE ai_sales_payment_facts SET next_at=UTC_TIMESTAMP(3) WHERE id=?',[fact.id]);
+    expect(await attributeSalesPaymentFact(owner.merchantId,fact.id)).toBe('attributed');
+    await query("UPDATE users SET role='admin' WHERE id=?",[other.userId]);
+    return {command,factId:Number(fact.id)};
+  }
+  const timeline=(factId:number)=>inspectSalesPaymentTimeline(other.userId,{merchantId:owner.merchantId,factId});
+  it.each(['OpenAI','ZahyPi'])('payment chronology: %s reviewed reply precedes capture without claiming delivery or sales causality',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;const payment=await timelinePayment();
+    const before=await query('SELECT * FROM ai_sales_payment_facts WHERE merchant_id=?',[owner.merchantId]),saved=await exposures(),usage=await usageSubscription(),calls=wa.post.mock.calls.length;
+    const result=await timeline(payment.factId);
+    expect(result).toMatchObject({counts:{recorded:1,realAcceptanceBeforeCapture:1},deliveryBeforeCapture:'not_measured',causality:'not_established',learningAllowed:false,winner:null});
+    expect(await timeline(payment.factId)).toEqual(result);expect(await exposures()).toEqual(saved);
+    expect(await query('SELECT * FROM ai_sales_payment_facts WHERE merchant_id=?',[owner.merchantId])).toEqual(before);
+    expect(await usageSubscription()).toEqual(usage);expect(wa.post.mock.calls.length).toBe(calls);expect(fetch).not.toHaveBeenCalled();
+    for(const secret of [config.text,'966500000988',f.token,f.account,input.baseSystemPrompt,'fixture-receipt'])expect(JSON.stringify(result)).not.toContain(secret);
+  });
+  it('payment chronology: a later reply cannot explain a capture and a refund retains the original clock',async()=>{
+    const f=await deliveryFixture(),r=await f.auth(),p=await timelinePayment();config.unix!+=10;await dispatch(r);
+    expect(await timeline(p.factId)).toMatchObject({counts:{realAcceptanceBeforeCapture:0,dispatchAtOrAfterCapture:1}});
+    config.unix!+=10;await applyTapOrderPaymentState({...p.command,providerStatus:'REFUNDED'});
+    const [refund]=await query("SELECT id FROM ai_sales_payment_facts WHERE merchant_id=? AND event_type='refunded'",[owner.merchantId]);
+    await query('UPDATE ai_sales_payment_facts SET next_at=UTC_TIMESTAMP(3) WHERE id=?',[refund.id]);
+    expect(await attributeSalesPaymentFact(owner.merchantId,refund.id)).toBe('attributed');
+    expect(await timeline(refund.id)).toMatchObject({event:'refunded',counts:{realAcceptanceBeforeCapture:0,dispatchAtOrAfterCapture:1},signedNetMinor:-15000});
+  });
+  it('payment chronology: delayed projection changes evidence digest without backdating acceptance or resending',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await sendMerchantWhatsApp(deliveryInput(r));config.unix!+=10;
+    const p=await timelinePayment(),before=await timeline(p.factId);expect(before.counts.recorded).toBe(0);
+    config.unix!+=10;await dispatch(r);const after=await timeline(p.factId);
+    expect(after).toMatchObject({counts:{recorded:1,inFlightAtCapture:1,realAcceptanceBeforeCapture:0},completeness:'not_established'});
+    expect(after.basisDigest).not.toBe(before.basisDigest);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('payment chronology: keeps source retention and revocation distinct from proof of no exposure',async()=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;const p=await timelinePayment();await revoke();
+    expect((await timeline(p.factId)).counts.realAcceptanceBeforeCapture).toBe(1);
+    await query('DELETE FROM ai_sales_reply_deliveries WHERE id=?',[r.deliveryId]);
+    expect(await timeline(p.factId)).toMatchObject({counts:{recorded:0},completeness:'not_established',denominator:'all_assigned_qualified_customers'});
+  });
+  it.each(['exposure-digest','rehashed-authorization','dispatch-clock','assignment','protocol','capture'])('payment chronology: rejects corrupted %s while preserving finance',async mode=>{
+    const f=await deliveryFixture(),r=await f.auth();await dispatch(r);config.unix!+=10;const p=await timelinePayment();
+    if(mode==='exposure-digest')await query("UPDATE ai_sales_experiment_exposures SET exposure_digest=REPEAT('b',64) WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='rehashed-authorization'||mode==='dispatch-clock') {const [row]=await exposures(),s=readSalesExperimentExposure(row);
+      if(mode==='rehashed-authorization')s.authorizationDigest='b'.repeat(64);else s.dispatchStartedAt=new Date(Date.parse(s.dispatchStartedAt)+1).toISOString();
+      if(Date.parse(s.acceptanceObservedAt)<Date.parse(s.dispatchStartedAt))s.observationTiming='clock_regression';
+      await query('UPDATE ai_sales_experiment_exposures SET snapshot=?,exposure_digest=? WHERE id=?',[JSON.stringify(s),policyArtifactDigest(s),row.id]);}
+    if(mode==='assignment')await query("UPDATE ai_sales_experiment_assignments SET assignment_digest=REPEAT('b',64) WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='protocol')await query("UPDATE ai_sales_experiment_protocols SET protocol_digest=REPEAT('b',64) WHERE merchant_id=?",[owner.merchantId]);
+    if(mode==='capture')await query("UPDATE ai_sales_payment_facts SET fact_digest=REPEAT('b',64) WHERE id=?",[p.factId]);
+    await expect(timeline(p.factId)).rejects.toThrow();expect((await query('SELECT status FROM order_payments WHERE id=?',[p.command.paymentId]))[0].status).toBe('captured');
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('payment chronology: checks database admin status and merchant ownership on every read',async()=>{
+    const p=await timelinePayment();
+    await expect(inspectSalesPaymentTimeline(owner.userId,{merchantId:owner.merchantId,factId:p.factId})).rejects.toBeInstanceOf(SalesPaymentTimelineAccessDenied);
+    await expect(inspectSalesPaymentTimeline(other.userId,{merchantId:other.merchantId,factId:p.factId})).rejects.toBeInstanceOf(SalesPaymentTimelineNotReady);
+    await query("UPDATE users SET account_status='deletion_pending' WHERE id=?",[other.userId]);await expect(timeline(p.factId)).rejects.toBeInstanceOf(SalesPaymentTimelineAccessDenied);
+  });
+  it('payment chronology: a diagnostic read never repairs pending attribution',async()=>{
+    const p=await timelinePayment();await query("UPDATE ai_sales_payment_facts SET attribution_state='pending',attribution=NULL,attribution_digest=NULL,next_at=UTC_TIMESTAMP(3) WHERE id=?",[p.factId]);
+    await expect(timeline(p.factId)).rejects.toBeInstanceOf(SalesPaymentTimelineNotReady);
+    expect((await query('SELECT attribution_state FROM ai_sales_payment_facts WHERE id=?',[p.factId]))[0].attribution_state).toBe('pending');
+  });
+  it('payment chronology: holds a coherent view while a competing send waits for the merchant lock',async()=>{
+    const f=await deliveryFixture(),r=await f.auth(),p=await timelinePayment();config.unix!+=10;
+    const pool=(await getPool())!,original=pool.getConnection.bind(pool);
+    let entered!:()=>void,release!:()=>void,once=true;
+    const locked=new Promise<void>(resolve=>{entered=resolve;}),continueRead=new Promise<void>(resolve=>{release=resolve;});
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();return new Proxy(c,{get(target,key){
+      if(key==='execute')return async(...args:any[])=>{const result=await (target.execute as any)(...args);
+        if(once&&String(args[0]).includes('SELECT * FROM ai_sales_payment_facts')) {once=false;entered();await continueRead;}return result;};
+      const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;
+    }}) as any;});
+    const reading=timeline(p.factId);await locked;const sending=dispatch(r);
+    try {await new Promise(resolve=>setTimeout(resolve,25));expect(wa.post).not.toHaveBeenCalled();}finally{release();}
+    expect((await reading).counts.recorded).toBe(0);await sending;vi.restoreAllMocks();
+    expect((await timeline(p.factId)).counts.dispatchAtOrAfterCapture).toBe(1);expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('payment chronology: destroys a connection with failed rollback and permits a clean retry',async()=>{
+    const p=await timelinePayment(),pool=(await getPool())!,original=pool.getConnection.bind(pool);let once=true,destroyed=0;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original();if(!once)return c;once=false;
+      return new Proxy(c,{get(target,key){if(key==='rollback')return async()=>{throw Error('synthetic rollback loss');};
+        if(key==='destroy')return()=>{destroyed++;target.destroy();};const value=(target as any)[key];return typeof value==='function'?value.bind(target):value;}}) as any;});
+    await expect(timeline(p.factId)).rejects.toThrow('synthetic rollback loss');expect(destroyed).toBe(1);vi.restoreAllMocks();
+    expect((await timeline(p.factId)).counts.recorded).toBe(0);
+  });
   it('transport exposure: catches an old worker projection after migration during rolling activation',async()=>{
     const f=await deliveryFixture(),r=await f.auth();await dispatch(r);
     await query('DELETE FROM ai_sales_experiment_exposures WHERE merchant_id=?',[owner.merchantId]);
