@@ -13,6 +13,7 @@ import {
 import { enqueueZidOrderCreatedNotification } from '../integrations/zid-order-notification-outbox';
 import type { ZidWebhookPolicy } from '../integrations/zid-settings';
 import { requireZidOrderStoreId } from '../integrations/zid-commerce-normalization';
+import { requireZidProductStore } from '../integrations/zid-product-normalization';
 
 export interface ZidWebhookPayload {
   event: string;
@@ -70,6 +71,10 @@ export function assertZidWebhookOrderStore(payload: ZidWebhookPayload, policy?: 
   if (['order.created', 'order.updated', 'order.cancelled'].includes(event)) {
     requireZidOrderStoreId(payload.data?.store_id, requireZidOrderStoreId(policy?.storeId));
   }
+  if (['product.created','product.updated','product.deleted','inventory.updated'].includes(event)) {
+    const storeId=requireZidProductStore(policy?.storeId);
+    requireZidProductStore(payload.data?.store_id??storeId,storeId);
+  }
 }
 
 export async function processZidWebhook(
@@ -81,6 +86,9 @@ export async function processZidWebhook(
   const occurredAt = normalizeZidWebhookOccurredAt(payload.created_at);
   if (!occurredAt) throw new Error('INVALID_ZID_WEBHOOK_TIME');
   assertZidWebhookOrderStore(payload, policy);
+  // The authenticated endpoint binds products to its store even when Zid omits
+  // store_id from the product body. An explicit contradictory store is rejected above.
+  const productData={...payload.data,store_id:policy?.storeId};
   switch (event) {
     case 'order.created':
       await handleOrderCreated(merchantId, payload.data, occurredAt, policy);
@@ -92,16 +100,16 @@ export async function processZidWebhook(
       await handleOrderCancelled(merchantId, payload.data, occurredAt);
       break;
     case 'product.created':
-      await handleProductCreated(merchantId, payload.data, occurredAt);
+      await handleProductCreated(merchantId, productData, occurredAt);
       break;
     case 'product.updated':
-      await handleProductUpdated(merchantId, payload.data, occurredAt);
+      await handleProductUpdated(merchantId, productData, occurredAt);
       break;
     case 'product.deleted':
-      await handleProductDeleted(merchantId, payload.data, occurredAt);
+      await handleProductDeleted(merchantId, productData, occurredAt);
       break;
     case 'inventory.updated':
-      await handleInventoryUpdated(merchantId, payload.data, occurredAt);
+      await handleInventoryUpdated(merchantId, productData, occurredAt);
       break;
     default:
       return { success: true, message: 'Unsupported event ignored' };
@@ -180,7 +188,7 @@ async function handleProductDeleted(
   productData: any,
   occurredAt: Date,
 ) {
-  await deactivateProductFromZid(merchantId, productData.id, occurredAt);
+  await deactivateProductFromZid(merchantId, productData.id, occurredAt, productData.store_id);
 }
 
 /**

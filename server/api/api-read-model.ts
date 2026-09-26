@@ -1,3 +1,4 @@
+import { zidCatalogVisibleSql } from '../integrations/zid-catalog-scope';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import type {
@@ -110,26 +111,26 @@ export async function listApiProducts(
       table: 'products',
       columns: [
         'id', 'merchantId', 'name', 'description', 'price', 'currency', 'category',
-        'isActive', 'status', 'trackInventory', 'stock', 'registrationOpen',
-        'productType', 'imageUrl', 'productUrl', 'createdAt', 'updatedAt',
+        'isActive', 'status', 'track_inventory', 'stock', 'registration_open',
+        'product_type', 'imageUrl', 'productUrl', 'createdAt', 'updatedAt',
       ],
     },
   ]);
   const pool = await requiredPool();
   const [countResult, dataResult] = await Promise.all([
     pool.execute(
-      "SELECT COUNT(*) AS total FROM products WHERE `merchantId` = ? AND `isActive` = 1 AND status = 'active'",
+      `SELECT COUNT(*) AS total FROM products WHERE merchantId = ? AND isActive = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}`,
       [merchantId],
     ),
     pool.execute(
       `SELECT id, name, description, price, currency, category,
               \`imageUrl\` AS imageUrl, \`productUrl\` AS productUrl,
-              \`productType\` AS productType, status, \`isActive\` AS isActive,
-              stock, \`trackInventory\` AS trackInventory,
-              \`registrationOpen\` AS registrationOpen,
+              \`product_type\` AS productType, status, \`isActive\` AS isActive,
+              stock, \`track_inventory\` AS trackInventory,
+              \`registration_open\` AS registrationOpen,
               \`createdAt\` AS createdAt, \`updatedAt\` AS updatedAt
          FROM products
-        WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active'
+        WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}
         ORDER BY id DESC
         LIMIT ? OFFSET ?`,
       [merchantId, pagination.limit, pagination.offset],
@@ -345,7 +346,7 @@ export async function getApiKnowledgeOverview(merchantId: number): Promise<ApiKn
   const [rows] = await pool.execute(
     `SELECT
        (SELECT COUNT(*) FROM products
-         WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active') AS products,
+         WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}) AS products,
        (SELECT COUNT(*) FROM conversations WHERE \`merchantId\` = ?) AS conversations,
        (SELECT COUNT(*) FROM extracted_faqs
          WHERE merchant_id = ? AND source_status = 'active') AS faqs,

@@ -1,0 +1,41 @@
+{
+  "verifiedAt": "2026-09-26T16:45:02.772Z",
+  "database": "sari_zid_catalog_migration_1790441078515_test",
+  "scope": "Actual updater 0128 to 0129 with historical catalogue preserved; interrupted DDL and full replay. No identity inference or product deletion.",
+  "migrations": 130,
+  "preservedTables": [
+    "products",
+    "zid_products",
+    "product_variants",
+    "sales_quotations",
+    "ai_sales_order_facts",
+    "ai_sales_order_links",
+    "ai_sales_payment_facts",
+    "ai_budget_policies"
+  ],
+  "unknownHistory": true,
+  "duplicateRejected": true,
+  "sourceRows": 3,
+  "projectionRows": 1,
+  "uniqueIndexes": [
+    {
+      "INDEX_NAME": "PRIMARY",
+      "columns_list": "id"
+    },
+    {
+      "INDEX_NAME": "zid_products_merchant_store_product_unique",
+      "columns_list": "merchant_id,zid_store_id,zid_product_id"
+    }
+  ],
+  "partialDdlPrefixes": [
+    4,
+    8,
+    12,
+    13,
+    17
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "b94950cc796bdab7cade3302a60d72e4d3841eaaba0f5710e4578c397ae5c3f9",
+  "passed": true
+}

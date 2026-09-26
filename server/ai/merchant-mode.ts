@@ -1,3 +1,4 @@
+import { zidCatalogVisibleSql } from '../integrations/zid-catalog-scope';
 import { formatProductPrice } from '../../shared/product-money';
 /**
  * Merchant Mode — Intelligent merchant-facing chat handler
@@ -584,7 +585,7 @@ async function handleDirectiveSearch(params: {
     if (pool) {
       const [products] = await pool.execute(
         `SELECT name, price, price_unit AS priceUnit, currency, stock, description FROM products
-         WHERE merchantId = ? AND isActive = 1 
+         WHERE merchantId = ? AND isActive = 1 AND ${zidCatalogVisibleSql()}
          AND (name LIKE ? OR description LIKE ? OR nameAr LIKE ?)
          LIMIT 5`,
         [params.merchantId, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`]

@@ -86,8 +86,8 @@ async function snapshotFor(connection: PoolConnection, merchantId: number, raw: 
     if (!p.zidProductId || !p.sku) throw new Error('Zid item identity missing');
     const [rows] = await connection.execute<any[]>(`SELECT zid_product_id AS zidProductId, zid_sku AS zidSku,
       name_ar AS nameAr, name_en AS nameEn, quantity, is_active AS isActive, is_published AS isPublished,
-      is_in_stock AS isInStock, price, sale_price, currency, updated_at FROM zid_products
-      WHERE merchant_id = ? AND zid_product_id = ? FOR UPDATE`, [merchantId, p.zidProductId]);
+      is_in_stock AS isInStock, track_inventory AS trackInventory, has_variants AS hasVariants, price, sale_price, currency, updated_at FROM zid_products
+      WHERE merchant_id = ? AND zid_store_id = ? AND zid_product_id = ? AND BINARY zid_product_id=BINARY ? FOR UPDATE`, [merchantId, options.storeId, p.zidProductId, p.zidProductId]);
     if (rows.length !== 1) throw new Error('Zid product ownership mismatch');
     catalog.push(rows[0]);
   }

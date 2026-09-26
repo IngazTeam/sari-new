@@ -17,7 +17,7 @@ export const zidSelectionSchema = z.object({
 }).strict();
 export type ParsedZidOrder = z.infer<typeof zidSelectionSchema>;
 type CatalogProduct = { zidProductId: string; zidSku: string | null; nameAr: string | null; nameEn: string | null;
-  quantity: number; isActive: number; isPublished: number; isInStock: number };
+  quantity: number; isActive: number; isPublished: number; isInStock: number; trackInventory?: number; hasVariants?: number };
 const normalize = (s: string) => s.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
 
 /** No substring/empty-name fallback or partial carts at this money boundary. */
@@ -29,7 +29,7 @@ export function matchZidSelection(raw: unknown, catalog: CatalogProduct[]): Pars
     const matches = available.filter(p => item.sku ? (p.zidSku === item.sku || p.zidProductId === item.sku)
       : item.zidProductId ? p.zidProductId === item.zidProductId
         : [p.nameAr, p.nameEn].some(name => !!name?.trim() && normalize(name) === normalize(item.name)));
-    if (matches.length !== 1 || !matches[0].zidSku || item.quantity > matches[0].quantity) throw new Error('Zid product requires clarification');
+    if (matches.length !== 1 || !matches[0].zidSku || matches[0].hasVariants === 1 || (matches[0].trackInventory !== 0 && item.quantity > matches[0].quantity)) throw new Error('Zid product requires clarification');
     const product = matches[0];
     if (item.zidProductId && product.zidProductId !== item.zidProductId) throw new Error('Zid product identity conflict');
     if (seen.has(product.zidProductId)) throw new Error('Duplicate Zid item');

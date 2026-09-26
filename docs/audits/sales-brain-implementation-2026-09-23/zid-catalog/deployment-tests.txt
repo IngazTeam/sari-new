@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: selects only the Sary pair and permits multiple web workers
+ok 1 - selects only the Sary pair and permits multiple web workers
+  ---
+  duration_ms: 0.7615
+  type: 'test'
+  ...
+# Subtest: rejects missing workers, mixed releases, stale executables and stopped processes
+ok 2 - rejects missing workers, mixed releases, stale executables and stopped processes
+  ---
+  duration_ms: 0.297
+  type: 'test'
+  ...
+# Subtest: runs the existing migration checks, including admin-managed AI deployment checks
+ok 3 - runs the existing migration checks, including admin-managed AI deployment checks
+  ---
+  duration_ms: 0.9988
+  type: 'test'
+  ...
+# Subtest: fails closed on unsupported check-list changes or shell commands in package scripts
+ok 4 - fails closed on unsupported check-list changes or shell commands in package scripts
+  ---
+  duration_ms: 0.3713
+  type: 'test'
+  ...
+# Subtest: a failing preflight never reaches migration; a failed migration never runs postflights
+ok 5 - a failing preflight never reaches migration; a failed migration never runs postflights
+  ---
+  duration_ms: 0.999
+  type: 'test'
+  ...
+# Subtest: readiness requires both live database connectivity and the current schema
+ok 6 - readiness requires both live database connectivity and the current schema
+  ---
+  duration_ms: 0.1706
+  type: 'test'
+  ...
+# Subtest: probe retries stale bodies and HTTP errors, then succeeds on validated readiness
+ok 7 - probe retries stale bodies and HTTP errors, then succeeds on validated readiness
+  ---
+  duration_ms: 0.3591
+  type: 'test'
+  ...
+# Subtest: persistent probe failure never becomes success
+ok 8 - persistent probe failure never becomes success
+  ---
+  duration_ms: 0.1425
+  type: 'test'
+  ...
+# Subtest: public validation requires the unique deployment marker and both language pages
+ok 9 - public validation requires the unique deployment marker and both language pages
+  ---
+  duration_ms: 0.6118
+  type: 'test'
+  ...
+# Subtest: a stale proxy marker or wrong-language page fails public verification
+ok 10 - a stale proxy marker or wrong-language page fails public verification
+  ---
+  duration_ms: 0.6049
+  type: 'test'
+  ...
+# Subtest: shipped shell entry points parse and refuse destructive in-place deployment
+ok 11 - shipped shell entry points parse and refuse destructive in-place deployment
+  ---
+  duration_ms: 143.2091
+  type: 'test'
+  ...
+# Subtest: accepts this built source capability and refuses older or relative targets
+ok 12 - accepts this built source capability and refuses older or relative targets
+  ---
+  duration_ms: 1.1827
+  type: 'test'
+  ...
+# Subtest: a malformed or unrelated marker cannot authorize rollback
+ok 13 - a malformed or unrelated marker cannot authorize rollback
+  ---
+  duration_ms: 2.7267
+  type: 'test'
+  ...
+# Subtest: draining requires stopped web and inbound processes with no live PID
+ok 14 - draining requires stopped web and inbound processes with no live PID
+  ---
+  duration_ms: 0.3257
+  type: 'test'
+  ...
+# Subtest: a stopped release remains discoverable for a safe updater retry, never ready
+ok 15 - a stopped release remains discoverable for a safe updater retry, never ready
+  ---
+  duration_ms: 0.2907
+  type: 'test'
+  ...
+# Subtest: writer compatibility uses actual process directories instead of a current symlink
+ok 16 - writer compatibility uses actual process directories instead of a current symlink
+  ---
+  duration_ms: 0.795
+  type: 'test'
+  ...
+# Subtest: CLI refuses unknown state and incompatible rollback without provider or database access
+ok 17 - CLI refuses unknown state and incompatible rollback without provider or database access
+  ---
+  duration_ms: 239.895
+  type: 'test'
+  ...
+# Subtest: both deployment paths drain old writers before DDL and guard every activation
+ok 18 - both deployment paths drain old writers before DDL and guard every activation
+  ---
+  duration_ms: 0.5938
+  type: 'test'
+  ...
+# Subtest: the actual updater activation function never invokes PM2 for an incompatible release
+ok 19 - the actual updater activation function never invokes PM2 for an incompatible release
+  ---
+  duration_ms: 252.7302
+  type: 'test'
+  ...
+# Subtest: shipped guard scripts remain valid Bash and keep the established invocation
+ok 20 - shipped guard scripts remain valid Bash and keep the established invocation
+  ---
+  duration_ms: 127.2654
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 716.301

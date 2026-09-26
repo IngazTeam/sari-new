@@ -730,6 +730,13 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' اختبرت رحلتا الإنشاء والمصالحة الفعليتان إلى الربط ثم القبض والاسترجاع، مع تزامن الربط وفقد إقرار الحفظ وعزل المتاجر والتجار وفساد الأدلة وحذف المصادر ومنع ازدواج الهوية المحلية. المزوّد محاكى والشبكة الخارجية محجوبة.','server/ai/sales-order-links.mysql.test.ts'],
  B065:[entries.B065[0]+' الترحيل 0128 يضيف سجل الروابط دون تعديل الحقائق القديمة، مع تفرد الدليل والهوية والهدف المحلي. فُحصت ترقية 0127 وإعادة SQL والمحدّث وحفظ ثمانية جداول وبقاء السقف العالمي.','scripts/testing/verify-sales-order-links-migration.cjs'],
 });
+Object.assign(entries, {
+ B016:[entries.B016[0]+' أصبحت كتابة مصدر منتج زد وإسقاطه ذرية بهوية المتجر، مع أقفال المصدر وحماية الروابط من التصادم وتوقيت يمنع الحدث القديم من إحياء منتج محذوف.','server/ai/zid-catalog-store.mysql.test.ts'],
+ B019:[entries.B019[0]+' يفصل كتالوج زد الجديد المنتجات المتطابقة بين المتاجر. يبقى التاريخ مجهول المتجر محفوظًا وخارج قراءات البيع، ويُرفض ربط مصدر بإسقاط متجر أو نشاط آخر.','server/ai/zid-catalog-store.mysql.test.ts'],
+ B021:[entries.B021[0]+' تستخدم المزامنة هوية متجر موثقة بنفس مفاتيح جلب المنتجات وتكتب الكتالوج العام ومصدر إنشاء طلب زد معًا. تُقيد قراءات المنتجات وRAG وAPI وعرض زد بالمتجر النشط؛ يحجب الاتصال الرئيسي غير الصالح الرجوع إلى الاتصال القديم.','server/zid-catalog-scope-pentest.test.ts'],
+ B064:[entries.B064[0]+' فُحص تبديل متجر زد ودفعات المزامنة الفارغة وتزامن الإنشاء والحذف والمخزون وrollback عند التصادم وقراءة API على MySQL وعرض سعر من الكتالوج المتزامن. أُصلحت أسماء أعمدة API التي كشفها الاختبار الحقيقي.','server/ai/zid-catalog-store.mysql.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0129 يضيف نطاق متجر الكتالوج وخصائص المخزون والخيارات، ويحفظ الصفوف السابقة دون تخمين هوية. يتطلب كتّابًا وقراءً يفهمون النطاق الجديد؛ تمنع علامة التوافق الجديدة تفعيل أو استعادة الإصدار الأقدم بعد الترحيل.','scripts/testing/verify-zid-catalog-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

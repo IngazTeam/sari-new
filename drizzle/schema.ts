@@ -2702,6 +2702,9 @@ export const zidProducts = mysqlTable("zid_products", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 
+	zidStoreId: varchar("zid_store_id", { length: 20 }).notNull().default(''),
+	trackInventory: tinyint("track_inventory").notNull().default(1),
+	hasVariants: tinyint("has_variants").notNull().default(0),
 	// Zid Product Info
 	zidProductId: varchar("zid_product_id", { length: 255 }).notNull(),
 	zidSku: varchar("zid_sku", { length: 255 }),
@@ -2737,16 +2740,16 @@ export const zidProducts = mysqlTable("zid_products", {
 	sariProductId: int("sari_product_id").references(() => products.id, { onDelete: "set null" }),
 
 	// Sync Info
-	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
+	lastSyncedAt: timestamp("last_synced_at", { mode: 'string', fsp: 3 }),
 	zidData: text("zid_data"), // Full JSON response from Zid API
 
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
 		index("zid_products_merchant_id_idx").on(table.merchantId),
 		index("zid_products_zid_product_id_idx").on(table.zidProductId),
-		uniqueIndex("zid_products_merchant_product_unique").on(table.merchantId, table.zidProductId),
+		uniqueIndex("zid_products_merchant_store_product_unique").on(table.merchantId, table.zidStoreId, table.zidProductId),
 		index("zid_products_sari_product_id_idx").on(table.sariProductId),
 	]);
 

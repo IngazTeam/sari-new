@@ -33,8 +33,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     const c = await query("INSERT INTO conversations (merchantId, customerPhone, status) VALUES (?, ?, 'active')", [fixture.merchantId, phone]);
     const m = await query("INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', 'أريد شراء 2 سماعة')", [c.insertId]);
     identity = { merchantId: fixture.merchantId, conversationId: c.insertId, incomingMessageId: m.insertId, customerPhone: phone };
-    await query(`INSERT INTO zid_products (merchant_id, zid_product_id, zid_sku, name_ar, price, quantity)
-      VALUES (?, 'Z1', 'SKU1', 'سماعة', 100, 10)`, [fixture.merchantId]);
+    await query(`INSERT INTO zid_products (zid_store_id,merchant_id, zid_product_id, zid_sku, name_ar, price, quantity)
+      VALUES ('11',?, 'Z1', 'SKU1', 'سماعة', 100, 10)`, [fixture.merchantId]);
     const settings = await query(`INSERT INTO zid_settings (merchant_id,store_id,access_token,manager_token,is_active)
       VALUES (?,'11','fixture-only','fixture-only',1)`, [fixture.merchantId]);
     mocks.settings.mockResolvedValue({ id: settings.insertId, merchantId: fixture.merchantId, isActive: 1, storeId: '11', accessToken: 'fixture-only', managerToken: 'fixture-only' });
@@ -249,6 +249,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
   it.each(['same','different'])('order evidence: scopes a repeated order number to the %s store',async kind=>{
     const q=await offer();await acceptZidCheckout(await incoming(),q.id);const [first]=await orderFacts();
     const store=kind==='same'?'11':'12';
+    if(kind==='different')await query("INSERT INTO zid_products (merchant_id,zid_store_id,zid_product_id,zid_sku,name_ar,price,quantity) VALUES (?,'12','Z1','SKU1','سماعة',100,10)",[fixture.merchantId]);
     await query('UPDATE zid_settings SET store_id=? WHERE merchant_id=?',[store,fixture.merchantId]);
     const [settings]=await query('SELECT id FROM zid_settings WHERE merchant_id=?',[fixture.merchantId]);
     mocks.settings.mockResolvedValue({id:settings.id,merchantId:fixture.merchantId,isActive:1,storeId:store,accessToken:'fixture-only',managerToken:'fixture-only'});

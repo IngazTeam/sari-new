@@ -56,7 +56,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable Zid order links and Tap evid
     const settings=await query("INSERT INTO zid_settings (merchant_id,store_id,access_token,manager_token,is_active) VALUES (?,'11','fixture','fixture',1)",[owner.merchantId]);
     provider.settings.mockResolvedValue({id:settings.insertId,merchantId:owner.merchantId,isActive:1,storeId:'11',accessToken:'fixture',managerToken:'fixture'});
     provider.create.mockResolvedValue({order:{...sourceOrder(),id:991,code:'SYNTHETIC',order_url:'https://fixture.zid.store/pay/991'}});
-    await query("INSERT INTO zid_products (merchant_id,zid_product_id,zid_sku,name_ar,price,quantity) VALUES (?,'Z1','SKU1','سماعة',100,10)",[owner.merchantId]);
+    await query("INSERT INTO zid_products (zid_store_id,merchant_id,zid_product_id,zid_sku,name_ar,price,quantity) VALUES ('11',?,'Z1','SKU1','سماعة',100,10)",[owner.merchantId]);
     const c=await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')",[owner.merchantId,phone]);
     const m=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming','أريد شراء سماعة')",[c.insertId]);
     const identity={merchantId:owner.merchantId,customerPhone:phone,conversationId:c.insertId,incomingMessageId:m.insertId};

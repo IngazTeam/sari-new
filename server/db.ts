@@ -287,6 +287,7 @@ import {
   MerchantInvitation,
   InsertMerchantInvitation,
 } from "../drizzle/schema";
+import { currentZidStoreSql, zidCatalogVisibleSql } from './integrations/zid-catalog-scope';
 import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
@@ -295,6 +296,7 @@ import {
   normalizeZidProduct,
   normalizeZidProductExternalId,
   zidProductProjectionId,
+  requireZidProductStore,
   type NormalizedZidProduct,
 } from './integrations/zid-product-normalization';
 import {
@@ -1124,7 +1126,7 @@ export async function getProductsByMerchantId(
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = [eq(products.merchantId, merchantId)];
+  const conditions = [eq(products.merchantId, merchantId), sql.raw(zidCatalogVisibleSql())];
 
   if (opts?.search) {
     conditions.push(
@@ -1158,7 +1160,7 @@ export async function getProductCountByMerchantId(
   const db = await getDb();
   if (!db) return 0;
 
-  const conditions = [eq(products.merchantId, merchantId)];
+  const conditions = [eq(products.merchantId, merchantId), sql.raw(zidCatalogVisibleSql())];
 
   if (opts?.search) {
     conditions.push(
@@ -1186,7 +1188,7 @@ export async function getActiveProductsByMerchantId(merchantId: number): Promise
   return db
     .select()
     .from(products)
-    .where(and(eq(products.merchantId, merchantId), eq(products.isActive, 1)))
+    .where(and(eq(products.merchantId, merchantId), eq(products.isActive, 1), sql.raw(zidCatalogVisibleSql())))
     .orderBy(desc(products.createdAt));
 }
 
@@ -7398,7 +7400,7 @@ export async function upsertProductFromZid(
   zidProduct: any,
   occurredAt = new Date(),
 ): Promise<void> {
-  await persistNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct, occurredAt)], false);
+  await persistNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct, occurredAt)]);
 }
 
 /**
@@ -7407,79 +7409,69 @@ export async function upsertProductFromZid(
 export async function upsertNormalizedProductsFromZid(
   merchantId: number,
   zidProducts: NormalizedZidProduct[],
+  scope: {storeId:string;startedAt:Date},
 ): Promise<{ upsertedProducts: number; disabledProducts: number }> {
-  return persistNormalizedProductsFromZid(merchantId, zidProducts, true);
+  return persistNormalizedProductsFromZid(merchantId, zidProducts, scope);
 }
 
+async function assertZidCatalogSchema() {
+  await assertRuntimeSchema('Zid store-scoped catalog',[{table:'zid_products',columns:['zid_store_id','track_inventory','has_variants'],
+    uniqueIndexes:[{name:'zid_products_merchant_store_product_unique',columns:['merchant_id','zid_store_id','zid_product_id']}]}]);
+}
 async function persistNormalizedProductsFromZid(
   merchantId: number,
-  zidProducts: NormalizedZidProduct[],
-  reconcileMissing: boolean,
+  batch: NormalizedZidProduct[],
+  reconcile?: {storeId:string;startedAt:Date},
+  transaction?: SariTransaction,
 ): Promise<{ upsertedProducts: number; disabledProducts: number }> {
-  const db = await getDb();
-  if (!db) return { upsertedProducts: 0, disabledProducts: 0 };
-  return db.transaction(async tx => {
-    for (const zidProduct of zidProducts) {
-      const projectionId = zidProductProjectionId(zidProduct.externalId);
-      const productData = {
-        merchantId,
-        sallaProductId: projectionId,
-        name: zidProduct.name,
-        nameAr: zidProduct.nameAr,
-        description: zidProduct.description,
-        descriptionAr: zidProduct.descriptionAr,
-        price: zidProduct.price,
-        compareAtPrice: zidProduct.compareAtPrice,
-        costPrice: zidProduct.costPrice,
-        currency: zidProduct.currency,
-        stock: zidProduct.stock,
-        trackInventory: zidProduct.trackInventory,
-        imageUrl: zidProduct.imageUrl,
-        images: zidProduct.images,
-        productUrl: zidProduct.productUrl,
-        category: zidProduct.category,
-        sku: zidProduct.sku,
-        barcode: zidProduct.barcode,
-        isActive: zidProduct.isActive,
-        status: zidProduct.status,
-        hasVariants: zidProduct.hasVariants,
-        lastSyncedAt: zidProduct.lastSyncedAt,
-      };
-      // Reserve the external identity using the database uniqueness contract.
-      // A no-op duplicate update acquires the row lock before the freshness-
-      // guarded update, eliminating the select/insert race across workers.
-      await tx.insert(products).values(normalizeProductMoneyWrite(productData)).onDuplicateKeyUpdate({
-        set: { sallaProductId: sql`${products.sallaProductId}` },
-      });
-      await tx.update(products).set(normalizeProductMoneyWrite(productData)).where(and(
-        eq(products.merchantId, merchantId),
-        eq(products.sallaProductId, projectionId),
-        or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, zidProduct.lastSyncedAt)),
-      ));
+  if(!Number.isSafeInteger(merchantId)||merchantId<=0)throw Error('ZID_CATALOG_IDENTITY');
+  const store=reconcile?requireZidProductStore(reconcile.storeId):undefined;
+  const cutoff=reconcile?formatZidProductSyncTime(reconcile.startedAt):undefined;
+  const seen=new Set<string>();
+  for(const p of batch){requireZidProductStore(p.storeId,store);normalizeZidProductExternalId(p.externalId);
+    if(seen.has(`${p.storeId}:${p.externalId}`)||cutoff&&p.lastSyncedAt!==cutoff)throw Error('ZID_CATALOG_BATCH');seen.add(`${p.storeId}:${p.externalId}`);}
+  await assertZidCatalogSchema();const db=await getDb();if(!db)throw Error('Database unavailable');
+  const write = async (tx: SariTransaction) => {
+    let upsertedProducts=0,disabledProducts=0;
+    for(const p of [...batch].sort((a,b)=>a.externalId.localeCompare(b.externalId))){
+      const projectionId=zidProductProjectionId(p.storeId,p.externalId);
+      const sourceData={merchantId,zidStoreId:p.storeId,zidProductId:p.externalId,zidSku:p.sku,nameAr:p.nameAr,nameEn:p.nameEn??p.name,
+        descriptionAr:p.descriptionAr,descriptionEn:p.description,price:((p.compareAtPrice??p.price)/100).toFixed(2),
+        salePrice:p.compareAtPrice===null?null:(p.price/100).toFixed(2),currency:p.currency,quantity:p.stock,trackInventory:p.trackInventory,
+        isInStock:p.trackInventory===0||p.stock>0?1:0,hasVariants:p.hasVariants,mainImage:p.imageUrl,images:p.images,categoryName:p.category,
+        isActive:p.isActive,isPublished:p.isActive,lastSyncedAt:p.lastSyncedAt};
+      await tx.insert(zidProducts).values(sourceData).onDuplicateKeyUpdate({set:{zidProductId:sql`${zidProducts.zidProductId}`}});
+      const [source]=await tx.select().from(zidProducts).where(and(eq(zidProducts.merchantId,merchantId),eq(zidProducts.zidStoreId,p.storeId),eq(zidProducts.zidProductId,p.externalId))).for('update');
+      if(!source||source.zidProductId!==p.externalId)throw Error('ZID_CATALOG_IDENTITY_CONFLICT');
+      if(source.lastSyncedAt&&(source.lastSyncedAt>p.lastSyncedAt||source.lastSyncedAt===p.lastSyncedAt&&source.isActive===0&&p.isActive===1))continue;
+      const productData={merchantId,sallaProductId:projectionId,name:p.name,nameAr:p.nameAr,description:p.description,descriptionAr:p.descriptionAr,
+        price:p.price,compareAtPrice:p.compareAtPrice,costPrice:p.costPrice,currency:p.currency,stock:p.stock,trackInventory:p.trackInventory,
+        imageUrl:p.imageUrl,images:p.images,productUrl:p.productUrl,category:p.category,sku:p.sku,barcode:p.barcode,isActive:p.isActive,status:p.status,
+        hasVariants:p.hasVariants,lastSyncedAt:p.lastSyncedAt};
+      let inserted=false;
+      try{await tx.insert(products).values(normalizeProductMoneyWrite(productData));inserted=true;}
+      catch(error:any){if((error?.code||error?.cause?.code)!=='ER_DUP_ENTRY')throw error;}
+      const [target]=await tx.select().from(products).where(and(eq(products.merchantId,merchantId),eq(products.sallaProductId,projectionId))).for('update');
+      if(!target||target.sallaProductId!==projectionId||source.sariProductId!==null&&source.sariProductId!==target.id||!inserted&&source.sariProductId!==target.id)throw Error('ZID_CATALOG_PROJECTION_CONFLICT');
+      if(target.lastSyncedAt&&target.lastSyncedAt>p.lastSyncedAt)throw Error('ZID_CATALOG_SOURCE_CONFLICT');
+      await tx.update(products).set(normalizeProductMoneyWrite(productData)).where(and(eq(products.merchantId,merchantId),eq(products.id,target.id)));
+      await tx.update(zidProducts).set({...sourceData,sariProductId:target.id}).where(eq(zidProducts.id,source.id));upsertedProducts++;
     }
-    let disabledProducts = 0;
-    if (reconcileMissing) {
-      const activeProjectionIds = zidProducts.map(product => zidProductProjectionId(product.externalId));
-      const batchStartedAt = zidProducts[0]?.lastSyncedAt
-        || formatDateForDB(new Date(Date.now() - 1_000));
-      const missingConditions = [
-        eq(products.merchantId, merchantId),
-        like(products.sallaProductId, 'zid:%'),
-        or(isNull(products.lastSyncedAt), lt(products.lastSyncedAt, batchStartedAt)),
-      ];
-      if (activeProjectionIds.length > 0) {
-        missingConditions.push(notInArray(products.sallaProductId, activeProjectionIds));
+    if(reconcile){
+      const ids=batch.map(p=>p.externalId);
+      const missing=await tx.select().from(zidProducts).where(and(eq(zidProducts.merchantId,merchantId),eq(zidProducts.zidStoreId,store!),
+        or(isNull(zidProducts.lastSyncedAt),lt(zidProducts.lastSyncedAt,cutoff!)),ids.length?notInArray(zidProducts.zidProductId,ids):undefined)).for('update');
+      for(const source of missing){
+        await tx.update(products).set({isActive:0,status:'draft',stock:0,lastSyncedAt:cutoff}).where(and(eq(products.merchantId,merchantId),
+          eq(products.id,source.sariProductId??0),eq(products.sallaProductId,zidProductProjectionId(store,source.zidProductId)),or(isNull(products.lastSyncedAt),lt(products.lastSyncedAt,cutoff!))));
+        await tx.update(zidProducts).set({isActive:0,isPublished:0,isInStock:0,quantity:0,lastSyncedAt:cutoff}).where(eq(zidProducts.id,source.id));disabledProducts++;
       }
-      const disabled = await tx.update(products).set({
-        isActive: 0,
-        status: 'draft',
-        stock: 0,
-      }).where(and(...missingConditions));
-      disabledProducts = Number((disabled[0] as any).affectedRows) || 0;
     }
-    return { upsertedProducts: zidProducts.length, disabledProducts };
-  });
+    return {upsertedProducts,disabledProducts};
+  };
+  return transaction ? write(transaction) : db.transaction(write);
 }
+
 
 /**
  * Apply a Tap verification result only to the exact credential tuple that was
@@ -7541,26 +7533,33 @@ export async function setMerchantPaymentVerifiedIfCredentialsMatch(
   }
 }
 
-export async function deactivateProductFromZid(
-  merchantId: number,
-  externalId: unknown,
-  occurredAt = new Date(),
-): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-  const projectionId = zidProductProjectionId(normalizeZidProductExternalId(externalId));
-  const eventTime = formatZidProductSyncTime(occurredAt);
-  await db.update(products).set({
-    isActive: 0,
-    status: 'draft',
-    stock: 0,
-    lastSyncedAt: eventTime,
-  }).where(and(
-    eq(products.merchantId, merchantId),
-    eq(products.sallaProductId, projectionId),
-    or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, eventTime)),
-  ));
+async function mutateZidCatalogProduct(merchantId:number,storeValue:unknown,externalValue:unknown,occurredAt:Date,quantity?:number) {
+  const storeId=requireZidProductStore(storeValue),externalId=normalizeZidProductExternalId(externalValue),eventTime=formatZidProductSyncTime(occurredAt);
+  await assertZidCatalogSchema();const db=await getDb();if(!db)throw Error('Database unavailable');
+  await db.transaction(async tx=>{
+    // A deletion arriving before create still reserves an ordered tombstone.
+    await tx.insert(zidProducts).values({merchantId,zidStoreId:storeId,zidProductId:externalId,price:'0.00',
+      isActive:0,isPublished:0,isInStock:0,quantity:quantity??0,lastSyncedAt:eventTime}).onDuplicateKeyUpdate({set:{zidProductId:sql`${zidProducts.zidProductId}`}});
+    const [source]=await tx.select().from(zidProducts).where(and(eq(zidProducts.merchantId,merchantId),eq(zidProducts.zidStoreId,storeId),
+      eq(zidProducts.zidProductId,externalId))).for('update');
+    if(!source)return;if(source.zidProductId!==externalId)throw Error('ZID_CATALOG_IDENTITY_CONFLICT');
+    if(source.lastSyncedAt&&source.lastSyncedAt>eventTime||quantity!==undefined&&source.isActive!==1)return;
+    const change=quantity===undefined?{isActive:0 as const,isPublished:0,isInStock:0,quantity:0,lastSyncedAt:eventTime}
+      :{quantity,isInStock:source.trackInventory===0||quantity>0?1:0,lastSyncedAt:eventTime};
+    if(source.sariProductId){
+      const [target]=await tx.select().from(products).where(and(eq(products.merchantId,merchantId),eq(products.id,source.sariProductId))).for('update');
+      if(!target||target.sallaProductId!==zidProductProjectionId(storeId,externalId))throw Error('ZID_CATALOG_PROJECTION_CONFLICT');
+      if(target.lastSyncedAt&&target.lastSyncedAt>eventTime)return;
+      await tx.update(products).set(quantity===undefined?{isActive:0,status:'draft',stock:0,lastSyncedAt:eventTime}:{stock:quantity,lastSyncedAt:eventTime})
+        .where(and(eq(products.merchantId,merchantId),eq(products.id,target.id)));
+    }
+    await tx.update(zidProducts).set(change).where(eq(zidProducts.id,source.id));
+  });
 }
+export async function deactivateProductFromZid(merchantId:number,externalId:unknown,occurredAt=new Date(),storeId?:unknown):Promise<void> {
+  await mutateZidCatalogProduct(merchantId,storeId,externalId,occurredAt);
+}
+
 
 /**
  * Upsert order from Zid
@@ -7800,30 +7799,10 @@ export async function upsertNormalizedCustomersFromZid(
 /**
  * Update product inventory from Zid
  */
-export async function updateProductInventoryFromZid(
-  merchantId: number,
-  payload: any,
-  occurredAt = new Date(),
-): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-  const externalId = normalizeZidProductExternalId(payload?.product_id ?? payload?.id);
-  const rawQuantity = payload?.quantity ?? payload?.stock;
-  const quantity = typeof rawQuantity === 'string' && rawQuantity.trim()
-    ? Number(rawQuantity)
-    : rawQuantity;
-  if (!Number.isFinite(quantity) || quantity < 0 || quantity > 2_147_483_647) {
-    throw new Error('INVALID_ZID_INVENTORY');
-  }
-  const eventTime = formatZidProductSyncTime(occurredAt);
-  await db.update(products)
-    .set({ stock: Math.floor(quantity), lastSyncedAt: eventTime })
-    .where(and(
-      eq(products.merchantId, merchantId),
-      eq(products.sallaProductId, zidProductProjectionId(externalId)),
-      eq(products.isActive, 1),
-      or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, eventTime)),
-    ));
+export async function updateProductInventoryFromZid(merchantId:number,payload:any,occurredAt=new Date()):Promise<void> {
+  const raw=payload?.quantity??payload?.stock,quantity=typeof raw==='string'&&raw.trim()?Number(raw):raw;
+  if(!Number.isFinite(quantity)||quantity<0||quantity>2_147_483_647)throw Error('INVALID_ZID_INVENTORY');
+  await mutateZidCatalogProduct(merchantId,payload?.store_id,payload?.product_id??payload?.id,occurredAt,Math.floor(quantity));
 }
 
 /**
@@ -9210,44 +9189,32 @@ export async function upsertZidSettings(merchantId: number, settings: any) {
 /**
  * Save Zid product to database
  */
-export async function saveZidProduct(merchantId: number, productData: any) {
-  const db = await getDb();
-  if (!db) return null;
-
-  // Check if product exists
-  const existing = await db
-    .select()
-    .from(zidProducts)
-    .where(
-      and(
-        eq(zidProducts.merchantId, merchantId),
-        eq(zidProducts.zidProductId, productData.zidProductId)
-      )
-    )
-    .limit(1);
-
-  if (existing[0]) {
-    await db
-      .update(zidProducts)
-      .set({
-        ...productData,
-        lastSyncedAt: formatDateForDB(new Date()),
-        updatedAt: formatDateForDB(new Date()),
-      })
-      .where(eq(zidProducts.id, existing[0].id));
-
-    return { ...existing[0], ...productData };
-  } else {
-    const result = await db
-      .insert(zidProducts)
-      .values({
-        merchantId,
-        ...productData,
-        lastSyncedAt: formatDateForDB(new Date()),
-      });
-
-    return { id: Number((result[0] as any).insertId), merchantId, ...productData };
-  }
+export async function saveZidProduct(merchantId:number,data:any) {
+  const storeId=requireZidProductStore(data?.zidStoreId);
+  const externalId=normalizeZidProductExternalId(data?.zidProductId);
+  await assertZidCatalogSchema();const db=await getDb();if(!db)throw Error('Database unavailable');
+  return db.transaction(async tx=>{
+    // Merge partial legacy updates under the same source lock used by webhook
+    // writers, so a delayed read cannot overwrite a newer product or inventory.
+    const [previous]=await tx.select().from(zidProducts).where(and(eq(zidProducts.merchantId,merchantId),
+      eq(zidProducts.zidStoreId,storeId),eq(zidProducts.zidProductId,externalId))).for('update');
+    if(previous&&previous.zidProductId!==externalId)throw Error('ZID_CATALOG_IDENTITY_CONFLICT');
+    const [projection]=previous?.sariProductId?await tx.select().from(products).where(and(eq(products.merchantId,merchantId),
+      eq(products.id,previous.sariProductId))).for('update'):[];
+    const value:Record<string,any>={...previous,...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))};
+    const images=typeof value.images==='string'?JSON.parse(value.images):value.images??[];
+    if(!Array.isArray(images))throw Error('ZID_CATALOG_IMAGES');
+    const normalized=normalizeZidProduct({id:externalId,store_id:storeId,sku:value.zidSku,name:{ar:value.nameAr,en:value.nameEn},
+      description:{ar:value.descriptionAr,en:value.descriptionEn},price:value.price,sale_price:value.salePrice,currency:value.currency,
+      quantity:value.quantity,is_published:value.isPublished!==0&&value.isPublished!==false,is_active:value.isActive!==0&&value.isActive!==false,
+      is_infinite:value.trackInventory===0,has_options:value.hasVariants===1,
+      images:images.map(image=>typeof image==='string'?{url:image}:image),image:{url:value.mainImage},category:{name:value.categoryName}});
+    if(projection){normalized.costPrice=projection.costPrice;normalized.barcode=projection.barcode;normalized.productUrl=projection.productUrl;}
+    await persistNormalizedProductsFromZid(merchantId,[normalized],undefined,tx);
+    const [saved]=await tx.select().from(zidProducts).where(and(eq(zidProducts.merchantId,merchantId),
+      eq(zidProducts.zidStoreId,storeId),eq(zidProducts.zidProductId,externalId)));
+    return saved??null;
+  });
 }
 
 /**
@@ -9260,7 +9227,7 @@ export async function getZidProducts(merchantId: number) {
   return await db
     .select()
     .from(zidProducts)
-    .where(eq(zidProducts.merchantId, merchantId))
+    .where(and(eq(zidProducts.merchantId, merchantId), sql.raw(`zid_products.zid_store_id<>'' AND BINARY zid_products.zid_store_id=BINARY ${currentZidStoreSql('zid_products.merchant_id')}`)))
     .orderBy(desc(zidProducts.createdAt));
 }
 
@@ -9283,7 +9250,7 @@ export async function getZidProductById(id: number) {
 /**
  * Get Zid product by Zid product ID
  */
-export async function getZidProductByZidId(merchantId: number, zidProductId: string) {
+export async function getZidProductByZidId(merchantId: number, zidProductId: string, storeIdValue:unknown) {
   const db = await getDb();
   if (!db) return null;
 
@@ -9293,7 +9260,9 @@ export async function getZidProductByZidId(merchantId: number, zidProductId: str
     .where(
       and(
         eq(zidProducts.merchantId, merchantId),
-        eq(zidProducts.zidProductId, zidProductId)
+        eq(zidProducts.zidStoreId,requireZidProductStore(storeIdValue)),
+        eq(zidProducts.zidProductId, zidProductId),
+        sql`BINARY ${zidProducts.zidProductId}=BINARY ${zidProductId}`
       )
     )
     .limit(1);
@@ -9304,17 +9273,14 @@ export async function getZidProductByZidId(merchantId: number, zidProductId: str
 /**
  * Link Zid product to Sari product
  */
-export async function linkZidProductToSariProduct(
-  zidProductId: number,
-  sariProductId: number
-) {
-  const db = await getDb();
-  if (!db) return;
-
-  await db
-    .update(zidProducts)
-    .set({ sariProductId })
-    .where(eq(zidProducts.id, zidProductId));
+export async function linkZidProductToSariProduct(zidProductId:number,sariProductId:number) {
+  const db=await getDb();if(!db)throw Error('Database unavailable');
+  await db.transaction(async tx=>{
+    const [z]=await tx.select().from(zidProducts).where(eq(zidProducts.id,zidProductId)).for('update');
+    if(!z||z.sariProductId!==sariProductId)throw Error('ZID_CATALOG_PROJECTION_CONFLICT');
+    const [p]=await tx.select().from(products).where(and(eq(products.id,sariProductId),eq(products.merchantId,z.merchantId))).for('update');
+    if(!p||p.sallaProductId!==zidProductProjectionId(z.zidStoreId,z.zidProductId))throw Error('ZID_CATALOG_PROJECTION_CONFLICT');
+  });
 }
 
 /**

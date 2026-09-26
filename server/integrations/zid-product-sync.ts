@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import {
-  normalizeZidStoreId,
   requestZidApi,
   type ZidApiCredentials,
 } from './zid-api';
 import {
   normalizeZidProduct,
+  requireZidProductStore,
   safeZidHttpUrl,
   safeZidText,
   ZidProductSyncError,
@@ -46,7 +46,7 @@ export async function fetchZidStoreIdentity(input: {
     fetchImpl: input.fetchImpl,
   });
   const parsed = zidStoreResponseSchema.safeParse(response);
-  const storeId = parsed.success ? normalizeZidStoreId(parsed.data.store.id) : null;
+  const storeId = parsed.success ? requireZidProductStore(parsed.data.store.id) : null;
   if (!parsed.success || !storeId) throw new ZidProductSyncError('invalid_store');
   return {
     storeId,
@@ -61,7 +61,7 @@ export async function fetchAllZidProducts(input: {
   fetchImpl?: typeof fetch;
   now?: Date;
 }): Promise<NormalizedZidProduct[]> {
-  const storeId = normalizeZidStoreId(input.storeId);
+  const storeId = requireZidProductStore(input.storeId);
   if (!storeId) throw new ZidProductSyncError('invalid_store');
   const products: NormalizedZidProduct[] = [];
   const seenIds = new Set<string>();
@@ -76,7 +76,7 @@ export async function fetchAllZidProducts(input: {
     const parsed = zidProductPageSchema.safeParse(response);
     if (!parsed.success) throw new ZidProductSyncError('invalid_page');
     for (const product of parsed.data.results) {
-      const normalized = normalizeZidProduct(product, syncStartedAt);
+      const normalized = normalizeZidProduct(product, syncStartedAt, storeId);
       if (seenIds.has(normalized.externalId)) continue;
       seenIds.add(normalized.externalId);
       products.push(normalized);

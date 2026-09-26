@@ -34,7 +34,6 @@ import {
 } from '../db_zid';
 import { getValidZidApiCredentials } from './zid-token-manager';
 import { assertRecentReauthentication, ReauthenticationError } from '../security/reauthentication';
-import { normalizeZidStoreId } from './zid-api';
 import {
   fetchAllZidProducts,
   fetchZidStoreIdentity,
@@ -47,6 +46,7 @@ import {
 } from './zid-commerce-sync';
 import { parseZidSettings } from './zid-settings';
 import { requireZidOrderStoreId } from './zid-commerce-normalization';
+import { requireZidProductStore } from './zid-product-normalization';
 import {
   acknowledgeZidOrderNotificationIncidents,
   getZidOrderNotificationHealth,
@@ -371,14 +371,11 @@ export const zidRouter = router({
               merchantId: merchant.id,
               syncType: 'products',
               task: async () => {
-                let storeId = normalizeZidStoreId(currentSettings.storeId);
-                if (!storeId) {
-                  const store = await fetchZidStoreIdentity({ credentials: apiCredentials });
-                  storeId = store.storeId;
-                  await updateIntegrationSettings(currentIntegration.id, { storeId });
-                }
-                const products = await fetchAllZidProducts({ credentials: apiCredentials, storeId });
-                const persisted = await upsertNormalizedProductsFromZid(merchant.id, products);
+                const {storeId} = await fetchZidStoreIdentity({ credentials: apiCredentials });
+                requireZidProductStore(storeId, requireZidProductStore(currentSettings.storeId));
+                const startedAt=new Date();
+                const products = await fetchAllZidProducts({ credentials: apiCredentials, storeId, now:startedAt });
+                const persisted = await upsertNormalizedProductsFromZid(merchant.id, products, {storeId,startedAt});
                 return { total: products.length, result: persisted };
               },
             });
@@ -576,14 +573,16 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
     case 'product.created':
     case 'product.updated':
       if (settings.syncProducts) {
-        await upsertProductFromZid(merchantId, payload);
+        const storeId=requireZidProductStore(settings.storeId);
+        await upsertProductFromZid(merchantId, {...payload,store_id:requireZidProductStore(payload?.store_id??storeId,storeId)});
         await recordCompletedZidSync(merchantId, 'products');
       }
       break;
 
     case 'inventory.updated':
       if (settings.syncProducts) {
-        await updateProductInventoryFromZid(merchantId, payload);
+        const storeId=requireZidProductStore(settings.storeId);
+        await updateProductInventoryFromZid(merchantId, {...payload,store_id:requireZidProductStore(payload?.store_id??storeId,storeId)});
         await recordCompletedZidSync(merchantId, 'inventory');
       }
       break;

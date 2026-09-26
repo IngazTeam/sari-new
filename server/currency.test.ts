@@ -54,7 +54,7 @@ describe.skipIf(!process.env.DATABASE_URL)('product currency and price contracts
     expect(rows[1].price).toBeNull();
   });
   it('resynchronizes a historical Zid price from a trusted major-unit provider payload', async () => {
-    await upsertProductFromZid(fixture.merchantId, {id:'price-test', name:'Zid item', price:'99.99', currency:'SAR', quantity:5});
+    await upsertProductFromZid(fixture.merchantId, {store_id:'11',id:'price-test', name:'Zid item', price:'99.99', currency:'SAR', quantity:5});
     const [rows] = await (await getPool())!.execute<any[]>('SELECT price,price_unit FROM products WHERE merchantId=?', [fixture.merchantId]);
     expect(rows).toEqual([{price:9999,price_unit:'minor'}]);
   });

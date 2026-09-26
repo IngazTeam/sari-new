@@ -1,0 +1,132 @@
+{
+  "baseline": "a49e80748ce51d5992e3ee6ec41237845f3cbbaa",
+  "frozenAt": "2026-09-26T17:00:07.705Z",
+  "sourceFiles": [
+    "drizzle/0129_zid_catalog_store_identity.sql",
+    "drizzle/meta/_journal.json",
+    "drizzle/schema.ts",
+    "scripts/testing/run-sales-brain.mjs",
+    "scripts/testing/write-sales-brain-acceptance.cjs",
+    "scripts/testing/verify-zid-catalog-migration.cjs",
+    "scripts/zid-order-release.mjs",
+    "scripts/zid-order-release.test.mjs",
+    "scripts/zid-order-store-capability.json",
+    "server/ai.ts",
+    "server/ai/merchant-mode.ts",
+    "server/ai/rag-engine.ts",
+    "server/ai/sales-order-links.mysql.test.ts",
+    "server/ai/zid-checkout-agreements.mysql.test.ts",
+    "server/ai/zid-checkout-agreements.ts",
+    "server/ai/zid-catalog-store.mysql.test.ts",
+    "server/api/api-read-model.ts",
+    "server/automation/zid-order-contract.ts",
+    "server/cron/schema-validator.ts",
+    "server/currency.test.ts",
+    "server/db.ts",
+    "server/db/products.ts",
+    "server/integrations/zid-catalog-scope.ts",
+    "server/integrations/zid-product-normalization.ts",
+    "server/integrations/zid-product-sync.ts",
+    "server/integrations/zid.ts",
+    "server/webhooks/zid-webhook.ts",
+    "server/zid-product-concurrency-pentest.test.ts",
+    "server/zid-product-sync-pentest.test.ts",
+    "server/zid-reconciliation-pentest.test.ts",
+    "server/zid-catalog-scope-pentest.test.ts"
+  ],
+  "scope": "Store-scoped Zid catalogue writes, source/projection atomicity, event freshness, active-store sales/API reads and quote selection. Actual MySQL; mocked Zid transport; no production traffic or deployment.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 195,
+      "failed": 3,
+      "accepted": false,
+      "reason": "Real API schema column mismatch plus two synthetic fixture issues.",
+      "sha256": "8ecb4cbfc8327e7bfbbccfedb25fdec5b42eaf5594790cdce6ff5f29de1cba50"
+    },
+    {
+      "kind": "second-focused",
+      "passed": 233,
+      "failed": 1,
+      "accepted": false,
+      "reason": "Obsolete whitespace-sensitive source assertion.",
+      "sha256": "35b4f265590bfd096f1f3836fe424d8e0a6d12b3d6bc013bfa4d9c05b87963de"
+    },
+    {
+      "kind": "focused",
+      "passed": 265,
+      "failed": 0,
+      "sha256": "bd471558fe904b15b7ddabde30ec5094032ec3e27e3054383629ade749ce9213"
+    },
+    {
+      "kind": "initial-full-before-legacy-adapter-fix",
+      "accepted": false,
+      "reason": "Passed but superseded by the legacy adapter compatibility correction.",
+      "sha256": "ab587ca6ecdeb1a6e1298105fe9b80e1d9c7f735c934fb61ef884581ed4aea2a"
+    },
+    {
+      "kind": "legacy-adapter-focused",
+      "passed": 50,
+      "failed": 0,
+      "sha256": "2f9ab6e746eaec0b14feab2d2bdb5e85c476118a05cac3d06b9b1d5b21abaf52"
+    },
+    {
+      "kind": "intermediate-types",
+      "accepted": false,
+      "reason": "TS2367 numeric/boolean flag inference corrected before the final snapshot.",
+      "sha256": "3c4a534ebc7442909b9e66d15c23539778cfdf5cc16ed7af497cd75ddae34dd4"
+    },
+    {
+      "kind": "intermediate-full-aborted",
+      "accepted": false,
+      "reason": "Stopped after the type-check failure; results not used for acceptance.",
+      "sha256": "9e65418edae3960c6eeda191e502f0fdc7748d195a292ee653c67ac03dbfd630"
+    },
+    {
+      "kind": "fresh-database",
+      "database": "sari_zid_catalog_final_20260926_test",
+      "migrations": 130,
+      "newMigrations": 1,
+      "sha256": "cb36e9926435c22673fe262a19fc2e60fe5d651669727dd7e21d3164af7fe86e"
+    },
+    {
+      "kind": "populated-upgrade-and-replay",
+      "passed": true,
+      "sha256": "f3a4159b2ebdeaaecd3f697d95f9f9d6a4fb9abdb496a0f65f68df372af2e699"
+    },
+    {
+      "kind": "final-full",
+      "groups": [
+        "unit",
+        "database",
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "cffe47286e8d93520df615d8ab2f4be6562093d28c74b4af5782f9291f162cb2"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    },
+    {
+      "kind": "deployment-guards",
+      "passed": 20,
+      "sha256": "099f0c1467abea5319fb4d93d0dd8f03f9b8e1229a486e216ad0043b80de6642"
+    }
+  ],
+  "acceptanceLimits": {
+    "catalogStoreIsolationProven": true,
+    "historicalStoreIdentityResolved": false,
+    "realProviderContractMeasured": false,
+    "instantaneousProviderPriceOrStockProven": false,
+    "variantSelectionImplemented": false,
+    "oldSentTextRetracted": false,
+    "otherPaymentSourcesProven": false,
+    "currentOrderLifecycleMeasured": false,
+    "businessLiftMeasured": false,
+    "finalBusinessDecision": false
+  },
+  "testInventoryNote": "69 new acceptance cases: 42 MySQL catalogue/sales cases and 27 adversarial scope cases. Existing case names retained; obsolete store-agnostic fixture setup and source assertions updated."
+}

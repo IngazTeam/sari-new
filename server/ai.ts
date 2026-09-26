@@ -189,12 +189,12 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
   // دمج المنتجات من المصدرين
   const allProducts = filterProductsAvailableForSale([
     ...(sariProducts || []),
-    ...zidProducts.map((zp: any) => ({
+    ...zidProducts.filter(zp => zp.sariProductId == null).map((zp: any) => ({
       id: zp.id,
       name: zp.nameAr || zp.nameEn || 'منتج بدون اسم',
       description: zp.descriptionAr || zp.descriptionEn,
       priceUnit: 'minor', currency: zp.currency || 'SAR',
-      price: majorToMinor(zp.price), // Convert to cents
+      price: majorToMinor(zp.salePrice ?? zp.price), // Convert to cents
       stock: zp.quantity,
       category: zp.categoryName,
       imageUrl: zp.mainImage,
@@ -203,7 +203,7 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
       isActive: zp.isActive,
       isPublished: zp.isPublished,
       isInStock: zp.isInStock,
-      trackInventory: 1,
+      trackInventory: zp.trackInventory,
       productType: 'physical',
     }))
   ]);

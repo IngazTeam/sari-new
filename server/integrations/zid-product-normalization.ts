@@ -1,8 +1,12 @@
 import { majorToMinor } from '../../shared/product-money';
+import { createHash } from 'node:crypto';
+import { normalizeZidStoreId } from './zid-api';
 export type NormalizedZidProduct = {
+  storeId: string;
   externalId: string;
   name: string;
   nameAr: string | null;
+  nameEn?: string | null;
   description: string | null;
   descriptionAr: string | null;
   price: number;
@@ -41,8 +45,14 @@ export function normalizeZidProductExternalId(value: unknown): string {
   return candidate;
 }
 
-export function zidProductProjectionId(externalId: string): string {
-  return `zid:${normalizeZidProductExternalId(externalId)}`;
+export function requireZidProductStore(value:unknown, expected?:unknown):string {
+  if(typeof value==='number'&&!Number.isSafeInteger(value))throw new ZidProductSyncError('invalid_store');
+  const store=normalizeZidStoreId(value);
+  if(!store||(expected!==undefined&&store!==requireZidProductStore(expected)))throw new ZidProductSyncError('invalid_store');
+  return store;
+}
+export function zidProductProjectionId(storeId: unknown, externalId: unknown): string {
+  return `zid:v2:${createHash('sha256').update(JSON.stringify([requireZidProductStore(storeId),normalizeZidProductExternalId(externalId)])).digest('hex')}`;
 }
 
 export function formatZidProductSyncTime(value: Date): string {
@@ -113,9 +123,10 @@ function productStock(product: Record<string, any>): { stock: number; trackInven
   return { stock, trackInventory: 1 };
 }
 
-export function normalizeZidProduct(value: unknown, now = new Date()): NormalizedZidProduct {
+export function normalizeZidProduct(value: unknown, now = new Date(), verifiedStore?: unknown): NormalizedZidProduct {
   const product = record(value);
-  const rawExternalId = typeof product.id === 'number' ? String(product.id) : product.id;
+  const storeId=requireZidProductStore(product.store_id??verifiedStore,verifiedStore);
+  const rawExternalId = product.id;
   const externalId = normalizeZidProductExternalId(rawExternalId);
   const name = localizedText(product.name ?? product.title, 255);
   const basePrice = cents(product.price);
@@ -154,9 +165,11 @@ export function normalizeZidProduct(value: unknown, now = new Date()): Normalize
   }
 
   return {
+    storeId,
     externalId,
     name,
     nameAr: localizedText(product.name ?? product.title, 255, 'ar'),
+    nameEn: localizedText(product.name ?? product.title, 255, 'en'),
     description: localizedText(descriptionSource, 50_000, 'en')
       || localizedText(descriptionSource, 50_000, 'ar'),
     descriptionAr: localizedText(descriptionSource, 50_000, 'ar'),

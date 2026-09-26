@@ -1,3 +1,4 @@
+import { zidCatalogVisibleSql } from '../integrations/zid-catalog-scope';
 import { lexicalRelevance, relevantPassages, sectionContentHash } from '../knowledge/retrieval';
 import { formatProductPrice } from '../../shared/product-money';
 /**
@@ -449,7 +450,7 @@ async function buildProductContext(merchantId: number, question: string): Promis
          p.course_start_date, p.course_end_date,
          p.max_students, p.enrolled_count, p.registration_open
        FROM products p
-       WHERE p.merchantId = ? AND p.isActive = 1
+       WHERE p.merchantId = ? AND p.isActive = 1 AND ${zidCatalogVisibleSql('p')}
        AND (p.course_end_date IS NULL OR p.course_end_date > NOW())
        AND (${likeClauses})
        ORDER BY p.createdAt DESC
