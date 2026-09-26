@@ -90,7 +90,7 @@ export async function projectTapPurchaseMemory(connection: PoolConnection, input
       JSON.stringify({ schemaVersion: 1, source: 'tap', paymentId: payment.id, outcome, attribution: 'verified_payment_only' }),
       `tap:${payment.id}:${outcome}`]);
     if (payment.status === 'captured') {
-      await connection.execute("UPDATE conversations SET deal_stage = 'paid' WHERE id = ? AND merchantId = ?", [conversationId, input.merchantId]);
+      await connection.execute("UPDATE conversations SET deal_stage = 'paid', loss_reason = NULL WHERE id = ? AND merchantId = ?", [conversationId, input.merchantId]);
       await connection.execute(`UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = 'purchase_completed'
         WHERE merchant_id = ? AND conversation_id = ? AND sent_at IS NULL AND cancelled_at IS NULL`, [input.merchantId, conversationId]);
     }

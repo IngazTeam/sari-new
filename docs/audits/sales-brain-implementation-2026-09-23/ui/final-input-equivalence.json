@@ -1,39 +1,9 @@
 {
-  "reused": false,
-  "selection": {
-    "command": "verify-sales-brain-ui.cjs --only-reply-review",
-    "freshScenarios": 82,
-    "priorFullSuite": {
-      "baselineCommit": "c3a181c94440bc68fa107bc3338bf6c2a35b0f4d",
-      "scenarios": 1166,
-      "reportSha256": "89bff8c071797050f3dd510923faec26873d7636398087844487b4a966d81aa2",
-      "otherScenariosNotRerun": 1084
-    },
-    "scope": "Fresh browser verification of the affected review/send components only. Remaining baseline journeys are historical, not claimed as rerun or included in this report.",
-    "changedUiSources": [
-      "scripts/testing/fixtures/sales-reply-send-trpc.tsx",
-      "shared/sales-reply-send.ts"
-    ],
-    "serverCorrectionAfterUi": {
-      "files": [
-        "server/ai/sales-reply-delivery.ts",
-        "server/ai/sales-experiment-generation.mysql.test.ts",
-        "server/ai/sales-reply-recovery.ts"
-      ],
-      "unchangedUiFilesVerified": 565,
-      "uiSourceTreeSha256": "bff2e4e2697f2ac1057ae6fb6638dccdd628a5c3e1eeb7a94a752e28a76b6626",
-      "scope": "Only server delivery/recovery code and its SQL regression test changed. Browser fixture/client/shared/verifier source hashes match the browser-tested snapshot."
-    }
-  },
+  "reused": true,
+  "baselineCommit": "ea2c2d23416e571b2ae8737a5f4e82d70ae957af",
+  "freshScenarios": 0,
+  "sourceFilesVerified": 565,
+  "sourceTreeSha256": "057e409560d6446182d44035d7a5eff0d83f03e8ab47ffd543888c1eef186cea",
   "resultsSha256": "33573a69cd9d9c53190fa48afdb5743e786c8853817224b22a587fff58a461e6",
-  "screenshots": {
-    "reply-review-ar-1440.png": "9d5155535a5cbeda45d1e74877110ff972de60a5ff82fb8c3ab13a6525e970c8",
-    "reply-review-ar-375.png": "03cbf3e5f46e78d132b67d6d6b08f1a5bf6e92f95660e7353a09bf5760a57fcb",
-    "reply-review-en-1440.png": "804ca92f86bc44098f4e5d12fa34705038e4add653f82bfff93de5b75112e5b2",
-    "reply-review-en-375.png": "d21a9f5004ee59b7e90919c01f27776c178ea617a5455db4ec784c71a630be57",
-    "reply-send-ar-1440.png": "73aa68b6243b09987d15d54da192b7ad56187731b1832679e07227a464727bbe",
-    "reply-send-ar-375.png": "2105457142c5545820bb970f34becab38c90fc733a579c7d82099be75866f832",
-    "reply-send-en-1440.png": "731d72fa96ecca95464982ec7a9306a72c66f1db6dc2b54bc11d8ebb610a3b72",
-    "reply-send-en-375.png": "f900db09834290b4b27bd469dcb1fe490f1a3bbf5b2363edd47072b25000a8b1"
-  }
+  "scope": "No UI behavior, client/shared strings, UI fixtures or browser verifier changed. Reuse the prior 82 review/send component journeys only as historical evidence; no fresh browser or full 1166-scenario claim."
 }

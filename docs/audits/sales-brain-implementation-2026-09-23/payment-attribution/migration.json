@@ -1,0 +1,27 @@
+{
+  "verifiedAt": "2026-09-26T11:28:44.618Z",
+  "database": "sari_payment_migration_1790422101215_test",
+  "scope": "Actual updater through 0124, historical captured payment/memory fixture, upgrade to 0125 and two idempotency checks; no historical facts invented.",
+  "migrations": 126,
+  "preservedTables": [
+    "orders",
+    "order_payments",
+    "customer_profiles",
+    "ai_purchase_outcomes",
+    "ai_budget_policies",
+    "ai_price_cards",
+    "ai_sales_experiment_assignments",
+    "ai_sales_experiment_exposures"
+  ],
+  "initiallyEmpty": true,
+  "rejectedConstraints": [
+    "payment",
+    "target",
+    "missing-attribution",
+    "attempt-limit"
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "1033a13a1bd60595e385a330681ec5719e090caa507eba1ac43345605dbd2ddc",
+  "passed": true
+}

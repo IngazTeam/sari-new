@@ -9,7 +9,6 @@
 
 import {
   getBookingById,
-  getPool,
   getOrderById,
   getServiceById,
 } from '../db';
@@ -159,7 +158,6 @@ export async function processTapWebhook(
   }
 
   if (status === 'CAPTURED' && applied.status === 'captured') {
-    await projectCapturedConversation(payment.merchantId, applied.conversationId);
     await notifyPaymentOutcome(payment, applied, 'captured');
   } else if (status === 'REFUNDED' && applied.status === 'refunded') {
     await notifyPaymentOutcome(payment, applied, 'refunded');
@@ -169,29 +167,6 @@ export async function processTapWebhook(
     success: true,
     message: applied.kind === 'noop' ? 'Webhook already reflected locally' : 'Webhook processed successfully',
   };
-}
-
-async function projectCapturedConversation(merchantId: number, conversationId?: number): Promise<void> {
-  if (!conversationId) return;
-  try {
-    const pool = await getPool();
-    if (!pool) return;
-    await pool.execute(
-      `UPDATE conversations SET deal_stage = 'paid', loss_reason = NULL WHERE id = ? AND merchantId = ?`,
-      [conversationId, merchantId],
-    );
-    await pool.execute(
-      `UPDATE sari_strategy_metrics SET led_to_purchase = 1
-       WHERE merchant_id = ? AND conversation_id = ? AND led_to_purchase = 0
-       ORDER BY created_at DESC LIMIT 1`,
-      [merchantId, conversationId],
-    );
-  } catch (error) {
-    console.warn('[TapWebhook] Conversion projection failed (non-blocking)', {
-      merchantId,
-      conversationId,
-    });
-  }
 }
 
 async function notifyPaymentOutcome(

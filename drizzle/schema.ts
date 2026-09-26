@@ -4331,6 +4331,24 @@ export const aiSalesExperimentExposures = mysqlTable('ai_sales_experiment_exposu
   uniqueIndex('uq_sales_exposure_outbox').on(table.merchantId,table.outboxId),
   index('idx_sales_exposure_assignment').on(table.merchantId,table.protocolId,table.assignmentId,table.id)]);
 
+export const aiSalesPaymentFacts = mysqlTable('ai_sales_payment_facts', {
+  id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  paymentId: int('payment_id').notNull(), eventType: mysqlEnum('event_type',['captured','refunded']).notNull(),
+  targetKind: mysqlEnum('target_kind',['order','booking']).notNull(), targetId: int('target_id').notNull(),
+  customerKey: char('customer_key', { length: 64 }), factDigest: char('fact_digest', { length: 64 }).notNull(), snapshot: json().notNull(),
+  attributionState: mysqlEnum('attribution_state',['pending','attributed','unassigned','review']).notNull().default('pending'),
+  attributionDigest: char('attribution_digest', { length: 64 }), attribution: json(), attempts: int().notNull().default(0),
+  nextAt: datetime('next_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`), lastError: varchar('last_error', { length: 40 }),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex('uq_sales_payment_event').on(table.merchantId,table.paymentId,table.eventType),
+  uniqueIndex('uq_sales_target_event').on(table.merchantId,table.targetKind,table.targetId,table.eventType),
+  index('idx_sales_payment_pending').on(table.attributionState,table.nextAt,table.id),
+  check('ck_sales_payment_attribution', sql`${table.attempts} BETWEEN 0 AND 8 AND (
+    (${table.attributionState}='pending' AND ${table.nextAt} IS NOT NULL AND ${table.attribution} IS NULL AND ${table.attributionDigest} IS NULL)
+    OR (${table.attributionState}='attributed' AND ${table.nextAt} IS NULL AND ${table.attribution} IS NOT NULL AND ${table.attributionDigest} IS NOT NULL)
+    OR (${table.attributionState} IN ('unassigned','review') AND ${table.nextAt} IS NULL AND ${table.attribution} IS NULL AND ${table.attributionDigest} IS NULL))`)]);
+
 export const aiPurchaseOutcomes = mysqlTable('ai_purchase_outcomes', {
   id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

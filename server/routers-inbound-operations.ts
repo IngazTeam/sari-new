@@ -4,6 +4,11 @@ import { adminProcedure, router } from './_core/trpc';
 import { inboundHealth, listInboundReviews, resolveInboundReview } from './messaging/operations';
 
 export const inboundOperationsRouter = router({
+  salesPaymentAttributionHealth: adminProcedure.query(async ({ctx}) => {
+    const {salesPaymentAttributionHealth,SalesPaymentHealthAccessDenied} = await import('./ai/sales-payment-attribution');
+    try { return await salesPaymentAttributionHealth(ctx.user.id); }
+    catch(error) { throw new TRPCError({code:error instanceof SalesPaymentHealthAccessDenied ? 'FORBIDDEN' : 'INTERNAL_SERVER_ERROR',message:'تعذر قراءة حالة إسناد المدفوعات'}); }
+  }),
   health: adminProcedure.query(() => inboundHealth()),
   salesReplyRecoveryHealth: adminProcedure.query(async ({ctx}) => {
     const {salesReplyRecoveryHealth,SalesReplyRecoveryAccessDenied} = await import('./ai/sales-reply-recovery');

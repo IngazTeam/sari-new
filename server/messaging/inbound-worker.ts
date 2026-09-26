@@ -36,6 +36,8 @@ export async function startInboundWorker() {
     stops.push(await startSalesReplyRecoveryWorker());
     const { startOrdinaryReplyUsageRecoveryWorker } = await import('../ai/ordinary-reply-usage');
     stops.push(await startOrdinaryReplyUsageRecoveryWorker());
+    const { startSalesPaymentAttributionWorker } = await import('../ai/sales-payment-attribution');
+    stops.push(await startSalesPaymentAttributionWorker());
     let stopping = false;
     let active: Promise<void> | undefined;
     let nextRetentionAt = 0;

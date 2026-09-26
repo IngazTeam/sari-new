@@ -2,6 +2,7 @@ import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { projectTapPurchaseMemory } from '../ai/verified-purchase-memory';
+import { assertSalesPaymentFactSchema, recordTapSalesPaymentFact } from '../ai/sales-payment-facts';
 import {
   planTapWebhookTransition,
   type StoredTapPaymentStatus,
@@ -151,6 +152,7 @@ export async function applyTapOrderPaymentState(input: TapOrderPaymentStateInput
 
 
 export async function assertTapOrderPaymentStateSchema() {
+  await assertSalesPaymentFactSchema();
   await assertRuntimeSchema('Tap order payment state', [
     { table: 'orders', columns: ['payment_status'] },
     { table: 'order_payments', columns: ['last_webhook_status', 'last_webhook_at'] },
@@ -373,6 +375,7 @@ export async function applyTapOrderPaymentStateInTransaction(connection: PoolCon
 
   if (nextStatus === 'captured' || nextStatus === 'refunded') {
     await projectTapPurchaseMemory(connection, { merchantId: payment.merchant_id, paymentId: payment.id, conversationId: metadata.conversationId });
+    await recordTapSalesPaymentFact(connection, payment.merchant_id, payment.id);
   }
   return {
     kind: 'transitioned',

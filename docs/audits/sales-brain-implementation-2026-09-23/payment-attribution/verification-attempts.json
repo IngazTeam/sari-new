@@ -1,0 +1,79 @@
+{
+  "scope": "Local synthetic verification; final six groups from frozen final source and a fresh disposable database.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 115,
+      "failed": 0,
+      "sha256": "617e0cd95f264cdf02bdd1f575474489f84007c0d6eefde9a9435a774a409cc1"
+    },
+    {
+      "kind": "expanded-focused",
+      "passed": 140,
+      "failed": 0,
+      "sha256": "dcbe02447b5d9415f81323966fbb7164649b77989b7b46a1b873f71062c83a45"
+    },
+    {
+      "kind": "migration-fixture-failure",
+      "reason": "Synthetic order lacked the existing required customerName column; fixed the fixture, not the migration.",
+      "sha256": "7b7c83c76ff0e443e0e5f126c1e2d735fccc83e12cbb55e7f9a8d534a8793528"
+    },
+    {
+      "kind": "migration-verifier-correction",
+      "file": "scripts/testing/verify-sales-payment-facts-migration.cjs",
+      "at": "2026-09-26T11:28:21.023Z",
+      "reason": "Migration fixture required orders.customerName; improved local diagnostic. No runtime, unit/SQL test, UI, schema or migration changes."
+    },
+    {
+      "kind": "upgrade-final",
+      "sha256": "ae6565e5c76b2b8c9ddacc2ad92af6714601eacac57782a0de8eeff15eb3fa6a"
+    },
+    {
+      "kind": "interrupted-full",
+      "reason": "Owned runner stopped during database phase after review found an invalid refund phone was classified unassigned. Partial results excluded.",
+      "sha256": "4ee2e14879328115dc9f46b2e0a1e0327cd4189a0e9f97b67ecb7ddf0fbba2e8"
+    },
+    {
+      "kind": "final-runtime-correction",
+      "at": "2026-09-26T11:31:35.843Z",
+      "files": [
+        "server/ai/sales-payment-attribution.ts",
+        "server/ai/sales-payment-attribution.mysql.test.ts"
+      ],
+      "reason": "A refund with an invalid current target phone must be compared to its original capture and quarantined, not silently classified unassigned."
+    },
+    {
+      "kind": "fresh-final-database",
+      "database": "sari_payment_facts_final_20260926_test",
+      "sha256": "5f9aa8f27e04169cb107698cfb75db9b86faef6ea346131b304513f14c1e9f2c"
+    },
+    {
+      "kind": "runtime-acceptance-and-obsolete-ownership-gate",
+      "unitPassed": 3573,
+      "databasePassed": 3011,
+      "regressionFailed": 1,
+      "reason": "The old source contract required the removed blind webhook conversation projection. No production runtime change was needed.",
+      "sha256": "4199fba2f3ef3a605369a1921f1dfabe91611e5ce594d64364120a1669710eb8"
+    },
+    {
+      "kind": "ownership-gate-correction",
+      "file": "server/tap-payment-ownership-pentest.test.ts",
+      "at": "2026-09-26T11:44:23.258Z",
+      "reason": "Retained the existing test but replaced its requirement for the unsafe removed webhook projection with canonical customer/merchant validation and prohibitions on blind paid/strategy updates. Runtime and previously passing unit/SQL suites unchanged."
+    },
+    {
+      "kind": "final-remaining-groups",
+      "groups": [
+        "regression",
+        "legacy-sales",
+        "budget",
+        "security"
+      ],
+      "sha256": "ffb0905edd1db45d3f407f635dc5e8d98dcc0c6598e8c1837b65cab8bc7f9b90"
+    },
+    {
+      "kind": "final-checks",
+      "sha256": "ef9204030681cccb47207daf48e969b497218519e72d3d2d5a1f062b59b65ae0"
+    }
+  ]
+}
