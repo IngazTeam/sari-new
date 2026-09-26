@@ -13,6 +13,7 @@ export async function purgeCompletedInboundPayloads(limit = 500): Promise<number
   const [deliveries] = await pool.execute<any>(
     `UPDATE whatsapp_message_deliveries SET request_json = NULL WHERE request_json IS NOT NULL
      AND status IN ('sent','delivered','read') AND status_updated_at < TIMESTAMPADD(DAY, -30, UTC_TIMESTAMP())
+     AND NOT EXISTS (SELECT 1 FROM ai_interaction_jobs j WHERE j.usage_outbox_id=whatsapp_message_deliveries.id AND j.usage_state='held')
      ORDER BY id LIMIT ${limit}`,
   );
   return result.affectedRows + deliveries.affectedRows;

@@ -4009,6 +4009,19 @@ export const aiInteractionJobs = mysqlTable('ai_interaction_jobs', {
   replyPlan: json('reply_plan'),
   salesDeliveryId: bigint('sales_delivery_id', { mode: 'number', unsigned: true }),
   outgoingMessageReference: int('outgoing_message_reference'),
+  usageState: varchar('usage_state', { length: 16 }).notNull().default('legacy'),
+  usageSubscriptionId: int('usage_subscription_id'),
+  usagePeriodStart: datetime('usage_period_start', { mode: 'string', fsp: 3 }),
+  usageUnits: int('usage_units', { unsigned: true }).notNull().default(0),
+  usageReservedAt: datetime('usage_reserved_at', { mode: 'string', fsp: 3 }),
+  usageDigest: char('usage_digest', { length: 64 }),
+  usageSettledAt: datetime('usage_settled_at', { mode: 'string', fsp: 3 }),
+  usageOutboxId: bigint('usage_outbox_id', { mode: 'number', unsigned: true }),
+  usageProvider: varchar('usage_provider', { length: 16 }),
+  usageRequestDigest: char('usage_request_digest', { length: 64 }),
+  usageRecoveryAt: datetime('usage_recovery_at', { mode: 'string', fsp: 3 }),
+  usageAttempts: int('usage_attempts', { unsigned: true }).notNull().default(0),
+  usageLastError: varchar('usage_last_error', { length: 32 }),
   state: varchar({ length: 24 }).default('waiting_delivery').notNull(),
   attempts: int().default(0).notNull(),
   leaseToken: varchar('lease_token', { length: 64 }),
@@ -4018,6 +4031,22 @@ export const aiInteractionJobs = mysqlTable('ai_interaction_jobs', {
   createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
   completedAt: datetime('completed_at', { mode: 'string', fsp: 3 }),
 }, table => [
+  index('idx_ordinary_reply_usage_holds').on(table.merchantId,table.usageSubscriptionId,table.usagePeriodStart,table.usageState),
+  index('idx_ordinary_reply_usage_recovery').on(table.usageState,table.usageRecoveryAt,table.id),
+  index('idx_ordinary_reply_usage_outbox').on(table.usageOutboxId,table.usageState),
+  check('ck_ordinary_reply_usage', sql`(${table.usageState} IN ('legacy','pending') AND (${table.usageState}='legacy' OR ${table.replyOrigin}='ordinary')
+      AND ${table.usageUnits}=0 AND ${table.usageSubscriptionId} IS NULL AND ${table.usagePeriodStart} IS NULL AND ${table.usageReservedAt} IS NULL
+      AND ${table.usageDigest} IS NULL AND ${table.usageSettledAt} IS NULL AND ${table.usageOutboxId} IS NULL AND ${table.usageProvider} IS NULL
+      AND ${table.usageRequestDigest} IS NULL AND ${table.usageRecoveryAt} IS NULL AND ${table.usageAttempts}=0 AND ${table.usageLastError} IS NULL)
+    OR (${table.usageState} IN ('held','charged','historical','released') AND ${table.replyOrigin}='ordinary' AND ${table.usageUnits}=2
+      AND ${table.usageSubscriptionId} IS NOT NULL AND ${table.usageSubscriptionId}>0 AND ${table.usagePeriodStart} IS NOT NULL AND ${table.usageReservedAt} IS NOT NULL
+      AND ${table.usageDigest} IS NOT NULL AND CHAR_LENGTH(${table.usageDigest})=64 AND ${table.usageOutboxId} IS NOT NULL AND ${table.usageOutboxId}>0
+      AND ${table.usageProvider} IS NOT NULL AND ${table.usageProvider} IN ('green_api','meta_cloud','mock') AND ${table.usageRequestDigest} IS NOT NULL
+      AND CHAR_LENGTH(${table.usageRequestDigest})=64 AND ${table.usageAttempts}<=8
+      AND (${table.usageLastError} IS NULL OR ${table.usageLastError} IN ('transport_unknown','evidence_unavailable'))
+      AND ((${table.usageState}='held' AND ${table.usageSettledAt} IS NULL)
+        OR (${table.usageState}<>'held' AND ${table.usageSettledAt} IS NOT NULL AND ${table.usageRecoveryAt} IS NULL)))
+  `),
   uniqueIndex('uq_ai_interaction_message').on(table.merchantId, table.incomingMessageId),
   index('idx_ai_interaction_due').on(table.state, table.availableAt, table.leaseUntil),
   check('ck_interaction_reply_owner', sql`(${table.replyOrigin}='legacy' AND ${table.replyDigest} IS NULL AND ${table.replyPlan} IS NULL AND ${table.salesDeliveryId} IS NULL AND ${table.outgoingMessageReference} IS NULL)

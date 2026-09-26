@@ -86,29 +86,17 @@ export async function hasReachedConversationLimit(merchantId: number): Promise<b
  */
 export async function hasReachedMessageLimit(merchantId: number): Promise<boolean> {
   try {
-    const subscription = await getActiveSubscription(merchantId);
-    
-    if (!subscription) {
-      console.warn(`[Usage] No active subscription for merchant ${merchantId}`);
-      return true;
-    }
-    
-    const limits = await getPlanLimits(subscription.planId, subscription.status);
-    
-    // Unlimited plan
-    if (limits.maxMessages === -1) {
-      return false;
-    }
-    
-    const reached = subscription.messagesUsed >= limits.maxMessages;
-    
-    if (reached) {
-      console.warn(`[Usage] Merchant ${merchantId} reached message limit: ${subscription.messagesUsed}/${limits.maxMessages}`);
-    }
-    
-    return reached;
-  } catch (error: any) {
-    console.error('[Usage] Error checking message limit:', error);
+    if (!Number.isSafeInteger(merchantId) || merchantId < 1) return true;
+    const { assertReplyUsageSchema, lockReplyUsageCapacity } = await import('./ai/reply-usage-quota');
+    const { checkoutTransaction } = await import('./ai/checkout-agreements');
+    await assertReplyUsageSchema();
+    await checkoutTransaction(async c => {
+      await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE', [merchantId]);
+      await lockReplyUsageCapacity(c, merchantId);
+    });
+    // Advisory admission before generation. The final transport gate reserves the same capacity atomically.
+    return false;
+  } catch {
     return true;
   }
 }

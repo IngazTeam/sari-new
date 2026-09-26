@@ -66,6 +66,10 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
   const execution = currentInboundExecution();
   try {
     const result = await dispatchMerchantWhatsApp(input);
+    if (input.replyGuard?.incomingMessageId) {
+      const { reconcileOrdinaryReplyUsage } = await import('../../ai/ordinary-reply-usage');
+      await reconcileOrdinaryReplyUsage(input.merchantId, input.replyGuard.incomingMessageId);
+    }
     if (execution && !result.accepted) execution.uncertainEffect = true;
     return result;
   } catch (error) {
@@ -96,26 +100,32 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
 
   let reserved = false;
   try {
-    await pool.execute(
+    // Lock the parent before FK validation takes an instance lock. Reply authority uses
+    // merchant -> instance; a VALUES insert can take instance -> merchant and deadlock it.
+    const [inserted] = await pool.execute<any>(
       `INSERT INTO whatsapp_message_deliveries
         (merchant_id, message_id, instance_id, provider, idempotency_key, direction, status, request_json)
-       VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued', ?)`,
+       SELECT ?, ?, ?, ?, ?, 'outgoing', 'queued', ? FROM merchants WHERE id=? FOR SHARE`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
           fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
-          salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard })]
+          replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
+    if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
     reserved = true;
   } catch (error: any) {
     if (error?.code !== 'ER_DUP_ENTRY') throw error;
     const [rows] = await pool.execute(
-      `SELECT status, provider_message_id, error_code FROM whatsapp_message_deliveries
+      `SELECT status, provider_message_id, error_code, request_json FROM whatsapp_message_deliveries
        WHERE idempotency_key = ? AND merchant_id = ? LIMIT 1`,
       [input.idempotencyKey, input.merchantId]
     );
     const existing = (rows as any[])?.[0];
     if (!existing) throw error;
-    if (existing.status === 'failed' && input.retryFailed && !input.idempotencyKey.startsWith('sales_reply:') && !input.salesReplyGuard
+    const priorRequest = typeof existing.request_json === 'string' ? JSON.parse(existing.request_json) : existing.request_json;
+    // Removing the guard from a retry request cannot strip the durable reply's authority.
+    if (existing.status === 'failed' && !existing.provider_message_id && input.retryFailed && !input.replyGuard && !priorRequest?.replyGuard
+        && !input.idempotencyKey.startsWith('sales_reply:') && !input.salesReplyGuard
         && existing.error_code !== 'provider_unreachable'
         && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(

@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 const provider = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => provider }));
 import { getPool, closeDb } from '../db/connection';
-import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
+import { createDisposableMerchant, cleanupDisposableMerchants, createDisposableTrialSubscription } from '../tests/helpers/disposable-merchant';
 import { enqueueInbound, claimInbound as claimForMerchant, executeInbound, recoverExpiredInbound, assertInboundOwned,
   heartbeatInbound, finishInbound, persistInboundReplyPlan } from './inbound-jobs';
 import { currentInboundExecution } from './inbound-context';
@@ -25,6 +25,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     senderData: { chatId: chat, sender: chat }, messageData: { typeMessage: 'textMessage', textMessageData: { textMessage: 'fixture' } } });
   beforeEach(async () => {
     fixture = await createDisposableMerchant('inbound');
+    await createDisposableTrialSubscription(fixture.merchantId);
     account = randomUUID();
     const pool = (await getPool())!;
     const [instance] = await pool.execute<any>(

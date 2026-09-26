@@ -8,6 +8,8 @@ import { checkoutTransaction } from './checkout-agreements';
 import { reserveOrdinaryReply, ordinaryReplyDigest, ordinaryReplyText } from './reply-reservation';
 
 export async function assertInteractionSchema() {
+  const { assertReplyUsageSchema } = await import('./reply-usage-quota');
+  await assertReplyUsageSchema();
   const { assertCheckoutAgreementSchema } = await import('./checkout-agreements');
   await assertCheckoutAgreementSchema();
   const { assertBookingAgreementSchema } = await import('./booking-agreements');

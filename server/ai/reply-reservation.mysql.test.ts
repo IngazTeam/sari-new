@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 const provider = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => provider }));
 import { getPool, closeDb } from '../db/connection';
-import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
+import { createDisposableMerchant, cleanupDisposableMerchants, createDisposableTrialSubscription } from '../tests/helpers/disposable-merchant';
 import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
 import { stageInteraction, finishInteractionDelivery } from './interaction-jobs';
 import { canDispatchConversationReply, ordinaryReplyDigest } from './reply-reservation';
@@ -20,6 +20,7 @@ describe.skipIf(!process.env.DATABASE_URL)('shared incoming reply ownership with
     incomingMessageId: p.incomingMessageId, version: p.ownershipVersion!, reservationDigest: ordinaryReplyDigest(p) } });
   beforeEach(async () => {
     owner = await createDisposableMerchant('reply-reservation'); other = await createDisposableMerchant('reply-other');
+    await createDisposableTrialSubscription(owner.merchantId);
     conversationId = Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,'966500000989','active')", [owner.merchantId])).insertId);
     incomingMessageId = Number((await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','استفسار')", [conversationId])).insertId);
     instanceId = Number((await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,provider,status,is_primary) VALUES (?,?,'fixture','green_api','active',1)", [owner.merchantId, randomUUID()])).insertId);

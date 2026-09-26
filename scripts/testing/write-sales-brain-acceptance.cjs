@@ -663,6 +663,12 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' أضيف فحص نفاد السعة وتنافس حجوزتين وفساد هوية التسوية وتغيّر الاشتراك والفترة وفقد إقرار الحفظ والانتهاء بعد الأقفال. أصلح مفتاح الرد ذي المعرّفين القصيرين دون تغيير المفاتيح السابقة المقبولة.','server/ai/sales-experiment-generation.mysql.test.ts'],
  B065:[entries.B065[0]+' يضيف الترحيل 0122 حالات استخدام منفصلة؛ يحفظ اشتراكات ونقلًا تاريخيًا دون فرض احتساب قديم. تحققت القيود والإعادة على MySQL محلي. لا ترحيل إنتاجي.','scripts/testing/verify-sales-reply-usage-migration.cjs'],
 });
+Object.assign(entries, {
+ B045:[entries.B045[0]+' استكمال 0123: يشترك الرد العادي والمعتمد في احتساب الحجوزات تحت قفل الاشتراك؛ فحص الدخول المبكر يحسب وحدتي الدورة والحجوزات. حجز الرد العادي مربوط بخطته وأول إيصال، دون الزيادة القديمة بعد الإرسال. لا يشمل ذلك كل إشعارات المنصة والمشرف.','server/ai/reply-usage-quota.ts'],
+ B062:[entries.B062[0]+' يسترجع عامل SQL احتساب الرد العادي دون إرسال أو فتح تعلم، ويحفظ العداد والتسوية ذريًا مع الاشتراك والفترة الأصليين. قبول أول جزء يحتسب الدورة مرة واحدة؛ لا يثبت اكتمال بقية الأجزاء. تُحفظ أدلة النقل المعلقة من التنقية.','server/ai/ordinary-reply-usage.ts'],
+ B064:[entries.B064[0]+' فُحص تنافس العادي والمعتمد على آخر سعة، والانقطاع قبل/بعد إقرار الحجز والإيصال والتسوية، والرد متعدد الأجزاء، وتلف الأدلة والعزل والرفض والغموض وتغير الاشتراك والتنقية والإغلاق المنظم.','server/ai/ordinary-reply-usage.mysql.test.ts'],
+ B065:[entries.B065[0]+' يحفظ الترحيل 0123 السجلات القديمة دون خصم أو إذن إرسال جديد، ويضيف فهارس الحجز والاسترجاع والإيصال وقيود حالات الاستخدام. يلزم تحديث الويب والعمال مع الترحيل.','scripts/testing/verify-ordinary-reply-usage-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

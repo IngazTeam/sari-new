@@ -576,6 +576,22 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     usagePlanIds.push(planId); await query("UPDATE merchant_subscriptions SET plan_id=?,status='active' WHERE merchant_id=?", [planId,owner.merchantId]);
     return {f,r,subscription:await usageSubscription(),planId};
   }
+  it.each([2,4])('shared reply usage: reviewed and ordinary turns compete atomically for capacity %s',async limit=>{
+    const {f,r}=await usageFixture(limit);
+    const conv=Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,'966500000988','active')",[owner.merchantId])).insertId);
+    const msg=Number((await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','استفسار آخر')",[conv])).insertId);
+    const p=buildReplyPlan({merchantId:owner.merchantId,instanceId:f.instanceRecordId,providerAccount:f.account,eventId:randomUUID(),conversationId:conv,incomingMessageId:msg,to:'966500000988',text:'رد عادي اصطناعي'});
+    wa.post.mockRejectedValue(Error('Synthetic unknown transport'));
+    const outcomes=await Promise.allSettled([dispatch(r),dispatchReplyPlan(p)]);
+    const debug={outcomes:outcomes.map(v=>v.status==='rejected'?{status:v.status,code:v.reason?.code}:{status:v.status}),ordinary:await query('SELECT state,usage_state FROM ai_interaction_jobs WHERE merchant_id=?',[owner.merchantId]),
+      delivery:await query('SELECT state,usage_state FROM ai_sales_reply_deliveries WHERE merchant_id=?',[owner.merchantId]),
+      transport:await query('SELECT status,error_code FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId])};
+    expect(wa.post.mock.calls.length,JSON.stringify(debug)).toBe(limit/2);expect((await usageSubscription()).messages_used).toBe(0);
+    const [[held]]=await (await getPool())!.execute<any[]>(`SELECT
+      (SELECT COALESCE(SUM(usage_units),0) FROM ai_sales_reply_deliveries WHERE merchant_id=? AND usage_state='held')+
+      (SELECT COALESCE(SUM(usage_units),0) FROM ai_interaction_jobs WHERE merchant_id=? AND usage_state='held') AS total`,[owner.merchantId,owner.merchantId]);
+    expect(Number(held.total)).toBe(limit);
+  });
   it('reply usage: reserves before provider IO and charges two units once with projected history', async () => {
     const {r}=await usageFixture();
     wa.post.mockImplementation(async()=>{expect(await projectionRow()).toMatchObject({usage_state:'held',usage_units:2});expect((await usageSubscription()).messages_used).toBe(0);

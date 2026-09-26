@@ -3,7 +3,7 @@ const mock = vi.hoisted(() => ({ send: vi.fn(), instance: vi.fn() }));
 vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => ({ send: mock.send }) }));
 vi.mock('../db', async original => ({ ...await original<typeof import('../db')>(), getPrimaryWhatsAppInstance: mock.instance, getWhatsAppInstanceById: mock.instance }));
 import { getPool, closeDb } from '../db/connection';
-import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
+import { createDisposableMerchant, cleanupDisposableMerchants, createDisposableTrialSubscription } from '../tests/helpers/disposable-merchant';
 import { transitionConversationOwnership as transition, conversationHandoffSummary, conversationHandoffSource, handoffPrompt, canSendConversationReply } from './conversation-handoff';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
@@ -23,6 +23,7 @@ describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership l
     idempotencyKey: `handoff:fixture:${fixture.merchantId}:${sourceId}`, replyGuard: guard() });
   beforeEach(async () => {
     fixture = await createDisposableMerchant('handoff');
+    await createDisposableTrialSubscription(fixture.merchantId);
     conversationId = Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')", [fixture.merchantId, phone])).insertId);
     sourceId = await incoming('أحتاج دورة مسائية، ميزانيتي محدودة');
     instanceId = Number((await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,?,'fixture','active',1)", [fixture.merchantId, `handoff-${fixture.merchantId}`])).insertId);

@@ -4,6 +4,8 @@ import type { SendMerchantWhatsAppInput } from '../channels/whatsapp/types';
 import { checkoutTransaction } from './checkout-agreements';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { canSendConversationReply } from './conversation-handoff';
+import { assertReplyUsageSchema } from './reply-usage-quota';
+import { reserveOrdinaryReplyUsage } from './ordinary-reply-usage';
 
 export class ReplyReservationConflict extends Error {
   constructor() { super('Reply message ownership changed or is unavailable'); }
@@ -35,8 +37,8 @@ export async function reserveOrdinaryReply(c: PoolConnection, plan: ReplyPlan) {
     return digest;
   }
   await c.execute(`INSERT INTO ai_interaction_jobs
-    (merchant_id,conversation_id,incoming_message_id,reply_text,reply_origin,reply_digest,reply_plan)
-    VALUES (?,?,?,?,'ordinary',?,?)`, [merchant, plan.conversationId, plan.incomingMessageId!,
+    (merchant_id,conversation_id,incoming_message_id,reply_text,reply_origin,reply_digest,reply_plan,usage_state)
+    VALUES (?,?,?,?,'ordinary',?,?,'pending')`, [merchant, plan.conversationId, plan.incomingMessageId!,
     ordinaryReplyText(plan), digest, JSON.stringify(plan)]);
   return digest;
 }
@@ -46,6 +48,7 @@ export async function canDispatchConversationReply(input: SendMerchantWhatsAppIn
   const guard = input.replyGuard;
   if (!guard?.incomingMessageId || input.retryFailed || input.salesReplyGuard) return false;
   try {
+    await assertReplyUsageSchema();
     return await checkoutTransaction(async c => {
       await lockReplySource(c, input.merchantId, guard.conversationId, guard.incomingMessageId!);
       if (!await canSendConversationReply(c, input.merchantId, guard, input.to)) return false;
@@ -59,10 +62,13 @@ export async function canDispatchConversationReply(input: SendMerchantWhatsAppIn
         incomingMessageId: guard.incomingMessageId, ownershipVersion: guard.version, effects: [normalized] });
       const [rows] = await c.execute<any[]>('SELECT * FROM ai_interaction_jobs WHERE merchant_id=? AND incoming_message_id=? FOR UPDATE', [input.merchantId, guard.incomingMessageId]);
       const row = rows[0], plan: ReplyPlan = parsed(row?.reply_plan);
-      return row?.reply_origin === 'ordinary' && row.state === 'waiting_delivery' && row.reply_digest === digest
+      const matches = row?.reply_origin === 'ordinary' && row.state === 'waiting_delivery' && row.reply_digest === digest
         && ordinaryReplyDigest(plan) === digest && row.reply_text === ordinaryReplyText(plan) && plan.conversationId === guard.conversationId
         && plan.incomingMessageId === guard.incomingMessageId && plan.ownershipVersion === guard.version
         && plan.effects.some(e => policyArtifactDigest(e) === policyArtifactDigest(normalized));
+      if (!matches) return false;
+      await reserveOrdinaryReplyUsage(c, row, normalized);
+      return true;
     });
   } catch { return false; }
 }

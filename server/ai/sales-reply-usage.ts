@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { databaseTimeEpoch } from '../db/time';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { assertReplyUsageSchema, lockReplyUsageCapacity } from './reply-usage-quota';
 
 const id = z.number().int().positive().safe();
 const timestamp = (value: any) => {
@@ -14,6 +15,7 @@ const sqlTime = (value: string) => value.slice(0, 23).replace('T', ' ');
 const unavailable = (): never => { throw Error('Reply usage evidence unavailable'); };
 
 export async function assertSalesReplyUsageSchema() {
+  await assertReplyUsageSchema();
   await assertRuntimeSchema('reviewed reply subscription usage', [{ table: 'ai_sales_reply_deliveries',
     columns: ['usage_state','usage_subscription_id','usage_period_start','usage_units','usage_reserved_at','usage_digest','usage_settled_at'],
     checkConstraints: ['ck_sales_reply_usage'] }]);
@@ -28,24 +30,8 @@ function evidence(row: any) {
 /** The caller owns the merchant and delivery rows. Subscription rows serialize quota reservations. */
 export async function reserveSalesReplyUsage(c: PoolConnection, row: any, expiresAt: string) {
   if (!['pending','legacy'].includes(row.usage_state)) return unavailable();
-  const [subscriptions] = await c.execute<any[]>(`SELECT s.* FROM merchant_subscriptions s
-    JOIN merchants m ON m.id=s.merchant_id AND m.current_subscription_id=s.id
-    WHERE m.id=? AND s.status IN ('active','trial') AND s.start_date<=UTC_TIMESTAMP(3) AND s.end_date>UTC_TIMESTAMP(3)
-      AND s.last_reset_at<=UTC_TIMESTAMP(3) AND (s.status<>'trial' OR s.trial_ends_at>UTC_TIMESTAMP(3)) FOR UPDATE`, [row.merchant_id]);
-  if (subscriptions.length !== 1) return unavailable();
-  const s = subscriptions[0], used = Number(s.messages_used), periodStart = timestamp(s.last_reset_at);
-  if (!Number.isSafeInteger(used) || used < 0 || used > 2147483645) return unavailable();
-  let limit = -1;
-  if (s.plan_id !== null) {
-    const [plans] = await c.execute<any[]>('SELECT message_limit FROM subscription_plans WHERE id=? FOR SHARE', [s.plan_id]);
-    if (plans.length !== 1) return unavailable(); limit = Number(plans[0].message_limit);
-  } else if (s.status !== 'trial') return unavailable();
-  if (!Number.isSafeInteger(limit) || limit < -1) return unavailable();
-  const [holds] = await c.execute<any[]>(`SELECT COALESCE(SUM(usage_units),0) AS held FROM ai_sales_reply_deliveries
-    WHERE merchant_id=? AND usage_subscription_id=? AND usage_period_start=? AND usage_state='held'`,
-    [row.merchant_id,s.id,sqlTime(periodStart)]);
-  const held = Number(holds[0].held);
-  if (!Number.isSafeInteger(held) || held < 0 || used+held+2 > 2147483647 || limit !== -1 && used+held+2 > limit) return unavailable();
+  const { subscriptionId, periodStart } = await lockReplyUsageCapacity(c, Number(row.merchant_id));
+  const s = { id: subscriptionId };
   const reservation = { ...row, usage_subscription_id: Number(s.id), usage_period_start: periodStart, usage_units: 2,
     usage_reserved_at: row.dispatch_started_at };
   const proof = evidence(reservation);

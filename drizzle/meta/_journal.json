@@ -862,6 +862,13 @@
       "when": 1794009600000,
       "tag": "0122_sales_reply_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1794096000000,
+      "tag": "0123_ordinary_reply_usage",
+      "breakpoints": true
     }
   ]
 }

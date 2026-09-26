@@ -32,7 +32,6 @@ import {
   hasReachedConversationLimit,
   hasReachedMessageLimit,
   incrementConversationUsage,
-  incrementMessageUsage,
 } from '../usage-tracking';
 
 interface WebhookResult {
@@ -1521,9 +1520,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         aiResponse: response,
       });
       
-      // Increment message usage (incoming + outgoing = 2 messages)
-      await incrementMessageUsage(instance.merchantId);
-      await incrementMessageUsage(instance.merchantId);
+      // Subscription usage is settled once from the channel receipt by the reply quota ledger.
       
       // Mark incoming message as processed
       if (incomingMsgId) {

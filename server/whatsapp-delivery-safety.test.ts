@@ -42,6 +42,24 @@ describe('provider outcome classification', () => {
   }
 });
 describe('durable delivery boundaries', () => {
+  it('does not contact the provider if the merchant disappears before outbox reservation', async () => {
+    mocks.execute.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    await expect(sendMerchantWhatsApp(input)).rejects.toThrow('reservation unavailable');expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it.each([false,true])('cannot retry an ordinary reply by omitting its persisted guard: serialized %s', async serialized => {
+    const request={replyGuard:{conversationId:1,incomingMessageId:2,version:0}};
+    mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',error_code:'http_400',request_json:serialized?JSON.stringify(request):request}]]);
+    expect(await sendMerchantWhatsApp({...input,retryFailed:true})).toMatchObject({accepted:false,duplicate:true});
+    expect(mocks.execute).toHaveBeenCalledTimes(2);expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('never retries a failed delivery with a provider acceptance ID even after its request body was redacted', async () => {
+    mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',provider_message_id:'accepted-before-delivery-failure',error_code:'delivery_failed',request_json:null}]]);
+    expect(await sendMerchantWhatsApp({...input,retryFailed:true})).toMatchObject({accepted:false,duplicate:true});expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('fails closed on corrupt persisted retry authority', async () => {
+    mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',error_code:'http_400',request_json:'{broken'}]]);
+    await expect(sendMerchantWhatsApp({...input,retryFailed:true})).rejects.toThrow();expect(mocks.post).not.toHaveBeenCalled();
+  });
   it('refuses reviewed reply keys without the separate server-owned authorization', async () => {
     expect(await sendMerchantWhatsApp({ ...input, idempotencyKey: 'sales_reply:20:42' })).toMatchObject({ accepted: false, errorCode: 'sales_reply_suppressed' });
     expect(mocks.post).not.toHaveBeenCalled();

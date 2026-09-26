@@ -53,3 +53,12 @@ export async function cleanupDisposableMerchants(userIds: number[]): Promise<voi
     }
   } finally { connection.release(); }
 }
+
+export async function createDisposableTrialSubscription(merchantId: number) {
+  assertDisposableDatabase();
+  const pool = (await getPool())!;
+  const [sub] = await pool.execute<any>(`INSERT INTO merchant_subscriptions (merchant_id,status,billing_cycle,start_date,end_date,trial_ends_at)
+    VALUES (?,'trial','monthly',UTC_TIMESTAMP(),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 7 DAY),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 7 DAY))`, [merchantId]);
+  await pool.execute('UPDATE merchants SET current_subscription_id=? WHERE id=?', [sub.insertId,merchantId]);
+  return Number(sub.insertId);
+}

@@ -1,0 +1,119 @@
+{
+  "scope": "Local synthetic verification; final acceptance from the frozen staged source only.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 150,
+      "failed": 0,
+      "logSha256": "6fa8e40d1133380691ed0fa09f6489c3e38721a43186c61a88ea33ff89e9941c"
+    },
+    {
+      "kind": "mixed-path-focused",
+      "passed": 381,
+      "failed": 1,
+      "result": "The four-unit shared capacity race exposed a real outbox INSERT FK deadlock: instance -> merchant opposed reviewed authority merchant -> instance. Diagnosed with local InnoDB lock evidence; fixed parent-first INSERT SELECT without retrying provider or unknown SQL outcomes.",
+      "logSha256": "50da80144c9e17b1744efa31f9288fd3a244aa03eb8bfd854122a8ec98178b3e"
+    },
+    {
+      "kind": "diagnostic-repeat",
+      "result": "A passing isolated run was not accepted as a fix. Repetition reproduced ER_LOCK_DEADLOCK; recorded only synthetic SQL states.",
+      "logSha256": "e675bf297b6448bd6ebf44355a662922628852dd80c6a98c25ecab08ad8a2757"
+    },
+    {
+      "kind": "corrected-race-stress",
+      "runs": 12,
+      "passed": 24,
+      "failed": 0,
+      "notSelectedPerRun": 312,
+      "logs": [
+        {
+          "run": 1,
+          "sha256": "f2a157a11d74858296b548738a908f3bf7d83bb5c5359556485ec4ab50fb67f7"
+        },
+        {
+          "run": 2,
+          "sha256": "a96f25ffe26eee2276e2f7f6c6e4fe072500e1cb3a194f330c63028df269743b"
+        },
+        {
+          "run": 3,
+          "sha256": "aee1d790216a77a5c47e8f9e59a3153feb84b7c7e01769a78ef6a2a6202db92a"
+        },
+        {
+          "run": 4,
+          "sha256": "043d7719b1cc42512c49d2583873b404df18a4ecccb94c7f74eaae8f8cc954a3"
+        },
+        {
+          "run": 5,
+          "sha256": "bfb32fd52838d601d07f45ce29ef51e398d40fddf9c8e07d77df0a3cc16529f0"
+        },
+        {
+          "run": 6,
+          "sha256": "c88c27ac86cb35c747784bf825d383239f5e153f49d8a0e2a1af98a31873329f"
+        },
+        {
+          "run": 7,
+          "sha256": "61291702a3841fd73eef02127dd2bf27bd6ec8f04c3ac5f0152e85bd798bf390"
+        },
+        {
+          "run": 8,
+          "sha256": "cd763c5fa263af00dbf577487741e2af22966d9f362d984ec042798fb2f0c7f2"
+        },
+        {
+          "run": 9,
+          "sha256": "5bdde7e741acd341b00d1ed8363cf9937e7798b7b766ffc3492400e7290f7dfe"
+        },
+        {
+          "run": 10,
+          "sha256": "2b50ed0b6bc437a06ff3ce2d847e361d2431ccda2b0cccb662eff81214d39ad5"
+        },
+        {
+          "run": 11,
+          "sha256": "9c8e24a81ae239aa395469c76a832c81d7c52ad35445fc3c4ad0e9e7af1801ea"
+        },
+        {
+          "run": 12,
+          "sha256": "e7ec298a8bc3533efd0a60ba35fbf6237a83f8a5eade9786d9a47c0e8472f462"
+        }
+      ]
+    },
+    {
+      "kind": "corrected-focused",
+      "passed": 125,
+      "failed": 0,
+      "logSha256": "b9e57ba055c441697c7158026ad8ccdb35d1169788c99cc850795c243f8c6cf5"
+    },
+    {
+      "kind": "superseded-full",
+      "result": "Stopped only the owned acceptance process tree after 3400 unit tests passed and the database group started. Added durable retry-guard and accepted-provider-ID protection. These partial results are excluded; all six groups restart from a new snapshot and a fresh database.",
+      "logSha256": "7a54c98f193f586f3b5b2b74b9b675eac987ddd1d2c4023dcb15c59138f2aaae"
+    },
+    {
+      "kind": "full-runtime-acceptance",
+      "database": "sari_ordinary_usage_verified_20260926_test",
+      "result": "Five groups passed. Security passed 4955 and failed one brittle substring test for the previous ordering of the retry condition. Production behavior was unchanged; replaced that single existing test with five behavioral channel scenarios and reran all 197 security files plus TypeScript.",
+      "logSha256": "6124ccad752727dfe8fdda6a5bd88b9aa57fb8f5a71487b7899f2112dff25edd"
+    },
+    {
+      "kind": "corrected-security-contract",
+      "passed": 37,
+      "failed": 0,
+      "logSha256": "190184140b268152da2f14a7a8bb11c8f775eab83b108095c79c8f32d7485119"
+    },
+    {
+      "kind": "final-security",
+      "files": 197,
+      "logSha256": "8b3559bd4a4655587166000eb7749fa6c77891199e4a8bb78a49b99ff9b69491",
+      "testOnlyCorrection": {
+        "file": "server/zid-order-notification-outbox-pentest.test.ts",
+        "reason": "Replace a brittle retry-condition substring assertion with five actual channel retry scenarios; no production source changed after the full run.",
+        "blob": "7ad430d28645b4e27d87709040ce4f1ccee1ace5"
+      }
+    },
+    {
+      "kind": "ui-equivalence",
+      "reused": true,
+      "inputsChecked": 39,
+      "screenshotsChecked": 113
+    }
+  ]
+}
