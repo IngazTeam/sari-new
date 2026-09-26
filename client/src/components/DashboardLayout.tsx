@@ -217,6 +217,7 @@ const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: Receipt, label: t('sidebar.admin.invoices', 'الفواتير'), path: "/admin/invoices" },
   { icon: TrendingUp, label: t('sidebar.admin.subscriptionReports', 'تقارير الاشتراكات'), path: "/admin/subscription-reports" },
   { icon: FileCheck2, label: t('salesEvidence.title'), path: "/admin/sales-evidence" },
+  { icon: FileCheck2, label: t('salesReadout.title'), path: "/admin/sales-experiments" },
   { icon: BellDot, label: t('sidebar.admin.notifications', 'الإشعارات'), path: "/admin/notifications" },
   { icon: FlaskConical, label: t('sidebar.admin.abTests', 'اختبارات A/B'), path: "/admin/ab-test-dashboard" },
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },

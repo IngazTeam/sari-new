@@ -220,6 +220,7 @@ const SubscriptionReports = lazyLoad(() => import("./pages/admin/SubscriptionRep
 const AdminInvoices = lazyLoad(() => import("./pages/admin/Invoices"));
 const AdminMonitor = lazyLoad(() => import("./pages/admin/Monitor"));
 const SalesEvidence = lazyLoad(() => import("./pages/admin/SalesEvidence"));
+const SalesExperimentEvidence = lazyLoad(() => import("./pages/admin/SalesExperimentEvidence"));
 const PrivacyRequests = lazyLoad(() => import("./pages/admin/PrivacyRequests"));
 const AdminAiAnalytics = lazyLoad(() => import("./pages/admin/AiAnalytics"));
 
@@ -991,6 +992,9 @@ function Router() {
       </Route>
 
       {/* Admin Routes */}
+      <Route path="/admin/sales-experiments">
+        <DashboardLayout><SalesExperimentEvidence /></DashboardLayout>
+      </Route>
       <Route path="/admin/sales-evidence">
         <DashboardLayout><SalesEvidence /></DashboardLayout>
       </Route>

@@ -1,5 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
-const root=process.cwd(),output=path.resolve('.tmp/sales-experiment-readout-verification');
+const withUi=process.argv.includes('--with-ui');
+const root=process.cwd(),output=path.resolve(withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -16,8 +17,11 @@ const database=[
   'server/ai/sales-experiment-assignment.mysql.test.ts','server/ai/sales-experiment-protocol.mysql.test.ts',
   'server/ai/sales-order-report.mysql.test.ts',
 ];
+if(withUi)unit.push('server/sales-experiment-readout-ui-pentest.test.ts','server/sales-order-report-ui-pentest.test.ts','server/mobile-navigation-soft404-pentest.test.ts');
 const extra=['server/ai/sales-experiment-readout-contract.ts','server/ai/sales-experiment-readout.ts','server/tests/helpers/sales-readout.ts',
   'scripts/testing/verify-sales-experiment-readout.cjs',...unit,...database];
+if(withUi)extra.push('client/src/lib/sales-experiment-readout-view.ts','client/src/pages/admin/SalesExperimentEvidence.tsx',
+  'scripts/testing/verify-sales-experiment-readout-ui.cjs','scripts/testing/fixtures/sales-experiment-readout-ui-entry.tsx','scripts/testing/fixtures/sales-experiment-readout-data.ts');
 function manifest(){
   const tracked=cp.execFileSync('git',['ls-files','-z'],{encoding:'utf8',windowsHide:true}).split('\0').filter(Boolean);
   const paths=Array.from(new Set([...tracked.filter(p=>/^(server|client|shared|scripts|drizzle)\//.test(p)||/^[^/]+\.(json|yaml|ts|mjs|cjs)$/.test(p)),...extra])).sort();
@@ -53,6 +57,16 @@ try{
   const pnpm=process.env.SARI_TEST_PNPM_CLI || '.tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs';
   if(!fs.existsSync(pnpm))throw Error('Set SARI_TEST_PNPM_CLI to the installed pnpm CLI path');
   checks.push(run('build',[pnpm,'run','build'],env));
+  const browserReports=[];
+  if(withUi){
+    for(const [name,script,variable]of [['readout-ui','scripts/testing/verify-sales-experiment-readout-ui.cjs','SALES_READOUT_UI_OUTPUT'],
+      ['order-report-ui','scripts/testing/verify-sales-order-report-ui.cjs','SALES_ORDER_REPORT_UI_OUTPUT']]){
+      const destination=path.join(output,name);checks.push(run(name,[script],{...env,[variable]:destination}));
+      const report=JSON.parse(fs.readFileSync(path.join(destination,'results.json')));
+      if(report.errors.length||!report.results.length||report.results.some(r=>r.passed!==true))throw Error('Incomplete browser report '+name);
+      browserReports.push({name,...report,artifacts:Object.fromEntries(fs.readdirSync(destination).map(file=>[file,sha(fs.readFileSync(path.join(destination,file)))]))});
+    }
+  }
   const after=manifest();if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Source changed during verification');
   const suites=['unit-security','database'].map(name=>{
     const bytes=fs.readFileSync(path.join(output,name+'.json')),r=JSON.parse(bytes);
@@ -64,7 +78,7 @@ try{
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
     scope:'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
-    checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserScenariosRun:0,productionAccess:false,network:'external_network_blocked'};
+    checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));
 }catch(error){console.error(error.message);process.exitCode=1;}

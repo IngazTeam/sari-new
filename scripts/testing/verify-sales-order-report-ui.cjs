@@ -1,6 +1,6 @@
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process'), esbuild = require('esbuild'), puppeteer = require('puppeteer-core');
-const dir = path.resolve('.tmp/sales-order-report-ui'), output = path.resolve('docs/audits/sales-brain-implementation-2026-09-23/order-report-ui');
+const dir = path.resolve('.tmp/sales-order-report-ui'), output = path.resolve(process.env.SALES_ORDER_REPORT_UI_OUTPUT || 'docs/audits/sales-brain-implementation-2026-09-23/order-report-ui');
 
 async function main() {
   fs.mkdirSync(dir, { recursive: true }); fs.mkdirSync(output, { recursive: true });

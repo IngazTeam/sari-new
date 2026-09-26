@@ -1,0 +1,17 @@
+{
+  "initialFailure": {
+    "phase": "readout-ui",
+    "reason": "Fixture omitted merchantUx translations that are loaded by the real application",
+    "failedCheck": "raw_translation_key",
+    "locale": "ar",
+    "width": 320,
+    "logSha256": "bc30f25e0de2449f0208aad99b8bf11bb36b533f612404ab2250681b54cf14cb"
+  },
+  "resolution": "Load both merchantUx catalogs in fixture, preserving strict raw-key checks",
+  "finalAcceptance": {
+    "tests": 644,
+    "browserScenarios": 105,
+    "sourceFiles": 1920,
+    "errors": 0
+  }
+}
