@@ -1506,6 +1506,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     });
     const delivery = await dispatchReplyPlan(replyPlan, (botSettings.responseDelay ?? 2) * 1000);
     if (delivery === 'human_takeover') return { success: true, message: 'Human takeover suppressed pending reply' };
+    if (delivery === 'reply_reserved') return { success: true, message: 'Another reply owns this incoming message; pending reply suppressed' };
     
     // ── FIX-1: Save outgoing message + mark incoming as processed AFTER successful send ──
     try {

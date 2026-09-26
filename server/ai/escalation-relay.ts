@@ -126,6 +126,7 @@ export async function relayEscalationReply(input: RelayInput): Promise<RelayResu
     || normalizeCampaignPhone(request?.to) !== normalizeCampaignPhone(input.merchantPhone)
     || !new RegExp(`^escalation_alert:${input.merchantId}:${guard.id}:[0-4]$`).test(alert.idempotency_key)) return unavailable;
   const reserved = await checkoutTransaction(async c => {
+    await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE', [input.merchantId]);
     const [candidates] = await c.execute<any[]>('SELECT conversation_id FROM sari_escalation_queue WHERE id=? AND merchant_id=?', [guard.id, input.merchantId]);
     if (!candidates.length) return null;
     const conversationId = candidates[0].conversation_id;

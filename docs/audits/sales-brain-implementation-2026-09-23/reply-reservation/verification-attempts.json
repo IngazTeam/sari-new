@@ -1,0 +1,34 @@
+{
+  "scope": "Local synthetic verification; final acceptance from the frozen staged source only.",
+  "attempts": [
+    {
+      "kind": "initial-focused",
+      "passed": 328,
+      "failed": 5,
+      "result": "All new reviewed projection and reservation cases passed. Five pre-existing handoff fixtures generated keys below the 16-character channel minimum on a fresh low-ID database; extended the fixture prefix without changing production validation.",
+      "logSha256": "bd1dd4f088872062d03f36cd251d4b94b88c2da5a3710113d90f30ac3a718949"
+    },
+    {
+      "kind": "focused-corrected",
+      "passed": 169,
+      "failed": 0,
+      "result": "Ordinary ownership, handoff, escalation, reviewed channel guard and security cases passed.",
+      "logSha256": "d91ebf5ec8a6cd5efaa6491a2f8d4017da115bee1337edab6b3577a28879c23c"
+    },
+    {
+      "kind": "superseded-full",
+      "result": "Stopped owned test processes after review identified an additional need to bind stored learning text to the complete reply plan. Added exact text checks at stage, final send and acceptance with a regression case. Restarted all suites from a new frozen snapshot and fresh disposable database; partial prior results excluded.",
+      "logSha256": "0bb0243c8dceb04b46bcf88bd9aba084363242f28f5df798e37d40681d165c19"
+    },
+    {
+      "kind": "final-full",
+      "logSha256": "c93f07030474412125ebeb68e5940f9d714fc1c3de6de262b416ec1198158cae"
+    },
+    {
+      "kind": "ui-equivalence",
+      "reused": true,
+      "inputsChecked": 39,
+      "screenshotsChecked": 113
+    }
+  ]
+}

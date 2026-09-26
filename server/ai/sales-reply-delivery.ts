@@ -7,6 +7,7 @@ import { checkoutTransaction } from './checkout-agreements';
 import { loadCurrentSalesReplyReviewBasis } from './sales-reply-review-workspace';
 import { readSalesReplyReview } from './sales-generation-output-review-store';
 import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
+import { lockReplySource, reserveReviewedReply, ownsReviewedReply } from './reply-reservation';
 import { authorizeSalesReplyDeliveryInput, prepareSalesReplyDeliveryInput, salesReplyDeliveryAuthorization,
   salesReplyDeliveryBasis, salesReplyDeliveryId as id, salesReplyDeliveryIdentity, salesReplyDeliveryKey,
   type SalesReplyDeliveryIdentity } from './sales-reply-delivery-contract';
@@ -27,7 +28,8 @@ function accountDigest(config: WhatsAppProviderConfig) {
   return policyArtifactDigest({ version: 'sales-reply-account.v1', provider: config.provider, instanceId: config.instanceId,
     token: config.token, apiUrl: config.apiUrl ?? null, phoneNumberId: config.phoneNumberId ?? null, providerAccountId: config.providerAccountId ?? null });
 }
-async function currentBasis(c: PoolConnection, merchant: number, actor: number, generationId: number, instanceRecordId: number) {
+async function currentBasis(c: PoolConnection, merchant: number, actor: number, generationId: number, instanceRecordId: number,
+  reserved?: { deliveryId: number; authorizationDigest: string }) {
   const owner = await lock(c, merchant);
   if (Number(owner.userId) !== actor || owner.status !== 'active') return conflict();
   const [users] = await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE', [actor]);
@@ -44,7 +46,8 @@ async function currentBasis(c: PoolConnection, merchant: number, actor: number, 
   const recipient = rawPhone.replace(/^\+/, '');
   const [incoming] = await c.execute<any[]>("SELECT DATE_FORMAT(createdAt,'%Y-%m-%dT%H:%i:%s.000Z') AS received FROM messages WHERE id=? AND conversationId=? AND direction='incoming' FOR SHARE", [turn.incomingMessageId, turn.conversationId]);
   const [jobs] = await c.execute<any[]>('SELECT id FROM ai_interaction_jobs WHERE merchant_id=? AND incoming_message_id=? LIMIT 1 FOR SHARE', [merchant, turn.incomingMessageId]);
-  if (jobs.length) return conflict();
+  if (reserved ? !await ownsReviewedReply(c, { ...reserved, merchantId: merchant, conversationId: turn.conversationId,
+    incomingMessageId: turn.incomingMessageId, responseText: current.evidence.responseText }) : jobs.length) return conflict();
   const [accounts] = await c.execute<any[]>('SELECT * FROM whatsapp_instances WHERE id=? AND merchant_id=? FOR UPDATE', [instanceRecordId, merchant]);
   const a = accounts[0];
   if (accounts.length !== 1 || a.status !== 'active' || !a.token || !a.instance_id
@@ -140,7 +143,10 @@ export async function authorizeSalesReplyDelivery(merchantId: number, actorUserI
       (merchant_id,generation_id,message_reference,actor_user_id,request_id,payload_digest,basis_digest,authorization_digest,snapshot,state)
       VALUES (?,?,?,?,?,?,?,?,?,'authorized')`, [merchant, input.generationId, b.incomingMessageId, actor, input.requestId, payload,
       current.basisDigest, policyArtifactDigest(snapshot), JSON.stringify(snapshot)]);
-    return history(c, (await load(c, merchant, Number(inserted.insertId))).receipt);
+    const receipt = (await load(c, merchant, Number(inserted.insertId))).receipt;
+    await reserveReviewedReply(c, { merchantId: merchant, conversationId: b.conversationId, incomingMessageId: b.incomingMessageId,
+      deliveryId: receipt.deliveryId, authorizationDigest: receipt.authorizationDigest, responseText: b.responseText });
+    return history(c, receipt);
   });
 }
 export async function getSalesReplyDelivery(merchantId: number, value: SalesReplyDeliveryIdentity) {
@@ -160,7 +166,7 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
       const s = receipt.authorization, b = s.basis;
       if (receipt.state !== 'authorized' || row.actor_user_id === null || receipt.authorizationDigest !== parsed.data.authorizationDigest
         || policyArtifactDigest(input) !== policyArtifactDigest(sendInput(receipt)) || accountDigest(config) !== b.accountDigest) return false;
-      const current = await currentBasis(c, b.merchantId, b.actorUserId, b.generationId, b.instanceRecordId);
+      const current = await currentBasis(c, b.merchantId, b.actorUserId, b.generationId, b.instanceRecordId, parsed.data);
       if (current.basisDigest !== s.basisDigest) return false;
       const delivery = await outbox(c, receipt);
       if (!delivery || delivery.status !== 'queued' || delivery.provider_message_id || Number(delivery.instance_id) !== b.instanceRecordId) return false;
@@ -174,11 +180,46 @@ export async function canDispatchSalesReply(input: SendMerchantWhatsAppInput, co
     });
   } catch { return false; }
 }
+/** Repairs local history from a proven receipt only; never sends or starts learning. */
+export async function reconcileSalesReplyConversation(merchantId: number, value: SalesReplyDeliveryIdentity) {
+  const merchant = id.parse(merchantId), input = salesReplyDeliveryIdentity.parse(value);
+  return checkoutTransaction(async c => {
+    await lock(c, merchant); const { row: authorizationRow, receipt } = await load(c, merchant, input.deliveryId);
+    if (receipt.authorizationDigest !== input.authorizationDigest) return conflict();
+    const result = await history(c, receipt), b = receipt.authorization.basis;
+    if (!['accepted', 'delivered', 'read'].includes(result.transport)) return { ...result, outgoingMessageId: null };
+    await lockReplySource(c, merchant, b.conversationId, b.incomingMessageId);
+    if (!await ownsReviewedReply(c, { ...input, merchantId: merchant, conversationId: b.conversationId,
+      incomingMessageId: b.incomingMessageId, responseText: b.responseText })) return conflict();
+    const [jobs] = await c.execute<any[]>('SELECT outgoing_message_reference FROM ai_interaction_jobs WHERE merchant_id=? AND incoming_message_id=? FOR UPDATE', [merchant, b.incomingMessageId]);
+    const externalId = `sales-reply:${merchant}:${receipt.deliveryId}`, reference = jobs[0].outgoing_message_reference;
+    const [messages] = await c.execute<any[]>('SELECT * FROM messages WHERE externalId=? FOR UPDATE', [externalId]);
+    if (reference !== null || messages.length) {
+      const message = messages[0];
+      if (messages.length !== 1 || reference === null || Number(reference) !== Number(message.id)
+        || Number(message.conversationId) !== b.conversationId || message.direction !== 'outgoing' || message.sender_type !== 'assistant'
+        || message.messageType !== 'text' || message.content !== b.responseText || message.aiResponse !== b.responseText
+        || Number(message.isProcessed) !== 1 || message.voiceUrl || message.imageUrl || message.mediaUrl) return conflict();
+      return { ...result, outgoingMessageId: Number(reference) };
+    }
+    const [inserted] = await c.execute<any>(`INSERT INTO messages
+      (conversationId,direction,sender_type,messageType,content,isProcessed,aiResponse,externalId,createdAt)
+      VALUES (?,'outgoing','assistant','text',?,1,?,?,?)`,
+    [b.conversationId, b.responseText, b.responseText, externalId, authorizationRow.dispatch_started_at]);
+    await c.execute(`UPDATE ai_interaction_jobs SET outgoing_message_reference=? WHERE merchant_id=? AND incoming_message_id=?`,
+      [inserted.insertId, merchant, b.incomingMessageId]);
+    await c.execute('UPDATE messages SET isProcessed=1 WHERE id=? AND conversationId=?', [b.incomingMessageId, b.conversationId]);
+    // Late recovery must not move a newer conversation backwards or pretend it happened now.
+    await c.execute('UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,?),?) WHERE id=? AND merchantId=?',
+      [authorizationRow.dispatch_started_at, authorizationRow.dispatch_started_at, b.conversationId, merchant]);
+    return { ...result, outgoingMessageId: Number(inserted.insertId) };
+  });
+}
 /** Uses only the saved exact reply. Unknown/failed attempts never acquire another transport key. */
 export async function dispatchReviewedSalesReply(merchantId: number, value: SalesReplyDeliveryIdentity) {
   const receipt = await getSalesReplyDelivery(merchantId, value);
-  if (receipt.state !== 'authorized' || receipt.transport !== 'not_attempted') return receipt;
+  if (receipt.state !== 'authorized' || receipt.transport !== 'not_attempted') return reconcileSalesReplyConversation(merchantId, value);
   try { await sendMerchantWhatsApp(sendInput(receipt)); }
   catch { /* Read the durable outbox; a transport exception does not permit another send. */ }
-  return getSalesReplyDelivery(merchantId, value);
+  return reconcileSalesReplyConversation(merchantId, value);
 }

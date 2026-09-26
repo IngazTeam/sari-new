@@ -49,7 +49,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   retryFailed?: boolean;
   /** Server-owned claim required for sales_followup transport keys. */
   followUpGuard?: { id: number; token: string };
-  replyGuard?: { conversationId: number; version: number; incomingMessageId?: number };
+  replyGuard?: import('../../ai/conversation-handoff').ConversationReplyGuard;
   escalationGuard?: import('../../ai/escalation-relay').EscalationTransportGuard;
   salesOfferGuard?: import('../../ai/sales-offer-delivery').SalesOfferTransportGuard;
   salesReplyGuard?: import('../../ai/sales-reply-delivery').SalesReplyTransportGuard;

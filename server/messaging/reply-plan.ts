@@ -5,6 +5,7 @@ import { persistInboundReplyPlan } from './inbound-jobs';
 import { currentInboundExecution } from './inbound-context';
 import { getPool } from '../db/connection';
 import { stageInteraction, finishInteractionDelivery } from '../ai/interaction-jobs';
+import { ReplyReservationConflict, ordinaryReplyDigest } from '../ai/reply-reservation';
 
 export type ReplyPlan = {
   version: 1;
@@ -63,9 +64,10 @@ export async function humanOwnsConversation(merchantId: number, conversationId: 
   return active.length > 0;
 }
 
-export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'sent' | 'human_takeover'> {
+export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'sent' | 'human_takeover' | 'reply_reserved'> {
   await persistInboundReplyPlan(plan);
-  await stageInteraction(plan);
+  try { await stageInteraction(plan); }
+  catch (error) { if (error instanceof ReplyReservationConflict) return 'reply_reserved'; throw error; }
   // Plans persisted before ownership versioning cannot prove that their context is still current.
   if (!Number.isSafeInteger(plan.ownershipVersion) || plan.ownershipVersion! < 0) {
     await finishInteractionDelivery(plan, false); return 'human_takeover';
@@ -79,7 +81,8 @@ export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'
       await finishInteractionDelivery(plan, false);
       return 'human_takeover';
     }
-    const replyGuard = { conversationId: plan.conversationId, incomingMessageId: plan.incomingMessageId, version: plan.ownershipVersion ?? 0 };
+    const replyGuard = { conversationId: plan.conversationId, incomingMessageId: plan.incomingMessageId, version: plan.ownershipVersion ?? 0,
+      reservationDigest: ordinaryReplyDigest(plan) };
     const { canSendConversationReply } = await import('../ai/conversation-handoff');
     if (!await canSendConversationReply((await getPool())!, effect.merchantId, replyGuard, effect.to)) {
       await finishInteractionDelivery(plan, false); return 'human_takeover';

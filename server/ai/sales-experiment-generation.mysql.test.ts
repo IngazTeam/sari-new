@@ -21,7 +21,9 @@ import { salesReplyReviewRubricDigest, type RecordSalesReplyReviewInput } from '
 import { refusalAcknowledgement } from './response-validator';
 import { getSalesReplyReviewWorkspace, listSalesReplyReviews, submitSalesReplyReview } from './sales-reply-review-workspace';
 import type { ReplyReviewSubmission } from '../../shared/sales-reply-review';
-import { prepareSalesReplyDelivery, authorizeSalesReplyDelivery, dispatchReviewedSalesReply, getSalesReplyDelivery, canDispatchSalesReply } from './sales-reply-delivery';
+import { prepareSalesReplyDelivery, authorizeSalesReplyDelivery, dispatchReviewedSalesReply, getSalesReplyDelivery, canDispatchSalesReply, reconcileSalesReplyConversation } from './sales-reply-delivery';
+import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
+import { stageInteraction, finishInteractionDelivery, runInteractionJob } from './interaction-jobs';
 import { sendMerchantWhatsApp, updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { salesReplyDeliveryKey } from './sales-reply-delivery-contract';
 import type { SendMerchantWhatsAppInput, WhatsAppProviderConfig } from '../channels/whatsapp/types';
@@ -176,14 +178,14 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'empty') expect(r).toMatchObject({ response: { text: null, metadata: null }, cost: { state: 'unknown' } });
     await generate(); expect(fetch).toHaveBeenCalledOnce();
   });
-  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review' | 'delivery' | 'dispatch', when: 'before' | 'after', failures = Infinity) {
+  function failCommit(phase: 'claim' | 'bind' | 'save' | 'settle' | 'receipt' | 'recover' | 'usage' | 'reserve' | 'link' | 'review' | 'delivery' | 'dispatch' | 'projection', when: 'before' | 'after', failures = Infinity) {
     return (async () => {
       const pool = (await getPool())!, original = pool.getConnection.bind(pool);
       vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
         const c = await original(); let matched = false;
         return new Proxy(c, { get(target, key) {
           if (key === 'execute') return async (...args: any[]) => {
-            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews', delivery: 'INSERT INTO ai_sales_reply_deliveries', dispatch: "SET state='dispatching',dispatch_started_at" }[phase];
+            const marker = { claim: 'INSERT INTO ai_sales_experiment_generations', bind: 'SET reservation_key=?', save: 'state=?,response_text=?', settle: "SET state = 'settled'", receipt: 'SET provider_receipt=?', recover: 'SET recovery_token=?', usage: 'SET usage_prompt_tokens=?', reserve: 'INSERT INTO ai_usage_reservations', link: 'SET reservation_key = ?', review: 'INSERT INTO ai_sales_generation_output_reviews', delivery: 'INSERT INTO ai_sales_reply_deliveries', dispatch: "SET state='dispatching',dispatch_started_at", projection: 'SET outgoing_message_reference=?' }[phase];
             if (String(args[0]).includes(marker)) matched = true; return (target.execute as any)(...args);
           };
           if (key === 'commit') return async () => {
@@ -541,7 +543,9 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     await updateWhatsAppDeliveryStatus({ provider, providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'read' });
     expect((await deliveryRead(r)).transport).toBe('read'); await revoke(); expect((await dispatch(r)).transport).toBe('read');
     expect(wa.post).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled(); expect(await ledger()).toEqual(budget);
-    expect(await query('SELECT id FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    expect(await query('SELECT reply_origin,state,outgoing_message_reference FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId]))
+      .toEqual([expect.objectContaining({ reply_origin: 'reviewed', state: 'reviewed_reserved', outgoing_message_reference: expect.any(Number) })]);
+    expect(await runInteractionJob()).toBe(false);
   });
   it('reviewed delivery: only current v2 approval authorizes and concurrent UUID replay cannot create another attempt', async () => {
     const f = await deliveryFixture(); const rows = await Promise.all([f.auth(), f.auth(), f.auth()]);
@@ -552,6 +556,76 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     await expect(authorizeSalesReplyDelivery(owner.merchantId, other.userId, f.value)).rejects.toThrow();
     await expect(getSalesReplyDelivery(other.merchantId, deliveryIdentity(rows[0]))).rejects.toThrow();
     await expect(dispatchReviewedSalesReply(owner.merchantId, { ...deliveryIdentity(rows[0]), authorizationDigest: 'f'.repeat(64) })).rejects.toThrow();
+  });
+  const ordinaryPlan = (f: Awaited<ReturnType<typeof deliveryFixture>>) => buildReplyPlan({ merchantId: owner.merchantId,
+    instanceId: f.instanceRecordId, providerAccount: f.account, eventId: `ordinary-${incomingMessageId}`, conversationId,
+    incomingMessageId, to: '966500000988', text: 'الرد العادي المنافس' });
+  it.each(['ordinary-first', 'reviewed-first', 'concurrent'] as const)('shared reservation: elects one owner for %s', async mode => {
+    const f = await deliveryFixture(), p = ordinaryPlan(f);
+    if (mode === 'ordinary-first') { await stageInteraction(p); await expect(f.auth()).rejects.toThrow(); }
+    if (mode === 'reviewed-first') { await f.auth(); expect(await dispatchReplyPlan(p)).toBe('reply_reserved'); }
+    if (mode === 'concurrent') {
+      const results = await Promise.allSettled([stageInteraction(p), f.auth()]);
+      expect(results.filter(x => x.status === 'fulfilled')).toHaveLength(1);
+    }
+    const [job] = await query('SELECT * FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId]);
+    if (job.reply_origin === 'ordinary') expect(await dispatchReplyPlan(p)).toBe('sent');
+    else {
+      const r = await f.auth(); await finishInteractionDelivery(p, true);
+      expect(await dispatch(r)).toMatchObject({ transport: 'accepted', outgoingMessageId: expect.any(Number) });
+    }
+    expect(wa.post).toHaveBeenCalledOnce();
+    expect(await query('SELECT id FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId])).toHaveLength(1);
+  });
+  it.each(['before','after'] as const)('reviewed projection: repairs lost acknowledgement %s commit without resending', async when => {
+    const f = await deliveryFixture(), r = await f.auth(); await failCommit('projection', when);
+    await expect(dispatch(r)).rejects.toThrow(); vi.restoreAllMocks(); expect(wa.post).toHaveBeenCalledOnce();
+    const repaired = await reconcileSalesReplyConversation(owner.merchantId, deliveryIdentity(r));
+    expect(repaired).toMatchObject({ transport: 'accepted', outgoingMessageId: expect.any(Number), exposureRecorded: false });
+    expect(await dispatch(r)).toEqual(repaired); expect(wa.post).toHaveBeenCalledOnce();
+    const messages = await query("SELECT * FROM messages WHERE conversationId=? AND direction='outgoing'", [conversationId]);
+    expect(messages).toHaveLength(1); expect(messages[0]).toMatchObject({ content: config.text, aiResponse: config.text, sender_type: 'assistant', isProcessed: 1 });
+    expect((await query('SELECT isProcessed FROM messages WHERE id=?', [incomingMessageId]))[0].isProcessed).toBe(1);
+    expect(await runInteractionJob()).toBe(false);
+  });
+  it('reviewed projection: repairs after newer conversation activity without moving its timestamp or rechecking expired authority', async () => {
+    const f = await deliveryFixture(), r = await f.auth();
+    await sendMerchantWhatsApp(deliveryInput(r));
+    const future = new Date((config.unix! + 900) * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text','سؤال جديد',?)", [conversationId, future]);
+    await query('UPDATE conversations SET lastMessageAt=?,human_takeover=1 WHERE id=?', [future, conversationId]);
+    config.unix! += 600; await revoke();
+    const before = await query('SELECT lastMessageAt FROM conversations WHERE id=?', [conversationId]);
+    const result = await dispatch(r); expect(result.outgoingMessageId).toEqual(expect.any(Number));
+    expect(await query('SELECT lastMessageAt FROM conversations WHERE id=?', [conversationId])).toEqual(before);
+    expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['unknown','rejected','failed'] as const)('reviewed projection: does not invent conversation output from %s transport', async mode => {
+    const f = await deliveryFixture(), r = await f.auth();
+    if (mode === 'unknown') wa.post.mockRejectedValue(Error('Synthetic loss'));
+    if (mode === 'rejected') wa.post.mockResolvedValue({ status: 400, data: { error: 'Synthetic rejection' } });
+    await sendMerchantWhatsApp(deliveryInput(r));
+    if (mode === 'failed') await updateWhatsAppDeliveryStatus({ provider: 'green_api', providerAccount: f.account, providerMessageId: 'fixture-receipt', status: 'failed' });
+    expect((await reconcileSalesReplyConversation(owner.merchantId, deliveryIdentity(r))).outgoingMessageId).toBeNull();
+    expect(await query("SELECT id FROM messages WHERE conversationId=? AND direction='outgoing'", [conversationId])).toHaveLength(0);
+    expect((await query('SELECT isProcessed FROM messages WHERE id=?', [incomingMessageId]))[0].isProcessed).toBe(0);
+    expect(await runInteractionJob()).toBe(false); expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it.each(['text','role','reference','deleted','job-digest','job-text','job-owner'] as const)('reviewed projection: rejects tampered %s and never recreates history blindly', async mode => {
+    const f = await deliveryFixture(), r = await f.auth(), sent = await dispatch(r);
+    if (mode === 'text') await query("UPDATE messages SET content='Changed' WHERE id=?", [sent.outgoingMessageId]);
+    if (mode === 'role') await query("UPDATE messages SET sender_type='merchant' WHERE id=?", [sent.outgoingMessageId]);
+    if (mode === 'reference') await query('UPDATE ai_interaction_jobs SET outgoing_message_reference=? WHERE merchant_id=?', [incomingMessageId, owner.merchantId]);
+    if (mode === 'deleted') await query('DELETE FROM messages WHERE id=?', [sent.outgoingMessageId]);
+    if (mode === 'job-digest') await query("UPDATE ai_interaction_jobs SET reply_digest=REPEAT('f',64) WHERE merchant_id=?", [owner.merchantId]);
+    if (mode === 'job-text') await query("UPDATE ai_interaction_jobs SET reply_text='Changed' WHERE merchant_id=?", [owner.merchantId]);
+    if (mode === 'job-owner') await query('UPDATE ai_interaction_jobs SET sales_delivery_id=sales_delivery_id+1 WHERE merchant_id=?', [owner.merchantId]);
+    await expect(dispatch(r)).rejects.toThrow(); expect(wa.post).toHaveBeenCalledOnce();
+  });
+  it('reviewed projection: refuses an unrelated row that occupies the deterministic history key', async () => {
+    const f = await deliveryFixture(), r = await f.auth(); await sendMerchantWhatsApp(deliveryInput(r));
+    await query("INSERT INTO messages (conversationId,direction,messageType,content,externalId) VALUES (?,'outgoing','text','Forged',?)", [conversationId, `sales-reply:${owner.merchantId}:${r.deliveryId}`]);
+    await expect(dispatch(r)).rejects.toThrow(); expect(wa.post).toHaveBeenCalledOnce();
   });
   it.each(['missing', 'rejected', 'legacy', 'corrupt', 'long'])('reviewed delivery: refuses %s output review before authorization', async mode => {
     if (mode === 'long') config.text = 'أ'.repeat(4097);
@@ -581,7 +655,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales policy turn generation through
     if (mode === 'account-disabled') await query("UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?", [f.instanceRecordId]);
     if (mode === 'review-new' || mode === 'review-rejected') await publicSubmit({ ...f.reviewValue, requestId: randomUUID(), expectedRevision: 1,
       checks: { ...f.reviewValue.checks, groundedInBusiness: mode !== 'review-rejected' } });
-    if (mode === 'interaction') await query('INSERT INTO ai_interaction_jobs (merchant_id,conversation_id,incoming_message_id,reply_text) VALUES (?,?,?,?)', [owner.merchantId, conversationId, incomingMessageId, 'Already staged']);
+    if (mode === 'interaction') await query("UPDATE ai_interaction_jobs SET reply_digest=REPEAT('f',64) WHERE merchant_id=?", [owner.merchantId]);
   }
   it.each(deliveryDrifts)('reviewed delivery: rechecks %s before provider I/O', async mode => {
     const f = await deliveryFixture(), r = await f.auth(); await driftDelivery(mode, f);

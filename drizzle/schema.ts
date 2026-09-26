@@ -4004,6 +4004,11 @@ export const aiInteractionJobs = mysqlTable('ai_interaction_jobs', {
   conversationId: int('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
   incomingMessageId: int('incoming_message_id').notNull().references(() => messages.id, { onDelete: 'cascade' }),
   replyText: text('reply_text').notNull(),
+  replyOrigin: varchar('reply_origin', { length: 16 }).default('legacy').notNull(),
+  replyDigest: char('reply_digest', { length: 64 }),
+  replyPlan: json('reply_plan'),
+  salesDeliveryId: bigint('sales_delivery_id', { mode: 'number', unsigned: true }),
+  outgoingMessageReference: int('outgoing_message_reference'),
   state: varchar({ length: 24 }).default('waiting_delivery').notNull(),
   attempts: int().default(0).notNull(),
   leaseToken: varchar('lease_token', { length: 64 }),
@@ -4015,6 +4020,10 @@ export const aiInteractionJobs = mysqlTable('ai_interaction_jobs', {
 }, table => [
   uniqueIndex('uq_ai_interaction_message').on(table.merchantId, table.incomingMessageId),
   index('idx_ai_interaction_due').on(table.state, table.availableAt, table.leaseUntil),
+  check('ck_interaction_reply_owner', sql`(${table.replyOrigin}='legacy' AND ${table.replyDigest} IS NULL AND ${table.replyPlan} IS NULL AND ${table.salesDeliveryId} IS NULL AND ${table.outgoingMessageReference} IS NULL)
+    OR (${table.replyOrigin}='ordinary' AND ${table.replyDigest} IS NOT NULL AND ${table.replyPlan} IS NOT NULL AND ${table.salesDeliveryId} IS NULL AND ${table.outgoingMessageReference} IS NULL)
+    OR (${table.replyOrigin}='reviewed' AND ${table.replyDigest} IS NOT NULL AND ${table.replyPlan} IS NULL AND ${table.salesDeliveryId} IS NOT NULL AND ${table.salesDeliveryId}>0
+      AND ${table.state}='reviewed_reserved' AND (${table.outgoingMessageReference} IS NULL OR ${table.outgoingMessageReference}>0))`),
 ]);
 
 export const aiLearningProposals = mysqlTable('ai_learning_proposals', {

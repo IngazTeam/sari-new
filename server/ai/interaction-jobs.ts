@@ -4,6 +4,8 @@ import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import type { ReplyPlan } from '../messaging/reply-plan';
 import { LearningSignalCaptureError } from './learning-signal-capture';
+import { checkoutTransaction } from './checkout-agreements';
+import { reserveOrdinaryReply, ordinaryReplyDigest, ordinaryReplyText } from './reply-reservation';
 
 export async function assertInteractionSchema() {
   const { assertCheckoutAgreementSchema } = await import('./checkout-agreements');
@@ -12,7 +14,7 @@ export async function assertInteractionSchema() {
   await assertBookingAgreementSchema();
   await assertRuntimeSchema('sales interaction events', [
     { table: 'ai_sales_sector_settings', columns: ['playbook_id', 'revision', 'updated_by'] },
-    { table: 'ai_interaction_jobs', uniqueIndexes: ['uq_ai_interaction_message'] },
+    { table: 'ai_interaction_jobs', columns: ['reply_origin', 'reply_digest', 'reply_plan', 'sales_delivery_id', 'outgoing_message_reference'], uniqueIndexes: ['uq_ai_interaction_message'] },
     { table: 'sari_learning_signals', columns: ['source_key'], uniqueIndexes: ['uq_learning_source'] },
     { table: 'ai_learning_proposals' },
     { table: 'ai_learning_evidence_links' },
@@ -25,26 +27,7 @@ export async function assertInteractionSchema() {
 
 /** Stage before delivery, so replay of a saved reply also repairs a missing event. */
 export async function stageInteraction(plan: ReplyPlan): Promise<void> {
-  if (!plan.incomingMessageId) return;
-  const merchantId = plan.effects[0]?.merchantId;
-  if (!merchantId || plan.effects.some(e => e.merchantId !== merchantId)) throw new Error('Interaction tenant mismatch');
-  const pool = await getPool();
-  if (!pool) throw new Error('Interaction storage unavailable');
-  const text = plan.effects.filter(e => e.kind === 'text').map(e => e.text || '').join('\n').slice(0, 16000);
-  const [result] = await pool.execute<any>(
-    `INSERT INTO ai_interaction_jobs (merchant_id, conversation_id, incoming_message_id, reply_text)
-     SELECT c.merchantId, c.id, m.id, ? FROM conversations c
-     JOIN messages m ON m.conversationId = c.id
-     WHERE c.merchantId = ? AND c.id = ? AND m.id = ? AND m.direction = 'incoming'
-     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(ai_interaction_jobs.id)`,
-    [text, merchantId, plan.conversationId, plan.incomingMessageId]);
-  // A no-op duplicate may report zero affected rows; ownership is checked explicitly.
-  if (!result.affectedRows && !result.insertId) {
-    const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT id FROM ai_interaction_jobs WHERE merchant_id = ? AND conversation_id = ? AND incoming_message_id = ?`,
-      [merchantId, plan.conversationId, plan.incomingMessageId]);
-    if (!rows.length) throw new Error('Interaction message ownership mismatch');
-  }
+  await checkoutTransaction(c => reserveOrdinaryReply(c, plan));
 }
 
 /** Accepted by the transport, not a claim that the customer has read the message. */
@@ -53,8 +36,9 @@ export async function finishInteractionDelivery(plan: ReplyPlan, accepted: boole
   const pool = await getPool();
   if (!pool) throw new Error('Interaction storage unavailable');
   await pool.execute(`UPDATE ai_interaction_jobs SET state = ?, available_at = UTC_TIMESTAMP(3)
-    WHERE merchant_id = ? AND conversation_id = ? AND incoming_message_id = ? AND state = 'waiting_delivery'`,
-  [accepted ? 'pending' : 'suppressed', plan.effects[0].merchantId, plan.conversationId, plan.incomingMessageId]);
+    WHERE merchant_id = ? AND conversation_id = ? AND incoming_message_id = ? AND state = 'waiting_delivery'
+      AND reply_origin='ordinary' AND reply_digest=? AND BINARY reply_text=BINARY ?`,
+  [accepted ? 'pending' : 'suppressed', plan.effects[0].merchantId, plan.conversationId, plan.incomingMessageId, ordinaryReplyDigest(plan), ordinaryReplyText(plan)]);
 }
 
 export async function runInteractionJob(): Promise<boolean> {

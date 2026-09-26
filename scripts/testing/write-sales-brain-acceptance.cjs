@@ -643,6 +643,13 @@ Object.assign(entries, {
  B064:[entries.B064[0]+' تغطي اختبارات جديدة تزوير تفويض وإيصال الإرسال، وسباق الحجز مع القراءة، وتغير المراجعة وبيانات حساب واتساب، وفقد إقرار الالتزام قبل الإرسال، وتعطل الحفظ بعد قبول المزوّد، وحذف سجل النقل والحساب، ونهاية المهلة بعد آخر قفل. النقل خارجيًا محاكى فقط.','server/ai/sales-experiment-generation.mysql.test.ts'],
  B065:[entries.B065[0]+' يضيف الترحيل 0119 سجل تفويض تسليم منفصلًا دون تشغيل إرسال؛ تحقق المحدّث على قاعدة جديدة عبر 120 ترحيلًا وحفظ 17 جدولًا ورفض سبع مخالفات وإعادة آمنة. بقي سقف المنصة 100 دولار يوميًا. لا يوجد نشر لهذه الدفعة.','scripts/testing/verify-sales-reply-delivery-migration.cjs'],
 });
+Object.assign(entries, {
+ B044:[entries.B044[0]+' أصبح الرد العادي والرد المعتمد يملكان حجزًا مشتركًا وحيدًا لكل رسالة واردة؛ البصمة تربط خطة الرد كاملة ويُفحص أثرها قبل النقل، ولا يحول انتهاء التفويض أو غموض الإرسال الحجز إلى رد بديل. التفعيل التلقائي وواجهة قرار الإرسال ما زالا مفتوحين.','server/ai/reply-reservation.mysql.test.ts'],
+ B045:[entries.B045[0]+' يفوز مسار واحد بالرسالة داخل معاملة SQL. أعيد ترتيب أقفال التولي البشري والتصعيد لتبدأ بالنشاط قبل المحادثة؛ يُحجب الإرسال إذا سبق التولي الفحص النهائي، دون ادعاء سحب طلب مزوّد بدأ بالفعل.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B062:[entries.B062[0]+' يُسقط الرد ذو الإيصال المقبول على تاريخ المحادثة مرة واحدة بنصه المعتمد وهوية ثابتة، مع استرجاع فقد إقرار الحفظ دون إرسال جديد. القبول والوصول والقراءة والفشل منفصلة؛ لا تعلم أو تعرض تجريبي تلقائي ولا إسناد دفع واسترداد من هذا السجل وحده.','server/ai/sales-experiment-generation.mysql.test.ts'],
+ B064:[entries.B064[0]+' اختبارات سلوكية محلية لتنافس الردود وتغيير النص والمستلم والحساب والمفتاح والمصدر وخطة النقل، وفقد إقرار الإسقاط وفساد الرسالة المرجعية ومنع اختلاق سجل عند النقل المجهول.','server/ai/reply-reservation-pentest.test.ts'],
+ B065:[entries.B065[0]+' الترحيل 0120 يضيف حجز الرد والإسقاط داخل ai_interaction_jobs؛ يحفظ حالات التفاعل القديمة بوصفها legacy دون منحها إذن نقل، ويمنع SQL تشغيل السجلات reviewed_reserved في عامل التعلم. سقف المنصة 100 دولار محفوظ.','scripts/testing/verify-reply-reservation-migration.cjs'],
+});
 for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});

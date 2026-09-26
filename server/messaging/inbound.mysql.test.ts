@@ -16,6 +16,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
   let instanceId: number;
   let conversationId: number;
+  let incomingMessageId: number;
   let account: string;
   const claimInbound = () => claimForMerchant(fixture.merchantId);
   const phone = '966500000009';
@@ -35,6 +36,8 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
       "INSERT INTO conversations (merchantId, customerPhone, status) VALUES (?, ?, 'active')", [fixture.merchantId, phone],
     );
     conversationId = conversation.insertId;
+    const [incoming] = await pool.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','fixture')", [conversationId]);
+    incomingMessageId = incoming.insertId;
     provider.send.mockReset().mockResolvedValue({ accepted: true, outcome: 'accepted', status: 'sent', providerMessageId: randomUUID() });
   });
   afterEach(async () => { await cleanupDisposableMerchants([fixture.userId]); });
@@ -129,7 +132,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     const event = payload(); await enqueueInbound({ payload: event, source: 'webhook' });
     const job = (await claimInbound())!;
     const plan = buildReplyPlan({ merchantId: fixture.merchantId, instanceId, providerAccount: account, eventId: event.idMessage,
-      conversationId, to: phone, text: 'reply', welcome: 'welcome', media: [{ type: 'image', url: 'https://example.com/fixture.png' }] });
+      conversationId, incomingMessageId, to: phone, text: 'reply', welcome: 'welcome', media: [{ type: 'image', url: 'https://example.com/fixture.png' }] });
     provider.send.mockImplementation(async () => {
       expect((await row(job.id)).reply_plan_json.effects).toHaveLength(3);
       return { accepted: true, status: 'sent', providerMessageId: randomUUID() };
@@ -145,7 +148,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     const event = payload(); await enqueueInbound({ payload: event, source: 'webhook' }); const job = (await claimInbound())!;
     provider.send.mockRejectedValue(new Error('Provider accepted but TCP response lost'));
     const plan = buildReplyPlan({ merchantId: fixture.merchantId, instanceId, providerAccount: account, eventId: event.idMessage,
-      conversationId, to: phone, text: 'reply', welcome: 'welcome' });
+      conversationId, incomingMessageId, to: phone, text: 'reply', welcome: 'welcome' });
     await executeInbound(job, async () => ({ success: await dispatchReplyPlan(plan) === 'sent' }));
     expect(provider.send).toHaveBeenCalledTimes(1);
     expect((await row(job.id)).status).toBe('review');
@@ -155,7 +158,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     const event = payload(); await enqueueInbound({ payload: event, source: 'webhook' }); const job = (await claimInbound())!;
     await (await getPool())!.execute('UPDATE conversations SET human_takeover = 1, human_expires_at = NULL WHERE id = ?', [conversationId]);
     const plan = buildReplyPlan({ merchantId: fixture.merchantId, instanceId, providerAccount: account, eventId: event.idMessage,
-      conversationId, to: phone, text: 'reply' });
+      conversationId, incomingMessageId, to: phone, text: 'reply' });
     await executeInbound(job, async () => { expect(await dispatchReplyPlan(plan)).toBe('human_takeover'); return { success: true }; });
     expect(provider.send).not.toHaveBeenCalled();
   });
@@ -228,7 +231,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
   });
   it('splits long replies without dropping characters or splitting an emoji, with stable effect keys', () => {
     const input = { merchantId: fixture.merchantId, instanceId, providerAccount: account, eventId: randomUUID(),
-      conversationId, to: phone, text: 'أ'.repeat(4095) + '😀' + 'ب'.repeat(4200) };
+      conversationId, incomingMessageId, to: phone, text: 'أ'.repeat(4095) + '😀' + 'ب'.repeat(4200) };
     const plan = buildReplyPlan(input);
     expect(plan.effects).toHaveLength(3);
     expect(plan.effects.every(effect => effect.text!.length <= 4096)).toBe(true);

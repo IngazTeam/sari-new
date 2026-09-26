@@ -1,0 +1,30 @@
+{
+  "verifiedAt": "2026-09-26T06:49:45.550Z",
+  "database": "sari_reply_reservation_1790405361952_test",
+  "scope": "Actual updater applies 0000–0119; six legacy interaction states are seeded; 0120 adds reservations without granting historical authority; updater reruns.",
+  "migrations": 121,
+  "legacyRows": 6,
+  "legacyUnchanged": true,
+  "noAutomaticAuthority": true,
+  "preservedTables": [
+    "users",
+    "merchants",
+    "conversations",
+    "messages",
+    "ai_budget_policies",
+    "ai_price_cards",
+    "ai_sales_reply_deliveries"
+  ],
+  "rejectedConstraints": [
+    "unknown-origin",
+    "legacy-digest",
+    "ordinary-missing-plan",
+    "reviewed-missing-delivery",
+    "reviewed-learning",
+    "negative-projection"
+  ],
+  "rerunUnchanged": true,
+  "globalDailyMicroUsd": "100000000",
+  "migrationSha256": "59beb2ce3533caff6148e8074fc0f7cffec5efd436304a77cf06c167735fc5a1",
+  "passed": true
+}

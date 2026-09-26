@@ -40,6 +40,10 @@ export async function transitionOwnershipInTransaction(connection: PoolConnectio
   if (Object.keys(patch).some(key => !['humanTakeover', 'humanTakeoverAt', 'humanExpiresAt', 'agentHistory'].includes(key))) throw new Error('Mixed ownership update is not supported');
   if (patch.humanTakeover !== 0 && patch.humanTakeover !== 1) throw new Error('Invalid conversation ownership');
   if (options.expectedVersion !== undefined) z.number().int().nonnegative().parse(options.expectedVersion);
+    // Match reply reservation lock order before touching conversation/session FK rows.
+    const [owners] = await connection.execute<any[]>('SELECT merchantId FROM conversations WHERE id=?', [conversationId]);
+    if (owners.length !== 1) throw new Error('Conversation unavailable');
+    await connection.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE', [owners[0].merchantId]);
     const [rows] = await connection.execute<any[]>(`SELECT *,
       (human_expires_at IS NOT NULL AND human_expires_at<=UTC_TIMESTAMP()) AS timed_expired,
       (human_expires_at IS NULL AND human_takeover_at<=TIMESTAMPADD(HOUR,-24,UTC_TIMESTAMP())) AS manual_expired
@@ -80,7 +84,7 @@ export async function transitionOwnershipInTransaction(connection: PoolConnectio
     return { changed: true, merchantId: current.merchantId, version: Number(current.handoff_version) + 1 };
 }
 
-export type ConversationReplyGuard = { conversationId: number; version: number; incomingMessageId?: number };
+export type ConversationReplyGuard = { conversationId: number; version: number; incomingMessageId?: number; reservationDigest?: string };
 export async function canSendConversationReply(pool: Pick<Pool, 'execute'>, merchantId: number, guard: ConversationReplyGuard, to?: string) {
   if (!Number.isSafeInteger(guard.conversationId) || guard.conversationId <= 0 || !Number.isSafeInteger(guard.version) || guard.version < 0) return false;
   if (guard.incomingMessageId !== undefined && (!Number.isSafeInteger(guard.incomingMessageId) || guard.incomingMessageId <= 0)) return false;

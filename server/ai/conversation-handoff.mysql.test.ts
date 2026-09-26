@@ -20,7 +20,7 @@ describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership l
   const options = (expectedVersion: number) => ({ merchantId: fixture.merchantId, expectedVersion });
   const guard = (version = 0, incomingMessageId = sourceId) => ({ conversationId, version, incomingMessageId });
   const input = () => ({ merchantId: fixture.merchantId, to: phone, kind: 'text' as const, text: 'fixture reply',
-    idempotencyKey: `handoff:${fixture.merchantId}:${sourceId}`, replyGuard: guard() });
+    idempotencyKey: `handoff:fixture:${fixture.merchantId}:${sourceId}`, replyGuard: guard() });
   beforeEach(async () => {
     fixture = await createDisposableMerchant('handoff');
     conversationId = Number((await query("INSERT INTO conversations (merchantId,customerPhone,status) VALUES (?,?,'active')", [fixture.merchantId, phone])).insertId);
