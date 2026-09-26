@@ -35,7 +35,8 @@ function receipt(row: any) {
   } catch { return conflict(); }
 }
 const selection = "SELECT *,DATE_FORMAT(observation_ends_at,'%Y-%m-%dT%H:%i:%s.%fZ') AS observation_utc FROM ai_sales_experiment_assignments";
-function parseRow(row: any) { return receipt({ ...row, observation_ends_at: String(row.observation_utc).replace(/(\.\d{3})\d{3}Z$/, '$1Z') }); }
+export function readSalesExperimentAssignmentRow(row: any) { return receipt({ ...row, observation_ends_at: String(row.observation_utc).replace(/(\.\d{3})\d{3}Z$/, '$1Z') }); }
+const parseRow = readSalesExperimentAssignmentRow;
 
 /** Internal historical read under the caller's merchant lock; never a current-use permit. */
 export async function loadSalesExperimentAssignment(c: PoolConnection, merchant: number, assignmentId: number) {

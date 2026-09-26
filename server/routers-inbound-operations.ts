@@ -5,8 +5,16 @@ import { inboundHealth, listInboundReviews, resolveInboundReview } from './messa
 import { inspectSalesPaymentTimelineInput, SalesPaymentTimelineLimitExceeded } from './ai/sales-payment-timeline-contract';
 import { inspectSalesOrderSettlementInput, SalesOrderSettlementLimitExceeded } from './ai/sales-order-settlement-contract';
 import { salesOrderReportInput, SalesOrderReportLimitExceeded } from './ai/sales-order-report-contract';
+import { salesExperimentReadoutInput, SalesExperimentReadoutLimitExceeded } from './ai/sales-experiment-readout-contract';
 
 export const inboundOperationsRouter = router({
+  salesExperimentReadout: adminProcedure.input(salesExperimentReadoutInput).query(async ({ctx,input}) => {
+    const {inspectSalesExperimentReadout,SalesExperimentReadoutAccessDenied,SalesExperimentReadoutNotReady} = await import('./ai/sales-experiment-readout');
+    try { return await inspectSalesExperimentReadout(ctx.user.id,input); }
+    catch(error) { throw new TRPCError({code:error instanceof SalesExperimentReadoutAccessDenied ? 'FORBIDDEN'
+      : error instanceof SalesExperimentReadoutNotReady || error instanceof SalesExperimentReadoutLimitExceeded ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR',
+      message:'تعذر قراءة أدلة تجربة المبيعات'}); }
+  }),
   salesOrderReport: adminProcedure.input(salesOrderReportInput).query(async ({ctx,input}) => {
     const {inspectSalesOrderReport,SalesOrderReportAccessDenied,SalesOrderReportNotReady} = await import('./ai/sales-order-report');
     try { return await inspectSalesOrderReport(ctx.user.id,input); }

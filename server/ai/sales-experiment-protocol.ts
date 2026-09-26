@@ -25,7 +25,7 @@ async function sectorSnapshot(c: PoolConnection, merchant: number) {
   if (playbook.id !== requested || !Number.isSafeInteger(revision) || revision < 0) conflict();
   return { revision, playbook, digest: policyArtifactDigest(playbook) };
 }
-function readProtocol(row: any) {
+export function readSalesExperimentProtocolRow(row: any) {
   try {
     const protocol = salesExperimentProtocolSnapshot.parse(typeof row.protocol === 'string' ? JSON.parse(row.protocol) : row.protocol);
     if (protocol.version !== 'sales-experiment-protocol.v1' || protocol.merchantId !== Number(row.merchant_id)
@@ -37,7 +37,7 @@ function readProtocol(row: any) {
     return protocol;
   } catch { return conflict(); }
 }
-function readWithdrawal(row: any, protocolDigest: string) {
+export function readSalesExperimentWithdrawalRow(row: any, protocolDigest: string) {
   try {
     const withdrawal = salesExperimentWithdrawalSnapshot.parse(typeof row.withdrawal === 'string' ? JSON.parse(row.withdrawal) : row.withdrawal);
     if (policyArtifactDigest(withdrawal) !== row.withdrawal_digest || withdrawal.protocolId !== Number(row.protocol_id)
@@ -46,6 +46,7 @@ function readWithdrawal(row: any, protocolDigest: string) {
     return withdrawal;
   } catch { return conflict(); }
 }
+const readProtocol = readSalesExperimentProtocolRow, readWithdrawal = readSalesExperimentWithdrawalRow;
 async function receipt(c: PoolConnection, row: any) {
   const protocol = readProtocol(row);
   const [withdrawals] = await c.execute<any[]>('SELECT * FROM ai_sales_experiment_withdrawals WHERE merchant_id=? AND protocol_id=? FOR SHARE', [row.merchant_id, row.id]);
