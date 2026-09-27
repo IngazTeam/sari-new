@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ state: vi.fn(), metadata: vi.fn(), runtime: vi.fn(), query: vi.fn() }));
-vi.mock('./budget-admin', () => ({ readAiBudgetAdmin: mocks.state }));
+vi.mock('./budget-admin', () => ({ readAiBudgetSnapshot: mocks.state }));
 vi.mock('../db_ai_settings', () => ({ getZahyPiRuntimeMetadata: mocks.metadata, getActiveModel: async () => 'gpt-4o' }));
 vi.mock('./zahypi-client', () => ({ resolveZahyPiRuntimeConfig: mocks.runtime }));
 vi.mock('../db/connection', () => ({ getPool: async () => ({ execute: mocks.query }) }));

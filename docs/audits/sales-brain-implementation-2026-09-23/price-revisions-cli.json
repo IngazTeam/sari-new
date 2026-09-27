@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2026-09-27T06:13:40.652Z",
+  "cases": [
+    "dry-run-no-database",
+    "apply-requires-explicit-admin-before-connection",
+    "forged-payload-actor-rejected"
+  ],
+  "passed": true,
+  "productionAccess": false,
+  "externalNetworkBlocked": true
+}

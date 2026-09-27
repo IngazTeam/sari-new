@@ -838,7 +838,12 @@ Object.assign(entries, {
  B063:[entries.B063[0]+' تعرض سجلات الموظف والإدارة تشخيصًا مقيدًا وإرشادًا لكل من رفع غير موثق ونقل غير موثق أو منتظر ونتيجة مجهولة ودليل قابل للتسوية وفشل وإيقاف وتعارض الدليل. الحالات مشتقة من طلب النقل المطابق، دون عرض الأخطاء الخام أو البيانات الخاصة.','client/src/components/StaffAttemptGuidance.tsx'],
  B064:[entries.B064[0]+' توسعت اختبارات MySQL لتغطية الدليل المتعارض وأخطاء HTTP الغامضة والحساب أو الاتجاه أو الطلب المزور، وغياب الدليل والتسوية بعد قبول متأخر. قراءة التشخيص لا تعدل المحاولة أو ترسل أو ترفع ملفًا؛ تشمل الواجهة التعليمات باللغتين والجوال.','server/ai/staff-attempt-review.mysql.test.ts'],
 });
-for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}}
+Object.assign(entries, {
+ B052:['بطاقات السعر المركزية أصبحت ذات إصدارات مؤرخة ومراجع اعتماد وهوية مشرف محفوظة، مع سجل وتصدير JSON لصفحات محدودة. يتحقق الخادم من الصلاحية المخزنة، ويرفض تعارض المسودات وإعادة استخدام الإصدار، ويعيد نتيجة الطلب نفسه دون تكراره أو إعادة تفعيل إصدار قديم. يؤرشف السعر السابق دون اختراع تاريخ اعتماده أو صاحبه. اختبرت المعاملة والتزامن وفقد الإقرار وبقاء السعر الأصلي للحجز والعربية والإنجليزية والجوال. بقي سقف المنصة 100 دولار يوميًا؛ لم تُدرج أسعار مزود فعلية أو يُعتمد الإنتاج. تنبيهات 70% و90% ما زالت مطلوبة.','scripts/testing/verify-ai-price.cjs'],
+});
+for(const r of records){const v=entries[r.id];if(v){r.implemented=v[0];r.verification=[v[1]];r.status=r.status==='complete'?'complete':'partial';if(r.status==='complete')r.remaining='لا متبقٍ لهذا البند ضمن نطاقه المحلي الموصوف؛ لا يغلق بوابة المرحلة تلقائياً.';}
+ if(r.id==='B052')r.remaining='تنبيهات داخلية عند 70% و90% واختبار عدم تكرارها وتزامن الحجوزات وتسويتها؛ اعتماد الأسعار الفعلية من السوبر أدمن والتحقق التشغيلي من السقف وتوقف الاستدعاءات الجديدة مع استمرار الرسائل والتدخل البشري.';
+}
 if(records.length!==71)throw Error(`Expected 71, got ${records.length}`);
 const dir='docs/audits/sales-brain-implementation-2026-09-23';fs.mkdirSync(dir,{recursive:true});
 fs.writeFileSync(`${dir}/acceptance-matrix.json`,JSON.stringify({generatedAt:new Date().toISOString(),total:71,records},null,2)+'\n');

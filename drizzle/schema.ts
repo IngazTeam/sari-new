@@ -18,6 +18,19 @@ export const aiPriceCards = mysqlTable('ai_price_cards', {
   maxInputTokens: int('max_input_tokens', { unsigned: true }).notNull(),
   enabled: tinyint().default(1).notNull(),
 }, table => [primaryKey({ columns: [table.provider, table.model] })]);
+// Application-append-only audit, retained even when an administrator is deleted.
+export const aiPriceCardRevisions = mysqlTable('ai_price_card_revisions', {
+  id: int().autoincrement().primaryKey(),
+  provider: varchar({ length: 40 }).notNull(), model: varchar({ length: 128 }).notNull(), version: varchar({ length: 80 }).notNull(),
+  origin: mysqlEnum(['legacy', 'admin']).notNull(), actorId: int('actor_id'), reference: varchar({ length: 240 }),
+  requestId: char('request_id', { length: 36 }), requestDigest: char('request_digest', { length: 64 }),
+  snapshot: json().notNull(), snapshotDigest: char('snapshot_digest', { length: 64 }).notNull(),
+  createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [
+  uniqueIndex('uq_ai_price_revision').on(table.provider, table.model, table.version),
+  uniqueIndex('uq_ai_price_request').on(table.requestId), index('idx_ai_price_history').on(table.provider, table.model, table.id),
+  check('chk_ai_price_revision_origin', sql`(${table.origin}='legacy' AND ${table.actorId} IS NULL AND ${table.reference} IS NULL AND ${table.requestId} IS NULL AND ${table.requestDigest} IS NULL) OR (${table.origin}='admin' AND ${table.actorId}>0 AND ${table.actorId} IS NOT NULL AND ${table.reference} IS NOT NULL AND ${table.requestId} IS NOT NULL AND ${table.requestDigest} IS NOT NULL)`),
+]);
 export const aiBudgetPeriods = mysqlTable('ai_budget_periods', {
   scopeKey: varchar('scope_key', { length: 160 }).notNull(),
   periodStart: date('period_start', { mode: 'string' }).notNull(),

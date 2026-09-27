@@ -6,18 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { AiPriceManager } from './AiPriceManager';
 
 export function AiBudgetCard() {
-  const { t } = useTranslation();
-  const budget = trpc.aiSettings.getBudget.useQuery();
-  const [provider, setProvider] = useState<'openai' | 'zahypi'>('openai');
-  const [model, setModel] = useState('');
-  const [version, setVersion] = useState('');
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
-  const [flat, setFlat] = useState('0');
-  const [maxInput, setMaxInput] = useState('');
-  const [priceEnabled, setPriceEnabled] = useState(true);
+  const { t, i18n } = useTranslation();
+  const budget = trpc.aiSettings.getBudget.useQuery(undefined, { retry: false });
   const [reservation, setReservation] = useState('');
   const [billed, setBilled] = useState('');
   const [reference, setReference] = useState('');
@@ -26,11 +19,7 @@ export function AiBudgetCard() {
     onSuccess: () => { toast.success(t('aiBudget.reconciliationSaved')); setReservation(''); setConfirmed(false); void budget.refetch(); },
     onError: error => toast.error(error.message),
   });
-  const save = trpc.aiSettings.savePriceCard.useMutation({
-    onSuccess: () => { toast.success(t('aiBudget.priceSaved')); void budget.refetch(); },
-    onError: error => toast.error(error.message),
-  });
-  const usd = (value: number) => value.toLocaleString('ar-SA', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
+  const usd = (value: number) => value.toLocaleString(i18n.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
   return <Card>
     <CardHeader>
       <CardTitle>{t('aiBudget.title')}</CardTitle>
@@ -44,11 +33,6 @@ export function AiBudgetCard() {
           <div><dt>{t('aiBudget.reserved')}</dt><dd>{usd(budget.data.reservedUsd)}</dd></div>
         </dl>
         {budget.data.unknownCount > 0 && <p role="status">{t('aiBudget.unknownCount', { count: budget.data.unknownCount })}</p>}
-        {!budget.data.prices.length && <p role="alert">{t('aiBudget.noPrices')}</p>}
-        <ul className="space-y-1">{budget.data.prices.map(price => <li key={`${price.provider}:${price.model}`}>
-          <span dir="ltr">{price.provider} / {price.model}</span>: {t('aiBudget.priceSummary', { input: usd(price.inputUsdPerMillion), output: usd(price.outputUsdPerMillion), flat: usd(price.flatUsd) })} — {price.enabled ? t('aiBudget.enabled') : t('aiBudget.disabled')}
-          <Button variant="link" onClick={() => { setProvider(price.provider); setModel(price.model); setVersion(price.version); setInput(String(price.inputUsdPerMillion)); setOutput(String(price.outputUsdPerMillion)); setFlat(String(price.flatUsd)); setMaxInput(String(price.maxInputTokens)); setPriceEnabled(price.enabled); }}>{t('aiBudget.edit')}</Button>
-        </li>)}</ul>
       </>}
       {!!budget.data?.pending.length && <form className="space-y-3 rounded border p-3" onSubmit={event => {
         event.preventDefault();
@@ -68,23 +52,8 @@ export function AiBudgetCard() {
         <label className="flex items-start gap-2"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /><span>{t('aiBudget.evidenceConfirmation')}</span></label>
         <Button type="submit" disabled={!confirmed || !reservation || reconcile.isPending}>{t('aiBudget.saveReconciliation')}</Button>
       </form>}
-      <form className="space-y-3" onSubmit={event => {
-        event.preventDefault();
-        save.mutate({ provider, model, version, inputUsdPerMillion: Number(input), outputUsdPerMillion: Number(output), flatUsd: Number(flat), maxInputTokens: Number(maxInput), enabled: priceEnabled });
-      }}>
-        <p className="text-sm text-muted-foreground">{t('aiBudget.priceHelp')}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div><Label htmlFor="budget-provider">{t('aiBudget.provider')}</Label><select id="budget-provider" className="block w-full rounded border bg-background p-2" value={provider} onChange={event => setProvider(event.target.value as 'openai' | 'zahypi')}><option value="openai">OpenAI</option><option value="zahypi">ZahyPi</option></select></div>
-          <div><Label htmlFor="budget-model">{t('aiBudget.model')}</Label><Input id="budget-model" dir="ltr" value={model} required maxLength={128} onChange={event => setModel(event.target.value)} /></div>
-          <div><Label htmlFor="budget-version">{t('aiBudget.version')}</Label><Input id="budget-version" value={version} required maxLength={80} onChange={event => setVersion(event.target.value)} /></div>
-          <div><Label htmlFor="budget-max-input">{t('aiBudget.maxInput')}</Label><Input id="budget-max-input" type="number" min="1" max="10000000" step="1" required value={maxInput} onChange={event => setMaxInput(event.target.value)} /></div>
-          <div><Label htmlFor="budget-input">{t('aiBudget.inputRate')}</Label><Input id="budget-input" type="number" min="0" step="0.000001" required value={input} onChange={event => setInput(event.target.value)} /></div>
-          <div><Label htmlFor="budget-output">{t('aiBudget.outputRate')}</Label><Input id="budget-output" type="number" min="0" step="0.000001" required value={output} onChange={event => setOutput(event.target.value)} /></div>
-          <div><Label htmlFor="budget-flat">{t('aiBudget.flat')}</Label><Input id="budget-flat" type="number" min="0" step="0.000001" required value={flat} onChange={event => setFlat(event.target.value)} /></div>
-        </div>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={priceEnabled} onChange={event => setPriceEnabled(event.target.checked)} /><span>{t('aiBudget.enablePrice')}</span></label>
-        <Button type="submit" disabled={save.isPending || budget.isError}>{save.isPending ? t('aiBudget.saving') : t('aiBudget.savePrice')}</Button>
-      </form>
+      <AiPriceManager prices={budget.data?.prices ?? []} available={!!budget.data && !budget.isError && !budget.isFetching}
+        onRefresh={async () => { const result = await budget.refetch(); return !result.isError && !!result.data; }} />
     </CardContent>
   </Card>;
 }

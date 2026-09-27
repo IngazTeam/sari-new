@@ -7,7 +7,9 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { buildAiCapabilityManifest } from "../shared/ai-capabilities";
 import { protectedProcedure, router } from "./_core/trpc";
-import { aiPriceCardInput, readAiBudgetAdmin, saveAiPriceCard, aiReconciliationInput, reconcileAiReservation } from './ai/budget-admin';
+import { readAiBudgetAdmin, saveAiPriceCard, aiReconciliationInput, reconcileAiReservation } from './ai/budget-admin';
+import { AiPriceAdminError, readAiPriceHistory } from './ai/price-admin';
+import { aiPriceCardSaveInput, aiPriceHistoryInput, aiPriceHistoryOutput, aiPriceSaveOutput } from '../shared/ai-price-contract';
 import {
   clearZahyPiRuntimeConfigCache,
   requestZahyPiJobCompletion,
@@ -18,6 +20,14 @@ import {
 function assertAdmin(role: string) {
   if (role !== "admin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+  }
+}
+
+async function priceAdminResult<T>(action: () => Promise<T>): Promise<T> {
+  try { return await action(); }
+  catch (error) {
+    const code = error instanceof AiPriceAdminError ? error.code : 'INTERNAL_SERVER_ERROR';
+    throw new TRPCError({ code, message: `AI_PRICE_${code}` });
   }
 }
 
@@ -61,11 +71,15 @@ const zahyPiModelSchema = z.string()
 export const aiSettingsRouter = router({
   getBudget: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
-    return readAiBudgetAdmin();
+    return priceAdminResult(() => readAiBudgetAdmin(ctx.user.id));
   }),
-  savePriceCard: protectedProcedure.input(aiPriceCardInput).mutation(async ({ ctx, input }) => {
+  getPriceHistory: protectedProcedure.input(aiPriceHistoryInput).output(aiPriceHistoryOutput).query(async ({ ctx, input }) => {
     assertAdmin(ctx.user.role);
-    return saveAiPriceCard(input);
+    return priceAdminResult(() => readAiPriceHistory(input, ctx.user.id));
+  }),
+  savePriceCard: protectedProcedure.input(aiPriceCardSaveInput).output(aiPriceSaveOutput).mutation(async ({ ctx, input }) => {
+    assertAdmin(ctx.user.role);
+    return priceAdminResult(() => saveAiPriceCard(input, ctx.user.id));
   }),
   reconcileBudget: protectedProcedure.input(aiReconciliationInput).mutation(async ({ ctx, input }) => {
     assertAdmin(ctx.user.role);

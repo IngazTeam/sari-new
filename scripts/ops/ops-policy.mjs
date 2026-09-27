@@ -6,7 +6,7 @@ export const CRITICAL_TABLES = Object.freeze([
   'orders', 'merchant_subscriptions', 'payment_transactions',
   'auth_sessions', 'merchant_members', 'order_payments', 'whatsapp_message_deliveries',
   'whatsapp_inbound_jobs', 'session_contexts',
-  'ai_budget_policies', 'ai_price_cards', 'ai_budget_periods', 'ai_usage_reservations',
+  'ai_budget_policies', 'ai_price_cards', 'ai_price_card_revisions', 'ai_budget_periods', 'ai_usage_reservations',
 ]);
 
 const SAFE_RESTORE_DATABASE = /(?:^|[_-])(restore|drill|test)(?:[_-]|$)/i;

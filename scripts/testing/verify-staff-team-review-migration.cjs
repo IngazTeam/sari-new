@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
  const url=new URL(process.env.SARI_TEST_DATABASE_URL||'');
  if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use the owned synthetic migration server');
  const root=process.cwd(),journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));
- if(journal.entries.at(-1).tag!=='0133_staff_team_reviews')throw Error('Unexpected migration head');
+ if(!['0133_staff_team_reviews','0134_ai_price_revisions'].includes(journal.entries.at(-1).tag))throw Error('Unexpected migration head');
  const dir=path.resolve('.tmp/team-review-migration-'+Date.now()),output=path.resolve(process.env.SARI_STAFF_MIGRATION_OUTPUT||'.tmp/team-review-migration/migration.json');
  fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
  const prior=journal.entries.filter(e=>e.idx<133);for(const e of prior)fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
@@ -34,7 +34,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
   const [[count]]=await c.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[budget]]=await c.query("SELECT daily_limit_micro_usd FROM ai_budget_policies WHERE scope_key='global'");
   const test={mode:'0132-to-0133-review-upgrade',migrations:count.n,preservedTables:tables.filter(t=>before[t]===after[t]),duplicateRequestRejected:duplicate,
    sourceDeletionPreservesAudit:retained.n===1,rerunUnchanged:saved===JSON.stringify((await c.query('SELECT * FROM ai_sales_staff_reviews'))[0]),globalDailyMicroUsd:String(budget.daily_limit_micro_usd)};
-  const cases=[...earlier.cases,{...test,passed:test.migrations===134&&test.preservedTables.length===tables.length&&duplicate&&test.sourceDeletionPreservesAudit&&test.rerunUnchanged&&test.globalDailyMicroUsd==='100000000'}];
+  const cases=[...earlier.cases,{...test,passed:test.migrations===journal.entries.length&&test.preservedTables.length===tables.length&&duplicate&&test.sourceDeletionPreservesAudit&&test.rerunUnchanged&&test.globalDailyMicroUsd==='100000000'}];
   const report={verifiedAt:new Date().toISOString(),scope:'Synthetic fresh head, prior voice upgrade, 0132-to-0133 review upgrade, unrecorded DDL replay and retained audit; no production.',
    migrationSha256:crypto.createHash('sha256').update(migration).digest('hex'),cases,passed:cases.length===3&&cases.every(t=>t.passed)};
   fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));if(!report.passed)throw Error('Migration cases failed');
