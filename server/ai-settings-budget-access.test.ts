@@ -61,4 +61,10 @@ describe('super-admin budget access', () => {
     mocks.save.mockResolvedValue({ success: true });
     await expect(caller('admin').savePriceCard(card)).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
   });
+  it('redacts manual settlement faults and respects revoked authority', async () => {
+    mocks.reconcile.mockRejectedValue(new Error('private invoice SQL password'));
+    await expect(caller('admin').reconcileBudget(evidence)).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'AI_PRICE_INTERNAL_SERVER_ERROR' });
+    mocks.reconcile.mockRejectedValue(new AiPriceAdminError('FORBIDDEN'));
+    await expect(caller('admin').reconcileBudget(evidence)).rejects.toMatchObject({ code: 'FORBIDDEN', message: 'AI_PRICE_FORBIDDEN' });
+  });
 });

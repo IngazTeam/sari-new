@@ -138,6 +138,7 @@ const units = [
   'server/tests/chat-commerce-pentest.test.ts',
 ];
 const database = [
+  'server/ai/budget-reconciliation.mysql.test.ts',
   'server/ai/price-admin.mysql.test.ts',
   'server/ai/staff-attempt-review.mysql.test.ts',
   'server/ai/staff-legacy-delivery.mysql.test.ts',
@@ -214,7 +215,7 @@ const database = [
   'server/ai/sales-sector-settings.mysql.test.ts',
   'server/messaging/inbound.mysql.test.ts', 'server/messaging/inbound-process.mysql.test.ts',
 ];
-const output = resolve('.tmp/sales-brain-evidence'); mkdirSync(output, { recursive: true });
+const output = resolve(process.env.SARI_BRAIN_EVIDENCE_OUTPUT || '.tmp/sales-brain-evidence'); mkdirSync(output, { recursive: true });
 function run(name, args) {
   const result = spawnSync(process.execPath, [resolve('scripts/testing/run-isolated.mjs'), ...args,
     '--reporter=default', '--reporter=json', `--outputFile.json=${resolve(output, `${name}.json`)}`],

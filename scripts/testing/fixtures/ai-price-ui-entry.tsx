@@ -5,6 +5,7 @@ import { observable } from '@trpc/server/observable';
 import { TRPCClientError } from '@trpc/client';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { Toaster } from 'sonner';
 import { trpc } from '../../../client/src/lib/trpc';
 import { AiBudgetCard } from '../../../client/src/components/admin/AiBudgetCard';
 import { AiCapabilityCard } from '../../../client/src/components/admin/AiCapabilityCard';
@@ -15,7 +16,7 @@ import merchantUxAr from '../../../client/src/locales/merchant-ux.ar';
 import merchantUxEn from '../../../client/src/locales/merchant-ux.en';
 
 const w = window as any, params = new URLSearchParams(location.search), mode = params.get('case') || 'ready';
-w.__priceWrites = []; w.__priceQueries = []; w.__priceSaved = false; w.__historyFailed = false;
+w.__priceWrites = []; w.__priceQueries = []; w.__priceSaved = false; w.__historyFailed = false; w.__reconcileWrites = [];
 const initial = { provider: 'openai', model: mode === 'long' ? 'model-'.repeat(20) : 'synthetic-model', version: 'approved-v1', inputUsdPerMillion: 0.000001,
   outputUsdPerMillion: 2, flatUsd: 0, maxInputTokens: 32000, enabled: true, revision: 'a'.repeat(64) };
 let current = initial;
@@ -29,9 +30,12 @@ const client = trpc.createClient({ links: [() => ({ op }) => observable(observer
   if (op.type === 'query') {
     w.__priceQueries.push({ path: op.path, input: op.input });
     if (op.path === 'aiSettings.getBudget') {
+      if (w.__budgetReadFailed) { fail('FORBIDDEN'); return; }
       if (mode === 'loading') return;
       if (mode === 'budget-error' && !w.__budgetRecovered || mode === 'refresh-error' && w.__priceSaved) { w.__budgetRecovered = true; fail(); return; }
-      reply({ configured: true, enabled: true, configuredLimitUsd: 100, effectiveLimitUsd: 100, spentUsd: 12, reservedUsd: 3, unknownCount: 0, pending: [], prices: mode === 'empty' && !w.__priceSaved ? [] : [current] });
+      reply({ configured: true, enabled: true, configuredLimitUsd: 100, effectiveLimitUsd: 100, spentUsd: 12, reservedUsd: 3, unknownCount: 0,
+        pending: mode.startsWith('reconcile-') ? [{ reservationKey: 'a'.repeat(64), requestId: 'synthetic-request', provider: 'openai', model: 'synthetic-model', scope: 'platform:synthetic', reservedUsd: 1 }] : [],
+        prices: mode === 'empty' && !w.__priceSaved ? [] : [current] });
     } else if (op.path === 'aiSettings.getPriceHistory') {
       if (mode === 'history-error' || w.__historyFailed) { fail(); return; }
       const before = (op.input as any).beforeId;
@@ -40,6 +44,11 @@ const client = trpc.createClient({ links: [() => ({ op }) => observable(observer
       reply(data);
     } else { fail(); }
     return;
+  }
+  if (op.path === 'aiSettings.reconcileBudget') {
+    w.__reconcileWrites.push(structuredClone(op.input));
+    const timer = setTimeout(() => mode === 'reconcile-error' ? fail('FORBIDDEN') : reply({ success: true }), 200);
+    return () => clearTimeout(timer);
   }
   w.__priceWrites.push(structuredClone(op.input));
   const input = op.input as any;
@@ -62,7 +71,7 @@ async function render() {
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { ...ar, merchantUx: merchantUxAr } }, en: { translation: { ...en, merchantUx: merchantUxEn } } }, interpolation: { escapeValue: false } });
   const manifest = buildAiCapabilityManifest({ enabled: true, textProvider: 'zahypi', textModel: 'synthetic-qwen', openaiCredential: 'configured', zahypiCredential: 'configured' });
   createRoot(document.getElementById('root')!).render(<trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}>
-    <main className="mx-auto max-w-5xl p-3 space-y-4"><AiBudgetCard /><AiCapabilityCard manifest={manifest} loading={false} failed={false} refreshing={false} onRefresh={() => {}} /></main>
+    <Toaster /><main className="mx-auto max-w-5xl p-3 space-y-4"><AiBudgetCard /><AiCapabilityCard manifest={manifest} loading={false} failed={false} refreshing={false} onRefresh={() => {}} /></main>
   </QueryClientProvider></trpc.Provider>);
 }
 void render();

@@ -17,7 +17,7 @@ export function AiBudgetCard() {
   const [confirmed, setConfirmed] = useState(false);
   const reconcile = trpc.aiSettings.reconcileBudget.useMutation({
     onSuccess: () => { toast.success(t('aiBudget.reconciliationSaved')); setReservation(''); setConfirmed(false); void budget.refetch(); },
-    onError: error => toast.error(error.message),
+    onError: () => toast.error(t('aiBudget.reconciliationFailed')),
   });
   const usd = (value: number) => value.toLocaleString(i18n.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
   return <Card>
@@ -34,9 +34,9 @@ export function AiBudgetCard() {
         </dl>
         {budget.data.unknownCount > 0 && <p role="status">{t('aiBudget.unknownCount', { count: budget.data.unknownCount })}</p>}
       </>}
-      {!!budget.data?.pending.length && <form className="space-y-3 rounded border p-3" onSubmit={event => {
+      {!budget.isError && !!budget.data?.pending.length && <form className="space-y-3 rounded border p-3" onSubmit={event => {
         event.preventDefault();
-        if (confirmed) reconcile.mutate({ reservationKey: reservation, billedUsd: Number(billed), reference, confirmedProviderEvidence: true });
+        if (confirmed && !budget.isFetching && !reconcile.isPending) reconcile.mutate({ reservationKey: reservation, billedUsd: Number(billed), reference, confirmedProviderEvidence: true });
       }}>
         <h3 className="font-semibold">{t('aiBudget.reconcileTitle')}</h3>
         <p className="text-sm text-muted-foreground">{t('aiBudget.reconcileHelp')}</p>
@@ -50,7 +50,7 @@ export function AiBudgetCard() {
           <div><Label htmlFor="budget-reference">{t('aiBudget.referenceLabel')}</Label><Input id="budget-reference" minLength={8} maxLength={160} required value={reference} onChange={event => { setReference(event.target.value); setConfirmed(false); }} /></div>
         </div>
         <label className="flex items-start gap-2"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /><span>{t('aiBudget.evidenceConfirmation')}</span></label>
-        <Button type="submit" disabled={!confirmed || !reservation || reconcile.isPending}>{t('aiBudget.saveReconciliation')}</Button>
+        <Button type="submit" disabled={!confirmed || !reservation || budget.isFetching || reconcile.isPending}>{t('aiBudget.saveReconciliation')}</Button>
       </form>}
       <AiPriceManager prices={budget.data?.prices ?? []} available={!!budget.data && !budget.isError && !budget.isFetching}
         onRefresh={async () => { const result = await budget.refetch(); return !result.isError && !!result.data; }} />

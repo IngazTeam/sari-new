@@ -56,6 +56,19 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
       assert.equal(await page.evaluate(()=>window.__priceWrites[0].expectedRevision),null);assert.equal(await page.evaluate(()=>window.__priceWrites[0].provider),'zahypi');record('create_new_card_without_existing_revision',{lang});
       await visit('ready',lang);await fill();await page.$eval('#budget-version',n=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(n,'approved-v1');n.dispatchEvent(new Event('input',{bubbles:true}));});await page.click('[data-price-save]');await page.waitForSelector('[data-price-message]');assert.equal(await page.evaluate(()=>window.__priceWrites.length),0);record('same_version_rejected_before_mutation',{lang});
       await visit('ready',lang);await page.click('[data-price-show-history]');await page.waitForSelector('[data-price-revision]');await page.evaluate(()=>{window.__historyFailed=true;return window.__refreshPrices();});await page.waitForFunction(()=>!document.querySelector('[data-price-revision]'));assert.equal(await disabled('[data-price-export]'),true);record('stale_history_hidden_after_authority_error',{lang});
+      for(const mode of ['reconcile-error','reconcile-success']){
+        await visit(mode,lang);await page.select('#budget-reservation','a'.repeat(64));await page.type('#budget-billed','0.5');await page.type('#budget-reference','synthetic-provider-invoice');
+        await page.$eval('#budget-reservation',n=>n.closest('form').querySelector('input[type=checkbox]').click());
+        await page.$eval('#budget-reservation',n=>n.closest('form').querySelector('button[type=submit]').click());await page.waitForSelector('[data-sonner-toast]');
+        const copy=JSON.parse(fs.readFileSync(`client/src/locales/${lang}.json`)).aiBudget;
+        assert.ok((await page.$eval('[data-sonner-toast]',n=>n.innerText)).includes(mode==='reconcile-error'?copy.reconciliationFailed:copy.reconciliationSaved));
+        assert.equal((await page.$eval('body',n=>n.innerText)).includes('private SQL'),false);assert.equal(await page.evaluate(()=>window.__reconcileWrites.length),1);record('manual_'+mode,{lang});
+      }
+      await visit('reconcile-success',lang);await page.waitForSelector('#budget-reservation');
+      await page.evaluate(()=>{window.__budgetReadFailed=true;return window.__refreshPrices();});
+      await page.waitForFunction(()=>!document.querySelector('#budget-reservation'));
+      assert.equal((await page.$eval('body',n=>n.innerText)).includes('synthetic-request'),false);
+      assert.equal(await page.evaluate(()=>window.__reconcileWrites.length),0);record('manual_stale_reservations_hidden_after_authority_error',{lang});
     }
     const report={generatedAt:new Date().toISOString(),browser:await browser.version(),actualComponents:true,realReactQueryAndTrpc:true,fixtureApi:true,externalRequestsBlocked:true,scope:'Local Chromium responsive viewports, not physical iPhone/Safari or production.',results,errors};
     fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({scenarios:results.length,errors}));

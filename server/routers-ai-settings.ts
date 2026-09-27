@@ -83,7 +83,7 @@ export const aiSettingsRouter = router({
   }),
   reconcileBudget: protectedProcedure.input(aiReconciliationInput).mutation(async ({ ctx, input }) => {
     assertAdmin(ctx.user.role);
-    return reconcileAiReservation(input, ctx.user.id);
+    return priceAdminResult(() => reconcileAiReservation(input, ctx.user.id));
   }),
   // Get AI settings (masked API key)
   getSettings: protectedProcedure.query(async ({ ctx }) => {

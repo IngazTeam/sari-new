@@ -44,10 +44,11 @@ export const aiReconciliationInput = z.object({
   reference: z.string().trim().min(8).max(160), confirmedProviderEvidence: z.literal(true),
 }).strict();
 
-export async function reconcileAiReservation(input: z.infer<typeof aiReconciliationInput>, actorId: number) {
-  aiReconciliationInput.parse(input);
+export async function reconcileAiReservation(raw: z.infer<typeof aiReconciliationInput>, actorId: number) {
+  const input = aiReconciliationInput.parse(raw);
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
+  await assertAiBudgetAdmin(pool, actorId);
   const [rows] = await pool.execute<any[]>(`SELECT scope_key, request_id, DATE_FORMAT(period_start, '%Y-%m-%d') AS period FROM ai_usage_reservations
     WHERE reservation_key = ? AND (state IN ('unknown', 'settled') OR (state='reserved' AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)))`, [input.reservationKey]);
   if (!rows[0]) throw new Error('Reservation unavailable or still in progress');

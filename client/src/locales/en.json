@@ -8976,6 +8976,7 @@
     "outputRate": "USD per million output tokens",
     "flat": "Additional flat USD per call",
     "reconciliationSaved": "Reconciled without resending the call",
+    "reconciliationFailed": "Reconciliation failed. Refresh and check your permissions, reservation state and provider evidence before retrying.",
     "priceSaved": "Price revision saved for new calls",
     "priceReplayed": "This request was already recorded. No older price was reactivated. Check the list for the current version.",
     "unknownCount": "{{count}} calls need provider reconciliation. Their budget is not released automatically.",

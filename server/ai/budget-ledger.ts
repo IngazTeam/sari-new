@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { getPool } from '../db/connection';
+import { assertAiBudgetAdmin } from './price-admin';
 import type { AiProviderJobReceipt } from './provider-job-receipt';
 
 export class AiBudgetError extends Error {
@@ -183,14 +184,17 @@ export async function settleAiBudget(reservation: Pick<Reservation, 'reservation
   try {
     await connection.beginTransaction();
     // Match reserve's lock order (period, then reservation) to avoid lock inversion.
+    // Manual financial evidence requires current authority held until the settlement commits.
+    if (evidence) await assertAiBudgetAdmin(connection, evidence.actorId, true);
     const [lookup] = await connection.execute<any[]>('SELECT DATE_FORMAT(period_start, \'%Y-%m-%d\') AS period FROM ai_usage_reservations WHERE reservation_key = ? AND scope_key = ?', [reservation.reservationKey, reservation.scopeKey]);
     if (!lookup[0]) throw new AiBudgetError('reservation_conflict');
     const period = lookup[0].period;
     await connection.execute("SELECT scope_key FROM ai_budget_periods WHERE scope_key = 'global' AND period_start = ? FOR UPDATE", [period]);
     await connection.execute('SELECT scope_key FROM ai_budget_periods WHERE scope_key = ? AND period_start = ? FOR UPDATE', [reservation.scopeKey, period]);
-    const [rows] = await connection.execute<any[]>('SELECT *,settlement_lease_until>UTC_TIMESTAMP(3) AS settlement_lease_valid FROM ai_usage_reservations WHERE reservation_key = ? AND scope_key = ? FOR UPDATE', [reservation.reservationKey, reservation.scopeKey]);
+    const [rows] = await connection.execute<any[]>('SELECT *,settlement_lease_until>UTC_TIMESTAMP(3) AS settlement_lease_valid, created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE) AS manual_review_due FROM ai_usage_reservations WHERE reservation_key = ? AND scope_key = ? FOR UPDATE', [reservation.reservationKey, reservation.scopeKey]);
     const row = rows[0];
     if(!row)throw new AiBudgetError('reservation_conflict');
+    if (evidence && row.state === 'reserved' && !Number(row.manual_review_due)) throw new AiBudgetError('reservation_conflict');
     if(recovery && (row.request_id!==recovery.requestId || row.settlement_token!==recovery.token || !row.settlement_lease_valid
       || row.usage_received_at===null || Number(row.usage_prompt_tokens)!==usage.prompt_tokens || Number(row.usage_completion_tokens)!==usage.completion_tokens)) {
       throw new AiBudgetError('reservation_conflict');
@@ -201,6 +205,7 @@ export async function settleAiBudget(reservation: Pick<Reservation, 'reservation
       : pricedMicroUsd(usage.prompt_tokens, usage.completion_tokens, row.input_rate, row.output_rate, row.flat_micro_usd);
     if (row.state === 'settled') {
       if (integer(row.settled_micro_usd) !== amount) throw new AiBudgetError('reservation_conflict');
+      if (evidence && (Number(row.reconciled_by) !== evidence.actorId || row.reconciliation_reference !== evidence.reference)) throw new AiBudgetError('reservation_conflict');
     } else {
       if (!['reserved', 'unknown'].includes(row.state)) throw new AiBudgetError('reservation_conflict');
       // Record real usage even if a provider violated the quote; later reservations will stop.

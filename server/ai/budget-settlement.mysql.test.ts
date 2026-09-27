@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { getPool,closeDb } from '../db/connection';
+import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { reserveAiBudget,settleAiBudget,withAiBudget,type AiBudgetAttempt } from './budget-ledger';
 import { persistAiProviderUsage,settleAiProviderUsage,claimAiSettlements,recoverAiSettlement,runAiSettlementBatch } from './budget-settlement';
 
@@ -135,9 +136,14 @@ describe.skipIf(!process.env.DATABASE_URL)('durable provider usage settlement on
   it.each(['before receipt','after receipt','after claim'])('preserves superadmin evidence settled %s',async when=>{
     if(when!=='before receipt')await persistAiProviderUsage(attempt,usage);
     let claim:any;if(when==='after claim'){await due();[claim]=await claimAiSettlements();}
-    await settleAiBudget(attempt,{prompt_tokens:0,completion_tokens:0},{billedMicroUsd:17,reference:'provider-invoice-fixture',actorId:99});
+    const admin = await createDisposableMerchant('budget-review');
+    try {
+      await query("UPDATE users SET role='admin' WHERE id=?", [admin.userId]);
+      await query("UPDATE ai_usage_reservations SET created_at=DATE_SUB(UTC_TIMESTAMP(), INTERVAL 16 MINUTE) WHERE reservation_key=?", [attempt.reservationKey]);
+      await settleAiBudget(attempt,{prompt_tokens:0,completion_tokens:0},{billedMicroUsd:17,reference:'provider-invoice-fixture',actorId:admin.userId});
+    } finally { await cleanupDisposableMerchants([admin.userId]); }
     await settleAiProviderUsage(attempt,usage);if(claim)expect(await recoverAiSettlement(claim)).toBe('skipped');
-    expect(await row()).toMatchObject({state:'settled',settled_micro_usd:17,reconciled_by:99,reconciliation_reference:'provider-invoice-fixture',settlement_next_at:null,settlement_token:null});
+    expect(await row()).toMatchObject({state:'settled',settled_micro_usd:17,reconciled_by:admin.userId,reconciliation_reference:'provider-invoice-fixture',settlement_next_at:null,settlement_token:null});
     expect((await amounts())[0].spent_micro_usd).toBe(17);
   });
   it('settles the original UTC period after the day changes',async()=>{

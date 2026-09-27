@@ -8,7 +8,7 @@ const onlyEvaluation = process.argv.includes('--only-evaluation');
 const onlyInspection = process.argv.includes('--only-inspection');
 const onlyCohort = process.argv.includes('--only-cohort');
 const onlyProtocol = process.argv.includes('--only-protocol');
-const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(onlyReplyReview ? '.tmp/reply-review-ui-targeted' : onlyLaunch ? '.tmp/launch-ui-targeted' : onlyPlanningReview ? '.tmp/planning-review-ui-targeted' : onlyInspection ? '.tmp/inspection-ui-targeted' : onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui');
+const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(process.env.SALES_BRAIN_UI_OUTPUT || (onlyReplyReview ? '.tmp/reply-review-ui-targeted' : onlyLaunch ? '.tmp/launch-ui-targeted' : onlyPlanningReview ? '.tmp/planning-review-ui-targeted' : onlyInspection ? '.tmp/inspection-ui-targeted' : onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui'));
 async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
   await esbuild.build({ entryPoints: [path.resolve('scripts/testing/fixtures/brain-ui-entry.tsx')], outfile: path.join(dir, 'fixture.js'), bundle: true, platform: 'browser', jsx: 'automatic',

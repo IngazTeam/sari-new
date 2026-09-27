@@ -159,12 +159,14 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic AI budget on disposable MySQL
     await markAiBudgetUnknown(reservation);
     const evidence = { reservationKey: reservation.reservationKey, billedUsd: 0.000007,
       reference: 'provider-statement-fixture-1', confirmedProviderEvidence: true as const };
-    await reconcileAiReservation(evidence, 77);
-    await reconcileAiReservation(evidence, 77);
+    const admin = await createDisposableMerchant('budget-admin'); users.push(admin.userId);
+    await (await getPool())!.execute("UPDATE users SET role='admin' WHERE id=?", [admin.userId]);
+    await reconcileAiReservation(evidence, admin.userId);
+    await reconcileAiReservation(evidence, admin.userId);
     expect(await getAiBudgetStatus(input.merchantId)).toMatchObject({ used: 7, globalUsed: 7 });
     const [rows] = await (await getPool())!.execute<any[]>('SELECT request_id, reconciled_by, reconciliation_reference, state FROM ai_usage_reservations WHERE reservation_key=?', [reservation.reservationKey]);
-    expect(rows[0]).toMatchObject({ request_id: input.requestId, reconciled_by: 77, reconciliation_reference: evidence.reference, state: 'settled' });
-    await expect(reconcileAiReservation({ ...evidence, billedUsd: 0.000008 }, 77)).rejects.toMatchObject({ code: 'reservation_conflict' });
+    expect(rows[0]).toMatchObject({ request_id: input.requestId, reconciled_by: admin.userId, reconciliation_reference: evidence.reference, state: 'settled' });
+    await expect(reconcileAiReservation({ ...evidence, billedUsd: 0.000008 }, admin.userId)).rejects.toMatchObject({ code: 'reservation_conflict' });
   });
   it('initializes UTC on physical connections before SQL is executed', async () => {
     const [rows] = await (await getPool())!.execute<any[]>('SELECT @@session.time_zone AS zone, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW()) AS drift');
