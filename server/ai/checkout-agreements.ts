@@ -10,6 +10,7 @@ import { invoiceApprovalSchema, type InvoiceMarginProof } from '../../shared/che
 import { checkoutCouponCommand, calculateCheckoutDiscount, type CheckoutDiscount } from '../../shared/checkout-discount';
 import { readCheckoutDiscount, sameCheckoutDiscount, consumeCheckoutDiscount } from './checkout-discount';
 import { assertSalesOrderFactSchema, recordSalesOrderFact } from './sales-order-facts';
+import { hasCheckoutOfferEvidence } from './checkout-offer-evidence';
 
 // The model proposes identifiers and quantities only. Prices and authority come from SQL.
 export const checkoutSelectionSchema = z.array(z.object({
@@ -83,15 +84,8 @@ export async function assertCheckoutIdentity(connection: PoolConnection, input: 
   return { customerName: conversations[0].customerName || input.customerPhone, content: String(messages[0].content || '') };
 }
 
-export async function wasCheckoutOfferDelivered(connection: PoolConnection, input: CheckoutIdentity, sourceMessageId: number, offerMarker: string) {
-  const [prior] = await connection.execute<any[]>(`SELECT incoming_message_id, reply_text FROM ai_interaction_jobs
-    WHERE merchant_id = ? AND conversation_id = ? AND incoming_message_id < ?
-      AND state IN ('pending', 'processing', 'completed', 'failed') ORDER BY incoming_message_id DESC LIMIT 1`,
-  [input.merchantId, input.conversationId, input.incomingMessageId]);
-  if (prior[0]?.incoming_message_id !== sourceMessageId || !String(prior[0]?.reply_text).includes(offerMarker)) return false;
-  const [outgoing] = await connection.execute<any[]>(`SELECT id, content, aiResponse FROM messages
-    WHERE conversationId = ? AND direction = 'outgoing' AND id < ? ORDER BY id DESC LIMIT 1`, [input.conversationId, input.incomingMessageId]);
-  return !(outgoing[0]?.id > sourceMessageId && (!outgoing[0].aiResponse || !String(outgoing[0].content).includes(offerMarker)));
+export async function wasCheckoutOfferDelivered(connection: PoolConnection, input: CheckoutIdentity, sourceMessageId: number, expectedOfferText: string) {
+  return hasCheckoutOfferEvidence(connection,input,sourceMessageId,expectedOfferText);
 }
 async function readSnapshot(connection: PoolConnection, merchantId: number, selection: CheckoutSelection): Promise<CatalogSnapshot> {
   const validated = checkoutSelectionSchema.parse(selection);
@@ -138,7 +132,7 @@ export async function prepareCheckoutQuote(input: CheckoutIdentity, selection: C
     let snapshot:Snapshot = await readSnapshot(connection, input.merchantId, selection);
     const prior=previous[0];
     if(prior&&!prior.order_id&&!prior.external_provider&&['sent','viewed'].includes(prior.status)
-      &&await wasCheckoutOfferDelivered(connection,input,prior.source_message_id,marker(prior.id))) {
+      &&await wasCheckoutOfferDelivered(connection,input,prior.source_message_id,quotationText(prior.id,parseSnapshot(prior.checkout_snapshot)))) {
       const old=parseSnapshot(prior.checkout_snapshot);
       if(old.version===2) snapshot=await discountSnapshot(connection,input,snapshot,old.discount.code);
     }
@@ -177,7 +171,7 @@ export async function prepareCheckoutCouponQuote(input:CheckoutIdentity):Promise
       const snapshot=parseSnapshot(quote.checkout_snapshot);return {kind:'quote',quotationId:quote.id,snapshot,text:quotationText(quote.id,snapshot)};
     }
     if(!quote||quote.order_id||quote.external_provider||!quote.valid||!['sent','viewed'].includes(quote.status)
-      ||!await wasCheckoutOfferDelivered(connection,input,quote.source_message_id,marker(quote.id)))return {kind:'clarify',
+      ||!await wasCheckoutOfferDelivered(connection,input,quote.source_message_id,quotationText(quote.id,parseSnapshot(quote.checkout_snapshot))))return {kind:'clarify',
         text:'أحتاج ملخص منتجات وكميات حاليًا لم يُسجل كطلب بعد. تغيير طلب مسجل يحتاج مراجعة؛ لن أعدّل مبلغه أو أكرر تسجيله.'};
     const old=parseSnapshot(quote.checkout_snapshot),catalog=await readSnapshot(connection,input.merchantId,old.items.map(i=>({productId:i.productId,variantId:i.variantId,quantity:i.quantity})));
     let snapshot:Snapshot=catalog;
@@ -204,7 +198,7 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
     }
     if (!isShortAffirmation(source.content) && !/^(?:اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/.test(normalizeCustomerText(source.content))) return { kind: 'clarify', text: 'اذكر المنتجات والكميات أو التعديل المطلوب لأعرض لك ملخصاً جديداً قبل التسجيل.' };
     if (!quote.valid || !['sent', 'viewed'].includes(quote.status) || quote.source_message_id >= input.incomingMessageId) return { kind: 'changed', text: 'هذا العرض لم يعد متاحاً للتأكيد. أرسل المنتجات والكميات لأجهز ملخصاً محدثاً.' };
-    if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, marker(quotationId))) return {
+    if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, quotationText(quotationId,parseSnapshot(quote.checkout_snapshot)))) return {
       kind: 'clarify', text: 'أحتاج موافقتك على آخر ملخص منتجات وكميات أُرسل لك قبل تسجيل الطلب.',
     };
     const old = parseSnapshot(quote.checkout_snapshot);
@@ -213,12 +207,23 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
       await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quotationId]);
       return { kind: 'changed', text: 'تغيرت تفاصيل العرض أو توفر المنتج أو صلاحية الكود. لم يُنشأ طلب؛ نحتاج ملخصاً محدثاً وموافقتك عليه.' };
     }
+    // Catalog/coupon locks can wait. Re-read consent and its delivered terms after
+    // that wait, and hold the consent row until the agreement commits.
+    const [consents] = await connection.execute<any[]>(`SELECT content FROM messages
+      WHERE id=? AND conversationId=? AND direction='incoming' FOR SHARE`, [input.incomingMessageId,input.conversationId]);
+    const finalSource = await assertCheckoutIdentity(connection,input);
+    if (consents.length!==1 || consents[0].content!==source.content || finalSource.content!==source.content
+      || !await wasCheckoutOfferDelivered(connection,input,quote.source_message_id,quotationText(quotationId,old)))
+      return {kind:'clarify',text:'تغير سياق الموافقة. أحتاج ملخصاً محدثاً وموافقتك عليه قبل تسجيل الطلب.'};
     const [order] = await connection.execute<any>(`INSERT INTO orders (merchantId, customerPhone, customerName, items, totalAmount, currency, status, notes, checkout_review_required,discountCode,checkout_subtotal_minor,checkout_discount_minor)
       VALUES (?, ?, ?, ?, ?, 'SAR', 'pending', ?, 1,?,?,?)`, [input.merchantId, input.customerPhone, source.customerName,
       JSON.stringify(old.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, quantity: i.quantity, price: i.price }))),
       old.totalMinor, `Quotation ${marker(quotationId)}: agreed product amount; billing/tax/delivery and coupon availability require review before payment. Stock not reserved.`,
       old.version===2?old.discount.code:null,old.version===2?old.catalogSubtotalMinor:null,old.version===2?old.discount.amountMinor:null]);
-    await connection.execute(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, order_id = ? WHERE id = ?`, [input.incomingMessageId, order.insertId, quotationId]);
+    const [accepted] = await connection.execute<any>(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, order_id = ?
+      WHERE id = ? AND status IN ('sent','viewed') AND order_id IS NULL AND consent_message_id IS NULL
+        AND offer_expires_at > UTC_TIMESTAMP(3)`, [input.incomingMessageId, order.insertId, quotationId]);
+    if (accepted.affectedRows!==1) throw Error('Checkout agreement expired before commitment');
     await recordSalesOrderFact(connection,input.merchantId,quotationId,'local_agreement');
     return { kind: 'order', quotationId, orderId: order.insertId, text: orderText(order.insertId), reused: false };
   });

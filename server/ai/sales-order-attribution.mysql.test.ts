@@ -6,7 +6,7 @@ import { seedApprovedSalesPlan } from '../tests/helpers/sales-launch';
 import { prepareSalesExperimentLaunch,authorizeSalesExperimentLaunch,revokeSalesExperimentLaunch } from './sales-experiment-launch';
 import { assignSalesExperimentCustomer } from './sales-experiment-assignment';
 import { prepareCheckoutQuote,acceptCheckoutQuote,type CheckoutIdentity } from './checkout-agreements';
-import { stageInteraction,finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { readSalesOrderFact,readSalesOrderAttribution } from './sales-order-fact-contract';
 import { attributeSalesOrderFact,runSalesOrderAttributionBatch,salesOrderAttributionHealth,SalesOrderHealthAccessDenied } from './sales-order-attribution';
@@ -37,9 +37,10 @@ describe.skipIf(!process.env.DATABASE_URL)('prospective agreement order attribut
   async function create(){
     await incoming('أريد شراء سماعة واحدة');const q=await prepareCheckoutQuote(identity,[{productId,variantId:null,quantity:1}]);if(q.kind!=='quote')throw Error('Quote missing');
     const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:q.text});
-    await stageInteraction(reply);await finishInteractionDelivery(reply,true);await incoming('نعم');
+    await stageCheckoutOfferFixture(reply);await incoming('نعم');
+    const deliveries=await query('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId]);
     const order=await acceptCheckoutQuote(identity,q.quotationId);if(order.kind!=='order')throw Error('Order missing '+order.kind);
-    return {order,q,consent:{...identity}};
+    return {order,q,consent:{...identity},deliveries};
   }
   beforeEach(async()=>{
     state.unix=null;state.observedUnix=null;users=[];owner=await createDisposableMerchant('order-itt');users.push(owner.userId);reviewer=await createDisposableMerchant('order-review');users.push(reviewer.userId);
@@ -57,11 +58,12 @@ describe.skipIf(!process.env.DATABASE_URL)('prospective agreement order attribut
   });
   afterEach(async()=>{state.unix=null;state.observedUnix=null;vi.restoreAllMocks();vi.unstubAllGlobals();await cleanupDisposableMerchants(users);});afterAll(closeDb);
   it('freezes consent and canonical order without payment, exposure or revenue',async()=>{
-    const {order,q}=await create(),[row]=await facts(),f=readSalesOrderFact(row);expect(await attribute()).toBe('attributed');
+    const {order,q,deliveries}=await create(),[row]=await facts(),f=readSalesOrderFact(row);expect(await attribute()).toBe('attributed');
     expect(f.snapshot).toMatchObject({quotationId:q.quotationId,localOrderId:order.orderId,customerKey:assignment.snapshot.customerKey,quotedAmountMinor:23000,paymentEvidence:'not_measured'});
     expect(readSalesOrderAttribution((await facts())[0])).toMatchObject({assignmentId:assignment.assignmentId,outcome:'order_created_only',revenueMinor:null,winner:null});
     expect((await query('SELECT payment_status FROM orders WHERE id=?',[order.orderId]))[0].payment_status).toBe('unpaid');
-    for(const table of ['ai_sales_payment_facts','ai_sales_experiment_exposures','order_payments','whatsapp_message_deliveries'])expect(await query(`SELECT id FROM ${table} WHERE merchant_id=?`,[owner.merchantId])).toHaveLength(0);
+    for(const table of ['ai_sales_payment_facts','ai_sales_experiment_exposures','order_payments'])expect(await query(`SELECT id FROM ${table} WHERE merchant_id=?`,[owner.merchantId])).toHaveLength(0);
+    expect(await query('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId])).toEqual(deliveries);
     expect(JSON.stringify(row)).not.toContain(phone);expect(fetch).not.toHaveBeenCalled();
   });
   it('replay and competing projection workers keep one immutable fact',async()=>{

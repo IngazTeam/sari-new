@@ -13,7 +13,7 @@ import { applyTapOrderPaymentState } from '../payment/order-payment-state';
 import { prepareZidCheckout,acceptZidCheckout } from './zid-checkout-agreements';
 import { reconcileZidCheckout } from './zid-checkout-reconciliation';
 import { buildReplyPlan } from '../messaging/reply-plan';
-import { stageInteraction,finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 const provider=vi.hoisted(()=>({settings:vi.fn(),create:vi.fn(),view:vi.fn()}));
 vi.mock('../db_zid',()=>({default:{getZidSettings:provider.settings}}));
 vi.mock('../integrations/zid/zidClient',()=>({ZidClient:class {
@@ -63,7 +63,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable Zid order links and Tap evid
     const identity={merchantId:owner.merchantId,customerPhone:phone,conversationId:c.insertId,incomingMessageId:m.insertId};
     const text=await prepareZidCheckout(identity,{products:[{name:'سماعة',quantity:2,sku:'SKU1',zidProductId:'Z1'}],customerName:'Synthetic',address:{line1:'Synthetic Street',city:'Riyadh',countryCode:'SA'}});
     const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(m.insertId),to:phone,text});
-    await stageInteraction(reply);await finishInteractionDelivery(reply,true);
+    await stageCheckoutOfferFixture(reply);
     const consent=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming','نعم')",[c.insertId]);
     const [quote]=await query('SELECT id FROM sales_quotations WHERE merchant_id=?',[owner.merchantId]);
     if(mode==='reconciliation')provider.create.mockRejectedValueOnce(Error('Synthetic unknown POST'));

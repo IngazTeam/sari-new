@@ -184,7 +184,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     }
     if (!isOrderConfirmation(source.content)) return { text: 'لم أعتمد هذا الرد كتأكيد. اذكر التعديل المطلوب للمنتجات أو الكمية أو العنوان.' };
     if (!quote.valid || !['sent', 'viewed'].includes(quote.status) || quote.source_message_id >= input.incomingMessageId) return { text: changed };
-    if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, marker(quoteId))) return { text: 'أحتاج موافقتك على آخر ملخص طلب أُرسل لك، قبل إنشاء الطلب.' };
+    if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, quoteText(quoteId,decode<Snapshot>(quote.external_snapshot)))) return { text: 'أحتاج موافقتك على آخر ملخص طلب أُرسل لك، قبل إنشاء الطلب.' };
     return { snapshot: decode<Snapshot>(quote.external_snapshot), sourceMessageId: quote.source_message_id, consentContent: source.content };
   });
   if ('text' in initial) return initial.text!;
@@ -210,7 +210,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     if (q.consent_message_id != null || q.order_id != null || q.execution_attempt_id != null || q.execution_started_at != null
       || q.external_result != null || q.external_order_key != null || q.external_reconciliation != null || Number(q.projection_pending) !== 0) return { text: changed };
     if (!q.valid || !['sent', 'viewed'].includes(q.status)) return { text: changed };
-    if (!await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, marker(quoteId))) return { text: changed };
+    if (!await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, quoteText(quoteId,initial.snapshot))) return { text: changed };
     let fresh: Snapshot;
     try { fresh = await snapshotFor(connection, input.merchantId, initial.snapshot.selection, currentOptions); }
     catch { await connection.execute("UPDATE sales_quotations SET status = 'expired' WHERE id = ?", [quoteId]); return { text: changed }; }
@@ -225,7 +225,7 @@ export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number
     if (consents.length !== 1 || String(consents[0].content || '') !== initial.consentContent) return { text: changed };
     const finalSource = await assertCheckoutIdentity(connection, input);
     if (finalSource.content !== initial.consentContent || !isOrderConfirmation(finalSource.content)
-      || !await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, marker(quoteId))) return { text: changed };
+      || !await wasCheckoutOfferDelivered(connection, input, initial.sourceMessageId!, quoteText(quoteId,initial.snapshot))) return { text: changed };
     await providerContext.assertCurrent(connection);
     const attemptId = randomUUID();
     const [claim] = await connection.execute<any>(`UPDATE sales_quotations SET status = 'accepted', consent_message_id = ?, execution_state = 'processing',

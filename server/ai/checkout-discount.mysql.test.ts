@@ -2,7 +2,7 @@ import {beforeEach,afterEach,afterAll,describe,it,expect,vi} from 'vitest';
 import {getPool,closeDb} from '../db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from '../tests/helpers/disposable-merchant';
 import {prepareCheckoutQuote,prepareCheckoutCouponQuote,acceptCheckoutQuote,approveCheckoutInvoice,type CheckoutIdentity,type CheckoutResult} from './checkout-agreements';
-import {stageInteraction,finishInteractionDelivery} from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import {buildReplyPlan} from '../messaging/reply-plan';
 import {getMarginPolicy,updateMarginPolicy} from './checkout-margin-policy';
 import {previewCheckoutMargin} from './checkout-margin';
@@ -18,7 +18,7 @@ describe.skipIf(!process.env.DATABASE_URL)('agreed local coupon redemption on My
   const query=async(sql:string,args:any[]=[]) => (await(await getPool())!.execute<any>(sql,args))[0];
   const incoming=async(content:string)=>{const row=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming',?)",[identity.conversationId,content]);identity={...identity,incomingMessageId:row.insertId};return identity;};
   const asQuote=(r:CheckoutResult)=>{if(r.kind!=='quote')throw Error(r.text);return r;};
-  const deliver=async(quote:Extract<CheckoutResult,{kind:'quote'}>)=>{const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:quote.text});await stageInteraction(reply);await finishInteractionDelivery(reply,true);};
+  const deliver=async(quote:Extract<CheckoutResult,{kind:'quote'}>)=>{const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:quote.text});await stageCheckoutOfferFixture(reply);};
   const coupon=async(command='طبق الكود LOCAL10')=>{await incoming(command);const quote=asQuote(await prepareCheckoutCouponQuote(identity));await deliver(quote);return quote;};
   const accept=async(quote:Extract<CheckoutResult,{kind:'quote'}>)=>{await incoming('نعم');const result=await acceptCheckoutQuote(identity,quote.quotationId);if(result.kind!=='order')throw Error(result.text);return result.orderId;};
   const stored=async(orderId:number)=>(await query('SELECT * FROM orders WHERE id=?',[orderId]))[0];

@@ -3,7 +3,7 @@ import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { getPool,closeDb } from '../db/connection';
 import { createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { prepareCheckoutQuote,acceptCheckoutQuote,type CheckoutIdentity } from './checkout-agreements';
-import { stageInteraction,finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { applyTapOrderPaymentState } from '../payment/order-payment-state';
 import { inspectSalesOrderReport,SalesOrderReportAccessDenied,SalesOrderReportNotReady } from './sales-order-report';
@@ -27,7 +27,7 @@ describe.skipIf(!process.env.DATABASE_URL)('consistent aggregate sales report on
   async function create(){
     await incoming('أريد شراء واحدة');const q=await prepareCheckoutQuote(identity,[{productId,variantId:null,quantity:1}]);if(q.kind!=='quote')throw Error('Quote missing');
     const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:q.text});
-    await stageInteraction(reply);await finishInteractionDelivery(reply,true);await incoming('نعم');
+    await stageCheckoutOfferFixture(reply);await incoming('نعم');
     const o=await acceptCheckoutQuote(identity,q.quotationId);if(o.kind!=='order')throw Error('Order missing');return {orderId:o.orderId,quotationId:q.quotationId};
   }
   async function pay(orderId:number){

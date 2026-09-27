@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
-import { stageInteraction, finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { prepareZidCheckout, acceptZidCheckout, handleZidCheckout } from './zid-checkout-agreements';
 import type { CheckoutIdentity } from './checkout-agreements';
@@ -56,7 +56,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     const text = await prepareZidCheckout(identity, selection());
     const [quote] = await quotes(); expect(text).toContain(`[ZQ-${quote.id}]`);
     const reply = buildReplyPlan({ ...identity, instanceId: 1, providerAccount: 'fixture', eventId: String(identity.incomingMessageId), to: phone, text });
-    await stageInteraction(reply); if (delivered) await finishInteractionDelivery(reply, true);
+    await stageCheckoutOfferFixture(reply, delivered);
     return quote;
   }
   async function unknown() {
@@ -255,7 +255,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     mocks.settings.mockResolvedValue({id:settings.id,merchantId:fixture.merchantId,isActive:1,storeId:store,accessToken:'fixture-only',managerToken:'fixture-only'});
     mocks.create.mockResolvedValue({order:{...response().order,store_id:Number(store)}});
     identity=await incoming('أريد شراء سماعة أخرى');const text=await prepareZidCheckout(identity,selection()),second=(await quotes()).at(-1);
-    const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text});await stageInteraction(reply);await finishInteractionDelivery(reply,true);
+    const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text});await stageCheckoutOfferFixture(reply);
     const consent=await incoming();await acceptZidCheckout(consent,second.id);await acceptZidCheckout(consent,second.id);
     expect(await orderFacts()).toHaveLength(kind==='same'?1:2);expect((await quotes()).at(-1).execution_state).toBe(kind==='same'?'unknown':'succeeded');
     if(kind==='different')expect((await orderFacts())[1].order_key).not.toBe(first.order_key);expect(mocks.create).toHaveBeenCalledTimes(2);
@@ -457,6 +457,17 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid saved agreement adversarial SQL 
     if (change === 'newer message') await incoming('لا أريد الشراء');
     await acceptZidCheckout(consent, q.id).catch(() => undefined);
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it.each(['receipt','projection','consent'])('rechecks offer %s after slow provider reads and never creates an external order', async attack => {
+    const q=await offer(),consent=await incoming();
+    mocks.shipping.mockImplementationOnce(async()=>{
+      if(attack==='receipt')await query('DELETE FROM whatsapp_message_deliveries WHERE merchant_id=?',[fixture.merchantId]);
+      if(attack==='projection')await query("UPDATE messages SET content=CONCAT(content,' هل تفضل الاتصال؟') WHERE conversationId=? AND direction='outgoing'",[identity.conversationId]);
+      if(attack==='consent')await query("UPDATE messages SET content='لا أريد الشراء' WHERE id=?",[consent.incomingMessageId]);
+      return {shipping_methods:[shipping]};
+    });
+    await acceptZidCheckout(consent,q.id);
+    expect(mocks.create).not.toHaveBeenCalled();expect((await quotes())[0].execution_state).toBe('ready');
   });
   it('rechecks takeover after slow provider reads and before claiming execution', async () => {
     const q = await offer(), consent = await incoming();

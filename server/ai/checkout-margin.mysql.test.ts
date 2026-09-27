@@ -4,7 +4,7 @@ import { createDisposableMerchant,cleanupDisposableMerchants } from '../tests/he
 import { prepareCheckoutQuote,acceptCheckoutQuote,approveCheckoutInvoice,type CheckoutIdentity } from './checkout-agreements';
 import { getMarginPolicy,updateMarginPolicy } from './checkout-margin-policy';
 import { previewCheckoutMargin, getCheckoutMarginException } from './checkout-margin';
-import { stageInteraction,finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
 import { issueCanonicalOrderPaymentLink } from '../payment/order-payment-link';
 import type { InvoiceMarginProof } from '../../shared/checkout-margin';
@@ -32,7 +32,7 @@ describe.skipIf(!process.env.DATABASE_URL)('local invoice margin authority on My
   async function makeOrder(variantId:number|null=null){
     const quote=await prepareCheckoutQuote(identity,[{productId,variantId,quantity:1}]);if(quote.kind!=='quote')throw Error('Missing quote');quotationId=quote.quotationId;
     const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:identity.customerPhone,text:quote.text});
-    await stageInteraction(reply);await finishInteractionDelivery(reply,true);
+    await stageCheckoutOfferFixture(reply);
     const yes=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming','نعم')",[identity.conversationId]);
     const result=await acceptCheckoutQuote({...identity,incomingMessageId:yes.insertId},quotationId);if(result.kind!=='order')throw Error('Missing order');orderId=result.orderId;
   }

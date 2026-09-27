@@ -3,7 +3,7 @@ import {beforeEach,afterEach,afterAll,describe,it,expect,vi} from 'vitest';
 import {getPool,closeDb} from '../db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from '../tests/helpers/disposable-merchant';
 import {prepareCheckoutQuote,prepareCheckoutCouponQuote,acceptCheckoutQuote,approveCheckoutInvoice,type CheckoutIdentity,type CheckoutResult} from './checkout-agreements';
-import {stageInteraction,finishInteractionDelivery} from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import {buildReplyPlan} from '../messaging/reply-plan';
 import {issueCanonicalOrderPaymentLink} from '../payment/order-payment-link';
 import {createDurableOrderCheckout} from '../payment/order-checkout-attempts';
@@ -18,7 +18,7 @@ describe.skipIf(!process.env.DATABASE_URL)('guarded coupon use release on MySQL'
   const query=async(sql:string,args:any[]=[]) => (await(await getPool())!.execute<any>(sql,args))[0];
   const incoming=async(content:string)=>{const row=await query("INSERT INTO messages (conversationId,direction,content) VALUES (?,'incoming',?)",[identity.conversationId,content]);identity={...identity,incomingMessageId:row.insertId};};
   const quote=(r:CheckoutResult)=>{if(r.kind!=='quote')throw Error(r.text);return r;};
-  const deliver=async(q:Extract<CheckoutResult,{kind:'quote'}>)=>{const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:q.text});await stageInteraction(reply);await finishInteractionDelivery(reply,true);};
+  const deliver=async(q:Extract<CheckoutResult,{kind:'quote'}>)=>{const reply=buildReplyPlan({...identity,instanceId:1,providerAccount:'fixture',eventId:String(identity.incomingMessageId),to:phone,text:q.text});await stageCheckoutOfferFixture(reply);};
   const prepare=async()=>{await incoming('أريد شراء 3 سماعات');await deliver(quote(await prepareCheckoutQuote(identity,[{productId,variantId:null,quantity:3}])));
     await incoming('طبق الكود LOCAL10');const q=quote(await prepareCheckoutCouponQuote(identity));await deliver(q);await incoming('نعم');const order=await acceptCheckoutQuote(identity,q.quotationId);if(order.kind!=='order')throw Error(order.text);return order.orderId;};
   const approve=(id:number)=>approveCheckoutInvoice({merchantId:owner.merchantId,orderId:id,actorUserId:owner.userId,expectedAmountMinor:26998,totalIsFinal:true});
@@ -44,6 +44,7 @@ describe.skipIf(!process.env.DATABASE_URL)('guarded coupon use release on MySQL'
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants([owner.userId,other.userId]);});afterAll(closeDb);
 
   it('releases exactly one use after cancellation, preserving invoice and redemption history',async()=>{
+    const deliveries=await query('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId]);
     expect((await view())?.blocker).toBe('order');await cancel();const before=await query('SELECT * FROM checkout_discount_redemptions WHERE order_id=?',[orderId]);
     expect(before[0].release_policy_version).toBe(1);expect((await view())?.state).toBe('eligible');const proof=await input();
     expect(await releaseCheckoutDiscount(owner.merchantId,owner.userId,proof)).toEqual({released:true,alreadyReleased:false});
@@ -53,7 +54,7 @@ describe.skipIf(!process.env.DATABASE_URL)('guarded coupon use release on MySQL'
     expect((await query('SELECT status,totalAmount,payment_status,checkout_discount_released,paymentUrl FROM orders WHERE id=?',[orderId]))[0]).toEqual({status:'cancelled',totalAmount:26998,payment_status:'unpaid',checkout_discount_released:1,paymentUrl:null});
     expect((await query('SELECT status,is_active FROM payment_links WHERE id=?',[link.id]))[0]).toEqual({status:'disabled',is_active:0});
     expect((await view())?.state).toBe('released');expect(tap.postTapCharge).not.toHaveBeenCalled();expect(tap.retrieveTapCharge).not.toHaveBeenCalled();
-    expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId])).toHaveLength(0);
+    expect(await query('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?',[owner.merchantId])).toEqual(deliveries);
   });
   it('allows the released capacity to fund a new separately consented order without replaying the old one',async()=>{
     await query('UPDATE discount_codes SET maxUses=1 WHERE id=?',[couponId]);await cancel();await release();const next=await prepare();await approve(next);

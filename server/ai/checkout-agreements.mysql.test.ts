@@ -3,7 +3,7 @@ import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { prepareCheckoutQuote, acceptCheckoutQuote, approveCheckoutInvoice, type CheckoutIdentity, type CheckoutResult, checkoutSelectionSchema } from './checkout-agreements';
 import { issueCanonicalOrderPaymentLink } from '../payment/order-payment-link';
-import { stageInteraction, finishInteractionDelivery } from './interaction-jobs';
+import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
 
 describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and consent', () => {
@@ -30,8 +30,7 @@ describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and con
     const result = await prepareCheckoutQuote(identity, selection());
     expect(result.kind).toBe('quote'); const quote = result as Extract<CheckoutResult, {kind:'quote'}>;
     const reply = buildReplyPlan({ ...identity, instanceId: 1, providerAccount: 'fixture', eventId: String(identity.incomingMessageId), to: phone, text: quote.text });
-    await stageInteraction(reply);
-    if (accepted) await finishInteractionDelivery(reply, true);
+    await stageCheckoutOfferFixture(reply, accepted);
     return quote;
   }
   it('persists quantities, exact minor money and compatible major-unit quotation fields before creating any order', async () => {
@@ -106,7 +105,7 @@ describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and con
   it('binds yes to the latest delivered question, not an older purchase offer', async () => {
     const quote = await offer(); const info = await incoming('أرسل التفاصيل');
     const reply = buildReplyPlan({ ...info, instanceId: 1, providerAccount: 'fixture', eventId: String(info.incomingMessageId), to: phone, text: 'هل أشرح لك المواصفات؟' });
-    await stageInteraction(reply); await finishInteractionDelivery(reply, true);
+    await stageCheckoutOfferFixture(reply);
     expect((await acceptCheckoutQuote(await incoming(), quote.quotationId)).kind).toBe('clarify');
     expect(await orders()).toHaveLength(0);
   });
