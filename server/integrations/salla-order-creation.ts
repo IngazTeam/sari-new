@@ -6,6 +6,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { sallaOrderCreateSchema, type SallaOrderIntent, type SallaCreationResult } from '../../shared/salla-order-create';
 import { assertSallaOrderAuthority, type SallaOrderAuthority } from './salla-order-projection';
 import { assertSallaOrderSelection, type SallaProductSelection } from './salla-catalog';
+import { assertSallaCreationEffectsSchema, enqueueSallaCreationEffects } from './salla-creation-effects';
 
 const internalId = z.number().int().positive().max(2147483647);
 const attemptSchema = z.object({ id:internalId, merchantId:internalId, token:z.string().uuid() }).strict();
@@ -20,6 +21,7 @@ function canonical(value: unknown): string {
 }
 export const sallaIntentHash = (input: SallaOrderIntent) => createHash('sha256').update(canonical(input)).digest('hex');
 export async function assertSallaCreationSchema() {
+  await assertSallaCreationEffectsSchema();
   await assertRuntimeSchema('Salla durable order creation',[{table:'salla_order_creations',
     columns:['merchant_id','actor_user_id','request_id','request_hash','attempt_token','state','store_id','connection_id','local_order_id','result_json','error_code','created_at','updated_at'],
     uniqueIndexes:[{name:'salla_creation_request',columns:['merchant_id','request_id']},{name:'salla_creation_order',columns:['local_order_id']}],
@@ -115,4 +117,5 @@ export async function completeSallaCreation(c:PoolConnection,a:SallaCreationAtte
   const [r]=await c.execute<any>(`UPDATE salla_order_creations SET state='completed',local_order_id=?,result_json=?,updated_at=UTC_TIMESTAMP(3)
     WHERE id=? AND merchant_id=? AND attempt_token=? AND state='dispatching'`,[result.orderId,JSON.stringify(result),a.id,a.merchantId,a.token]);
   if(r.affectedRows!==1)throw Error('Creation completion unavailable');
+  await enqueueSallaCreationEffects(c,a.merchantId,a.id,result.orderId);
 }

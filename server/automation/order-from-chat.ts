@@ -18,10 +18,8 @@ import { SallaIntegration } from '../integrations/salla';
 import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
 import { dispatchSallaCreation, type SallaCreationAttempt } from '../integrations/salla-order-creation';
 import {
-  getMerchantById,
   getProductsByMerchantId,
   getSallaConnectionByMerchantId,
-  getUserById,
 } from '../db';
 // import { sendWhatsAppMessage } from '../greenapi-wrapper';
 import { extractDiscountCodeFromMessage } from './discount-system';
@@ -243,24 +241,7 @@ export async function createOrderFromChat(
 
     // Salla owns payment for its order. A separate Tap link would leave the
     // provider's COD balance unpaid and could cause a second collection.
-    // Notify admin about new order
-    try {
-      const { notifyNewOrder } = await import('../_core/emailNotifications');
-      const merchant = await getMerchantById(merchantId);
-      const user = merchant ? await getUserById(merchant.userId) : null;
-      await notifyNewOrder({
-        merchantName: user?.name || merchant?.businessName || 'Unknown',
-        businessName: merchant?.businessName || 'Unknown',
-        orderNumber: order.orderNumber || 'N/A',
-        customerName: customerName,
-        customerPhone: customerPhone,
-        totalAmount: finalAmount / 100, // Convert from halalas to SAR
-        itemsCount: items.length,
-        orderDate: new Date(),
-      });
-    } catch (error) {
-      console.error('Failed to send new order notification:', error);
-    }
+    // Follow-up effects are queued atomically with the saved creation.
 
     return {
       orderId: order.id,

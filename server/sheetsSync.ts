@@ -15,6 +15,7 @@ import {
   updateProduct,
 } from './db';
 import * as sheets from './_core/googleSheets';
+import { formatMinorMoney } from '../shared/product-money';
 
 /**
  * إعداد Spreadsheet الرئيسي للتاجر
@@ -111,7 +112,7 @@ export async function setupMerchantSpreadsheet(merchantId: number): Promise<{
 /**
  * مزامنة طلب جديد إلى Google Sheets
  */
-export async function syncOrderToSheets(orderId: number): Promise<{
+export async function syncOrderToSheets(orderId: number, guard?: { merchantId:number; beforeSend:()=>Promise<void> }): Promise<{
   success: boolean;
   message: string;
 }> {
@@ -122,6 +123,7 @@ export async function syncOrderToSheets(orderId: number): Promise<{
     }
 
     const merchantId = order.merchantId;
+    if (guard && merchantId !== guard.merchantId) throw new Error('Order merchant changed');
     const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
@@ -158,7 +160,7 @@ export async function syncOrderToSheets(orderId: number): Promise<{
       order.customerName || 'غير محدد',
       order.customerPhone || 'غير محدد',
       productsStr,
-      `${order.totalAmount} ريال`,
+      formatMinorMoney(order.totalAmount),
       translateOrderStatus(order.status),
       order.trackingNumber || '-',
       order.notes || '-'
@@ -169,7 +171,16 @@ export async function syncOrderToSheets(orderId: number): Promise<{
       merchantId,
       spreadsheetId,
       'الطلبات!A:J',
-      rowData
+      rowData,
+      guard ? { raw:true, beforeSend:async()=>{
+        const current=await getGoogleIntegration(merchantId,'sheets');
+        const identity=(value:string|null)=>{ const credentials=JSON.parse(value||'{}');return credentials.refresh_token||credentials.access_token; };
+        if (!current || !current.isActive || current.id!==integration.id || current.sheetId!==spreadsheetId
+          || !identity(integration.credentials) || identity(current.credentials)!==identity(integration.credentials)) {
+          throw new Error('Sheets connection changed');
+        }
+        await guard.beforeSend();
+      }} : undefined
     );
 
     if (result.success) {
@@ -588,4 +599,3 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
     };
   }
 }
-

@@ -46,6 +46,7 @@ import { installProductionConsoleRedaction } from "../security/log-redaction";
 import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
 import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-receipts";
+import { startSallaCreationEffectsWorker } from "../integrations/salla-creation-effects";
 import { startCalendlyWebhookReceiptWorker } from "../integrations/calendly-webhook-receipts";
 import { startWooCommerceWebhookReceiptWorker } from "../integrations/woocommerce-webhook-receipts";
 import { startCampaignDeliveryWorker } from "../automation/campaign-delivery-outbox";
@@ -704,6 +705,7 @@ async function startServer() {
 
       // Durable Salla webhook effects with leases, retry and persistent replay protection.
       startSallaWebhookReceiptWorker();
+      startSallaCreationEffectsWorker();
 
       // Durable Calendly invitee projection with canonical provider fetches.
       startCalendlyWebhookReceiptWorker();

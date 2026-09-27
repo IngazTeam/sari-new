@@ -279,7 +279,8 @@ export async function appendToSheet(
   merchantId: number,
   spreadsheetId: string,
   range: string,
-  values: any[][]
+  values: any[][],
+  options?: { beforeSend: () => Promise<void>; raw: true }
 ): Promise<{ success: boolean; message: string }> {
   try {
     const auth = await getAuthenticatedClient(merchantId);
@@ -289,10 +290,11 @@ export async function appendToSheet(
 
     const sheets = google.sheets({ version: 'v4', auth });
     
+    await options?.beforeSend();
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: options?.raw ? 'RAW' : 'USER_ENTERED',
       requestBody: {
         values,
       },

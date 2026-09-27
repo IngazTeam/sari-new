@@ -7,8 +7,10 @@
 import { getDb } from "../db";
 import { sendPushNotification } from "./pushNotifications";
 import { sendEmail } from "./emailService";
-import { notificationPreferences, notificationLogs, notificationSettings, merchants } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { notificationPreferences, notificationLogs, notificationSettings, merchants, users } from "../../drizzle/schema";
+import { eq, and, isNotNull } from "drizzle-orm";
+import { z } from 'zod';
+import { formatMinorMoney } from '../../shared/product-money';
 
 export type NotificationType = 
   | 'new_order'
@@ -21,6 +23,32 @@ export type NotificationType =
   | 'custom';
 
 export type NotificationMethod = 'push' | 'email' | 'both';
+
+function escapeNotificationHtml(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character]!);
+}
+
+function notificationEmailUrl(value?: string): string | null {
+  if (!value) return null;
+  try {
+    const base = new URL(process.env.VITE_APP_URL || 'https://sary.live');
+    const target = new URL(value, base);
+    if (!['https:', 'http:'].includes(base.protocol) || base.username || base.password
+      || target.origin !== base.origin || target.username || target.password) return null;
+    return target.href;
+  } catch { return null; }
+}
+
+export async function getMerchantNotificationEmail(merchantId:number) {
+  z.number().int().positive().parse(merchantId);
+  const db=await getDb();if(!db)return null;
+  const [recipient]=await db.select({userId:users.id,email:users.email}).from(merchants)
+    .innerJoin(users,eq(users.id,merchants.userId))
+    .where(and(eq(merchants.id,merchantId),eq(merchants.status,'active'),eq(users.accountStatus,'active'),isNotNull(users.emailVerifiedAt))).limit(1);
+  return recipient&&z.string().email().safeParse(recipient.email).success ? {userId:recipient.userId,email:recipient.email!} : null;
+}
 
 export interface NotificationPayload {
   merchantId: number;
@@ -194,7 +222,7 @@ async function canSendNotification(
 /**
  * إرسال إشعار شامل
  */
-export async function sendNotification(payload: NotificationPayload): Promise<boolean> {
+export async function sendNotification(payload: NotificationPayload, beforeSend?: () => Promise<void>): Promise<boolean> {
   try {
     // التحقق من إمكانية الإرسال
     const { canSend, method } = await canSendNotification(payload.merchantId, payload.type);
@@ -224,6 +252,11 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
     // إرسال الإشعار حسب الطريقة المفضلة
     let pushSuccess = false;
     let emailSuccess = false;
+    const authorize = beforeSend ? async () => {
+      const current = await canSendNotification(payload.merchantId, payload.type);
+      if (!current.canSend || current.method !== method) throw new Error('Notification preference changed');
+      await beforeSend();
+    } : undefined;
 
     if (method === 'push' || method === 'both') {
       try {
@@ -233,7 +266,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
             title: payload.title,
             body: payload.body,
             url: payload.url,
-          }
+          },
+          authorize
         );
         pushSuccess = pushResult.success > 0;
       } catch (error) {
@@ -243,27 +277,27 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
 
     if (method === 'email' || method === 'both') {
       try {
-        // الحصول على بريد التاجر
-        const merchantResult = await db.select().from(merchants)
-          .where(eq(merchants.id, payload.merchantId))
-          .limit(1);
-        const merchant = merchantResult.length > 0 ? merchantResult[0] : null;
-
-        // @ts-ignore
-        if (merchant?.email) {
+        const recipient=await getMerchantNotificationEmail(payload.merchantId);
+        if (recipient) {
+          const detailsUrl = notificationEmailUrl(payload.url);
           emailSuccess = await sendEmail({
-            to: (merchant as any).email,
+            to: recipient.email,
             subject: payload.title,
             html: `
               <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2 style="color: #2563eb;">${payload.title}</h2>
-                <p style="font-size: 16px; line-height: 1.6;">${payload.body}</p>
-                ${payload.url ? `<a href="${payload.url}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">عرض التفاصيل</a>` : ''}
+                <h2 style="color: #2563eb;">${escapeNotificationHtml(payload.title)}</h2>
+                <p style="font-size: 16px; line-height: 1.6;">${escapeNotificationHtml(payload.body)}</p>
+                ${detailsUrl ? `<a href="${escapeNotificationHtml(detailsUrl)}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">عرض التفاصيل</a>` : ''}
               </div>
             `,
             type: 'notification',
             merchantId: payload.merchantId,
             metadata: payload.metadata,
+            beforeSend: async()=>{
+              const current=await getMerchantNotificationEmail(payload.merchantId);
+              if(!current||current.userId!==recipient.userId||current.email!==recipient.email)throw new Error('Notification recipient changed');
+              await authorize?.();
+            },
           });
         }
       } catch (error) {
@@ -298,15 +332,15 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
 /**
  * إرسال إشعار طلب جديد
  */
-export async function notifyNewOrder(merchantId: number, orderId: number, orderTotal: number) {
+export async function notifyNewOrder(merchantId: number, orderId: number, orderTotal: number, beforeSend?: () => Promise<void>) {
   return sendNotification({
     merchantId,
     type: 'new_order',
     title: '🛒 طلب جديد',
-    body: `لديك طلب جديد بقيمة ${orderTotal} ريال`,
-    url: `/merchant/orders/${orderId}`,
+    body: `لديك طلب جديد بقيمة ${formatMinorMoney(orderTotal)}`,
+    url: `/merchant/orders`,
     metadata: { orderId, orderTotal },
-  });
+  }, beforeSend);
 }
 
 /**

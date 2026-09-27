@@ -12,6 +12,7 @@ export interface EmailOptions {
   type?: 'test' | 'notification' | 'invoice' | 'report' | 'custom';
   merchantId?: number;
   metadata?: Record<string, any>;
+  beforeSend?: () => Promise<void>;
 }
 
 /**
@@ -38,6 +39,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     const logId = Number((logResult[0] as any).insertId);
 
     // Send via SMTP2GO API
+    await options.beforeSend?.();
     const response = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
       headers: {

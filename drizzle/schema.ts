@@ -833,6 +833,26 @@ export const sallaProductProjections = mysqlTable('salla_product_projections', {
     AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalProductId},'^[1-9][0-9]{0,19}$','c')`),
 ]);
 
+export const sallaCreationEffects = mysqlTable('salla_creation_effects', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  creationId:int('creation_id').notNull(),localOrderId:int('local_order_id').notNull(),
+  kind:mysqlEnum(['owner_notice','merchant_notice','sheets']).notNull(),contextHash:char('context_hash',{length:64}).notNull(),
+  state:mysqlEnum(['pending','processing','dispatching','accepted','review']).default('pending').notNull(),attempts:int().default(0).notNull(),
+  claimToken:char('claim_token',{length:36}),leaseUntil:datetime('lease_until',{mode:'string',fsp:3}),
+  availableAt:datetime('available_at',{mode:'string',fsp:3}).notNull(),dispatchStartedAt:datetime('dispatch_started_at',{mode:'string',fsp:3}),
+  acceptedAt:datetime('accepted_at',{mode:'string',fsp:3}),lastError:varchar('last_error',{length:64}),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull(),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull(),
+},table=>[uniqueIndex('salla_creation_effect_once').on(table.creationId,table.kind),
+  index('salla_creation_effect_due').on(table.state,table.availableAt,table.id),index('salla_creation_effect_order').on(table.merchantId,table.localOrderId,table.id),
+  check('chk_salla_creation_effect',sql`${table.creationId}>0 AND ${table.localOrderId}>0 AND ${table.attempts} BETWEEN 0 AND 8
+    AND REGEXP_LIKE(${table.contextHash},'^[0-9a-f]{64}$','c') AND (${table.claimToken} IS NULL OR REGEXP_LIKE(${table.claimToken},'^[0-9a-f-]{36}$','c'))
+    AND ((${table.state}='pending' AND ${table.claimToken} IS NULL AND ${table.leaseUntil} IS NULL AND ${table.dispatchStartedAt} IS NULL AND ${table.acceptedAt} IS NULL)
+      OR (${table.state}='processing' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NOT NULL AND ${table.dispatchStartedAt} IS NULL AND ${table.acceptedAt} IS NULL)
+      OR (${table.state}='dispatching' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NOT NULL AND ${table.dispatchStartedAt} IS NOT NULL AND ${table.acceptedAt} IS NULL)
+      OR (${table.state}='accepted' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NULL AND ${table.dispatchStartedAt} IS NOT NULL AND ${table.acceptedAt} IS NOT NULL)
+      OR (${table.state}='review' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NULL AND ${table.acceptedAt} IS NULL))`),
+]);
+
 export const sallaOrderCreations = mysqlTable('salla_order_creations', {
   id:int().autoincrement().primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   actorUserId:int('actor_user_id').notNull(), requestId:char('request_id',{length:36}).notNull(), requestHash:char('request_hash',{length:64}).notNull(),

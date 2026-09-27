@@ -218,7 +218,7 @@ export async function notifyNewOrder(data: {
   totalAmount: number;
   itemsCount: number;
   orderDate: Date;
-}): Promise<boolean> {
+}, beforeSend?: () => Promise<void>): Promise<boolean> {
   const title = "🛒 طلب جديد";
   const content = `
 **طلب جديد تم إنشاؤه**
@@ -235,10 +235,10 @@ export async function notifyNewOrder(data: {
 - الإجمالي: ${data.totalAmount} ريال
 - التاريخ: ${data.orderDate.toLocaleString("ar-SA")}
 
-طلب جديد يعني نمو في المبيعات! 📈
+يمكنك متابعة الطلب من لوحة المتجر.
   `.trim();
 
-  return await notifyOwner({ title, content });
+  return await notifyOwner({ title, content }, beforeSend);
 }
 
 /**

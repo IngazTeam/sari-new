@@ -981,6 +981,13 @@
       "when": 1795392000001,
       "tag": "0139_salla_product_projections",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "5",
+      "when": 1795392000002,
+      "tag": "0140_salla_creation_effects",
+      "breakpoints": true
     }
   ]
 }

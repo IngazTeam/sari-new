@@ -46,7 +46,8 @@ export interface PushNotificationPayload {
 
 export async function sendPushNotification(
   merchantId: number,
-  payload: PushNotificationPayload
+  payload: PushNotificationPayload,
+  beforeSend?: () => Promise<void>
 ): Promise<{ success: number; failed: number }> {
   ensureVapid();
   if (!pushEnabled) {
@@ -83,6 +84,13 @@ export async function sendPushNotification(
           },
         };
 
+        if (beforeSend) {
+          const current = (await getActivePushSubscriptions(merchantId)).find(row => row.id === subscription.id);
+          if (!current || ['endpoint','p256dh','auth'].some(key => current[key] !== subscription[key])) {
+            throw new Error('Push subscription changed');
+          }
+          await beforeSend();
+        }
         await webpush.sendNotification(
           pushSubscription,
           JSON.stringify({

@@ -64,7 +64,8 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
  * bubble up as TRPC errors so callers can fix the payload.
  */
 export async function notifyOwner(
-  payload: NotificationPayload
+  payload: NotificationPayload,
+  beforeSend?: () => Promise<void>
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
@@ -85,6 +86,7 @@ export async function notifyOwner(
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
 
   try {
+    await beforeSend?.();
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {

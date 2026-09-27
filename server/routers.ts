@@ -2218,27 +2218,7 @@ export const appRouter = router({
             result.paymentUrl || ''
           );
 
-        // Auto-sync to Google Sheets if enabled
-        if (!result.replayed) {
-        try {
-          const { syncOrderToSheets } = await import('./sheetsSync');
-          await syncOrderToSheets(result.orderId);
-          console.log(`[Auto-Sync] Order ${result.orderId} synced to Google Sheets`);
-        } catch (error) {
-          console.error('[Auto-Sync] Failed to sync order to Google Sheets:', error);
-          // Don't throw error - just log it
-        }
-
-        // إرسال إشعار بالطلب الجديد
-        try {
-          const { notifyNewOrder } = await import('./_core/notificationService');
-          await notifyNewOrder(merchant.id, result.orderId, order.totalAmount);
-          console.log(`[Notification] New order notification sent for order ${result.orderId}`);
-        } catch (error) {
-          console.error('[Notification] Failed to send new order notification:', error);
-          // Don't throw error - just log it
-        }
-        }
+        // The durable creation transaction owns notification and Sheets tasks.
 
         return {
           success: true,

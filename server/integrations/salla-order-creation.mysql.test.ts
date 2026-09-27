@@ -34,7 +34,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
   it('commits the operation, order and store identity together and replays without another provider call or email',async()=>{
     const first=await run();expect(first.replayed).toBe(false);expect((await ledger()).state).toBe('completed');
-    expect(await run()).toEqual({...first,replayed:true});expect(external.post).toHaveBeenCalledTimes(1);expect(external.notify).toHaveBeenCalledTimes(1);
+    expect(await run()).toEqual({...first,replayed:true});expect(external.post).toHaveBeenCalledTimes(1);expect(external.notify).not.toHaveBeenCalled();
+    expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=? AND state=\'pending\'',[merchant])).toHaveLength(3);
     expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(1);
     const row=await ledger();expect(row.request_hash).toMatch(/^[a-f0-9]{64}$/);expect(JSON.stringify(row)).not.toContain(intent().customerPhone);expect(JSON.stringify(row)).not.toContain('synthetic-token');
   });
