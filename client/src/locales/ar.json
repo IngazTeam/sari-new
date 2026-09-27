@@ -9103,5 +9103,23 @@
     "allFacts": "كل أدلة القبول المسجلة للنشاط",
     "otherCustomers": "أدلة تخص عملاء خارج عينة التجربة",
     "limit": "هذه أدلة قبول نقل، وليست قياسًا مكتملًا للمساعدة البشرية أو المبيعات الناتجة عنها. لا تثبت التسليم أو القراءة أو مؤلف المحتوى. المجموعات والاتصالات القديمة والرسائل اليدوية خارج هذا السجل، وتبقى بوابة قياس المساعدة البشرية مفتوحة."
+  },
+  "workspacePages": {
+    "salla": "ربط متجر سلة",
+    "calendar": "ربط Google Calendar",
+    "sheets": "ربط Google Sheets",
+    "sheetReports": "تقارير Google Sheets",
+    "sheetInventory": "مخزون Google Sheets",
+    "wooProducts": "منتجات WooCommerce",
+    "wooOrders": "طلبات WooCommerce",
+    "loyalty": "إعدادات برنامج الولاء",
+    "loyaltyTiers": "مستويات الولاء",
+    "loyaltyRewards": "مكافآت الولاء",
+    "loyaltyCustomers": "عملاء الولاء",
+    "scheduledReports": "التقارير المجدولة",
+    "autoNotifications": "أتمتة إشعارات العملاء",
+    "integrations": "حالة التكاملات",
+    "paymentReview": "مراجعة الاشتراك",
+    "paymentCancelled": "لم تكتمل العودة من بوابة الدفع. راجع حالة اشتراكك قبل إعادة المحاولة."
   }
 }

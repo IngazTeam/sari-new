@@ -28,4 +28,13 @@ describe('merchant workspace navigation', () => {
     expect(new Set(navigableMerchantTools.map(tool => tool.path)).size).toBe(navigableMerchantTools.length);
     for (const tool of navigableMerchantTools) expect(tool.path).not.toMatch(/:|\/callback$|\/checkout$|\/payment\/(success|cancel)$/);
   });
+  it('mounts one workspace shell for Sheets pages and keeps the removed tenant menu out of the admin layout', () => {
+    for (const page of ['SheetsSettings', 'SheetsReports', 'SheetsInventory']) {
+      expect(readFileSync(`client/src/pages/${page}.tsx`, 'utf8')).not.toContain('DashboardLayout');
+    }
+    const layout = readFileSync('client/src/components/DashboardLayout.tsx', 'utf8');
+    expect(layout).not.toContain('getMerchantMenuGroups');
+    expect(layout).not.toContain('getMerchantMenuItems');
+    expect(layout).toContain('<MerchantShell>');
+  });
 });

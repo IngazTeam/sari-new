@@ -52,7 +52,7 @@ export default function IntegrationsDashboard() {
     <div className="container mx-auto py-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t('integrationsDashboardPage.text1')}</h1>
+          <h1 className="text-2xl font-bold">{t('workspacePages.integrations')}</h1>
           <p className="text-muted-foreground">{t('integrationsDashboardPage.text2')}</p>
         </div>
         <Button variant="outline" onClick={() => refetch()}><RefreshCw className="h-4 w-4 ml-2" />{t('integrationsDashboardPage.text3')}</Button>

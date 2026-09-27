@@ -58,7 +58,6 @@ export default function AcquisitionReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        // @ts-ignore
         {sources.slice(0, 3).map((s) => {
           const info = SOURCE_LABELS[s.source] || {
             label: s.source,
@@ -105,7 +104,6 @@ export default function AcquisitionReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  // @ts-ignore
                   {sources.map((s) => {
                     const info = SOURCE_LABELS[s.source] || {
                       label: s.source,

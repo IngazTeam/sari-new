@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { useRef } from "react";
 import { useTranslation } from 'react-i18next';
 import { PAYMENT_PROVIDER_REFERENCE_PATTERN } from '@shared/subscription-payment-status';
+import { WorkspaceState } from '@/components/merchant/WorkspaceState';
 
 const MAX_LEGACY_STATUS_POLLS = 30;
 
@@ -54,6 +55,8 @@ export default function PaymentSuccess() {
   const completed = paymentStatus.data?.status === 'completed';
   const failed = !validReference || paymentStatus.data?.status === 'failed';
 
+  if (failed || paymentStatus.isError) return <WorkspaceState kind="payment" action={<Button onClick={() => setLocation('/merchant/subscriptions')}>{t('workspacePages.paymentReview')}</Button>} />;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="max-w-md w-full">
@@ -81,10 +84,10 @@ export default function PaymentSuccess() {
             </p>
           </div>
 
-          <div className="bg-muted p-4 rounded-lg text-right">
+          {subscriptionId > 0 && <div className="bg-muted p-4 rounded-lg text-right">
             <p className="text-sm text-muted-foreground mb-2">{t('paymentSuccessPage.text2')}</p>
             <p className="font-mono font-bold">#{subscriptionId}</p>
-          </div>
+          </div>}
 
           <div className="space-y-2">
             <Button
@@ -102,9 +105,9 @@ export default function PaymentSuccess() {
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          {completed && <p className="text-xs text-muted-foreground">
             {t('paymentSuccessPage.text7')}
-          </p>
+          </p>}
         </CardContent>
       </Card>
     </div>

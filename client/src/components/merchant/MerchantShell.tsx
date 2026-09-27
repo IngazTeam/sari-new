@@ -57,6 +57,8 @@ import {
   navigableMerchantTools,
 } from './navigation';
 import '@/styles/merchant-workspace.css';
+import ErrorBoundary from '../ErrorBoundary';
+import { WorkspaceState, workspaceFailureKind } from './WorkspaceState';
 
 export default function MerchantShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -82,6 +84,10 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
           ? term('orders')
           : merchantToolForPath(path)?.title || 'الأداة';
 
+  useEffect(() => {
+    document.body.classList.add('merchant-surface');
+    return () => document.body.classList.remove('merchant-surface');
+  }, []);
   useEffect(() => {
     setMobileOpen(false);
     setSearchOpen(false);
@@ -318,7 +324,9 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
           tabIndex={-1}
           className={`mw-main ${section?.id === 'inbox' && location === '/merchant/conversations' ? 'mw-inbox-main' : ''}`}
         >
-          {children}
+          <ErrorBoundary resetKey={location} fallback={(retry, error) => <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? retry : undefined} focus />}>
+            {children}
+          </ErrorBoundary>
         </main>
         <footer className="mw-footer">
           <span>مساحة أوضح. يوم أخف.</span>

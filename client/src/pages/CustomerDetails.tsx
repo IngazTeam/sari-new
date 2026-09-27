@@ -1,3 +1,4 @@
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 import { useParams, Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ export default function CustomerDetails() {
   const customerPhone = decodeURIComponent(params.phone || '');
 
   // Fetch customer details
-  const { data: customer, isLoading } = trpc.customers.getByPhone.useQuery({
+  const { data: customer, isLoading, isError, error, refetch } = trpc.customers.getByPhone.useQuery({
     customerPhone,
   });
 
@@ -37,21 +38,8 @@ export default function CustomerDetails() {
     );
   }
 
-  if (!customer) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="text-center py-12">
-            <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">{t('customerDetailsPage.text1')}</p>
-            <Link href="/merchant/customers">
-              <Button className="mt-4" variant="outline">{t('customerDetails.auto_0')}</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isError) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? () => { void refetch(); } : undefined} />;
+  if (!customer) return <WorkspaceState kind="missing" title={t('customerDetailsPage.text1')} action={<Button asChild><Link href="/merchant/customers">{t('customerDetails.auto_0')}</Link></Button>} />;
 
   const getStatusBadge = (status: string) => {
     switch (status) {

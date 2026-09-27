@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { WorkspaceState } from './merchant/WorkspaceState';
 
 type QueryStateCardProps = {
   kind: 'error' | 'empty';
@@ -21,6 +22,10 @@ export function QueryStateCard({
   action,
 }: QueryStateCardProps) {
   const Icon = kind === 'error' ? AlertTriangle : Inbox;
+
+  if (typeof window !== 'undefined' && /^\/merchant(?:\/|$)/.test(window.location.pathname)) {
+    return <div role={kind === 'error' ? 'alert' : 'status'}><WorkspaceState inline kind={kind} title={title} description={description} onRetry={onRetry} action={action || (onRetry && retryLabel ? <Button onClick={onRetry}>{retryLabel}</Button> : undefined)} /></div>;
+  }
 
   return (
     <Card role={kind === 'error' ? 'alert' : 'status'}>

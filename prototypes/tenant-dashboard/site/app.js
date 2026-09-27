@@ -73,7 +73,13 @@ function status(text,kind=''){return `<span class="status ${kind}">${esc(text)}<
 const customer = id => data.contacts.find(c=>c.id===id) || data.contacts[0];
 function avatar(c){return `<span class="avatar ${['sage','blue','rose'][c.id%3]}">${esc(c.name.charAt(0))}</span>`;}
 function button(text,action,kind='',extras=''){return `<button class="button ${kind}" data-action="${action}" ${extras}>${text}</button>`;}
-function route(s,t=''){return `#/${s}${t?'/'+t:''}`;}
+function route(s,t=''){
+  const destinations={overview:'dashboard',inbox:'conversations',sales:'orders',catalog:'products',customers:'customers',ai:'ai-hub',marketing:'campaigns',analytics:'analytics-hub',settings:'settings',tools:'tools',
+    'sales/orders':'orders','sales/quotes':'sales-hub','sales/links':'payment-links','catalog/products':'products','catalog/services':'services','catalog/bookings':'bookings',
+    'ai/knowledge':'sari-brain','ai/behavior':'bot-settings','ai/test':'test-sari','ai/operation':'human-takeover',
+    'settings/store':'settings','settings/integrations':'platform-integrations','settings/team':'team','settings/billing':'subscription'};
+  return `#/page/merchant/${destinations[`${s}/${t}`]||destinations[s]||'tools'}`;
+}
 function go(s,t=''){if(location.hash===route(s,t)){ui.demo='normal';render();}else location.hash=route(s,t);}
 function navLinks(){return groups.slice(0,8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}<span>${title}</span>${id==='inbox'?`<span class="nav-count">${data.contacts.filter(c=>c.needs).length}</span>`:''}</a>`).join('')+`<div class="nav-secondary">${groups.slice(8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}${title}</a>`).join('')}</div>`;}
 const brand = `<a class="brand" href="#/overview"><span class="brand-mark">✦</span><div><div class="brand-name">ساري</div><small>شريك يومك</small></div></a>`;
@@ -154,7 +160,7 @@ function settings(){
 function toolsPage(){
   const group=ui.tab||'all';
   const list=window.FEATURES.map((f,i)=>({...f,index:i})).filter(f=>(group==='all'||f.group===group)&&(f.title+' '+f.routes.join(' ')).toLowerCase().includes(ui.query.toLowerCase()));
-  return heading('جميع الأدوات','102 واجهة حالية، موزعة على أقسام واضحة. اختر أداة لمراجعة موضعها ومقترح تحسينها.',`<a class="button" href="report.html">${icon('file')}تقرير الفحص</a>`)+`<div class="toolbar">${searchField('ابحث باسم أداة أو مسار…')}<label class="sr-only" for="tools-filter">قسم الأداة</label><select id="tools-filter" class="control" data-change="tool-group"><option value="all">كل الأقسام</option>${groups.slice(0,9).map(g=>`<option value="${g[0]}" ${group===g[0]?'selected':''}>${g[1]}</option>`).join('')}</select></div><div class="tool-count">${list.length} أداة · خريطة تنظيم، مع معاينة تفاصيل المقترح</div><div class="tool-grid">${list.map(f=>`<button class="tool-card" data-action="feature" data-id="${f.index}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${labels[f.group]} · ${f.routes.length} ${f.routes.length>1?'مسارات':'مسار'}</small></span></button>`).join('')||'<p>لا توجد أداة تطابق بحثك.</p>'}</div>`;
+  return heading('جميع الأدوات','102 واجهة حالية، موزعة على أقسام واضحة. اختر أداة لمراجعة موضعها ومقترح تحسينها.',`<a class="button" href="report-latest.html">${icon('file')}تقرير الفحص</a>`)+`<div class="toolbar">${searchField('ابحث باسم أداة أو مسار…')}<label class="sr-only" for="tools-filter">قسم الأداة</label><select id="tools-filter" class="control" data-change="tool-group"><option value="all">كل الأقسام</option>${groups.slice(0,9).map(g=>`<option value="${g[0]}" ${group===g[0]?'selected':''}>${g[1]}</option>`).join('')}</select></div><div class="tool-count">${list.length} أداة · خريطة تنظيم، مع معاينة تفاصيل المقترح</div><div class="tool-grid">${list.map(f=>`<button class="tool-card" data-action="feature" data-id="${f.index}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${labels[f.group]} · ${f.routes.length} ${f.routes.length>1?'مسارات':'مسار'}</small></span></button>`).join('')||'<p>لا توجد أداة تطابق بحثك.</p>'}</div>`;
 }
 function empty(title,desc,action='',i='box'){return `<div class="empty">${icon(i)}<h2>${title}</h2><p>${desc}</p>${action}</div>`;}
 function demoState(){
@@ -167,12 +173,27 @@ function demoState(){
 const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings,tools:toolsPage};
 function render(keepFocus=false){
   const focus=keepFocus?document.activeElement:null,id=focus?.id,start=focus?.selectionStart,end=focus?.selectionEnd;
-  shell(); $('#main').innerHTML=ui.demo==='normal'?renderers[ui.section]():demoState();
-  document.title=`${labels[ui.section]} · ساري`;
+  shell(); $('#main').innerHTML=ui.page?TenantPages.render(ui.page):(ui.demo==='normal'?renderers[ui.section]():demoState());
+  $('#main').dataset.pageRoute=ui.page?.route || '';
+  for(const anchor of document.querySelectorAll('a[href^="#/"]')){
+    const legacy=anchor.getAttribute('href').match(/^#\/(?!page\/)([^/]+)(?:\/([^/]+))?$/);
+    if(legacy)anchor.setAttribute('href',route(legacy[1],legacy[2]||''));
+  }
+  document.title=`${ui.page?.title || labels[ui.section]} · ساري`;
   if(id){const el=document.getElementById(id);el?.focus({preventScroll:true});if(typeof start==='number'&&el?.setSelectionRange)el.setSelectionRange(start,end);}
   if(ui.section==='inbox'&&ui.chat){const body=$('.chat-body');if(body)body.scrollTop=body.scrollHeight;}
 }
 function onRoute(){
+  if(location.hash.startsWith('#/page/')) {
+    let path; try { path=decodeURIComponent(location.hash.slice(6)); } catch { path='/merchant/preview-state/missing'; }
+    ui.page=TenantPages.find(path)||TenantPages.find('/merchant/preview-state/missing');
+    if(ui.page.redirect)ui.page=TenantPages.find(ui.page.redirect);
+    ui.section=ui.page.group;ui.tab='';ui.demo='normal';ui.query='';ui.filter='all';
+    TenantPages.reset(ui.page);
+    if($('#dialog').open)$('#dialog').close();if($('#nav-dialog').open)$('#nav-dialog').close();
+    clearTimeout(loadingTimer);render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});return;
+  }
+  ui.page=null;
   const [section='overview',tab='']=location.hash.replace(/^#\/?/,'').split('/');
   ui.section=renderers[section]?section:'overview';
   const allowed={sales:['orders','quotes','links'],catalog:['products','services','bookings'],ai:['knowledge','behavior','test','operation'],settings:['store','integrations','team','billing'],tools:['all',...groups.slice(0,9).map(g=>g[0])]};
@@ -204,10 +225,11 @@ function campaignDialog(){
   openDialog(wizard.id?'تعديل الحملة':'إنشاء حملة',`<div class="steps">${['الجمهور','الرسالة','المراجعة'].map((s,i)=>`<span class="step ${i+1===step?'active':''}" ${i+1===step?'aria-current="step"':''}><b>${i+1}</b>${s}</span>`).join('')}</div><form data-form="campaign" class="form-stack">${form}<div class="dialog-foot">${step>1?button('السابق','campaign-back','spacer','type="button"'):''}${step===3?button('حفظ مسودة','campaign-draft','','type="button"'):''}<button type="submit" class="button primary">${step===3?'حفظ الجدولة التجريبية':'التالي '+icon('left')}</button></div></form>`);
 }
 function saveCampaign(state){const id=wizard.id||Date.now(),c={id,title:wizard.title,audience:wizard.audience,message:wizard.message,status:state,date:wizard.date};const index=data.campaigns.findIndex(x=>x.id===id);if(index>=0)data.campaigns[index]=c;else data.campaigns.unshift(c);persist();$('#dialog').close();render();toast(state==='draft'?'تم حفظ مسودة الحملة محليًا.':'تم حفظ الجدولة في النموذج؛ لا يوجد إرسال فعلي.');}
-function featureDialog(index){const f=window.FEATURES[index];if(!f)return;openDialog(f.title,`<span class="status gray">ضمن ${labels[f.group]}</span><p style="margin-top:18px;font-size:13px;line-height:2">${esc(f.note)}</p><h3 style="margin-top:22px">مسارات الواجهة الحالية</h3>${f.routes.map(r=>`<div class="detail-route">${esc(r)}</div>`).join('')}<p class="hint" style="margin-top:18px">هذه خريطة موضع الميزة ومقترحها. الواجهات الأساسية في الموك أب تفاعلية؛ الأدوات المتخصصة تحتاج تصميمًا تفصيليًا وربطًا بالخادم عند التنفيذ.</p><div class="dialog-foot"><a class="button" href="report.html">تقرير الفحص</a><a class="button primary" href="${route(f.group)}">معاينة قسم ${labels[f.group]} ${icon('left')}</a></div>`);}
-function searchDialog(){openDialog('إلى أين تريد الذهاب؟',`<div class="search-field">${icon('search')}<label class="sr-only" for="global-search">البحث في الأقسام والأدوات</label><input id="global-search" class="control dialog-search" data-input="global-search" autofocus placeholder="مثال: الحجوزات، الولاء، إعدادات واتساب…" autocomplete="off"></div><div class="search-results" id="search-results"></div><p class="hint">ابحث في جميع الأدوات الـ102 · Esc للإغلاق</p>`);updateSearch('');}
+function featureDialog(index){const f=window.FEATURES[index];if(!f)return;location.hash=TenantPages.href(f.routes[0]);}
+
+function searchDialog(){openDialog('إلى أين تريد الذهاب؟',`<div class="search-field">${icon('search')}<label class="sr-only" for="global-search">البحث في الأقسام والأدوات</label><input id="global-search" class="control dialog-search" data-input="global-search" autofocus placeholder="مثال: الحجوزات، الولاء، إعدادات واتساب…" autocomplete="off"></div><div class="search-results" id="search-results"></div><p class="hint">ابحث في جميع الصفحات والأدوات · Esc للإغلاق</p>`);updateSearch('');}
 function updateSearch(q){const matches=window.FEATURES.map((f,i)=>({...f,index:i})).filter(f=>(f.title+' '+f.routes.join(' ')).toLowerCase().includes(q.toLowerCase())).slice(0,15);$('#search-results').innerHTML=matches.map(f=>`<button class="search-result" data-action="feature" data-id="${f.index}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${labels[f.group]}</small></span>${icon('left')}</button>`).join('')||'<div class="no-results">لا توجد أداة بهذا الاسم. جرّب كلمة أخرى.</div>';}
-function prototypeDialog(){openDialog('خيارات تجربة الموك أب',`<div class="prototype-section"><h3>جرّب حالة الصفحة الحالية</h3><p>يمكنك معاينة الفراغ والخطأ والتحميل، ثم العودة إلى البيانات.</p><div class="segmented">${[['normal','البيانات'],['empty','فارغة'],['loading','تحميل'],['error','خطأ']].map(([id,t])=>`<button data-action="demo-state" data-id="${id}" aria-pressed="${ui.demo===id}">${t}</button>`).join('')}</div></div><div class="prototype-section"><h3>نطاق هذا التصور</h3><p>8 أقسام عمل رئيسية، الإعدادات، وخريطة لجميع الواجهات الحالية. البيانات توضيحية وتُحفظ محليًا في متصفحك. الاتصال والدفع والذكاء الاصطناعي الفعلي تحتاج ربط الخادم.</p><a class="report-link" href="report.html"><span>تقرير الفحص الكامل · 122 مسارًا</span>${icon('left')}</a></div>${button('إعادة ضبط بيانات النموذج','reset-confirm','danger')}`);}
+function prototypeDialog(){openDialog('خيارات تجربة الموك أب',`<div class="prototype-section"><h3>جرّب حالة الصفحة الحالية</h3><p>يمكنك معاينة الفراغ والخطأ والتحميل، ثم العودة إلى البيانات.</p><div class="segmented">${[['normal','البيانات'],['empty','فارغة'],['loading','تحميل'],['error','خطأ']].map(([id,t])=>`<button data-action="demo-state" data-id="${id}" aria-pressed="${ui.demo===id}">${t}</button>`).join('')}</div></div><div class="prototype-section"><h3>نطاق هذا التصور</h3><p>صفحات داخلية كاملة وحالات خطأ موحدة. افتح أي أداة من البحث للوصول إلى تصميمها التفاعلي. البيانات توضيحية وتُحفظ محليًا في متصفحك. الاتصال والدفع والذكاء الاصطناعي الفعلي تحتاج ربط الخادم.</p><a class="report-link" href="report-latest.html"><span>تقرير فحص جميع الصفحات · سبتمبر 2026</span>${icon('left')}</a></div>${button('إعادة ضبط بيانات النموذج','reset-confirm','danger')}`);}
 function commercialDialog(type){openDialog(type==='quote'?'عرض سعر جديد':'إنشاء رابط دفع تجريبي',`<form data-form="commercial" class="form-stack"><input type="hidden" name="type" value="${type}"><div class="field"><label for="commercial-title">${type==='quote'?'عنوان العرض':'غرض الدفع'}</label><input id="commercial-title" name="title" required maxlength="80" autofocus></div><div class="field"><label for="commercial-customer">اسم العميل</label><input id="commercial-customer" name="customer" required maxlength="60"></div><div class="field"><label for="commercial-amount">المبلغ بالريال</label><input id="commercial-amount" name="amount" type="number" required min="1" step="0.01" max="1000000"></div><p class="hint">سيُنشأ سجل محلي للمراجعة. لا يرسل عرضًا ولا ينشئ رابط تحصيل فعليًا.</p><div class="dialog-foot"><button class="button" type="button" data-action="close">إلغاء</button><button class="button primary" type="submit">إنشاء المسودة</button></div></form>`);}
 let csvUrl;
 function csv(name,headers,rows){
@@ -223,11 +245,11 @@ document.addEventListener('click',e=>{
   if(link?.getAttribute('href')===location.hash){if($('#dialog').open)$('#dialog').close();if($('#nav-dialog').open)$('#nav-dialog').close();}
   const el=e.target.closest('[data-action]');if(!el)return;const a=el.dataset.action,id=el.dataset.id;
   if(a==='close')$('#dialog').close();
-  else if(a==='menu'){$('#nav-dialog').innerHTML=`<button class="icon-button nav-close" data-action="nav-close" aria-label="إغلاق القائمة">${icon('close')}</button>`+brand+`<nav aria-label="أقسام المتجر">${navLinks()}</nav><a class="text-link" href="report.html" style="margin:20px 12px">${icon('file')} تقرير الفحص</a>`;$('#nav-dialog').showModal();}
+  else if(a==='menu'){$('#nav-dialog').innerHTML=`<button class="icon-button nav-close" data-action="nav-close" aria-label="إغلاق القائمة">${icon('close')}</button>`+brand+`<nav aria-label="أقسام المتجر">${navLinks()}</nav><a class="text-link" href="report-latest.html" style="margin:20px 12px">${icon('file')} تقرير الفحص</a>`;$('#nav-dialog').showModal();}
   else if(a==='nav-close')$('#nav-dialog').close();
   else if(a==='tab')go(ui.section,id);
   else if(a==='search')searchDialog();
-  else if(a==='prototype')prototypeDialog();
+  else if(a==='prototype'){if(ui.page){document.querySelector('[data-page-action=states]')?.click();if(ui.page.kind==='state')location.hash=TenantPages.href('/merchant/tools');}else prototypeDialog();}
   else if(a==='retry'){ui.demo='normal';render();toast('تم عرض البيانات التوضيحية.');}
   else if(a==='demo-state'){ui.demo=id;$('#dialog').close();render();clearTimeout(loadingTimer);if(id==='loading')loadingTimer=setTimeout(()=>{ui.demo='normal';render();toast('اكتمل التحميل التجريبي.');},2200);}
   else if(a==='quick')openDialog('ماذا تريد أن تنجز؟',`<div class="form-stack">${button(icon('chat')+'متابعة المحادثات','needs')}${button(icon('box')+'إضافة منتج','new-product','', 'data-type="product"')}${button(icon('file')+'إنشاء عرض سعر','new-quote')}${button(icon('megaphone')+'تجهيز حملة','campaign-new')}</div>`);

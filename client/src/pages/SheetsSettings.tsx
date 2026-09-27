@@ -6,7 +6,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, FileSpreadsheet, Settings, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import DashboardLayout from '@/components/DashboardLayout';
 import { useTranslation } from 'react-i18next';
 
 export default function SheetsSettings() {
@@ -105,19 +104,19 @@ export default function SheetsSettings() {
 
   if (statusLoading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('sheetsSettingsPage.text0')}</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('workspacePages.sheets')}</h1>
           <p className="text-muted-foreground">{t('sheetsSettings.auto_0')}</p>
         </div>
 
@@ -275,6 +274,6 @@ export default function SheetsSettings() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

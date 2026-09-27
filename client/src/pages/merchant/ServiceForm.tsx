@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 
 export default function ServiceForm() {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ export default function ServiceForm() {
   });
 
   const { data: categoriesData } = trpc.serviceCategories.list.useQuery();
-  const { data: serviceData, isLoading: serviceLoading } = trpc.services.getById.useQuery(
+  const { data: serviceData, isLoading: serviceLoading, isError: serviceError, error, refetch } = trpc.services.getById.useQuery(
     { serviceId: serviceId! },
     { enabled: isEdit }
   );
@@ -134,6 +135,9 @@ export default function ServiceForm() {
       </div>
     );
   }
+
+  if (isEdit && serviceError) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? () => { void refetch(); } : undefined} />;
+  if (isEdit && !serviceData?.service) return <WorkspaceState kind="missing" action={<Button onClick={() => setLocation('/merchant/services')}>{t('merchantUx.serviceForm.back')}</Button>} />;
 
   return (
     <div className="container py-8 max-w-3xl">

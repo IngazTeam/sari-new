@@ -82,15 +82,15 @@ export default function SariPlayground() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div className="min-h-screen bg-accent p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
+            <div className="p-3 bg-primary rounded-2xl">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{t('sariPlayground.auto_0')}</h1>
+            <h1 className="text-4xl font-bold text-primary">{t('sariPlayground.auto_0')}</h1>
           </div>
           <p className="text-gray-600 text-lg">{t('sariPlayground.auto_1')}</p>
           <Badge variant="outline" className="text-green-600 border-green-600">
@@ -139,7 +139,7 @@ export default function SariPlayground() {
                 >
                   {message.role === 'assistant' && (
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                         <Bot className="h-5 w-5 text-white" />
                       </div>
                     </div>
@@ -181,7 +181,7 @@ export default function SariPlayground() {
             {chatMutation.isPending && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                     <Bot className="h-5 w-5 text-white" />
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export default function SariPlayground() {
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || chatMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="bg-primary"
               >
                 {chatMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />

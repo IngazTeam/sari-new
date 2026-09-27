@@ -77,7 +77,7 @@ export default function LoyaltyTiers() {
       <div className="flex items-center gap-3 mb-6">
         <Trophy className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">{t('loyaltyTiersPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('workspacePages.loyaltyTiers')}</h1>
           <p className="text-muted-foreground">{t('loyaltyTiersPage.text1')}</p>
         </div>
       </div>

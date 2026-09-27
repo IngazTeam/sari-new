@@ -1,0 +1,3250 @@
+{
+  "generatedAt": "2026-09-27T20:53:35.010Z",
+  "routeCount": 126,
+  "pageFiles": 103,
+  "routes": [
+    {
+      "route": "/merchant/setup-wizard",
+      "title": "الإعداد الأولي",
+      "group": "settings",
+      "component": "SetupWizard",
+      "file": "client/src/pages/SetupWizard.tsx",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [
+        "setupWizard.getProgress"
+      ],
+      "mutations": [
+        "setupWizard.saveProgress",
+        "setupWizard.completeSetup"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "اختصار رحلة الإعداد إلى النشاط والمعرفة والقناة والتجربة؛ إبقاء التقدم قابلًا للاستكمال."
+    },
+    {
+      "route": "/merchant",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/dashboard",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/dashboard",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/dashboard",
+      "title": "نظرة عامة",
+      "group": "overview",
+      "component": "MerchantDashboard",
+      "file": "client/src/pages/merchant/Dashboard.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "merchants.getCurrent",
+        "merchants.getOnboardingStatus",
+        "dashboard.getSummary",
+        "conversations.listRecent",
+        "conversations.count",
+        "campaigns.getStats",
+        "reviews.getStats",
+        "dashboard.getAiInsights",
+        "sariBrain.getIntegrationSyncStatus"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تقديم مهام اليوم وملخص الأداء على تفاصيل تعلم المخ والمزامنة؛ توحيد حالة التشغيل."
+    },
+    {
+      "route": "/merchant/ai-hub",
+      "title": "مركز المساعد",
+      "group": "ai",
+      "component": "AIWhatsAppHub",
+      "file": "client/src/pages/merchant/AIWhatsAppHub.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "توحيد المعرفة والسلوك والتجربة والتشغيل؛ تصحيح وجهتي الكلمات المفتاحية والصوت."
+    },
+    {
+      "route": "/merchant/analytics-hub",
+      "title": "مركز التحليلات",
+      "group": "analytics",
+      "component": "AnalyticsHub",
+      "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "استخدام تبويبات واضحة لتعريفات المؤشرات بدل بطاقات متشابهة."
+    },
+    {
+      "route": "/merchant/campaigns",
+      "title": "الحملات",
+      "group": "marketing",
+      "component": "Campaigns",
+      "file": "client/src/pages/merchant/Campaigns.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الحملات",
+        "مكتملة",
+        "قيد التنفيذ",
+        "مسودات",
+        "جميع الحملات",
+        "اسم الحملة",
+        "الحالة",
+        "قبله مزود الإرسال",
+        "الإجمالي",
+        "التاريخ",
+        "الإجراءات"
+      ],
+      "queries": [
+        "campaigns.list",
+        "campaigns.getSendProgress",
+        "campaigns.getManualReviewSummary"
+      ],
+      "mutations": [
+        "campaigns.delete",
+        "campaigns.send",
+        "campaigns.acknowledgeManualReview"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إصلاح تعديل المسودة المكسور وتصحيح نص تأكيد الإرسال."
+    },
+    {
+      "route": "/merchant/campaigns/new",
+      "title": "إنشاء حملة",
+      "group": "marketing",
+      "component": "NewCampaign",
+      "file": "client/src/pages/merchant/NewCampaign.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "mutations": [
+        "campaigns.create",
+        "campaigns.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "خطوات جمهور ثم رسالة ثم مراجعة؛ بيان الموافقة وعدد المستلمين والتوقيت قبل الجدولة."
+    },
+    {
+      "route": "/merchant/campaigns/:id/edit",
+      "title": "إنشاء حملة",
+      "group": "marketing",
+      "component": "NewCampaign",
+      "file": "client/src/pages/merchant/NewCampaign.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "mutations": [
+        "campaigns.create",
+        "campaigns.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "خطوات جمهور ثم رسالة ثم مراجعة؛ بيان الموافقة وعدد المستلمين والتوقيت قبل الجدولة."
+    },
+    {
+      "route": "/merchant/campaigns/:id",
+      "title": "تفاصيل الحملة",
+      "group": "marketing",
+      "component": "CampaignDetails",
+      "file": "client/src/pages/merchant/CampaignDetails.tsx",
+      "layout": "workspace",
+      "labels": [
+        "الحالة",
+        "إجمالي المستلمين",
+        "قبله مزود الإرسال",
+        "تاريخ الإنشاء",
+        "محتوى الرسالة",
+        "الصورة المرفقة",
+        "ملخص الجمهور المستهدف"
+      ],
+      "queries": [
+        "campaigns.getById"
+      ],
+      "mutations": [
+        "campaigns.send"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إظهار سياق الحملة وإجراء متابعة؛ توضيح قبول المزود مقابل التسليم."
+    },
+    {
+      "route": "/merchant/campaigns/:id/report",
+      "title": "تقرير الحملة",
+      "group": "analytics",
+      "component": "CampaignReport",
+      "file": "client/src/pages/merchant/CampaignReport.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "نجح الإرسال",
+        "فشل الإرسال",
+        "نسبة النجاح",
+        "معلومات الحملة",
+        "سجل الإرسال التفصيلي",
+        "رقم الهاتف",
+        "اسم العميل",
+        "الحالة",
+        "رسالة الخطأ",
+        "وقت الإرسال",
+        "ملخص الأخطاء"
+      ],
+      "queries": [
+        "campaigns.getReport"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تصحيح عنوان نجاح الإرسال ليوافق معنى الحالة؛ تمييز الخطأ عن حملة غير موجودة."
+    },
+    {
+      "route": "/merchant/products",
+      "title": "المنتجات",
+      "group": "catalog",
+      "component": "Products",
+      "file": "client/src/pages/merchant/Products.tsx",
+      "layout": "workspace",
+      "labels": [
+        "اسم المنتج *",
+        "الوصف",
+        "رابط الصورة",
+        "السعر",
+        "ريال",
+        "$",
+        "الكمية المتوفرة",
+        "إجمالي المنتجات",
+        "المنتجات المتوفرة",
+        "نفدت الكمية",
+        "قائمة المنتجات",
+        "المنتج",
+        "الكمية",
+        "الإجراءات"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "products.list"
+      ],
+      "mutations": [
+        "products.create",
+        "products.update",
+        "products.delete",
+        "products.bulkDelete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "توضيح الفرق بين النشط والمتوفر بالمخزون؛ إظهار مصدر المنتج وحالة مزامنته."
+    },
+    {
+      "route": "/merchant/products/upload",
+      "title": "استيراد المنتجات",
+      "group": "catalog",
+      "component": "UploadProducts",
+      "file": "client/src/pages/merchant/UploadProducts.tsx",
+      "layout": "workspace",
+      "labels": [
+        "رفع ملف CSV أو Excel",
+        "إنشاء Google Sheet تلقائياً",
+        "سيتم رفع المنتجات + إنشاء شيت للمزامنة التلقائية كل 30 دقيقة",
+        "مزامنة Google Sheets",
+        "نتيجة المزامنة",
+        "تحميل القالب",
+        "نتيجة الاستيراد"
+      ],
+      "queries": [
+        "products.getSheetSyncStatus"
+      ],
+      "mutations": [
+        "products.uploadCSV",
+        "products.uploadExcel",
+        "products.smartImport",
+        "products.syncFromGoogleSheets"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معاينة الأعمدة والأخطاء والتكرارات قبل الاعتماد مع ملخص بعد الاستيراد."
+    },
+    {
+      "route": "/merchant/conversations",
+      "title": "المحادثات",
+      "group": "inbox",
+      "component": "Conversations",
+      "file": "client/src/pages/merchant/Conversations.tsx",
+      "layout": "workspace",
+      "labels": [
+        "قائمة المحادثات",
+        "عميل"
+      ],
+      "queries": [
+        "conversations.list",
+        "merchants.getCurrent",
+        "conversations.connectionStatus",
+        "conversations.getMessages"
+      ],
+      "mutations": [
+        "conversations.sendReply",
+        "conversations.sendVoiceReply",
+        "conversations.syncFromWhatsApp",
+        "conversations.diagnoseWebhook"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إصلاح حد 50 والبحث؛ جعل الجوال قائمة ثم محادثة؛ نقل العدادات إلى ملخص مضغوط."
+    },
+    {
+      "route": "/merchant/whatsapp",
+      "title": "أرقام واتساب",
+      "group": "settings",
+      "component": "WhatsAppInstancesPage",
+      "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "merchants.getCurrent",
+        "whatsappInstances.listSafe",
+        "whatsappInstances.getUsage",
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection",
+        "whatsappInstances.getReconnectQR",
+        "whatsappInstances.confirmReconnect"
+      ],
+      "mutations": [
+        "whatsappRequests.create",
+        "whatsappInstances.toggleStatus",
+        "whatsappInstances.setPrimary",
+        "whatsappInstances.completeMetaEmbeddedSignup",
+        "whatsappInstances.refreshInstance",
+        "whatsappInstances.reconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معالج ربط واحد يوضح Meta وQR وحالة كل خطوة دون ادعاء نشاط غير مؤكد."
+    },
+    {
+      "route": "/merchant/salla",
+      "title": "ربط سلة",
+      "group": "settings",
+      "component": "SallaIntegration",
+      "file": "client/src/pages/SallaIntegration.tsx",
+      "layout": "workspace",
+      "labels": [
+        "هل أنت متأكد من فصل المتجر؟",
+        "ربط متجر Salla",
+        "اذهب إلى الإعدادات → API",
+        "انسخ الـ Token والصقه هنا",
+        "روابط OAuth & Webhook",
+        "آخر 20 عملية مزامنة"
+      ],
+      "queries": [
+        "salla.getConnection",
+        "salla.getSyncLogs"
+      ],
+      "mutations": [
+        "salla.connect",
+        "salla.disconnect",
+        "salla.syncNow"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إعادة بناء النصوص الدلالية للعناوين والحقول والتنبيهات؛ عنوان الصفحة الحالي رسالة تحقق."
+    },
+    {
+      "route": "/merchant/integrations/byaan",
+      "title": "ربط بيان",
+      "group": "settings",
+      "component": "ByaanIntegration",
+      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "integrations.getByaanStatus"
+      ],
+      "mutations": [
+        "integrations.connectByaan",
+        "integrations.testByaanConnection"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إيضاح مصدر الحقيقة وما يُدار من بيان مع وقت آخر مزامنة وإجراء معالجة."
+    },
+    {
+      "route": "/merchant/byaan-dashboard",
+      "title": "بيان: الدورات والمتدربون",
+      "group": "settings",
+      "component": "ByaanDashboard",
+      "file": "client/src/pages/ByaanDashboard.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "byaan.getStatus",
+        "byaan.getTrainees",
+        "byaan.getFaqs"
+      ],
+      "mutations": [
+        "byaan.triggerResync",
+        "byaan.toggleFaq"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "الحالة غير المرتبطة توفر رابطًا واضحًا؛ اختبار المزامنة يحتاج بيئة بيان تجريبية."
+    },
+    {
+      "route": "/merchant/integrations/zid",
+      "title": "ربط زد",
+      "group": "settings",
+      "component": "ZidIntegration",
+      "file": "client/src/pages/merchant/ZidIntegration.tsx",
+      "layout": "workspace",
+      "labels": [
+        "حالة الاتصال",
+        "إعدادات المزامنة",
+        "المزامنة التلقائية",
+        "مزامنة المنتجات",
+        "مزامنة الطلبات",
+        "مزامنة العملاء",
+        "إشعار التاجر بالطلبات الجديدة",
+        "أداء التنبيهات خلال 7 أيام",
+        "إعدادات Webhooks",
+        "سجل المزامنة",
+        "ربط متجر زد"
+      ],
+      "queries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "mutations": [
+        "zid.beginOAuth",
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "الربط عبر OAuth واضح؛ إضافة ملخص متطلبات وسجل محاولات مفهوم."
+    },
+    {
+      "route": "/merchant/zid/settings",
+      "title": "ربط زد",
+      "group": "settings",
+      "component": "ZidIntegration",
+      "file": "client/src/pages/merchant/ZidIntegration.tsx",
+      "layout": "workspace",
+      "labels": [
+        "حالة الاتصال",
+        "إعدادات المزامنة",
+        "المزامنة التلقائية",
+        "مزامنة المنتجات",
+        "مزامنة الطلبات",
+        "مزامنة العملاء",
+        "إشعار التاجر بالطلبات الجديدة",
+        "أداء التنبيهات خلال 7 أيام",
+        "إعدادات Webhooks",
+        "سجل المزامنة",
+        "ربط متجر زد"
+      ],
+      "queries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "mutations": [
+        "zid.beginOAuth",
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "الربط عبر OAuth واضح؛ إضافة ملخص متطلبات وسجل محاولات مفهوم."
+    },
+    {
+      "route": "/merchant/zid/callback",
+      "title": "نتيجة تفويض زد",
+      "group": "settings",
+      "component": "ZidCallback",
+      "file": "client/src/pages/ZidCallback.tsx",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [
+        "zid.handleOAuthCallback"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "حالة التفويض الناقص مفهومة؛ الحفاظ على مسار عودة مباشر."
+    },
+    {
+      "route": "/merchant/zid/products",
+      "title": "منتجات زد",
+      "group": "catalog",
+      "component": "ZidProducts",
+      "file": "client/src/pages/ZidProducts.tsx",
+      "layout": "workspace",
+      "labels": [
+        "مزامنة المنتجات"
+      ],
+      "queries": [
+        "zid.getConnection"
+      ],
+      "mutations": [
+        "zid.syncNow"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "حالة عدم الربط واضحة؛ توحيدها ضمن المنتجات مع مرشح المصدر."
+    },
+    {
+      "route": "/merchant/zid/sync-logs",
+      "title": "سجل مزامنة زد",
+      "group": "settings",
+      "component": "ZidSyncLogs",
+      "file": "client/src/pages/ZidSyncLogs.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي المزامنات",
+        "مزامنات ناجحة",
+        "مزامنات فاشلة",
+        "سجل العمليات"
+      ],
+      "queries": [
+        "zid.getSyncLogs",
+        "zid.getSyncStats"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "توضيح نوع الفشل والإجراء ووقت آخر نجاح؛ ترقيم بدل حد ثابت."
+    },
+    {
+      "route": "/merchant/woocommerce/settings",
+      "title": "ربط WooCommerce",
+      "group": "settings",
+      "component": "WooCommerceSettings",
+      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "بيانات الاتصال",
+        "رابط المتجر"
+      ],
+      "queries": [
+        "woocommerce.getSettings"
+      ],
+      "mutations": [
+        "woocommerce.saveSettings",
+        "woocommerce.testConnection",
+        "woocommerce.syncProducts",
+        "woocommerce.syncOrders",
+        "woocommerce.reconcileWebhookIncidents",
+        "woocommerce.disconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تقليل المصطلحات في المسار الأساسي وإخفاء تفاصيل Webhook ضمن إعدادات متقدمة."
+    },
+    {
+      "route": "/merchant/woocommerce/products",
+      "title": "منتجات WooCommerce",
+      "group": "catalog",
+      "component": "WooCommerceProducts",
+      "file": "client/src/pages/WooCommerceProducts.tsx",
+      "layout": "workspace",
+      "labels": [
+        "غير متوفر",
+        "متوفر قريباً",
+        "منتجات WooCommerce",
+        "إجمالي المنتجات",
+        "متوفر",
+        "بحث عن منتج",
+        "ابحث عن منتج...",
+        "قائمة المنتجات",
+        "الصورة",
+        "الاسم",
+        "السعر"
+      ],
+      "queries": [
+        "woocommerce.getProducts",
+        "woocommerce.searchProducts"
+      ],
+      "mutations": [
+        "woocommerce.syncProducts"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "العنوان والعدادات غير متوافقة مع المقصود؛ إعادة تعيين النصوص."
+    },
+    {
+      "route": "/merchant/woocommerce/orders",
+      "title": "طلبات WooCommerce",
+      "group": "sales",
+      "component": "WooCommerceOrders",
+      "file": "client/src/pages/WooCommerceOrders.tsx",
+      "layout": "workspace",
+      "labels": [
+        "فشلت المزامنة",
+        "تم تحديث الحالة",
+        "تم تحديث حالة الطلب بنجاح",
+        "فشل التحديث",
+        "تم إرسال الإشعار",
+        "جميع الحالات",
+        "قيد الانتظار",
+        "قيد المعالجة",
+        "معلق",
+        "مكتمل",
+        "ملغي",
+        "مسترجع",
+        "فاشل",
+        "جميع الطلبات المزامنة من WooCommerce",
+        "جاري التحميل...",
+        "لا توجد طلبات",
+        "العميل:",
+        "الحالة:",
+        "الشحن"
+      ],
+      "queries": [
+        "woocommerce.getOrders"
+      ],
+      "mutations": [
+        "woocommerce.syncOrders",
+        "woocommerce.updateOrderStatus",
+        "woocommerce.sendOrderNotification"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "العناوين تعرض رسائل نجاح وفشل ثابتة؛ توحيد النصوص والبحث عبر النتائج."
+    },
+    {
+      "route": "/merchant/woocommerce/analytics",
+      "title": "تحليلات WooCommerce",
+      "group": "analytics",
+      "component": "WooCommerceAnalytics",
+      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "الفترة الزمنية",
+        "نوع العرض",
+        "من تاريخ",
+        "إلى تاريخ",
+        "إجمالي الإيرادات",
+        "متوسط قيمة الطلب",
+        "معدل التحويل",
+        "إجمالي العملاء",
+        "رسم بياني للإيرادات",
+        "الطلبات المكتملة",
+        "الطلبات قيد المعالجة",
+        "الطلبات الملغاة",
+        "أكثر المنتجات مبيعاً",
+        "تفاصيل المنتجات",
+        "معدل التحويل من واتساب",
+        "معدل إتمام الطلبات",
+        "معدل العملاء المتكررين"
+      ],
+      "queries": [
+        "woocommerce.getSalesStats",
+        "woocommerce.getTopProducts",
+        "woocommerce.getConversionRate",
+        "woocommerce.getCustomerStats"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تعريف الإيراد المكتمل وعدم ادعاء تحويل غير موثوق نقطتان جيدتان؛ دمج مرشح المصدر."
+    },
+    {
+      "route": "/merchant/integrations/calendly",
+      "title": "ربط Calendly",
+      "group": "settings",
+      "component": "CalendlyIntegration",
+      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
+      "layout": "workspace",
+      "labels": [
+        "حالة الاتصال",
+        "المواعيد القادمة",
+        "إعدادات التكامل",
+        "مزامنة مع واتساب",
+        "إعدادات Webhooks",
+        "روابط الحجز",
+        "ربط حساب Calendly"
+      ],
+      "queries": [
+        "calendly.getConnection",
+        "calendly.getUpcomingEvents",
+        "calendly.getEventTypes",
+        "calendly.getStats"
+      ],
+      "mutations": [
+        "calendly.connect",
+        "calendly.disconnect",
+        "calendly.syncNow",
+        "calendly.updateSettings"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معالج اتصال واختبار واضح؛ تحويل خطوات الرمز إلى شرح مختصر ومرجع متقدم."
+    },
+    {
+      "route": "/merchant/chat-orders",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/orders",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/discounts",
+      "title": "كوبونات الخصم",
+      "group": "marketing",
+      "component": "DiscountCodes",
+      "file": "client/src/pages/DiscountCodes.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "discounts.list",
+        "discounts.getStats"
+      ],
+      "mutations": [
+        "discounts.create",
+        "discounts.update",
+        "discounts.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "نصوص دلالية وحالات خطأ وفراغ جيدة؛ معاينة أثر الخصم قبل الحفظ."
+    },
+    {
+      "route": "/merchant/referrals",
+      "title": "إحالات التجار",
+      "group": "settings",
+      "component": "Referrals",
+      "file": "client/src/pages/merchant/Referrals.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الإحالات",
+        "الإحالات الناجحة",
+        "المكافآت المكتسبة",
+        "المكافآت المستخدمة",
+        "رمز الإحالة الخاص بك",
+        "المكافآت المتاحة",
+        "الإحالات",
+        "كيف يعمل نظام الإحالة؟"
+      ],
+      "queries": [
+        "referrals.getMyCode",
+        "referrals.getMyReferrals",
+        "referrals.getMyRewards",
+        "referrals.getStats"
+      ],
+      "mutations": [
+        "referrals.claimReward"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "فصل إحالة تاجر جديد عن ولاء عملاء المتجر؛ توضيح شروط اكتساب المكافأة."
+    },
+    {
+      "route": "/merchant/abandoned-carts",
+      "title": "السلات المتروكة",
+      "group": "marketing",
+      "component": "AbandonedCartsPage",
+      "file": "client/src/pages/merchant/AbandonedCartsPage.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي السلال المهجورة",
+        "التذكيرات المرسلة",
+        "السلال المستعادة",
+        "القيمة المستعادة",
+        "قائمة السلال المهجورة",
+        "رقم الهاتف",
+        "اسم العميل",
+        "المنتجات",
+        "الإجمالي",
+        "تاريخ الإنشاء",
+        "الحالة",
+        "الإجراءات",
+        "نصائح لتحسين معدل الاستعادة"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "abandonedCarts.list",
+        "abandonedCarts.getStats"
+      ],
+      "mutations": [
+        "abandonedCarts.sendReminder",
+        "abandonedCarts.markRecovered"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تصحيح رسالة نجاح الاستعادة؛ توضيح مصدر السلة وشروط إرسال التذكير."
+    },
+    {
+      "route": "/merchant/occasion-campaigns",
+      "title": "حملات المناسبات",
+      "group": "marketing",
+      "component": "OccasionCampaignsPage",
+      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الحملات",
+        "الحملات المكتملة",
+        "قبله مزود الإرسال",
+        "المناسبات القادمة",
+        "سجل الحملات",
+        "المناسبة",
+        "السنة",
+        "نسبة الخصم",
+        "كود الخصم",
+        "عدد المستلمين",
+        "تاريخ اكتمال المعالجة",
+        "الحالة",
+        "مفعّلة",
+        "كيف يعمل النظام؟",
+        "💡 نصائح لزيادة المبيعات"
+      ],
+      "queries": [
+        "occasionCampaigns.list",
+        "occasionCampaigns.getStats",
+        "occasionCampaigns.getUpcoming"
+      ],
+      "mutations": [
+        "occasionCampaigns.toggle",
+        "occasionCampaigns.create"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "التفعيل الصريح جيد؛ تصحيح رسالة نجاح التبديل وعرض موعد المنطقة الزمنية."
+    },
+    {
+      "route": "/merchant/promotions",
+      "title": "العروض الترويجية",
+      "group": "marketing",
+      "component": "PromotionsPage",
+      "file": "client/src/pages/merchant/Promotions.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "promotions.list",
+        "promotions.getStats"
+      ],
+      "mutations": [
+        "promotions.create",
+        "promotions.update",
+        "promotions.toggleActive",
+        "promotions.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تمييز العرض المقترح للمساعد عن كوبون الخصم والحملة المرسلة."
+    },
+    {
+      "route": "/merchant/analytics",
+      "title": "تحليلات المبيعات",
+      "group": "analytics",
+      "component": "AnalyticsDashboard",
+      "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الإيرادات",
+        "إجمالي الطلبات",
+        "متوسط قيمة الطلب",
+        "معدل التحويل",
+        "اتجاه الإيرادات والطلبات",
+        "شرائح العملاء",
+        "إحصائيات شرائح العملاء",
+        "المنتجات الأكثر مبيعاً",
+        "المنتج",
+        "المبيعات",
+        "الإيرادات",
+        "متوسط السعر",
+        "المخزون",
+        "أداء الحملات",
+        "الحملة",
+        "المرسل",
+        "معدل الفتح",
+        "معدل النقر",
+        "أداء كودات الخصم",
+        "الكود",
+        "النوع",
+        "القيمة",
+        "الاستخدامات",
+        "متوسط الطلب",
+        "تحليل العملاء",
+        "التحليل حسب الساعة",
+        "التحليل حسب أيام الأسبوع",
+        "💡 رؤى وتوصيات"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "analytics.getDashboardKPIs",
+        "analytics.getRevenueTrends",
+        "analytics.getTopProducts",
+        "analytics.getCampaignAnalytics",
+        "analytics.getCustomerSegments",
+        "analytics.getHourlyAnalytics",
+        "analytics.getWeekdayAnalytics",
+        "analytics.getDiscountCodeAnalytics"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "منع عرض أصفار قبل التحميل أو عند فشل الاستعلامات؛ تعريف كل مؤشر."
+    },
+    {
+      "route": "/merchant/message-analytics",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/overview-analytics",
+      "title": "نظرة الأداء",
+      "group": "analytics",
+      "component": "OverviewAnalytics",
+      "file": "client/src/pages/merchant/OverviewAnalytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي المبيعات",
+        "معدل التحويل",
+        "متوسط التقييم",
+        "الإحالات الناجحة",
+        "السلال المهجورة",
+        "توزيع التقييمات",
+        "إحصائيات الطلبات",
+        "أداء الإحالات",
+        "رؤى وتوصيات"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "abandonedCarts.getStats",
+        "messageAnalytics.getConversionRate",
+        "referrals.getStats",
+        "orders.getStats"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "عدم وصف 0 من 0 بأنه أداء ضعيف؛ استخدام لا توجد بيانات كافية."
+    },
+    {
+      "route": "/merchant/orders",
+      "title": "الطلبات",
+      "group": "sales",
+      "component": "Orders",
+      "file": "client/src/pages/merchant/Orders.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الطلبات",
+        "معلقة",
+        "قيد التنفيذ",
+        "مكتملة",
+        "إجمالي الإيرادات",
+        "الطلبات",
+        "الحالة الجديدة",
+        "رقم التتبع (اختياري)"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "orders.getWithFilters",
+        "orders.getStats"
+      ],
+      "mutations": [
+        "orders.updateStatus",
+        "orders.cancel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "عرض تحذير استرداد طلبات زد فقط عندما يرتبط الحساب بزد أو توجد حالات فعلية."
+    },
+    {
+      "route": "/merchant/whatsapp-instances",
+      "title": "أرقام واتساب",
+      "group": "settings",
+      "component": "WhatsAppInstancesPage",
+      "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "merchants.getCurrent",
+        "whatsappInstances.listSafe",
+        "whatsappInstances.getUsage",
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection",
+        "whatsappInstances.getReconnectQR",
+        "whatsappInstances.confirmReconnect"
+      ],
+      "mutations": [
+        "whatsappRequests.create",
+        "whatsappInstances.toggleStatus",
+        "whatsappInstances.setPrimary",
+        "whatsappInstances.completeMetaEmbeddedSignup",
+        "whatsappInstances.refreshInstance",
+        "whatsappInstances.reconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معالج ربط واحد يوضح Meta وQR وحالة كل خطوة دون ادعاء نشاط غير مؤكد."
+    },
+    {
+      "route": "/merchant/whatsapp-setup",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/whatsapp",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/whatsapp-test",
+      "title": "تشخيص واتساب",
+      "group": "settings",
+      "component": "WhatsAppTest",
+      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
+      "layout": "workspace",
+      "labels": [
+        "بيانات Green API",
+        "إرسال رسالة نصية",
+        "رقم الجوال (مع رمز الدولة)",
+        "نص الرسالة",
+        "إرسال صورة",
+        "رابط الصورة",
+        "نص مرفق (اختياري)",
+        "نتائج الاختبار",
+        "نصائح سريعة"
+      ],
+      "queries": [
+        "whatsapp.getPrimaryInstance"
+      ],
+      "mutations": [
+        "whatsapp.saveInstance",
+        "whatsapp.deleteInstance",
+        "whatsapp.sendTestMessage",
+        "whatsapp.sendTestImage",
+        "whatsapp.testConnection"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "أداة متقدمة؛ لا تظهر مفاتيح المزود كمسار إعداد يومي للتاجر."
+    },
+    {
+      "route": "/merchant/greenapi-setup",
+      "title": "دليل QR القديم",
+      "group": "settings",
+      "component": "GreenAPISetupGuide",
+      "file": "client/src/pages/merchant/GreenAPISetupGuide.tsx",
+      "layout": "workspace",
+      "labels": [
+        "التسجيل في Green API",
+        "إنشاء Instance جديد",
+        "إعداد Webhooks",
+        "ربط رقم الواتساب",
+        "اختبار الاتصال",
+        "روابط مفيدة"
+      ],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "إبقاؤه كمرجع للقناة القديمة ضمن معالج القناة، لا مسارًا موازيًا أساسيًا."
+    },
+    {
+      "route": "/merchant/test-sari",
+      "title": "تجربة المساعد",
+      "group": "ai",
+      "component": "TestSari",
+      "file": "client/src/pages/merchant/TestSari.tsx",
+      "layout": "workspace",
+      "labels": [
+        "قيمة الصفقة (ريال)",
+        "إحصائيات التقييم",
+        "تطور نسبة الرضا",
+        "💡 نصيحة",
+        "🚀 الخطوة التالية"
+      ],
+      "queries": [],
+      "mutations": [
+        "testSari.createConversation",
+        "testSari.saveMessage",
+        "testSari.markAsDeal",
+        "testSari.sendMessage",
+        "testSari.resetConversation"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "توحيد مع ساحة التجربة؛ إظهار مصدر المعرفة وحدود التجربة قبل الإرسال."
+    },
+    {
+      "route": "/merchant/metrics-dashboard",
+      "title": "مقاييس المساعد",
+      "group": "analytics",
+      "component": "MetricsDashboard",
+      "file": "client/src/pages/merchant/MetricsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "💡 كيف تستفيد من هذه المقاييس؟"
+      ],
+      "queries": [
+        "testSari.getMetrics"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تحديد مصدر المقاييس والحد الأدنى للعينة؛ منع المقارنات على بيانات مفقودة."
+    },
+    {
+      "route": "/merchant/whatsapp-webhook-setup",
+      "title": "تشخيص Webhook",
+      "group": "settings",
+      "component": "WhatsAppWebhookSetup",
+      "file": "client/src/pages/merchant/WhatsAppWebhookSetup.tsx",
+      "layout": "workspace",
+      "labels": [
+        "خطوات التفعيل",
+        "كيف يعمل النظام؟"
+      ],
+      "queries": [
+        "auth.me"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إزالة مؤشرات جاهز ونشط ومفعل الثابتة في بيئة لا تملك قناة."
+    },
+    {
+      "route": "/merchant/bot-settings",
+      "title": "سلوك المساعد",
+      "group": "ai",
+      "component": "BotSettings",
+      "file": "client/src/pages/merchant/BotSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "القوالب الجاهزة",
+        "الرد التلقائي",
+        "تفعيل الرد التلقائي",
+        "ساعات العمل",
+        "تفعيل ساعات العمل",
+        "وقت البداية",
+        "وقت النهاية",
+        "أيام العمل",
+        "الرسائل",
+        "رسالة الترحيب",
+        "رسالة خارج أوقات العمل",
+        "سلوك الذكاء الاصطناعي",
+        "نبرة الصوت",
+        "اللغة",
+        "تأخير الرد (ثواني)",
+        "الحد الأقصى لطول الرد",
+        "معاينة مباشرة"
+      ],
+      "queries": [
+        "botSettings.get",
+        "botSettings.shouldRespond"
+      ],
+      "mutations": [
+        "botSettings.update",
+        "botSettings.sendTestMessage"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تقليل طول الصفحة؛ تبويبات للسلوك والدوام والتحويل مع حفظ وحالة تغييرات واضحة."
+    },
+    {
+      "route": "/merchant/human-takeover",
+      "title": "التدخل البشري",
+      "group": "inbox",
+      "component": "HumanTakeoverSettings",
+      "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "botSettings.get",
+        "botSettings.getTakeoverConversations"
+      ],
+      "mutations": [
+        "botSettings.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ربط القائمة بالمحادثات مباشرة مع مدة الإيقاف ومالك المحادثة."
+    },
+    {
+      "route": "/merchant/virtual-team",
+      "title": "شخصيات المساعد",
+      "group": "ai",
+      "component": "VirtualTeamPage",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "virtualAgents.list"
+      ],
+      "mutations": [
+        "virtualAgents.create",
+        "virtualAgents.update",
+        "virtualAgents.delete",
+        "virtualAgents.seedTemplates"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تحديد حدود الأدوار وأولوية التحويل؛ عدم خلطه بأعضاء الفريق الحقيقيين."
+    },
+    {
+      "route": "/merchant/sari-brain",
+      "title": "معرفة المساعد",
+      "group": "ai",
+      "component": "SariBrain",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "sariBrain.getSources",
+        "sariBrain.getActivityLog",
+        "sariBrain.getFaqs",
+        "sariBrain.getHealthScore",
+        "sariBrain.getKnowledgeSections",
+        "sariBrain.getPendingReviews",
+        "sariBrain.getAnalysisStatus",
+        "sariBrain.getWebsiteKnowledge",
+        "sariBrain.getPageContent",
+        "sariBrain.getQualityDashboard"
+      ],
+      "mutations": [
+        "sariBrain.deleteSource",
+        "sariBrain.resetBrain",
+        "sariBrain.reanalyzeWebsite",
+        "sariBrain.createSection",
+        "sariBrain.deleteSection",
+        "sariBrain.approveSection",
+        "sariBrain.analyzeContent",
+        "sariBrain.ingestAnalyzedContent",
+        "sariBrain.testSari",
+        "sariBrain.createFaq",
+        "sariBrain.deleteFaq",
+        "sariBrain.addCustomUrl",
+        "sariBrain.togglePageInBot",
+        "sariBrain.deleteDiscoveredPage",
+        "sariBrain.previewUrl"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تقسيم الصفحة الكبيرة إلى مصادر ومراجعات وقواعد؛ فصل إعادة الضبط في منطقة مستقلة."
+    },
+    {
+      "route": "/merchant/sari-playground",
+      "title": "ساحة التجربة",
+      "group": "ai",
+      "component": "SariPlayground",
+      "file": "client/src/pages/SariPlayground.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [
+        "ai.chat"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تصحيح النصوص المنزاحة وإزالة نشط ومتصل الثابتة؛ دمجها مع التجربة الأساسية."
+    },
+    {
+      "route": "/merchant/sari-analytics",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/sales-hub",
+      "title": "عروض الأسعار",
+      "group": "sales",
+      "component": "SalesHub",
+      "file": "client/src/pages/merchant/SalesHub.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "sariBrain.getQuotations",
+        "sariBrain.getQuotationStats",
+        "sariBrain.getCurrentTarget"
+      ],
+      "mutations": [
+        "sariBrain.createQuotation",
+        "sariBrain.updateQuotationStatus",
+        "sariBrain.setMonthlyTarget",
+        "sariBrain.sendQuotationToCustomer"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "استخدام اسم عروض الأسعار؛ معاينة قبل الإرسال وسياق العميل وحالة العرض."
+    },
+    {
+      "route": "/merchant/sales-pipeline",
+      "title": "فرص البيع",
+      "group": "sales",
+      "component": "SalesPipeline",
+      "file": "client/src/pages/merchant/SalesPipeline.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "salesPipeline.getActionCounts",
+        "salesPipeline.getKPIs",
+        "salesPipeline.getPipeline",
+        "salesPipeline.getLossBreakdown"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "ربط الحالات بالفرص والمحادثات؛ عرض خطأ الاستعلام بدل العدادات الصفرية."
+    },
+    {
+      "route": "/merchant/acquisition-report",
+      "title": "مصادر العملاء",
+      "group": "analytics",
+      "component": "AcquisitionReport",
+      "file": "client/src/pages/merchant/AcquisitionReport.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "merchants.getCurrent",
+        "analytics.getAcquisitionSources"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "إزالة تعليق @ts-ignore الظاهر فعليًا وإضافة وصف الإسناد."
+    },
+    {
+      "route": "/merchant/quotation-templates",
+      "title": "قوالب عروض الأسعار",
+      "group": "sales",
+      "component": "QuotationTemplates",
+      "file": "client/src/pages/merchant/QuotationTemplates.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "sariBrain.getQuotationTemplates"
+      ],
+      "mutations": [
+        "sariBrain.createQuotationTemplate",
+        "sariBrain.updateQuotationTemplate",
+        "sariBrain.deleteQuotationTemplate"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معاينة الجوال وPDF؛ تمييز مسودة القالب من النسخة المعتمدة."
+    },
+    {
+      "route": "/merchant/media-library",
+      "title": "مكتبة الوسائط",
+      "group": "catalog",
+      "component": "MediaLibrary",
+      "file": "client/src/pages/merchant/MediaLibrary.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "media.list",
+        "media.getStats"
+      ],
+      "mutations": [
+        "media.upload",
+        "media.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "الحصة والفراغ واضحان؛ إظهار التقدم والفشل لكل ملف ومرجع استخدامه."
+    },
+    {
+      "route": "/merchant/scheduled-messages",
+      "title": "الرسائل المجدولة",
+      "group": "marketing",
+      "component": "ScheduledMessages",
+      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تعديل الرسالة المجدولة",
+        "إضافة رسالة مجدولة جديدة",
+        "عنوان الرسالة",
+        "محتوى الرسالة",
+        "اليوم",
+        "الوقت (24 ساعة)",
+        "تفعيل الرسالة",
+        "مفعّل",
+        "معطّل"
+      ],
+      "queries": [
+        "scheduledMessages.list"
+      ],
+      "mutations": [
+        "scheduledMessages.create",
+        "scheduledMessages.update",
+        "scheduledMessages.delete",
+        "scheduledMessages.toggle"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "بيان التوقيت والجمهور والموافقة وإمكانية إيقاف الجدولة."
+    },
+    {
+      "route": "/merchant/sari-personality",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/bot-settings",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/quick-responses",
+      "title": "الردود السريعة",
+      "group": "inbox",
+      "component": "QuickResponses",
+      "file": "client/src/pages/merchant/QuickResponses.tsx",
+      "layout": "workspace",
+      "labels": [
+        "العبارة المحفزة *",
+        "الرد *",
+        "كلمات مفتاحية إضافية",
+        "الأولوية (0-10)",
+        "إجمالي الردود",
+        "الردود النشطة",
+        "الردود المعطلة",
+        "قائمة الردود السريعة",
+        "العبارة المحفزة",
+        "الرد",
+        "الأولوية",
+        "عدد الاستخدام",
+        "الحالة",
+        "الإجراءات"
+      ],
+      "queries": [
+        "quickResponses.list",
+        "quickResponses.getStats"
+      ],
+      "mutations": [
+        "quickResponses.create",
+        "quickResponses.update",
+        "quickResponses.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إتاحتها داخل المحادثة مع البحث والمعاينة، إضافة إلى الإدارة."
+    },
+    {
+      "route": "/merchant/insights",
+      "title": "الرؤى والاقتراحات وA/B",
+      "group": "analytics",
+      "component": "InsightsDashboard",
+      "file": "client/src/pages/merchant/InsightsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الكلمات",
+        "ردود مقترحة",
+        "ردود مطبقة",
+        "توزيع الفئات",
+        "أكثر 10 كلمات تكراراً",
+        "متوسط الرضا",
+        "إيجابي",
+        "محايد",
+        "سلبي",
+        "تطور المشاعر",
+        "آخر التقارير الأسبوعية",
+        "الاختبارات النشطة"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصدير CSV غير منفذ؛ فتح تبويب A/B عند دخول مساره؛ انتظار نجاح التحديث."
+    },
+    {
+      "route": "/merchant/advanced-analytics",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/analytics-dashboard",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/performance-metrics",
+      "title": "مقاييس الأداء",
+      "group": "analytics",
+      "component": "PerformanceMetrics",
+      "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "العائد على الاستثمار (ROI)"
+      ],
+      "queries": [
+        "performance.getPerformanceMetrics"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "إصلاح merchantId=0 القادم من مسار لا يحوي هذا المعرف، وإظهار الرفض كخطأ."
+    },
+    {
+      "route": "/merchant/data-sync",
+      "title": "مزامنة Google Sheets",
+      "group": "settings",
+      "component": "DataSync",
+      "file": "client/src/pages/merchant/DataSync.tsx",
+      "layout": "workspace",
+      "labels": [
+        "الحالة العامة",
+        "سجل المزامنة",
+        "معلومات الإعداد",
+        "كيف تعمل المزامنة؟"
+      ],
+      "queries": [
+        "sheets.getStatus"
+      ],
+      "mutations": [
+        "sheets.syncInventory"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إجراء ربط قبل مزامنة الآن؛ بيان عدم التفعيل بدل تعليمات تبدو كحالة تشغيل."
+    },
+    {
+      "route": "/merchant/reviews",
+      "title": "تقييمات المنتجات",
+      "group": "customers",
+      "component": "Reviews",
+      "file": "client/src/pages/merchant/Reviews.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي التقييمات",
+        "متوسط التقييم",
+        "تقييمات إيجابية",
+        "تقييمات سلبية",
+        "فلترة التقييمات",
+        "حسب النجوم"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "reviews.list",
+        "reviews.getStats"
+      ],
+      "mutations": [
+        "reviews.reply"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "توحيد التقييمات مع تقييمات الخدمات مع مرشح النوع وحالات الرد والخطأ."
+    },
+    {
+      "route": "/merchant/booking-reviews",
+      "title": "تقييمات الحجوزات",
+      "group": "customers",
+      "component": "BookingReviews",
+      "file": "client/src/pages/merchant/BookingReviews.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي التقييمات",
+        "متوسط التقييم",
+        "5 نجوم",
+        "بانتظار الرد",
+        "قائمة التقييمات",
+        "العميل",
+        "التاريخ",
+        "التقييم",
+        "التعليق",
+        "الحالة",
+        "الإجراءات",
+        "الرد على التقييم"
+      ],
+      "queries": [
+        "bookingReviews.list"
+      ],
+      "mutations": [
+        "bookingReviews.reply"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "دمج قائمة الردود ضمن مركز العملاء مع تمييز الخدمة."
+    },
+    {
+      "route": "/merchant/order-notifications",
+      "title": "إشعارات الطلبات",
+      "group": "settings",
+      "component": "OrderNotificationsSettings",
+      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "الإشعارات المفعلة",
+        "الإشعارات المعطلة",
+        "آخر تحديث",
+        "مفعّل",
+        "معطّل",
+        "قالب الرسالة",
+        "💡 نصائح"
+      ],
+      "queries": [
+        "orderNotifications.getTemplates",
+        "orderNotifications.getHealth"
+      ],
+      "mutations": [
+        "orderNotifications.updateTemplate",
+        "orderNotifications.acknowledgeIncidents"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معاينة المتغيرات والرسالة قبل التفعيل؛ دمجها ضمن مركز الأتمتة."
+    },
+    {
+      "route": "/merchant/settings",
+      "title": "الحساب والمتجر",
+      "group": "settings",
+      "component": "MerchantSettings",
+      "file": "client/src/pages/merchant/Settings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "معلومات الحساب",
+        "الاسم",
+        "البريد الإلكتروني",
+        "معلومات المتجر",
+        "اسم المتجر",
+        "رقم الهاتف",
+        "العملة",
+        "الملف التعريفي",
+        "إعدادات الرد الآلي",
+        "طرق الدفع"
+      ],
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "knowledgeDocs.getCurrent"
+      ],
+      "mutations": [
+        "knowledgeDocs.delete",
+        "knowledgeDocs.reprocess",
+        "auth.updateProfile",
+        "auth.emailVerification.sendVerificationEmail",
+        "merchants.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "فصل الحساب والمتجر والمعرفة؛ عدم تكرار رفع ملف المعرفة في مكانين."
+    },
+    {
+      "route": "/merchant/privacy-center",
+      "title": "الخصوصية",
+      "group": "settings",
+      "component": "PrivacyCenter",
+      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "accountData.getState"
+      ],
+      "mutations": [
+        "accountData.setMarketingConsent",
+        "accountData.exportPersonalData",
+        "accountData.requestDeletion",
+        "accountData.submitRequest"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "حافظ على وضوح نطاق التصدير وخطوات طلب الحقوق؛ اختبار النتائج دون حذف حقيقي."
+    },
+    {
+      "route": "/merchant/notifications",
+      "title": "الإشعارات",
+      "group": "overview",
+      "component": "NotificationsPage",
+      "file": "client/src/pages/merchant/NotificationsPage.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "notifications.list",
+        "notifications.unreadCount"
+      ],
+      "mutations": [
+        "notifications.markAsRead",
+        "notifications.markAllAsRead",
+        "notifications.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تجميع حسب الحاجة للإجراء وربط كل تنبيه بوجهته؛ توحيد المنطقة الزمنية."
+    },
+    {
+      "route": "/merchant/language-settings",
+      "title": "لغة المساعد",
+      "group": "ai",
+      "component": "LanguageSettings",
+      "file": "client/src/pages/merchant/LanguageSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "اختر اللغة",
+        "معاينة رسائل البوت"
+      ],
+      "queries": [],
+      "mutations": [
+        "botSettings.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تسمية لغة ردود المساعد بوضوح وفصلها عن لغة الواجهة والعملة."
+    },
+    {
+      "route": "/merchant/calendar/settings",
+      "title": "ربط Google Calendar",
+      "group": "settings",
+      "component": "CalendarSettings",
+      "file": "client/src/pages/CalendarSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "حالة الاتصال",
+        "التذكيرات التلقائية"
+      ],
+      "queries": [
+        "calendar.getStatus"
+      ],
+      "mutations": [
+        "calendar.disconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "عنوان الصفحة الحالي تحذير فصل؛ إعادة تعيين النصوص بالكامل."
+    },
+    {
+      "route": "/merchant/calendar",
+      "title": "التقويم",
+      "group": "catalog",
+      "component": "CalendarPage",
+      "file": "client/src/pages/CalendarPage.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "calendar.listAppointments",
+        "calendar.getStatus"
+      ],
+      "mutations": [
+        "calendar.cancelAppointment"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "حالة عدم الربط مفهومة؛ عرض حجوزات ساري مستقلة عن ربط تقويم خارجي إن أمكن."
+    },
+    {
+      "route": "/merchant/staff",
+      "title": "مقدمو الخدمات",
+      "group": "catalog",
+      "component": "StaffManagement",
+      "file": "client/src/pages/StaffManagement.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "staff.list"
+      ],
+      "mutations": [
+        "staff.create",
+        "staff.update",
+        "staff.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "فصل مقدمي الخدمات عن أعضاء صلاحيات اللوحة؛ ربط الخدمة والتوفر."
+    },
+    {
+      "route": "/merchant/team",
+      "title": "الفريق والصلاحيات",
+      "group": "settings",
+      "component": "TeamManagement",
+      "file": "client/src/pages/merchant/TeamManagement.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "team.list"
+      ],
+      "mutations": [
+        "team.invite",
+        "team.remove",
+        "team.revokeInvite"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "المهام والصلاحيات مفهومة؛ إظهار المالك الحالي بدل إحصاء مالكين صفر."
+    },
+    {
+      "route": "/merchant/services",
+      "title": "الخدمات",
+      "group": "catalog",
+      "component": "ServicesManagement",
+      "file": "client/src/pages/merchant/ServicesManagement.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الخدمات",
+        "التصنيفات",
+        "الخدمات النشطة"
+      ],
+      "queries": [
+        "services.list",
+        "serviceCategories.list"
+      ],
+      "mutations": [
+        "services.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إنشاء خدمة وحفظها نجح؛ بطاقة موجزة وسعر ومدة واضحان."
+    },
+    {
+      "route": "/merchant/services/new",
+      "title": "إضافة وتعديل خدمة",
+      "group": "catalog",
+      "component": "ServiceForm",
+      "file": "client/src/pages/merchant/ServiceForm.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "mutations": [
+        "services.create",
+        "services.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "النصوص الجديدة جيدة؛ يجب رفض تعديل معرف غير موجود بدل نموذج فارغ."
+    },
+    {
+      "route": "/merchant/services/:id/edit",
+      "title": "إضافة وتعديل خدمة",
+      "group": "catalog",
+      "component": "ServiceForm",
+      "file": "client/src/pages/merchant/ServiceForm.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "mutations": [
+        "services.create",
+        "services.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "النصوص الجديدة جيدة؛ يجب رفض تعديل معرف غير موجود بدل نموذج فارغ."
+    },
+    {
+      "route": "/merchant/services/:id",
+      "title": "تفاصيل الخدمة",
+      "group": "catalog",
+      "component": "ServiceDetails",
+      "file": "client/src/pages/ServiceDetails.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "services.getById"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "حالة غير موجودة مع عودة جيدة؛ ربط الحجز ومقدمي الخدمة في مكان واحد."
+    },
+    {
+      "route": "/merchant/bookings",
+      "title": "الحجوزات",
+      "group": "catalog",
+      "component": "BookingsManagement",
+      "file": "client/src/pages/BookingsManagement.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "bookings.list",
+        "bookings.getStats",
+        "services.list"
+      ],
+      "mutations": [
+        "bookings.create"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "وضع يوم وأسبوع وقائمة؛ تثبيت حالة الحجز وتوقيته والمنطقة الزمنية."
+    },
+    {
+      "route": "/merchant/service-categories",
+      "title": "تصنيفات الخدمات",
+      "group": "catalog",
+      "component": "ServiceCategories",
+      "file": "client/src/pages/merchant/ServiceCategories.tsx",
+      "layout": "workspace",
+      "labels": [
+        "الاسم بالعربي *",
+        "الاسم بالإنجليزي",
+        "الوصف",
+        "الأيقونة (Emoji)",
+        "اللون"
+      ],
+      "queries": [
+        "serviceCategories.list"
+      ],
+      "mutations": [
+        "serviceCategories.create",
+        "serviceCategories.update",
+        "serviceCategories.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إدارة ضمن الكتالوج؛ حالة الفراغ والإضافة واضحتان."
+    },
+    {
+      "route": "/merchant/service-packages",
+      "title": "حزم الخدمات",
+      "group": "catalog",
+      "component": "ServicePackages",
+      "file": "client/src/pages/merchant/ServicePackages.tsx",
+      "layout": "workspace",
+      "labels": [
+        "اسم الحزمة *",
+        "الوصف",
+        "الخدمات المشمولة *",
+        "السعر الأصلي (ريال) *",
+        "سعر الحزمة (ريال) *"
+      ],
+      "queries": [
+        "servicePackages.list",
+        "services.list"
+      ],
+      "mutations": [
+        "servicePackages.create",
+        "servicePackages.update",
+        "servicePackages.delete"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معاينة القيمة والتوفير والخدمات المضمنة قبل الحفظ."
+    },
+    {
+      "route": "/merchant/sheets/settings",
+      "title": "ربط Google Sheets",
+      "group": "settings",
+      "component": "SheetsSettings",
+      "file": "client/src/pages/SheetsSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "التقارير اليومية",
+        "التقارير الأسبوعية",
+        "التقارير الشهرية"
+      ],
+      "queries": [
+        "sheets.getStatus",
+        "sheets.getReportSettings",
+        "sheets.getAuthUrl"
+      ],
+      "mutations": [
+        "sheets.setupSpreadsheet",
+        "sheets.updateReportSettings",
+        "sheets.disconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "نجح الإعداد وفشل الإعداد عناوين ثابتة خاطئة؛ تصحيح النصوص."
+    },
+    {
+      "route": "/merchant/sheets/export",
+      "title": "تصدير المحادثات",
+      "group": "analytics",
+      "component": "SheetsExport",
+      "file": "client/src/pages/SheetsExport.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تحديد الكل"
+      ],
+      "queries": [
+        "conversations.list"
+      ],
+      "mutations": [
+        "sheets.exportConversations"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "حالات خطأ وفراغ جيدة؛ توضيح نطاق تحديد الكل وإتاحة التصدير لما بعد 100."
+    },
+    {
+      "route": "/merchant/sheets/reports",
+      "title": "تقارير Google Sheets",
+      "group": "analytics",
+      "component": "SheetsReports",
+      "file": "client/src/pages/SheetsReports.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [
+        "sheets.generateDailyReport",
+        "sheets.generateWeeklyReport",
+        "sheets.generateMonthlyReport",
+        "sheets.sendReportViaWhatsApp"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "عناوين نجاح ثابتة؛ عرض توليد/جدولة حقيقي وحالة آخر تشغيل."
+    },
+    {
+      "route": "/merchant/sheets/inventory",
+      "title": "مخزون Google Sheets",
+      "group": "catalog",
+      "component": "SheetsInventory",
+      "file": "client/src/pages/SheetsInventory.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [
+        "sheets.syncInventory",
+        "sheets.updateInventoryFromSheets"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصحيح العناوين؛ معاينة الفرق قبل استبدال المخزون."
+    },
+    {
+      "route": "/merchant/payments",
+      "title": "المدفوعات",
+      "group": "sales",
+      "component": "Payments",
+      "file": "client/src/pages/merchant/Payments.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي المعاملات",
+        "معاملات ناجحة",
+        "قيد الانتظار",
+        "فاشلة",
+        "معاملات الدفع",
+        "المعرف",
+        "العميل",
+        "المبلغ",
+        "الحالة",
+        "طريقة الدفع",
+        "التاريخ",
+        "الإجراءات"
+      ],
+      "queries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "توحيد المسارين المتكررين وعنوان h1؛ فصل مدفوعات العملاء عن فواتير ساري."
+    },
+    {
+      "route": "/merchant/payments/:id",
+      "title": "تفاصيل معاملة",
+      "group": "sales",
+      "component": "PaymentDetails",
+      "file": "client/src/pages/PaymentDetails.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "payments.getById"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "غير موجودة مع رجوع جيد؛ إضافة حالة تحقق غير مؤكدة بدلاً من الجزم."
+    },
+    {
+      "route": "/merchant/payment-links",
+      "title": "روابط الدفع",
+      "group": "sales",
+      "component": "PaymentLinks",
+      "file": "client/src/pages/merchant/PaymentLinks.tsx",
+      "layout": "workspace",
+      "labels": [
+        "روابط الدفع",
+        "عنوان الرابط *",
+        "الوصف",
+        "المبلغ (ريال سعودي) *",
+        "الحد الأقصى للاستخدام (اختياري)",
+        "العنوان",
+        "المبلغ",
+        "الاستخدام",
+        "المدفوعات",
+        "الحالة",
+        "التاريخ",
+        "الإجراءات"
+      ],
+      "queries": [
+        "payments.listLinks"
+      ],
+      "mutations": [
+        "payments.createLink",
+        "payments.disableLink"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "نسخ الرابط بعد نجاح clipboard فقط؛ ملخص العميل والمبلغ والصلاحية."
+    },
+    {
+      "route": "/merchant/payment-settings",
+      "title": "بوابة دفع العملاء",
+      "group": "settings",
+      "component": "PaymentSettings",
+      "file": "client/src/pages/merchant/PaymentSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تفعيل Tap Payment",
+        "وضع الاختبار (Sandbox)",
+        "إرسال رابط الدفع تلقائياً",
+        "رسالة رابط الدفع",
+        "كيفية الحصول على مفاتيح Tap",
+        "حالة التكامل"
+      ],
+      "queries": [
+        "merchantPayments.getSettings"
+      ],
+      "mutations": [
+        "merchantPayments.saveSettings",
+        "merchantPayments.testConnection"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إعداد منفصل عن اشتراك ساري؛ فحص الاتصال وحالة المتطلبات بوضوح."
+    },
+    {
+      "route": "/merchant/loyalty/settings",
+      "title": "إعدادات الولاء",
+      "group": "marketing",
+      "component": "LoyaltySettings",
+      "file": "client/src/pages/LoyaltySettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "خطأ",
+        "إعدادات نظام الولاء",
+        "إدارة برنامج النقاط والمكافآت",
+        "تشغيل أو إيقاف برنامج النقاط للعملاء",
+        "تفعيل النظام",
+        "إعدادات النقاط",
+        "تحديد قيمة النقاط وطريقة حسابها",
+        "مكافأة الإحالة",
+        "ريال لكل 1 نقطة",
+        "مكافأة التقييم",
+        "مدة صلاحية النقاط (بالأيام)",
+        "مكافأة عيد الميلاد",
+        "مكافآت إضافية"
+      ],
+      "queries": [
+        "loyalty.getSettings"
+      ],
+      "mutations": [
+        "loyalty.updateSettings"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "إعادة بناء النصوص؛ العناوين والحقول تستدعي رسائل نجاح وفشل غير مناسبة."
+    },
+    {
+      "route": "/merchant/loyalty/tiers",
+      "title": "مستويات الولاء",
+      "group": "marketing",
+      "component": "LoyaltyTiers",
+      "file": "client/src/pages/LoyaltyTiers.tsx",
+      "layout": "workspace",
+      "labels": [
+        "فشل حفظ المستوى",
+        "مستويات الولاء",
+        "إدارة مستويات العملاء ومزاياهم",
+        "الحد الأدنى من النقاط"
+      ],
+      "queries": [
+        "loyalty.getTiers"
+      ],
+      "mutations": [
+        "loyalty.updateTier"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصحيح النصوص وعرض قواعد الترقية والمزايا بجدول مقارن."
+    },
+    {
+      "route": "/merchant/loyalty/rewards",
+      "title": "مكافآت الولاء",
+      "group": "marketing",
+      "component": "LoyaltyRewards",
+      "file": "client/src/pages/LoyaltyRewards.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تم حذف المكافأة",
+        "فشل حذف المكافأة",
+        "خصم",
+        "شحن مجاني",
+        "هدية",
+        "النوع",
+        "قيمة الخصم",
+        "ريال",
+        "لا توجد مكافآت حتى الآن",
+        "تعديل المكافأة"
+      ],
+      "queries": [
+        "loyalty.getRewards"
+      ],
+      "mutations": [
+        "loyalty.createReward",
+        "loyalty.updateReward",
+        "loyalty.deleteReward"
+      ],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصحيح النصوص؛ توضيح الرصيد والتكلفة والتوفر قبل الاستبدال."
+    },
+    {
+      "route": "/merchant/loyalty/customers",
+      "title": "عملاء الولاء",
+      "group": "customers",
+      "component": "LoyaltyCustomers",
+      "file": "client/src/pages/LoyaltyCustomers.tsx",
+      "layout": "workspace",
+      "labels": [
+        "عرض وإدارة نقاط العملاء",
+        "النقاط الموزعة",
+        "النقاط المستبدلة",
+        "إجمالي الاستبدالات",
+        "قائمة العملاء",
+        "جميع العملاء المسجلين في نظام الولاء",
+        "العميل",
+        "رقم الجوال",
+        "المستوى",
+        "آخر نشاط",
+        "لا يوجد",
+        "عدد النقاط",
+        "السبب (بالعربي)",
+        "السبب (بالإنجليزي)"
+      ],
+      "queries": [
+        "loyalty.getAllCustomersPoints",
+        "loyalty.getStats"
+      ],
+      "mutations": [
+        "loyalty.addPoints",
+        "loyalty.deductPoints"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "تصحيح رؤوس الجدول والعدادات؛ سجل سبب تعديل النقاط."
+    },
+    {
+      "route": "/merchant/integrations-dashboard",
+      "title": "صحة التكاملات",
+      "group": "settings",
+      "component": "IntegrationsDashboard",
+      "file": "client/src/pages/IntegrationsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إدارة ومراقبة جميع التكاملات المفعلة",
+        "تحديث",
+        "التكاملات النشطة",
+        "عمليات المزامنة",
+        "لم تتم المزامنة بعد",
+        "متصل"
+      ],
+      "queries": [
+        "advancedNotifications.getIntegrationsDashboard"
+      ],
+      "mutations": [
+        "advancedNotifications.resolveError"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إعادة تعيين النصوص؛ عدم عرض نسبة نجاح 100% عندما لا توجد عمليات."
+    },
+    {
+      "route": "/merchant/platform-integrations",
+      "title": "التكاملات",
+      "group": "settings",
+      "component": "PlatformIntegrations",
+      "file": "client/src/pages/PlatformIntegrations.tsx",
+      "layout": "workspace",
+      "labels": [
+        "مربوط",
+        "منصة التجارة الإلكترونية السعودية الرائدة"
+      ],
+      "queries": [
+        "integrations.getByaanStatus",
+        "sheets.getStatus",
+        "calendar.getStatus",
+        "integrations.getCurrentPlatform",
+        "salla.getConnection",
+        "zid.getConnection",
+        "woocommerce.getSettings"
+      ],
+      "mutations": [
+        "integrations.testByaanConnection",
+        "salla.disconnect",
+        "zid.disconnect",
+        "woocommerce.disconnect"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "بطاقات مصدر وحالة ووقت آخر نجاح وإجراء واحد لكل بطاقة."
+    },
+    {
+      "route": "/merchant/notification-settings",
+      "title": "تفضيلات الإشعارات",
+      "group": "settings",
+      "component": "NotificationSettings",
+      "file": "client/src/pages/NotificationSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "طريقة الإرسال المفضلة",
+        "أنواع الإشعارات",
+        "الطلبات الجديدة",
+        "الرسائل الجديدة",
+        "المواعيد",
+        "تحديثات حالة الطلب",
+        "الرسائل الفائتة",
+        "فك ربط واتساب",
+        "ساعات الهدوء",
+        "تفعيل ساعات الهدوء",
+        "من الساعة",
+        "إلى الساعة",
+        "إعدادات إضافية",
+        "إشعارات فورية",
+        "تجميع الإشعارات",
+        "فترة التجميع (دقائق)"
+      ],
+      "queries": [
+        "notificationPreferences.get"
+      ],
+      "mutations": [
+        "notificationPreferences.update"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "توحيدها مع إشعارات المتصفح والطلبات مع الفصل بين المستلم والعميل."
+    },
+    {
+      "route": "/merchant/currency-settings",
+      "title": "عملة المتجر",
+      "group": "settings",
+      "component": "CurrencySettings",
+      "file": "client/src/pages/CurrencySettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "العملة الأساسية",
+        "دولار أمريكي",
+        "الاسم:"
+      ],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "القيم المعروضة والعناوين منزاحة؛ فصل تغيير وحدة العرض عن تحويل المبالغ."
+    },
+    {
+      "route": "/merchant/push-notifications",
+      "title": "إشعارات المتصفح",
+      "group": "settings",
+      "component": "PushNotificationsSettings",
+      "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الإشعارات",
+        "تم الإرسال",
+        "فشل",
+        "معلق",
+        "حالة الاشتراك",
+        "سجل الإشعارات"
+      ],
+      "queries": [
+        "push.getVapidPublicKey",
+        "push.getStats",
+        "push.getLogs"
+      ],
+      "mutations": [
+        "push.subscribe",
+        "push.unsubscribe",
+        "push.sendTest"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "طلب الإذن بعد فعل واضح؛ اختصار التفاصيل التقنية ضمن تشخيص."
+    },
+    {
+      "route": "/merchant/scheduled-reports",
+      "title": "التقارير المجدولة",
+      "group": "analytics",
+      "component": "ScheduledReports",
+      "file": "client/src/pages/ScheduledReports.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تقرير جديد",
+        "نوع التقرير",
+        "قم بتخصيص إعدادات التقرير المجدول",
+        "يوم الشهر",
+        "وقت الإرسال",
+        "اسم التقرير",
+        "البريد الإلكتروني",
+        "رقم الواتساب",
+        "يوم الإرسال",
+        "المحادثات",
+        "الطلبات",
+        "الإيرادات",
+        "المنتجات",
+        "العملاء",
+        "المواعيد"
+      ],
+      "queries": [
+        "advancedNotifications.getScheduledReports"
+      ],
+      "mutations": [
+        "advancedNotifications.createScheduledReport",
+        "advancedNotifications.updateScheduledReport",
+        "advancedNotifications.deleteScheduledReport"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "عنوان حذف التقرير وأزرار تحقق خاطئة؛ أسماء صحيحة وحذف مع تأكيد."
+    },
+    {
+      "route": "/merchant/whatsapp-auto-notifications",
+      "title": "أتمتة رسائل العملاء",
+      "group": "marketing",
+      "component": "WhatsAppAutoNotifications",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إلغاء الموعد",
+        "تغيير الموعد",
+        "تم إنشاء الإشعار بنجاح",
+        "تم حذف الإشعار بنجاح",
+        "إشعارات WhatsApp التلقائية"
+      ],
+      "queries": [
+        "advancedNotifications.getWhatsappAutoNotifications",
+        "advancedNotifications.getDefaultTemplates"
+      ],
+      "mutations": [
+        "advancedNotifications.createWhatsappAutoNotification",
+        "advancedNotifications.updateWhatsappAutoNotification",
+        "advancedNotifications.deleteWhatsappAutoNotification"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "العنوان إلغاء الطلب غير صحيح؛ معاينة لكل حدث وحذف محمي ومسمى."
+    },
+    {
+      "route": "/merchant/reports",
+      "title": "التقارير",
+      "group": "analytics",
+      "component": "Reports",
+      "file": "client/src/pages/Reports.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي المبيعات",
+        "عدد الطلبات",
+        "متوسط قيمة الطلب",
+        "معدل التحويل",
+        "تشغيل آمن للحملات",
+        "إجمالي العملاء",
+        "عملاء جدد",
+        "عملاء نشطين",
+        "معدل الاحتفاظ",
+        "استخدم وسائط HTTPS عامة",
+        "إجمالي المحادثات",
+        "متوسط وقت الرد",
+        "معدل الرضا",
+        "تحتاج مراجعة قبل إعادة المحاولة"
+      ],
+      "queries": [
+        "reports.getSalesReport",
+        "reports.getCustomersReport",
+        "reports.getConversationsReport"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "مراجعة أسماء الفلاتر والتبويبات وربط كل تصدير بفترته ومرشحه."
+    },
+    {
+      "route": "/merchant/subscriptions",
+      "title": "الباقة والفواتير",
+      "group": "settings",
+      "component": "MySubscription",
+      "file": "client/src/pages/merchant/MySubscription.tsx",
+      "layout": "workspace",
+      "labels": [
+        "لا يوجد اشتراك نشط",
+        "سجل المدفوعات",
+        "التاريخ",
+        "الوصف",
+        "المبلغ",
+        "الحالة"
+      ],
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة."
+    },
+    {
+      "route": "/merchant/usage",
+      "title": "استهلاك الرسائل",
+      "group": "settings",
+      "component": "Usage",
+      "file": "client/src/pages/merchant/Usage.tsx",
+      "layout": "workspace",
+      "labels": [
+        "المحادثات",
+        "الرسائل",
+        "الرسائل الصوتية",
+        "معلومات إعادة التعيين",
+        "ترقية الباقة"
+      ],
+      "queries": [
+        "subscriptions.getUsage"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "دمجها مع الاستخدام الموحد وتوضيح مصدر العدادات ودورة إعادة التعيين."
+    },
+    {
+      "route": "/merchant/usage-dashboard",
+      "title": "حدود الاستخدام",
+      "group": "settings",
+      "component": "UsageDashboard",
+      "file": "client/src/pages/merchant/UsageDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "معلومات الباقة",
+        "نصائح لتحسين الاستخدام"
+      ],
+      "queries": [
+        "usage.getCurrentUsage"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "حالات الاستعادة جيدة؛ توحيد الحدود وتعريف العملاء مقابل المحادثات."
+    },
+    {
+      "route": "/merchant/subscription/plans",
+      "title": "الباقات",
+      "group": "settings",
+      "component": "SubscriptionPlansMerchant",
+      "file": "client/src/pages/merchant/SubscriptionPlans.tsx",
+      "layout": "workspace",
+      "labels": [
+        "🎁 أنت في الفترة التجريبية المجانية",
+        "⏰ انتهت الفترة التجريبية"
+      ],
+      "queries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "mutations": [
+        "merchantSubscription.subscribe"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "احتساب التوفير السنوي من الأسعار الفعلية بدل نسبة ثابتة؛ تمييز الباقة الحالية."
+    },
+    {
+      "route": "/merchant/subscription/compare",
+      "title": "مقارنة الباقات",
+      "group": "settings",
+      "component": "ComparePlans",
+      "file": "client/src/pages/ComparePlans.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "mutations": [
+        "merchantSubscription.upgradePlan"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "نصوص دلالية وحدود فعلية جيدة؛ عرض مناسب للجوال دون ازدحام."
+    },
+    {
+      "route": "/merchant/subscription",
+      "title": "الباقة والفواتير",
+      "group": "settings",
+      "component": "MySubscription",
+      "file": "client/src/pages/merchant/MySubscription.tsx",
+      "layout": "workspace",
+      "labels": [
+        "لا يوجد اشتراك نشط",
+        "سجل المدفوعات",
+        "التاريخ",
+        "الوصف",
+        "المبلغ",
+        "الحالة"
+      ],
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة."
+    },
+    {
+      "route": "/merchant/checkout",
+      "title": "بدء الاشتراك المدفوع",
+      "group": "settings",
+      "component": "Checkout",
+      "file": "client/src/pages/merchant/Checkout.tsx",
+      "layout": "workspace",
+      "labels": [
+        "ملخص الطلب",
+        "طريقة الدفع"
+      ],
+      "queries": [
+        "subscriptionPlans.listPlans"
+      ],
+      "mutations": [
+        "merchantSubscription.subscribe"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "إصلاح روابط الشروط والخصوصية # وإضافة عودة عندما تكون الباقة غير موجودة."
+    },
+    {
+      "route": "/merchant/payment/success",
+      "title": "نتيجة دفع الاشتراك",
+      "group": "settings",
+      "component": "PaymentSuccess",
+      "file": "client/src/pages/merchant/PaymentSuccess.tsx",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [
+        "subscriptionPayments.verifyPayment"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "قراءة search الصحيحة؛ المرجع المرسل يظهر #0 حاليًا في هذا المسار القديم."
+    },
+    {
+      "route": "/merchant/payment/cancel",
+      "title": "إلغاء دفع الاشتراك",
+      "group": "settings",
+      "component": "PaymentCancel",
+      "file": "client/src/pages/merchant/PaymentCancel.tsx",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "لا تجزم بعدم الخصم دون تحقق؛ الاحتفاظ بخيار الباقة عند إعادة المحاولة."
+    },
+    {
+      "route": "/merchant/tools",
+      "title": "MerchantTools",
+      "group": "settings",
+      "component": "MerchantTools",
+      "file": "client/src/pages/merchant/Tools.tsx",
+      "layout": "workspace",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/customers",
+      "title": "العملاء",
+      "group": "customers",
+      "component": "Customers",
+      "file": "client/src/pages/Customers.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي العملاء",
+        "العملاء النشطين",
+        "عملاء جدد",
+        "قائمة العملاء",
+        "الاسم",
+        "رقم الهاتف",
+        "عدد المحادثات",
+        "عدد الطلبات",
+        "آخر تفاعل",
+        "الحالة",
+        "الإجراءات",
+        "المعلومات الأساسية",
+        "البريد الإلكتروني",
+        "تاريخ التسجيل",
+        "التصنيفات",
+        "سجل المحادثات",
+        "سجل الطلبات",
+        "الملاحظات",
+        "إضافة ملاحظة جديدة",
+        "الملاحظات السابقة"
+      ],
+      "queries": [
+        "customers.list",
+        "customers.getStats",
+        "customers.exportCsv"
+      ],
+      "mutations": [
+        "customers.addNote",
+        "customers.addTag",
+        "customers.removeTag"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "عنوان تم إضافة الملاحظة ثابت وخاطئ؛ تصحيح النصوص وتجميع سجل العميل."
+    },
+    {
+      "route": "/merchant/website-analysis",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/smart-analysis",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/smart-analysis",
+      "title": "تحليل الموقع",
+      "group": "ai",
+      "component": "SmartAnalysis",
+      "file": "client/src/pages/SmartAnalysis.tsx",
+      "layout": "workspace",
+      "labels": [
+        "تحليل موقع جديد",
+        "إجمالي الصفحات",
+        "الأسئلة الشائعة",
+        "صفحات الشحن",
+        "صفحات FAQ",
+        "مشاكل SEO",
+        "التوصيات الذكية"
+      ],
+      "queries": [
+        "analysis.getStatus",
+        "analysis.getExistingData",
+        "analysis.getDiscoveredPages",
+        "analysis.getExtractedFaqs",
+        "analysis.getStats",
+        "websiteAnalysis.listAnalyses",
+        "websiteAnalysis.getAnalysis",
+        "websiteAnalysis.getInsights"
+      ],
+      "mutations": [
+        "websiteAnalysis.analyze",
+        "websiteAnalysis.deleteAnalysis",
+        "analysis.previewAnalysis",
+        "analysis.applyAnalysis",
+        "analysis.deletePage",
+        "analysis.deleteFaq"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "معالج اكتشاف ثم معاينة ثم استيراد إلى المعرفة؛ حالة تقدم موثوقة."
+    },
+    {
+      "route": "/merchant/competitor-analysis",
+      "title": "تحليل المنافسين",
+      "group": "analytics",
+      "component": "CompetitorAnalysis",
+      "file": "client/src/pages/CompetitorAnalysis.tsx",
+      "layout": "workspace",
+      "labels": [
+        "اسم المنافس",
+        "رابط الموقع"
+      ],
+      "queries": [
+        "websiteAnalysis.listCompetitors"
+      ],
+      "mutations": [
+        "websiteAnalysis.addCompetitor",
+        "websiteAnalysis.deleteCompetitor"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ميزة متقدمة ضمن الرؤى؛ بيان آخر تحليل ومصدر المقارنة."
+    },
+    {
+      "route": "/merchant/customers/:phone",
+      "title": "ملف العميل",
+      "group": "customers",
+      "component": "CustomerDetails",
+      "file": "client/src/pages/CustomerDetails.tsx",
+      "layout": "workspace",
+      "labels": [
+        "قيد الانتظار",
+        "مؤكد",
+        "تم الشحن",
+        "ملغي",
+        "عدد الطلبات",
+        "القيمة الإجمالية",
+        "نقطة متاحة",
+        "معلومات التفاعل",
+        "تاريخ التسجيل",
+        "آخر تفاعل",
+        "سجل الطلبات",
+        "جميع طلبات العميل",
+        "التاريخ"
+      ],
+      "queries": [
+        "customers.getByPhone"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "أسماء مؤشرات الحالة خاطئة؛ سجل موحد للمحادثات والطلبات والتقييمات."
+    },
+    {
+      "route": "/merchant/ai-suggestions",
+      "title": "الرؤى والاقتراحات وA/B",
+      "group": "analytics",
+      "component": "InsightsDashboard",
+      "file": "client/src/pages/merchant/InsightsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الكلمات",
+        "ردود مقترحة",
+        "ردود مطبقة",
+        "توزيع الفئات",
+        "أكثر 10 كلمات تكراراً",
+        "متوسط الرضا",
+        "إيجابي",
+        "محايد",
+        "سلبي",
+        "تطور المشاعر",
+        "آخر التقارير الأسبوعية",
+        "الاختبارات النشطة"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصدير CSV غير منفذ؛ فتح تبويب A/B عند دخول مساره؛ انتظار نجاح التحديث."
+    },
+    {
+      "route": "/merchant/keywords",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/smart-analysis",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/voice-messages",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/analysis",
+      "title": "تحليلات الرسائل",
+      "group": "analytics",
+      "component": "Analytics",
+      "file": "client/src/pages/merchant/Analytics.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الرسائل",
+        "الرسائل الصوتية",
+        "معدل التحويل",
+        "وقت الذروة",
+        "إيجابي",
+        "سلبي",
+        "محايد",
+        "معدل الثقة",
+        "توزيع المشاعر",
+        "تفصيل المشاعر",
+        "توزيع أنواع الرسائل",
+        "أوقات الذروة",
+        "المنتجات الأكثر استفساراً",
+        "اتجاه الرسائل اليومية"
+      ],
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ستة مسارات لواجهة واحدة؛ فصل التحليلات عن إعدادات الصوت وإضافة فترة موحدة."
+    },
+    {
+      "route": "/merchant/weekly-reports",
+      "title": "مدخل لوحة التاجر",
+      "group": "settings",
+      "redirect": "/merchant/reports",
+      "layout": "standalone",
+      "labels": [],
+      "queries": [],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة."
+    },
+    {
+      "route": "/merchant/ab-tests",
+      "title": "الرؤى والاقتراحات وA/B",
+      "group": "analytics",
+      "component": "InsightsDashboard",
+      "file": "client/src/pages/merchant/InsightsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي الكلمات",
+        "ردود مقترحة",
+        "ردود مطبقة",
+        "توزيع الفئات",
+        "أكثر 10 كلمات تكراراً",
+        "متوسط الرضا",
+        "إيجابي",
+        "محايد",
+        "سلبي",
+        "تطور المشاعر",
+        "آخر التقارير الأسبوعية",
+        "الاختبارات النشطة"
+      ],
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تصدير CSV غير منفذ؛ فتح تبويب A/B عند دخول مساره؛ انتظار نجاح التحديث."
+    },
+    {
+      "route": "/merchant/try-sari-analytics",
+      "title": "مقاييس المساعد",
+      "group": "analytics",
+      "component": "MetricsDashboard",
+      "file": "client/src/pages/merchant/MetricsDashboard.tsx",
+      "layout": "workspace",
+      "labels": [
+        "💡 كيف تستفيد من هذه المقاييس؟"
+      ],
+      "queries": [
+        "testSari.getMetrics"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "تحديد مصدر المقاييس والحد الأدنى للعينة؛ منع المقارنات على بيانات مفقودة."
+    },
+    {
+      "route": "/merchant/merchant-payments",
+      "title": "المدفوعات",
+      "group": "sales",
+      "component": "Payments",
+      "file": "client/src/pages/merchant/Payments.tsx",
+      "layout": "workspace",
+      "labels": [
+        "إجمالي المعاملات",
+        "معاملات ناجحة",
+        "قيد الانتظار",
+        "فاشلة",
+        "معاملات الدفع",
+        "المعرف",
+        "العميل",
+        "المبلغ",
+        "الحالة",
+        "طريقة الدفع",
+        "التاريخ",
+        "الإجراءات"
+      ],
+      "queries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "mutations": [],
+      "legacy": [],
+      "hasErrorHandling": false,
+      "note": "توحيد المسارين المتكررين وعنوان h1؛ فصل مدفوعات العملاء عن فواتير ساري."
+    },
+    {
+      "route": "/merchant/my-subscription",
+      "title": "الباقة والفواتير",
+      "group": "settings",
+      "component": "MySubscription",
+      "file": "client/src/pages/merchant/MySubscription.tsx",
+      "layout": "workspace",
+      "labels": [
+        "لا يوجد اشتراك نشط",
+        "سجل المدفوعات",
+        "التاريخ",
+        "الوصف",
+        "المبلغ",
+        "الحالة"
+      ],
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ],
+      "legacy": [],
+      "hasErrorHandling": true,
+      "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة."
+    }
+  ]
+}

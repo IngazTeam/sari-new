@@ -204,7 +204,7 @@ export default function WooCommerceOrders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('wooCommerceOrdersPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('workspacePages.wooOrders')}</h1>
           <p className="text-muted-foreground">{t('wooCommerceOrdersPage.text1')}</p>
         </div>
         <Button 

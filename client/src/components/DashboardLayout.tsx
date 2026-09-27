@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { MerchantSelector } from './MerchantSelector';
 import { AiBudgetAlerts } from './admin/AiBudgetAlerts';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,193 +17,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
 import { useIsMobile } from "@/hooks/useMobile";
-import {
-  LayoutGrid,
-  LogOut,
-  PanelLeft,
-  Users,
-  MessageSquareText,
-  Package,
-  Megaphone,
-  Settings,
-  ShieldCheck,
-  Smartphone,
-  BarChart3,
-  CreditCard,
-  Store,
-  ShoppingCart,
-  Ticket,
-  UserPlus,
-  ShoppingBag,
-  PartyPopper,
-  BellDot,
-  Bot,
-  CalendarCheck2,
-  Sparkles,
-  Zap,
-  Search,
-  Key,
-  Database,
-  Receipt,
-  Star,
-  CalendarDays,
-  UsersRound,
-  HandPlatter,
-  CalendarRange,
-  FileSpreadsheet,
-  Download,
-  Warehouse,
-  HandCoins,
-  LinkIcon,
-  Gift,
-  Award,
-  Crown,
-  Heart,
-  Plug,
-  BellRing,
-  Timer,
-  ScrollText,
-  TrendingUp,
-  Activity,
-  Globe,
-  ChevronDown,
-  Languages,
-  AudioLines,
-  FlaskConical,
-  ScanSearch,
-  Brain,
-  UserCheck,
-  Wand2,
-  Send,
-  Boxes,
-  Swords,
-  ClipboardList,
-  Gem,
-  CircuitBoard,
-  Mail,
-  FileCode2,
-  FileCheck2,
-  KeyRound,
-  ChartPie,
-  Webhook,
-  Flame,
-  FileText,
-  ImageIcon,
-  CalendarClock,
-  GraduationCap,
-} from "lucide-react";
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid, LogOut, PanelLeft, Users, Megaphone, Settings, ShieldCheck, Smartphone, BarChart3, CreditCard, BellDot, Sparkles, Search, Key, Database, Receipt, Gift, Award, TrendingUp, Activity, Globe, Languages, FlaskConical, Brain, Mail, FileCode2, FileCheck2, KeyRound } from "lucide-react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Redirect, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { SubscriptionBadge } from "./SubscriptionBadge";
-import { EmergencyPhoneButton } from "./EmergencyPhoneButton";
 import { useTranslation } from 'react-i18next';
-import { useIntegration } from '@/hooks/useIntegration';
 import MerchantShell from './merchant/MerchantShell';
+import { WorkspaceStandalone, WorkspaceState } from './merchant/WorkspaceState';
 
-// Menu item type with optional group
+// Administration menu items.
 type MenuItem = {
   icon: any;
   label: string;
   path: string;
-  group?: string;
-  hero?: boolean;
-  secondary?: boolean;
 };
 
-// Menu groups for merchant
-const getMerchantMenuGroups = (t: any) => [
-  { id: 'main', label: t('sidebar.groups.main', 'الرئيسية والمتابعة'), icon: LayoutGrid, color: 'text-slate-600 dark:text-slate-400', activeColor: 'text-slate-700', bgColor: 'bg-slate-100/60 dark:bg-slate-800/40', borderColor: 'border-slate-300 dark:border-slate-600' },
-  { id: 'operations', label: t('sidebar.groups.operations', 'المبيعات والتشغيل'), icon: Boxes, color: 'text-emerald-600 dark:text-emerald-400', activeColor: 'text-emerald-700', bgColor: 'bg-emerald-50/60 dark:bg-emerald-900/20', borderColor: 'border-emerald-300 dark:border-emerald-700' },
-  { id: 'channels', label: t('sidebar.groups.channels', 'المساعد الذكي'), icon: Brain, color: 'text-violet-600 dark:text-violet-400', activeColor: 'text-violet-700', bgColor: 'bg-violet-50/60 dark:bg-violet-900/20', borderColor: 'border-violet-300 dark:border-violet-700' },
-  { id: 'marketing', label: t('sidebar.groups.marketing', 'التسويق والولاء'), icon: Send, color: 'text-orange-600 dark:text-orange-400', activeColor: 'text-orange-700', bgColor: 'bg-orange-50/60 dark:bg-orange-900/20', borderColor: 'border-orange-300 dark:border-orange-700' },
-  { id: 'analytics', label: t('sidebar.groups.analytics', 'التحليلات'), icon: ChartPie, color: 'text-blue-600 dark:text-blue-400', activeColor: 'text-blue-700', bgColor: 'bg-blue-50/60 dark:bg-blue-900/20', borderColor: 'border-blue-300 dark:border-blue-700' },
-  { id: 'settings', label: t('sidebar.groups.settings', 'الإعدادات والربط'), icon: Settings, color: 'text-gray-600 dark:text-gray-400', activeColor: 'text-gray-700', bgColor: 'bg-gray-50/60 dark:bg-gray-800/30', borderColor: 'border-gray-300 dark:border-gray-600' },
-];
-
-// Menu items based on user role
-const getMerchantMenuItems = (t: any): MenuItem[] => [
-  // 1. الرئيسية والمتابعة
-  { icon: LayoutGrid, label: t('sidebar.merchant.dashboard', 'لوحة التحكم'), path: "/merchant/dashboard", group: 'main' },
-  { icon: MessageSquareText, label: t('sidebar.merchant.conversations', 'المحادثات'), path: "/merchant/conversations", group: 'main' },
-  { icon: BellDot, label: t('sidebar.merchant.notifications', 'الإشعارات'), path: "/merchant/notifications", group: 'main' },
-
-  // 2. المبيعات والتشغيل
-  { icon: Package, label: t('sidebar.merchant.products', 'المنتجات'), path: "/merchant/products", group: 'operations' },
-  { icon: Receipt, label: t('sidebar.merchant.orders', 'الطلبات'), path: "/merchant/orders", group: 'operations' },
-  { icon: Users, label: t('sidebar.merchant.customerManagement', 'العملاء'), path: "/merchant/customers", group: 'operations' },
-  { icon: HandPlatter, label: t('sidebar.merchant.services', 'الخدمات'), path: "/merchant/services", group: 'operations', secondary: true },
-  { icon: CalendarCheck2, label: t('sidebar.merchant.bookingManagement', 'الحجوزات'), path: "/merchant/bookings", group: 'operations', secondary: true },
-  { icon: CalendarRange, label: t('sidebar.merchant.calendar', 'التقويم'), path: "/merchant/calendar", group: 'operations', secondary: true },
-  { icon: LinkIcon, label: t('sidebar.merchant.paymentLinks', 'روابط الدفع'), path: "/merchant/payment-links", group: 'operations', secondary: true },
-  { icon: HandCoins, label: t('sidebar.merchant.paymentsPage', 'المدفوعات'), path: "/merchant/payments", group: 'operations', secondary: true },
-  { icon: Star, label: t('sidebar.merchant.reviews', 'التقييمات'), path: "/merchant/reviews", group: 'operations', secondary: true },
-  { icon: BarChart3, label: t('sidebar.merchant.salesPipeline', 'غرفة قيادة المبيعات'), path: "/merchant/sales-pipeline", group: 'operations' },
-  { icon: Receipt, label: t('sidebar.merchant.salesHub', 'عروض الأسعار'), path: "/merchant/sales-hub", group: 'operations' },
-  { icon: FileText, label: t('sidebar.merchant.quotationTemplates', 'قوالب عروض الأسعار'), path: "/merchant/quotation-templates", group: 'operations', secondary: true },
-
-  // 3. المساعد الذكي
-  { icon: Brain, label: t('sidebar.merchant.sariBrain', 'عقل ساري'), path: "/merchant/sari-brain", group: 'channels', hero: true },
-  { icon: Wand2, label: t('sidebar.merchant.aiHub', 'مركز المساعد الذكي'), path: "/merchant/ai-hub", group: 'channels' },
-  { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
-  { icon: Bot, label: t('sidebar.merchant.botSettings', 'إعدادات الروبوت'), path: "/merchant/bot-settings", group: 'channels' },
-  { icon: UserCheck, label: t('sidebar.merchant.humanTakeover', 'التدخل البشري'), path: "/merchant/human-takeover", group: 'channels' },
-  { icon: UsersRound, label: t('sidebar.merchant.virtualTeam', 'فريق العمل الافتراضي'), path: "/merchant/virtual-team", group: 'channels', secondary: true },
-  { icon: Zap, label: t('sidebar.merchant.quickResponses', 'الردود السريعة'), path: "/merchant/quick-responses", group: 'channels', secondary: true },
-  { icon: Timer, label: t('sidebar.merchant.scheduledMessages', 'الرسائل المجدولة'), path: "/merchant/scheduled-messages", group: 'channels', secondary: true },
-  { icon: BellRing, label: t('sidebar.merchant.orderNotifications', 'إشعارات الطلبات'), path: "/merchant/order-notifications", group: 'channels', secondary: true },
-  { icon: ScrollText, label: t('sidebar.merchant.messageAnalytics', 'سجل الرسائل'), path: "/merchant/message-analytics", group: 'channels', secondary: true },
-  { icon: AudioLines, label: t('sidebar.merchant.voiceMessages', 'الرسائل الصوتية'), path: "/merchant/voice-messages", group: 'channels', secondary: true },
-
-  // 4. التسويق والولاء
-  { icon: Megaphone, label: t('sidebar.merchant.campaigns', 'الحملات'), path: "/merchant/campaigns", group: 'marketing' },
-  { icon: Ticket, label: t('sidebar.merchant.discounts', 'كوبونات الخصم'), path: "/merchant/discounts", group: 'marketing' },
-  { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts', 'السلات المتروكة'), path: "/merchant/abandoned-carts", group: 'marketing' },
-  { icon: PartyPopper, label: t('sidebar.merchant.occasionCampaigns', 'حملات المناسبات'), path: "/merchant/occasion-campaigns", group: 'marketing', secondary: true },
-  { icon: Flame, label: t('sidebar.merchant.promotions', 'العروض الترويجية'), path: "/merchant/promotions", group: 'marketing' },
-  { icon: Gem, label: t('sidebar.merchant.loyaltySettings', 'برنامج الولاء'), path: "/merchant/loyalty/settings", group: 'marketing', secondary: true },
-  { icon: UserPlus, label: t('sidebar.merchant.referrals', 'الإحالات'), path: "/merchant/referrals", group: 'marketing', secondary: true },
-
-  // 5. التحليلات والتقارير
-  { icon: ChartPie, label: t('sidebar.merchant.analyticsHub', 'مركز التحليلات'), path: "/merchant/analytics-hub", group: 'analytics' },
-  { icon: BarChart3, label: t('sidebar.merchant.reports', 'التقارير'), path: "/merchant/reports", group: 'analytics' },
-  { icon: Globe, label: t('sidebar.merchant.smartAnalysis', 'تحليل الموقع'), path: "/merchant/smart-analysis", group: 'analytics', secondary: true },
-  { icon: Swords, label: t('sidebar.merchant.competitorAnalysis', 'تحليل المنافسين'), path: "/merchant/competitor-analysis", group: 'analytics', secondary: true },
-  { icon: ClipboardList, label: t('sidebar.merchant.weeklyReports', 'التقارير الأسبوعية'), path: "/merchant/weekly-reports", group: 'analytics', secondary: true },
-  { icon: ScanSearch, label: t('sidebar.merchant.keywords', 'الكلمات المفتاحية'), path: "/merchant/keywords", group: 'analytics', secondary: true },
-  { icon: FlaskConical, label: t('sidebar.merchant.abTests', 'اختبارات A/B'), path: "/merchant/ab-tests", group: 'analytics', secondary: true },
-
-  // 6. الإعدادات والربط
-  { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
-  { icon: ShieldCheck, label: t('sidebar.merchant.privacyCenter', 'مركز الخصوصية'), path: "/merchant/privacy-center", group: 'settings' },
-  { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
-  { icon: Plug, label: t('sidebar.merchant.platformIntegrations', 'التكاملات والربط'), path: "/merchant/platform-integrations", group: 'settings' },
-  { icon: Users, label: t('sidebar.merchant.teamManagement', 'إدارة الفريق'), path: "/merchant/team", group: 'settings' },
-  { icon: CalendarClock, label: t('sidebar.merchant.staffManagement', 'مقدمو الخدمات'), path: "/merchant/staff", group: 'settings', secondary: true },
-  { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings', secondary: true },
-  { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings', secondary: true },
-  { icon: ImageIcon, label: t('sidebar.merchant.mediaLibrary', 'مكتبة الوسائط'), path: "/merchant/media-library", group: 'settings', secondary: true },
-];
-
+// Administration navigation. Tenant navigation lives only in MerchantShell.
 const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: LayoutGrid, label: t('sidebar.admin.dashboard'), path: "/admin/dashboard" },
   { icon: Activity, label: t('sidebar.admin.monitor', 'مركز المراقبة'), path: "/admin/monitor" },
@@ -250,17 +85,20 @@ export default function DashboardLayout({
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const { loading, user } = useAuth();
+  const { loading, user, error, refresh } = useAuth();
+  const merchantRoute = /^\/merchant(?:\/|$)/.test(routeLocation);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
   if (loading) {
+    if (merchantRoute) return <WorkspaceStandalone><WorkspaceState kind="loading" /></WorkspaceStandalone>;
     return <DashboardLayoutSkeleton />
   }
 
   if (!user) {
+    if (merchantRoute) return <WorkspaceStandalone><WorkspaceState kind={error ? 'offline' : 'session'} onRetry={error ? () => { void refresh(); } : undefined} /></WorkspaceStandalone>;
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
@@ -292,7 +130,7 @@ export default function DashboardLayout({
     return <Redirect to="/merchant/dashboard" />;
   }
 
-  if (routeLocation.startsWith('/merchant/')) {
+  if (merchantRoute) {
     return <MerchantShell>{children}</MerchantShell>;
   }
 
@@ -327,7 +165,6 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [expandedGroup, setExpandedGroup] = useState<string | null>('main');
   const [sidebarSearch, setSidebarSearch] = useState('');
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -341,61 +178,8 @@ function DashboardLayoutContent({
     logout();
   };
 
-  // Accordion: only one group open at a time
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroup(prev => prev === groupId ? null : groupId);
-  };
-
-  // Get menu items based on user role
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const menuItems = isAdmin ? getAdminMenuItems(t) : getMerchantMenuItems(t);
-  const menuGroups = getMerchantMenuGroups(t);
-
-  // Apply integration terminology to sidebar labels (e.g., منتجات → دورات when Byaan)
-  const { term, isLocked, source: integrationSource } = useIntegration();
-  const adaptedMenuItems = useMemo(() => {
-    if (isAdmin || integrationSource === 'none') return menuItems;
-    return menuItems.map(item => {
-      if (item.path === '/merchant/products') return { ...item, label: term('products') };
-      if (item.path === '/merchant/customers') return { ...item, label: term('customers') };
-      if (item.path === '/merchant/orders') return { ...item, label: term('orders') };
-      return item;
-    }).concat(
-      // Conditional Byaan dashboard link
-      integrationSource === 'byaan' ? [
-        { icon: GraduationCap, label: 'لوحة بيان 🎓', path: '/merchant/byaan-dashboard', group: 'settings' },
-      ] : []
-    );
-  }, [menuItems, isAdmin, integrationSource, term]);
-
-  const activeMenuItem = adaptedMenuItems.find(item => item.path === location);
-
-  // Group menu items by group
-  const groupedMenuItems = adaptedMenuItems.reduce((acc, item) => {
-    const group = item.group || 'other';
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
-
-  // Filter menu items based on search
-  const filteredGroupedItems = useMemo(() => {
-    if (!sidebarSearch.trim()) return groupedMenuItems;
-    const query = sidebarSearch.toLowerCase();
-    const filtered: Record<string, MenuItem[]> = {};
-    for (const [group, items] of Object.entries(groupedMenuItems)) {
-      const matched = items.filter(item => item.label.toLowerCase().includes(query));
-      if (matched.length > 0) filtered[group] = matched;
-    }
-    return filtered;
-  }, [groupedMenuItems, sidebarSearch]);
-
-  // Auto-expand group containing active item
-  useEffect(() => {
-    if (activeMenuItem?.group && expandedGroup !== activeMenuItem.group) {
-      setExpandedGroup(activeMenuItem.group);
-    }
-  }, [location]);
+  const menuItems = getAdminMenuItems(t);
+  const activeMenuItem = menuItems.find(item => item.path === location);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -453,7 +237,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    {isAdmin ? t('sidebar.adminPanel') : t('sidebar.merchantPanel')}
+                    {t('sidebar.adminPanel')}
                   </span>
                 </div>
               ) : null}
@@ -461,7 +245,6 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 overflow-y-auto">
-            {!isAdmin && !isCollapsed && <MerchantSelector />}
             {/* Sidebar Search */}
             {!isCollapsed && (
               <div className="px-3 py-2">
@@ -478,9 +261,8 @@ function DashboardLayoutContent({
               </div>
             )}
             <SidebarMenu className="px-2 py-1">
-              {isAdmin ? (
-                // Admin: flat list
-                menuItems.map((item) => {
+              {
+                menuItems.filter(item => item.label.toLowerCase().includes(sidebarSearch.trim().toLowerCase())).map((item) => {
                   const isActive = location === item.path;
                   return (
                     <SidebarMenuItem key={item.path}>
@@ -498,129 +280,10 @@ function DashboardLayoutContent({
                     </SidebarMenuItem>
                   );
                 })
-              ) : (
-                // Merchant: grouped with collapsible sections
-                menuGroups.map((group) => {
-                  const groupItems = (sidebarSearch.trim() ? filteredGroupedItems : groupedMenuItems)[group.id] || [];
-                  if (groupItems.length === 0) return null;
-                  const isSearching = sidebarSearch.trim().length > 0;
-                  const isExpanded = isSearching || expandedGroup === group.id;
-                  const hasActiveItem = groupItems.some(item => item.path === location);
-                  const GroupIcon = group.icon;
-
-                  return (
-                    <div key={group.id} className="mb-0.5">
-                      {/* Group Header */}
-                      <button
-                        onClick={() => toggleGroup(group.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                          isExpanded
-                            ? `${group.bgColor} ${group.color} shadow-sm`
-                            : hasActiveItem
-                              ? `${group.color} bg-accent/20`
-                              : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
-                        } ${isCollapsed ? 'justify-center' : ''}`}
-                      >
-                        <GroupIcon className={`h-4.5 w-4.5 shrink-0 ${isExpanded ? group.color : ''}`} />
-                        {!isCollapsed && (
-                          <>
-                            <span className="flex-1 text-right truncate">{group.label}</span>
-                            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isExpanded ? '' : 'ltr:-rotate-90 rtl:rotate-90'}`} />
-                          </>
-                        )}
-                      </button>
-
-                      {/* Group Items — smooth accordion */}
-                      <div
-                        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                          isExpanded || isCollapsed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                        }`}
-                      >
-                        <div className="overflow-hidden">
-                          <div className={`${!isCollapsed ? `mr-3 border-r-2 ${group.borderColor}` : ''} mt-0.5 mb-1`}>
-                            {groupItems.map((item) => {
-                              const isActive = location === item.path;
-
-                              // Hero Card — عقل ساري
-                              if (item.hero && !isCollapsed) {
-                                return (
-                                  <SidebarMenuItem key={item.path}>
-                                    <SidebarMenuButton
-                                      isActive={isActive}
-                                      onClick={() => setLocation(item.path)}
-                                      tooltip={item.label}
-                                      className={`h-auto transition-all duration-200 font-normal rounded-xl mr-2 p-0 overflow-hidden`}
-                                    >
-                                      <div className={`w-full p-2.5 rounded-xl transition-all ${
-                                        isActive
-                                          ? 'bg-gradient-to-br from-violet-500/15 to-primary/10 border border-violet-300 dark:border-violet-700 shadow-sm'
-                                          : 'bg-gradient-to-br from-violet-500/5 to-transparent hover:from-violet-500/10 border border-transparent'
-                                      }`}>
-                                        <div className="flex items-center gap-2.5">
-                                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center shadow-sm shrink-0">
-                                            <Brain className="h-4 w-4 text-white" />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <span className="text-sm font-semibold block">🧠 {item.label}</span>
-                                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                              <span className="relative flex h-1.5 w-1.5">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
-                                              </span>
-                                              نشط • يتعلم الآن
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </SidebarMenuButton>
-                                  </SidebarMenuItem>
-                                );
-                              }
-
-                              return (
-                                <SidebarMenuItem key={item.path}>
-                                  <SidebarMenuButton
-                                    isActive={isActive}
-                                    onClick={() => setLocation(item.path)}
-                                    tooltip={item.label}
-                                    className={`transition-all duration-200 font-normal rounded-lg ${!isCollapsed ? 'mr-2' : ''} ${
-                                      item.secondary ? 'h-8 text-xs opacity-70 hover:opacity-100' : 'h-9'
-                                    } ${
-                                      isActive
-                                        ? `font-medium ${group.bgColor} border-r-[3px] border-primary shadow-sm`
-                                        : 'hover:bg-accent/40'
-                                    }`}
-                                  >
-                                    <item.icon
-                                      className={`${item.secondary ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-colors ${isActive ? group.color : 'text-muted-foreground'}`}
-                                    />
-                                    <span className="truncate">{item.label}</span>
-                                  </SidebarMenuButton>
-                                </SidebarMenuItem>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              }
             </SidebarMenu>
           </SidebarContent>
 
-          {/* ═══ AI Status Dock ═══ */}
-          {!isAdmin && !isCollapsed && (
-            <div className="px-3 py-2 border-t">
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-violet-500/5 to-primary/5">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
-                <span className="text-[11px] text-muted-foreground font-medium">🧠 ساري نشط الآن</span>
-              </div>
-            </div>
-          )}
 
         </Sidebar>
         <div
@@ -647,8 +310,6 @@ function DashboardLayoutContent({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {!isAdmin && <SubscriptionBadge />}
-              {!isAdmin && <EmergencyPhoneButton />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />
@@ -680,8 +341,6 @@ function DashboardLayoutContent({
         {!isMobile && (
           <div className="flex border-b h-14 items-center justify-start bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-3">
-              {!isAdmin && <SubscriptionBadge />}
-              {!isAdmin && <EmergencyPhoneButton />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />

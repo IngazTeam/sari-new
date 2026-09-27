@@ -119,7 +119,7 @@ export default function ByaanIntegration() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+              <div className="p-2 bg-primary rounded-xl shadow-lg">
                 <GraduationCap className="h-7 w-7 text-white" />
               </div>
               ربط بيان
@@ -128,7 +128,7 @@ export default function ByaanIntegration() {
           </div>
         </div>
         {isConnected && (
-          <Badge variant="default" className="gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 border-0">
+          <Badge variant="default" className="gap-1.5 px-4 py-2 text-sm bg-primary border-0">
             <CheckCircle2 className="h-4 w-4" />
             مربوط
           </Badge>
@@ -137,7 +137,7 @@ export default function ByaanIntegration() {
 
       {/* Connection Banner */}
       {isConnected ? (
-        <Card className="border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+        <Card className="border-indigo-200 dark:border-indigo-800 bg-accent">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -300,25 +300,25 @@ export default function ByaanIntegration() {
           {/* Stats Tab */}
           <TabsContent value="overview" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-100 dark:border-blue-900">
+              <Card className="bg-accent border-blue-100 dark:border-blue-900">
                 <CardContent className="pt-5">
                   <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{totalConversions}</div>
                   <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">إجمالي العمليات</div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-100 dark:border-green-900">
+              <Card className="bg-accent border-green-100 dark:border-green-900">
                 <CardContent className="pt-5">
                   <div className="text-3xl font-bold text-green-700 dark:text-green-300">{enrollments}</div>
                   <div className="text-sm text-green-600 dark:text-green-400 mt-1">تسجيلات</div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-100 dark:border-purple-900">
+              <Card className="bg-accent border-purple-100 dark:border-purple-900">
                 <CardContent className="pt-5">
                   <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">{payments}</div>
                   <div className="text-sm text-purple-600 dark:text-purple-400 mt-1">مدفوعات</div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-100 dark:border-amber-900">
+              <Card className="bg-accent border-amber-100 dark:border-amber-900">
                 <CardContent className="pt-5">
                   <div className="text-3xl font-bold text-amber-700 dark:text-amber-300">{totalRevenue.toLocaleString('ar-SA')} ر.س</div>
                   <div className="text-sm text-amber-600 dark:text-amber-400 mt-1">الإيرادات عبر ساري</div>

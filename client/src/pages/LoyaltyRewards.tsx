@@ -170,7 +170,7 @@ export default function LoyaltyRewards() {
         <div className="flex items-center gap-3">
           <Gift className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">{t('loyaltyRewardsPage.text0')}</h1>
+            <h1 className="text-3xl font-bold">{t('workspacePages.loyaltyRewards')}</h1>
             <p className="text-muted-foreground">{t('loyaltyRewardsPage.text1')}</p>
           </div>
         </div>

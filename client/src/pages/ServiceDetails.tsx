@@ -1,3 +1,4 @@
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -27,38 +28,15 @@ export default function ServiceDetails() {
   const [, setLocation] = useLocation();
   const serviceId = parseInt(id || "0");
 
-  const { data, isLoading } = trpc.services.getById.useQuery(
+  const { data, isLoading, isError, error, refetch } = trpc.services.getById.useQuery(
     { serviceId },
     { enabled: !!serviceId }
   );
 
-  if (isLoading) {
-    return (
-      <div className="container py-8">
-        <Skeleton className="h-8 w-64 mb-6" />
-        <div className="grid gap-6 md:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-96 mt-6" />
-      </div>
-    );
-  }
+  if (isLoading) return <WorkspaceState kind="loading" />;
 
-  if (!data?.service) {
-    return (
-      <div className="container py-8">
-        <Card className="p-8 text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold mb-2">{t('serviceDetailsPage.text0')}</h2>
-          <Button onClick={() => setLocation("/merchant/services")} className="mt-4">
-            العودة للخدمات
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  if (isError) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? () => { void refetch(); } : undefined} focus />;
+  if (!data?.service) return <WorkspaceState kind="missing" title={t('serviceDetailsPage.text0')} action={<Button onClick={() => setLocation('/merchant/services')}>{t('sidebar.merchant.services')}</Button>} focus />;
 
   const { service, bookingStats, recentBookings, ratingStats } = data;
 

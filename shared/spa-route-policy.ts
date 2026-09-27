@@ -10,6 +10,8 @@ export const SPA_ROUTE_TEMPLATES = [
   ...CENTRAL_ROUTE_PATHS,
   "/",
   "/login",
+  "/merchant",
+  "/merchant/",
   "/signup",
   "/register",
   "/forgot-password",
@@ -219,6 +221,7 @@ export const SPA_ROUTE_TEMPLATES = [
 ] as const;
 
 const CANONICAL_REDIRECTS: Readonly<Record<string, string>> = {
+  '/merchant': '/merchant/dashboard',
   '/register': '/signup',
   '/try-sari-enhanced': '/try-sari',
   '/conversational-commerce-platform': '/ai-whatsapp-sales-agent',

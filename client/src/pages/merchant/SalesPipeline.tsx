@@ -100,7 +100,7 @@ export default function SalesPipeline() {
           role="button"
           tabIndex={0}
           aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات الجاهزة للدفع' })}
-          className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+          className="border-emerald-200 bg-accent cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=ready')}
           onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=ready'))}
         >
@@ -122,7 +122,7 @@ export default function SalesPipeline() {
           role="button"
           tabIndex={0}
           aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات التي تحتاج تدخلاً' })}
-          className="border-orange-200 bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+          className="border-orange-200 bg-accent cursor-pointer hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?needs_human=1')}
           onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?needs_human=1'))}
         >
@@ -144,7 +144,7 @@ export default function SalesPipeline() {
           role="button"
           tabIndex={0}
           aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات ذات الدفع غير المكتمل' })}
-          className="border-amber-200 bg-gradient-to-br from-amber-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          className="border-amber-200 bg-accent cursor-pointer hover:shadow-md hover:ring-2 hover:ring-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=payment_link_sent')}
           onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=payment_link_sent'))}
         >
@@ -166,7 +166,7 @@ export default function SalesPipeline() {
           role="button"
           tabIndex={0}
           aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات المتوقفة' })}
-          className="border-slate-200 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-slate-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+          className="border-slate-200 bg-accent cursor-pointer hover:shadow-md hover:ring-2 hover:ring-slate-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=stalled')}
           onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=stalled'))}
         >

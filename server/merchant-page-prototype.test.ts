@@ -1,0 +1,116 @@
+import { readFileSync } from 'node:fs';
+import { runInContext } from 'node:vm';
+import { JSDOM, VirtualConsole } from 'jsdom';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+const base = 'prototypes/tenant-dashboard/site/';
+let dom: JSDOM, w: any;
+let errors: Error[];
+beforeEach(() => {
+  errors = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', error => errors.push(error));
+  dom = new JSDOM(readFileSync(base + 'index.html', 'utf8'), { url: 'http://127.0.0.1:4329/', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
+  w = dom.window;
+  w.scrollTo = () => {};
+  w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
+  for (const script of ['features.js', 'page-catalog.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + script, 'utf8'), dom.getInternalVMContext());
+});
+afterEach(() => { dom.window.close(); });
+function route(path: string) { w.history.replaceState(null, '', w.TenantPages.href(path)); w.dispatchEvent(new w.HashChangeEvent('hashchange')); }
+function click(action: string) { const node = w.document.querySelector(`[data-page-action="${action}"]`); expect(node, action).toBeTruthy(); node.click(); }
+function input(selector: string, value: string) { const node = w.document.querySelector(selector); node.value = value; node.dispatchEvent(new w.Event('input', { bubbles: true })); }
+function submit(type: string) { w.document.querySelector(`[data-page-form="${type}"]`).dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); }
+const text = () => w.document.getElementById('main').textContent;
+
+describe('complete tenant page prototype', () => {
+  it('renders every application route and recovery state with a single page heading and working internal links', () => {
+    const inventory = JSON.parse(readFileSync('docs/audits/tenant-pages-2026-09-27/inventory.json', 'utf8'));
+    const routes = inventory.routes;
+    for (const page of routes) expect(w.TenantPages.find(page.route), page.route).toBeTruthy();
+    expect(w.TENANT_PAGES.length).toBe(133);
+    for (const page of w.TENANT_PAGES) {
+      route(page.route);
+      expect(w.document.querySelectorAll('#main h1').length, page.route).toBe(1);
+      if (page.kind === 'result' && page.route.includes('/zid/')) {
+        expect(text()).toContain('التحقق من ربط زد');
+        expect(text()).not.toContain('تأكيد الدفع');
+      }
+      for (const anchor of w.document.querySelectorAll('#main a[href^="#/page/"]')) {
+        expect(w.TenantPages.find(anchor.getAttribute('href').slice(6)), anchor.getAttribute('href')).toBeTruthy();
+      }
+    }
+    expect(errors).toEqual([]);
+  });
+
+  it('searches records, clears empty results and opens details without creating an order', () => {
+    route('/merchant/orders');
+    input('#page-search', 'does-not-exist');
+    expect(text()).toContain('لا توجد نتائج مطابقة');
+    click('clear');
+    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(8);
+    click('primary');
+    expect(text()).toContain('سجل النشاط');
+    expect(w.document.querySelector('[data-page-form="create"]')).toBeNull();
+    click('back');
+    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(8);
+  });
+
+  it('persists new records and renders user input as text, never executable HTML', () => {
+    route('/merchant/products'); click('primary');
+    input('#dialog #page-f0', '<img src=x onerror=alert(1)>'); submit('create');
+    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
+    expect(text()).toContain('<img src=x onerror=alert(1)>');
+    expect(w.document.querySelector('#main img[src=x]')).toBeNull();
+    route('/merchant/tools'); route('/merchant/products');
+    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
+  });
+
+  it('preserves unchecked form settings after save and reopening', () => {
+    const page = w.TENANT_PAGES.find((p: any) => p.kind === 'form' && p.labels.some((l: string) => /تفعيل|تنبيه|إشعارات/.test(l)));
+    route(page.route);
+    const checkbox = w.document.querySelector('input[type=checkbox]');
+    expect(checkbox).toBeTruthy(); checkbox.checked = false;
+    submit('settings'); route('/merchant/tools'); route(page.route);
+    expect(w.document.querySelector('input[type=checkbox]').checked).toBe(false);
+    expect(text()).toContain('تم حفظ التغييرات');
+  });
+
+  it('keeps import errors visible and requires a separate approval to accept valid rows', () => {
+    route('/merchant/products/upload'); click('preview-import');
+    expect(text()).toContain('السعر مطلوب');
+    expect(text()).not.toContain('تم اعتماد سجلين');
+    click('confirm-import'); expect(text()).toContain('تم اعتماد سجلين');
+  });
+
+  it('carries the selected plan into checkout instead of always showing the middle plan', () => {
+    route('/merchant/subscription/plans');
+    w.document.querySelector('[data-page-action="choose-plan"][data-plan="0"]').click();
+    route('/merchant/checkout');
+    expect(text()).toContain('البداية');
+    expect(text()).toContain('99 ر.س');
+    expect(text()).not.toContain('249 ر.س');
+  });
+
+  it('simulates connection state and recovers an error without losing the selected page', () => {
+    route('/merchant/salla'); click('connect');
+    expect(text()).toContain('متصل تجريبيًا');
+    click('states'); w.document.querySelector('[data-page-action="state"][data-value="offline"]').click();
+    expect(text()).toContain('تعذّر الاتصال'); click('recover');
+    expect(text()).toContain('متصل تجريبيًا'); click('disconnect');
+    expect(text()).toContain('غير متصل');
+  });
+
+  it('prevents advancing an empty campaign and reviews the drafted message before completion', () => {
+    route('/merchant/campaigns/new'); submit('compose');
+    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الجمهور');
+    input('#page-f0', 'حملة المراجعة'); submit('compose');
+    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الرسالة');
+    submit('compose');
+    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الرسالة');
+    input('#page-f0', 'رسالة حملة توضيحية'); submit('compose');
+    expect(text()).toContain('راجع قبل الحفظ');
+    expect(text()).toContain('رسالة حملة توضيحية');
+  });
+});

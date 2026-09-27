@@ -1,3 +1,4 @@
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,32 +22,15 @@ export default function CampaignReport() {
   const params = useParams();
   const campaignId = parseInt(params.id || '0');
 
-  const { data, isLoading } = trpc.campaigns.getReport.useQuery(
+  const { data, isLoading, isError, error, refetch } = trpc.campaigns.getReport.useQuery(
     { id: campaignId },
     { enabled: campaignId > 0 }
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('campaignReportPage.text0')}</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <WorkspaceState kind="loading" />;
 
-  if (!data) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">{t('campaignReportPage.text1')}</p>
-        <Button onClick={() => setLocation('/merchant/campaigns')} className="mt-4">
-          {t('campaignReportPage.text21')}
-        </Button>
-      </div>
-    );
-  }
+  if (isError) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? () => { void refetch(); } : undefined} focus />;
+  if (!data) return <WorkspaceState kind="missing" title={t('campaignReportPage.text1')} action={<Button onClick={() => setLocation('/merchant/campaigns')}>{t('campaignReportPage.text21')}</Button>} focus />;
 
   const { campaign, logs, stats } = data;
 

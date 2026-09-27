@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRef } from 'react';
+import { Link } from 'wouter';
+import { WorkspaceState } from '@/components/merchant/WorkspaceState';
 
 import { useTranslation } from 'react-i18next';
 export default function Checkout() {
@@ -15,7 +17,7 @@ export default function Checkout() {
   const planIdStr = params.get('planId');
   const planId = parseInt(planIdStr || '0', 10);
 
-  const { data: plans, isLoading: planLoading } = trpc.subscriptionPlans.listPlans.useQuery();
+  const { data: plans, isLoading: planLoading, isError, refetch } = trpc.subscriptionPlans.listPlans.useQuery();
   const plan = plans?.find(item => item.id === planId);
   const createSessionMutation = trpc.merchantSubscription.subscribe.useMutation({
     onSuccess: (data: any) => {
@@ -47,17 +49,8 @@ export default function Checkout() {
     );
   }
 
-  if (!plan) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">{t('checkoutPage.text2')}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isError) return <WorkspaceState kind="offline" onRetry={() => { void refetch(); }} />;
+  if (!plan) return <WorkspaceState kind="missing" title={t('checkoutPage.text2')} action={<Button asChild><Link href="/merchant/subscription/plans">{t('workspacePages.paymentReview')}</Link></Button>} />;
 
   const handlePayment = async () => {
     await createSessionMutation.mutateAsync({

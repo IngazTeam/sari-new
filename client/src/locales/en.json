@@ -9038,5 +9038,23 @@
     "exportHistoryPage": "Export this page as JSON",
     "newerHistory": "Newer revisions",
     "olderHistory": "Older revisions"
+  },
+  "workspacePages": {
+    "salla": "Connect Salla",
+    "calendar": "Connect Google Calendar",
+    "sheets": "Connect Google Sheets",
+    "sheetReports": "Google Sheets reports",
+    "sheetInventory": "Google Sheets inventory",
+    "wooProducts": "WooCommerce products",
+    "wooOrders": "WooCommerce orders",
+    "loyalty": "Loyalty settings",
+    "loyaltyTiers": "Loyalty tiers",
+    "loyaltyRewards": "Loyalty rewards",
+    "loyaltyCustomers": "Loyalty customers",
+    "scheduledReports": "Scheduled reports",
+    "autoNotifications": "Customer notification automation",
+    "integrations": "Integration status",
+    "paymentReview": "Review subscription",
+    "paymentCancelled": "The payment return was not completed. Check your subscription status before trying again."
   }
 }

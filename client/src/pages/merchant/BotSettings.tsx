@@ -525,7 +525,7 @@ export default function BotSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-lg p-6 space-y-4">
+            <div className="bg-accent rounded-lg p-6 space-y-4">
               {/* WhatsApp-style messages */}
               <div className="space-y-3">
                 {/* Customer message */}
@@ -617,7 +617,7 @@ export default function BotSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
+              <div className="p-1.5 rounded-lg bg-primary text-white">
                 <Users className="h-4 w-4" />
               </div>
               سلوك الجروبات
@@ -655,7 +655,7 @@ export default function BotSettings() {
 
             {/* Keywords Input — shown when keyword_only */}
             {groupMode === 'keyword_only' && (
-              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-from-top-2">
+              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
                 <Label className="font-semibold flex items-center gap-2">
                   <KeyRound className="h-4 w-4" />
                   الكلمات المفتاحية
@@ -708,7 +708,7 @@ export default function BotSettings() {
 
             {/* Redirect Message — shown when private_redirect */}
             {groupMode === 'private_redirect' && (
-              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-from-top-2">
+              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
                 <Label className="font-semibold flex items-center gap-2">
                   <ArrowUpRight className="h-4 w-4" />
                   رسالة التوجيه الخاص

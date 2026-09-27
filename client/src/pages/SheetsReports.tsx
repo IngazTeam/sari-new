@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, FileText, Send, Calendar, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import DashboardLayout from '@/components/DashboardLayout';
 import { useTranslation } from 'react-i18next';
 
 export default function SheetsReports() {
@@ -145,10 +144,10 @@ export default function SheetsReports() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="container max-w-6xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('sheetsReportsPage.text0')}</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('workspacePages.sheetReports')}</h1>
           <p className="text-muted-foreground">{t('sheetsReports.auto_0')}</p>
         </div>
 
@@ -238,6 +237,6 @@ export default function SheetsReports() {
           </ul>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

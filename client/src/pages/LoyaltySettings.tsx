@@ -76,7 +76,7 @@ export default function LoyaltySettings() {
       <div className="flex items-center gap-3 mb-6">
         <Settings className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">{t('loyaltySettingsPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('workspacePages.loyalty')}</h1>
           <p className="text-muted-foreground">{t('loyaltySettingsPage.text1')}</p>
         </div>
       </div>

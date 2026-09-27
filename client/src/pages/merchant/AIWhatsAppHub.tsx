@@ -105,7 +105,7 @@ export default function AIWhatsAppHub() {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-white shadow-lg">
+          <div className="p-3 rounded-xl bg-primary text-white shadow-lg">
             <Sparkles className="h-7 w-7" />
           </div>
           <div>

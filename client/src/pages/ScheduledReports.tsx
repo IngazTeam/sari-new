@@ -41,7 +41,7 @@ export default function ScheduledReports() {
   return (
     <div className="container mx-auto py-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold">{t('scheduledReportsPage.text4')}</h1><p className="text-muted-foreground">{t('scheduledReports.auto_0')}</p></div>
+        <div><h1 className="text-2xl font-bold">{t('workspacePages.scheduledReports')}</h1><p className="text-muted-foreground">{t('scheduledReports.auto_0')}</p></div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{t('scheduledReportsPage.text5')}</Button></DialogTrigger>
           <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editingReport ? "تعديل التقرير" : "إنشاء تقرير جديد"}</DialogTitle><DialogDescription>{t('scheduledReportsPage.text6')}</DialogDescription></DialogHeader>

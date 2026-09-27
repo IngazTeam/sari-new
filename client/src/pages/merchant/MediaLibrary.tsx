@@ -168,7 +168,7 @@ export default function MediaLibrary() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
+            <div className="p-2 rounded-xl bg-accent">
               <ImageIcon className="h-6 w-6 text-cyan-400" />
             </div>
             مكتبة الوسائط
@@ -180,7 +180,7 @@ export default function MediaLibrary() {
         <Button
           onClick={() => fileRef.current?.click()}
           disabled={uploadMut.isPending}
-          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg"
+          className="bg-primary text-white shadow-lg"
         >
           {uploadMut.isPending ? (
             <Loader2 className="h-4 w-4 ml-2 animate-spin" />
@@ -216,8 +216,8 @@ export default function MediaLibrary() {
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         stats.usagePercent > 80
-                          ? 'bg-gradient-to-r from-red-500 to-orange-500'
-                          : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                          ? 'bg-primary  '
+                          : 'bg-primary  '
                       }`}
                       style={{ width: `${Math.min(stats.usagePercent, 100)}%` }}
                     />
@@ -530,7 +530,7 @@ export default function MediaLibrary() {
         /* Empty State */
         <Card className="bg-card/40 backdrop-blur-sm border-white/5 border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10 mb-4">
+            <div className="p-4 rounded-2xl bg-accent mb-4">
               <ImageIcon className="h-10 w-10 text-cyan-400/60" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
@@ -544,7 +544,7 @@ export default function MediaLibrary() {
             {!searchQuery && (
               <Button
                 onClick={() => fileRef.current?.click()}
-                className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+                className="bg-primary text-white"
               >
                 <Upload className="h-4 w-4 ml-2" />
                 رفع أول ملف
@@ -566,7 +566,7 @@ export default function MediaLibrary() {
               <img
                 src={lightboxUrl}
                 alt={t('merchantUx.actions.mediaPreview')}
-                className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+                className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-sm"
               />
               <div className="absolute -bottom-10 left-1/2 flex -translate-x-1/2 gap-2">
                 <Button

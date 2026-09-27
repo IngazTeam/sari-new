@@ -1,0 +1,1516 @@
+{
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844,
+      "results": [
+        {
+          "route": "#/page/merchant/setup-wizard",
+          "heading": "الإعداد الأولي",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/dashboard",
+          "heading": "صباح الخير، أحمد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/ai-hub",
+          "heading": "مركز المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/analytics-hub",
+          "heading": "مركز التحليلات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/campaigns",
+          "heading": "الحملات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/campaigns/new",
+          "heading": "إنشاء حملة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id/edit",
+          "heading": "إنشاء حملة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id",
+          "heading": "تفاصيل الحملة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id/report",
+          "heading": "تقرير الحملة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/products",
+          "heading": "المنتجات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/products/upload",
+          "heading": "استيراد المنتجات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/conversations",
+          "heading": "المحادثات",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/whatsapp",
+          "heading": "أرقام واتساب",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/salla",
+          "heading": "ربط سلة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/integrations/byaan",
+          "heading": "ربط بيان",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/byaan-dashboard",
+          "heading": "بيان: الدورات والمتدربون",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/integrations/zid",
+          "heading": "ربط زد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/zid/settings",
+          "heading": "ربط زد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/zid/callback",
+          "heading": "نتيجة تفويض زد",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/zid/products",
+          "heading": "منتجات زد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/zid/sync-logs",
+          "heading": "سجل مزامنة زد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/woocommerce/settings",
+          "heading": "ربط WooCommerce",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/woocommerce/products",
+          "heading": "منتجات WooCommerce",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/woocommerce/orders",
+          "heading": "طلبات WooCommerce",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/woocommerce/analytics",
+          "heading": "تحليلات WooCommerce",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/integrations/calendly",
+          "heading": "ربط Calendly",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/discounts",
+          "heading": "كوبونات الخصم",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/referrals",
+          "heading": "إحالات التجار",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/abandoned-carts",
+          "heading": "السلات المتروكة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/occasion-campaigns",
+          "heading": "حملات المناسبات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/promotions",
+          "heading": "العروض الترويجية",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/analytics",
+          "heading": "تحليلات المبيعات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/message-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/overview-analytics",
+          "heading": "نظرة الأداء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/orders",
+          "heading": "الطلبات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/whatsapp-instances",
+          "heading": "أرقام واتساب",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/whatsapp-test",
+          "heading": "تشخيص واتساب",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/greenapi-setup",
+          "heading": "دليل QR القديم",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/test-sari",
+          "heading": "تجربة المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/metrics-dashboard",
+          "heading": "مقاييس المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/whatsapp-webhook-setup",
+          "heading": "تشخيص Webhook",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/bot-settings",
+          "heading": "سلوك المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/human-takeover",
+          "heading": "التدخل البشري",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/virtual-team",
+          "heading": "شخصيات المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sari-brain",
+          "heading": "معرفة المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sari-playground",
+          "heading": "ساحة التجربة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sari-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sales-hub",
+          "heading": "عروض الأسعار",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sales-pipeline",
+          "heading": "فرص البيع",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/acquisition-report",
+          "heading": "مصادر العملاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/quotation-templates",
+          "heading": "قوالب عروض الأسعار",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/media-library",
+          "heading": "مكتبة الوسائط",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/scheduled-messages",
+          "heading": "الرسائل المجدولة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/quick-responses",
+          "heading": "الردود السريعة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/insights",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/advanced-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/analytics-dashboard",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/performance-metrics",
+          "heading": "مقاييس الأداء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/data-sync",
+          "heading": "مزامنة Google Sheets",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/reviews",
+          "heading": "تقييمات المنتجات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/booking-reviews",
+          "heading": "تقييمات الحجوزات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/order-notifications",
+          "heading": "إشعارات الطلبات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/settings",
+          "heading": "الحساب والمتجر",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/privacy-center",
+          "heading": "الخصوصية",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/notifications",
+          "heading": "الإشعارات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/language-settings",
+          "heading": "لغة المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/calendar/settings",
+          "heading": "ربط Google Calendar",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/calendar",
+          "heading": "التقويم",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/staff",
+          "heading": "مقدمو الخدمات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/team",
+          "heading": "الفريق والصلاحيات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/services",
+          "heading": "الخدمات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/services/new",
+          "heading": "إضافة وتعديل خدمة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/services/:id/edit",
+          "heading": "إضافة وتعديل خدمة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/services/:id",
+          "heading": "تفاصيل الخدمة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/bookings",
+          "heading": "الحجوزات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/service-categories",
+          "heading": "تصنيفات الخدمات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/service-packages",
+          "heading": "حزم الخدمات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sheets/settings",
+          "heading": "ربط Google Sheets",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sheets/export",
+          "heading": "تصدير المحادثات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sheets/reports",
+          "heading": "تقارير Google Sheets",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/sheets/inventory",
+          "heading": "مخزون Google Sheets",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/payments",
+          "heading": "المدفوعات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/payments/:id",
+          "heading": "تفاصيل معاملة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/payment-links",
+          "heading": "روابط الدفع",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/payment-settings",
+          "heading": "بوابة دفع العملاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/loyalty/settings",
+          "heading": "إعدادات الولاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/loyalty/tiers",
+          "heading": "مستويات الولاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/loyalty/rewards",
+          "heading": "مكافآت الولاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/loyalty/customers",
+          "heading": "عملاء الولاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/integrations-dashboard",
+          "heading": "صحة التكاملات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/platform-integrations",
+          "heading": "التكاملات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/notification-settings",
+          "heading": "تفضيلات الإشعارات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/currency-settings",
+          "heading": "عملة المتجر",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/push-notifications",
+          "heading": "إشعارات المتصفح",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/scheduled-reports",
+          "heading": "التقارير المجدولة",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/whatsapp-auto-notifications",
+          "heading": "أتمتة رسائل العملاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/reports",
+          "heading": "التقارير",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/subscriptions",
+          "heading": "الباقة والفواتير",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/usage",
+          "heading": "استهلاك الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/usage-dashboard",
+          "heading": "حدود الاستخدام",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/subscription/plans",
+          "heading": "الباقات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/subscription/compare",
+          "heading": "مقارنة الباقات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/subscription",
+          "heading": "الباقة والفواتير",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/checkout",
+          "heading": "بدء الاشتراك المدفوع",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/payment/success",
+          "heading": "نتيجة دفع الاشتراك",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/payment/cancel",
+          "heading": "إلغاء دفع الاشتراك",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/tools",
+          "heading": "جميع الأدوات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/customers",
+          "heading": "العملاء",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/smart-analysis",
+          "heading": "تحليل الموقع",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/competitor-analysis",
+          "heading": "تحليل المنافسين",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/customers/:phone",
+          "heading": "ملف العميل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/ai-suggestions",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/voice-messages",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/analysis",
+          "heading": "تحليلات الرسائل",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/ab-tests",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/try-sari-analytics",
+          "heading": "مقاييس المساعد",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/merchant-payments",
+          "heading": "المدفوعات",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/my-subscription",
+          "heading": "الباقة والفواتير",
+          "scroll": 375,
+          "width": 375
+        },
+        {
+          "route": "#/page/merchant/preview-state/missing",
+          "heading": "هذه الصفحة ليست هنا",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/error",
+          "heading": "تعذّر عرض الصفحة",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/offline",
+          "heading": "تعذّر الاتصال",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/forbidden",
+          "heading": "تحتاج صلاحية لهذا القسم",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/session",
+          "heading": "سجّل الدخول إلى مساحة عملك",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/loading",
+          "heading": "نجهّز مساحة عملك",
+          "scroll": 390,
+          "width": 390
+        },
+        {
+          "route": "#/page/merchant/preview-state/empty",
+          "heading": "مساحتك جاهزة للبداية",
+          "scroll": 390,
+          "width": 390
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "results": [
+        {
+          "route": "#/page/merchant/setup-wizard",
+          "heading": "الإعداد الأولي",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/dashboard",
+          "heading": "صباح الخير، أحمد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/ai-hub",
+          "heading": "مركز المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/analytics-hub",
+          "heading": "مركز التحليلات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/campaigns",
+          "heading": "الحملات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/campaigns/new",
+          "heading": "إنشاء حملة",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id/edit",
+          "heading": "إنشاء حملة",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id",
+          "heading": "تفاصيل الحملة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/campaigns/:id/report",
+          "heading": "تقرير الحملة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/products",
+          "heading": "المنتجات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/products/upload",
+          "heading": "استيراد المنتجات",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/conversations",
+          "heading": "المحادثات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/whatsapp",
+          "heading": "أرقام واتساب",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/salla",
+          "heading": "ربط سلة",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/integrations/byaan",
+          "heading": "ربط بيان",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/byaan-dashboard",
+          "heading": "بيان: الدورات والمتدربون",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/integrations/zid",
+          "heading": "ربط زد",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/zid/settings",
+          "heading": "ربط زد",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/zid/callback",
+          "heading": "نتيجة تفويض زد",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/zid/products",
+          "heading": "منتجات زد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/zid/sync-logs",
+          "heading": "سجل مزامنة زد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/woocommerce/settings",
+          "heading": "ربط WooCommerce",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/woocommerce/products",
+          "heading": "منتجات WooCommerce",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/woocommerce/orders",
+          "heading": "طلبات WooCommerce",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/woocommerce/analytics",
+          "heading": "تحليلات WooCommerce",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/integrations/calendly",
+          "heading": "ربط Calendly",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/discounts",
+          "heading": "كوبونات الخصم",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/referrals",
+          "heading": "إحالات التجار",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/abandoned-carts",
+          "heading": "السلات المتروكة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/occasion-campaigns",
+          "heading": "حملات المناسبات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/promotions",
+          "heading": "العروض الترويجية",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/analytics",
+          "heading": "تحليلات المبيعات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/message-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/overview-analytics",
+          "heading": "نظرة الأداء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/orders",
+          "heading": "الطلبات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/whatsapp-instances",
+          "heading": "أرقام واتساب",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/whatsapp-test",
+          "heading": "تشخيص واتساب",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/greenapi-setup",
+          "heading": "دليل QR القديم",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/test-sari",
+          "heading": "تجربة المساعد",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/metrics-dashboard",
+          "heading": "مقاييس المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/whatsapp-webhook-setup",
+          "heading": "تشخيص Webhook",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/bot-settings",
+          "heading": "سلوك المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/human-takeover",
+          "heading": "التدخل البشري",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/virtual-team",
+          "heading": "شخصيات المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/sari-brain",
+          "heading": "معرفة المساعد",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/sari-playground",
+          "heading": "ساحة التجربة",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/sari-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/sales-hub",
+          "heading": "عروض الأسعار",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/sales-pipeline",
+          "heading": "فرص البيع",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/acquisition-report",
+          "heading": "مصادر العملاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/quotation-templates",
+          "heading": "قوالب عروض الأسعار",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/media-library",
+          "heading": "مكتبة الوسائط",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/scheduled-messages",
+          "heading": "الرسائل المجدولة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/quick-responses",
+          "heading": "الردود السريعة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/insights",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/advanced-analytics",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/analytics-dashboard",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/performance-metrics",
+          "heading": "مقاييس الأداء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/data-sync",
+          "heading": "مزامنة Google Sheets",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/reviews",
+          "heading": "تقييمات المنتجات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/booking-reviews",
+          "heading": "تقييمات الحجوزات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/order-notifications",
+          "heading": "إشعارات الطلبات",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/settings",
+          "heading": "الحساب والمتجر",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/privacy-center",
+          "heading": "الخصوصية",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/notifications",
+          "heading": "الإشعارات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/language-settings",
+          "heading": "لغة المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/calendar/settings",
+          "heading": "ربط Google Calendar",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/calendar",
+          "heading": "التقويم",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/staff",
+          "heading": "مقدمو الخدمات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/team",
+          "heading": "الفريق والصلاحيات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/services",
+          "heading": "الخدمات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/services/new",
+          "heading": "إضافة وتعديل خدمة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/services/:id/edit",
+          "heading": "إضافة وتعديل خدمة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/services/:id",
+          "heading": "تفاصيل الخدمة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/bookings",
+          "heading": "الحجوزات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/service-categories",
+          "heading": "تصنيفات الخدمات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/service-packages",
+          "heading": "حزم الخدمات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/sheets/settings",
+          "heading": "ربط Google Sheets",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/sheets/export",
+          "heading": "تصدير المحادثات",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/sheets/reports",
+          "heading": "تقارير Google Sheets",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/sheets/inventory",
+          "heading": "مخزون Google Sheets",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/payments",
+          "heading": "المدفوعات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/payments/:id",
+          "heading": "تفاصيل معاملة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/payment-links",
+          "heading": "روابط الدفع",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/payment-settings",
+          "heading": "بوابة دفع العملاء",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/loyalty/settings",
+          "heading": "إعدادات الولاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/loyalty/tiers",
+          "heading": "مستويات الولاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/loyalty/rewards",
+          "heading": "مكافآت الولاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/loyalty/customers",
+          "heading": "عملاء الولاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/integrations-dashboard",
+          "heading": "صحة التكاملات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/platform-integrations",
+          "heading": "التكاملات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/notification-settings",
+          "heading": "تفضيلات الإشعارات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/currency-settings",
+          "heading": "عملة المتجر",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/push-notifications",
+          "heading": "إشعارات المتصفح",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/scheduled-reports",
+          "heading": "التقارير المجدولة",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/whatsapp-auto-notifications",
+          "heading": "أتمتة رسائل العملاء",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/reports",
+          "heading": "التقارير",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/subscriptions",
+          "heading": "الباقة والفواتير",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/usage",
+          "heading": "استهلاك الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/usage-dashboard",
+          "heading": "حدود الاستخدام",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/subscription/plans",
+          "heading": "الباقات",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/subscription/compare",
+          "heading": "مقارنة الباقات",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/subscription",
+          "heading": "الباقة والفواتير",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/checkout",
+          "heading": "بدء الاشتراك المدفوع",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/payment/success",
+          "heading": "نتيجة دفع الاشتراك",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/payment/cancel",
+          "heading": "إلغاء دفع الاشتراك",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/tools",
+          "heading": "جميع الأدوات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/customers",
+          "heading": "العملاء",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/smart-analysis",
+          "heading": "تحليل الموقع",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/competitor-analysis",
+          "heading": "تحليل المنافسين",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/customers/:phone",
+          "heading": "ملف العميل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/ai-suggestions",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/voice-messages",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/analysis",
+          "heading": "تحليلات الرسائل",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/ab-tests",
+          "heading": "الرؤى والاقتراحات وA/B",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/try-sari-analytics",
+          "heading": "مقاييس المساعد",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/merchant-payments",
+          "heading": "المدفوعات",
+          "scroll": 1425,
+          "width": 1425
+        },
+        {
+          "route": "#/page/merchant/my-subscription",
+          "heading": "الباقة والفواتير",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/missing",
+          "heading": "هذه الصفحة ليست هنا",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/error",
+          "heading": "تعذّر عرض الصفحة",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/offline",
+          "heading": "تعذّر الاتصال",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/forbidden",
+          "heading": "تحتاج صلاحية لهذا القسم",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/session",
+          "heading": "سجّل الدخول إلى مساحة عملك",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/loading",
+          "heading": "نجهّز مساحة عملك",
+          "scroll": 1440,
+          "width": 1440
+        },
+        {
+          "route": "#/page/merchant/preview-state/empty",
+          "heading": "مساحتك جاهزة للبداية",
+          "scroll": 1440,
+          "width": 1440
+        }
+      ]
+    }
+  ]
+}

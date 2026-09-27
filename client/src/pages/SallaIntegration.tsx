@@ -128,7 +128,7 @@ export default function SallaIntegration() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('sallaIntegrationPage.text0')}</h1>
+        <h1 className="text-3xl font-bold">{t('workspacePages.salla')}</h1>
         <p className="text-muted-foreground mt-2">{t('sallaIntegration.auto_0')}</p>
       </div>
 

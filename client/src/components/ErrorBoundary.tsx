@@ -1,9 +1,12 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
+import { WorkspaceStandalone, WorkspaceState } from './merchant/WorkspaceState';
 
 interface Props {
   children: ReactNode;
+  fallback?: (retry: () => void, error: Error | null) => ReactNode;
+  resetKey?: string;
 }
 
 interface State {
@@ -27,14 +30,26 @@ class ErrorBoundary extends Component<Props, State> {
       error.message?.includes('Loading chunk') ||
       error.message?.includes('Failed to fetch');
     const key = 'eb_reload_' + window.location.pathname;
-    if (isChunkError && !sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, '1');
-      window.location.reload();
-    }
+    try {
+      if (isChunkError && !sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
+    } catch { /* Recovery remains available when storage is blocked. */ }
   }
+
+  componentDidUpdate(previous: Props) {
+    if (this.state.hasError && previous.resetKey !== this.props.resetKey) this.retry();
+  }
+
+  retry = () => this.setState({ hasError: false, error: null });
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback(this.retry, this.state.error);
+      if (/^\/merchant(?:\/|$)/.test(window.location.pathname)) {
+        return <WorkspaceStandalone><WorkspaceState kind="error" onRetry={() => window.location.reload()} focus /></WorkspaceStandalone>;
+      }
       return (
         <div className="flex items-center justify-center min-h-screen p-8 bg-background">
           <div className="flex flex-col items-center w-full max-w-2xl p-8">

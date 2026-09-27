@@ -51,7 +51,7 @@ export default function WhatsAppAutoNotifications() {
   return (
     <div className="container mx-auto py-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold">{t('whatsAppAutoNotificationsPage.text4')}</h1><p className="text-muted-foreground">{t('whatsAppAutoNotifications.auto_0')}</p></div>
+        <div><h1 className="text-2xl font-bold">{t('workspacePages.autoNotifications')}</h1><p className="text-muted-foreground">{t('whatsAppAutoNotifications.auto_0')}</p></div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{t('whatsAppAutoNotificationsPage.text5')}</Button></DialogTrigger>
           <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editingNotification ? "تعديل الإشعار" : "إنشاء إشعار جديد"}</DialogTitle><DialogDescription>{t('whatsAppAutoNotificationsPage.text6')}</DialogDescription></DialogHeader>

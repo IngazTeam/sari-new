@@ -52,7 +52,7 @@ const DISCOUNT_TEMPLATES = [
     icon: Percent,
     labelKey: 'merchantUx.discounts.templatePercentage10Label',
     descriptionKey: 'merchantUx.discounts.templatePercentage10Description',
-    gradient: 'from-blue-500/20 to-cyan-500/20',
+    gradient: ' ',
     iconColor: 'text-blue-400',
     preset: { code: 'SAVE10', type: 'percentage' as const, value: '10', minOrderAmount: '100', maxUses: '100', expiresAt: '' },
   },
@@ -61,7 +61,7 @@ const DISCOUNT_TEMPLATES = [
     icon: Sparkles,
     labelKey: 'merchantUx.discounts.templatePercentage25Label',
     descriptionKey: 'merchantUx.discounts.templatePercentage25Description',
-    gradient: 'from-violet-500/20 to-purple-500/20',
+    gradient: ' ',
     iconColor: 'text-violet-400',
     preset: { code: 'MEGA25', type: 'percentage' as const, value: '25', minOrderAmount: '200', maxUses: '50', expiresAt: '' },
   },
@@ -70,7 +70,7 @@ const DISCOUNT_TEMPLATES = [
     icon: DollarSign,
     labelKey: 'merchantUx.discounts.templateFixed50Label',
     descriptionKey: 'merchantUx.discounts.templateFixed50Description',
-    gradient: 'from-emerald-500/20 to-green-500/20',
+    gradient: ' ',
     iconColor: 'text-emerald-400',
     preset: { code: 'FLAT50', type: 'fixed' as const, value: '50', minOrderAmount: '200', maxUses: '100', expiresAt: '' },
   },
@@ -79,7 +79,7 @@ const DISCOUNT_TEMPLATES = [
     icon: Gift,
     labelKey: 'merchantUx.discounts.templateWelcomeLabel',
     descriptionKey: 'merchantUx.discounts.templateWelcomeDescription',
-    gradient: 'from-amber-500/20 to-orange-500/20',
+    gradient: ' ',
     iconColor: 'text-amber-400',
     preset: { code: 'WELCOME', type: 'percentage' as const, value: '15', minOrderAmount: '50', maxUses: '', expiresAt: '' },
   },
@@ -88,7 +88,7 @@ const DISCOUNT_TEMPLATES = [
     icon: Calendar,
     labelKey: 'merchantUx.discounts.templateSeasonalLabel',
     descriptionKey: 'merchantUx.discounts.templateSeasonalDescription',
-    gradient: 'from-rose-500/20 to-pink-500/20',
+    gradient: ' ',
     iconColor: 'text-rose-400',
     preset: { code: 'SEASON30', type: 'percentage' as const, value: '30', minOrderAmount: '150', maxUses: '200', expiresAt: getDateAfterDays(30) },
   },
@@ -97,7 +97,7 @@ const DISCOUNT_TEMPLATES = [
     icon: Zap,
     labelKey: 'merchantUx.discounts.templateFlashLabel',
     descriptionKey: 'merchantUx.discounts.templateFlashDescription',
-    gradient: 'from-yellow-500/20 to-amber-500/20',
+    gradient: ' ',
     iconColor: 'text-yellow-400',
     preset: { code: 'FLASH40', type: 'percentage' as const, value: '40', minOrderAmount: '100', maxUses: '30', expiresAt: getDateAfterDays(3) },
   },
@@ -397,7 +397,7 @@ export default function DiscountCodes() {
       <Card className="bg-card/60 backdrop-blur-sm border-white/10">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20">
+            <div className="p-2 rounded-xl bg-accent">
               <Sparkles className="h-5 w-5 text-violet-400" />
             </div>
             <div>
@@ -414,7 +414,7 @@ export default function DiscountCodes() {
                 <button
                   key={tmpl.id}
                   onClick={() => applyTemplate(tmpl.preset)}
-                  className={`group relative p-4 rounded-xl border border-white/10 bg-gradient-to-br ${tmpl.gradient} hover:border-white/20 hover:scale-[1.02] transition-all duration-200 text-center cursor-pointer`}
+                  className={`group relative p-4 rounded-xl border border-white/10 bg-primary ${tmpl.gradient} hover:border-white/20 hover:scale-[1.02] transition-all duration-200 text-center cursor-pointer`}
                 >
                   <div className={`mx-auto mb-2 p-2 rounded-lg bg-background/30 w-fit`}>
                     <Icon className={`h-5 w-5 ${tmpl.iconColor}`} />

@@ -271,7 +271,7 @@ export default function UploadProducts() {
                       <Button
                         onClick={handleSmartImport}
                         disabled={isUploading || !selectedFile.name.toLowerCase().endsWith('.xlsx')}
-                        className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 gap-2"
+                        className="bg-primary gap-2"
                       >
                         {smartImport.isPending ? (
                           <>
@@ -342,7 +342,7 @@ export default function UploadProducts() {
 
               {/* Smart Result — AI Analysis */}
               {smartResult && (
-                <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
+                <div className="space-y-3 p-4 rounded-xl bg-accent border border-violet-200">
                   <div className="flex items-center gap-2 text-violet-700 font-semibold">
                     <Brain className="h-5 w-5" />
                     تحليل الذكاء الاصطناعي

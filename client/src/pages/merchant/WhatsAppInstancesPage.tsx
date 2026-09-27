@@ -540,7 +540,7 @@ export default function WhatsAppInstancesPage() {
 
       {/* Approved Request — Connect WhatsApp Banner */}
       {requests?.some((r: any) => r.status === 'approved') && (
-        <Card className="border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+        <Card className="border-green-300 bg-accent">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">

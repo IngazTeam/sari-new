@@ -665,8 +665,8 @@ export default function Products() {
 
       {/* Floating Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
-          <div className="flex items-center gap-4 px-6 py-3 rounded-xl bg-background border shadow-2xl">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in- fade-in duration-200">
+          <div className="flex items-center gap-4 px-6 py-3 rounded-xl bg-background border shadow-sm">
             <div className="flex items-center gap-2">
               <CheckSquare className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium">

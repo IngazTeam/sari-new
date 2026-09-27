@@ -196,7 +196,7 @@ export default function PromotionsPage() {
           if (!open) { setEditingPromo(null); setFormData(defaultFormData); }
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600">
+            <Button className="bg-primary text-white">
               <Plus className="h-4 w-4 ml-2" />
               إنشاء عرض جديد
             </Button>
@@ -380,7 +380,7 @@ export default function PromotionsPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                className="bg-primary text-white"
               >
                 {(createMutation.isPending || updateMutation.isPending) ? 'جاري الحفظ...' : editingPromo ? 'تحديث' : 'إنشاء العرض'}
               </Button>
@@ -467,7 +467,7 @@ export default function PromotionsPage() {
               }`}>
                 {/* Status indicator */}
                 <div className={`absolute top-0 left-0 right-0 h-1 ${
-                  active ? 'bg-gradient-to-r from-orange-400 to-red-400' :
+                  active ? 'bg-primary  ' :
                   expired ? 'bg-gray-300' : 'bg-gray-200'
                 }`} />
 

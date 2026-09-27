@@ -102,7 +102,7 @@ export default function AnalyticsHub() {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-600 text-white shadow-lg">
+          <div className="p-3 rounded-xl bg-primary text-white shadow-lg">
             <BarChart3 className="h-7 w-7" />
           </div>
           <div>

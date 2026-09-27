@@ -111,7 +111,7 @@ export default function LoyaltyCustomers() {
       <div className="flex items-center gap-3 mb-6">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">{t('loyaltyCustomersPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('workspacePages.loyaltyCustomers')}</h1>
           <p className="text-muted-foreground">{t('loyaltyCustomersPage.text1')}</p>
         </div>
       </div>

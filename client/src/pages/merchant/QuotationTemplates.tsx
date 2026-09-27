@@ -148,7 +148,7 @@ export default function QuotationTemplates() {
     const total = 2875;
 
     return (
-      <div className="bg-[#0b141a] rounded-2xl overflow-hidden max-w-md mx-auto shadow-2xl border border-white/5">
+      <div className="bg-[#0b141a] rounded-2xl overflow-hidden max-w-md mx-auto shadow-sm border border-white/5">
         {/* WhatsApp Header */}
         <div className="bg-[#1f2c33] px-4 py-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
@@ -225,7 +225,7 @@ export default function QuotationTemplates() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20">
+            <div className="p-2 rounded-xl bg-accent">
               <FileText className="h-6 w-6 text-violet-400" />
             </div>
             قوالب عروض الأسعار
@@ -237,7 +237,7 @@ export default function QuotationTemplates() {
         {!showForm && (
           <Button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg"
+            className="bg-primary text-white shadow-lg"
           >
             <Plus className="h-4 w-4 ml-2" />
             إنشاء قالب جديد
@@ -327,7 +327,7 @@ export default function QuotationTemplates() {
                 <Button
                   onClick={handleSave}
                   disabled={createMut.isPending || updateMut.isPending}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white flex-1"
+                  className="bg-primary text-white flex-1"
                 >
                   <Save className="h-4 w-4 ml-2" />
                   {createMut.isPending || updateMut.isPending ? 'جاري الحفظ...' : editingId ? 'حفظ التعديلات' : 'إنشاء القالب'}
@@ -494,7 +494,7 @@ export default function QuotationTemplates() {
         /* Empty State */
         <Card className="bg-card/40 backdrop-blur-sm border-white/5 border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 mb-4">
+            <div className="p-4 rounded-2xl bg-accent mb-4">
               <FileText className="h-10 w-10 text-violet-400/60" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">لا توجد قوالب بعد</h3>
@@ -503,7 +503,7 @@ export default function QuotationTemplates() {
             </p>
             <Button
               onClick={() => { resetForm(); setShowForm(true); }}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+              className="bg-primary text-white"
             >
               <Plus className="h-4 w-4 ml-2" />
               إنشاء أول قالب

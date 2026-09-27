@@ -1,3 +1,4 @@
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 import { useParams, useLocation, Link } from 'wouter';
 import { useEffect, useState } from 'react';
 import { trpc } from '@/lib/trpc';
@@ -27,34 +28,12 @@ export default function PaymentDetails() {
   const [, navigate] = useLocation();
   const paymentId = parseInt(params.id || '0');
 
-  const { data: payment, isLoading } = trpc.payments.getById.useQuery({ id: paymentId });
+  const { data: payment, isLoading, isError, error, refetch } = trpc.payments.getById.useQuery({ id: paymentId });
 
-  if (isLoading) {
-    return (
-      <div className="container py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <WorkspaceState kind="loading" />;
 
-  if (!payment) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="py-8 text-center">
-            <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">{t('paymentDetailsPage.text0')}</h2>
-            <p className="text-muted-foreground mb-4">{t('paymentDetailsPage.text1')}</p>
-            <Button onClick={() => navigate('/merchant/payments')}>
-              <ArrowLeft className="ml-2 h-4 w-4" />{t('paymentDetails.auto_0')}</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isError) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={workspaceFailureKind(error) === 'error' ? () => { void refetch(); } : undefined} focus />;
+  if (!payment) return <WorkspaceState kind="missing" title={t('paymentDetailsPage.text0')} action={<Button onClick={() => navigate('/merchant/payments')}>{t('paymentDetails.auto_0')}</Button>} focus />;
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {

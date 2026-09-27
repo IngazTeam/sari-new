@@ -8,9 +8,10 @@ import DashboardLayout from "./components/DashboardLayout";
 import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense, useEffect } from "react";
 import TrackingScripts from "./components/TrackingScripts";
+import { WorkspaceStandalone, WorkspaceState } from './components/merchant/WorkspaceState';
 
 // Loading component for lazy-loaded pages
-const PageLoader = () => (
+const PageLoader = () => /^\/merchant(?:\/|$)/.test(window.location.pathname) ? <div className="merchant-workspace"><WorkspaceState kind="loading" /></div> : (
   <div className="flex items-center justify-center min-h-[50vh]">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
   </div>
@@ -316,6 +317,8 @@ function Router() {
       <Route path="/docs/ai-sales-guide"><Redirect to="/ai-whatsapp-sales-agent" /></Route>
 
       <Route path="/merchant/setup-wizard" component={SetupWizard} />
+      <Route path="/merchant"><Redirect to="/merchant/dashboard" /></Route>
+      <Route path="/merchant/"><Redirect to="/merchant/dashboard" /></Route>
 
       {/* Merchant Routes */}
       <Route path="/merchant/dashboard">
@@ -418,7 +421,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/zid/callback">
-        <ZidCallback />
+        <WorkspaceStandalone><ZidCallback /></WorkspaceStandalone>
       </Route>
 
       <Route path="/merchant/zid/products">
@@ -915,11 +918,11 @@ function Router() {
       </Route>
 
       <Route path="/merchant/payment/success">
-        <PaymentSuccess />
+        <WorkspaceStandalone><PaymentSuccess /></WorkspaceStandalone>
       </Route>
 
       <Route path="/merchant/payment/cancel">
-        <PaymentCancel />
+        <WorkspaceStandalone><PaymentCancel /></WorkspaceStandalone>
       </Route>
 
       <Route path="/merchant/tools">

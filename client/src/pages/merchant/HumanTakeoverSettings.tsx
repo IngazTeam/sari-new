@@ -80,7 +80,7 @@ export default function HumanTakeoverSettings() {
       {/* Header */}
       <div className="mb-2">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+          <div className="p-2 rounded-xl bg-primary text-white">
             <UserCheck className="h-6 w-6" />
           </div>
           التدخل البشري
@@ -125,7 +125,7 @@ export default function HumanTakeoverSettings() {
         <CardContent>
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-amber-500 to-emerald-500" />
+            <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-primary" />
 
             <div className="space-y-6 pr-12">
               {[

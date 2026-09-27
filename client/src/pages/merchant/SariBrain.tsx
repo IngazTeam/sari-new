@@ -584,7 +584,7 @@ export default function SariBrain() {
               .insight-enter { animation: fadeInUp 0.5s ease-out; }`}</style>
           {/* Top animated bar */}
           {!analysisResults && !analysisError && (
-            <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-gradient-to-r from-primary via-emerald-500 to-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
           )}
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-3 justify-end">
@@ -612,7 +612,7 @@ export default function SariBrain() {
           <div className="space-y-2.5 py-2">
             {/* Expected results preview — shown only at start */}
             {!analysisResults && !analysisError && analysisStep < 2 && (
-              <div className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-emerald-500/5 border border-primary/10 mb-3 insight-enter">
+              <div className="p-3 rounded-lg bg-accent border border-primary/10 mb-3 insight-enter">
                 <p className="text-xs font-medium text-muted-foreground mb-2">بعد التحليل سيقوم ساري بـ:</p>
                 <div className="grid grid-cols-2 gap-1.5 text-[11px] text-foreground/80">
                   <span>✓ بناء قاعدة معرفة ذكية</span>
@@ -677,14 +677,14 @@ export default function SariBrain() {
                   <span className="font-mono font-semibold text-primary text-xs">{Math.round(fakeProgress)}%</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${fakeProgress}%` }} />
+                  <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${fakeProgress}%` }} />
                 </div>
               </div>
             )}
 
             {/* Results summary */}
             {analysisResults && (
-              <div className="mt-3 p-4 rounded-lg bg-gradient-to-br from-primary/5 to-emerald-500/5 border border-primary/20 space-y-3">
+              <div className="mt-3 p-4 rounded-lg bg-accent border border-primary/20 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center p-2 rounded-lg bg-background border">
                     <p className="text-2xl font-bold text-primary">{analysisResults.score}</p>
@@ -803,7 +803,7 @@ export default function SariBrain() {
       {/* Health Score Card */}
       {healthScore && (
         <Card className="border-primary/20 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent pb-3">
+          <CardHeader className="bg-accent pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <TrendingUp className="h-5 w-5 text-primary" />
               🏥 صحة المعرفة
@@ -849,7 +849,7 @@ export default function SariBrain() {
         const tips = (tipsMatch?.[1] || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
         return (
           <Card className="border-emerald-300 dark:border-emerald-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent pb-3">
+            <CardHeader className="bg-accent pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Sparkles className="h-5 w-5 text-emerald-500" />
                 💎 ذكاء المبيعات
@@ -898,7 +898,7 @@ export default function SariBrain() {
         const opps = (oppsSection.content || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
         return (
           <Card className="border-amber-300 dark:border-amber-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent pb-3">
+            <CardHeader className="bg-accent pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Target className="h-5 w-5 text-amber-500" />
                 🎯 فرص التطوير
@@ -1086,7 +1086,7 @@ export default function SariBrain() {
       </Card>
 
       {/* ═══ Test Sari — Ask a test question ═══ */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+      <Card className="border-primary/20 bg-accent">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
@@ -1220,7 +1220,7 @@ export default function SariBrain() {
       {/* ═══ Website Knowledge Dashboard ═══ */}
       {websiteKnowledge && (
         <Card className="border-primary/20 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent">
+          <CardHeader className="bg-accent">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
@@ -1453,7 +1453,7 @@ export default function SariBrain() {
 
                     {/* GPT Summary */}
                     {urlPreview.analysis?.summary && (
-                      <div className="p-3 rounded-xl bg-gradient-to-l from-primary/5 to-primary/10 border border-primary/20">
+                      <div className="p-3 rounded-xl bg-accent border border-primary/20">
                         <p className="text-sm font-medium text-primary flex items-center gap-2">
                           <Sparkles className="h-4 w-4 shrink-0" />
                           {urlPreview.analysis.summary}

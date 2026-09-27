@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, Upload, Download, RefreshCw, Package, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import DashboardLayout from '@/components/DashboardLayout';
 import { useTranslation } from 'react-i18next';
 
 export default function SheetsInventory() {
@@ -60,10 +59,10 @@ export default function SheetsInventory() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('sheetsInventoryPage.text0')}</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('workspacePages.sheetInventory')}</h1>
           <p className="text-muted-foreground">{t('sheetsInventory.auto_0')}</p>
         </div>
 
@@ -213,6 +212,6 @@ export default function SheetsInventory() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

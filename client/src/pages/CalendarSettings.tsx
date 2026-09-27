@@ -74,7 +74,7 @@ export default function CalendarSettings() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t('calendarSettingsPage.text1')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('workspacePages.calendar')}</h1>
         <p className="text-muted-foreground">{t('calendarSettings.auto_0')}</p>
       </div>
 

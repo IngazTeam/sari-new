@@ -6,10 +6,16 @@ import Footer from '@/components/Footer';
 import { SeoHead } from '@/components/SeoHead';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import DashboardLayout from '@/components/DashboardLayout';
+import { WorkspaceState } from '@/components/merchant/WorkspaceState';
 
 export default function NotFound() {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || 'ar').startsWith('ar');
+
+  if (/^\/merchant(?:\/|$)/.test(window.location.pathname)) {
+    return <DashboardLayout><SeoHead title={t('publicUx.notFound.pageTitle')} description={t('publicUx.notFound.metaDescription')} noindex /><WorkspaceState kind="missing" focus /></DashboardLayout>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir={isArabic ? 'rtl' : 'ltr'}>

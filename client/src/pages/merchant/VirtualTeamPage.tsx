@@ -20,11 +20,11 @@ import { trpc } from '@/lib/trpc';
 import { AgentAvatar, AVATAR_OPTIONS, AVATAR_LABELS, type AvatarKey } from '@/components/AgentAvatars';
 
 const TONE_OPTIONS = [
-  { value: 'friendly', label: 'ودود', color: 'bg-emerald-100 text-emerald-700 border-emerald-300', gradient: 'from-emerald-500 to-teal-600' },
-  { value: 'professional', label: 'رسمي', color: 'bg-blue-100 text-blue-700 border-blue-300', gradient: 'from-blue-500 to-indigo-600' },
-  { value: 'casual', label: 'عفوي', color: 'bg-orange-100 text-orange-700 border-orange-300', gradient: 'from-orange-500 to-amber-600' },
-  { value: 'empathetic', label: 'متعاطف', color: 'bg-purple-100 text-purple-700 border-purple-300', gradient: 'from-purple-500 to-violet-600' },
-  { value: 'persuasive', label: 'مقنع', color: 'bg-amber-100 text-amber-700 border-amber-300', gradient: 'from-amber-500 to-yellow-600' },
+  { value: 'friendly', label: 'ودود', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+  { value: 'professional', label: 'رسمي', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { value: 'casual', label: 'عفوي', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { value: 'empathetic', label: 'متعاطف', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+  { value: 'persuasive', label: 'مقنع', color: 'bg-amber-100 text-amber-700 border-amber-300' },
 ];
 
 type AgentFormData = {
@@ -145,7 +145,7 @@ export default function VirtualTeamPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
+            <div className="p-2.5 rounded-xl bg-primary text-white shadow-lg">
               <Users className="h-6 w-6" />
             </div>
             فريق العمل الافتراضي
@@ -161,7 +161,7 @@ export default function VirtualTeamPage() {
               {seedMutation.isPending ? 'جارٍ...' : 'قوالب جاهزة'}
             </Button>
           )}
-          <Button onClick={openCreate} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
+          <Button onClick={openCreate} className="bg-primary shadow-lg">
             <Plus className="h-4 w-4 ml-2" />
             أضف شخصية
           </Button>
@@ -181,8 +181,8 @@ export default function VirtualTeamPage() {
                 key={agent.id}
                 className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                {/* Gradient Header */}
-                <div className={`h-20 bg-gradient-to-br ${toneInfo.gradient} relative`}>
+                {/* Workspace header */}
+                <div className="h-20 bg-primary relative">
                   {agent.isDefault && (
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 text-xs gap-1">
@@ -293,9 +293,9 @@ export default function VirtualTeamPage() {
           </button>
         </div>
       ) : (
-        <Card className="py-16 border-0 shadow-lg bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
+        <Card className="py-16 border-0 shadow-lg bg-accent">
           <CardContent className="flex flex-col items-center gap-5 text-center">
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
+            <div className="p-5 rounded-2xl bg-primary text-white shadow-lg">
               <Users className="h-10 w-10" />
             </div>
             <h3 className="text-2xl font-bold">أنشئ فريقك الافتراضي</h3>
@@ -307,7 +307,7 @@ export default function VirtualTeamPage() {
                 <Sparkles className="h-4 w-4" />
                 ابدأ بقوالب جاهزة
               </Button>
-              <Button onClick={openCreate} className="bg-gradient-to-r from-violet-600 to-purple-600 gap-2">
+              <Button onClick={openCreate} className="bg-primary gap-2">
                 <Plus className="h-4 w-4" />
                 أنشئ من الصفر
               </Button>
@@ -556,7 +556,7 @@ export default function VirtualTeamPage() {
             <Button
               onClick={handleSave}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 gap-2"
+              className="bg-primary gap-2"
             >
               <Save className="h-4 w-4" />
               {(createMutation.isPending || updateMutation.isPending) ? 'جارٍ الحفظ...' : 'حفظ الشخصية'}

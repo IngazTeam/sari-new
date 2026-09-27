@@ -314,7 +314,7 @@ export default function SalesHub() {
       {/* Sales Target Progress */}
       {currentTarget && (
         <Card className="border-primary/20 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-primary/10 to-transparent pb-3">
+          <CardHeader className="bg-accent pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Target className="h-5 w-5 text-primary" />
               🎯 هدف المبيعات الشهري
