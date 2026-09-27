@@ -11,7 +11,9 @@ import { authorizeDashboardStaff } from './staff-dashboard-reply';
 import { transitionOwnershipInTransaction } from './conversation-handoff';
 import { destroySession } from './session-context';
 import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundle';
-import { staffAccountDigest,staffPhoneKey,staffReceiptDigest,parseStaffJson } from './sales-staff-acceptance-contract';
+import { staffAccountDigest,staffPhoneKey,staffReceiptDigest } from './sales-staff-acceptance-contract';
+import {readVoiceCompatibility,matchesCompatibilityRecording} from './staff-voice-compatibility-contract';
+import {reserveVoiceCompatibility,sendVoiceCompatibility} from './staff-voice-compatibility';
 import { assertSalesStaffAcceptanceSchema,staffRelayAccountIsCurrent } from './sales-staff-acceptance';
 import { staffActorKey } from './staff-dashboard-reply-contract';
 import { staffVoiceIntent,staffVoiceBasis,staffVoiceAcceptance,readStaffVoiceIntent,readStaffVoiceBasis,readStaffVoiceAcceptance,staffVoiceTransport,staffVoiceKey,staffVoiceStorageKey,validateStaffVoiceUrl } from './staff-dashboard-voice-contract';
@@ -22,20 +24,6 @@ import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channe
 
 const id=z.number().int().positive().safe(),unavailable=():never=>{throw Error('Staff voice unavailable');};
 const bytesDigest=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
-export type VoiceCompatibilitySend=()=>Promise<{success:boolean;persisted:boolean}>;
-const compatibilityResult=z.object({success:z.literal(true),status:z.literal('accepted'),persisted:z.boolean()}).strict();
-// Compatibility preserves the old transport, but reserves a request once and never invents a verified acceptance fact.
-function compatibilityIntent(merchant:number,actor:number,input:StaffVoiceInput,bytes:Buffer,phone:string){
-  return {version:'staff-voice-compatibility.v1',merchant,actor,conversationId:input.conversationId,requestId:input.requestId,
-    audioDigest:bytesDigest(bytes),byteLength:bytes.length,mimeType:input.mimeType,duration:input.duration,customerKey:hash({merchant,phone}),scope:'unmeasured_compatibility'};
-}
-async function reserveCompatibility(c:PoolConnection,merchant:number,actor:number,input:StaffVoiceInput,bytes:Buffer,conv:any){
-  const intent=compatibilityIntent(merchant,actor,input,bytes,conv.customerPhone);
-  const [saved]=await c.execute<any>(`INSERT INTO ai_sales_staff_voices
-    (merchant_id,actor_user_id,conversation_id,request_id,instance_id,ownership_version,customer_phone,compatibility,intent,intent_digest,next_reconcile_at)
-    VALUES (?,?,?,?,0,?,?,1,?,?,NULL)`,[merchant,actor,input.conversationId,input.requestId,conv.handoff_version,conv.customerPhone,JSON.stringify(intent),hash(intent)]);
-  return {id:Number(saved.insertId),compatibility:true,fresh:true,intentDigest:hash(intent)};
-}
 async function clock(c:PoolConnection){const [[r]]=await c.query<any[]>('SELECT UTC_TIMESTAMP(3) AS now');return new Date(databaseTimeEpoch(r.now)).toISOString();}
 export async function assertDashboardVoiceSchema(){
   await assertSalesStaffAcceptanceSchema();
@@ -48,21 +36,19 @@ async function reserve(merchant:number,actor:number,input:StaffVoiceInput,bytes:
     await authorizeDashboardStaff(c,merchant,actor);
     const [prior]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_voices WHERE merchant_id=? AND request_id=?',[merchant,input.requestId]);
     if(prior.length){
-      if(prior[0].compatibility){const r=prior[0],expected=compatibilityIntent(merchant,actor,input,bytes,r.customer_phone);
-        if(r.actor_user_id!==actor||r.conversation_id!==input.conversationId||r.intent_digest!==hash(expected)||hash(parseStaffJson(r.intent))!==hash(expected))return unavailable();
-        const result=r.status==='accepted'?compatibilityResult.parse(parseStaffJson(r.compatibility_result)):null;
-        if(result&&r.basis_digest!==hash({intentDigest:r.intent_digest,result}))return unavailable();
-        return {id:r.id,compatibility:true,fresh:false,intentDigest:r.intent_digest,result};}
+      if(prior[0].compatibility){const r=prior[0],record=readVoiceCompatibility(r);
+        if(!matchesCompatibilityRecording(record.intent,actor,input,bytes))return unavailable();
+        return {id:r.id,compatibility:true as const,fresh:false,intentDigest:r.intent_digest,result:record.result};}
       const i=readStaffVoiceIntent(prior[0]);
       if(i.actorUserId!==actor||i.conversationId!==input.conversationId||i.audioDigest!==bytesDigest(bytes)||i.byteLength!==bytes.length||i.mimeType!==input.mimeType||i.duration!==input.duration)return unavailable();
       return {...prior[0],intent:i,fresh:false};
     }
     const [convs]=await c.execute<any[]>('SELECT * FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[input.conversationId,merchant]);
     const conv=convs[0];if(convs.length!==1)return unavailable();
-    if(typeof conv.customerPhone==='string'&&(conv.customerPhone.startsWith('group_')||conv.customerPhone.endsWith('@g.us')))return reserveCompatibility(c,merchant,actor,input,bytes,conv);
+    if(typeof conv.customerPhone==='string'&&(conv.customerPhone.startsWith('group_')||conv.customerPhone.endsWith('@g.us')))return reserveVoiceCompatibility(c,merchant,actor,input,bytes,conv);
     const customerKey=staffPhoneKey(merchant,conv.customerPhone);
     const [accounts]=await c.execute<any[]>("SELECT * FROM whatsapp_instances WHERE merchant_id=? AND is_primary=1 AND status='active' FOR SHARE",[merchant]);
-    if(!accounts.length){const [registered]=await c.execute<any[]>('SELECT id FROM whatsapp_instances WHERE merchant_id=? LIMIT 1 FOR SHARE',[merchant]);if(registered.length)return unavailable();return reserveCompatibility(c,merchant,actor,input,bytes,conv);}
+    if(!accounts.length){const [registered]=await c.execute<any[]>('SELECT id FROM whatsapp_instances WHERE merchant_id=? LIMIT 1 FOR SHARE',[merchant]);if(registered.length)return unavailable();return reserveVoiceCompatibility(c,merchant,actor,input,bytes,conv);}
     if(accounts.length!==1)return unavailable();const a=accounts[0];
     const config:WhatsAppProviderConfig={provider:a.provider||'green_api',instanceId:String(a.instance_id),token:decryptSecret(a.token),apiUrl:a.api_url,phoneNumberId:a.phone_number_id,providerAccountId:a.provider_account_id};
     if(config.provider==='mock'&&process.env.NODE_ENV!=='test')return unavailable();const accountDigest=staffAccountDigest(config);
@@ -142,19 +128,12 @@ export async function reconcileDashboardVoice(merchant:number,voiceId:number):Pr
   });
 }
 /** One reservation owns at most one upload and one transport call; recovery never repeats either effect. */
-export async function trySendDashboardVoice(merchant:number,actor:number,raw:StaffVoiceInput,compatibilitySend?:VoiceCompatibilitySend):Promise<StaffDashboardReplyResult>{
+export async function trySendDashboardVoice(merchant:number,actor:number,raw:StaffVoiceInput):Promise<StaffDashboardReplyResult>{
   id.parse(merchant);id.parse(actor);const input=staffVoiceInput.parse(raw),bytes=decodeValidatedAudio(input.audioBase64,input.mimeType);await assertDashboardVoiceSchema();
   const r=await reserve(merchant,actor,input,bytes);
   if('compatibility' in r&&r.compatibility){
     if('result' in r&&r.result)return r.result;
-    if(r.fresh&&compatibilitySend){
-      try{const sent=await compatibilitySend();if(!sent.success)return {success:false,status:'pending',persisted:false};
-        const result=compatibilityResult.parse({success:true,status:'accepted',persisted:sent.persisted});
-        await checkoutTransaction(async c=>{await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
-          const [saved]=await c.execute<any>("UPDATE ai_sales_staff_voices SET status='accepted',compatibility_result=?,basis_digest=? WHERE id=? AND merchant_id=? AND compatibility=1 AND status='reserved'",[JSON.stringify(result),hash({intentDigest:r.intentDigest,result}),r.id,merchant]);
-          if(saved.affectedRows!==1)return unavailable();});return result;
-      }catch{ /* Unknown legacy transport or commit result is not permission to resend. */ }
-    }
+    if(r.fresh){destroySession(merchant,input.conversationId);return sendVoiceCompatibility(merchant,r.id,r.intentDigest,bytes);}
     return {success:false,status:'pending',persisted:false};
   }
   if(!('intent' in r))return unavailable();

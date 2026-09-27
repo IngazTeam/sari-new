@@ -110,28 +110,8 @@ describe.skipIf(!process.env.DATABASE_URL)('dashboard voice durable lifecycle',(
     mocks.send.mockImplementationOnce(async()=>{await q("UPDATE conversations SET customerPhone='966500009999' WHERE id=?",[conv]);return {accepted:true,providerMessageId:'receipt',status:'sent'};});
     expect(await send()).toEqual({success:true,status:'accepted',persisted:false});expect(await facts()).toHaveLength(1);expect(await messages()).toEqual([]);
   });
-  it('an inactive registered account cannot fall back to the compatibility sender',async()=>{
-    await q("UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?",[instance]);const legacy=vi.fn();await expect(trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).rejects.toThrow();expect(legacy).not.toHaveBeenCalled();expect(mocks.upload).not.toHaveBeenCalled();
-  });
-  it.each(['group','legacy'])('retains unmeasured %s transport with once-only request handling',async kind=>{
-    if(kind==='group')await q("UPDATE conversations SET customerPhone='group_123456789012' WHERE id=?",[conv]);else await q('DELETE FROM whatsapp_instances WHERE id=?',[instance]);
-    const legacy=vi.fn().mockResolvedValue({success:true,persisted:true});const run=()=>trySendDashboardVoice(f.merchantId,f.userId,input(),legacy);
-    await Promise.all(Array.from({length:5},run));expect(await run()).toEqual({success:true,status:'accepted',persisted:true});expect(legacy).toHaveBeenCalledOnce();expect(await facts()).toEqual([]);expect(mocks.upload).not.toHaveBeenCalled();
-  });
-  it('never repeats unknown compatibility transport even after registration changes',async()=>{
-    await q('DELETE FROM whatsapp_instances WHERE id=?',[instance]);const legacy=vi.fn().mockRejectedValue(Error('unknown'));
-    expect(await trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).toMatchObject({success:false});
-    await q("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,'new','fixture','active',1)",[f.merchantId]);
-    expect(await trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).toMatchObject({success:false});expect(legacy).toHaveBeenCalledOnce();expect(mocks.upload).not.toHaveBeenCalled();
-  });
-  it('recovers a lost compatibility result commit and rejects result corruption',async()=>{
-    await q("UPDATE conversations SET customerPhone='group_123456789012' WHERE id=?",[conv]);
-    const legacy=vi.fn().mockImplementation(async()=>{const pool=(await getPool())!,connect=pool.getConnection.bind(pool);let lost=false;
-      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await connect(),commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementation(async()=>{await commit();if(!lost){lost=true;throw Error('lost compatibility commit');}});return c;});return {success:true,persisted:false};});
-    expect(await trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).toMatchObject({success:false});vi.restoreAllMocks();
-    expect(await trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).toEqual({success:true,status:'accepted',persisted:false});expect(legacy).toHaveBeenCalledOnce();
-    await q("UPDATE ai_sales_staff_voices SET compatibility_result=JSON_SET(compatibility_result,'$.persisted',true) WHERE merchant_id=?",[f.merchantId]);
-    await expect(trySendDashboardVoice(f.merchantId,f.userId,input(),legacy)).rejects.toThrow();expect(await facts()).toEqual([]);
+  it('an inactive registered account cannot fall back to compatibility',async()=>{
+    await q("UPDATE whatsapp_instances SET status='inactive',is_primary=0 WHERE id=?",[instance]);await expect(send()).rejects.toThrow();expect(mocks.upload).not.toHaveBeenCalled();expect(mocks.send).not.toHaveBeenCalled();
   });
   it('blocks retryFailed and missing guards from replaying the audio outbox',async()=>{
     mocks.send.mockResolvedValueOnce({accepted:false,status:'failed',outcome:'rejected'});await send();const r=(await attempts())[0],b=readStaffVoiceBasis(r);

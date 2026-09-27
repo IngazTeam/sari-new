@@ -109,7 +109,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
           fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
-          replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
+          replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
     if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
     reserved = true;
@@ -129,6 +129,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
         && !input.idempotencyKey.startsWith('staff_reply:') && !input.staffReplyGuard
         && !input.idempotencyKey.startsWith('staff_voice:') && !input.staffVoiceGuard && !priorRequest?.staffVoiceGuard
         && !input.idempotencyKey.startsWith('staff_compat_text:') && !input.staffCompatibilityGuard && !priorRequest?.staffCompatibilityGuard
+        && !input.idempotencyKey.startsWith('staff_compat_voice:') && !input.staffCompatibilityVoiceGuard && !priorRequest?.staffCompatibilityVoiceGuard
         && existing.error_code !== 'provider_unreachable'
         && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(
@@ -152,6 +153,13 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   }
 
   const provider = getWhatsAppProvider(config.provider);
+  if(input.idempotencyKey.startsWith('staff_compat_voice:')||input.staffCompatibilityVoiceGuard){
+    const {canDispatchVoiceCompatibility}=await import('../../ai/staff-voice-compatibility');
+    if(!await canDispatchVoiceCompatibility(input,config)){
+      await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='staff_compat_voice_suppressed',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'",[input.merchantId,input.idempotencyKey]);
+      return {accepted:false,duplicate:false,status:'failed',errorCode:'staff_compat_voice_suppressed'};
+    }
+  }
   if(input.idempotencyKey.startsWith('staff_compat_text:')||input.staffCompatibilityGuard){
     const {canDispatchStaffCompatibility}=await import('../../ai/staff-compatibility-authority');
     if(!await canDispatchStaffCompatibility(input,config)){

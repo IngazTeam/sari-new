@@ -56,6 +56,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   staffReplyGuard?: { id:number; basisDigest:string };
   staffVoiceGuard?: { id:number; basisDigest:string };
   staffCompatibilityGuard?: { id:number; basisDigest:string };
+  staffCompatibilityVoiceGuard?: { id:number; basisDigest:string };
   appointmentReminderGuard?: import('../../appointment-reminders').AppointmentReminderGuard;
   bookingNoticeGuard?: import('../../booking-reschedule-notification').BookingNoticeGuard;
 };

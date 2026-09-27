@@ -9,10 +9,10 @@ import type {WhatsAppProviderConfig,SendMerchantWhatsAppInput} from '../channels
 
 const unavailable=():never=>{throw Error('Staff compatibility authority unavailable');};
 export const staffCompatibilityKey=(merchant:number,reply:number)=>`staff_compat_text:${merchant}:${reply}`;
-/** Local support contract: compatibility text uses the existing Green API adapter only. */
+/** Local support contract: compatibility sends use the existing Green API adapter only. */
 function configFor(row:any,legacy:boolean):WhatsAppProviderConfig{
   const config:WhatsAppProviderConfig={provider:legacy?'green_api':row.provider,instanceId:legacy?row.instanceId:row.instance_id,
-    token:decryptSecret(legacy?row.apiToken:row.token),apiUrl:(legacy?row.apiUrl:row.api_url)||'https://api.green-api.com',
+    token:decryptSecret(legacy?row.apiToken:row.token),apiUrl:legacy?(row.apiUrl||'https://api.green-api.com'):row.api_url,
     phoneNumberId:legacy?null:row.phone_number_id,providerAccountId:legacy?null:row.provider_account_id};
   const url=new URL(config.apiUrl!);
   if(config.provider!=='green_api'||!/^\d+$/.test(config.instanceId)||!/^[a-zA-Z0-9_-]+$/.test(config.token)
@@ -49,7 +49,7 @@ export async function canDispatchStaffCompatibility(input:SendMerchantWhatsAppIn
     const current=await inspectStaffCompatibilityDispatch(input.merchantId,g.id,g.basisDigest),b=current.basis;
     return b.authority.source==='registered'&&b.authority.recordId===input.instanceRecordId&&b.authority.accountDigest===staffAccountDigest(config)
       &&input.idempotencyKey===staffCompatibilityKey(input.merchantId,g.id)&&input.kind==='text'&&input.to===current.phone&&input.text===current.text
-      &&!input.mediaUrl&&!input.fileName&&!input.template&&!input.replyGuard&&!input.salesReplyGuard&&!input.staffReplyGuard&&!input.staffVoiceGuard
+      &&!input.mediaUrl&&!input.fileName&&!input.template&&!input.replyGuard&&!input.salesReplyGuard&&!input.staffReplyGuard&&!input.staffVoiceGuard&&!input.staffCompatibilityVoiceGuard
       &&!input.escalationGuard&&!input.salesOfferGuard&&!input.bookingNoticeGuard&&!input.appointmentReminderGuard&&!input.followUpGuard;
   }catch{return false;}
 }

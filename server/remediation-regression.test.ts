@@ -46,18 +46,16 @@ describe('10/10 remediation regression guards', () => {
     expect(personality).toContain('incrementQuickResponseUse(quickResponse.id)');
   });
 
-  it('sends uploaded voice media through WhatsApp before recording success locally', () => {
+  it('delegates voice reply effects to the durable service and validates standalone uploads', () => {
     const routers = read('./server/routers.ts');
     const voiceSend = section(routers, "sendVoiceReply: permissionProcedure('conversations.reply')", '// ── Sync conversations');
     const voiceUpload = section(routers, 'voice: router({', 'messageAnalytics: router({');
     const client = read('./client/src/pages/merchant/Conversations.tsx');
 
-    expect(voiceSend).toContain('conversation.merchantId !== merchant.id');
     expect(voiceSend).toContain('.input(staffVoiceInput)');
-    expect(voiceSend).toContain('routeDashboardStaffVoice(ctx.merchantId,ctx.user.id,input,async()=>{');
+    expect(voiceSend).toContain('routeDashboardStaffVoice(ctx.merchantId,ctx.user.id,input)');
     expect(voiceSend).not.toMatch(/audioUrl:\s*z\.string/);
-    expect(voiceSend.indexOf('sendFileWithCredentials(')).toBeLessThan(voiceSend.indexOf('createMessage({'));
-    expect(voiceSend).toContain('!result.success || !result.messageId');
+    expect(voiceSend).not.toMatch(/sendFileWithCredentials|storagePut|createMessage/);
     expect(voiceUpload).toContain('decodeValidatedAudio(input.audioBase64, input.mimeType)');
     expect(client).toContain('sendVoiceReplyMutation.mutateAsync');
   });
