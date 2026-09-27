@@ -833,6 +833,21 @@ export const sallaProductProjections = mysqlTable('salla_product_projections', {
     AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalProductId},'^[1-9][0-9]{0,19}$','c')`),
 ]);
 
+export const sallaSheetReceipts = mysqlTable('salla_sheet_receipts', {
+  id:int().autoincrement().primaryKey(),effectId:int('effect_id').notNull(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  creationId:int('creation_id').notNull(),localOrderId:int('local_order_id').notNull(),
+  claimToken:char('claim_token',{length:36}).notNull(),contextHash:char('context_hash',{length:64}).notNull(),
+  intent:json().notNull(),intentHash:char('intent_hash',{length:64}).notNull(),receipt:json(),receiptHash:char('receipt_hash',{length:64}),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),acceptedAt:datetime('accepted_at',{mode:'string',fsp:3}),
+},table=>[uniqueIndex('salla_sheet_effect_once').on(table.effectId),index('salla_sheet_merchant').on(table.merchantId,table.id),
+  check('chk_salla_sheet_receipt',sql`${table.effectId}>0 AND ${table.creationId}>0 AND ${table.localOrderId}>0
+    AND REGEXP_LIKE(${table.claimToken},'^[0-9a-f-]{36}$','c') AND REGEXP_LIKE(${table.contextHash},'^[0-9a-f]{64}$','c')
+    AND REGEXP_LIKE(${table.intentHash},'^[0-9a-f]{64}$','c')
+    AND ((${table.receipt} IS NULL AND ${table.receiptHash} IS NULL AND ${table.acceptedAt} IS NULL)
+      OR (${table.receipt} IS NOT NULL AND ${table.receiptHash} IS NOT NULL AND ${table.acceptedAt} IS NOT NULL AND REGEXP_LIKE(${table.receiptHash},'^[0-9a-f]{64}$','c')))`),
+]);
+
 export const sallaEffectReviews = mysqlTable('salla_effect_reviews', {
   id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   reviewerUserId:int('reviewer_user_id').notNull(),effectId:int('effect_id').notNull(),orderId:int('order_id').notNull(),

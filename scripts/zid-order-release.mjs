@@ -13,6 +13,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'salla-order-creation-0138',
   'salla-catalog-store-identity-0139',
   'salla-creation-effects-0140',
+  'salla-sheet-receipts-0142',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

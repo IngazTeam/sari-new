@@ -4,6 +4,7 @@
  */
 
 import { google } from 'googleapis';
+import { makeSheetIntent, verifySheetAppend, type SheetEvidenceHooks } from '../integrations/salla-sheet-evidence';
 import {
   createGoogleIntegration,
   getGoogleIntegration,
@@ -102,7 +103,7 @@ export async function handleOAuthCallback(
 /**
  * الحصول على OAuth2 client مع credentials محفوظة
  */
-async function getAuthenticatedClient(merchantId: number) {
+async function getAuthenticatedClient(merchantId: number, redactErrors=false) {
   try {
     const integration = await getGoogleIntegration(merchantId, 'sheets');
     
@@ -128,7 +129,7 @@ async function getAuthenticatedClient(merchantId: number) {
 
     return oauth2Client;
   } catch (error) {
-    console.error('[Google Sheets] Error getting authenticated client:', error);
+    console.error('[Google Sheets] Error getting authenticated client:', redactErrors ? 'authentication unavailable' : error);
     return null;
   }
 }
@@ -280,35 +281,59 @@ export async function appendToSheet(
   spreadsheetId: string,
   range: string,
   values: any[][],
-  options?: { beforeSend: () => Promise<void>; raw: true }
+  options?: { beforeSend: () => Promise<void>; raw: true;
+    evidence?: SheetEvidenceHooks & { integrationId:number } }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const auth = await getAuthenticatedClient(merchantId);
+    const auth = await getAuthenticatedClient(merchantId,Boolean(options?.evidence));
     if (!auth) {
       return { success: false, message: 'Google Sheets غير مربوط' };
     }
 
-    const sheets = google.sheets({ version: 'v4', auth });
-    
-    await options?.beforeSend();
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range,
-      valueInputOption: options?.raw ? 'RAW' : 'USER_ENTERED',
-      requestBody: {
-        values,
-      },
-    });
+    if(options?.evidence) {
+      const intent=makeSheetIntent(options.evidence.integrationId,spreadsheetId,range,values);
+      // Refresh authentication before acquiring the durable dispatch marker.
+      // A single fetch avoids implicit SDK auth/transport retries after append.
+      const {token}=await auth.getAccessToken();
+      if(!token)throw Error('Sheets authentication unavailable');
+      const url=new URL(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append`);
+      url.search=new URLSearchParams({valueInputOption:'RAW',insertDataOption:'INSERT_ROWS',includeValuesInResponse:'true',responseValueRenderOption:'UNFORMATTED_VALUE'}).toString();
+      const body=JSON.stringify({majorDimension:'ROWS',values});
+      await options.beforeSend();
+      await options.evidence.prepare(intent);
+      const response=await fetch(url,{method:'POST',redirect:'error',signal:AbortSignal.timeout(20000),
+        headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body});
+      if(!response.ok||!response.body) {
+        await response.body?.cancel().catch(()=>{});
+        throw Error('Sheets append unconfirmed');
+      }
+      const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+      try {
+        for(;;) {const {done,value}=await reader.read();if(done)break;size+=value.byteLength;
+          if(size>2000000)throw Error('Sheets response too large');chunks.push(value);}
+      } finally {await reader.cancel().catch(()=>{});reader.releaseLock();}
+      const receipt=verifySheetAppend(JSON.parse(Buffer.concat(chunks).toString('utf8')),intent,spreadsheetId,values);
+      await options.evidence.accept(receipt);
+    } else {
+      const sheets = google.sheets({ version: 'v4', auth });
+      await options?.beforeSend();
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range,
+        valueInputOption: options?.raw ? 'RAW' : 'USER_ENTERED',
+        requestBody: { values },
+      });
+    }
 
     return {
       success: true,
       message: 'تم إضافة البيانات بنجاح',
     };
   } catch (error: any) {
-    console.error('[Google Sheets] Error appending to sheet:', error);
+    console.error('[Google Sheets] Error appending to sheet:', options?.evidence ? 'append unconfirmed' : error);
     return {
       success: false,
-      message: error.message || 'فشل إضافة البيانات',
+      message: options?.evidence ? 'تعذر تأكيد إضافة البيانات' : error.message || 'فشل إضافة البيانات',
     };
   }
 }

@@ -9,6 +9,7 @@ import { createDisposableMerchant,cleanupDisposableMerchants,assertDisposableDat
 import { encryptSecret } from '../security/secrets';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { runSallaCreationEffectsBatch } from './salla-creation-effects';
+import { simulateAcceptedSheetAppend,syntheticSheetIntent,syntheticSheetReceipt } from '../tests/helpers/salla-sheet-evidence';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic intent, lease and actual MySQL recovery',()=>{
   const q=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
@@ -27,7 +28,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic inten
       VALUES (?,?,?,REPEAT('a',64),?,'dispatching',?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))`,[merchant,owner,randomUUID(),token,store,connection])).insertId);
     effects.owner.mockReset().mockImplementation(async(_data,beforeSend)=>{await beforeSend();return true;});
     effects.merchant.mockReset().mockImplementation(async(_merchant,_order,_total,beforeSend)=>{await beforeSend();return true;});
-    effects.sheets.mockReset().mockImplementation(async(_order,options)=>{await options.beforeSend();return {success:true};});
+    effects.sheets.mockReset().mockImplementation(simulateAcceptedSheetAppend);
     order=(await persist()).id;
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
@@ -151,5 +152,104 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic inten
     try{if(mode==='table')await q('RENAME TABLE salla_creation_effects TO salla_creation_effects_hidden');else await q('ALTER TABLE salla_creation_effects DROP INDEX salla_creation_effect_once');
       await expect(run()).rejects.toMatchObject({code:'DATABASE_SCHEMA_OUTDATED'});for(const send of Object.values(effects))expect(send).not.toHaveBeenCalled();
     }finally{if(mode==='table')await q('RENAME TABLE salla_creation_effects_hidden TO salla_creation_effects');else await q('ALTER TABLE salla_creation_effects ADD UNIQUE KEY salla_creation_effect_once(creation_id,kind)');}
+  });
+  describe('durable Sheets acceptance and recovery',()=>{
+    const sheet=async()=>(await rows()).find((r:any)=>r.kind==='sheets');
+    const receipts=()=>q('SELECT * FROM salla_sheet_receipts WHERE merchant_id=?',[merchant]);
+    beforeEach(async()=>{await q("UPDATE salla_creation_effects SET available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 1 DAY) WHERE merchant_id=? AND kind<>'sheets'",[merchant]);});
+    it('persists one intent and receipt with the exact claim and no copied customer data',async()=>{
+      await run();const r=(await receipts())[0],e=await sheet();expect(r).toMatchObject({effect_id:e.id,merchant_id:merchant,creation_id:creation,local_order_id:order,claim_token:e.claim_token,context_hash:e.context_hash});
+      expect(e.state).toBe('accepted');expect(r.accepted_at).not.toBeNull();expect(e.accepted_at).toEqual(r.accepted_at);
+      expect(JSON.stringify(r)).not.toMatch(/Synthetic|966500000000|synthetic-sheet|refresh_token/);
+      expect(await run()).toBe(0);expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it('a helper boolean without durable evidence cannot accept Sheets',async()=>{
+      effects.sheets.mockImplementation(async(_o,options)=>{await options.beforeSend();return {success:true};});await run();
+      expect((await sheet()).state).toBe('review');expect(await receipts()).toHaveLength(0);
+    });
+    it('a marked append without response remains unknown with no second send',async()=>{
+      effects.sheets.mockImplementation(async(_o,options)=>{await options.evidence.prepare(syntheticSheetIntent());throw Error('timeout');});await run();
+      expect(await sheet()).toMatchObject({state:'review',last_error:'transport_unconfirmed'});expect((await receipts())[0].accepted_at).toBeNull();
+      await ready();expect(await run()).toBe(2);expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it('valid receipt survives a false helper result after successful transport',async()=>{
+      effects.sheets.mockImplementation(async(o,options)=>{await simulateAcceptedSheetAppend(o,options);return {success:false};});await run();expect((await sheet()).state).toBe('accepted');
+    });
+    it('an intent insertion failure rolls back the dispatch marker before any transport',async()=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool),sent=vi.fn();
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);if(sql.includes('INSERT INTO salla_sheet_receipts'))throw Error('insert failed');return r;})as any);return c;});
+      effects.sheets.mockImplementation(async(_o,options)=>{await options.evidence.prepare(syntheticSheetIntent());sent();return {success:true};});await run();vi.restoreAllMocks();
+      expect(sent).not.toHaveBeenCalled();expect(await receipts()).toHaveLength(0);expect(await sheet()).toMatchObject({state:'pending',dispatch_started_at:null});
+    });
+    it('lost intent commit acknowledgement parks the attempt without calling transport',async()=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool),sent=vi.fn();
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);if(sql.includes('INSERT INTO salla_sheet_receipts')){const commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{await commit();throw Error('lost intent ack');});}return r;})as any);return c;});
+      effects.sheets.mockImplementation(async(_o,options)=>{await options.evidence.prepare(syntheticSheetIntent());sent();return {success:true};});await run();vi.restoreAllMocks();
+      expect(sent).not.toHaveBeenCalled();expect(await receipts()).toHaveLength(1);expect((await sheet()).state).toBe('review');expect(await run()).toBe(0);
+    });
+    it.each(['before','after'])('receipt commit failure %s commit never causes a repeated append',async mode=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool);
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);if(sql.includes('SET receipt=?')){const commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{if(mode==='after')await commit();throw Error('receipt commit failure');});}return r;})as any);return c;});
+      await run();vi.restoreAllMocks();expect((await sheet()).state).toBe('review');await run();
+      expect((await sheet()).state).toBe(mode==='after'?'accepted':'review');expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it.each(['before','after'])('recovers a %s-write parent acknowledgement loss using the receipt alone',async mode=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool);let failed=false;
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{
+        if(!failed&&sql.includes("SET state='accepted'")){failed=true;if(mode==='before')throw Error('parent write failed');const result=await execute(sql,args);const commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{await commit();throw Error('parent commit ack lost');});return result;}return execute(sql,args);
+      })as any);return c;});await run();vi.restoreAllMocks();
+      expect((await receipts())[0].accepted_at).not.toBeNull();await run();expect((await sheet()).state).toBe('accepted');expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it('captures a late response after lease expiry and current context change',async()=>{
+      effects.sheets.mockImplementation(async(_o,options)=>{
+        await options.evidence.prepare(syntheticSheetIntent());await q('UPDATE salla_creation_effects SET lease_until=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 MINUTE) WHERE id=?',[(await sheet()).id]);
+        await run();expect((await sheet()).state).toBe('review');await q("UPDATE orders SET customerName='Changed after send' WHERE id=?",[order]);
+        await options.evidence.accept(syntheticSheetReceipt());return {success:true};
+      });await run();expect((await sheet()).state).toBe('accepted');expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it('does not mark a historical 0140 acceptance or unknown dispatch as receipt-proven',async()=>{
+      await q(`UPDATE salla_creation_effects SET state='review',attempts=1,claim_token=?,dispatch_started_at=UTC_TIMESTAMP(3),lease_until=NULL,last_error='transport_unconfirmed' WHERE id=?`,[randomUUID(),(await sheet()).id]);
+      expect(await run()).toBe(0);expect((await sheet()).state).toBe('review');expect(await receipts()).toHaveLength(0);expect(effects.sheets).not.toHaveBeenCalled();
+    });
+    it('rejects duplicate prepare calls even for an identical request',async()=>{
+      const sent=vi.fn();effects.sheets.mockImplementation(async(_o,options)=>{await options.evidence.prepare(syntheticSheetIntent());sent();await options.evidence.prepare(syntheticSheetIntent());sent();return {success:true};});
+      await run();expect(sent).toHaveBeenCalledOnce();expect((await sheet()).state).toBe('review');expect(await receipts()).toHaveLength(1);
+    });
+    it('acceptance is immutable but an identical acknowledgement is idempotent',async()=>{
+      effects.sheets.mockImplementation(async(o,options)=>{await simulateAcceptedSheetAppend(o,options);const before=await receipts();await options.evidence.accept(syntheticSheetReceipt());expect(await receipts()).toEqual(before);
+        await expect(options.evidence.accept({...syntheticSheetReceipt(),updatedRangeHash:'b'.repeat(64)})).rejects.toThrow();return {success:true};});
+      await run();expect((await sheet()).state).toBe('accepted');expect(await receipts()).toHaveLength(1);
+    });
+    it('rejects a response bound to another intent',async()=>{
+      effects.sheets.mockImplementation(async(_o,options)=>{await options.evidence.prepare(syntheticSheetIntent());await options.evidence.accept({...syntheticSheetReceipt(),intentHash:'b'.repeat(64)});return {success:true};});
+      await run();expect((await sheet()).state).toBe('review');expect((await receipts())[0].accepted_at).toBeNull();
+    });
+    it.each(['merchant_id','creation_id','local_order_id','claim_token','context_hash','intent_hash','receipt_hash','intent','receipt'])('quarantines a mismatched stored %s instead of accepting or repeating it',async field=>{
+      effects.sheets.mockImplementation(async(o,options)=>{await simulateAcceptedSheetAppend(o,options);
+        const value=field==='merchant_id'?await createDisposableMerchant('forged-receipt'):null;if(value)users.push(value.userId);
+        const data=value?value.merchantId:['creation_id','local_order_id'].includes(field)?2147483647:field==='claim_token'?randomUUID():['intent','receipt'].includes(field)?'{}':'b'.repeat(64);
+        await q(`UPDATE salla_sheet_receipts SET ${field}=? WHERE effect_id=?`,[data,(await sheet()).id]);return {success:true};
+      });await run();expect(await sheet()).toMatchObject({state:'review',last_error:'sheet_evidence_invalid'});expect(await run()).toBe(0);expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it('isolates receipt settlement to the requested merchant',async()=>{
+      effects.sheets.mockImplementation(async(o,options)=>{await simulateAcceptedSheetAppend(o,options);throw Error('post-receipt failure');});await run();expect((await sheet()).state).toBe('review');
+      const other=await createDisposableMerchant('receipt-other');users.push(other.userId);await runSallaCreationEffectsBatch(20,other.merchantId);expect((await sheet()).state).toBe('review');
+      await Promise.all([run(),run(),run()]);expect((await sheet()).state).toBe('accepted');expect(effects.sheets).toHaveBeenCalledOnce();
+    });
+    it.each(['table','index','constraint'])('missing receipt %s fails closed before claiming any work',async mode=>{
+      try {
+        if(mode==='table')await q('RENAME TABLE salla_sheet_receipts TO salla_sheet_receipts_hidden');
+        else if(mode==='index')await q('ALTER TABLE salla_sheet_receipts DROP INDEX salla_sheet_effect_once');
+        else await q('ALTER TABLE salla_sheet_receipts DROP CHECK chk_salla_sheet_receipt');
+        await expect(run()).rejects.toMatchObject({code:'DATABASE_SCHEMA_OUTDATED'});expect(effects.sheets).not.toHaveBeenCalled();expect((await sheet()).attempts).toBe(0);
+      } finally {
+        if(mode==='table')await q('RENAME TABLE salla_sheet_receipts_hidden TO salla_sheet_receipts');
+        else if(mode==='index')await q('ALTER TABLE salla_sheet_receipts ADD UNIQUE KEY salla_sheet_effect_once(effect_id)');
+        else {
+          const {readFileSync}=await import('node:fs');const ddl=readFileSync('drizzle/0142_salla_sheet_receipts.sql','utf8');
+          const constraint=ddl.slice(ddl.indexOf('CONSTRAINT chk_salla_sheet_receipt'),ddl.lastIndexOf('\n)'));await q('ALTER TABLE salla_sheet_receipts ADD '+constraint.trim());
+        }
+      }
+    });
   });
 });

@@ -16,6 +16,7 @@ import {
 } from './db';
 import * as sheets from './_core/googleSheets';
 import { formatMinorMoney } from '../shared/product-money';
+import type { SheetEvidenceHooks } from './integrations/salla-sheet-evidence';
 
 /**
  * إعداد Spreadsheet الرئيسي للتاجر
@@ -112,7 +113,7 @@ export async function setupMerchantSpreadsheet(merchantId: number): Promise<{
 /**
  * مزامنة طلب جديد إلى Google Sheets
  */
-export async function syncOrderToSheets(orderId: number, guard?: { merchantId:number; beforeSend:()=>Promise<void> }): Promise<{
+export async function syncOrderToSheets(orderId: number, guard?: { merchantId:number; beforeSend:()=>Promise<void>; evidence?:SheetEvidenceHooks }): Promise<{
   success: boolean;
   message: string;
 }> {
@@ -172,7 +173,7 @@ export async function syncOrderToSheets(orderId: number, guard?: { merchantId:nu
       spreadsheetId,
       'الطلبات!A:J',
       rowData,
-      guard ? { raw:true, beforeSend:async()=>{
+      guard ? { raw:true, evidence:guard.evidence ? {...guard.evidence,integrationId:integration.id} : undefined, beforeSend:async()=>{
         const current=await getGoogleIntegration(merchantId,'sheets');
         const identity=(value:string|null)=>{ const credentials=JSON.parse(value||'{}');return credentials.refresh_token||credentials.access_token; };
         if (!current || !current.isActive || current.id!==integration.id || current.sheetId!==spreadsheetId
@@ -185,17 +186,18 @@ export async function syncOrderToSheets(orderId: number, guard?: { merchantId:nu
 
     if (result.success) {
       // تحديث وقت آخر مزامنة
-      await updateGoogleIntegration(integration.id, {
-        lastSync: new Date().toISOString(),
-      });
+      // An accepted append remains successful if this optional display timestamp
+      // cannot be written. It must never encourage another append of the row.
+      try { await updateGoogleIntegration(integration.id, {lastSync: new Date().toISOString()}); }
+      catch { console.error('[Sheets Sync] Last-sync timestamp unavailable after accepted append'); }
     }
 
     return result;
   } catch (error: any) {
-    console.error('[Sheets Sync] Error syncing order:', error);
+    console.error('[Sheets Sync] Error syncing order:', guard?.evidence ? 'sync unconfirmed' : error);
     return {
       success: false,
-      message: error.message || 'فشل مزامنة الطلب',
+      message: guard?.evidence ? 'تعذر تأكيد مزامنة الطلب' : error.message || 'فشل مزامنة الطلب',
     };
   }
 }

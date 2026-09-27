@@ -31,6 +31,15 @@ test('draining requires stopped web and inbound processes with no live PID',()=>
   assert.throws(()=>assertManagedWritersStopped([{name:'sari',pm2_env:{status:'stopped'}}]));
   assert.throws(()=>assertManagedWritersStopped(null));
 });
+test('a 0141 worker cannot accept Sheets without the durable 0142 receipt contract',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-sheet-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
+  const file=path.join(root,'scripts/zid-order-store-capability.json');
+  try {
+    const marker=JSON.parse(fs.readFileSync('scripts/zid-order-store-capability.json','utf8'));
+    marker.capabilities=marker.capabilities.filter(c=>c!=='salla-sheet-receipts-0142');
+    fs.writeFileSync(file,JSON.stringify(marker));assert.throws(()=>assertZidOrderReleaseCompatible(root));
+  } finally {fs.unlinkSync(file);fs.rmdirSync(path.dirname(file));fs.rmdirSync(root);}
+});
 test('a stopped release remains discoverable for a safe updater retry, never ready',()=>{
   const directory='/var/www/sari-release-12345678-abc';
   const apps=['sari','sari-inbound'].map(name=>({name,pm2_env:{status:'stopped',pm_cwd:directory,pm_exec_path:`${directory}/dist/${name==='sari'?'index':'worker'}.js`}}));

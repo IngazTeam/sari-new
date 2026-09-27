@@ -9,6 +9,7 @@ import { createDisposableMerchant,cleanupDisposableMerchants } from '../tests/he
 import { encryptSecret } from '../security/secrets';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { runSallaCreationEffectsBatch } from './salla-creation-effects';
+import { simulateAcceptedSheetAppend } from '../tests/helpers/salla-sheet-evidence';
 import { listSallaEffects,listSallaEffectReviews,checkSallaEffect } from './salla-effect-review';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla operational review on isolated MySQL',()=>{
@@ -31,7 +32,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla operational review on isolated
     effect=(await rows())[0].id;
     effects.owner.mockReset().mockImplementation(async(_d,guard)=>{await guard();return true;});
     effects.merchant.mockReset().mockImplementation(async(_m,_o,_v,guard)=>{await guard();return true;});
-    effects.sheets.mockReset().mockImplementation(async(_o,options)=>{await options.beforeSend();return {success:true};});
+    effects.sheets.mockReset().mockImplementation(simulateAcceptedSheetAppend);
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
   function noSends(){expect(effects.owner).not.toHaveBeenCalled();expect(effects.merchant).not.toHaveBeenCalled();expect(effects.sheets).not.toHaveBeenCalled();}
