@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundle';
 import { parseStaffJson } from './sales-staff-acceptance-contract';
 import {compatibilitySettlement,assertCompatibilitySettlement} from './staff-compatibility-settlement-contract';
+import {legacyStaffDelivery,assertLegacyStaffDelivery} from './staff-legacy-delivery-contract';
 
 const id=z.number().int().positive().safe(),digest=z.string().regex(/^[a-f0-9]{64}$/);
 export const staffCompatibilityResult=z.object({success:z.literal(true),status:z.literal('accepted'),persisted:z.boolean()}).strict();
@@ -13,11 +14,11 @@ const legacySnapshot=z.object({
 export const staffCompatibilityAuthority=z.object({source:z.enum(['registered','legacy']),recordId:id,accountDigest:digest}).strict();
 export const staffCompatibilitySnapshot=z.discriminatedUnion('version',[
   legacySnapshot,legacySnapshot.extend({version:z.literal('staff-text-compatibility.v2'),ownershipVersion:id,authority:staffCompatibilityAuthority,
-    reservedAt:z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v),settlement:compatibilitySettlement.optional()}).strict(),
+    reservedAt:z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v),settlement:compatibilitySettlement.optional(),legacyDelivery:legacyStaffDelivery.optional()}).strict(),
 ]);
 export const staffCompatibilityCustomer=(merchantId:number,phone:string)=>hash({version:'staff-compatibility-customer.v1',merchantId,phone});
 export function isStaffTextCompatibility(row:any){return ['staff-text-compatibility.v1','staff-text-compatibility.v2'].includes(parseStaffJson(row.basis)?.version);}
-/** A compatibility result records the old sender's response, never verified provider acceptance. */
+/** Compatibility evidence stays separate from measured sales acceptance. Historical results remain readable. */
 export function readStaffTextCompatibility(row:any){
   const raw=parseStaffJson(row.basis),s=staffCompatibilitySnapshot.parse(raw);
   if(hash(raw)!==row.basis_digest||hash(s)!==row.basis_digest||s.sourceId!==Number(row.id)||s.merchantId!==Number(row.merchant_id)
@@ -31,6 +32,12 @@ export function readStaffTextCompatibility(row:any){
     const {settlement,...basis}=s;
     assertCompatibilitySettlement(settlement,{kind:'text',merchantId:s.merchantId,sourceId:s.sourceId,instanceRecordId:s.authority.recordId,
       basisDigest:hash({...basis,result:null}),phone:row.customer_phone,text:row.reply_text});
+  }
+  if(s.version==='staff-text-compatibility.v2'&&s.legacyDelivery){
+    if(s.authority.source!=='legacy'||s.settlement)throw Error('Unsupported legacy text delivery');
+    const {legacyDelivery,...basis}=s;
+    assertLegacyStaffDelivery(legacyDelivery,{kind:'text',merchantId:s.merchantId,sourceId:s.sourceId,connectionId:s.authority.recordId,
+      accountDigest:s.authority.accountDigest,basisDigest:hash({...basis,result:null}),phone:row.customer_phone,text:row.reply_text});
   }
   return s;
 }

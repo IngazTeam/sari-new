@@ -51,15 +51,15 @@ describe.each(['text', 'voice'] as const)('%s history and SQL-only checks', kind
       it('recovers after reconnect without original content, recording or an external effect', async () => {
         await unresolved(); expect((await list()).items[0].state).toBe('pending'); await closeDb();
         const results = await Promise.all(Array.from({ length: 5 }, check));
-        expect(results.every(r => r.success === (channel !== 'legacy'))).toBe(true);
-        expect((await list()).items[0].state).toBe(channel === 'legacy' ? 'pending' : 'accepted'); once();
+        expect(results.every(r => r.success && r.persisted)).toBe(true);
+        expect((await list()).items[0].state).toBe('accepted'); once();
       });
       it('retains the same result after a lost review commit acknowledgement', async () => {
         await unresolved(); const pool = (await getPool())!, connect = pool.getConnection.bind(pool); let commits = 0;
         vi.spyOn(pool, 'getConnection').mockImplementation(async () => {
           const c = await connect(), commit = c.commit.bind(c); vi.spyOn(c, 'commit').mockImplementation(async () => { await commit(); if (++commits === 2) throw Error('lost acknowledgement'); }); return c;
         });
-        await expect(check()).rejects.toThrow(); vi.restoreAllMocks(); expect((await check()).success).toBe(channel !== 'legacy'); once();
+        await expect(check()).rejects.toThrow(); vi.restoreAllMocks(); expect((await check()).success).toBe(true); once();
       });
       it.each(['actor', 'suspended', 'disabled'])('rejects %s revocation both before and during the review', async change => {
         await unresolved(); const changeAuthority = () => q(change === 'actor' ? "INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'viewer',1)"

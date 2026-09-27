@@ -10,7 +10,7 @@ import {authorizeDashboardStaff} from './staff-dashboard-reply';
 import {transitionOwnershipInTransaction} from './conversation-handoff';
 import {selectStaffCompatibilityAccount} from './staff-compatibility-authority';
 import {staffAccountDigest} from './sales-staff-acceptance-contract';
-import {staffCompatibilityResult} from './staff-dashboard-compatibility';
+import {saveLegacyStaffDelivery} from './staff-legacy-delivery';
 import {policyArtifactDigest as hash} from './learning-policy-evaluation-bundle';
 import {validateStaffVoiceUrl} from './staff-dashboard-voice-contract';
 import {compatibilityAudioDigest,compatibilityVoiceCustomer,pinnedVoiceCompatibilityIntent,voiceCompatibilityBasis,readVoiceCompatibility,
@@ -40,7 +40,7 @@ async function inspect(c:PoolConnection,merchant:number,voice:number,intentDiges
   await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
   const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_voices WHERE id=? AND merchant_id=? FOR UPDATE',[voice,merchant]);
   if(rows.length!==1)return unavailable();const row=rows[0],record=readVoiceCompatibility(row),i=record.intent;
-  if(i.version!=='staff-voice-compatibility.v2'||record.result||(intentDigest&&hash(i)!==intentDigest))return unavailable();
+  if(i.version!=='staff-voice-compatibility.v2'||record.result||record.basis?.legacyDelivery||(intentDigest&&hash(i)!==intentDigest))return unavailable();
   await authorizeDashboardStaff(c,merchant,i.actor);
   const [convs]=await c.execute<any[]>(`SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? AND handoff_version=? AND human_takeover=1
     AND (human_expires_at>UTC_TIMESTAMP(3) OR (human_expires_at IS NULL AND human_takeover_at>TIMESTAMPADD(HOUR,-24,UTC_TIMESTAMP(3)))) FOR SHARE`,[i.conversationId,merchant,i.ownershipVersion]);
@@ -77,24 +77,7 @@ export async function sendVoiceCompatibility(merchant:number,voice:number,intent
       return await reconcileStaffCompatibility('voice',merchant,current.intent.actor,voice);
     }
     const sent=await getWhatsAppProvider(current.config.provider).send(current.config,request);
-    const receipt=sent.providerMessageId;
-    if(sent.accepted!==true||!['sent','delivered','read'].includes(sent.status)||typeof receipt!=='string'||!/^[^\s<>\x00-\x1f]{1,255}$/.test(receipt)
-      ||('outcome' in sent&&sent.outcome!==undefined&&sent.outcome!=='accepted'))return pending();
-    return await checkoutTransaction(async c=>{
-      await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
-      const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_voices WHERE id=? AND merchant_id=? FOR UPDATE',[voice,merchant]);
-      if(rows.length!==1)return unavailable();const record=readVoiceCompatibility(rows[0]);
-      if(hash(record.intent)!==intentDigest||!record.basis||hash(record.basis)!==hash(basis))return unavailable();
-      const i=current.intent,[convs]=await c.execute<any[]>('SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[i.conversationId,merchant]);let persisted=false;
-      if(convs.length===1&&compatibilityVoiceCustomer(merchant,convs[0].customerPhone)===i.customerKey){
-        const content=`[رسالة صوتية — ${Math.round(i.duration)} ثانية]`,[messages]=await c.execute<any[]>('SELECT * FROM messages WHERE conversationId=? AND externalId=? FOR UPDATE',[i.conversationId,receipt]);
-        if(messages.length>1||messages.some(m=>m.direction!=='outgoing'||m.messageType!=='voice'||m.sender_type!=='merchant'||m.content!==content||m.voiceUrl!==mediaUrl||m.mediaUrl!==mediaUrl))return unavailable();
-        if(!messages.length)await c.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content,voiceUrl,mediaUrl,externalId,isProcessed,sender_type) VALUES (?,'outgoing','voice',?,?,?,?,1,'merchant')",[i.conversationId,content,mediaUrl,mediaUrl,receipt]);
-        await c.execute('UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,UTC_TIMESTAMP()),UTC_TIMESTAMP()) WHERE id=? AND merchantId=?',[i.conversationId,merchant]);persisted=true;
-      }
-      const result=staffCompatibilityResult.parse({success:true,status:'accepted',persisted}),finished=voiceCompatibilityBasis.parse({...basis,result});
-      const [saved]=await c.execute<any>("UPDATE ai_sales_staff_voices SET status='accepted',compatibility_result=?,basis=?,basis_digest=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(result),JSON.stringify(finished),hash(finished),voice,merchant]);
-      if(saved.affectedRows!==1)return unavailable();return result;
-    });
+    if(!await saveLegacyStaffDelivery('voice',merchant,voice,hash(basis),sent))return pending();
+    return await reconcileStaffCompatibility('voice',merchant,current.intent.actor,voice);
   }catch{return pending();}
 }

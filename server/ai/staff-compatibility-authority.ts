@@ -34,7 +34,7 @@ export async function inspectStaffCompatibilityDispatch(merchant:number,reply:nu
     await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
     const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE merchant_id=? AND id=? FOR SHARE',[merchant,reply]);
     if(rows.length!==1)return unavailable();const row=rows[0],basis=readStaffTextCompatibility(row);
-    if(basis.version!=='staff-text-compatibility.v2'||basis.result||hash(basis)!==basisDigest)return unavailable();
+    if(basis.version!=='staff-text-compatibility.v2'||basis.result||basis.legacyDelivery||hash(basis)!==basisDigest)return unavailable();
     await authorizeDashboardStaff(c,merchant,basis.actorUserId);
     const [conversations]=await c.execute<any[]>(`SELECT customerPhone FROM conversations WHERE merchantId=? AND id=? AND handoff_version=? AND human_takeover=1
       AND (human_expires_at>UTC_TIMESTAMP(3) OR (human_expires_at IS NULL AND human_takeover_at>TIMESTAMPADD(HOUR,-24,UTC_TIMESTAMP(3)))) FOR SHARE`,[merchant,basis.conversationId,basis.ownershipVersion]);

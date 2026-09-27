@@ -6,6 +6,7 @@ import {staffCompatibilityAuthority,staffCompatibilityResult} from './staff-dash
 import {validateStaffVoiceUrl} from './staff-dashboard-voice-contract';
 import {staffVoiceMime,staffVoiceExtension,type StaffVoiceInput} from '../../shared/staff-dashboard-voice';
 import {compatibilitySettlement,assertCompatibilitySettlement} from './staff-compatibility-settlement-contract';
+import {legacyStaffDelivery,assertLegacyStaffDelivery} from './staff-legacy-delivery-contract';
 
 const id=z.number().int().positive().safe(),digest=z.string().regex(/^[a-f0-9]{64}$/);
 export const compatibilityAudioDigest=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
@@ -18,7 +19,7 @@ export const pinnedVoiceCompatibilityIntent=historicalIntent.extend({version:z.l
   reservedAt:z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v)}).strict();
 const intentSchema=z.discriminatedUnion('version',[historicalIntent,pinnedVoiceCompatibilityIntent]);
 export const voiceCompatibilityBasis=z.object({version:z.literal('staff-voice-compatibility-basis.v2'),intentDigest:digest,
-  mediaUrlDigest:digest,fileName:z.string(),result:staffCompatibilityResult.nullable(),settlement:compatibilitySettlement.optional()}).strict();
+  mediaUrlDigest:digest,fileName:z.string(),result:staffCompatibilityResult.nullable(),settlement:compatibilitySettlement.optional(),legacyDelivery:legacyStaffDelivery.optional()}).strict();
 export const compatibilityVoiceKey=(merchant:number,source:number)=>`staff_compat_voice:${merchant}:${source}`;
 export const compatibilityVoiceStorageKey=(i:z.infer<typeof pinnedVoiceCompatibilityIntent>)=>`audio/staff-compat-voice/${i.merchant}/${i.actor}/${i.requestId}.${staffVoiceExtension[i.mimeType]}`;
 export function matchesCompatibilityRecording(i:z.infer<typeof intentSchema>,actor:number,input:StaffVoiceInput,bytes:Buffer){
@@ -49,6 +50,12 @@ export function readVoiceCompatibility(r:any){
     const {settlement,...pending}=basis;
     assertCompatibilitySettlement(settlement,{kind:'voice',merchantId:intent.merchant,sourceId:intent.sourceId,instanceRecordId:intent.authority.recordId,
       basisDigest:hash({...pending,result:null}),phone:r.customer_phone,mediaUrl:r.media_url,fileName:basis.fileName});
+  }
+  if(basis.legacyDelivery){
+    if(intent.authority.source!=='legacy'||basis.settlement)throw Error('Unsupported legacy voice delivery');
+    const {legacyDelivery,...pending}=basis;
+    assertLegacyStaffDelivery(legacyDelivery,{kind:'voice',merchantId:intent.merchant,sourceId:intent.sourceId,connectionId:intent.authority.recordId,
+      accountDigest:intent.authority.accountDigest,basisDigest:hash({...pending,result:null}),phone:r.customer_phone,mediaUrl:r.media_url,fileName:basis.fileName});
   }
   return {intent,basis,result};
 }

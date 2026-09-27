@@ -66,7 +66,7 @@ describe.skipIf(!process.env.DATABASE_URL)('pinned compatibility text transport'
     await send().catch(()=>{});vi.restoreAllMocks();await closeDb();expect((await send()).success).toBe(phase==='result');expect(provider).toHaveBeenCalledTimes(phase==='result'?1:0);
   });
   it.each(['INSERT INTO messages',"SET status='accepted'"])('does not repeat after SQL failure at %s',async fragment=>{provider.mockImplementation(async()=>{await failSql(fragment);return accepted();});
-    expect(await send()).toMatchObject({success:false});vi.restoreAllMocks();expect(await send()).toMatchObject({status:'pending'});expect(provider).toHaveBeenCalledOnce();expect(await messages()).toEqual([]);});
+    expect(await send()).toMatchObject({success:false});vi.restoreAllMocks();expect(await messages()).toEqual([]);expect(await send()).toMatchObject({success:true,status:'accepted'});expect(provider).toHaveBeenCalledOnce();expect(await messages()).toHaveLength(1);});
   it('isolates another authorized employee and equal UUIDs across tenants',async()=>{const other=await createDisposableMerchant('authority-other');try{await send();
     await q("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)",[f.merchantId,other.userId]);await expect(trySendDashboardStaff(f.merchantId,other.userId,input())).rejects.toThrow();
     const c=Number((await q("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500006611')",[other.merchantId])).insertId);await account(other.merchantId);

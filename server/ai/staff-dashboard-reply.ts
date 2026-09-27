@@ -14,10 +14,11 @@ import { dashboardStaffBasis,dashboardStaffAcceptance,readDashboardStaffBasis,re
 import { staffDashboardReplyInput,type StaffDashboardReplyInput,type StaffDashboardReplyResult } from '../../shared/staff-dashboard-reply';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channels/whatsapp/types';
-import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilitySnapshot,staffCompatibilityCustomer,staffCompatibilityResult } from './staff-dashboard-compatibility';
+import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilitySnapshot,staffCompatibilityCustomer } from './staff-dashboard-compatibility';
 import {selectStaffCompatibilityAccount,inspectStaffCompatibilityDispatch,staffCompatibilityKey} from './staff-compatibility-authority';
 import {getWhatsAppProvider} from '../channels/whatsapp/providers';
 import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
+import {saveLegacyStaffDelivery} from './staff-legacy-delivery';
 import { staffAttemptReviewAuthority, type StaffAttemptReviewAuthority } from '../../shared/staff-attempt-review';
 
 const id=z.number().int().positive().safe();
@@ -185,25 +186,8 @@ export async function trySendDashboardStaff(merchant:number,actor:number,raw:Sta
           return await reconcileStaffCompatibility('text',merchant,actor,r.id);
         }
         const sent=await getWhatsAppProvider(current.config.provider).send(current.config,{kind:'text',to:current.phone,text:current.text});
-        const receipt=sent.providerMessageId;
-        if(sent.accepted!==true||!['sent','delivered','read'].includes(sent.status)||typeof receipt!=='string'||!z.string().regex(/^[^\s<>\x00-\x1f]{1,255}$/).safeParse(receipt).success||('outcome' in sent&&sent.outcome==='unknown'))return {success:false,status:'pending',persisted:false};
-        return await checkoutTransaction(async c=>{
-          await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
-          const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE id=? AND merchant_id=? FOR UPDATE',[r.id,merchant]);
-          if(rows.length!==1||hash(readStaffTextCompatibility(rows[0]))!==hash(r.basis))return unavailable();
-          let persisted=false;
-          const [conversations]=await c.execute<any[]>('SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[input.conversationId,merchant]);
-          if(conversations.length===1&&staffCompatibilityCustomer(merchant,conversations[0].customerPhone)===r.basis.customerKey){
-            const [messages]=await c.execute<any[]>('SELECT * FROM messages WHERE conversationId=? AND externalId=? FOR UPDATE',[input.conversationId,receipt]);
-            if(messages.length>1||messages.some(m=>m.direction!=='outgoing'||m.messageType!=='text'||m.sender_type!=='merchant'||m.content!==input.message))return unavailable();
-            if(!messages.length)await c.execute("INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,sender_type) VALUES (?,'outgoing','text',?,?,1,'merchant')",[input.conversationId,input.message,receipt]);
-            await c.execute('UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,UTC_TIMESTAMP()),UTC_TIMESTAMP()) WHERE id=? AND merchantId=?',[input.conversationId,merchant]);persisted=true;
-          }
-          const result=staffCompatibilityResult.parse({success:true,status:'accepted',persisted});
-          const basis=staffCompatibilitySnapshot.parse({...r.basis,result});
-          const [saved]=await c.execute<any>("UPDATE ai_sales_staff_replies SET status='accepted',basis=?,basis_digest=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(basis),hash(basis),r.id,merchant]);
-          if(saved.affectedRows!==1)return unavailable();return result;
-        });
+        if(!await saveLegacyStaffDelivery('text',merchant,r.id,hash(r.basis),sent))return {success:false,status:'pending',persisted:false};
+        return await reconcileStaffCompatibility('text',merchant,actor,r.id);
       }catch{ /* An unknown transport or commit result must never trigger a second send. */ }
     }
     if(!r.fresh)return reconcileStaffCompatibility('text',merchant,actor,r.id).catch(()=>({success:false,status:'pending' as const,persisted:false}));
