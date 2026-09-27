@@ -18,6 +18,7 @@ import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilityS
 import {selectStaffCompatibilityAccount,inspectStaffCompatibilityDispatch,staffCompatibilityKey} from './staff-compatibility-authority';
 import {getWhatsAppProvider} from '../channels/whatsapp/providers';
 import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
+import { staffAttemptReviewAuthority, type StaffAttemptReviewAuthority } from '../../shared/staff-attempt-review';
 
 const id=z.number().int().positive().safe();
 const unavailable=():never=>{throw Error('Staff reply unavailable');};
@@ -116,12 +117,15 @@ export async function canDispatchDashboardStaff(input:SendMerchantWhatsAppInput,
   }catch{return false;}
 }
 /** SQL-only recovery: it cannot send, renew authority, or replace a verified acceptance. */
-export async function reconcileDashboardStaff(merchant:number,replyId:number):Promise<StaffDashboardReplyResult>{
+export async function reconcileDashboardStaff(merchant:number,replyId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
+  if(review)staffAttemptReviewAuthority.parse(review);
   id.parse(merchant);id.parse(replyId);await assertDashboardStaffSchema();
   return checkoutTransaction(async c=>{
     await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
+    if(review)await authorizeDashboardStaff(c,merchant,review.actorUserId);
     const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE id=? AND merchant_id=? FOR UPDATE',[replyId,merchant]);
     if(rows.length!==1)return unavailable();const r=rows[0],b=readDashboardStaffBasis(r);
+    if(review&&(b.actorUserId!==review.actorUserId||b.conversationId!==review.conversationId))return unavailable();
     const [facts]=await c.execute<any[]>("SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? AND source_kind='dashboard_text' AND source_id=?",[merchant,replyId]);
     const [deliveries]=await c.execute<any[]>('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key=? FOR UPDATE',[merchant,staffDashboardKey(merchant,replyId)]);
     const d=deliveries[0];let s=facts.length?readDashboardStaffAcceptance(facts[0]):null;

@@ -1,4 +1,5 @@
 import { salesExperimentLaunchEn } from './sales-experiment-launch';
+import { staffAttemptReviewEn } from './staff-attempt-review';
 import { salesReplyReviewEn } from './sales-reply-review';
 import { salesReplySendEn } from './sales-reply-send';
 import { salesCohortInspectionEn } from './sales-cohort-inspection';
@@ -10,6 +11,7 @@ import { learningPolicyEvaluationEn } from './learning-policy-evaluation';
 import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
 const merchantUxEn: MerchantUxCopy = {
+  staffAttempts: staffAttemptReviewEn,
   replyReview: salesReplyReviewEn,
   replySend: salesReplySendEn,
   policyReview: learningPolicyReviewEn,

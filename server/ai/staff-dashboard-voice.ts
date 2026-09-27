@@ -15,6 +15,7 @@ import { staffAccountDigest,staffPhoneKey,staffReceiptDigest } from './sales-sta
 import {readVoiceCompatibility,matchesCompatibilityRecording} from './staff-voice-compatibility-contract';
 import {reserveVoiceCompatibility,sendVoiceCompatibility} from './staff-voice-compatibility';
 import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
+import { staffAttemptReviewAuthority, type StaffAttemptReviewAuthority } from '../../shared/staff-attempt-review';
 import { assertSalesStaffAcceptanceSchema,staffRelayAccountIsCurrent } from './sales-staff-acceptance';
 import { staffActorKey } from './staff-dashboard-reply-contract';
 import { staffVoiceIntent,staffVoiceBasis,staffVoiceAcceptance,readStaffVoiceIntent,readStaffVoiceBasis,readStaffVoiceAcceptance,staffVoiceTransport,staffVoiceKey,staffVoiceStorageKey,validateStaffVoiceUrl } from './staff-dashboard-voice-contract';
@@ -83,12 +84,15 @@ export async function canDispatchDashboardVoice(input:SendMerchantWhatsAppInput,
     });
   }catch{return false;}
 }
-export async function reconcileDashboardVoice(merchant:number,voiceId:number):Promise<StaffDashboardReplyResult>{
+export async function reconcileDashboardVoice(merchant:number,voiceId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
+  if(review)staffAttemptReviewAuthority.parse(review);
   id.parse(merchant);id.parse(voiceId);await assertDashboardVoiceSchema();
   return checkoutTransaction(async c=>{
     await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
     const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_voices WHERE id=? AND merchant_id=? FOR UPDATE',[voiceId,merchant]);
+    if(review)await authorizeDashboardStaff(c,merchant,review.actorUserId);
     if(rows.length!==1||rows[0].compatibility)return unavailable();const r=rows[0],i=readStaffVoiceIntent(r);
+    if(review&&(i.actorUserId!==review.actorUserId||i.conversationId!==review.conversationId))return unavailable();
     const [facts]=await c.execute<any[]>("SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? AND source_kind='dashboard_voice' AND source_id=?",[merchant,voiceId]);
     const [deliveries]=await c.execute<any[]>('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key=? FOR UPDATE',[merchant,staffVoiceKey(merchant,voiceId)]);
     if(facts.length>1||deliveries.length>1)return unavailable();

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
 import { routeDashboardStaffReply } from './staff-dashboard-reply-route';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
+import { staffAttemptReviewProcedures } from './routers-staff-attempt-review';
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import {
@@ -24,6 +25,7 @@ import {
 } from './db';
 
 export const conversationsRouter = router({
+    ...staffAttemptReviewProcedures,
     ...conversationHandoffProcedures,
     // Get all conversations for current merchant (with optional pipeline filters)
     list: permissionProcedure('conversations.read')

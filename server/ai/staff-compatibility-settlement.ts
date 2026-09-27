@@ -11,7 +11,8 @@ import type {StaffDashboardReplyResult} from '../../shared/staff-dashboard-reply
 const pending=():StaffDashboardReplyResult=>({success:false,status:'pending',persisted:false});
 const unavailable=():never=>{throw Error('Compatibility settlement unavailable');};
 /** SQL-only settlement of an already accepted registered transport. Never calls storage or WhatsApp. */
-export async function reconcileStaffCompatibility(kind:'text'|'voice',merchant:number,actor:number,source:number):Promise<StaffDashboardReplyResult>{
+export async function reconcileStaffCompatibility(kind:'text'|'voice',merchant:number,actor:number,source:number,conversation?:number):Promise<StaffDashboardReplyResult>{
+  if(conversation!==undefined)z.number().int().positive().safe().parse(conversation);
   z.enum(['text','voice']).parse(kind);for(const value of [merchant,actor,source])z.number().int().positive().safe().parse(value);
   return checkoutTransaction(async c=>{
     await authorizeDashboardStaff(c,merchant,actor);
@@ -20,6 +21,7 @@ export async function reconcileStaffCompatibility(kind:'text'|'voice',merchant:n
     if(rows.length!==1)return unavailable();const row=rows[0];
     const text=kind==='text'?readStaffTextCompatibility(row):null,voice=kind==='voice'?readVoiceCompatibility(row):null;
     const owner=text?.actorUserId??voice?.intent.actor;if(owner!==actor)return unavailable();
+    if(conversation!==undefined&&(text?.conversationId??voice?.intent.conversationId)!==conversation)return unavailable();
     const result=text?.result??voice?.result;if(result)return result;
     const pinnedText=text?.version==='staff-text-compatibility.v2'?text:null;
     const pinnedVoice=voice?.intent.version==='staff-voice-compatibility.v2'?voice.intent:null;

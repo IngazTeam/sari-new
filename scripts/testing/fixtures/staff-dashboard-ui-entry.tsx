@@ -14,6 +14,7 @@ import merchantUxAr from '../../../client/src/locales/merchant-ux.ar';
 import merchantUxEn from '../../../client/src/locales/merchant-ux.en';
 const w=window as any,params=new URLSearchParams(location.search),mode=params.get('case')||'accepted';w.__staffWrites=[];w.__staffQueries=[];
 const voiceFixture=params.get('voice')==='1';
+const reviewFixture=params.get('review')==='1';w.__attemptChecks=[];w.__attemptQueries=[];w.__attemptStates={};
 if(voiceFixture&&params.get('mic')!=='real'){
   w.__tracksStopped=0;w.__recordersStarted=0;w.__clockOffset=0;w.__objectUrls=[];w.__revokedUrls=[];
   const now=Date.now.bind(Date);Date.now=()=>now()+w.__clockOffset;
@@ -41,22 +42,40 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
   let data:any;
   if(op.type==='query'){
     w.__staffQueries.push(op.path);
-    if(op.path==='conversations.list')data={items:voiceFixture?[...(w.__hideSelected?[]:[conversation]),{...conversation,id:5,customerName:'Other synthetic customer'}]:[conversation],total:voiceFixture?2:1,page:1,pageSize:50,totalPages:1};
+    if(op.path==='conversations.list')data={items:voiceFixture||reviewFixture?[...(w.__hideSelected?[]:[conversation]),{...conversation,id:5,customerName:'Other synthetic customer'}]:[conversation],total:voiceFixture||reviewFixture?2:1,page:1,pageSize:50,totalPages:1};
     else if(op.path==='merchants.getCurrent')data={id:2,businessName:'Synthetic merchant',timezone:'Asia/Riyadh'};
     else if(op.path==='conversations.connectionStatus')data={connected:true,state:'connected'};
     else if(op.path==='conversations.getMessages')data=messages;
     else if(op.path==='conversations.getHandoff')data=null;
     else if(op.path==='conversations.listEscalationRelays'||op.path==='conversations.listSalesOfferAttempts')data={items:[],nextCursor:null};
+    else if(op.path==='conversations.listStaffAttempts'){
+      const input=op.input as any;w.__attemptQueries.push(structuredClone(input));
+      if(mode==='list-error'||w.__reviewDenied){observer.error(new TRPCClientError('private attempt permission detail'));return;}
+      const item=(id:number,state='pending',persisted:boolean|null=null)=>({id,createdAt:'2026-09-27T00:01:00.000Z',state,persisted,...w.__attemptStates[`${input.conversationId}:${input.kind}:${id}`]});
+      data=mode==='empty'||input.conversationId===5?{items:[],nextCursor:null}:mode==='pages'
+        ?{items:Array.from({length:20},(_,n)=>item((input.beforeId||101)-1-n)),nextCursor:input.beforeId?null:81}
+        :{items:[item(30),item(29,'accepted',true),item(28,'unavailable')],nextCursor:null};
+      if(mode==='invalid')data.items[0].mediaUrl='private signed URL';
+    }
     else if(op.path==='aiSuggestions.getQuickSuggestions')data={suggestions:[]};
     else {observer.error(new TRPCClientError('Unexpected fixture query '+op.path));return;}
   }else{
+    if(op.path==='conversations.checkStaffAttempt'){
+      const input=op.input as any;w.__attemptChecks.push(structuredClone(input));
+      if(mode==='error'||w.__reviewDenied){observer.error(new TRPCClientError('private attempt SQL error'));return;}
+      const result=w.__reviewResult||mode;
+      data=result==='bad-result'?{success:true,status:'pending',persisted:true}:['accepted','projection'].includes(result)
+        ?{success:true,status:'accepted',persisted:result==='accepted'}:{success:false,status:result==='failed'?'failed':result==='suppressed'?'suppressed':'pending',persisted:false};
+      if(data.success&&data.status==='accepted')w.__attemptStates[`${input.conversationId}:${input.kind}:${input.sourceId}`]={state:'accepted',persisted:data.persisted};
+      const timer=setTimeout(()=>{observer.next({result:{data}});observer.complete();},w.__attemptCheckDelay||200);return()=>clearTimeout(timer);
+    }
     if(op.path!=='conversations.sendReply'&&!(voiceFixture&&op.path==='conversations.sendVoiceReply')){observer.error(new TRPCClientError('Unexpected fixture write'));return;}
     w.__staffWrites.push(structuredClone(op.input));
     if(mode==='error'){observer.error(TRPCClientError.from({error:{message:'private token <script>',code:-32603,data:{code:'CONFLICT',httpStatus:409}}}));return;}
     const status=w.__staffResult||mode;data={success:status==='accepted'||status==='projection',status:status==='projection'?'accepted':status,persisted:status==='accepted'};
     if(data.success)messages.push({id:100+messages.length,conversationId:4,direction:'outgoing',messageType:voiceFixture?'voice':'text',content:voiceFixture?'Synthetic recording':(op.input as any).message,senderType:'merchant',createdAt:'2026-09-27T00:01:00Z'});
   }
-  const timer=setTimeout(()=>{observer.next({result:{data}});observer.complete();},op.type==='mutation'?200:5);return()=>clearTimeout(timer);
+  const timer=setTimeout(()=>{observer.next({result:{data}});observer.complete();},op.path==='conversations.listStaffAttempts'?(w.__attemptQueryDelay||5):op.type==='mutation'?200:5);return()=>clearTimeout(timer);
 })]});
 async function render(){const lng=params.get('lang')==='en'?'en':'ar';document.documentElement.lang=lng;document.documentElement.dir=lng==='ar'?'rtl':'ltr';
   await i18n.use(initReactI18next).init({lng,resources:{ar:{translation:{...ar,merchantUx:merchantUxAr}},en:{translation:{...en,merchantUx:merchantUxEn}}},interpolation:{escapeValue:false}});

@@ -1,4 +1,5 @@
 import { staffVoiceInput } from '../shared/staff-dashboard-voice';
+import { staffAttemptReviewProcedures } from './routers-staff-attempt-review';
 import { routeDashboardStaffVoice } from './staff-dashboard-voice-route';
 import { abTestsRouter } from './routers-ab-tests';
 import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
@@ -1474,6 +1475,7 @@ export const appRouter = router({
 
   // Conversations
   conversations: router({
+    ...staffAttemptReviewProcedures,
     ...escalationReconciliationProcedures,
     ...salesOfferReviewProcedures,
     ...conversationHandoffProcedures,

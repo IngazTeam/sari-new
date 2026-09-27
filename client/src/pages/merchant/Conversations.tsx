@@ -4,6 +4,7 @@ import { staffDashboardAttempt } from '@/lib/staff-dashboard-attempt';
 import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { EscalationReconciliation } from '@/components/EscalationReconciliation';
 import { SalesOfferReview } from '@/components/SalesOfferReview';
+import { StaffAttemptReview } from '@/components/StaffAttemptReview';
 import { isValidDealStage } from '@shared/const';
 import {
   Card,
@@ -604,6 +605,7 @@ export default function Conversations() {
                   />
                 </div>
               </details>
+              <StaffAttemptReview key={`attempts-${selectedConversation.id}`} conversationId={selectedConversation.id} />
               <CardContent className="p-0 mw-chat-messages">
                 <ScrollArea className="mw-chat-scroll p-4">
                   {messagesError ? (
