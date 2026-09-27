@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), dispatch:vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
-vi.mock('./integrations/salla-catalog',()=>({selectSallaOrderProduct:m.product}));
+const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), dispatch:vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), authority:vi.fn(), catalog:vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+vi.mock('./integrations/salla-catalog',()=>({selectSallaOrderProduct:m.product,sallaCatalogAuthority:m.authority,readSallaOrderExtractionCatalog:m.catalog}));
 vi.mock('./integrations/salla-order-creation',()=>({dispatchSallaCreation:m.dispatch}));
 vi.mock('./integrations/salla-order-projection', async importOriginal => ({...await importOriginal<any>(),persistSallaOrderProjection:m.create,preflightSallaOrderAuthority:m.preflight}));
 vi.mock('axios', () => ({ default: { create: () => ({ post: m.post, get: m.get }) } }));
@@ -106,9 +106,10 @@ describe('Salla order transport and monetary authority', () => {
     expect(ctx.uncertainEffect).toBe(true); expect(m.create).not.toHaveBeenCalled();
   });
   it('requires a unique parsed product match and never substitutes the first candidate', async () => {
-    m.products.mockResolvedValue([{id:1,name:'Sample A',price:100,priceUnit:'minor',currency:'SAR',isActive:1,trackInventory:0},{id:2,name:'Sample B',price:200,priceUnit:'minor',currency:'SAR',isActive:1,trackInventory:0}]);
-    m.llm.mockResolvedValue({choices:[{message:{content:JSON.stringify({products:[{name:'Sample',quantity:1}]})}}]});
-    expect((await parseOrderMessage('fixture',7))?.products[0].productId).toBeUndefined();
+    m.authority.mockResolvedValue({merchantId:7,connectionId:12,storeId:'987',accessToken:'test-only'});
+    m.catalog.mockResolvedValue([{productId:1,name:'Sample A',price:100,stock:5,trackInventory:0,revision:1},{productId:2,name:'Sample B',price:200,stock:5,trackInventory:0,revision:1}]);
+    m.llm.mockResolvedValue({choices:[{finish_reason:'stop',message:{content:JSON.stringify({products:[{name:'Sample',quantity:1}],unresolved:[]})}}]});
+    expect(await parseOrderMessage('fixture',7)).toBeNull();expect(m.products).not.toHaveBeenCalled();
   });
   it('formats a confirmation from minor units and does not invent a missing checkout link', () => {
     const text=generateOrderConfirmationMessage('456',[{name:'Sample',price:9999,quantity:2}],22998,'');

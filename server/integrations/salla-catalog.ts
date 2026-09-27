@@ -6,6 +6,7 @@ import { decryptSecret } from '../security/secrets';
 import { assertSallaOrderAuthority,sallaAuthoritySchema,type SallaOrderAuthority } from './salla-order-projection';
 import { sallaProductProjectionId,type NormalizedSallaProduct } from './salla-product-normalization';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
+import { sallaExtractionProductSchema } from '../automation/salla-order-contract';
 
 const internal=z.number().int().positive().max(2147483647);
 export type SallaCatalogReceipt={id:number;storeId:string;productId:string;token:string};
@@ -96,6 +97,23 @@ async function select(c:Pick<PoolConnection,'execute'>,a:SallaOrderAuthority,pro
 }
 export async function selectSallaOrderProduct(a:SallaOrderAuthority,productId:number,quantity:number) {
   await assertSallaCatalogSchema();const pool=await getPool();if(!pool)throw Error('Database unavailable');await assertSallaOrderAuthority(pool,a);return select(pool,a,productId,quantity);
+}
+/** Only currently verified, orderable products from this connection enter the
+ * extraction prompt. Refuse an oversized catalogue rather than hiding ambiguity. */
+export async function readSallaOrderExtractionCatalog(a:SallaOrderAuthority) {
+  sallaAuthoritySchema.parse(a);await assertSallaCatalogSchema();
+  return transaction(async c=>{
+    const [merchants]=await c.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR SHARE",[a.merchantId]);
+    if(merchants.length!==1)throw Error('Merchant unavailable');
+    await assertSallaOrderAuthority(c,a,true);
+    const [rows]=await c.execute<any[]>(`SELECT o.id AS productId,o.name,o.price,o.stock,o.track_inventory AS trackInventory,p.read_revision AS revision
+      FROM salla_product_projections p JOIN products o ON o.id=p.local_product_id AND o.merchantId=p.merchant_id
+        AND o.sallaProductId=CONCAT('salla:',p.store_id,':',p.external_product_id)
+      WHERE p.merchant_id=? AND p.store_id=? AND p.connection_id=? AND p.archived=0
+        AND o.isActive=1 AND o.status='active' AND o.price_unit='minor' AND o.currency='SAR' AND o.has_variants=0
+        AND (o.track_inventory=0 OR o.stock>0) ORDER BY p.id LIMIT 501`,[a.merchantId,a.storeId,a.connectionId]);
+    return z.array(sallaExtractionProductSchema).min(1).max(500).parse(rows);
+  });
 }
 export async function assertSallaOrderSelection(c:PoolConnection,a:SallaOrderAuthority,input:SallaProductSelection[]) {
   const items=z.array(selectionSchema).min(1).max(100).parse(input);
