@@ -1,13 +1,14 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const withUi=process.argv.includes('--with-ui');
-const withVoiceAuthority=process.argv.includes('--voice-authority');
+const withCompatibilitySettlement=process.argv.includes('--compatibility-settlement');
+const withVoiceAuthority=process.argv.includes('--voice-authority')||withCompatibilitySettlement;
 const withAuthority=process.argv.includes('--staff-authority')||withVoiceAuthority;
 const withCompatibility=process.argv.includes('--staff-compatibility')||withAuthority;
 const withStaffTransport=process.argv.includes('--staff-transport')||withCompatibility;
 const withVoice=process.argv.includes('--staff-voice')||withStaffTransport;
 const withDashboardStaff=process.argv.includes('--dashboard-staff')||withVoice;
 const withStaffAcceptance=process.argv.includes('--staff-acceptance')||withDashboardStaff;
-const root=process.cwd(),output=path.resolve(withVoiceAuthority?'.tmp/voice-authority-verification':withAuthority?'.tmp/staff-authority-verification':withCompatibility?'.tmp/staff-compatibility-verification':withStaffTransport?'.tmp/staff-transport-readout-verification':withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
+const root=process.cwd(),output=path.resolve(withCompatibilitySettlement?'.tmp/compatibility-settlement-verification':withVoiceAuthority?'.tmp/voice-authority-verification':withAuthority?'.tmp/staff-authority-verification':withCompatibility?'.tmp/staff-compatibility-verification':withStaffTransport?'.tmp/staff-transport-readout-verification':withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -73,6 +74,11 @@ if(withVoiceAuthority){
   unit.push('server/ai/staff-voice-compatibility-pentest.test.ts');
   database.push('server/ai/staff-voice-compatibility.mysql.test.ts');
   extra.push(...unit,...database,'server/ai/staff-voice-compatibility-contract.ts','server/ai/staff-voice-compatibility.ts');
+}
+if(withCompatibilitySettlement){
+  unit.push('server/ai/staff-compatibility-settlement-pentest.test.ts');
+  database.push('server/ai/staff-compatibility-settlement.mysql.test.ts');
+  extra.push(...unit,...database,'server/ai/staff-compatibility-settlement-contract.ts','server/ai/staff-compatibility-settlement.ts');
 }
 function manifest(){
   const tracked=cp.execFileSync('git',['ls-files','-z'],{encoding:'utf8',windowsHide:true}).split('\0').filter(Boolean);
@@ -141,7 +147,7 @@ try{
       tests:r.testResults.flatMap(f=>f.assertionResults.map(t=>({file:path.relative(root,f.name).replaceAll('\\','/'),name:t.fullName,status:t.status})))};
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
-    scope:withVoiceAuthority?'staff_voice_compatibility_authority_and_affected_regression_not_full_release_acceptance':withAuthority?'staff_text_authority_and_affected_regression_not_full_release_acceptance':withCompatibility?'staff_text_compatibility_and_affected_regression_not_full_release_acceptance':withStaffTransport?'staff_acceptance_readout_and_affected_regression_not_full_release_acceptance':withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
+    scope:withCompatibilitySettlement?'compatibility_settlement_and_affected_regression_not_full_release_acceptance':withVoiceAuthority?'staff_voice_compatibility_authority_and_affected_regression_not_full_release_acceptance':withAuthority?'staff_text_authority_and_affected_regression_not_full_release_acceptance':withCompatibility?'staff_text_compatibility_and_affected_regression_not_full_release_acceptance':withStaffTransport?'staff_acceptance_readout_and_affected_regression_not_full_release_acceptance':withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
     checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),migrationReport,productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));

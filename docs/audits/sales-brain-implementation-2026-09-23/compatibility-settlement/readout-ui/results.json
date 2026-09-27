@@ -1,0 +1,628 @@
+{
+  "generatedAt": "2026-09-27T01:16:00.884Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "realReactQueryAndTrpc": true,
+  "externalRequestsBlocked": true,
+  "scope": "SalesExperimentEvidence component in Chromium with simulated read transport. Not physical iPhone/Safari or a signed-in production journey.",
+  "results": [
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "normalized_keyboard_details_responsive",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "protocol_edit_discards_previous_read",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "transport-mixed",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-empty",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-pending",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-timing",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-unbound",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-synthetic",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-mixed",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-empty",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-pending",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-timing",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-unbound",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport-synthetic",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "transport_refresh_withholds_stale_payment_chronology",
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-mixed",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-unknown",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-missing",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-boundary",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-mixed",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-unknown",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-missing",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_message_evidence_staff-boundary",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "staff_identity_loss_refresh_discards_prior_counts",
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_outcome-mixed",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_bookings-only",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_before-decision",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_pending",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_empty",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_withdrawn",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_minimum",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_outcome-mixed",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_bookings-only",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_before-decision",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_pending",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_empty",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_withdrawn",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recorded_order_outcome_minimum",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "unresolved_refresh_removes_old_outcome_ratios",
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_before",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_at",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_flight",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_after",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_mock",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_regression",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_declined",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_pending",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_before",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_at",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_flight",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_after",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_mock",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_regression",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_declined",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "exposure_chronology_pending",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "empty_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "unmeasured_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "refund_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "late_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "pending_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "review_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "unassigned_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "huge_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "live_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "withdrawn_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "minimum_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "currency_scale_not_invented",
+      "passed": true
+    },
+    {
+      "mode": "all_financial_cards_paginated_without_slicing_denominator",
+      "passed": true
+    },
+    {
+      "mode": "new_snapshot_resets_financial_page",
+      "passed": true
+    },
+    {
+      "mode": "FORBIDDEN_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "UNAUTHORIZED_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "PRECONDITION_FAILED_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "foreign_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "wrong-protocol_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "unsupported_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "inconsistent_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "outcome-inconsistent_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "staff-inconsistent_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "transport-inconsistent_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "xss_safe_error",
+      "passed": true
+    },
+    {
+      "mode": "FORBIDDEN_refresh_hides_cache_and_recovers",
+      "passed": true
+    },
+    {
+      "mode": "UNAUTHORIZED_refresh_hides_cache_and_recovers",
+      "passed": true
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_refresh_hides_cache_and_recovers",
+      "passed": true
+    },
+    {
+      "mode": "focus_revalidates_authority",
+      "passed": true
+    },
+    {
+      "mode": "offline_refresh_hides_cache_until_new_read",
+      "passed": true
+    },
+    {
+      "mode": "merchant_change_cancels_delayed_read",
+      "passed": true
+    },
+    {
+      "mode": "protocol_change_cancels_delayed_read",
+      "passed": true
+    },
+    {
+      "mode": "context_navigation_resets_form_and_result",
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_read",
+      "values": {
+        "merchant": "1e3"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_read",
+      "values": {
+        "protocol": "0"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_read",
+      "values": {
+        "protocol": "9007199254740992"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_read",
+      "values": {
+        "protocol": "4bad"
+      },
+      "passed": true
+    },
+    {
+      "mode": "refresh_replaces_old_groups",
+      "passed": true
+    },
+    {
+      "mode": "reduced_motion_and_loading",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "readout-ar-1440.png",
+    "readout-ar-375.png",
+    "readout-ar-mobile-arm.png",
+    "readout-ar-mobile-exposure.png",
+    "readout-ar-mobile-finance.png",
+    "readout-ar-mobile-outcome.png",
+    "readout-ar-mobile-staff.png",
+    "readout-ar-mobile-transport.png",
+    "readout-en-1440.png",
+    "readout-en-375.png"
+  ]
+}

@@ -135,7 +135,7 @@ describe.skipIf(!process.env.DATABASE_URL)('pinned compatibility text transport'
     await group();if(status==='reserved')provider.mockImplementation(async()=>{await failSql("SET status='accepted'");return accepted();});await send();vi.restoreAllMocks();
     await q("UPDATE whatsapp_message_deliveries SET status_updated_at='2020-01-01' WHERE merchant_id=?",[f.merchantId]);await purgeCompletedInboundPayloads();
     const [d]=await q('SELECT request_json FROM whatsapp_message_deliveries WHERE merchant_id=?',[f.merchantId]);expect(d.request_json===null).toBe(status==='accepted');
-    expect((await send()).success).toBe(status==='accepted');expect(provider).toHaveBeenCalledOnce();
+    expect((await send()).success).toBe(true);expect(provider).toHaveBeenCalledOnce();
   });
   it.each(['../x','..\\x','%2fpath','token?x','token#x','token\n'])('rejects unsafe token %j before ownership or network',async token=>{
     await q('UPDATE whatsapp_connection_requests SET apiToken=? WHERE id=?',[token,legacyId]);await expect(send()).rejects.toThrow();expect(await attempts()).toEqual([]);expect(provider).not.toHaveBeenCalled();

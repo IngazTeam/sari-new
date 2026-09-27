@@ -1,0 +1,273 @@
+{
+  "generatedAt": "2026-09-27T01:18:39.993Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "externalRequestsBlocked": true,
+  "scope": "Actual Conversations and VoiceRecorder with simulated API/media lifecycle plus real Chromium MediaRecorder using a synthetic microphone. No production or physical iPhone/Safari.",
+  "results": [
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "list_refresh_cannot_destroy_or_retarget_recording",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "permission_denied",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "constructor_failure_stops_capture",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "cancel_before_permission_resolution",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "cancel_during_recording_cannot_resurrect_blob",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "unmount_stops_active_microphone",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "unmount_before_permission_resolution",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "maximum_duration_stops_recorder",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty_recording_not_sendable",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "mp4_recorder_fallback",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "storage_failure_preserves_audio_without_send",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "real_chromium_recorder_with_synthetic_microphone",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "pending_keeps_recording_and_reuses_attempt",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "acceptance_releases_recording_and_navigation",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "list_refresh_cannot_destroy_or_retarget_recording",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "permission_denied",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "constructor_failure_stops_capture",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "cancel_before_permission_resolution",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "cancel_during_recording_cannot_resurrect_blob",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "unmount_stops_active_microphone",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "unmount_before_permission_resolution",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "maximum_duration_stops_recorder",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty_recording_not_sendable",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "mp4_recorder_fallback",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "storage_failure_preserves_audio_without_send",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "real_chromium_recorder_with_synthetic_microphone",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "voice-ar-1440.png",
+    "voice-ar-375.png",
+    "voice-en-1440.png",
+    "voice-en-375.png"
+  ]
+}

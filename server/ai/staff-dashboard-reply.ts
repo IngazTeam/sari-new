@@ -17,6 +17,7 @@ import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channe
 import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilitySnapshot,staffCompatibilityCustomer,staffCompatibilityResult } from './staff-dashboard-compatibility';
 import {selectStaffCompatibilityAccount,inspectStaffCompatibilityDispatch,staffCompatibilityKey} from './staff-compatibility-authority';
 import {getWhatsAppProvider} from '../channels/whatsapp/providers';
+import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
 
 const id=z.number().int().positive().safe();
 const unavailable=():never=>{throw Error('Staff reply unavailable');};
@@ -174,10 +175,12 @@ export async function trySendDashboardStaff(merchant:number,actor:number,raw:Sta
     if(r.fresh){
       destroySession(merchant,input.conversationId);
       try{const current=await inspectStaffCompatibilityDispatch(merchant,r.id,hash(r.basis));
-        const sent=current.basis.authority.source==='registered'
-          ?await sendMerchantWhatsApp({merchantId:merchant,instanceRecordId:current.basis.authority.recordId,idempotencyKey:staffCompatibilityKey(merchant,r.id),
-            kind:'text',to:current.phone,text:current.text,staffCompatibilityGuard:{id:r.id,basisDigest:hash(r.basis)}})
-          :await getWhatsAppProvider(current.config.provider).send(current.config,{kind:'text',to:current.phone,text:current.text});
+        if(current.basis.authority.source==='registered'){
+          await sendMerchantWhatsApp({merchantId:merchant,instanceRecordId:current.basis.authority.recordId,idempotencyKey:staffCompatibilityKey(merchant,r.id),
+            kind:'text',to:current.phone,text:current.text,staffCompatibilityGuard:{id:r.id,basisDigest:hash(r.basis)}}).catch(()=>{});
+          return await reconcileStaffCompatibility('text',merchant,actor,r.id);
+        }
+        const sent=await getWhatsAppProvider(current.config.provider).send(current.config,{kind:'text',to:current.phone,text:current.text});
         const receipt=sent.providerMessageId;
         if(sent.accepted!==true||!['sent','delivered','read'].includes(sent.status)||typeof receipt!=='string'||!z.string().regex(/^[^\s<>\x00-\x1f]{1,255}$/).safeParse(receipt).success||('outcome' in sent&&sent.outcome==='unknown'))return {success:false,status:'pending',persisted:false};
         return await checkoutTransaction(async c=>{
@@ -199,6 +202,7 @@ export async function trySendDashboardStaff(merchant:number,actor:number,raw:Sta
         });
       }catch{ /* An unknown transport or commit result must never trigger a second send. */ }
     }
+    if(!r.fresh)return reconcileStaffCompatibility('text',merchant,actor,r.id).catch(()=>({success:false,status:'pending' as const,persisted:false}));
     return {success:false,status:'pending',persisted:false};
   }
   if(r.fresh){

@@ -17,6 +17,7 @@ import {compatibilityAudioDigest,compatibilityVoiceCustomer,pinnedVoiceCompatibi
   compatibilityVoiceKey,compatibilityVoiceStorageKey} from './staff-voice-compatibility-contract';
 import {staffVoiceExtension,type StaffVoiceInput} from '../../shared/staff-dashboard-voice';
 import type {StaffDashboardReplyResult} from '../../shared/staff-dashboard-reply';
+import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
 
 const unavailable=():never=>{throw Error('Voice compatibility authority unavailable');};
 const pending=():StaffDashboardReplyResult=>({success:false,status:'pending',persisted:false});
@@ -71,9 +72,11 @@ export async function sendVoiceCompatibility(merchant:number,voice:number,intent
       if(saved.affectedRows!==1)return unavailable();});
     const current=await checkoutTransaction(c=>inspect(c,merchant,voice,intentDigest));if(!current.basis||hash(current.basis)!==hash(basis))return unavailable();
     const request={kind:'audio' as const,to:current.phone,mediaUrl,fileName:basis.fileName};
-    const sent=current.intent.authority.source==='registered'
-      ?await sendMerchantWhatsApp({...request,merchantId:merchant,instanceRecordId:current.intent.authority.recordId,idempotencyKey:compatibilityVoiceKey(merchant,voice),staffCompatibilityVoiceGuard:{id:voice,basisDigest:hash(basis)}})
-      :await getWhatsAppProvider(current.config.provider).send(current.config,request);
+    if(current.intent.authority.source==='registered'){
+      await sendMerchantWhatsApp({...request,merchantId:merchant,instanceRecordId:current.intent.authority.recordId,idempotencyKey:compatibilityVoiceKey(merchant,voice),staffCompatibilityVoiceGuard:{id:voice,basisDigest:hash(basis)}}).catch(()=>{});
+      return await reconcileStaffCompatibility('voice',merchant,current.intent.actor,voice);
+    }
+    const sent=await getWhatsAppProvider(current.config.provider).send(current.config,request);
     const receipt=sent.providerMessageId;
     if(sent.accepted!==true||!['sent','delivered','read'].includes(sent.status)||typeof receipt!=='string'||!/^[^\s<>\x00-\x1f]{1,255}$/.test(receipt)
       ||('outcome' in sent&&sent.outcome!==undefined&&sent.outcome!=='accepted'))return pending();

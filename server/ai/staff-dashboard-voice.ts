@@ -14,6 +14,7 @@ import { policyArtifactDigest as hash } from './learning-policy-evaluation-bundl
 import { staffAccountDigest,staffPhoneKey,staffReceiptDigest } from './sales-staff-acceptance-contract';
 import {readVoiceCompatibility,matchesCompatibilityRecording} from './staff-voice-compatibility-contract';
 import {reserveVoiceCompatibility,sendVoiceCompatibility} from './staff-voice-compatibility';
+import {reconcileStaffCompatibility} from './staff-compatibility-settlement';
 import { assertSalesStaffAcceptanceSchema,staffRelayAccountIsCurrent } from './sales-staff-acceptance';
 import { staffActorKey } from './staff-dashboard-reply-contract';
 import { staffVoiceIntent,staffVoiceBasis,staffVoiceAcceptance,readStaffVoiceIntent,readStaffVoiceBasis,readStaffVoiceAcceptance,staffVoiceTransport,staffVoiceKey,staffVoiceStorageKey,validateStaffVoiceUrl } from './staff-dashboard-voice-contract';
@@ -134,7 +135,7 @@ export async function trySendDashboardVoice(merchant:number,actor:number,raw:Sta
   if('compatibility' in r&&r.compatibility){
     if('result' in r&&r.result)return r.result;
     if(r.fresh){destroySession(merchant,input.conversationId);return sendVoiceCompatibility(merchant,r.id,r.intentDigest,bytes);}
-    return {success:false,status:'pending',persisted:false};
+    return reconcileStaffCompatibility('voice',merchant,actor,r.id).catch(()=>({success:false,status:'pending' as const,persisted:false}));
   }
   if(!('intent' in r))return unavailable();
   if(r.fresh){destroySession(merchant,input.conversationId);

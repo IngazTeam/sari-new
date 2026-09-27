@@ -5,6 +5,7 @@ import {parseStaffJson} from './sales-staff-acceptance-contract';
 import {staffCompatibilityAuthority,staffCompatibilityResult} from './staff-dashboard-compatibility';
 import {validateStaffVoiceUrl} from './staff-dashboard-voice-contract';
 import {staffVoiceMime,staffVoiceExtension,type StaffVoiceInput} from '../../shared/staff-dashboard-voice';
+import {compatibilitySettlement,assertCompatibilitySettlement} from './staff-compatibility-settlement-contract';
 
 const id=z.number().int().positive().safe(),digest=z.string().regex(/^[a-f0-9]{64}$/);
 export const compatibilityAudioDigest=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
@@ -17,7 +18,7 @@ export const pinnedVoiceCompatibilityIntent=historicalIntent.extend({version:z.l
   reservedAt:z.string().datetime({precision:3}).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v)}).strict();
 const intentSchema=z.discriminatedUnion('version',[historicalIntent,pinnedVoiceCompatibilityIntent]);
 export const voiceCompatibilityBasis=z.object({version:z.literal('staff-voice-compatibility-basis.v2'),intentDigest:digest,
-  mediaUrlDigest:digest,fileName:z.string(),result:staffCompatibilityResult.nullable()}).strict();
+  mediaUrlDigest:digest,fileName:z.string(),result:staffCompatibilityResult.nullable(),settlement:compatibilitySettlement.optional()}).strict();
 export const compatibilityVoiceKey=(merchant:number,source:number)=>`staff_compat_voice:${merchant}:${source}`;
 export const compatibilityVoiceStorageKey=(i:z.infer<typeof pinnedVoiceCompatibilityIntent>)=>`audio/staff-compat-voice/${i.merchant}/${i.actor}/${i.requestId}.${staffVoiceExtension[i.mimeType]}`;
 export function matchesCompatibilityRecording(i:z.infer<typeof intentSchema>,actor:number,input:StaffVoiceInput,bytes:Buffer){
@@ -43,5 +44,11 @@ export function readVoiceCompatibility(r:any){
   const rawBasis=parseStaffJson(r.basis),basis=voiceCompatibilityBasis.parse(rawBasis);
   if(hash(rawBasis)!==r.basis_digest||hash(basis)!==r.basis_digest||basis.intentDigest!==hash(intent)||hash(basis.result)!==hash(result)
     ||basis.fileName!==`voice-message.${staffVoiceExtension[intent.mimeType]}`||basis.mediaUrlDigest!==hash(validateStaffVoiceUrl(r.media_url)))throw Error('Voice compatibility object changed');
+  if(basis.settlement){
+    if(!result||intent.authority.source!=='registered')throw Error('Unsupported voice settlement');
+    const {settlement,...pending}=basis;
+    assertCompatibilitySettlement(settlement,{kind:'voice',merchantId:intent.merchant,sourceId:intent.sourceId,instanceRecordId:intent.authority.recordId,
+      basisDigest:hash({...pending,result:null}),phone:r.customer_phone,mediaUrl:r.media_url,fileName:basis.fileName});
+  }
   return {intent,basis,result};
 }
