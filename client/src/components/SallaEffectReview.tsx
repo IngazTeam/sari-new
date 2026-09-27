@@ -13,9 +13,18 @@ function EffectDetails({item}:{item:Item}) {
   const labels={owner_notice:t('merchantUx.sallaEffects.owner'),merchant_notice:t('merchantUx.sallaEffects.merchant'),sheets:t('merchantUx.sallaEffects.sheets')};
   const states={pending:t('merchantUx.sallaEffects.pending'),processing:t('merchantUx.sallaEffects.processing'),dispatching:t('merchantUx.sallaEffects.dispatching'),accepted:t('merchantUx.sallaEffects.accepted'),review:t('merchantUx.sallaEffects.review')};
   const guidance={queued:t('merchantUx.sallaEffects.queued'),preparing:t('merchantUx.sallaEffects.preparing'),preparation_expired:t('merchantUx.sallaEffects.preparationExpired'),in_flight:t('merchantUx.sallaEffects.inFlight'),outcome_unknown:t('merchantUx.sallaEffects.unknown'),accepted:t('merchantUx.sallaEffects.acceptedHint'),review_before_send:t('merchantUx.sallaEffects.beforeSend')};
+  const channels={owner:t('merchantUx.sallaEffects.ownerChannel'),email:t('merchantUx.sallaEffects.emailChannel'),push:t('merchantUx.sallaEffects.pushChannel')};
+  const results={accepted:t('merchantUx.sallaEffects.allAccepted'),partial:t('merchantUx.sallaEffects.partial'),unknown:t('merchantUx.sallaEffects.noticeUnknown'),not_accepted:t('merchantUx.sallaEffects.notAccepted')};
+  const targetStates={ready:t('merchantUx.sallaEffects.targetReady'),dispatching:t('merchantUx.sallaEffects.targetSending'),accepted:t('merchantUx.sallaEffects.targetAccepted'),rejected:t('merchantUx.sallaEffects.targetRejected'),unknown:t('merchantUx.sallaEffects.targetUnknown'),blocked:t('merchantUx.sallaEffects.targetBlocked'),disabled:t('merchantUx.sallaEffects.targetDisabled'),unconfigured:t('merchantUx.sallaEffects.targetUnconfigured'),unavailable:t('merchantUx.sallaEffects.targetUnavailable')};
   return <>
     <h3 className="font-semibold">{labels[item.kind]}</h3><p>{t('merchantUx.sallaEffects.reference',{id:item.id,order:item.orderId})}</p>
-    <p className="font-medium">{states[item.state]}</p><p>{guidance[item.diagnostic]}</p>
+    <p className="font-medium">{states[item.state]}</p><p>{item.notice?results[item.notice.result]:guidance[item.diagnostic]}</p>
+    {item.notice&&<div data-notice-evidence className="space-y-2 rounded-md border p-3">
+      <p className="font-medium">{t('merchantUx.sallaEffects.recipientResults')}</p>
+      <ol tabIndex={0} className="max-h-80 space-y-2 overflow-y-auto" aria-label={t('merchantUx.sallaEffects.recipientResults')}>
+        {item.notice.targets.map((target,index)=><li key={index} data-notice-target className="flex flex-wrap justify-between gap-2 border-b py-2"><span>{t('merchantUx.sallaEffects.recipientNumber',{number:index+1})} · {channels[target.channel]}</span><span>{targetStates[target.state]}</span></li>)}
+      </ol><p className="text-muted-foreground">{t('merchantUx.sallaEffects.receiptScope')}</p>
+    </div>}
     {!item.contextValid&&<p className="rounded-md border border-amber-500/50 p-2" data-salla-effect-context>{t('merchantUx.sallaEffects.changed')}</p>}
     <p className="text-muted-foreground">{t('merchantUx.sallaEffects.attempts',{count:item.attempts})}</p>
     <p className="text-muted-foreground">{t('merchantUx.sallaEffects.updated')}: <time dateTime={item.updatedAt}>{new Intl.DateTimeFormat(i18n.language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(item.updatedAt))}</time></p>

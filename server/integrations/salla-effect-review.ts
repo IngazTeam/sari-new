@@ -5,6 +5,7 @@ import { getPool } from '../db/connection';
 import { databaseTimeEpoch } from '../db/time';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { hasPermission } from '../_core/permissions';
+import { inspectNoticeEvidence } from './salla-notice-receipts';
 import { assertSallaCreationEffectsSchema, inspectSallaEffectContext } from './salla-creation-effects';
 import { sallaEffectListInput, sallaEffectCheckInput, sallaEffectPage, sallaEffectItem,
   sallaEffectAuditItem, sallaEffectAuditPage, sallaEffectAuditListInput } from '../../shared/salla-effect-review';
@@ -58,7 +59,8 @@ async function inspect(c: PoolConnection, row: any, now: number) {
     attempts: row.attempts, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at),
     dispatchStartedAt: row.dispatch_started_at ? iso(row.dispatch_started_at) : null,
     acceptedAt: row.accepted_at ? iso(row.accepted_at) : null,
-    contextValid: await inspectSallaEffectContext(c, row), diagnostic });
+    contextValid: await inspectSallaEffectContext(c, row), diagnostic,
+    ...(['owner_notice','merchant_notice'].includes(row.kind)?{notice:await inspectNoticeEvidence(c,row)}:{}) });
 }
 function readAudit(row: any) {
   const raw = typeof row.snapshot === 'string' ? JSON.parse(row.snapshot) : row.snapshot;

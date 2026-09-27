@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 const effects=vi.hoisted(()=>({owner:vi.fn(),merchant:vi.fn(),sheets:vi.fn()}));
-vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:effects.owner}));
-vi.mock('../_core/notificationService',()=>({notifyNewOrder:effects.merchant}));
+vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:(data:any,guard:any,hooks:any)=>simulateNoticeAdapter(effects.owner,[data],guard,hooks,'owner')}));
+vi.mock('../_core/notificationService',()=>({notifyNewOrder:(m:any,o:any,v:any,guard:any,hooks:any)=>simulateNoticeAdapter(effects.merchant,[m,o,v],guard,hooks,'push')}));
 vi.mock('../sheetsSync',()=>({syncOrderToSheets:effects.sheets}));
 import { getPool,closeDb } from '../db/connection';
 import { createDisposableMerchant,cleanupDisposableMerchants,assertDisposableDatabase } from '../tests/helpers/disposable-merchant';
@@ -10,6 +10,7 @@ import { encryptSecret } from '../security/secrets';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { runSallaCreationEffectsBatch } from './salla-creation-effects';
 import { simulateAcceptedSheetAppend,syntheticSheetIntent,syntheticSheetReceipt } from '../tests/helpers/salla-sheet-evidence';
+import { simulateNoticeAdapter,syntheticNoticeTarget,syntheticNoticeAcceptance } from '../tests/helpers/notice-evidence';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic intent, lease and actual MySQL recovery',()=>{
   const q=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
@@ -117,14 +118,14 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic inten
     expect(sent).not.toHaveBeenCalled();expect((await rows())[0].state).toBe('review');expect(await run(1)).toBe(0);
   });
   it('accepted-state commit loss cannot reset the effect or resend it',async()=>{
-    const pool=(await getPool())!,execute=pool.execute.bind(pool);let lost=false;
-    vi.spyOn(pool,'execute').mockImplementation((async(sql:string,args:any[])=>{const result=await execute(sql,args);if(!lost&&sql.includes("SET state='accepted'")){lost=true;throw Error('lost effect acknowledgement');}return result;})as any);
-    await run();vi.restoreAllMocks();expect((await rows()).every((r:any)=>r.state==='accepted')).toBe(true);expect(await run()).toBe(0);for(const send of Object.values(effects))expect(send).toHaveBeenCalledTimes(1);
+    const pool=(await getPool())!,get=pool.getConnection.bind(pool);let lost=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);if(!lost&&sql.includes("SET state='accepted'")){lost=true;const commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{await commit();throw Error('lost effect acknowledgement');});}return r;})as any);return c;});
+    await run();vi.restoreAllMocks();expect(lost).toBe(true);expect((await rows()).every((r:any)=>r.state==='accepted')).toBe(true);expect(await run()).toBe(0);for(const send of Object.values(effects))expect(send).toHaveBeenCalledTimes(1);
   });
   it('a failed acknowledgement write parks the already attempted effect for review',async()=>{
-    await isolateOwner();const pool=(await getPool())!,execute=pool.execute.bind(pool);let failed=false;
-    vi.spyOn(pool,'execute').mockImplementation((async(sql:string,args:any[])=>{if(!failed&&sql.includes("SET state='accepted'")){failed=true;throw Error('write unavailable');}return execute(sql,args);})as any);
-    await run(1);vi.restoreAllMocks();expect((await rows())[0]).toMatchObject({state:'review',last_error:'transport_unconfirmed'});expect(await run(1)).toBe(0);expect(effects.owner).toHaveBeenCalledTimes(1);
+    await isolateOwner();const pool=(await getPool())!,get=pool.getConnection.bind(pool);let failed=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{if(!failed&&sql.includes("SET state='accepted'")){failed=true;throw Error('write unavailable');}return execute(sql,args);})as any);return c;});
+    await run(1);vi.restoreAllMocks();expect(failed).toBe(true);expect((await rows())[0]).toMatchObject({state:'review',last_error:'transport_unconfirmed'});expect(await run(1)).toBe(0);expect((await rows())[0].state).toBe('accepted');expect(effects.owner).toHaveBeenCalledTimes(1);
   });
   it('a lost claim acknowledgement does not send and can safely recover only after lease expiry',async()=>{
     await isolateOwner();const pool=(await getPool())!,get=pool.getConnection.bind(pool);let lost=false;
@@ -152,6 +153,67 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla creation effects: atomic inten
     try{if(mode==='table')await q('RENAME TABLE salla_creation_effects TO salla_creation_effects_hidden');else await q('ALTER TABLE salla_creation_effects DROP INDEX salla_creation_effect_once');
       await expect(run()).rejects.toMatchObject({code:'DATABASE_SCHEMA_OUTDATED'});for(const send of Object.values(effects))expect(send).not.toHaveBeenCalled();
     }finally{if(mode==='table')await q('RENAME TABLE salla_creation_effects_hidden TO salla_creation_effects');else await q('ALTER TABLE salla_creation_effects ADD UNIQUE KEY salla_creation_effect_once(creation_id,kind)');}
+  });
+  describe('durable recipient plans and receipts',()=>{
+    const receipt=async()=>(await q('SELECT * FROM salla_notice_receipts WHERE effect_id=?',[(await rows())[0].id]))[0];
+    beforeEach(isolateOwner);
+    it('saves scope-bound evidence without copied customer data and never trusts a boolean',async()=>{
+      await run();const e=(await rows())[0],r=await receipt();expect(r).toMatchObject({merchant_id:merchant,creation_id:creation,local_order_id:order,claim_token:e.claim_token,context_hash:e.context_hash,fully_accepted:1});
+      expect(e.state).toBe('accepted');expect(JSON.stringify(r)).not.toMatch(/customerName|966500000000|synthetic-recipient|synthetic-payload/);
+      expect(await run()).toBe(0);expect(effects.owner).toHaveBeenCalledOnce();
+    });
+    it('freezes a disabled plan without a transport marker or retry',async()=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{const t={...syntheticNoticeTarget(),initial:'disabled'};await hooks.plan({version:1,method:'owner',targets:[t]});return false;});
+      await run();expect((await rows())[0]).toMatchObject({state:'review',dispatch_started_at:null});expect((await receipt()).fully_accepted).toBe(0);expect(await run()).toBe(0);
+    });
+    it('quarantines a crashed preparation with a frozen plan rather than claiming new recipients',async()=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{await hooks.plan({version:1,method:'owner',targets:[syntheticNoticeTarget()]});throw Error('crash');});await run();
+      expect((await rows())[0].state).toBe('review');expect((await receipt()).claim_token).toBe((await rows())[0].claim_token);expect(await run()).toBe(0);
+    });
+    it('expired preparation with a saved plan retains its original claim for review',async()=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{await hooks.plan({version:1,method:'owner',targets:[syntheticNoticeTarget()]});await q("UPDATE salla_creation_effects SET lease_until=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 MINUTE) WHERE id=?",[(await rows())[0].id]);
+        expect(await run()).toBe(0);return false;});await run();expect((await rows())[0]).toMatchObject({state:'review',last_error:'notice_interrupted'});expect(effects.owner).toHaveBeenCalledOnce();
+    });
+    it('a partial merchant notice keeps individual acceptance without claiming complete success',async()=>{
+      await q("UPDATE salla_creation_effects SET available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 1 DAY) WHERE merchant_id=? AND kind='owner_notice'",[merchant]);
+      await q("UPDATE salla_creation_effects SET available_at=UTC_TIMESTAMP(3) WHERE merchant_id=? AND kind='merchant_notice'",[merchant]);
+      effects.merchant.mockImplementation(async(_m,_o,_v,_guard,hooks)=>{const targets=[syntheticNoticeTarget('email'),syntheticNoticeTarget('push')];await hooks.plan({version:1,method:'both',targets});
+        await hooks.start(targets[0].key);await hooks.finish(targets[0].key,syntheticNoticeAcceptance('email'));
+        await hooks.start(targets[1].key);await hooks.finish(targets[1].key,{state:'unknown',httpStatus:null,referenceHash:null});return true;});
+      await run();expect((await rows())[1].state).toBe('review');const data=(await q('SELECT evidence FROM salla_notice_receipts WHERE merchant_id=?',[merchant]))[0].evidence;
+      expect((typeof data==='string'?JSON.parse(data):data).entries.map((e:any)=>e.state)).toEqual(['accepted','unknown']);expect(await run()).toBe(0);expect(effects.merchant).toHaveBeenCalledOnce();
+    });
+    it('rejects a duplicate target start and cannot replace a recorded outcome',async()=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{const t=syntheticNoticeTarget();await hooks.plan({version:1,method:'owner',targets:[t]});await hooks.start(t.key);
+        await expect(hooks.start(t.key)).rejects.toThrow();await hooks.finish(t.key,syntheticNoticeAcceptance());const before=await receipt();await hooks.finish(t.key,syntheticNoticeAcceptance());expect(await receipt()).toEqual(before);
+        await expect(hooks.finish(t.key,{state:'unknown',httpStatus:null,referenceHash:null})).rejects.toThrow();return true;});await run();expect((await rows())[0].state).toBe('accepted');
+    });
+    it.each(['target','method','before-start'])('rejects forged %s before acceptance',async mode=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{const t=syntheticNoticeTarget();await hooks.plan({version:1,method:mode==='method'?'push':'owner',targets:[t]});
+        if(mode==='target')await hooks.start('a'.repeat(64));else await hooks.finish(t.key,syntheticNoticeAcceptance());return true;});await run();expect((await rows())[0].state).not.toBe('accepted');
+    });
+    it.each(['before','after'])('lost receipt commit %s commit is recovered only when durable evidence exists',async mode=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool);let injected=false;
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);
+        if(!injected&&sql.includes('SET evidence=?')&&args[2]===1){injected=true;const commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{if(mode==='after')await commit();throw Error('lost receipt');});}return r;})as any);return c;});
+      await run();vi.restoreAllMocks();expect(injected).toBe(true);expect((await rows())[0].state).toBe('review');await run();expect((await rows())[0].state).toBe(mode==='after'?'accepted':'review');expect(effects.owner).toHaveBeenCalledOnce();
+    });
+    it.each(['merchant_id','creation_id','local_order_id','claim_token','context_hash','evidence_hash','fully_accepted'])('stored %s tampering cannot settle acceptance',async field=>{
+      effects.owner.mockImplementation(async(_d,_guard,hooks)=>{const t=syntheticNoticeTarget();await hooks.plan({version:1,method:'owner',targets:[t]});await hooks.start(t.key);await hooks.finish(t.key,syntheticNoticeAcceptance());
+        const m=field==='merchant_id'?await createDisposableMerchant('notice-forged'):null;if(m)users.push(m.userId);
+        const value=m?m.merchantId:['creation_id','local_order_id'].includes(field)?2147483647:field==='claim_token'?randomUUID():field==='fully_accepted'?0:'b'.repeat(64);
+        await q(`UPDATE salla_notice_receipts SET ${field}=? WHERE effect_id=?`,[value,(await rows())[0].id]);return true;});await run();expect((await rows())[0]).toMatchObject({state:'review',last_error:'notice_evidence_invalid'});expect(await run()).toBe(0);
+    });
+    it('plan write rollback cannot leave a partial manifest or enable transport',async()=>{
+      const pool=(await getPool())!,get=pool.getConnection.bind(pool);const sent=vi.fn();
+      vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{const r=await execute(sql,args);if(sql.includes('INSERT INTO salla_notice_receipts'))throw Error('plan failure');return r;})as any);return c;});
+      effects.owner.mockImplementation(async(_d,guard)=>{await guard();sent();return true;});await run();vi.restoreAllMocks();expect(sent).not.toHaveBeenCalled();expect(await receipt()).toBeUndefined();expect((await rows())[0]).toMatchObject({state:'pending',dispatch_started_at:null});
+    });
+    it.each(['table','index'])('missing notice %s fails closed before any delivery',async mode=>{
+      try{if(mode==='table')await q('RENAME TABLE salla_notice_receipts TO salla_notice_receipts_hidden');else await q('ALTER TABLE salla_notice_receipts DROP INDEX salla_notice_effect_once');
+        await expect(run()).rejects.toMatchObject({code:'DATABASE_SCHEMA_OUTDATED'});expect(effects.owner).not.toHaveBeenCalled();
+      }finally{if(mode==='table')await q('RENAME TABLE salla_notice_receipts_hidden TO salla_notice_receipts');else await q('ALTER TABLE salla_notice_receipts ADD UNIQUE KEY salla_notice_effect_once(effect_id)');}
+    });
   });
   describe('durable Sheets acceptance and recovery',()=>{
     const sheet=async()=>(await rows()).find((r:any)=>r.kind==='sheets');

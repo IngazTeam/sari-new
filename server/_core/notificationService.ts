@@ -11,6 +11,8 @@ import { notificationPreferences, notificationLogs, notificationSettings, mercha
 import { eq, and, isNotNull } from "drizzle-orm";
 import { z } from 'zod';
 import { formatMinorMoney } from '../../shared/product-money';
+import type { NoticeHooks } from '../integrations/notice-evidence';
+import { deliverNotices,prepareEmailNotice,preparePushNotices,suppressedNotice } from './notice-delivery';
 
 export type NotificationType = 
   | 'new_order'
@@ -57,6 +59,13 @@ export interface NotificationPayload {
   body: string;
   url?: string;
   metadata?: Record<string, any>;
+}
+function notificationEmailHtml(payload:NotificationPayload,detailsUrl:string|null) {
+  return `<div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #2563eb;">${escapeNotificationHtml(payload.title)}</h2>
+    <p style="font-size: 16px; line-height: 1.6;">${escapeNotificationHtml(payload.body)}</p>
+    ${detailsUrl?`<a href="${escapeNotificationHtml(detailsUrl)}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">عرض التفاصيل</a>`:''}
+  </div>`;
 }
 
 /**
@@ -162,10 +171,12 @@ async function getGlobalSettings() {
  */
 async function canSendNotification(
   merchantId: number,
-  type: NotificationType
+  type: NotificationType,
+  strict=false
 ): Promise<{ canSend: boolean; method: NotificationMethod }> {
   // التحقق من الإعدادات العامة
   const globalSettings = await getGlobalSettings();
+  if(strict&&!globalSettings)throw Error('Notification settings unavailable');
   
   const globalEnabledMap: Record<NotificationType, boolean> = {
     new_order: globalSettings?.newOrdersGlobalEnabled ?? true,
@@ -184,6 +195,7 @@ async function canSendNotification(
 
   // الحصول على تفضيلات التاجر
   const prefs = await getMerchantPreferences(merchantId);
+  if(strict&&!prefs)throw Error('Notification preferences unavailable');
   
   if (!prefs) {
     return { canSend: true, method: 'both' };
@@ -222,12 +234,13 @@ async function canSendNotification(
 /**
  * إرسال إشعار شامل
  */
-export async function sendNotification(payload: NotificationPayload, beforeSend?: () => Promise<void>): Promise<boolean> {
+export async function sendNotification(payload: NotificationPayload, beforeSend?: () => Promise<void>, evidence?:NoticeHooks): Promise<boolean> {
   try {
     // التحقق من إمكانية الإرسال
-    const { canSend, method } = await canSendNotification(payload.merchantId, payload.type);
+    const { canSend, method } = await canSendNotification(payload.merchantId, payload.type,Boolean(evidence));
     
     if (!canSend) {
+      if(evidence)await deliverNotices(method,(method==='both'?['push','email'] as const:[method]).map(channel=>suppressedNotice(channel,'disabled')),evidence);
       console.log(`[Notification] Skipped: ${payload.type} for merchant ${payload.merchantId} (disabled or quiet hours)`);
       return false;
     }
@@ -248,6 +261,26 @@ export async function sendNotification(payload: NotificationPayload, beforeSend?
     });
 
     const logId = logResult.insertId;
+
+    if(evidence) {
+      const authorize=async()=>{
+        const current=await canSendNotification(payload.merchantId,payload.type,true);
+        if(!current.canSend||current.method!==method)throw Error('Notification preference changed');await beforeSend?.();
+      };
+      const prepared=method==='push'||method==='both'?await preparePushNotices(payload.merchantId,{title:payload.title,body:payload.body,url:payload.url},authorize):[];
+      if(method==='email'||method==='both') {
+        const recipient=await getMerchantNotificationEmail(payload.merchantId),detailsUrl=notificationEmailUrl(payload.url);
+        prepared.push(recipient?prepareEmailNotice({userId:recipient.userId,to:recipient.email,subject:payload.title,
+          html:notificationEmailHtml(payload,detailsUrl)},async()=>{
+          const current=await getMerchantNotificationEmail(payload.merchantId);
+          if(!current||current.userId!==recipient.userId||current.email!==recipient.email)throw Error('Notification recipient changed');await authorize();
+        }):suppressedNotice('email','unavailable'));
+      }
+      const success=await deliverNotices(method,prepared,evidence);
+      try{await db.update(notificationLogs).set({status:success?'sent':'failed',sentAt:success?new Date():null,error:success?null:'Not all notification targets accepted'}).where(eq(notificationLogs.id,logId));}
+      catch{console.warn('[Notification] Receipt saved; display log unavailable');}
+      return success;
+    }
 
     // إرسال الإشعار حسب الطريقة المفضلة
     let pushSuccess = false;
@@ -283,13 +316,7 @@ export async function sendNotification(payload: NotificationPayload, beforeSend?
           emailSuccess = await sendEmail({
             to: recipient.email,
             subject: payload.title,
-            html: `
-              <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2 style="color: #2563eb;">${escapeNotificationHtml(payload.title)}</h2>
-                <p style="font-size: 16px; line-height: 1.6;">${escapeNotificationHtml(payload.body)}</p>
-                ${detailsUrl ? `<a href="${escapeNotificationHtml(detailsUrl)}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">عرض التفاصيل</a>` : ''}
-              </div>
-            `,
+            html: notificationEmailHtml(payload,detailsUrl),
             type: 'notification',
             merchantId: payload.merchantId,
             metadata: payload.metadata,
@@ -324,7 +351,7 @@ export async function sendNotification(payload: NotificationPayload, beforeSend?
 
     return success;
   } catch (error) {
-    console.error('[Notification] Error:', error);
+    console.error('[Notification] Error:', evidence?'delivery unconfirmed':error);
     return false;
   }
 }
@@ -332,7 +359,7 @@ export async function sendNotification(payload: NotificationPayload, beforeSend?
 /**
  * إرسال إشعار طلب جديد
  */
-export async function notifyNewOrder(merchantId: number, orderId: number, orderTotal: number, beforeSend?: () => Promise<void>) {
+export async function notifyNewOrder(merchantId: number, orderId: number, orderTotal: number, beforeSend?: () => Promise<void>, evidence?:NoticeHooks) {
   return sendNotification({
     merchantId,
     type: 'new_order',
@@ -340,7 +367,7 @@ export async function notifyNewOrder(merchantId: number, orderId: number, orderT
     body: `لديك طلب جديد بقيمة ${formatMinorMoney(orderTotal)}`,
     url: `/merchant/orders`,
     metadata: { orderId, orderTotal },
-  }, beforeSend);
+  }, beforeSend,evidence);
 }
 
 /**

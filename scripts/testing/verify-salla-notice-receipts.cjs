@@ -1,7 +1,7 @@
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto');
-const root = process.cwd(), output = path.resolve('.tmp/salla-effect-review-verification');
+const root = process.cwd(), output = path.resolve('.tmp/salla-notice-receipts-verification');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const units = ['server/salla-effect-review-pentest.test.ts','server/deployment-release-pentest.test.ts', 'server/runtime-schema-pentest.test.ts',
+const units = ['server/notice-delivery-pentest.test.ts','server/salla-sheet-receipts-pentest.test.ts','server/salla-effect-review-pentest.test.ts','server/deployment-release-pentest.test.ts', 'server/runtime-schema-pentest.test.ts',
   'server/salla-catalog-pentest.test.ts', 'server/salla-order-projection-pentest.test.ts',
   'server/salla-order-creation-pentest.test.ts', 'server/salla-webhook-receipts-pentest.test.ts',
   'server/salla-webhook-ingress-pentest.test.ts', 'server/salla-order-money.test.ts',
@@ -40,7 +40,7 @@ try {
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use owned synthetic MySQL');
   env.DATABASE_URL=url.toString();
   const startedAt = new Date().toISOString(), before = manifest(), checks = [];
-  checks.push(run('migration',['scripts/testing/verify-salla-effect-review-migration.cjs'],{SARI_TEST_DATABASE_URL:url.toString(),SARI_SALLA_EFFECT_REVIEW_MIGRATION_OUTPUT:path.join(output,'migration.json')}));
+  checks.push(run('migration',['scripts/testing/verify-salla-notice-receipts-migration.cjs'],{SARI_TEST_DATABASE_URL:url.toString(),SARI_SALLA_NOTICE_RECEIPTS_MIGRATION_OUTPUT:path.join(output,'migration.json')}));
   checks.push(run('database',['scripts/testing/run-isolated.mjs','--with-database','--no-file-parallelism',...database,'--reporter=default','--reporter=json',`--outputFile.json=${path.join(output,'database.json')}`],{SARI_TEST_DATABASE_URL:url.toString()}));
   const baseCommit = cp.execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim();
   const toolingCommand = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts['test:tooling'].split(' ');
@@ -82,9 +82,9 @@ try {
   if(JSON.stringify(dbFiles)!==JSON.stringify([...database].sort()))throw Error('Unexpected DB test selection');
   const migration=JSON.parse(fs.readFileSync(path.join(output,'migration.json')));
   if(!migration.passed||migration.cases.length!==2||migration.cases.some(c=>!c.passed))throw Error('Incomplete migration verification');
-  const report = { version: 'salla-effect-review.v1', startedAt, finishedAt: new Date().toISOString(),
+  const report = { version: 'salla-notice-receipts.v1', startedAt, finishedAt: new Date().toISOString(),
     baseCommit, sourceStableBeforeAndAfter: true, sourceSha256: before, checks,
-    scope: 'Salla operational SQL-only review and immutable audit, current merchant authority, request replay, real migration and affected effect/creation/catalog/projection regressions; browser component with simulated API. No production or live delivery.',
+    scope: 'Frozen recipient plans, SMTP2GO and Web Push acceptance, platform HTTP acknowledgements, SQL-only recovery, partial outcomes and translated review UI. Synthetic local tests; no real provider delivery or production.',
     tooling: { ...counts, testNames }, unitSecurity: { passed: result.numPassedTests, failed: 0, skipped: 0,
       tests: result.testResults.flatMap(file => file.assertionResults.map(test => ({
         file: path.relative(root, file.name).replaceAll('\\', '/'), name: test.fullName, status: test.status }))) },

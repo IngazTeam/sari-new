@@ -1,4 +1,7 @@
 export const sallaEffectReviewAr = {
+  ownerChannel:'إدارة المنصة',emailChannel:'البريد الإلكتروني',pushChannel:'إشعار المتصفح',allAccepted:'سُجل قبول جميع المستلمين المحددين.',partial:'قبول جزئي؛ لم يُثبت قبول جميع المستلمين.',noticeUnknown:'نتيجة النقل غير مؤكدة لبعض المستلمين.',notAccepted:'لم يُسجل قبول للإشعار.',
+  targetReady:'لم يبدأ نقله',targetSending:'بدأ نقله؛ بلا نتيجة محفوظة',targetAccepted:'قبله المزوّد',targetRejected:'رفضه المزوّد',targetUnknown:'نتيجة غير مؤكدة',targetBlocked:'تغير التفويض قبل النقل',targetDisabled:'معطل بالتفضيلات أو وقت الهدوء',targetUnconfigured:'إعداد القناة غير مكتمل',targetUnavailable:'لا مستلم صالح أو خدمة مدعومة',
+  recipientResults:'النتائج حسب القناة والمستلم',recipientNumber:'المستلم {{number}}',receiptScope:'هذه نتائج قبول النقل وليست إثبات وصول أو قراءة. قبول إشعار المنصة يعتمد على استجابة HTTP. لا يعيد الفحص إرسالًا، ولا تضاف الأجهزة الجديدة إلى المحاولة السابقة.',
   title:'متابعة إشعارات طلبات سلة', scope:'تابع إشعار الإدارة وإشعار نشاطك ومزامنة Sheets لكل طلب. يسجل الفحص الحالة الحالية دون إعادة إرسال أو تغيير نتيجة الطلب.',
   effects:'الإجراءات',history:'سجل الفحوص',order:'رقم الطلب المحلي',all:'الكل',state:'الحالة',kind:'الإجراء',apply:'تطبيق',invalidFilter:'أدخل رقم طلب صحيحًا موجبًا أو اترك الحقل فارغًا.',
   owner:'إشعار إدارة المنصة',merchant:'إشعار نشاطك',sheets:'مزامنة Sheets',pending:'في الانتظار',processing:'قيد التحضير',dispatching:'بدأ الإرسال',accepted:'قبول مسجل',review:'يحتاج مراجعة',
@@ -12,6 +15,9 @@ export const sallaEffectReviewAr = {
   historyScope:'الفحوص ملاحظات محفوظة في وقتها؛ قد تتغير الحالة بعدها. لا تمثل اعتمادًا يدويًا للتسليم.',
 };
 export const sallaEffectReviewEn: Record<keyof typeof sallaEffectReviewAr,string> = {
+  ownerChannel:'Platform channel',emailChannel:'Email',pushChannel:'Browser push',allAccepted:'Acceptance is recorded for every planned recipient.',partial:'Partial acceptance; not every recipient has confirmed acceptance.',noticeUnknown:'Transport is unconfirmed for some recipients.',notAccepted:'No notification acceptance is recorded.',
+  targetReady:'Transport not started',targetSending:'Transport started; no saved result',targetAccepted:'Accepted by provider',targetRejected:'Rejected by provider',targetUnknown:'Outcome unconfirmed',targetBlocked:'Authority changed before transport',targetDisabled:'Disabled by preferences or quiet hours',targetUnconfigured:'Channel configuration missing',targetUnavailable:'No valid recipient or supported service',
+  recipientResults:'Results by channel and recipient',recipientNumber:'Recipient {{number}}',receiptScope:'These records confirm transport acceptance, not delivery or reading. Platform acceptance uses an HTTP acknowledgement. Checking does not resend, and new devices are not added to an earlier attempt.',
   title:'Salla order notifications',scope:'Track the platform notice, your business notice and Sheets sync for each order. A check records the current state without resending or changing the order result.',
   effects:'Actions',history:'Check history',order:'Local order ID',all:'All',state:'State',kind:'Action',apply:'Apply',invalidFilter:'Enter a positive whole order ID or leave it empty.',
   owner:'Platform notice',merchant:'Business notice',sheets:'Sheets sync',pending:'Queued',processing:'Preparing',dispatching:'Send started',accepted:'Acceptance recorded',review:'Needs review',

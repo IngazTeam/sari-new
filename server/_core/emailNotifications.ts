@@ -218,7 +218,7 @@ export async function notifyNewOrder(data: {
   totalAmount: number;
   itemsCount: number;
   orderDate: Date;
-}, beforeSend?: () => Promise<void>): Promise<boolean> {
+}, beforeSend?: () => Promise<void>, evidence?:import('../integrations/notice-evidence').NoticeHooks): Promise<boolean> {
   const title = "🛒 طلب جديد";
   const content = `
 **طلب جديد تم إنشاؤه**
@@ -238,7 +238,7 @@ export async function notifyNewOrder(data: {
 يمكنك متابعة الطلب من لوحة المتجر.
   `.trim();
 
-  return await notifyOwner({ title, content }, beforeSend);
+  return await notifyOwner({ title, content }, beforeSend,evidence);
 }
 
 /**

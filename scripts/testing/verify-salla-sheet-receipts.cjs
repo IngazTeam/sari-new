@@ -55,7 +55,7 @@ try {
   checks.push(run('build', ['.tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs', 'run', 'build'], { NODE_ENV: 'production' }));
   checks.push(run('browser',['scripts/testing/verify-salla-effect-review-ui.cjs'],{SARI_SALLA_EFFECT_REVIEW_UI_OUTPUT:path.join(output,'browser')}));
   const browser=JSON.parse(fs.readFileSync(path.join(output,'browser/results.json')));
-  if(browser.errors.length||browser.results.length!==38||browser.results.some(r=>!r.passed))throw Error('Incomplete browser verification');
+  if(browser.errors.length||browser.results.length!==54||browser.results.some(r=>!r.passed))throw Error('Incomplete browser verification');
   if (JSON.stringify(before) !== JSON.stringify(manifest())) throw Error('Source changed during verification');
   const toolingLog = fs.readFileSync(path.join(output, 'tooling.log'), 'utf8');
   const counts = Object.fromEntries(['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo'].map(key => {

@@ -833,6 +833,16 @@ export const sallaProductProjections = mysqlTable('salla_product_projections', {
     AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalProductId},'^[1-9][0-9]{0,19}$','c')`),
 ]);
 
+export const sallaNoticeReceipts = mysqlTable('salla_notice_receipts', {
+  id:int().autoincrement().primaryKey(),effectId:int('effect_id').notNull(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  creationId:int('creation_id').notNull(),localOrderId:int('local_order_id').notNull(),claimToken:char('claim_token',{length:36}).notNull(),
+  contextHash:char('context_hash',{length:64}).notNull(),evidence:json().notNull(),evidenceHash:char('evidence_hash',{length:64}).notNull(),fullyAccepted:tinyint('fully_accepted').default(0).notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},table=>[uniqueIndex('salla_notice_effect_once').on(table.effectId),index('salla_notice_merchant').on(table.merchantId,table.id),
+  check('chk_salla_notice_receipt',sql`${table.effectId}>0 AND ${table.creationId}>0 AND ${table.localOrderId}>0 AND ${table.fullyAccepted} IN (0,1)
+    AND REGEXP_LIKE(${table.claimToken},'^[0-9a-f-]{36}$','c') AND REGEXP_LIKE(${table.contextHash},'^[0-9a-f]{64}$','c') AND REGEXP_LIKE(${table.evidenceHash},'^[0-9a-f]{64}$','c')`),
+]);
+
 export const sallaSheetReceipts = mysqlTable('salla_sheet_receipts', {
   id:int().autoincrement().primaryKey(),effectId:int('effect_id').notNull(),
   merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),

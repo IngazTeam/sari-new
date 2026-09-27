@@ -1,5 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
+import type { NoticeHooks } from '../integrations/notice-evidence';
+import { deliverNotices,prepareOwnerNotice,suppressedNotice } from './notice-delivery';
 
 export type NotificationPayload = {
   title: string;
@@ -65,9 +67,18 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
  */
 export async function notifyOwner(
   payload: NotificationPayload,
-  beforeSend?: () => Promise<void>
+  beforeSend?: () => Promise<void>,
+  evidence?:NoticeHooks
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
+
+  if(evidence) {
+    if(!ENV.forgeApiUrl||!ENV.forgeApiKey)return deliverNotices('owner',[suppressedNotice('owner','unconfigured')],evidence);
+    const endpoint=buildEndpointUrl(ENV.forgeApiUrl),key=ENV.forgeApiKey;
+    return deliverNotices('owner',[prepareOwnerNotice(endpoint,key,{title,content},async()=>{
+      if(!ENV.forgeApiUrl||buildEndpointUrl(ENV.forgeApiUrl)!==endpoint||ENV.forgeApiKey!==key)throw Error('Owner channel changed');await beforeSend?.();
+    })],evidence);
+  }
 
   if (!ENV.forgeApiUrl) {
     throw new TRPCError({

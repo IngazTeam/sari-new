@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 const effects=vi.hoisted(()=>({owner:vi.fn(),merchant:vi.fn(),sheets:vi.fn()}));
-vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:effects.owner}));
-vi.mock('../_core/notificationService',()=>({notifyNewOrder:effects.merchant}));
+vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:(data:any,guard:any,hooks:any)=>simulateNoticeAdapter(effects.owner,[data],guard,hooks,'owner')}));
+vi.mock('../_core/notificationService',()=>({notifyNewOrder:(m:any,o:any,v:any,guard:any,hooks:any)=>simulateNoticeAdapter(effects.merchant,[m,o,v],guard,hooks,'push')}));
 vi.mock('../sheetsSync',()=>({syncOrderToSheets:effects.sheets}));
 import { getPool,closeDb } from '../db/connection';
 import { createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
@@ -10,6 +10,7 @@ import { encryptSecret } from '../security/secrets';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { runSallaCreationEffectsBatch } from './salla-creation-effects';
 import { simulateAcceptedSheetAppend } from '../tests/helpers/salla-sheet-evidence';
+import { simulateNoticeAdapter } from '../tests/helpers/notice-evidence';
 import { listSallaEffects,listSallaEffectReviews,checkSallaEffect } from './salla-effect-review';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla operational review on isolated MySQL',()=>{

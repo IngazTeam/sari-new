@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noticeSummary } from './notice-evidence';
 
 const id = z.number().int().positive().max(2147483647);
 const time = z.string().datetime({ precision: 3 });
@@ -13,9 +14,13 @@ export const sallaEffectItem = z.object({
   id, orderId: id, kind: sallaEffectKind, state: sallaEffectState, attempts: z.number().int().min(0).max(8),
   createdAt: time, updatedAt: time, dispatchStartedAt: time.nullable(), acceptedAt: time.nullable(),
   contextValid: z.boolean(),
+  notice:noticeSummary.optional(),
   diagnostic: z.enum(['queued', 'preparing', 'preparation_expired', 'in_flight', 'outcome_unknown', 'accepted', 'review_before_send']),
 }).strict().superRefine((v, ctx) => {
   const accepted = v.state === 'accepted';
+  if(v.notice&&(v.kind==='sheets'||accepted&&v.notice.result!=='accepted'
+    ||v.kind==='owner_notice'&&(v.notice.targets.length!==1||v.notice.targets[0].channel!=='owner')
+    ||v.kind==='merchant_notice'&&(v.notice.targets.some(t=>t.channel==='owner')||v.notice.targets.filter(t=>t.channel==='email').length>1)))ctx.addIssue({code:'custom',message:'Contradictory notice result'});
   if (accepted !== (v.acceptedAt !== null) || accepted !== (v.diagnostic === 'accepted')
     || accepted && !v.dispatchStartedAt
     || ['pending', 'processing'].includes(v.state) && v.dispatchStartedAt !== null

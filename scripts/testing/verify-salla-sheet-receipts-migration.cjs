@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 (async()=>{
   const root=process.cwd(),url=new URL(process.env.SARI_TEST_DATABASE_URL||'');
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use owned synthetic MySQL');
-  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.equal(journal.entries.at(-1).tag,'0142_salla_sheet_receipts');
+  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0142_salla_sheet_receipts','0143_salla_notice_receipts'].includes(journal.entries.at(-1).tag));
   const dir=path.resolve('.tmp/salla-sheet-receipts-migration-'+Date.now()),output=path.resolve(process.env.SARI_SALLA_SHEET_RECEIPTS_MIGRATION_OUTPUT||'.tmp/salla-sheet-receipts-migration/results.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
   const prior=journal.entries.filter(e=>e.idx<142);for(const e of prior)fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
@@ -15,7 +15,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
     const [[identity]]=await db.query('SELECT @@port AS port,@@datadir AS directory');assert.equal(Number(identity.port),33089);assert.equal(path.resolve(identity.directory).toLowerCase(),fs.realpathSync(path.resolve('.tmp/staff-migration-mysql/data')).toLowerCase());
     for(const mode of ['fresh','upgrade']){
       const name=`sari_sheet_receipts_${mode}_${Date.now()}_test`;await db.query(`CREATE DATABASE ${name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);await db.query(`USE ${name}`);
-      if(mode==='fresh'){run(name);const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_sheet_receipts');assert.equal(n.n,143);assert.equal(a.n,0);cases.push({mode,migrations:n.n,emptyHistory:true,passed:true});continue;}
+      if(mode==='fresh'){run(name);const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_sheet_receipts');assert.equal(n.n,journal.entries.length);assert.equal(a.n,0);cases.push({mode,migrations:n.n,emptyHistory:true,passed:true});continue;}
       run(name,dir);
       const [u]=await db.query("INSERT INTO users(openId,name,role,account_status) VALUES ('synthetic-sheet-receipts','Synthetic','admin','active')");
       const [m]=await db.execute("INSERT INTO merchants(userId,businessName,status) VALUES (?,'Synthetic','active')",[u.insertId]);
@@ -27,7 +27,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
       const tables=['orders','salla_connections','salla_order_projections','salla_order_creations','salla_creation_effects','salla_product_projections','salla_webhook_receipts','ai_budget_policies','salla_effect_reviews'];
       const state=async()=>{const v={};for(const t of tables)v[t]=(await db.query(`SELECT * FROM ${t}`))[0];return JSON.stringify(v);};
       const before=await state();await db.query(ddl);run(name);assert.equal(await state(),before);
-      const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_sheet_receipts');assert.equal(n.n,143);assert.equal(a.n,0);
+      const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_sheet_receipts');assert.equal(n.n,journal.entries.length);assert.equal(a.n,0);
       const insert=`INSERT INTO salla_sheet_receipts(effect_id,merchant_id,creation_id,local_order_id,claim_token,context_hash,intent,intent_hash)
         VALUES (?,?,1,?,'32345678-1234-4234-8234-123456789abc',REPEAT('a',64),JSON_OBJECT('synthetic',true),REPEAT('b',64))`,args=[e.insertId,m.insertId,o.insertId];
       await db.execute(insert,args);await assert.rejects(()=>db.execute(insert,args),x=>x.code==='ER_DUP_ENTRY');

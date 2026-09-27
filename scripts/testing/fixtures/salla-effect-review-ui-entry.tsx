@@ -13,8 +13,11 @@ const w=window as any,p=new URLSearchParams(location.search),mode=p.get('case')|
 w.__reads=[];w.__writes=[];w.__saved={};w.__audits=[];
 const qc=new QueryClient();w.__refresh=()=>qc.invalidateQueries();w.__online=(v:boolean)=>onlineManager.setOnline(v);
 const time='2026-09-28T00:00:00.000Z';
-function item(id:number,state='review') {return {id,orderId:4,kind:'sheets',state,attempts:1,createdAt:time,updatedAt:time,
-  dispatchStartedAt:state==='pending'?null:time,acceptedAt:state==='accepted'?time:null,contextValid:id!==30,diagnostic:state==='pending'?'queued':state==='accepted'?'accepted':'outcome_unknown'};}
+function item(id:number,state='review') {
+  const notice=mode.startsWith('notice')&&state!=='pending'?state==='accepted'?{result:'accepted',targets:[{channel:'email',state:'accepted'}]}:
+    {result:mode==='notice-invalid'?'accepted':'partial',targets:['accepted','unknown','rejected','blocked','disabled','unconfigured','unavailable','ready','dispatching'].map(state=>({channel:'push',state}))}:undefined;
+  return {id,orderId:4,kind:mode.startsWith('notice')?'merchant_notice':'sheets',state,attempts:1,createdAt:time,updatedAt:time,
+  dispatchStartedAt:state==='pending'?null:time,acceptedAt:state==='accepted'?time:null,contextValid:id!==30,diagnostic:state==='pending'?'queued':state==='accepted'?'accepted':'outcome_unknown',...(notice?{notice}: {})};}
 const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
   const input=op.input as any;
   const timer=setTimeout(()=>{

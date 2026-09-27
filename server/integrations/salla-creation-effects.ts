@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { sheetIntentSchema,sheetReceiptSchema,sheetIntentHash,sheetReceiptHash,type SheetIntent,type SheetReceipt } from './salla-sheet-evidence';
+import { SALLA_NOTICE_REQUIREMENTS,saveNoticePlan,startNoticeTarget,finishNoticeTarget,readNoticeRecord } from './salla-notice-receipts';
+import type { NoticeHooks,NoticePlan,NoticeOutcome } from './notice-evidence';
 
 const idSchema = z.number().int().positive().max(2147483647);
 const kinds = ['owner_notice','merchant_notice','sheets'] as const;
@@ -21,7 +23,7 @@ export const SALLA_CREATION_EFFECT_REQUIREMENTS = [{ table:'salla_creation_effec
 },{table:'salla_sheet_receipts',columns:['effect_id','merchant_id','creation_id','local_order_id','claim_token','context_hash','intent','intent_hash',
   'receipt','receipt_hash','created_at','accepted_at'],
   uniqueIndexes:[{name:'salla_sheet_effect_once',columns:['effect_id']}],checkConstraints:['chk_salla_sheet_receipt'],
-}];
+},...SALLA_NOTICE_REQUIREMENTS];
 export const assertSallaCreationEffectsSchema = () => assertRuntimeSchema('Salla creation effects',
   SALLA_CREATION_EFFECT_REQUIREMENTS,{cacheSuccess:false});
 
@@ -77,14 +79,15 @@ async function recover(merchantId?:number) {
   // A dispatch marker is never made retryable, including a crashed process with
   // no response. Safe preparation leases alone may return to the queue.
   await transaction(async c=>{
-    const [rows]=await c.execute<any[]>(`SELECT id,state,attempts FROM salla_creation_effects
+    const [rows]=await c.execute<any[]>(`SELECT id,state,attempts,
+      EXISTS(SELECT 1 FROM salla_notice_receipts r WHERE r.effect_id=salla_creation_effects.id) AS notice_planned FROM salla_creation_effects
       WHERE state IN ('processing','dispatching') AND lease_until<=UTC_TIMESTAMP(3)${merchantId===undefined?'':' AND merchant_id=?'}
       ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED`,merchantId===undefined?[]:[merchantId]);
     for(const row of rows) {
-      const review=row.state==='dispatching'||row.attempts>=8;
+      const review=row.state==='dispatching'||row.attempts>=8||row.notice_planned;
       await c.execute(`UPDATE salla_creation_effects SET state=?,lease_until=NULL,
         claim_token=IF(?,claim_token,NULL),available_at=UTC_TIMESTAMP(3),last_error=?,updated_at=UTC_TIMESTAMP(3) WHERE id=?`,
-        [review?'review':'pending',review?1:0,row.state==='dispatching'?'transport_unconfirmed':review?'retry_exhausted':'preparation_recovered',row.id]);
+        [review?'review':'pending',review?1:0,row.state==='dispatching'?'transport_unconfirmed':row.notice_planned?'notice_interrupted':review?'retry_exhausted':'preparation_recovered',row.id]);
     }
   });
 }
@@ -99,7 +102,7 @@ async function claim(merchantId?:number):Promise<Effect|null> {
     return {...row,claim_token:token,attempts:row.attempts+1};
   });
 }
-async function guard(row:Effect,dispatch=false,sheetIntent?:SheetIntent):Promise<Context> {
+async function guard(row:Effect,dispatch=false,sheetIntent?:SheetIntent,notice?:{plan:NoticePlan}|{key:string}):Promise<Context> {
   return transaction(async c=>{
     const [rows]=await c.execute<any[]>(`SELECT * FROM salla_creation_effects WHERE id=? AND merchant_id=? AND creation_id=?
       AND local_order_id=? AND kind=? AND context_hash=? AND claim_token=? AND state IN ('processing','dispatching')
@@ -108,6 +111,10 @@ async function guard(row:Effect,dispatch=false,sheetIntent?:SheetIntent):Promise
     if(rows.length!==1)throw Error('Creation effect lease unavailable');
     const current=await context(c,row.merchant_id,row.creation_id,true);
     if(current.id!==row.local_order_id||digest(current)!==row.context_hash)throw Error('Creation effect context changed');
+    if(notice) {
+      if('plan'in notice){if(rows[0].state!=='processing')throw Error('Notice already started');await saveNoticePlan(c,rows[0],notice.plan);}
+      else await startNoticeTarget(c,rows[0],notice.key);
+    }
     if(sheetIntent) {
       if(row.kind!=='sheets'||!dispatch||rows[0].state!=='processing')throw Error('Sheets dispatch already started');
       const intent=sheetIntentSchema.parse(sheetIntent);
@@ -176,15 +183,37 @@ async function settleSheetReceipts(merchantId?:number,effectId?:number) {
     }
   });
 }
-async function finish(row:Effect,accepted:boolean) {
+async function captureNoticeReceipt(row:Effect,key:string,outcome:NoticeOutcome) {
+  await transaction(async c=>{
+    const [rows]=await c.execute<any[]>(`SELECT * FROM salla_creation_effects WHERE id=? AND merchant_id=? AND creation_id=?
+      AND local_order_id=? AND claim_token=? AND context_hash=? AND kind=? AND state IN ('processing','dispatching','review','accepted') FOR UPDATE`,
+      [row.id,row.merchant_id,row.creation_id,row.local_order_id,row.claim_token,row.context_hash,row.kind]);
+    if(rows.length!==1)throw Error('Notice attempt unavailable');await finishNoticeTarget(c,rows[0],key,outcome);
+  });
+}
+async function settleNoticeReceipts(merchantId?:number,effectId?:number) {
+  await transaction(async c=>{
+    const [effects]=await c.execute<any[]>(`SELECT e.* FROM salla_creation_effects e
+      WHERE e.kind IN ('owner_notice','merchant_notice') AND e.state IN ('processing','dispatching','review')
+        AND (e.last_error IS NULL OR e.last_error<>'notice_evidence_invalid')
+        AND EXISTS(SELECT 1 FROM salla_notice_receipts r WHERE r.effect_id=e.id ${effectId===undefined?'AND r.fully_accepted=1':''})
+        ${merchantId===undefined?'':'AND e.merchant_id=?'} ${effectId===undefined?'':'AND e.id=?'}
+      ORDER BY e.id LIMIT 100 FOR UPDATE SKIP LOCKED`,[...(merchantId===undefined?[]:[merchantId]),...(effectId===undefined?[]:[effectId])]);
+    for(const e of effects) {
+      let saved;
+      try {saved=await readNoticeRecord(c,e);if(!saved)throw Error('Missing notice record');}
+      catch {await c.execute("UPDATE salla_creation_effects SET state='review',lease_until=NULL,last_error='notice_evidence_invalid',updated_at=UTC_TIMESTAMP(3) WHERE id=?",[e.id]);continue;}
+      if(saved.record.entries.every(t=>t.state==='accepted'))await c.execute(`UPDATE salla_creation_effects SET state='accepted',lease_until=NULL,
+        accepted_at=?,last_error=NULL,updated_at=UTC_TIMESTAMP(3) WHERE id=?`,[saved.row.updated_at,e.id]);
+    }
+  });
+}
+async function finish(row:Effect,_accepted:boolean) {
   const pool=(await getPool())!;
   if(row.kind==='sheets')await settleSheetReceipts(row.merchant_id,row.id);
   // A late positive acknowledgement may settle our own stale dispatch, but may
   // not acquire a new attempt or revive a row failed before dispatch.
-  if(accepted&&row.kind!=='sheets')await pool.execute(`UPDATE salla_creation_effects SET state='accepted',lease_until=NULL,
-    accepted_at=UTC_TIMESTAMP(3),last_error=NULL,updated_at=UTC_TIMESTAMP(3)
-    WHERE id=? AND merchant_id=? AND claim_token=? AND dispatch_started_at IS NOT NULL
-      AND (state='dispatching' OR (state='review' AND last_error='transport_unconfirmed'))`,[row.id,row.merchant_id,row.claim_token]);
+  if(row.kind!=='sheets')await settleNoticeReceipts(row.merchant_id,row.id);
   await pool.execute(`UPDATE salla_creation_effects SET state='review',lease_until=NULL,
     last_error='effect_not_confirmed',updated_at=UTC_TIMESTAMP(3)
     WHERE id=? AND merchant_id=? AND claim_token=? AND state IN ('processing','dispatching')`,[row.id,row.merchant_id,row.claim_token]);
@@ -192,24 +221,26 @@ async function finish(row:Effect,accepted:boolean) {
 async function failed(row:Effect) {
   const pool=(await getPool())!;
   await pool.execute(`UPDATE salla_creation_effects SET
-    state=IF(dispatch_started_at IS NOT NULL OR attempts>=8,'review','pending'),
+    state=IF(dispatch_started_at IS NOT NULL OR attempts>=8 OR EXISTS(SELECT 1 FROM salla_notice_receipts r WHERE r.effect_id=salla_creation_effects.id),'review','pending'),
     last_error=IF(dispatch_started_at IS NOT NULL,'transport_unconfirmed','preparation_failed'),
-    lease_until=NULL,claim_token=IF(dispatch_started_at IS NOT NULL OR attempts>=8,claim_token,NULL),
+    lease_until=NULL,claim_token=IF(state='review',claim_token,NULL),
     available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 60 SECOND),updated_at=UTC_TIMESTAMP(3)
     WHERE id=? AND merchant_id=? AND claim_token=? AND state IN ('processing','dispatching')`,[row.id,row.merchant_id,row.claim_token]);
 }
 async function dispatch(row:Effect) {
-  const current=await guard(row),beforeSend=async()=>{await guard(row,true);};
+  const current=await guard(row),beforeSend=async()=>{await guard(row);};
+  const evidence:NoticeHooks={plan:async plan=>{await guard(row,false,undefined,{plan});},
+    start:async key=>{await guard(row,true,undefined,{key});},finish:(key,outcome)=>captureNoticeReceipt(row,key,outcome)};
   if(row.kind==='owner_notice') {
     const {notifyNewOrder}=await import('../_core/emailNotifications');
     const items=JSON.parse(current.items);if(!Array.isArray(items))throw Error('Invalid order items');
     return notifyNewOrder({merchantName:current.merchantName||current.businessName,businessName:current.businessName,
       orderNumber:current.orderNumber,customerName:current.customerName,customerPhone:current.customerPhone,
-      totalAmount:current.totalAmount/100,itemsCount:items.length,orderDate:new Date(current.createdAt)},beforeSend);
+      totalAmount:current.totalAmount/100,itemsCount:items.length,orderDate:new Date(current.createdAt)},beforeSend,evidence);
   }
   if(row.kind==='merchant_notice') {
     const {notifyNewOrder}=await import('../_core/notificationService');
-    return notifyNewOrder(row.merchant_id,current.id,current.totalAmount,beforeSend);
+    return notifyNewOrder(row.merchant_id,current.id,current.totalAmount,beforeSend,evidence);
   }
   const {syncOrderToSheets}=await import('../sheetsSync');
   return (await syncOrderToSheets(current.id,{merchantId:row.merchant_id,beforeSend:async()=>{await guard(row);},
@@ -217,7 +248,7 @@ async function dispatch(row:Effect) {
 }
 export async function runSallaCreationEffectsBatch(limit=20,merchantId?:number):Promise<number> {
   z.number().int().min(1).max(25).parse(limit);if(merchantId!==undefined)idSchema.parse(merchantId);
-  await assertSallaCreationEffectsSchema();await settleSheetReceipts(merchantId);await recover(merchantId);
+  await assertSallaCreationEffectsSchema();await settleSheetReceipts(merchantId);await settleNoticeReceipts(merchantId);await recover(merchantId);
   let handled=0;
   for(;handled<limit;handled++) {
     const row=await claim(merchantId);if(!row)break;
