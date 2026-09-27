@@ -128,7 +128,7 @@ describe.skipIf(!process.env.DATABASE_URL)('pinned compatibility text transport'
       if(kind==='token')await q("UPDATE whatsapp_instances SET token='rotated' WHERE id=?",[instance]);
       if(kind==='ownership')await q('UPDATE conversations SET handoff_version=handoff_version+1 WHERE id=?',[conv]);return loaded;
     });
-    expect(await send()).toMatchObject({success:false,status:'pending'});expect(provider).not.toHaveBeenCalled();
+    expect(await send()).toMatchObject({success:false,status:kind==='actor'?'pending':'suppressed'});expect(provider).not.toHaveBeenCalled();
     expect((await q('SELECT status,error_code FROM whatsapp_message_deliveries WHERE merchant_id=?',[f.merchantId]))[0]).toMatchObject({status:'failed',error_code:'staff_compatibility_suppressed'});
   });
   it.each(['reserved','accepted'])('retention preserves unresolved evidence and redacts %s only when complete',async status=>{

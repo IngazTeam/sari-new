@@ -1,0 +1,52 @@
+{
+  "verifiedAt": "2026-09-27T03:33:10.732Z",
+  "scope": "Synthetic fresh head, prior voice upgrade, 0132-to-0133 review upgrade, unrecorded DDL replay and retained audit; no production.",
+  "migrationSha256": "578dc2dfe8382858383db17a5694dcda252b95f426b64e0c90e1b5bbc1600229",
+  "cases": [
+    {
+      "mode": "fresh",
+      "migrations": 134,
+      "empty": true,
+      "passed": true
+    },
+    {
+      "mode": "upgrade",
+      "migrations": 134,
+      "preservedTables": [
+        "sales_escalation_relays",
+        "sari_escalation_queue",
+        "messages",
+        "whatsapp_message_deliveries",
+        "ai_budget_policies",
+        "ai_sales_staff_acceptances",
+        "ai_sales_staff_replies"
+      ],
+      "initiallyEmpty": true,
+      "duplicateRequestRejected": true,
+      "unsupportedSourceRejected": true,
+      "sourceDeletionPreservesEvidence": true,
+      "rerunUnchanged": true,
+      "globalDailyMicroUsd": "100000000",
+      "passed": true
+    },
+    {
+      "mode": "0132-to-0133-review-upgrade",
+      "migrations": 134,
+      "preservedTables": [
+        "messages",
+        "conversations",
+        "ai_sales_staff_replies",
+        "ai_sales_staff_voices",
+        "ai_sales_staff_acceptances",
+        "whatsapp_message_deliveries",
+        "ai_budget_policies"
+      ],
+      "duplicateRequestRejected": true,
+      "sourceDeletionPreservesAudit": true,
+      "rerunUnchanged": true,
+      "globalDailyMicroUsd": "100000000",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

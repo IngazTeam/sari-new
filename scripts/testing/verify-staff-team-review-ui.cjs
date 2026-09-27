@@ -30,6 +30,16 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
     passed('responsive_reason_and_audit',lang,{width});
    }
    await page.setViewport({width:375,height:900});
+   for(const [index,diagnostic]of ['upload_unconfirmed','transport_unconfirmed','transport_pending','outcome_unknown','settlement_available','provider_failed','dispatch_suppressed','evidence_conflict'].entries()){
+    const width=[320,375,430,1440][index%4];await page.setViewport({width,height:900});await visit('diag-'+diagnostic,lang);await settled();
+    await page.waitForSelector(`[data-team-attempt] [data-attempt-diagnostic="${diagnostic}"]`);await inspect();
+    assert.equal(await page.$eval('[data-team-attempt] [data-attempt-diagnostic]',n=>n.textContent.length>55),true);
+    assert.equal(await page.$eval('[data-team-attempt]',n=>n.dataset.teamState),diagnostic==='provider_failed'?'failed':diagnostic==='dispatch_suppressed'?'suppressed':diagnostic==='evidence_conflict'?'unavailable':'pending');
+    await page.click('[data-team-refresh]');await settled();assert.equal(await page.evaluate(()=>window.__teamChecks.length),0);
+    if(diagnostic==='outcome_unknown'){await page.setViewport({width:375,height:900});await inspect();await page.screenshot({path:path.join(output,`team-diagnostic-${lang}-375.png`),fullPage:true});}
+    passed('diagnostic_'+diagnostic,lang,{width});
+   }
+   await page.setViewport({width:375,height:900});
    for(const mode of ['pending','unavailable','failed','suppressed','projection','error','bad-result']){
     await visit(mode,lang);await settled();await check();await inspect();assert.equal(await page.evaluate(()=>window.__teamChecks.length),1);
     if(['error','bad-result'].includes(mode)){assert.equal(await page.$eval('[data-team-check]',n=>n.disabled),true);await page.click('[data-team-refresh]');await settled();await page.waitForFunction(()=>document.querySelector('[data-team-check]')?.disabled===false);await page.click('[data-team-check]');await page.waitForFunction(()=>window.__teamChecks.length===2);

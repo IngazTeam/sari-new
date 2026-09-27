@@ -12,7 +12,10 @@ import ar from '../../../client/src/locales/ar.json';
 import en from '../../../client/src/locales/en.json';
 import merchantUxAr from '../../../client/src/locales/merchant-ux.ar';
 import merchantUxEn from '../../../client/src/locales/merchant-ux.en';
+import {staffAttemptDiagnostic,staffDiagnosticState} from '../../../shared/staff-attempt-review';
 const w=window as any,params=new URLSearchParams(location.search),mode=params.get('case')||'accepted';w.__staffWrites=[];w.__staffQueries=[];
+const diagnostic=staffAttemptDiagnostic.safeParse(mode.replace(/^diag-/,''));
+const diagnosis=diagnostic.success?{state:staffDiagnosticState[diagnostic.data],diagnostic:diagnostic.data}:{};
 const voiceFixture=params.get('voice')==='1';
 const teamFixture=params.get('team')==='1';w.__teamQueries=[];w.__teamChecks=[];w.__teamStates={};w.__teamAudits=[];w.__teamResponses={};
 const reviewFixture=params.get('review')==='1';w.__attemptChecks=[];w.__attemptQueries=[];w.__attemptStates={};
@@ -55,7 +58,7 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
       if(mode==='list-error'||w.__teamDenied){observer.error(new TRPCClientError('private team permission'));return;}
       const key=(id:number)=>input.kind+':'+id;
       if(op.path==='conversations.listTeamStaffAttempts'){
-        const item=(id:number)=>({attempt:{id,createdAt:'2026-09-27T00:01:00.000Z',state:'pending',persisted:null,...w.__teamStates[key(id)]},conversationId:4,authorUserId:8});
+        const item=(id:number)=>({attempt:{id,createdAt:'2026-09-27T00:01:00.000Z',state:'pending',persisted:null,...diagnosis,...w.__teamStates[key(id)]},conversationId:4,authorUserId:8});
         data=mode==='empty'||input.conversationId&&input.conversationId!==4||input.authorUserId&&input.authorUserId!==8?{items:[],nextCursor:null}:mode==='pages'
           ?{items:Array.from({length:input.beforeId?3:20},(_,n)=>item((input.beforeId||101)-1-n)),nextCursor:input.beforeId?null:81}
           :{items:[item(30)],nextCursor:null};
@@ -66,7 +69,7 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
 
       const input=op.input as any;w.__attemptQueries.push(structuredClone(input));
       if(mode==='list-error'||w.__reviewDenied){observer.error(new TRPCClientError('private attempt permission detail'));return;}
-      const item=(id:number,state='pending',persisted:boolean|null=null)=>({id,createdAt:'2026-09-27T00:01:00.000Z',state,persisted,...w.__attemptStates[`${input.conversationId}:${input.kind}:${id}`]});
+      const item=(id:number,state='pending',persisted:boolean|null=null)=>({id,createdAt:'2026-09-27T00:01:00.000Z',state,persisted,...(id===30?diagnosis:{}),...w.__attemptStates[`${input.conversationId}:${input.kind}:${id}`]});
       data=mode==='empty'||input.conversationId===5?{items:[],nextCursor:null}:mode==='pages'
         ?{items:Array.from({length:20},(_,n)=>item((input.beforeId||101)-1-n)),nextCursor:input.beforeId?null:81}
         :{items:[item(30),item(29,'accepted',true),item(28,'unavailable')],nextCursor:null};
@@ -86,7 +89,8 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
       if(!prior&&result!=='bad-result'){
         w.__teamResponses[input.requestId]=data;
         w.__teamAudits.unshift({id:data.reviewId,kind:input.kind,sourceId:input.sourceId,conversationId:input.conversationId,authorUserId:input.authorUserId,reviewerUserId:7,reason:input.reason,createdAt:'2026-09-27T00:02:00.000Z',result:data.result});
-        if(data.result.success)w.__teamStates[input.kind+':'+input.sourceId]={state:'accepted',persisted:data.result.persisted};
+        if(data.result.success)w.__teamStates[input.kind+':'+input.sourceId]={state:'accepted',persisted:data.result.persisted,diagnostic:undefined};
+        else if(['failed','suppressed'].includes(data.result.status))w.__teamStates[input.kind+':'+input.sourceId]={state:data.result.status,persisted:null,diagnostic:data.result.status==='failed'?'provider_failed':'dispatch_suppressed'};
       }
       const timer=setTimeout(()=>{if(mode==='lost-ack'&&!prior)observer.error(new TRPCClientError('private lost ack'));else{observer.next({result:{data}});observer.complete();}},w.__teamDelay||200);return()=>clearTimeout(timer);
     }
@@ -97,7 +101,8 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
       const result=w.__reviewResult||mode;
       data=result==='bad-result'?{success:true,status:'pending',persisted:true}:['accepted','projection'].includes(result)
         ?{success:true,status:'accepted',persisted:result==='accepted'}:{success:false,status:result==='failed'?'failed':result==='suppressed'?'suppressed':'pending',persisted:false};
-      if(data.success&&data.status==='accepted')w.__attemptStates[`${input.conversationId}:${input.kind}:${input.sourceId}`]={state:'accepted',persisted:data.persisted};
+      if(data.success&&data.status==='accepted')w.__attemptStates[`${input.conversationId}:${input.kind}:${input.sourceId}`]={state:'accepted',persisted:data.persisted,diagnostic:undefined};
+      else if(['failed','suppressed'].includes(data.status))w.__attemptStates[`${input.conversationId}:${input.kind}:${input.sourceId}`]={state:data.status,persisted:null,diagnostic:data.status==='failed'?'provider_failed':'dispatch_suppressed'};
       const timer=setTimeout(()=>{observer.next({result:{data}});observer.complete();},w.__attemptCheckDelay||200);return()=>clearTimeout(timer);
     }
     if(op.path!=='conversations.sendReply'&&!(voiceFixture&&op.path==='conversations.sendVoiceReply')){observer.error(new TRPCClientError('Unexpected fixture write'));return;}

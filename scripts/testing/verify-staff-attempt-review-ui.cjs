@@ -37,6 +37,17 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
         passed('voice_check_survives_reload_without_original_recording',lang,{width});
       }
       await page.setViewport({width:375,height:900});
+      for(const [index,diagnostic]of ['upload_unconfirmed','transport_unconfirmed','transport_pending','outcome_unknown','settlement_available','provider_failed','dispatch_suppressed','evidence_conflict'].entries()){
+        const width=[320,375,430,1440][index%4];await page.setViewport({width,height:900});await visit('diag-'+diagnostic,lang);await settled();
+        await page.waitForSelector(`[data-staff-attempt="30"] [data-attempt-diagnostic="${diagnostic}"]`);await inspect();
+        assert.equal(await page.$eval('[data-staff-attempt="30"] [data-attempt-diagnostic]',n=>n.textContent.length>55),true);
+        assert.equal(await page.$eval('[data-staff-attempt="30"]',n=>n.dataset.attemptState),diagnostic==='provider_failed'?'failed':diagnostic==='dispatch_suppressed'?'suppressed':diagnostic==='evidence_conflict'?'unavailable':'pending');
+        await page.click('[data-attempt-refresh]');await settled();assert.equal(await page.evaluate(()=>window.__attemptChecks.length),0);
+        if(diagnostic==='evidence_conflict')assert.equal(await page.$('[data-staff-attempt="30"] [data-attempt-check]'),null);
+        if(diagnostic==='outcome_unknown'){await page.setViewport({width:375,height:900});await inspect();await page.screenshot({path:path.join(output,`attempt-diagnostic-${lang}-375.png`),fullPage:true});}
+        passed('diagnostic_'+diagnostic,lang,{width});
+      }
+      await page.setViewport({width:375,height:900});
       for(const mode of ['accepted','projection','failed','suppressed','error','bad-result']){
         await visit(mode,lang);await settled();await check();await inspect();assert.equal(await page.evaluate(()=>window.__attemptChecks.length),1);
         if(['accepted','projection'].includes(mode))await page.waitForSelector('[data-staff-attempt="30"][data-attempt-state="accepted"]');

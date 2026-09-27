@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { StaffAttemptGuidance } from './StaffAttemptGuidance';
 import { staffAttemptPage, staffAttemptItem, staffAttemptCheckResult } from '@shared/staff-attempt-review';
 
 function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }: {
@@ -14,14 +15,14 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
   const [notice, setNotice] = useState('');
   const [blocked, setBlocked] = useState(false);
   useEffect(() => setBlocked(false), [revision]);
-  const states = { pending: t('merchantUx.staffAttempts.pending'), accepted: t('merchantUx.staffAttempts.accepted'), unavailable: t('merchantUx.staffAttempts.unavailable') };
+  const states = { pending: t('merchantUx.staffAttempts.pending'), accepted: t('merchantUx.staffAttempts.accepted'), unavailable: t('merchantUx.staffAttempts.unavailable'), failed:t('merchantUx.staffAttempts.failed'), suppressed:t('merchantUx.staffAttempts.suppressed') };
   const check = async () => {
-    if (busy.current || blocked || refreshing || item.state !== 'pending') return;
+    if (busy.current || blocked || refreshing || !['pending','failed','suppressed'].includes(item.state)) return;
     busy.current = true; setNotice('');
     try {
       const result = staffAttemptCheckResult.parse(await mutation.mutateAsync({ conversationId, kind, sourceId: item.id }));
       setNotice(result.success ? result.persisted ? t('merchantUx.staffAttempts.checked') : t('merchantUx.staffAttempts.unprojected')
-        : result.status === 'pending' ? t('merchantUx.staffAttempts.unresolved') : t('merchantUx.staffAttempts.notAccepted'));
+        : result.status === 'pending' ? t('merchantUx.staffAttempts.unresolved') : result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed'));
       onChecked();
     } catch { setBlocked(true); setNotice(t('merchantUx.staffAttempts.checkFailed')); }
     finally { busy.current = false; }
@@ -30,8 +31,9 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
     <h4 className="font-semibold">{t('merchantUx.staffAttempts.attempt', { id: item.id })}</h4>
     <time dateTime={item.createdAt} className="text-muted-foreground">{new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.createdAt))}</time>
     <p>{states[item.state]}</p>
+    <StaffAttemptGuidance diagnostic={item.diagnostic}/>
     {item.state === 'accepted' && !item.persisted && <p>{t('merchantUx.staffAttempts.unprojected')}</p>}
-    {item.state === 'pending' && <Button data-attempt-check className="h-auto min-h-11 w-full whitespace-normal" disabled={blocked || refreshing || mutation.isPending} onClick={() => void check()}>
+    {['pending','failed','suppressed'].includes(item.state) && <Button data-attempt-check className="h-auto min-h-11 w-full whitespace-normal" disabled={blocked || refreshing || mutation.isPending} onClick={() => void check()}>
       {mutation.isPending ? t('merchantUx.staffAttempts.checking') : t('merchantUx.staffAttempts.check')}</Button>}
     {notice && <p role="status" data-attempt-notice>{notice}</p>}
   </article>;

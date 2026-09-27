@@ -3,6 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
 import {trpc} from '@/lib/trpc';
 import {Button} from '@/components/ui/button';
+import {StaffAttemptGuidance} from './StaffAttemptGuidance';
 import {staffTeamCheckResult,staffTeamListInput,staffTeamPage,staffTeamAuditPage,staffTeamReviewReason,type staffTeamItem} from '@shared/staff-team-review';
 
 type Kind='text'|'voice';type Reason=z.infer<typeof staffTeamReviewReason>;
@@ -19,7 +20,7 @@ function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typ
    request.current??={requestId:crypto.randomUUID(),reason};
    const response=staffTeamCheckResult.parse(await mutation.mutateAsync({kind,sourceId:a.id,conversationId:item.conversationId,authorUserId:item.authorUserId,...request.current}));
    const outcome=response.result.success?(response.result.persisted?t('merchantUx.staffAttempts.accepted'):t('merchantUx.staffAttempts.unprojected'))
-    :response.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):response.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):t('merchantUx.staffAttempts.notAccepted');
+    :response.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):response.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):response.result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed');
    setNotice(`${t('merchantUx.teamAttempts.saved',{id:response.reviewId})} ${outcome}`);request.current=undefined;onChecked();
   }catch{setBlocked(true);setNotice(t('merchantUx.teamAttempts.failed'));}
   finally{busy.current=false;}
@@ -28,7 +29,8 @@ function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typ
   <h4 className="font-semibold">{t('merchantUx.staffAttempts.attempt',{id:a.id})}</h4>
   <p>{t('merchantUx.teamAttempts.identity',{conversation:item.conversationId,author:item.authorUserId})}</p>
   <time dateTime={a.createdAt}>{new Intl.DateTimeFormat(i18n.language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(a.createdAt))}</time>
-  <p>{a.state==='accepted'?t('merchantUx.staffAttempts.accepted'):a.state==='unavailable'?t('merchantUx.staffAttempts.unavailable'):t('merchantUx.staffAttempts.pending')}</p>
+  <p>{a.state==='accepted'?t('merchantUx.staffAttempts.accepted'):a.state==='unavailable'?t('merchantUx.staffAttempts.unavailable'):a.state==='failed'?t('merchantUx.staffAttempts.failed'):a.state==='suppressed'?t('merchantUx.staffAttempts.suppressed'):t('merchantUx.staffAttempts.pending')}</p>
+  <StaffAttemptGuidance diagnostic={a.diagnostic}/>
   {a.state==='accepted'&&!a.persisted&&<p>{t('merchantUx.staffAttempts.unprojected')}</p>}
   {a.state!=='accepted'&&<>
    <label className="block">{t('merchantUx.teamAttempts.reason')}
@@ -80,7 +82,7 @@ function TeamBrowser(){
      <h4>{t('merchantUx.teamAttempts.review',{id:v.id})} · {t('merchantUx.staffAttempts.attempt',{id:v.sourceId})}</h4>
      <p>{t('merchantUx.teamAttempts.identity',{conversation:v.conversationId,author:v.authorUserId})}</p><p>{t('merchantUx.teamAttempts.reviewer',{reviewer:v.reviewerUserId})}</p>
      <time dateTime={v.createdAt}>{new Intl.DateTimeFormat(i18n.language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(v.createdAt))}</time><p>{reasons[v.reason]}</p>
-     <p>{v.result.success?t('merchantUx.staffAttempts.accepted'):v.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):v.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):t('merchantUx.staffAttempts.notAccepted')}</p>
+     <p>{v.result.success?t('merchantUx.staffAttempts.accepted'):v.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):v.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):v.result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed')}</p>
      {v.result.success&&!v.result.persisted&&<p>{t('merchantUx.staffAttempts.unprojected')}</p>}
     </article>):<p>{t('merchantUx.teamAttempts.empty')}</p>:page.success&&(page.data.items.length?page.data.items.map(item=><TeamAttempt key={item.attempt.id} item={item} kind={kind} refreshing={query.isFetching} revision={query.dataUpdatedAt} onChecked={()=>checked(item.conversationId)}/>):<p>{t('merchantUx.teamAttempts.empty')}</p>)}
    </div>}

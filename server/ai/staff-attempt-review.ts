@@ -1,6 +1,7 @@
 import type {PoolConnection} from 'mysql2/promise';
 import { z } from 'zod';
-import { staffAttemptListInput, staffAttemptCheckInput, staffAttemptPage } from '../../shared/staff-attempt-review';
+import { staffAttemptListInput, staffAttemptCheckInput, staffAttemptPage, staffAttemptItem } from '../../shared/staff-attempt-review';
+import { diagnoseUnsettledStaffAttempt } from './staff-attempt-diagnostics';
 import { checkoutTransaction } from './checkout-agreements';
 import { databaseTimeEpoch } from '../db/time';
 import { authorizeDashboardStaff, assertDashboardStaffSchema, reconcileDashboardStaff } from './staff-dashboard-reply';
@@ -65,7 +66,7 @@ export async function checkStaffAttempt(merchant: number, actor: number, raw: z.
 
 /** Shared strict metadata inspection; callers must authorize and tenant-scope the row first. */
 export async function inspectStaffAttemptItem(c:PoolConnection,kind:'text'|'voice',row:any,merchant:number,actor:number,conversationId:number){
-  const item = { id: Number(row.id), createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(), state: 'pending' as 'pending' | 'accepted' | 'unavailable', persisted: null as boolean | null };
+  const item:z.infer<typeof staffAttemptItem> = { id: Number(row.id), createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(), state: 'pending', persisted: null };
   try {
     const inspected = identity(kind, row, merchant, actor, conversationId);
     if (inspected.compatibility) {
@@ -81,6 +82,7 @@ export async function inspectStaffAttemptItem(c:PoolConnection,kind:'text'|'voic
         || row.projected_message_id != null && !id.safeParse(Number(row.projected_message_id)).success) return unavailable();
       item.state = 'accepted'; item.persisted = row.projected_message_id != null;
     }
-  } catch { item.state = 'unavailable'; item.persisted = null; }
+    if(item.state==='pending')Object.assign(item,await diagnoseUnsettledStaffAttempt(c,kind,row));
+  } catch { item.state = 'unavailable'; item.persisted = null; item.diagnostic='evidence_conflict'; }
   return item;
 }

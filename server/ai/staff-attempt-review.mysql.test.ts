@@ -115,8 +115,65 @@ describe.each(['text', 'voice'] as const)('%s history and SQL-only checks', kind
       });
       it('never guesses acceptance for a failed provider result', async () => {
         mocks.send.mockResolvedValue({ accepted: false, status: 'failed', outcome: 'rejected', errorCode: 'http_400' }); await send();
-        expect((await list()).items[0].state).toBe('pending'); expect(await check()).toMatchObject({ success: false }); once();
+        expect((await list()).items[0]).toMatchObject(channel==='legacy'?{state:'pending',diagnostic:'transport_unconfirmed'}:{state:'failed',diagnostic:'provider_failed'});
+        expect(await check()).toMatchObject({ success: false, status:channel==='legacy'?'pending':'failed' }); once();
       });
+      it('explains a lost provider acknowledgement without claiming rejection or changing SQL evidence',async()=>{
+        mocks.send.mockRejectedValue(Error('private provider failure'));await send();const before=await row();
+        expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:channel==='legacy'?'transport_unconfirmed':'outcome_unknown',persisted:null});
+        expect(await row()).toEqual(before);expect(await check()).toMatchObject({success:false,status:'pending'});once();
+      });
+      it('identifies recoverable acceptance without settling during a read',async()=>{
+        await unresolved();const before=await row();expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'settlement_available'});
+        expect(await row()).toEqual(before);expect(await q('SELECT * FROM messages WHERE conversationId=?',[conv])).toEqual([]);once();
+      });
+      if(kind==='voice')it('separates an unconfirmed upload from delivery and never repeats it',async()=>{
+        mocks.upload.mockRejectedValue(Error('unknown upload result'));await send();
+        expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'upload_unconfirmed'});expect(await check()).toMatchObject({success:false,status:'pending'});
+        expect(mocks.upload).toHaveBeenCalledOnce();expect(mocks.send).not.toHaveBeenCalled();
+      });
+      if(channel!=='legacy'){
+        const delivery=()=>q('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?',[f.merchantId]);
+        const rejected=async()=>{mocks.send.mockResolvedValue({accepted:false,status:'failed',outcome:'rejected',errorCode:'http_400'});await send();};
+        it('exposes validated suppression consistently in history and SQL checks',async()=>{
+          await rejected();const code=channel==='group'?(kind==='text'?'staff_compatibility_suppressed':'staff_compat_voice_suppressed'):(kind==='text'?'staff_reply_suppressed':'staff_voice_suppressed');
+          await q('UPDATE whatsapp_message_deliveries SET error_code=? WHERE merchant_id=?',[code,f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'suppressed',diagnostic:'dispatch_suppressed',persisted:null});
+          expect(await check()).toEqual({success:false,status:'suppressed',persisted:false});once();
+        });
+        it.each(['receipt','provider_unreachable','http_408','http_503'])('keeps ambiguous failed %s evidence unresolved',async ambiguity=>{
+          await rejected();await q('UPDATE whatsapp_message_deliveries SET provider_message_id=?,error_code=? WHERE merchant_id=?',
+            [ambiguity==='receipt'?'possible-acceptance':null,ambiguity==='receipt'?'http_400':ambiguity,f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'outcome_unknown'});
+          expect(await check()).toEqual({success:false,status:'pending',persisted:false});expect(await q('SELECT * FROM messages WHERE conversationId=?',[conv])).toEqual([]);once();
+        });
+        it('distinguishes queued transport from a missing transport record',async()=>{
+          await rejected();await q("UPDATE whatsapp_message_deliveries SET status='queued',error_code=NULL WHERE merchant_id=?",[f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'transport_pending'});
+          await q('DELETE FROM whatsapp_message_deliveries WHERE merchant_id=?',[f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'transport_unconfirmed'});once();
+        });
+        it.each(['request','account','direction','purged'])('does not trust failed %s evidence from a different request',async change=>{
+          await rejected();
+          if(change==='account'){
+            const other=Number((await q("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,status,is_primary) VALUES (?,'710000002','fixture','active',0)",[f.merchantId])).insertId);
+            await q('UPDATE whatsapp_message_deliveries SET instance_id=? WHERE merchant_id=?',[other,f.merchantId]);
+          }else await q(`UPDATE whatsapp_message_deliveries SET ${change==='request'?"request_json=JSON_OBJECT('private','forged')":change==='direction'?"direction='incoming'":'request_json=NULL'} WHERE merchant_id=?`,[f.merchantId]);
+          const before=await delivery();expect((await list()).items[0]).toMatchObject({state:'unavailable',diagnostic:'evidence_conflict'});
+          await expect(check()).rejects.toThrow();expect(await delivery()).toEqual(before);once();
+        });
+        it('allows SQL recovery after later verified acceptance without retrying transport',async()=>{
+          await rejected();expect((await list()).items[0].state).toBe('failed');
+          await q("UPDATE whatsapp_message_deliveries SET status='sent',error_code=NULL,provider_message_id='late-confirmed-receipt' WHERE merchant_id=?",[f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'settlement_available'});
+          expect(await check()).toEqual({success:true,status:'accepted',persisted:true});expect((await list()).items[0].state).toBe('accepted');once();
+        });
+        it('does not turn a contradictory success status with an error into acceptance',async()=>{
+          await rejected();await q("UPDATE whatsapp_message_deliveries SET status='sent',provider_message_id='uncertain-receipt',error_code='provider_unreachable' WHERE merchant_id=?",[f.merchantId]);
+          expect((await list()).items[0]).toMatchObject({state:'pending',diagnostic:'outcome_unknown'});
+          expect(await check()).toEqual({success:false,status:'pending',persisted:false});expect(await q('SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=?',[f.merchantId])).toEqual([]);once();
+        });
+      }
       if (channel === 'registered') it('does not display an accepted database flag without a valid acceptance fact', async () => {
         await send(); await q('DELETE FROM ai_sales_staff_acceptances WHERE merchant_id=?', [f.merchantId]);
         expect((await list()).items[0]).toMatchObject({ state: 'unavailable', persisted: null }); await expect(check()).rejects.toThrow(); once();

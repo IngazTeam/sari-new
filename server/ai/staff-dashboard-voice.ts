@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { PoolConnection } from 'mysql2/promise';
 import { z } from 'zod';
+import { unresolvedStaffDelivery } from './staff-delivery-outcome';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { databaseTimeEpoch } from '../db/time';
 import { decryptSecret } from '../security/secrets';
@@ -108,7 +109,7 @@ export async function reconcileDashboardVoiceInTransaction(c:PoolConnection,merc
         ||d.idempotency_key!==staffVoiceKey(merchant,voiceId)||staffReceiptDigest(merchant,i.instanceRecordId,i.provider,d.provider_message_id)!==s.providerMessageDigest)return unavailable();
     }else if(d){const proof=staffVoiceTransport(b,{...d,provider_message_id:d.provider_message_id||'pending-receipt'});
       if(s&&(proof.outboxId!==s.outboxId||proof.requestDigest!==s.requestDigest||proof.providerMessageDigest!==s.providerMessageDigest))return unavailable();
-      if(!s&&['sent','delivered','read'].includes(d.status)&&d.provider_message_id){
+      if(!s&&['sent','delivered','read'].includes(d.status)&&d.provider_message_id&&d.error_code==null){
         const observed=await clock(c);s=staffVoiceAcceptance.parse({version:'sales-staff-voice-acceptance.v1',basis:b,basisDigest:hash(b),...proof,acceptanceObservedAt:observed,
           observationTiming:observed<i.reservedAt?'clock_regression':'ordered',timeBasis:'local_receipt_verification',scope:'provider_acceptance_only'});
         await c.execute(`INSERT INTO ai_sales_staff_acceptances (merchant_id,source_kind,source_id,customer_key,outbox_id,provider_message_digest,acceptance_digest,snapshot,acceptance_observed_at)
@@ -116,7 +117,7 @@ export async function reconcileDashboardVoiceInTransaction(c:PoolConnection,merc
       }
     }
     if(!s){await c.execute('UPDATE ai_sales_staff_voices SET next_reconcile_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)) WHERE id=?',[voiceId]);
-      return {success:false,status:d?.status==='failed'?(d.error_code==='staff_voice_suppressed'?'suppressed':'failed'):'pending',persisted:false};}
+      return {success:false,status:unresolvedStaffDelivery(d,'staff_voice_suppressed').status,persisted:false};}
     const receipt=d?.provider_message_id||r.provider_message_id;
     if(s.providerMessageDigest!==staffReceiptDigest(merchant,i.instanceRecordId,i.provider,receipt))return unavailable();let projected=r.projected_message_id;
     if(!projected){const [convs]=await c.execute<any[]>('SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[i.conversationId,merchant]);

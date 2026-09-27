@@ -1,5 +1,6 @@
 import type { PoolConnection } from 'mysql2/promise';
 import { z } from 'zod';
+import { unresolvedStaffDelivery } from './staff-delivery-outcome';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { databaseTimeEpoch } from '../db/time';
 import { decryptSecret } from '../security/secrets';
@@ -133,7 +134,7 @@ export async function reconcileDashboardStaffInTransaction(c:PoolConnection,merc
     const [facts]=await c.execute<any[]>("SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? AND source_kind='dashboard_text' AND source_id=?",[merchant,replyId]);
     const [deliveries]=await c.execute<any[]>('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key=? FOR UPDATE',[merchant,staffDashboardKey(merchant,replyId)]);
     const d=deliveries[0];let s=facts.length?readDashboardStaffAcceptance(facts[0]):null;
-    if(facts.length>1||s&&s.basisDigest!==hash(b))return unavailable();
+    if(facts.length>1||deliveries.length>1||s&&s.basisDigest!==hash(b))return unavailable();
     if(!s&&r.status==='accepted')return unavailable();
     if(d&&s&&d.request_json==null){
       if(Number(d.id)!==s.outboxId||Number(d.merchant_id)!==merchant||Number(d.instance_id)!==b.instanceRecordId||d.direction!=='outgoing'
@@ -143,7 +144,7 @@ export async function reconcileDashboardStaffInTransaction(c:PoolConnection,merc
       // Validate all request bindings even when an outbox has no accepted receipt yet.
       const proof=dashboardStaffTransport(b,{...d,provider_message_id:d.provider_message_id||'pending-receipt'});
       if(s&&(proof.outboxId!==s.outboxId||proof.requestDigest!==s.requestDigest||proof.providerMessageDigest!==s.providerMessageDigest))return unavailable();
-      if(!s&&['sent','delivered','read'].includes(d.status)&&d.provider_message_id){
+      if(!s&&['sent','delivered','read'].includes(d.status)&&d.provider_message_id&&d.error_code==null){
         const observed=await clock(c);s=dashboardStaffAcceptance.parse({version:'sales-staff-dashboard-acceptance.v1',basis:b,basisDigest:hash(b),...proof,
           acceptanceObservedAt:observed,observationTiming:observed<b.reservedAt?'clock_regression':'ordered',timeBasis:'local_receipt_verification',scope:'provider_acceptance_only'});
         await c.execute(`INSERT INTO ai_sales_staff_acceptances (merchant_id,source_kind,source_id,customer_key,outbox_id,provider_message_digest,acceptance_digest,snapshot,acceptance_observed_at)
@@ -151,7 +152,7 @@ export async function reconcileDashboardStaffInTransaction(c:PoolConnection,merc
       }
     }
     if(!s){
-      const status=d?.status==='failed'?(d.error_code==='staff_reply_suppressed'?'suppressed':'failed'):'pending';
+      const {status}=unresolvedStaffDelivery(d,'staff_reply_suppressed');
       await c.execute(`UPDATE ai_sales_staff_replies SET next_reconcile_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)) WHERE id=? AND merchant_id=?`,[replyId,merchant]);
       return {success:false,status,persisted:false};
     }

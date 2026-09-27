@@ -1,0 +1,339 @@
+{
+  "results": [
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_upload_unconfirmed",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_transport_unconfirmed",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_transport_pending",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_outcome_unknown",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_settlement_available",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_provider_failed",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_dispatch_suppressed",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_evidence_conflict",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "pending",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "suppressed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "bad-result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "list-error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "invalid",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "viewer",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "filters_and_invalid_input",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "double_click",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "revocation",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "lost_ack_visible_in_history",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_result_cannot_retarget",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_result_cannot_retarget_filter",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "keyboard",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_reason_and_audit",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_upload_unconfirmed",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_transport_unconfirmed",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_transport_pending",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_outcome_unknown",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_settlement_available",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_provider_failed",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_dispatch_suppressed",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "diagnostic_evidence_conflict",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "pending",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "suppressed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "bad-result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "list-error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "invalid",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "viewer",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "filters_and_invalid_input",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "double_click",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "revocation",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "lost_ack_visible_in_history",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_result_cannot_retarget",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_result_cannot_retarget_filter",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "keyboard",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

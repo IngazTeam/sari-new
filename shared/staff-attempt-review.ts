@@ -9,12 +9,19 @@ export const staffAttemptCheckInput = z.object({
   conversationId: id, kind: staffAttemptKind, sourceId: id,
 }).strict();
 export const staffAttemptReviewAuthority = z.object({ actorUserId: id, conversationId: id }).strict();
+export const staffAttemptDiagnostic = z.enum(['upload_unconfirmed', 'transport_unconfirmed', 'transport_pending', 'outcome_unknown', 'settlement_available', 'provider_failed', 'dispatch_suppressed', 'evidence_conflict']);
+export const staffDiagnosticState = {
+  upload_unconfirmed: 'pending', transport_unconfirmed: 'pending', transport_pending: 'pending', outcome_unknown: 'pending', settlement_available: 'pending',
+  provider_failed: 'failed', dispatch_suppressed: 'suppressed', evidence_conflict: 'unavailable',
+} as const;
 export const staffAttemptItem = z.object({
   id, createdAt: z.string().datetime({ precision: 3 }),
-  state: z.enum(['pending', 'accepted', 'unavailable']),
+  state: z.enum(['pending', 'accepted', 'failed', 'suppressed', 'unavailable']),
   persisted: z.boolean().nullable(),
+  // Optional during rollout; current unresolved SQL reads always supply it.
+  diagnostic: staffAttemptDiagnostic.optional(),
 }).strict().superRefine((item, ctx) => {
-  if ((item.state === 'accepted') !== (item.persisted !== null))
+  if ((item.state === 'accepted') !== (item.persisted !== null) || item.diagnostic && staffDiagnosticState[item.diagnostic] !== item.state)
     ctx.addIssue({ code: 'custom', message: 'Invalid attempt result' });
 });
 export const staffAttemptPage = z.object({

@@ -1,5 +1,6 @@
 import type {PoolConnection} from 'mysql2/promise';
 import {z} from 'zod';
+import {unresolvedStaffDelivery} from './staff-delivery-outcome';
 import {checkoutTransaction} from './checkout-agreements';
 import {authorizeDashboardStaff} from './staff-dashboard-reply';
 import {databaseTimeEpoch} from '../db/time';
@@ -39,7 +40,8 @@ export async function reconcileStaffCompatibilityInTransaction(c:PoolConnection,
     if(authority.source==='registered'){
       const [deliveries]=await c.execute<any[]>('SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key=? FOR UPDATE',[merchant,compatibilityDeliveryKey(basis)]);
       if(!deliveries.length)return pending();if(deliveries.length!==1)return unavailable();
-      delivery=readCompatibilityDelivery(basis,deliveries[0],observedAt);if(!delivery)return pending();
+      delivery=readCompatibilityDelivery(basis,deliveries[0],observedAt);
+      if(!delivery)return {success:false,status:unresolvedStaffDelivery(deliveries[0],kind==='text'?'staff_compatibility_suppressed':'staff_compat_voice_suppressed').status,persisted:false};
     }else{
       // The readers above bind this saved proof to the original account, request and source.
       legacyReceipt=(pinnedText?.legacyDelivery??voice?.basis?.legacyDelivery)?.providerMessageId;

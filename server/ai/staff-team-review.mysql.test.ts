@@ -87,6 +87,16 @@ describe.each(['text','voice'] as const)('%s administrative review',kind=>{
     await q(`UPDATE ${table} SET ${corruption==='digest'?"basis_digest=REPEAT('a',64)":"basis=JSON_QUOTE('invalid snapshot')"} WHERE id=?`,[source]);const before=await row();
     expect((await review()).result).toEqual({success:false,status:'unavailable',persisted:false});expect(await row()).toEqual(before);expect(await messages()).toEqual([]);expect(await audits()).toHaveLength(1);once();
    });
+   if(channel!=='legacy')it.each(['failed','suppressed','ambiguous'])('audits %s accurately and preserves the original observation after late acceptance',async state=>{
+    const suppression=channel==='group'?(kind==='text'?'staff_compatibility_suppressed':'staff_compat_voice_suppressed'):(kind==='text'?'staff_reply_suppressed':'staff_voice_suppressed');
+    await q("UPDATE whatsapp_message_deliveries SET status='failed',provider_message_id=NULL,error_code=? WHERE merchant_id=?",[state==='suppressed'?suppression:state==='ambiguous'?'provider_unreachable':'http_400',f.merchantId]);
+    const status=state==='ambiguous'?'pending':state,diagnostic=state==='ambiguous'?'outcome_unknown':state==='suppressed'?'dispatch_suppressed':'provider_failed';
+    expect((await listTeamStaffAttempts(f.merchantId,f.userId,{kind})).items[0].attempt).toMatchObject({state:status,diagnostic});
+    const first=await review();expect(first.result).toEqual({success:false,status,persisted:false});expect((await listStaffTeamReviews(f.merchantId,f.userId,{kind})).items[0].result).toEqual(first.result);
+    await q("UPDATE whatsapp_message_deliveries SET status='sent',error_code=NULL,provider_message_id='late-team-receipt' WHERE merchant_id=?",[f.merchantId]);
+    expect(await review()).toEqual(first);reviewRequest=randomUUID();expect((await review()).result).toEqual({success:true,status:'accepted',persisted:true});
+    const history=await listStaffTeamReviews(f.merchantId,f.userId,{kind});expect(history.items).toHaveLength(2);expect(history.items[1].result).toEqual(first.result);once();
+   });
    it('isolates tenants and rejects mismatched author or conversation before auditing',async()=>{
     await expect(checkTeamStaffAttempt(author.merchantId,author.userId,input())).rejects.toThrow();
     for(const patch of [{authorUserId:f.userId},{conversationId:conv+100000}])await expect(checkTeamStaffAttempt(f.merchantId,f.userId,{...input(),...patch})).rejects.toThrow();
