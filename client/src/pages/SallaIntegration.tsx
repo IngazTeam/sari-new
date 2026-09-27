@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Store, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertCircle, Copy, CheckCheck, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SallaEffectReview } from '@/components/SallaEffectReview';
 
 import { useTranslation } from 'react-i18next';
 export default function SallaIntegration() {
@@ -132,6 +133,7 @@ export default function SallaIntegration() {
         <p className="text-muted-foreground mt-2">{t('sallaIntegration.auto_0')}</p>
       </div>
 
+      <SallaEffectReview />
       {/* Connection Status Card */}
       {connection?.connected ? (
         <Card>

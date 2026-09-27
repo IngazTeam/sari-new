@@ -833,6 +833,13 @@ export const sallaProductProjections = mysqlTable('salla_product_projections', {
     AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalProductId},'^[1-9][0-9]{0,19}$','c')`),
 ]);
 
+export const sallaEffectReviews = mysqlTable('salla_effect_reviews', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  reviewerUserId:int('reviewer_user_id').notNull(),effectId:int('effect_id').notNull(),orderId:int('order_id').notNull(),
+  requestId:char('request_id',{length:36}).notNull(),requestDigest:char('request_digest',{length:64}).notNull(),
+  snapshot:json().notNull(),snapshotDigest:char('snapshot_digest',{length:64}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},table=>[uniqueIndex('salla_effect_review_request').on(table.merchantId,table.requestId),index('salla_effect_review_history').on(table.merchantId,table.orderId,table.id)]);
+
 export const sallaCreationEffects = mysqlTable('salla_creation_effects', {
   id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   creationId:int('creation_id').notNull(),localOrderId:int('local_order_id').notNull(),

@@ -988,6 +988,13 @@
       "when": 1795392000002,
       "tag": "0140_salla_creation_effects",
       "breakpoints": true
+    },
+    {
+      "idx": 141,
+      "version": "5",
+      "when": 1795392000003,
+      "tag": "0141_salla_effect_reviews",
+      "breakpoints": true
     }
   ]
 }

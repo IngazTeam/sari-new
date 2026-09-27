@@ -15,6 +15,7 @@ import { reconcileBookingCheckoutSchema } from '../shared/booking-checkout-recon
 import { bookingPaymentLinkRenewalSchema } from '../shared/booking-payment-link-renewal';
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaOrderCreateSchema } from '../shared/salla-order-create';
+import { sallaEffectReviewProcedures } from './routers-salla-effect-review';
 import { runSallaOrderCreation, SallaCreationError } from './integrations/salla-order-creation';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
@@ -1994,6 +1995,7 @@ export const appRouter = router({
 
   // Salla Integration Router
   salla: router({
+    ...sallaEffectReviewProcedures,
     // Get connection status
     getConnection: protectedProcedure
       .query(async ({ ctx }) => {

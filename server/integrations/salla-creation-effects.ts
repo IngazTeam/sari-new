@@ -50,6 +50,16 @@ function digest(c:Context) {
   return createHash('sha256').update(JSON.stringify([c.merchantId,c.ownerId,c.connectionId,c.storeId,c.externalOrderId,
     c.accessToken,c.id,c.orderNumber,c.customerPhone,c.customerName,c.totalAmount,c.currency,c.items,c.createdAt])).digest('hex');
 }
+/** Read-only inspection. No claim, recovery, acceptance or external request. */
+export async function inspectSallaEffectContext(c:PoolConnection,row:{merchant_id:number;creation_id:number;local_order_id:number;context_hash:string}) {
+  try {
+    const current=await context(c,row.merchant_id,row.creation_id,true);
+    return current.id===row.local_order_id&&digest(current)===row.context_hash;
+  } catch(error) {
+    if(error instanceof Error&&error.message==='Creation context unavailable')return false;
+    throw error;
+  }
+}
 /** Called only inside the order+projection+creation-completion transaction. */
 export async function enqueueSallaCreationEffects(c:PoolConnection,merchantId:number,creationId:number,orderId:number) {
   const current=await context(c,merchantId,creationId,true);

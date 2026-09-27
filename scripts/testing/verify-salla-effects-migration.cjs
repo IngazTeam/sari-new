@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 (async()=>{
   const root=process.cwd(),url=new URL(process.env.SARI_TEST_DATABASE_URL||'');
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use the owned synthetic migration server');
-  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.equal(journal.entries.at(-1).tag,'0140_salla_creation_effects');
+  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0140_salla_creation_effects','0141_salla_effect_reviews'].includes(journal.entries.at(-1).tag));
   const dir=path.resolve('.tmp/salla-effects-migration-'+Date.now()),output=path.resolve(process.env.SARI_SALLA_EFFECTS_MIGRATION_OUTPUT||'.tmp/salla-effects-migration/results.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
   const prior=journal.entries.filter(e=>e.idx<140);for(const e of prior)fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
@@ -15,7 +15,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
     const [[identity]]=await db.query('SELECT @@port AS port,@@datadir AS directory');assert.equal(Number(identity.port),33089);assert.equal(path.resolve(identity.directory).toLowerCase(),fs.realpathSync(path.resolve('.tmp/staff-migration-mysql/data')).toLowerCase());
     for(const mode of ['fresh','upgrade']){
       const name=`sari_effects_${mode}_${Date.now()}_test`;await db.query(`CREATE DATABASE ${name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);await db.query(`USE ${name}`);
-      if(mode==='fresh'){run(name);const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_creation_effects');assert.equal(n.n,141);assert.equal(a.n,0);cases.push({mode,migrations:n.n,emptyHistory:true,passed:true});continue;}
+      if(mode==='fresh'){run(name);const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_creation_effects');assert.equal(n.n,journal.entries.length);assert.equal(a.n,0);cases.push({mode,migrations:n.n,emptyHistory:true,passed:true});continue;}
       run(name,dir);
       const [u]=await db.query("INSERT INTO users(openId,name,role,account_status) VALUES ('synthetic-salla-effects','Synthetic','admin','active')");
       const [m]=await db.execute("INSERT INTO merchants(userId,businessName,status) VALUES (?,'Synthetic','active')",[u.insertId]);
@@ -38,7 +38,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
       await db.query("UPDATE salla_creation_effects SET state='review',lease_until=NULL,last_error='transport_unconfirmed'");
       const history=JSON.stringify((await db.query('SELECT * FROM salla_creation_effects'))[0]);run(name);await db.query(ddl);assert.equal(await snapshot(),before);assert.equal(JSON.stringify((await db.query('SELECT * FROM salla_creation_effects'))[0]),history);
       await db.execute('DELETE FROM orders WHERE id=?',[o.insertId]);await db.execute('DELETE FROM salla_order_creations WHERE id=?',[a.insertId]);assert.equal(JSON.stringify((await db.query('SELECT * FROM salla_creation_effects'))[0]),history);
-      const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations');assert.equal(n.n,141);
+      const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations');assert.equal(n.n,journal.entries.length);
       cases.push({mode:'0139-to-0140',migrations:n.n,preservedTables:tables,noLegacyNotificationBackfill:true,unrecordedDdlReplay:true,replaySafe:true,uniqueEffect:true,stateConstraints:violations.length,historySurvivesSourceDeletion:true,passed:true});
     }
     const report={generatedAt:new Date().toISOString(),scope:'Owned synthetic MySQL only; no production',cases,passed:true};fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

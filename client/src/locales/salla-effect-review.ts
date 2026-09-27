@@ -1,0 +1,26 @@
+export const sallaEffectReviewAr = {
+  title:'متابعة إشعارات طلبات سلة', scope:'تابع إشعار الإدارة وإشعار نشاطك ومزامنة Sheets لكل طلب. يسجل الفحص الحالة الحالية دون إعادة إرسال أو تغيير نتيجة الطلب.',
+  effects:'الإجراءات',history:'سجل الفحوص',order:'رقم الطلب المحلي',all:'الكل',state:'الحالة',kind:'الإجراء',apply:'تطبيق',invalidFilter:'أدخل رقم طلب صحيحًا موجبًا أو اترك الحقل فارغًا.',
+  owner:'إشعار إدارة المنصة',merchant:'إشعار نشاطك',sheets:'مزامنة Sheets',pending:'في الانتظار',processing:'قيد التحضير',dispatching:'بدأ الإرسال',accepted:'قبول مسجل',review:'يحتاج مراجعة',
+  queued:'بانتظار المعالجة الآلية.',preparing:'يحضر العامل الإجراء الآن.',preparationExpired:'انتهت مهلة التحضير؛ ينتظر استعادة العامل.',inFlight:'بدأ الإرسال؛ لم تُحسم نتيجته بعد.',
+  unknown:'قد يكون الإجراء نُفّذ. يلزم التحقق من القناة قبل أي إعادة إرسال.',acceptedHint:'سُجل قبول من الموصل. لا يثبت ذلك وصول الإشعار أو نجاح جميع المستلمين والقنوات.',beforeSend:'توقف قبل تسجيل بدء الإرسال. راجع الربط والتفضيلات وسجل الفحص.',
+  changed:'تغير سياق الطلب أو المالك أو الاتصال، أو لم يعد متاحًا. يظل سجل النتيجة السابقة محفوظًا.',reference:'الإجراء #{{id}} · الطلب #{{order}}',attempts:'محاولات التحضير: {{count}}',
+  updated:'آخر تحديث',observed:'وقت الفحص',reason:'سبب الفحص',chooseReason:'اختر سببًا',delivery:'التحقق من نتيجة الإرسال',incident:'مراجعة مشكلة تشغيلية',
+  check:'افحص الحالة وسجّلها',checking:'جارٍ الفحص…',saved:'حُفظ الفحص #{{id}}. لم يُرسل إجراء جديد.',saveFailed:'تعذر تأكيد الحفظ. حدّث النتائج قبل المحاولة مجددًا؛ سنستخدم رقم المحاولة نفسه.',
+  loading:'جارٍ تحميل السجل…',empty:'لا توجد إجراءات مطابقة.',emptyHistory:'لا توجد فحوص مسجلة لهذا النطاق.',failed:'تعذر عرض السجل. حدّث الصفحة وتأكد من صلاحية إدارة التكاملات.',invalid:'تعذر التحقق من بيانات السجل.',
+  refresh:'تحديث النتائج',latest:'أحدث النتائج',older:'نتائج أقدم',reviewer:'الفحص #{{id}} · المستخدم #{{user}}',
+  historyScope:'الفحوص ملاحظات محفوظة في وقتها؛ قد تتغير الحالة بعدها. لا تمثل اعتمادًا يدويًا للتسليم.',
+};
+export const sallaEffectReviewEn: Record<keyof typeof sallaEffectReviewAr,string> = {
+  title:'Salla order notifications',scope:'Track the platform notice, your business notice and Sheets sync for each order. A check records the current state without resending or changing the order result.',
+  effects:'Actions',history:'Check history',order:'Local order ID',all:'All',state:'State',kind:'Action',apply:'Apply',invalidFilter:'Enter a positive whole order ID or leave it empty.',
+  owner:'Platform notice',merchant:'Business notice',sheets:'Sheets sync',pending:'Queued',processing:'Preparing',dispatching:'Send started',accepted:'Acceptance recorded',review:'Needs review',
+  queued:'Waiting for automatic processing.',preparing:'A worker is preparing this action.',preparationExpired:'The preparation lease expired; waiting for worker recovery.',inFlight:'Sending started; its result is not yet confirmed.',
+  unknown:'The action may have completed. Check the channel before any resend.',acceptedHint:'The adapter recorded acceptance. This does not prove delivery or success for every recipient and channel.',beforeSend:'Stopped before a send marker was recorded. Check the connection, preferences and check history.',
+  changed:'The order, owner or connection changed or is unavailable. The earlier result remains in the record.',reference:'Action #{{id}} · Order #{{order}}',attempts:'Preparation attempts: {{count}}',
+  updated:'Last update',observed:'Checked at',reason:'Reason for checking',chooseReason:'Choose a reason',delivery:'Check send result',incident:'Investigate an operational issue',
+  check:'Check and record state',checking:'Checking…',saved:'Check #{{id}} saved. No new action was sent.',saveFailed:'The save could not be confirmed. Refresh before trying again; the same request ID will be used.',
+  loading:'Loading history…',empty:'No matching actions.',emptyHistory:'No recorded checks in this scope.',failed:'History could not be loaded. Refresh and check your integration management permission.',invalid:'The history data could not be verified.',
+  refresh:'Refresh results',latest:'Latest results',older:'Older results',reviewer:'Check #{{id}} · User #{{user}}',
+  historyScope:'Checks preserve observations at their recorded time. The state may change later; a check is not manual approval of delivery.',
+};
