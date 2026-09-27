@@ -6,6 +6,7 @@ import {
   getSallaConnectionByMerchantId,
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { assertSallaObservationSchema, recordSallaObservation } from '../ai/salla-sales-observations';
 import {
   sendMerchantWhatsApp,
   WhatsAppDeliveryStateError,
@@ -259,8 +260,10 @@ async function deleteLocalProduct(row: ReceiptRow): Promise<void> {
 async function applyOrderEffect(
   row: ReceiptRow,
   nextStatus: LocalOrderStatus,
+  authority: { connectionId: number; accessToken: string; providerStatus: string },
   trackingNumber?: string,
 ): Promise<void> {
+  await assertSallaObservationSchema();
   const pool = await getPool();
   if (!pool) throw new ReceiptProcessingError('database_unavailable');
   const connection = await pool.getConnection();
@@ -269,6 +272,9 @@ async function applyOrderEffect(
   try {
     await connection.beginTransaction();
     inTransaction = true;
+    await recordSallaObservation(connection, { ...authority, merchantId: Number(row.merchant_id),
+      storeId: row.salla_store_id, orderId: row.resource_id, receiptId: row.id,
+      processingToken: row.processing_token, eventKey: row.event_key });
     const [orders] = await connection.execute<LocalOrderRow[]>(
       `SELECT id, status, customerPhone, customerName, orderNumber, trackingNumber
          FROM orders
@@ -278,12 +284,13 @@ async function applyOrderEffect(
     );
     const order = orders[0];
     if (!order) {
-      await connection.execute(
+      const [receiptUpdate] = await connection.execute(
         `UPDATE salla_webhook_receipts
             SET effect_applied = 1, notification_required = 0, notification_status = NULL
           WHERE id = ? AND status = 'processing' AND processing_token = ?`,
         [row.id, row.processing_token],
       );
+      if (Number((receiptUpdate as any).affectedRows || 0) !== 1) throw new ReceiptProcessingError('lease_lost');
       try {
         await connection.commit();
         inTransaction = false;
@@ -422,7 +429,8 @@ async function applyReceiptEffect(row: ReceiptRow): Promise<void> {
       const remote = await salla.getOrderStatus(row.resource_id);
       const mapped = mapSallaOrderStatusSlug(remote.status);
       if (!mapped) throw new ReceiptProcessingError('unsupported_order_status', true);
-      await applyOrderEffect(row, mapped, remote.trackingNumber);
+      await applyOrderEffect(row, mapped, { connectionId: connection.id, accessToken: connection.accessToken,
+        providerStatus: remote.status }, remote.trackingNumber);
     } else {
       throw new ReceiptProcessingError('unsupported_event', true);
     }

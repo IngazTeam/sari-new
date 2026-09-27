@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import SallaObservations from '@/components/admin/SallaObservations';
 import { formatSalesEvidenceMoney, parseSalesEvidenceId, parseSalesReportForm, readSalesReportView,
   type SalesReportRequest, type SalesReportView } from '@/lib/sales-order-report-view';
 
@@ -54,6 +55,7 @@ function SalesEvidenceForm({ initialMerchant }: { initialMerchant: string }) {
     </CardContent></Card>
     <p className="rounded-lg border bg-muted/30 p-4 text-sm leading-7" data-sales-limits>{t('salesEvidence.limitations')}</p>
     {request ? <SalesReportQuery key={attempt} request={request} /> : <p role="status" data-sales-idle className="text-muted-foreground">{t('salesEvidence.idle')}</p>}
+    <SallaObservations key={merchant} merchant={merchant} />
   </div>;
 }
 

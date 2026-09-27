@@ -820,6 +820,22 @@ export const sallaWebhookReceipts = mysqlTable("salla_webhook_receipts", {
 	index("salla_webhook_receipts_store_idx").on(table.sallaStoreId),
 ]);
 
+export const sallaSalesObservations = mysqlTable('salla_sales_observations', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  storeId: varchar('store_id', { length: 32 }).notNull(), orderId: varchar('order_id', { length: 32 }).notNull(),
+  observedState: mysqlEnum('observed_state', ['pending','paid','processing','shipped','delivered','cancelled']).notNull(),
+  providerStatus: varchar('provider_status', { length: 40 }).notNull(),
+  receiptId: int('receipt_id').notNull().references(() => sallaWebhookReceipts.id, { onDelete: 'cascade' }),
+  eventKey: varchar('event_key', { length: 64 }).notNull(),
+  firstObservedAt: datetime('first_observed_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [
+  uniqueIndex('salla_observation_scope_state').on(table.merchantId, table.storeId, table.orderId, table.observedState),
+  uniqueIndex('salla_observation_receipt').on(table.receiptId),
+  check('chk_salla_observation_ids', sql`REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.orderId},'^[1-9][0-9]{0,19}$','c')`),
+  check('chk_salla_observation_source', sql`REGEXP_LIKE(${table.eventKey},'^[a-f0-9]{64}$','c') AND REGEXP_LIKE(${table.providerStatus},'^[a-z_]{1,40}$','c')`),
+]);
+
 export const sariPersonalitySettings = mysqlTable("sari_personality_settings", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

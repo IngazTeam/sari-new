@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { adminProcedure, router } from './_core/trpc';
+import { sallaObservationsInput, sallaObservationsOutput } from '../shared/salla-sales-observations';
 import { inboundHealth, listInboundReviews, resolveInboundReview } from './messaging/operations';
 import { inspectSalesPaymentTimelineInput, SalesPaymentTimelineLimitExceeded } from './ai/sales-payment-timeline-contract';
 import { inspectSalesOrderSettlementInput, SalesOrderSettlementLimitExceeded } from './ai/sales-order-settlement-contract';
@@ -8,6 +9,12 @@ import { salesOrderReportInput, SalesOrderReportLimitExceeded } from './ai/sales
 import { salesExperimentReadoutInput, SalesExperimentReadoutLimitExceeded } from './ai/sales-experiment-readout-contract';
 
 export const inboundOperationsRouter = router({
+  sallaObservations: adminProcedure.input(sallaObservationsInput).output(sallaObservationsOutput).query(async ({ ctx, input }) => {
+    const { inspectSallaObservations, SallaObservationAccessDenied, SallaObservationConflict } = await import('./ai/salla-sales-observations');
+    try { return await inspectSallaObservations(ctx.user.id, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof SallaObservationAccessDenied ? 'FORBIDDEN'
+      : error instanceof SallaObservationConflict ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR', message: 'تعذر قراءة حالات طلب سلة' }); }
+  }),
   salesExperimentReadout: adminProcedure.input(salesExperimentReadoutInput).query(async ({ctx,input}) => {
     const {inspectSalesExperimentReadout,SalesExperimentReadoutAccessDenied,SalesExperimentReadoutNotReady} = await import('./ai/sales-experiment-readout');
     try { return await inspectSalesExperimentReadout(ctx.user.id,input); }

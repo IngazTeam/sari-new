@@ -8751,6 +8751,25 @@
     "noOrderedReceipt": "No ordered real acceptance",
     "styleBefore": "Of customers with prior acceptance, {{value}} had a candidate-style reply before capture. This is a time relationship, not an estimate of reply impact."
   },
+  "sallaEvidence": {
+    "title": "Observed Salla order states",
+    "description": "Inspect the first observation of each order state returned by an authenticated Salla connection. Use Salla’s internal order ID, not the customer-facing reference number.",
+    "merchantScope": "Merchant scope: {{merchant}} — changes with the merchant ID above.",
+    "store": "Salla store ID",
+    "order": "Salla order ID",
+    "invalid": "Enter a valid merchant ID and store and order IDs using English digits without spaces.",
+    "read": "View saved states",
+    "failed": "The order evidence could not be verified. Check your access and order details, then retry.",
+    "limitations": "These states were observed after capture was enabled. They are not the current state or a complete transition history. “Paid in Salla” does not prove funds were captured or attribute a sale to an AI reply.",
+    "empty": "No saved states match this merchant, store and order. This does not mean the order does not exist or is unpaid.",
+    "firstObserved": "First saved observation",
+    "pending": "Pending review",
+    "paid": "Paid in Salla",
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
   "salesEvidence": {
     "paused": "Reading is paused until the connection returns. The previous result is hidden; access will be checked when reading resumes.",
     "scopeBeforeStart": "Merchant {{merchant}} · No recorded evidence reaches the requested starting ID #{{from}} at read time.",

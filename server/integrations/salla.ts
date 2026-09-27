@@ -1,5 +1,6 @@
 import { majorToMinor, requireMinor } from '../../shared/product-money';
 import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
+import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
 import {
   createProduct,
@@ -388,6 +389,7 @@ export class SallaIntegration {
     trackingUrl?: string;
   }> {
     try {
+      sallaExternalId.parse(sallaOrderId);
       const response = await sallaHttp.get(
         `${SALLA_API_BASE}/orders/${sallaOrderId}`,
         {
@@ -398,16 +400,21 @@ export class SallaIntegration {
         }
       );
 
-      const order = response.data.data;
+      const order = response.data?.data;
+      const identity = typeof order?.id === 'number' && Number.isSafeInteger(order.id) ? String(order.id) : order?.id;
+      if (response.data?.success !== true || response.data?.status !== 200 || !sallaExternalId.safeParse(identity).success
+        || identity !== sallaOrderId || typeof order?.status?.slug !== 'string' || !/^[a-z_]{1,40}$/.test(order.status.slug)) {
+        throw new Error('Invalid Salla order response');
+      }
 
       return {
-        status: String(order.status?.slug || ''),
-        trackingNumber: order.shipping?.tracking_number,
-        trackingUrl: order.shipping?.tracking_url
+        status: order.status.slug,
+        trackingNumber: typeof order.shipping?.tracking_number === 'string'
+          ? order.shipping.tracking_number.slice(0, 100) : undefined,
       };
-    } catch (error: any) {
-      console.error(`[Salla] Failed to get order status ${sallaOrderId}:`, error);
-      throw error;
+    } catch {
+      // Axios errors can contain Authorization headers and the customer's complete order.
+      throw new Error('Salla order status unavailable');
     }
   }
 
