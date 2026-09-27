@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2026-09-27T03:08:56.490Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "externalRequestsBlocked": true,
+  "scope": "Actual Conversations and StaffAttemptReview with simulated API. No live provider, production or physical iPhone/Safari.",
+  "results": [
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "suppressed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "bad-result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "list-error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "invalid",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "older_and_latest_pages",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "double_click_has_one_check",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_stale_actions",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_text_check_cannot_retarget_voice",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_check_cannot_retarget_conversation",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "keyboard_and_live_status",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "voice_check_survives_reload_without_original_recording",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "accepted",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "projection",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "failed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "suppressed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "bad-result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "list-error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "invalid",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "older_and_latest_pages",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "double_click_has_one_check",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_stale_actions",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_text_check_cannot_retarget_voice",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_check_cannot_retarget_conversation",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "keyboard_and_live_status",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "attempt-review-ar-1440.png",
+    "attempt-review-ar-375.png",
+    "attempt-review-en-1440.png",
+    "attempt-review-en-375.png"
+  ]
+}

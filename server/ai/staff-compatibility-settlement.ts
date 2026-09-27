@@ -1,3 +1,4 @@
+import type {PoolConnection} from 'mysql2/promise';
 import {z} from 'zod';
 import {checkoutTransaction} from './checkout-agreements';
 import {authorizeDashboardStaff} from './staff-dashboard-reply';
@@ -14,13 +15,16 @@ const unavailable=():never=>{throw Error('Compatibility settlement unavailable')
 export async function reconcileStaffCompatibility(kind:'text'|'voice',merchant:number,actor:number,source:number,conversation?:number):Promise<StaffDashboardReplyResult>{
   if(conversation!==undefined)z.number().int().positive().safe().parse(conversation);
   z.enum(['text','voice']).parse(kind);for(const value of [merchant,actor,source])z.number().int().positive().safe().parse(value);
-  return checkoutTransaction(async c=>{
-    await authorizeDashboardStaff(c,merchant,actor);
+  return checkoutTransaction(c=>reconcileStaffCompatibilityInTransaction(c,kind,merchant,source,actor,conversation));
+}
+/** Internal SQL operation: an administrative caller must authorize and audit in this same transaction. */
+export async function reconcileStaffCompatibilityInTransaction(c:PoolConnection,kind:'text'|'voice',merchant:number,source:number,actor?:number,conversation?:number):Promise<StaffDashboardReplyResult>{
+    if(actor!==undefined)await authorizeDashboardStaff(c,merchant,actor);
     const table=kind==='text'?'ai_sales_staff_replies':'ai_sales_staff_voices';
     const [rows]=await c.execute<any[]>(`SELECT * FROM ${table} WHERE id=? AND merchant_id=? FOR UPDATE`,[source,merchant]);
     if(rows.length!==1)return unavailable();const row=rows[0];
     const text=kind==='text'?readStaffTextCompatibility(row):null,voice=kind==='voice'?readVoiceCompatibility(row):null;
-    const owner=text?.actorUserId??voice?.intent.actor;if(owner!==actor)return unavailable();
+    const owner=text?.actorUserId??voice?.intent.actor;if(actor!==undefined&&owner!==actor)return unavailable();
     if(conversation!==undefined&&(text?.conversationId??voice?.intent.conversationId)!==conversation)return unavailable();
     const result=text?.result??voice?.result;if(result)return result;
     const pinnedText=text?.version==='staff-text-compatibility.v2'?text:null;
@@ -63,5 +67,4 @@ export async function reconcileStaffCompatibility(kind:'text'|'voice',merchant:n
       ?await c.execute<any>("UPDATE ai_sales_staff_replies SET status='accepted',basis=?,basis_digest=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(snapshot),hash(snapshot),source,merchant])
       :await c.execute<any>("UPDATE ai_sales_staff_voices SET status='accepted',basis=?,basis_digest=?,compatibility_result=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(snapshot),hash(snapshot),JSON.stringify(settled),source,merchant]);
     if(saved.affectedRows!==1)return unavailable();return settled;
-  });
 }

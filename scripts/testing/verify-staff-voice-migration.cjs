@@ -4,11 +4,11 @@ const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'
     ||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use the separate synthetic migration server');
   const c=await mysql.createConnection(url.toString()),journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));
-  if(journal.entries.at(-1).tag!=='0132_staff_dashboard_voices')throw Error('Unexpected migration head');
+  if(!['0132_staff_dashboard_voices','0133_staff_team_reviews'].includes(journal.entries.at(-1).tag))throw Error('Unexpected migration head');
   const dir=path.resolve('.tmp/dashboard-voice-migration-'+Date.now()),output=path.resolve(process.env.SARI_STAFF_MIGRATION_OUTPUT||'.tmp/dashboard-voice-migration/migration.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
-  for(const e of journal.entries.slice(0,-1))fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
-  fs.writeFileSync(path.join(dir,'drizzle/meta/_journal.json'),JSON.stringify({...journal,entries:journal.entries.slice(0,-1)}));
+  for(const e of journal.entries.filter(e=>e.idx<132))fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
+  fs.writeFileSync(path.join(dir,'drizzle/meta/_journal.json'),JSON.stringify({...journal,entries:journal.entries.filter(e=>e.idx<132)}));
   const migration=fs.readFileSync('drizzle/0132_staff_dashboard_voices.sql','utf8'),statements=migration.split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean),logs=[];
   const env=Object.fromEntries(Object.entries(process.env).filter(([k])=>/^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|TEMP|TMP|USERPROFILE|APPDATA|LOCALAPPDATA|PROGRAMFILES|PROGRAMFILES\(X86\)|PROGRAMDATA|HOMEDRIVE|HOMEPATH|NUMBER_OF_PROCESSORS|CI)$/i.test(k)));
   Object.assign(env,{NODE_ENV:'test',SARI_ENV_FILE:path.resolve('.tmp/isolated-tests/empty.env'),DOTENV_CONFIG_PATH:path.resolve('.tmp/isolated-tests/empty.env'),
@@ -20,7 +20,7 @@ const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:
   try{for(const mode of ['fresh','upgrade']){
     const name=`sari_voice_${mode}_${Date.now()}_test`;await c.query(`CREATE DATABASE ${name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);await c.query(`USE ${name}`);
     if(mode==='fresh'){run(name);const [[n]]=await c.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[r]]=await c.query('SELECT COUNT(*) AS n FROM ai_sales_staff_voices');
-      cases.push({mode,migrations:n.n,empty:r.n===0,passed:n.n===133&&r.n===0});continue;}
+      cases.push({mode,migrations:n.n,empty:r.n===0,passed:n.n===journal.entries.length&&r.n===0});continue;}
     run(name,dir);
     const [u]=await c.execute("INSERT INTO users (openId,name,role) VALUES ('staff-dashboard-migration','Synthetic','user')");
     const [m]=await c.execute("INSERT INTO merchants (userId,businessName) VALUES (?,'Synthetic dashboard staff')",[u.insertId]);
@@ -44,9 +44,9 @@ const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:
     const [attemptsAfter]=await c.query('SELECT * FROM ai_sales_staff_voices'),[[n]]=await c.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[budget]]=await c.query("SELECT daily_limit_micro_usd FROM ai_budget_policies WHERE scope_key='global'");
     const r={mode,migrations:n.n,preservedTables:tables.filter(t=>before[t]===after[t]),initiallyEmpty:empty.n===0,duplicateRequestRejected:duplicate,unsupportedSourceRejected:invalid,
       sourceDeletionPreservesEvidence:retained.n===3&&attempt.n===1,rerunUnchanged:JSON.stringify(prior)===JSON.stringify(await snapshot())&&JSON.stringify(attemptsBefore)===JSON.stringify(attemptsAfter),globalDailyMicroUsd:String(budget.daily_limit_micro_usd)};
-    cases.push({...r,passed:r.migrations===133&&r.preservedTables.length===tables.length&&r.initiallyEmpty&&duplicate&&invalid&&r.sourceDeletionPreservesEvidence&&r.rerunUnchanged&&r.globalDailyMicroUsd==='100000000'});
+    cases.push({...r,passed:r.migrations===journal.entries.length&&r.preservedTables.length===tables.length&&r.initiallyEmpty&&duplicate&&invalid&&r.sourceDeletionPreservesEvidence&&r.rerunUnchanged&&r.globalDailyMicroUsd==='100000000'});
   }
-    const report={verifiedAt:new Date().toISOString(),scope:'Synthetic fresh database and 0131-to-0132 upgrade, partial DDL, preservation, constraints, deletion and full replay. No production access.',
+    const report={verifiedAt:new Date().toISOString(),scope:'Synthetic fresh database and 0131-to-current upgrade (including 0132 voice), partial DDL, preservation, constraints, deletion and full replay. No production access.',
       migrationSha256:crypto.createHash('sha256').update(migration).digest('hex'),cases,passed:cases.length===2&&cases.every(r=>r.passed)};
     fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');fs.writeFileSync(path.join(dir,'migration.log'),logs.join('\n'));console.log(JSON.stringify(report));if(!report.passed)throw Error('Migration acceptance failed');
   }finally{await c.end();}

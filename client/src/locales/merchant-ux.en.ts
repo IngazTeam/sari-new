@@ -1,3 +1,4 @@
+import {staffTeamReviewEn} from './staff-team-review';
 import { salesExperimentLaunchEn } from './sales-experiment-launch';
 import { staffAttemptReviewEn } from './staff-attempt-review';
 import { salesReplyReviewEn } from './sales-reply-review';
@@ -11,6 +12,7 @@ import { learningPolicyEvaluationEn } from './learning-policy-evaluation';
 import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
 const merchantUxEn: MerchantUxCopy = {
+  teamAttempts: staffTeamReviewEn,
   staffAttempts: staffAttemptReviewEn,
   replyReview: salesReplyReviewEn,
   replySend: salesReplySendEn,

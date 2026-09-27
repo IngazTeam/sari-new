@@ -4659,3 +4659,11 @@ export const salesStaffVoices=mysqlTable('ai_sales_staff_voices',{
   createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },t=>[uniqueIndex('uq_staff_voice_request').on(t.merchantId,t.requestId),index('idx_staff_voice_conversation').on(t.merchantId,t.conversationId,t.id),
   index('idx_staff_voice_recovery').on(t.nextReconcileAt,t.id)]);
+
+export const salesStaffReviews=mysqlTable('ai_sales_staff_reviews',{
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  reviewerUserId:int('reviewer_user_id').notNull(),authorUserId:int('author_user_id').notNull(),conversationId:int('conversation_id').notNull(),
+  sourceKind:mysqlEnum('source_kind',['text','voice']).notNull(),sourceId:int('source_id').notNull(),requestId:char('request_id',{length:36}).notNull(),
+  requestDigest:char('request_digest',{length:64}).notNull(),snapshot:json().notNull(),snapshotDigest:char('snapshot_digest',{length:64}).notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},t=>[uniqueIndex('uq_staff_review_request').on(t.merchantId,t.requestId),index('idx_staff_review_history').on(t.merchantId,t.sourceKind,t.id)]);

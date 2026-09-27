@@ -1,6 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const withUi=process.argv.includes('--with-ui');
-const withLegacyDelivery=process.argv.includes('--legacy-delivery');
+const withTeamReview=process.argv.includes('--team-review');
+const withLegacyDelivery=process.argv.includes('--legacy-delivery')||withTeamReview;
 const withAttemptReview=process.argv.includes('--staff-attempt-review')||withLegacyDelivery;
 const withCompatibilitySettlement=process.argv.includes('--compatibility-settlement')||withAttemptReview;
 const withVoiceAuthority=process.argv.includes('--voice-authority')||withCompatibilitySettlement;
@@ -10,7 +11,7 @@ const withStaffTransport=process.argv.includes('--staff-transport')||withCompati
 const withVoice=process.argv.includes('--staff-voice')||withStaffTransport;
 const withDashboardStaff=process.argv.includes('--dashboard-staff')||withVoice;
 const withStaffAcceptance=process.argv.includes('--staff-acceptance')||withDashboardStaff;
-const root=process.cwd(),output=path.resolve(withLegacyDelivery?'.tmp/legacy-delivery-verification':withAttemptReview?'.tmp/staff-attempt-review-verification':withCompatibilitySettlement?'.tmp/compatibility-settlement-verification':withVoiceAuthority?'.tmp/voice-authority-verification':withAuthority?'.tmp/staff-authority-verification':withCompatibility?'.tmp/staff-compatibility-verification':withStaffTransport?'.tmp/staff-transport-readout-verification':withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
+const root=process.cwd(),output=path.resolve(withTeamReview?'.tmp/team-review-verification':withLegacyDelivery?'.tmp/legacy-delivery-verification':withAttemptReview?'.tmp/staff-attempt-review-verification':withCompatibilitySettlement?'.tmp/compatibility-settlement-verification':withVoiceAuthority?'.tmp/voice-authority-verification':withAuthority?'.tmp/staff-authority-verification':withCompatibility?'.tmp/staff-compatibility-verification':withStaffTransport?'.tmp/staff-transport-readout-verification':withVoice?'.tmp/staff-voice-verification':withDashboardStaff?'.tmp/staff-dashboard-verification':withStaffAcceptance?'.tmp/sales-staff-acceptance-verification':withUi?'.tmp/sales-experiment-readout-ui-verification':'.tmp/sales-experiment-readout-verification');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 fs.mkdirSync(output,{recursive:true});
 const unit=[
@@ -93,6 +94,11 @@ if(withLegacyDelivery){
   database.push('server/ai/staff-legacy-delivery.mysql.test.ts');
   extra.push(...unit,...database,'server/ai/staff-legacy-delivery.ts','server/ai/staff-legacy-delivery-contract.ts');
 }
+if(withTeamReview){
+  unit.push('server/staff-team-review-access-pentest.test.ts');
+  database.push('server/ai/staff-team-review.mysql.test.ts');
+  extra.push(...unit,...database,'server/ai/staff-team-review.ts','shared/staff-team-review.ts','client/src/components/StaffTeamReview.tsx','client/src/locales/staff-team-review.ts','drizzle/0133_staff_team_reviews.sql','scripts/testing/verify-staff-team-review-migration.cjs','scripts/testing/verify-staff-team-review-ui.cjs');
+}
 function manifest(){
   const tracked=cp.execFileSync('git',['ls-files','-z'],{encoding:'utf8',windowsHide:true}).split('\0').filter(Boolean);
   const paths=Array.from(new Set([...tracked.filter(p=>/^(server|client|shared|scripts|drizzle)\//.test(p)||/^[^/]+\.(json|yaml|ts|mjs|cjs)$/.test(p)),...extra])).sort();
@@ -116,7 +122,7 @@ try{
   let migrationReport;
   if(withStaffAcceptance){
     const migrationOutput=path.join(output,'migration.json');
-    checks.push(run('staff-migration',[withVoice?'scripts/testing/verify-staff-voice-migration.cjs':withDashboardStaff?'scripts/testing/verify-staff-dashboard-migration.cjs':'scripts/testing/verify-sales-staff-acceptance-migration.cjs'],{...process.env,
+    checks.push(run('staff-migration',[withTeamReview?'scripts/testing/verify-staff-team-review-migration.cjs':withVoice?'scripts/testing/verify-staff-voice-migration.cjs':withDashboardStaff?'scripts/testing/verify-staff-dashboard-migration.cjs':'scripts/testing/verify-sales-staff-acceptance-migration.cjs'],{...process.env,
       SARI_TEST_DATABASE_URL:process.env.SARI_STAFF_MIGRATION_DATABASE_URL,SARI_STAFF_MIGRATION_OUTPUT:migrationOutput}));
     const bytes=fs.readFileSync(migrationOutput),report=JSON.parse(bytes);
     if(!report.passed||!report.cases.length||report.cases.some(c=>!c.passed))throw Error('Incomplete staff migration report');
@@ -144,6 +150,7 @@ try{
       ['order-report-ui','scripts/testing/verify-sales-order-report-ui.cjs','SALES_ORDER_REPORT_UI_OUTPUT'],
       ...(withDashboardStaff?[['staff-dashboard-ui','scripts/testing/verify-staff-dashboard-ui.cjs','STAFF_DASHBOARD_UI_OUTPUT']]:[]),
       ...(withVoice?[['staff-voice-ui','scripts/testing/verify-staff-voice-ui.cjs','STAFF_VOICE_UI_OUTPUT']]:[]),
+      ...(withTeamReview?[['staff-team-review-ui','scripts/testing/verify-staff-team-review-ui.cjs','STAFF_TEAM_REVIEW_UI_OUTPUT']]:[]),
       ...(withAttemptReview?[['staff-attempt-review-ui','scripts/testing/verify-staff-attempt-review-ui.cjs','STAFF_ATTEMPT_REVIEW_UI_OUTPUT']]:[])]){
       const destination=path.join(output,name);checks.push(run(name,[script],{...env,[variable]:destination}));
       const report=JSON.parse(fs.readFileSync(path.join(destination,'results.json')));
@@ -161,7 +168,7 @@ try{
       tests:r.testResults.flatMap(f=>f.assertionResults.map(t=>({file:path.relative(root,f.name).replaceAll('\\','/'),name:t.fullName,status:t.status})))};
   });
   const result={version:'sales-experiment-readout-verification.v1',startedAt,finishedAt:new Date().toISOString(),baseCommit,
-    scope:withLegacyDelivery?'legacy_delivery_and_affected_regression_not_full_release_acceptance':withAttemptReview?'staff_attempt_review_and_affected_regression_not_full_release_acceptance':withCompatibilitySettlement?'compatibility_settlement_and_affected_regression_not_full_release_acceptance':withVoiceAuthority?'staff_voice_compatibility_authority_and_affected_regression_not_full_release_acceptance':withAuthority?'staff_text_authority_and_affected_regression_not_full_release_acceptance':withCompatibility?'staff_text_compatibility_and_affected_regression_not_full_release_acceptance':withStaffTransport?'staff_acceptance_readout_and_affected_regression_not_full_release_acceptance':withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
+    scope:withTeamReview?'team_review_and_affected_regression_not_full_release_acceptance':withLegacyDelivery?'legacy_delivery_and_affected_regression_not_full_release_acceptance':withAttemptReview?'staff_attempt_review_and_affected_regression_not_full_release_acceptance':withCompatibilitySettlement?'compatibility_settlement_and_affected_regression_not_full_release_acceptance':withVoiceAuthority?'staff_voice_compatibility_authority_and_affected_regression_not_full_release_acceptance':withAuthority?'staff_text_authority_and_affected_regression_not_full_release_acceptance':withCompatibility?'staff_text_compatibility_and_affected_regression_not_full_release_acceptance':withStaffTransport?'staff_acceptance_readout_and_affected_regression_not_full_release_acceptance':withVoice?'dashboard_voice_and_affected_regression_not_full_release_acceptance':withDashboardStaff?'dashboard_staff_reply_and_affected_regression_not_full_release_acceptance':withStaffAcceptance?'staff_transport_acceptance_and_affected_regression_not_full_release_acceptance':'targeted_readout_and_affected_regression_not_full_release_acceptance',sourceStableBeforeAndAfter:true,sourceSha256:before,
     checks,suites,totalTests:suites.reduce((n,s)=>n+s.passed,0),browserReports,browserScenariosRun:browserReports.reduce((n,r)=>n+r.results.length,0),migrationReport,productionAccess:false,network:'external_network_blocked'};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify({tests:result.totalTests,sourceFiles:Object.keys(before).length,checks:checks.length}));

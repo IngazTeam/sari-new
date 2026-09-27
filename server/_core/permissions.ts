@@ -21,6 +21,7 @@ export type MerchantRole = 'owner' | 'manager' | 'sales_supervisor' | 'viewer';
 export type Permission =
   | 'conversations.read'
   | 'conversations.reply'
+  | 'conversations.review'
   | 'products.manage'
   | 'customers.manage'
   | 'orders.manage'
@@ -42,6 +43,7 @@ export type Permission =
 const ROLE_PERMISSIONS: Record<MerchantRole, readonly Permission[]> = {
   owner: [
     'conversations.read', 'conversations.reply',
+    'conversations.review',
     'products.manage', 'customers.manage', 'orders.manage',
     'analytics.read', 'campaigns.manage',
     'bot_settings.manage', 'virtual_agents.manage',
@@ -51,6 +53,7 @@ const ROLE_PERMISSIONS: Record<MerchantRole, readonly Permission[]> = {
   ],
   manager: [
     'conversations.read', 'conversations.reply',
+    'conversations.review',
     'products.manage', 'customers.manage', 'orders.manage',
     'analytics.read', 'campaigns.manage',
     'bot_settings.manage', 'virtual_agents.manage',

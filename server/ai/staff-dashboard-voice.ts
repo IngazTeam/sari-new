@@ -87,7 +87,10 @@ export async function canDispatchDashboardVoice(input:SendMerchantWhatsAppInput,
 export async function reconcileDashboardVoice(merchant:number,voiceId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
   if(review)staffAttemptReviewAuthority.parse(review);
   id.parse(merchant);id.parse(voiceId);await assertDashboardVoiceSchema();
-  return checkoutTransaction(async c=>{
+  return checkoutTransaction(c=>reconcileDashboardVoiceInTransaction(c,merchant,voiceId,review));
+}
+/** Internal SQL operation: caller owns the transaction and, when review is omitted, authorization. */
+export async function reconcileDashboardVoiceInTransaction(c:PoolConnection,merchant:number,voiceId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
     await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
     const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_voices WHERE id=? AND merchant_id=? FOR UPDATE',[voiceId,merchant]);
     if(review)await authorizeDashboardStaff(c,merchant,review.actorUserId);
@@ -130,7 +133,6 @@ export async function reconcileDashboardVoice(merchant:number,voiceId:number,rev
     }
     await c.execute("UPDATE ai_sales_staff_voices SET status='accepted',provider_message_id=?,projected_message_id=?,next_reconcile_at=NULL WHERE id=? AND merchant_id=?",[receipt,projected||null,voiceId,merchant]);
     return {success:true,status:'accepted',persisted:Boolean(projected)};
-  });
 }
 /** One reservation owns at most one upload and one transport call; recovery never repeats either effect. */
 export async function trySendDashboardVoice(merchant:number,actor:number,raw:StaffVoiceInput):Promise<StaffDashboardReplyResult>{

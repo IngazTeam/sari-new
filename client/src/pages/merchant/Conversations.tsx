@@ -1,3 +1,4 @@
+import {StaffTeamReview} from '@/components/StaffTeamReview';
 import { trpc } from '@/lib/trpc';
 import { staffVoiceAttempt } from '@/lib/staff-voice-attempt';
 import { staffDashboardAttempt } from '@/lib/staff-dashboard-attempt';
@@ -235,6 +236,7 @@ export default function Conversations() {
 
   return (
     <div className="mw-inbox-page">
+      <StaffTeamReview/>
       {/* WhatsApp Disconnected Warning Banner */}
       {connectionHealth &&
         !connectionHealth.connected &&

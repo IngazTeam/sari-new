@@ -1,3 +1,4 @@
+import type {PoolConnection} from 'mysql2/promise';
 import { z } from 'zod';
 import { staffAttemptListInput, staffAttemptCheckInput, staffAttemptPage } from '../../shared/staff-attempt-review';
 import { checkoutTransaction } from './checkout-agreements';
@@ -41,25 +42,8 @@ export async function listStaffAttempts(merchant: number, actor: number, raw: z.
       ORDER BY id DESC LIMIT 21 FOR SHARE`, [merchant, actor, input.conversationId, ...(input.beforeId ? [input.beforeId] : [])]);
     const items = [];
     for (const row of rows.slice(0, 20)) {
-      const item = { id: Number(row.id), createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(), state: 'pending' as 'pending' | 'accepted' | 'unavailable', persisted: null as boolean | null };
-      try {
-        const inspected = identity(input.kind, row, merchant, actor, input.conversationId);
-        if (inspected.compatibility) {
-          if (inspected.result) { item.state = 'accepted'; item.persisted = inspected.result.persisted; }
-        } else if (row.status === 'accepted') {
-          const [facts] = await c.execute<any[]>('SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? AND source_kind=? AND source_id=?',
-            [merchant, input.kind === 'text' ? 'dashboard_text' : 'dashboard_voice', row.id]);
-          if (facts.length !== 1) return unavailable();
-          const fact = input.kind === 'text' ? readDashboardStaffAcceptance(facts[0]) : readStaffVoiceAcceptance(facts[0]);
-          const basis = input.kind === 'text' ? readDashboardStaffBasis(row) : readStaffVoiceBasis(row);
-          const account = input.kind === 'text' ? readDashboardStaffBasis(row) : readStaffVoiceIntent(row);
-          if (fact.basisDigest !== hash(basis) || fact.providerMessageDigest !== staffReceiptDigest(merchant, account.instanceRecordId, account.provider, row.provider_message_id)
-            || row.projected_message_id != null && !id.safeParse(Number(row.projected_message_id)).success) return unavailable();
-          item.state = 'accepted'; item.persisted = row.projected_message_id != null;
-        }
-      } catch { item.state = 'unavailable'; item.persisted = null; }
-      items.push(item);
-    }
+      items.push(await inspectStaffAttemptItem(c,input.kind,row,merchant,actor,input.conversationId));
+   }
     return staffAttemptPage.parse({ items, nextCursor: rows.length > 20 ? items.at(-1)!.id : null });
   });
 }
@@ -77,4 +61,26 @@ export async function checkStaffAttempt(merchant: number, actor: number, raw: z.
   if (compatibility) return reconcileStaffCompatibility(input.kind, merchant, actor, input.sourceId, input.conversationId);
   const authority = { actorUserId: actor, conversationId: input.conversationId };
   return input.kind === 'text' ? reconcileDashboardStaff(merchant, input.sourceId, authority) : reconcileDashboardVoice(merchant, input.sourceId, authority);
+}
+
+/** Shared strict metadata inspection; callers must authorize and tenant-scope the row first. */
+export async function inspectStaffAttemptItem(c:PoolConnection,kind:'text'|'voice',row:any,merchant:number,actor:number,conversationId:number){
+  const item = { id: Number(row.id), createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(), state: 'pending' as 'pending' | 'accepted' | 'unavailable', persisted: null as boolean | null };
+  try {
+    const inspected = identity(kind, row, merchant, actor, conversationId);
+    if (inspected.compatibility) {
+      if (inspected.result) { item.state = 'accepted'; item.persisted = inspected.result.persisted; }
+    } else if (row.status === 'accepted') {
+      const [facts] = await c.execute<any[]>('SELECT * FROM ai_sales_staff_acceptances WHERE merchant_id=? AND source_kind=? AND source_id=?',
+        [merchant, kind === 'text' ? 'dashboard_text' : 'dashboard_voice', row.id]);
+      if (facts.length !== 1) return unavailable();
+      const fact = kind === 'text' ? readDashboardStaffAcceptance(facts[0]) : readStaffVoiceAcceptance(facts[0]);
+      const basis = kind === 'text' ? readDashboardStaffBasis(row) : readStaffVoiceBasis(row);
+      const account = kind === 'text' ? readDashboardStaffBasis(row) : readStaffVoiceIntent(row);
+      if (fact.basisDigest !== hash(basis) || fact.providerMessageDigest !== staffReceiptDigest(merchant, account.instanceRecordId, account.provider, row.provider_message_id)
+        || row.projected_message_id != null && !id.safeParse(Number(row.projected_message_id)).success) return unavailable();
+      item.state = 'accepted'; item.persisted = row.projected_message_id != null;
+    }
+  } catch { item.state = 'unavailable'; item.persisted = null; }
+  return item;
 }

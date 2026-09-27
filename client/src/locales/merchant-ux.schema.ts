@@ -71,6 +71,7 @@ import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
+  teamAttempts: Record<keyof typeof import('./staff-team-review').staffTeamReviewAr, string>;
   staffAttempts: Record<keyof typeof import('./staff-attempt-review').staffAttemptReviewAr, string>;
   experimentLaunch: SalesExperimentLaunchCopy;
   experimentReview: SalesExperimentReviewCopy;

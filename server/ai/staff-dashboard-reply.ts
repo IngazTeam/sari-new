@@ -121,7 +121,10 @@ export async function canDispatchDashboardStaff(input:SendMerchantWhatsAppInput,
 export async function reconcileDashboardStaff(merchant:number,replyId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
   if(review)staffAttemptReviewAuthority.parse(review);
   id.parse(merchant);id.parse(replyId);await assertDashboardStaffSchema();
-  return checkoutTransaction(async c=>{
+  return checkoutTransaction(c=>reconcileDashboardStaffInTransaction(c,merchant,replyId,review));
+}
+/** Internal SQL operation: caller owns the transaction and, when review is omitted, authorization. */
+export async function reconcileDashboardStaffInTransaction(c:PoolConnection,merchant:number,replyId:number,review?:StaffAttemptReviewAuthority):Promise<StaffDashboardReplyResult>{
     await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
     if(review)await authorizeDashboardStaff(c,merchant,review.actorUserId);
     const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE id=? AND merchant_id=? FOR UPDATE',[replyId,merchant]);
@@ -169,7 +172,6 @@ export async function reconcileDashboardStaff(merchant:number,replyId:number,rev
     }
     await c.execute("UPDATE ai_sales_staff_replies SET status='accepted',provider_message_id=?,projected_message_id=?,next_reconcile_at=NULL WHERE id=? AND merchant_id=?",[receipt,projected||null,replyId,merchant]);
     return {success:true,status:'accepted',persisted:Boolean(projected)};
-  });
 }
 /** Reserve every request before any transport, including the unmeasured compatibility sender. */
 export async function trySendDashboardStaff(merchant:number,actor:number,raw:StaffDashboardReplyInput):Promise<StaffDashboardReplyResult>{
