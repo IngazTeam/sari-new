@@ -15,6 +15,7 @@ import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMino
 import { invokeLLM } from '../_core/llm';
 import { SallaIntegration } from '../integrations/salla';
 import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
+import { dispatchSallaCreation, type SallaCreationAttempt } from '../integrations/salla-order-creation';
 import {
   getMerchantById,
   getProductById,
@@ -155,10 +156,12 @@ export async function createOrderFromChat(
   customerPhone: string,
   customerName: string,
   parsedOrder: ParsedOrder,
-  message?: string
+  message?: string,
+  creation?: SallaCreationAttempt,
 ): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null; discountInfo?: DiscountInfo } | null> {
   let providerAttempted = false;
   try {
+    if (!creation || creation.merchantId !== merchantId) throw new Error('Durable creation attempt required');
     const shipTo = sallaShippingSchema.parse(parsedOrder.shipTo);
     await currentInboundExecution()?.assertOwned();
     // Get Salla connection
@@ -219,6 +222,7 @@ export async function createOrderFromChat(
     const discountCode = message ? extractDiscountCodeFromMessage(message) : undefined;
     await currentInboundExecution()?.assertOwned();
     await preflightSallaOrderAuthority(authority);
+    await dispatchSallaCreation(creation,authority);
     providerAttempted = true;
     const sallaOrder = await salla.createOrder({
       customerName,
@@ -260,7 +264,7 @@ export async function createOrderFromChat(
       giftRecipientName: parsedOrder.giftRecipientName,
       giftMessage: parsedOrder.giftMessage,
       discountCode: discountCode || null
-    });
+    }, creation);
 
     if (!order) {
       throw new Error('Failed to save order in database');

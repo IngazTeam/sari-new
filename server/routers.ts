@@ -14,7 +14,8 @@ import { reconcileCheckoutSchema } from '../shared/checkout-reconciliation';
 import { reconcileBookingCheckoutSchema } from '../shared/booking-checkout-reconciliation';
 import { bookingPaymentLinkRenewalSchema } from '../shared/booking-payment-link-renewal';
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
-import { sallaShippingSchema } from '../shared/salla-order';
+import { sallaOrderCreateSchema } from '../shared/salla-order-create';
+import { runSallaOrderCreation, SallaCreationError } from './integrations/salla-order-creation';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
 import { salesOfferReviewProcedures } from './routers-sales-offer-review';
@@ -2162,41 +2163,35 @@ export const appRouter = router({
   orders: router({
     // Create order from chat
     createFromChat: permissionProcedure('orders.manage')
-      .input(z.object({
-        customerPhone: z.string().trim().min(7).max(50),
-        customerName: z.string().trim().min(1).max(255),
-        message: z.string().trim().min(1).max(10_000), // Customer's message
-        shipTo: sallaShippingSchema,
-      }).strict())
+      .input(sallaOrderCreateSchema)
       .mutation(async ({ input, ctx }) => {
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { parseOrderMessage, createOrderFromChat, generateOrderConfirmationMessage, generateGiftOrderConfirmationMessage } = await import('./automation/order-from-chat');
 
-        // Parse order from message
-        const parsedOrder = await parseOrderMessage(input.message, merchant.id);
-        if (!parsedOrder || parsedOrder.products.length === 0) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'لم نتمكن من فهم الطلب. يرجى توضيح المنتجات المطلوبة.'
+        const { requestId, ...intent } = input;
+        let result;
+        try {
+          result = await runSallaOrderCreation({ merchantId:merchant.id, actorUserId:ctx.user.id, requestId, intent }, async creation => {
+            const parsedOrder = await parseOrderMessage(intent.message,merchant.id);
+            if (!parsedOrder || parsedOrder.products.length === 0) return null;
+            return createOrderFromChat(merchant.id,intent.customerPhone,intent.customerName,
+              { ...parsedOrder,shipTo:intent.shipTo },intent.message,creation);
           });
-        }
-
-        // Create order
-        const result = await createOrderFromChat(
-          merchant.id,
-          input.customerPhone,
-          input.customerName,
-          { ...parsedOrder, shipTo: input.shipTo },
-          input.message
-        );
-
-        if (!result) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'فشل إنشاء الطلب'
-          });
+        } catch (error) {
+          if (error instanceof SallaCreationError) {
+            const messages = {
+              request_conflict:'معرّف العملية مستخدم بتفاصيل أو مستخدم مختلف. لم يُنشأ طلب جديد.',
+              operation_pending:'هذه العملية قيد التنفيذ أو التحقق. احتفظ بمعرّفها ولا تنشئ عملية بديلة حتى تتأكد من نتيجتها.',
+              operation_review:'نتيجة إنشاء الطلب تحتاج مراجعة في سلة. لم نعد إرسال الطلب لتجنب تكراره.',
+              operation_rejected:'توقفت العملية قبل إرسال الطلب إلى سلة. راجع المنتجات والعنوان ثم أنشئ عملية جديدة.',
+              result_unavailable:'تعذر التحقق من الطلب أو عرضه حاليًا. لم يُنشأ طلب بديل.',
+            };
+            throw new TRPCError({code:'CONFLICT',message:messages[error.code]});
+          }
+          // An unavailable local acknowledgement is not permission to use a new request ID.
+          throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر تأكيد حالة العملية. احتفظ بمعرّفها وأعد الاستعلام بالبيانات نفسها؛ لا تنشئ طلبًا بديلًا.'});
         }
 
         // Get order details for confirmation message
@@ -2224,6 +2219,7 @@ export const appRouter = router({
           );
 
         // Auto-sync to Google Sheets if enabled
+        if (!result.replayed) {
         try {
           const { syncOrderToSheets } = await import('./sheetsSync');
           await syncOrderToSheets(result.orderId);
@@ -2242,12 +2238,14 @@ export const appRouter = router({
           console.error('[Notification] Failed to send new order notification:', error);
           // Don't throw error - just log it
         }
+        }
 
         return {
           success: true,
           orderId: result.orderId,
           orderNumber: result.orderNumber,
           paymentUrl: result.paymentUrl,
+          replayed: result.replayed,
           confirmationMessage
         };
       }),

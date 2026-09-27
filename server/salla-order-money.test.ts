@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), dispatch:vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+vi.mock('./integrations/salla-order-creation',()=>({dispatchSallaCreation:m.dispatch}));
 vi.mock('./integrations/salla-order-projection', async importOriginal => ({...await importOriginal<any>(),persistSallaOrderProjection:m.create,preflightSallaOrderAuthority:m.preflight}));
 vi.mock('axios', () => ({ default: { create: () => ({ post: m.post, get: m.get }) } }));
 vi.mock('./db', () => ({
@@ -14,7 +15,9 @@ vi.mock('./automation/referral-system', () => ({ extractReferralCodeFromMessage:
 vi.mock('./payment/order-payment-link', () => ({ issueCanonicalOrderPaymentLink: m.link }));
 vi.mock('./_core/emailNotifications', () => ({ notifyNewOrder: m.notify }));
 import { SallaIntegration } from './integrations/salla';
-import { createOrderFromChat, parseOrderMessage, generateOrderConfirmationMessage } from './automation/order-from-chat';
+import { createOrderFromChat as create, parseOrderMessage, generateOrderConfirmationMessage } from './automation/order-from-chat';
+const attempt={id:1,merchantId:7,token:'12345678-1234-4234-8234-123456789abc'};
+const createOrderFromChat:typeof create=(...a)=>create(a[0],a[1],a[2],a[3],a[4],attempt);
 import { withInboundExecution, type InboundExecution } from './messaging/inbound-context';
 import { formatMinorMoney } from '../shared/product-money';
 const shipTo = {country: 1, city: 2, address_line:'Fixture', street_number:'12', block:'Test', short_address:'ABCD1234', building_number:'1234', additional_number:'5678', postal_code:'12345', geo_coordinates:{lat:24,lng:46}};
@@ -25,12 +28,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.connection.mockResolvedValue({id:12,merchantId:7,sallaStoreId:'987',syncStatus:'active',accessToken:'test-only'});
   m.preflight.mockResolvedValue(undefined);
+  m.dispatch.mockResolvedValue(undefined);
   m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,currency:'SAR',amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
   m.product.mockResolvedValue({id:4,merchantId:7,name:'Sample',price:9999,priceUnit:'minor',currency:'SAR',sallaProductId:'123',isActive:1,trackInventory:1,stock:5});
   m.create.mockResolvedValue({id:55,orderNumber:'456'});
   m.notify.mockResolvedValue(undefined);
 });
 describe('Salla order transport and monetary authority', () => {
+  it('refuses an unreserved creation and does not call the provider',async()=>{
+    expect(await create(7,'966500000009','Test',parsed())).toBeNull();expect(m.post).not.toHaveBeenCalled();
+  });
+  it('persists the dispatch reservation before POST and passes it to the atomic local save',async()=>{
+    await createOrderFromChat(7,'966500000009','Test',parsed());
+    expect(m.dispatch.mock.invocationCallOrder[0]).toBeLessThan(m.post.mock.invocationCallOrder[0]);
+    expect(m.create.mock.calls[0][2]).toEqual(attempt);
+  });
   it('uses the documented product identifiers, national address and pending payment contract', async () => {
     const result = await new SallaIntegration(7,'test-only').createOrder({...data(),discountCode:'TEST'});
     expect(m.post).toHaveBeenCalledTimes(1);

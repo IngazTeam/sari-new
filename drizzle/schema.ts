@@ -821,6 +821,21 @@ export const sallaWebhookReceipts = mysqlTable("salla_webhook_receipts", {
 	index('idx_salla_receipt_order_scope').on(table.merchantId,table.sallaStoreId,table.resourceId,table.eventType,table.status),
 ]);
 
+export const sallaOrderCreations = mysqlTable('salla_order_creations', {
+  id:int().autoincrement().primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  actorUserId:int('actor_user_id').notNull(), requestId:char('request_id',{length:36}).notNull(), requestHash:char('request_hash',{length:64}).notNull(),
+  attemptToken:char('attempt_token',{length:36}).notNull(), state:mysqlEnum(['preparing','dispatching','completed','rejected','review']).notNull(),
+  storeId:varchar('store_id',{length:32}),connectionId:int('connection_id'),localOrderId:int('local_order_id'),resultJson:json('result_json'),errorCode:varchar('error_code',{length:64}),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull(),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull(),
+},table=>[uniqueIndex('salla_creation_request').on(table.merchantId,table.requestId),uniqueIndex('salla_creation_order').on(table.localOrderId),
+  index('salla_creation_review').on(table.merchantId,table.state,table.id),
+  check('chk_salla_creation_state',sql`${table.actorUserId}>0 AND REGEXP_LIKE(${table.requestHash},'^[0-9a-f]{64}$','c')
+    AND ((${table.storeId} IS NULL AND ${table.connectionId} IS NULL) OR (${table.storeId} IS NOT NULL AND ${table.connectionId} IS NOT NULL AND ${table.connectionId}>0 AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c')))
+    AND (${table.state} NOT IN ('dispatching','completed') OR (${table.storeId} IS NOT NULL AND ${table.connectionId} IS NOT NULL))
+    AND ((${table.state}='completed' AND ${table.localOrderId} IS NOT NULL AND ${table.localOrderId}>0 AND ${table.resultJson} IS NOT NULL)
+      OR (${table.state}<>'completed' AND ${table.localOrderId} IS NULL AND ${table.resultJson} IS NULL))`),
+]);
+
 export const sallaOrderProjections = mysqlTable('salla_order_projections', {
   id: int().autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

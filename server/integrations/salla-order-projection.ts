@@ -5,6 +5,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { decryptSecret } from '../security/secrets';
 import { sallaExternalId, sallaObservedState } from '../../shared/salla-sales-observations';
 import type { SendMerchantWhatsAppInput } from '../channels/whatsapp/types';
+import type { SallaCreationAttempt } from './salla-order-creation';
 
 const internalId = z.number().int().positive().max(2147483647);
 export const sallaAuthoritySchema = z.object({ merchantId: internalId, connectionId: internalId,
@@ -40,13 +41,14 @@ const projectionInput = z.object({ externalOrderId: sallaExternalId, orderNumber
 
 /** Only an accepted authenticated create response may establish a new store binding.
  * Never upgrade a historical bare ID by guessing from today's connection. */
-export async function persistSallaOrderProjection(authority: SallaOrderAuthority, raw: z.infer<typeof projectionInput>) {
+export async function persistSallaOrderProjection(authority: SallaOrderAuthority, raw: z.infer<typeof projectionInput>, creation?: SallaCreationAttempt) {
   const a = sallaAuthoritySchema.parse(authority), input = projectionInput.parse(raw);
   const alias = sallaOrderProjectionId(a.storeId,input.externalOrderId);
   await assertSallaOrderProjectionSchema(); const pool = await getPool(); if (!pool) throw Error('Database unavailable');
   const c = await pool.getConnection(); let reusable = true, committing = false;
   try {
     await c.beginTransaction(); await assertSallaOrderAuthority(c,a,true);
+    if (creation) await (await import('./salla-order-creation')).lockSallaCreation(c,creation,a);
     // Duplicate identities are ambiguous here, not permission to overwrite the original customer or total.
     const [result] = await c.execute<any>(`INSERT INTO orders
       (merchantId,sallaOrderId,orderNumber,customerPhone,customerName,address,city,items,totalAmount,currency,status,payment_status,paymentUrl,isGift,giftRecipientName,giftMessage,discountCode)
@@ -56,6 +58,8 @@ export async function persistSallaOrderProjection(authority: SallaOrderAuthority
     const id = Number(result.insertId);
     await c.execute(`INSERT INTO salla_order_projections(merchant_id,store_id,external_order_id,local_order_id,connection_id,created_at)
       VALUES (?,?,?,?,?,UTC_TIMESTAMP(3))`,[a.merchantId,a.storeId,input.externalOrderId,id,a.connectionId]);
+    if (creation) await (await import('./salla-order-creation')).completeSallaCreation(c,creation,
+      {orderId:id,orderNumber:input.orderNumber,paymentUrl:input.paymentUrl});
     committing = true; await c.commit(); committing = false;
     return { id, orderNumber: input.orderNumber };
   } catch (error) {
