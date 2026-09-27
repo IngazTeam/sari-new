@@ -2,8 +2,10 @@ import { getPool } from '../db/connection';
 import { getActiveModel, getZahyPiRuntimeMetadata } from '../db_ai_settings';
 import { resolveZahyPiRuntimeConfig } from './zahypi-client';
 import { readAiBudgetSnapshot } from './budget-admin';
+import { assertAiBudgetAlertSchema } from './budget-alerts';
 
 export async function inspectAiBudget(deployment = false) {
+  await assertAiBudgetAlertSchema();
   const state = await readAiBudgetSnapshot();
   // Deployment verifies the budget infrastructure without depending on
   // decryptable provider credentials. Administrators configure those in-app.

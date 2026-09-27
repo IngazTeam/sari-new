@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 import { trpc } from '../../../client/src/lib/trpc';
 import { AiBudgetCard } from '../../../client/src/components/admin/AiBudgetCard';
 import { AiCapabilityCard } from '../../../client/src/components/admin/AiCapabilityCard';
+import { AiBudgetAlerts } from '../../../client/src/components/admin/AiBudgetAlerts';
 import { buildAiCapabilityManifest } from '../../../shared/ai-capabilities';
 import ar from '../../../client/src/locales/ar.json';
 import en from '../../../client/src/locales/en.json';
@@ -29,7 +30,15 @@ const client = trpc.createClient({ links: [() => ({ op }) => observable(observer
   const fail = (code = 'INTERNAL_SERVER_ERROR') => observer.error(TRPCClientError.from({ error: { message: 'private SQL price password', code: -32603, data: { code } } } as any));
   if (op.type === 'query') {
     w.__priceQueries.push({ path: op.path, input: op.input });
-    if (op.path === 'aiSettings.getBudget') {
+    if (op.path === 'aiSettings.getBudgetAlerts') {
+      if (mode === 'alerts-error' || w.__budgetReadFailed) { fail('FORBIDDEN'); return; }
+      if (mode === 'alerts-loading') return;
+      const level = w.__alertLevel ?? (mode === 'alerts-70' ? 70 : mode === 'alerts-90' ? 90 : mode === 'alerts-100' ? 100 : 0);
+      const data: any = { period: '2026-09-27', configured: true, enabled: true, limitUsd: 100, spentUsd: level / 2, reservedUsd: level / 2, level,
+        events: mode.startsWith('alerts-') && mode !== 'alerts-empty' ? [90, 70].map(threshold => ({ period: '2026-09-27', threshold, limitUsd: 100, spentUsd: 45, reservedUsd: 45, observedAt: '2026-09-27T06:00:00.000Z' })) : [] };
+      if (mode === 'alerts-invalid') data.events[0].privateKey = 'private SQL';
+      reply(data);
+    } else if (op.path === 'aiSettings.getBudget') {
       if (w.__budgetReadFailed) { fail('FORBIDDEN'); return; }
       if (mode === 'loading') return;
       if (mode === 'budget-error' && !w.__budgetRecovered || mode === 'refresh-error' && w.__priceSaved) { w.__budgetRecovered = true; fail(); return; }
@@ -71,7 +80,7 @@ async function render() {
   await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { ...ar, merchantUx: merchantUxAr } }, en: { translation: { ...en, merchantUx: merchantUxEn } } }, interpolation: { escapeValue: false } });
   const manifest = buildAiCapabilityManifest({ enabled: true, textProvider: 'zahypi', textModel: 'synthetic-qwen', openaiCredential: 'configured', zahypiCredential: 'configured' });
   createRoot(document.getElementById('root')!).render(<trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}>
-    <Toaster /><main className="mx-auto max-w-5xl p-3 space-y-4"><AiBudgetCard /><AiCapabilityCard manifest={manifest} loading={false} failed={false} refreshing={false} onRefresh={() => {}} /></main>
+    <Toaster /><main className="mx-auto max-w-5xl p-3 space-y-4">{mode.startsWith('alerts-') && <aside data-alert-banner><AiBudgetAlerts /></aside>}<AiBudgetCard /><AiCapabilityCard manifest={manifest} loading={false} failed={false} refreshing={false} onRefresh={() => {}} /></main>
   </QueryClientProvider></trpc.Provider>);
 }
 void render();

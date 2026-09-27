@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ state: vi.fn(), metadata: vi.fn(), runtime: vi.fn(), query: vi.fn() }));
+const mocks = vi.hoisted(() => ({ state: vi.fn(), metadata: vi.fn(), runtime: vi.fn(), query: vi.fn(), alertsSchema: vi.fn() }));
+vi.mock('./budget-alerts', () => ({ assertAiBudgetAlertSchema: mocks.alertsSchema }));
 vi.mock('./budget-admin', () => ({ readAiBudgetSnapshot: mocks.state }));
 vi.mock('../db_ai_settings', () => ({ getZahyPiRuntimeMetadata: mocks.metadata, getActiveModel: async () => 'gpt-4o' }));
 vi.mock('./zahypi-client', () => ({ resolveZahyPiRuntimeConfig: mocks.runtime }));
@@ -16,6 +17,11 @@ beforeEach(() => {
 });
 
 describe('deployment and AI readiness', () => {
+  it('requires the durable alert schema before budget inspection or activation', async () => {
+    mocks.alertsSchema.mockRejectedValue(Error('alert schema missing'));
+    await expect(inspectAiBudget(true)).rejects.toThrow('alert schema missing');
+    expect(mocks.state).not.toHaveBeenCalled();
+  });
   it('allows the admin UI to deploy without price cards or decryptable provider credentials', async () => {
     const result = await inspectAiBudget(true);
     expect(result).toMatchObject({ passed: true, mode: 'deployment', credentials: 'managed-in-super-admin' });

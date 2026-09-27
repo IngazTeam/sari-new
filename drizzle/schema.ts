@@ -40,6 +40,18 @@ export const aiBudgetPeriods = mysqlTable('ai_budget_periods', {
   spentMicroUsd: bigint('spent_micro_usd', { mode: 'number', unsigned: true }).default(0).notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [primaryKey({ columns: [table.scopeKey, table.periodStart] })]);
+// Global daily threshold notifications survive settlement, restarts and audit retention.
+export const aiBudgetAlerts = mysqlTable('ai_budget_alerts', {
+  periodStart: date('period_start', { mode: 'string' }).notNull(),
+  thresholdPercent: tinyint('threshold_percent', { unsigned: true }).notNull(),
+  limitMicroUsd: bigint('limit_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  spentMicroUsd: bigint('spent_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  reservedMicroUsd: bigint('reserved_micro_usd', { mode: 'number', unsigned: true }).notNull(),
+  observedAt: datetime('observed_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [primaryKey({ columns: [table.periodStart, table.thresholdPercent] }),
+  check('chk_ai_budget_alert_threshold', sql`${table.thresholdPercent} IN (70,90)`),
+  check('chk_ai_budget_alert_limit', sql`${table.limitMicroUsd}>0`),
+]);
 export const aiUsageReservations = mysqlTable('ai_usage_reservations', {
   usagePromptTokens:bigint('usage_prompt_tokens',{mode:'number',unsigned:true}),
   usageCompletionTokens:bigint('usage_completion_tokens',{mode:'number',unsigned:true}),

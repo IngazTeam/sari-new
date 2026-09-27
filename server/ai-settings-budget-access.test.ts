@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ read: vi.fn(), save: vi.fn(), reconcile: vi.fn(), history: vi.fn() }));
+const mocks = vi.hoisted(() => ({ read: vi.fn(), save: vi.fn(), reconcile: vi.fn(), history: vi.fn(), alerts: vi.fn() }));
+vi.mock('./ai/budget-alerts', async original => ({ ...await original<typeof import('./ai/budget-alerts')>(), readAiBudgetAlerts: mocks.alerts }));
 vi.mock('./ai/price-admin', async importOriginal => ({
   ...await importOriginal<typeof import('./ai/price-admin')>(), readAiPriceHistory: mocks.history,
 }));
@@ -18,8 +19,24 @@ beforeEach(() => { vi.resetAllMocks(); mocks.read.mockResolvedValue({ configured
   mocks.save.mockResolvedValue({ success: true, revisionId: 1, revision: 'a'.repeat(64), replayed: false });
   mocks.reconcile.mockResolvedValue({ success: true }); mocks.history.mockResolvedValue({ entries: [], nextBeforeId: null }); });
 describe('super-admin budget access', () => {
+  it('attributes alerts to the session actor and rejects invalid or private output', async () => {
+    const value = { period: '2026-09-27', configured: true, enabled: true, limitUsd: 100, spentUsd: 70, reservedUsd: 0, level: 70, events: [] };
+    mocks.alerts.mockResolvedValue(value);
+    await expect(caller('admin').getBudgetAlerts()).resolves.toEqual(value);
+    expect(mocks.alerts).toHaveBeenCalledWith(77);
+    mocks.alerts.mockResolvedValue({ ...value, privateKey: 'secret' });
+    await expect(caller('admin').getBudgetAlerts()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+  });
+  it('redacts alert storage errors and denies revoked authority', async () => {
+    mocks.alerts.mockRejectedValue(Error('private SQL password'));
+    await expect(caller('admin').getBudgetAlerts()).rejects.toMatchObject({ message: 'AI_PRICE_INTERNAL_SERVER_ERROR' });
+    mocks.alerts.mockRejectedValue(new AiPriceAdminError('FORBIDDEN'));
+    await expect(caller('admin').getBudgetAlerts()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
   it.each([null, 'user'])('denies %s reads, price changes and reconciliations before accessing storage', async role => {
     const api = caller(role);
+    await expect(api.getBudgetAlerts()).rejects.toMatchObject({ code: role ? 'FORBIDDEN' : 'UNAUTHORIZED' });
+    expect(mocks.alerts).not.toHaveBeenCalled();
     await expect(api.getBudget()).rejects.toMatchObject({ code: role ? 'FORBIDDEN' : 'UNAUTHORIZED' });
     await expect(api.savePriceCard(card)).rejects.toMatchObject({ code: role ? 'FORBIDDEN' : 'UNAUTHORIZED' });
     await expect(api.getPriceHistory({ provider: card.provider, model: card.model })).rejects.toMatchObject({ code: role ? 'FORBIDDEN' : 'UNAUTHORIZED' });

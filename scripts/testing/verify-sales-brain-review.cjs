@@ -46,7 +46,8 @@ try{
   run('build',[process.env.SARI_TEST_PNPM_CLI||'.tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs','run','build'],{},[path.resolve('dist')]);
   run('migration',['scripts/testing/verify-ai-price-migration.cjs'],{SARI_PRICE_MIGRATION_OUTPUT:path.join(output,'migration.json')},[path.join(output,'migration.json')]);
   run('prior-migrations',['scripts/testing/verify-staff-team-review-migration.cjs'],{SARI_STAFF_MIGRATION_OUTPUT:path.join(output,'prior-migrations.json')},[path.join(output,'prior-migrations.json')]);
-  const browserSpecs=[['brain','scripts/testing/verify-sales-brain-ui.cjs','SALES_BRAIN_UI_OUTPUT'],['prices','scripts/testing/verify-ai-price-ui.cjs','SARI_PRICE_UI_OUTPUT'],
+  run('alert-migration',['scripts/testing/verify-ai-budget-alert-migration.cjs'],{SARI_ALERT_MIGRATION_OUTPUT:path.join(output,'alert-migration.json')},[path.join(output,'alert-migration.json')]);
+  const browserSpecs=[['brain','scripts/testing/verify-sales-brain-ui.cjs','SALES_BRAIN_UI_OUTPUT'],['prices','scripts/testing/verify-ai-price-ui.cjs','SARI_PRICE_UI_OUTPUT'],['alerts','scripts/testing/verify-ai-budget-alert-ui.cjs','SARI_ALERT_UI_OUTPUT'],
     ['readout','scripts/testing/verify-sales-experiment-readout-ui.cjs','SALES_READOUT_UI_OUTPUT'],['orders','scripts/testing/verify-sales-order-report-ui.cjs','SALES_ORDER_REPORT_UI_OUTPUT'],
     ['staff-text','scripts/testing/verify-staff-dashboard-ui.cjs','STAFF_DASHBOARD_UI_OUTPUT'],['staff-voice','scripts/testing/verify-staff-voice-ui.cjs','STAFF_VOICE_UI_OUTPUT'],
     ['staff-review','scripts/testing/verify-staff-team-review-ui.cjs','STAFF_TEAM_REVIEW_UI_OUTPUT'],['staff-attempts','scripts/testing/verify-staff-attempt-review-ui.cjs','STAFF_ATTEMPT_REVIEW_UI_OUTPUT']];
@@ -59,11 +60,11 @@ try{
   const plan=fs.readFileSync('docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md','utf8'),items=[...plan.matchAll(/^- \[([ x])\] \*\*(B\d{3}) —/gm)];assert.equal(items.length,71);
   for(const item of items){const r=matrix.records.find(r=>r.id===item[2]);assert.ok(r);assert.equal(item[1]==='x',r.status==='complete');for(const ref of r.verification)assert.ok(fs.existsSync(ref)||fs.existsSync(path.join('docs/audits/sales-brain-implementation-2026-09-23',ref)),'Missing evidence '+ref);}
   const translations=JSON.parse(fs.readFileSync(path.join(output,'translations.log')));assert.deepEqual(translations.missing,[]);assert.deepEqual(translations.unresolvedDynamicCalls,[]);assert.deepEqual(translations.interpolationErrors,[]);
-  const migrations=['migration','prior-migrations'].map(name=>JSON.parse(fs.readFileSync(path.join(output,name+'.json'))));assert.ok(migrations.every(r=>r.passed&&r.cases.every(c=>c.passed)));
+  const migrations=['migration','prior-migrations','alert-migration'].map(name=>JSON.parse(fs.readFileSync(path.join(output,name+'.json'))));assert.ok(migrations.every(r=>r.passed&&r.cases.every(c=>c.passed)));
   assert.deepEqual(manifest(),before);
   const uniqueTests=new Set(suites.flatMap(s=>s.tests.map(t=>t.file+'\0'+t.name)));
   const report={version:'sales-brain-all-stages-review.v1',verifiedAt:new Date().toISOString(),baseCommit,sourceSha256:before,sourceStableBeforeAndAfter:true,
-    scope:'All selected implemented-stage, regression and security suites and eight UI groups. Local fixtures only; not live provider acceptance or a 10/10 business score.',checks,suites,totalExecutions:suites.reduce((n,s)=>n+s.passed,0),uniqueTests:uniqueTests.size,
+    scope:'All selected implemented-stage, regression and security suites and nine UI groups. Local fixtures only; not live provider acceptance or a 10/10 business score.',checks,suites,totalExecutions:suites.reduce((n,s)=>n+s.passed,0),uniqueTests:uniqueTests.size,
     browsers,browserScenarios:browsers.reduce((n,b)=>n+b.results.length,0),translations,migrations,migrationCount:journal.entries.length,planItems:matrix.records.map(r=>({id:r.id,title:r.title,status:r.status,remaining:r.remaining})),productionAccess:false,externalNetworkBlocked:true};
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({tests:report.totalExecutions,uniqueTests:report.uniqueTests,browserScenarios:report.browserScenarios}));
 }catch(e){console.error(e.message);process.exitCode=1;}

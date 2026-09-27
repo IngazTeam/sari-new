@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { getPool } from '../db/connection';
 import { assertAiBudgetAdmin } from './price-admin';
+import { recordAiBudgetAlerts } from './budget-alerts';
 import type { AiProviderJobReceipt } from './provider-job-receipt';
 
 export class AiBudgetError extends Error {
@@ -155,6 +156,7 @@ export async function reserveAiBudget(input: BudgetRequest): Promise<Reservation
       [reservationKey, requestId, policy.scopeKey, policy.period, fingerprint, input.provider, input.model, input.taskType,
         price.version, price.input_micro_usd_per_million, price.output_micro_usd_per_million, price.flat_micro_usd, amount],
     );
+    await recordAiBudgetAlerts(connection, policy.period);
     await connection.commit();
     return { reservationKey, requestId, scopeKey: policy.scopeKey, period: policy.period, created: true };
   } catch (error) {
@@ -226,6 +228,7 @@ export async function settleAiBudget(reservation: Pick<Reservation, 'reservation
         settlement_next_at=NULL,settlement_last_error=NULL WHERE reservation_key = ?`,
         [amount, evidence?.reference ?? null, evidence?.actorId ?? null, reservation.reservationKey]);
     }
+    await recordAiBudgetAlerts(connection, period);
     await connection.commit();
   } catch (error) { await connection.rollback(); throw error; }
   finally { connection.release(); }

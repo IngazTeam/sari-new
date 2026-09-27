@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { AiPriceManager } from './AiPriceManager';
+import { AiBudgetAlerts } from './AiBudgetAlerts';
 
 export function AiBudgetCard() {
   const { t, i18n } = useTranslation();
@@ -20,12 +21,13 @@ export function AiBudgetCard() {
     onError: () => toast.error(t('aiBudget.reconciliationFailed')),
   });
   const usd = (value: number) => value.toLocaleString(i18n.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
-  return <Card>
+  return <Card id="ai-budget">
     <CardHeader>
       <CardTitle>{t('aiBudget.title')}</CardTitle>
       <CardDescription>{t('aiBudget.description')}</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
+      <AiBudgetAlerts history />
       {budget.isLoading ? <p role="status">{t('aiBudget.loading')}</p> : budget.error ? <p role="alert">{t('aiBudget.unavailable')}</p> : budget.data && <>
         <dl className="grid gap-4 sm:grid-cols-3">
           <div><dt>{t('aiBudget.limit')}</dt><dd className="text-xl font-bold">{usd(budget.data.effectiveLimitUsd)}</dd></div>

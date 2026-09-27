@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { MerchantSelector } from './MerchantSelector';
+import { AiBudgetAlerts } from './admin/AiBudgetAlerts';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -709,7 +710,10 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          {user?.role === 'admin' && location !== '/admin/ai-settings' && <div className="mb-4"><AiBudgetAlerts /></div>}
+          {children}
+        </main>
       </SidebarInset>
 
       {/* Logout Confirmation Dialog */}

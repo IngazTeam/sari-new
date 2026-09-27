@@ -9,6 +9,8 @@ import { buildAiCapabilityManifest } from "../shared/ai-capabilities";
 import { protectedProcedure, router } from "./_core/trpc";
 import { readAiBudgetAdmin, saveAiPriceCard, aiReconciliationInput, reconcileAiReservation } from './ai/budget-admin';
 import { AiPriceAdminError, readAiPriceHistory } from './ai/price-admin';
+import { readAiBudgetAlerts } from './ai/budget-alerts';
+import { aiBudgetAlertsOutput } from '../shared/ai-budget-alert-contract';
 import { aiPriceCardSaveInput, aiPriceHistoryInput, aiPriceHistoryOutput, aiPriceSaveOutput } from '../shared/ai-price-contract';
 import {
   clearZahyPiRuntimeConfigCache,
@@ -69,6 +71,10 @@ const zahyPiModelSchema = z.string()
   .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/, "اسم النموذج غير صالح");
 
 export const aiSettingsRouter = router({
+  getBudgetAlerts: protectedProcedure.output(aiBudgetAlertsOutput).query(async ({ ctx }) => {
+    assertAdmin(ctx.user.role);
+    return priceAdminResult(() => readAiBudgetAlerts(ctx.user.id));
+  }),
   getBudget: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
     return priceAdminResult(() => readAiBudgetAdmin(ctx.user.id));

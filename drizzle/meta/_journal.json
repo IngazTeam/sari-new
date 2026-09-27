@@ -946,6 +946,13 @@
       "when": 1795046400000,
       "tag": "0134_ai_price_revisions",
       "breakpoints": true
+    },
+    {
+      "idx": 135,
+      "version": "5",
+      "when": 1795132800000,
+      "tag": "0135_ai_budget_alerts",
+      "breakpoints": true
     }
   ]
 }
