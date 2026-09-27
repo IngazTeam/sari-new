@@ -259,35 +259,6 @@ async function claimReceipts(limit: number): Promise<ReceiptRow[]> {
   return rows;
 }
 
-async function markEffectApplied(
-  row: ReceiptRow,
-  notificationRequired = false,
-  notificationStatus: LocalOrderStatus | null = null,
-): Promise<void> {
-  const pool = await getPool();
-  if (!pool) throw new ReceiptProcessingError('database_unavailable');
-  const [result] = await pool.execute(
-    `UPDATE salla_webhook_receipts
-        SET effect_applied = 1, notification_required = ?, notification_status = ?
-      WHERE id = ? AND status = 'processing' AND processing_token = ?`,
-    [notificationRequired ? 1 : 0, notificationStatus, row.id, row.processing_token],
-  );
-  if (Number((result as any).affectedRows || 0) !== 1) throw new ReceiptProcessingError('lease_lost');
-  row.effect_applied = 1;
-  row.notification_required = notificationRequired ? 1 : 0;
-  row.notification_status = notificationStatus;
-}
-
-async function deleteLocalProduct(row: ReceiptRow): Promise<void> {
-  const pool = await getPool();
-  if (!pool) throw new ReceiptProcessingError('database_unavailable');
-  await pool.execute(
-    'DELETE FROM products WHERE merchantId = ? AND sallaProductId = ?',
-    [row.merchant_id, row.resource_id],
-  );
-  await markEffectApplied(row);
-}
-
 async function applyOrderEffect(
   row: ReceiptRow,
   nextStatus: LocalOrderStatus,
@@ -443,11 +414,12 @@ async function applyReceiptEffect(row: ReceiptRow): Promise<void> {
   const salla = new SallaIntegration(Number(row.merchant_id), connection.accessToken);
 
   if (!row.effect_applied) {
-    if (row.event_type === 'product.deleted') {
-      await deleteLocalProduct(row);
-    } else if (row.event_type === 'product.updated' || row.event_type === 'product.quantity.updated') {
-      await salla.syncSingleProduct(row.resource_id);
-      await markEffectApplied(row);
+    if (['product.deleted', 'product.updated', 'product.quantity.updated'].includes(row.event_type)) {
+      await salla.syncSingleProduct(row.resource_id, { id: row.id, storeId: row.salla_store_id,
+        productId: row.resource_id, token: row.processing_token });
+      row.effect_applied = 1;
+      row.notification_required = 0;
+      row.notification_status = null;
     } else if (row.event_type === 'order.updated') {
       const remote = await salla.getOrderStatus(row.resource_id);
       const mapped = mapSallaOrderStatusSlug(remote.status);

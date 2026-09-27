@@ -1,4 +1,4 @@
-import { zidCatalogVisibleSql } from '../integrations/zid-catalog-scope';
+import { catalogVisibleSql } from '../integrations/catalog-scope';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import type {
@@ -119,7 +119,7 @@ export async function listApiProducts(
   const pool = await requiredPool();
   const [countResult, dataResult] = await Promise.all([
     pool.execute(
-      `SELECT COUNT(*) AS total FROM products WHERE merchantId = ? AND isActive = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}`,
+      `SELECT COUNT(*) AS total FROM products WHERE merchantId = ? AND isActive = 1 AND status = 'active' AND ${catalogVisibleSql()}`,
       [merchantId],
     ),
     pool.execute(
@@ -130,7 +130,7 @@ export async function listApiProducts(
               \`registration_open\` AS registrationOpen,
               \`createdAt\` AS createdAt, \`updatedAt\` AS updatedAt
          FROM products
-        WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}
+        WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${catalogVisibleSql()}
         ORDER BY id DESC
         LIMIT ? OFFSET ?`,
       [merchantId, pagination.limit, pagination.offset],
@@ -346,7 +346,7 @@ export async function getApiKnowledgeOverview(merchantId: number): Promise<ApiKn
   const [rows] = await pool.execute(
     `SELECT
        (SELECT COUNT(*) FROM products
-         WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${zidCatalogVisibleSql()}) AS products,
+         WHERE \`merchantId\` = ? AND \`isActive\` = 1 AND status = 'active' AND ${catalogVisibleSql()}) AS products,
        (SELECT COUNT(*) FROM conversations WHERE \`merchantId\` = ?) AS conversations,
        (SELECT COUNT(*) FROM extracted_faqs
          WHERE merchant_id = ? AND source_status = 'active') AS faqs,

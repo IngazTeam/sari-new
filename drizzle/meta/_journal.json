@@ -974,6 +974,13 @@
       "when": 1795392000000,
       "tag": "0138_salla_order_creations",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "5",
+      "when": 1795392000001,
+      "tag": "0139_salla_product_projections",
+      "breakpoints": true
     }
   ]
 }

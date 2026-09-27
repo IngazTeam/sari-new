@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), dispatch:vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+vi.mock('./integrations/salla-catalog',()=>({selectSallaOrderProduct:m.product}));
 vi.mock('./integrations/salla-order-creation',()=>({dispatchSallaCreation:m.dispatch}));
 vi.mock('./integrations/salla-order-projection', async importOriginal => ({...await importOriginal<any>(),persistSallaOrderProjection:m.create,preflightSallaOrderAuthority:m.preflight}));
 vi.mock('axios', () => ({ default: { create: () => ({ post: m.post, get: m.get }) } }));
@@ -30,7 +31,7 @@ beforeEach(() => {
   m.preflight.mockResolvedValue(undefined);
   m.dispatch.mockResolvedValue(undefined);
   m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,currency:'SAR',amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
-  m.product.mockResolvedValue({id:4,merchantId:7,name:'Sample',price:9999,priceUnit:'minor',currency:'SAR',sallaProductId:'123',isActive:1,trackInventory:1,stock:5});
+  m.product.mockReset().mockResolvedValue({productId:4,externalId:'123',revision:1,name:'Sample',price:9999,quantity:2});
   m.create.mockResolvedValue({id:55,orderNumber:'456'});
   m.notify.mockResolvedValue(undefined);
 });
@@ -71,8 +72,8 @@ describe('Salla order transport and monetary authority', () => {
     expect(m.create.mock.calls[0][1]).toMatchObject({externalOrderId:'123',totalAmount:22998});
     expect(m.link).not.toHaveBeenCalled();
   });
-  it.each([{merchantId:8},{priceUnit:'unverified'},{currency:'USD'},{stock:1}])('rejects foreign, uncertain, unsupported or unavailable products: %j', async patch => {
-    m.product.mockResolvedValue({...await m.product(),...patch});
+  it('stops when the verified catalogue rejects a selection (scope and money checked by MySQL contracts)', async () => {
+    m.product.mockRejectedValue(Error('Salla product unavailable'));
     expect(await createOrderFromChat(7,'966500000009','Test',parsed())).toBeNull();
     expect(m.post).not.toHaveBeenCalled(); expect(m.create).not.toHaveBeenCalled();
   });

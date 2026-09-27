@@ -1,6 +1,6 @@
 import { currentInboundExecution } from '../messaging/inbound-context';
 import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
-import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMinor } from '../../shared/product-money';
+import { formatProductPrice, formatMinorMoney, requireMinor } from '../../shared/product-money';
 /**
  * Order From Chat System
  * 
@@ -13,12 +13,12 @@ import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMino
  */
 
 import { invokeLLM } from '../_core/llm';
+import { selectSallaOrderProduct, type SallaProductSelection } from '../integrations/salla-catalog';
 import { SallaIntegration } from '../integrations/salla';
 import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
 import { dispatchSallaCreation, type SallaCreationAttempt } from '../integrations/salla-order-creation';
 import {
   getMerchantById,
-  getProductById,
   getProductsByMerchantId,
   getSallaConnectionByMerchantId,
   getUserById,
@@ -27,7 +27,6 @@ import {
 import { extractDiscountCodeFromMessage } from './discount-system';
 import {
   filterProductsAvailableForSale,
-  isProductAvailableForSale,
 } from '../ai/product-availability';
 
 interface ParsedOrder {
@@ -174,46 +173,18 @@ export async function createOrderFromChat(
     const authority = sallaAuthoritySchema.parse({ merchantId, connectionId: sallaConnection.id,
       storeId: sallaConnection.sallaStoreId, accessToken: sallaConnection.accessToken });
 
-    // Prepare order items
+    if (!parsedOrder.products.length || parsedOrder.products.length > 100
+      || new Set(parsedOrder.products.map(p => p.productId)).size !== parsedOrder.products.length) throw Error('Invalid product selection');
     const items = [];
+    const selection: SallaProductSelection[] = [];
     let totalAmount = 0;
-    const outOfStockItems: string[] = [];
-
     for (const product of parsedOrder.products) {
-      if (!product.productId) continue;
-
-      const dbProduct = await getProductById(product.productId);
-      if (!dbProduct || dbProduct.merchantId !== merchantId) throw new Error('Product unavailable for this merchant');
-      const money = verifiedProductMoney(dbProduct);
-      if (money.currency !== 'SAR' || !dbProduct.sallaProductId || dbProduct.sallaProductId.includes(':')) throw new Error('Product is not payable through Salla');
-      if (!Number.isSafeInteger(product.quantity) || product.quantity < 1) throw new Error('Invalid order quantity');
-
-      if (!isProductAvailableForSale(dbProduct)) {
-        outOfStockItems.push(dbProduct.name);
-        continue;
-      }
-
-      // P3: Zero Stock Guard
-      const stock = (dbProduct as any).stock ?? (dbProduct as any).quantity ?? null;
-      if (dbProduct.trackInventory && stock !== null && stock <= 0) { outOfStockItems.push(dbProduct.name); continue; }
-      if (dbProduct.trackInventory && stock !== null && product.quantity > stock) throw new Error('Requested quantity unavailable');
-
-      items.push({
-        sallaProductId: dbProduct.sallaProductId || '',
-        productId: dbProduct.id,
-        name: dbProduct.name,
-        quantity: product.quantity,
-        price: dbProduct.price
-      });
-
-      totalAmount += dbProduct.price * product.quantity;
-    }
-
-    if (items.length === 0 || items.length !== parsedOrder.products.length) {
-      if (outOfStockItems.length > 0) {
-        throw new Error(`OUT_OF_STOCK:${outOfStockItems.join(',')}`);
-      }
-      throw new Error('No valid products found');
+      if (!product.productId) throw Error('Unresolved product selection');
+      const verified = await selectSallaOrderProduct(authority, product.productId, product.quantity);
+      selection.push(verified);
+      items.push({ sallaProductId: verified.externalId, productId: verified.productId,
+        name: verified.name, quantity: verified.quantity, price: verified.price });
+      totalAmount += verified.price * verified.quantity;
     }
 
     requireMinor(totalAmount);
@@ -222,7 +193,7 @@ export async function createOrderFromChat(
     const discountCode = message ? extractDiscountCodeFromMessage(message) : undefined;
     await currentInboundExecution()?.assertOwned();
     await preflightSallaOrderAuthority(authority);
-    await dispatchSallaCreation(creation,authority);
+    await dispatchSallaCreation(creation,authority,selection);
     providerAttempted = true;
     const sallaOrder = await salla.createOrder({
       customerName,

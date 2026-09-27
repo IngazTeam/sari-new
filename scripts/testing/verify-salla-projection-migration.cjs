@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 (async()=>{
   const root=process.cwd(),url=new URL(process.env.SARI_TEST_DATABASE_URL||'');
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use the owned synthetic migration server');
-  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0137_salla_order_projections','0138_salla_order_creations'].includes(journal.entries.at(-1).tag));
+  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0137_salla_order_projections','0138_salla_order_creations','0139_salla_product_projections'].includes(journal.entries.at(-1).tag));
   const dir=path.resolve('.tmp/salla-projection-migration-'+Date.now()),output=path.resolve(process.env.SARI_SALLA_PROJECTION_MIGRATION_OUTPUT||'.tmp/salla-projection-migration/results.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
   const prior=journal.entries.filter(e=>e.idx<137);for(const e of prior)fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));
@@ -13,7 +13,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
   const db=await mysql.createConnection(url.toString()),ddl=fs.readFileSync('drizzle/0137_salla_order_projections.sql','utf8').split('--> statement-breakpoint'),cases=[];
   const apply=async()=>{for(const s of ddl)if(s.trim())await db.query(s);};
   try{
-    const [[identity]]=await db.query('SELECT @@port AS port,@@datadir AS directory');assert.equal(Number(identity.port),33089);assert.equal(path.resolve(identity.directory).toLowerCase(),path.resolve('.tmp/staff-migration-mysql/data').toLowerCase());
+    const [[identity]]=await db.query('SELECT @@port AS port,@@datadir AS directory');assert.equal(Number(identity.port),33089);assert.equal(path.resolve(identity.directory).toLowerCase(),fs.realpathSync(path.resolve('.tmp/staff-migration-mysql/data')).toLowerCase());
     for(const mode of ['fresh','upgrade']){
       const name=`sari_projection_${mode}_${Date.now()}_test`;await db.query(`CREATE DATABASE ${name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);await db.query(`USE ${name}`);
       if(mode==='fresh'){run(name);const [[n]]=await db.query('SELECT COUNT(*) AS n FROM __drizzle_migrations'),[[a]]=await db.query('SELECT COUNT(*) AS n FROM salla_order_projections');assert.equal(n.n,journal.entries.length);assert.equal(a.n,0);cases.push({mode,migrations:n.n,emptyHistory:true,passed:true});continue;}

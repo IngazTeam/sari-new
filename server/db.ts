@@ -287,7 +287,8 @@ import {
   MerchantInvitation,
   InsertMerchantInvitation,
 } from "../drizzle/schema";
-import { currentZidStoreSql, zidCatalogVisibleSql } from './integrations/zid-catalog-scope';
+import { currentZidStoreSql } from './integrations/zid-catalog-scope';
+import { catalogVisibleSql } from './integrations/catalog-scope';
 import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
@@ -1126,7 +1127,7 @@ export async function getProductsByMerchantId(
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = [eq(products.merchantId, merchantId), sql.raw(zidCatalogVisibleSql())];
+  const conditions = [eq(products.merchantId, merchantId), sql.raw(catalogVisibleSql())];
 
   if (opts?.search) {
     conditions.push(
@@ -1160,7 +1161,7 @@ export async function getProductCountByMerchantId(
   const db = await getDb();
   if (!db) return 0;
 
-  const conditions = [eq(products.merchantId, merchantId), sql.raw(zidCatalogVisibleSql())];
+  const conditions = [eq(products.merchantId, merchantId), sql.raw(catalogVisibleSql())];
 
   if (opts?.search) {
     conditions.push(
@@ -1188,7 +1189,7 @@ export async function getActiveProductsByMerchantId(merchantId: number): Promise
   return db
     .select()
     .from(products)
-    .where(and(eq(products.merchantId, merchantId), eq(products.isActive, 1), sql.raw(zidCatalogVisibleSql())))
+    .where(and(eq(products.merchantId, merchantId), eq(products.isActive, 1), sql.raw(catalogVisibleSql())))
     .orderBy(desc(products.createdAt));
 }
 
@@ -2134,7 +2135,7 @@ export async function getAllSallaConnections(): Promise<SallaConnection[]> {
 
 export async function createSyncLog(merchantId: number, syncType: 'full_sync' | 'stock_sync' | 'single_product', status: 'success' | 'failed' | 'in_progress'): Promise<number> {
   const db = await getDb();
-  if (!db) return 0;
+  if (!db) throw Error('Database unavailable');
 
   const result = await db.insert(syncLogs).values({
     merchantId,
@@ -2144,7 +2145,9 @@ export async function createSyncLog(merchantId: number, syncType: 'full_sync' | 
     startedAt: formatDateForDB(new Date())
   });
 
-  return (result as any).insertId;
+  const id = Number(result[0].insertId);
+  if (!Number.isSafeInteger(id) || id < 1) throw Error('Sync log unavailable');
+  return id;
 }
 
 export async function updateSyncLog(id: number, status: 'success' | 'failed', itemsSynced: number, errors?: string): Promise<void> {

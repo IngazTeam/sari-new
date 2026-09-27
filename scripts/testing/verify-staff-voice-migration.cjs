@@ -4,7 +4,7 @@ const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'
     ||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use the separate synthetic migration server');
   const c=await mysql.createConnection(url.toString()),journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));
-  if(!['0132_staff_dashboard_voices','0133_staff_team_reviews','0134_ai_price_revisions','0135_ai_budget_alerts','0136_salla_sales_observations','0137_salla_order_projections','0138_salla_order_creations'].includes(journal.entries.at(-1).tag))throw Error('Unexpected migration head');
+  if(!['0132_staff_dashboard_voices','0133_staff_team_reviews','0134_ai_price_revisions','0135_ai_budget_alerts','0136_salla_sales_observations','0137_salla_order_projections','0138_salla_order_creations','0139_salla_product_projections'].includes(journal.entries.at(-1).tag))throw Error('Unexpected migration head');
   const dir=path.resolve('.tmp/dashboard-voice-migration-'+Date.now()),output=path.resolve(process.env.SARI_STAFF_MIGRATION_OUTPUT||'.tmp/dashboard-voice-migration/migration.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});
   for(const e of journal.entries.filter(e=>e.idx<132))fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));

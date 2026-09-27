@@ -1,3 +1,4 @@
+import { catalogVisibleSql } from '../integrations/catalog-scope';
 import { zidCatalogVisibleSql } from '../integrations/zid-catalog-scope';
 import { normalizeProductMoneyWrite } from '../../shared/product-money';
 /**
@@ -49,7 +50,7 @@ export async function getProductsByMerchantId(merchantId: number): Promise<Produ
     const db = await getDb();
     if (!db) return [];
 
-    return db.select().from(products).where(and(eq(products.merchantId, merchantId),sql.raw(zidCatalogVisibleSql()))).orderBy(desc(products.createdAt));
+    return db.select().from(products).where(and(eq(products.merchantId, merchantId),sql.raw(catalogVisibleSql()))).orderBy(desc(products.createdAt));
 }
 
 export async function getActiveProductsByMerchantId(merchantId: number): Promise<Product[]> {
@@ -60,7 +61,7 @@ export async function getActiveProductsByMerchantId(merchantId: number): Promise
         .select()
         .from(products)
         // @ts-ignore
-        .where(and(eq(products.merchantId, merchantId), eq(products.isActive, true),sql.raw(zidCatalogVisibleSql())))
+        .where(and(eq(products.merchantId, merchantId), eq(products.isActive, true),sql.raw(catalogVisibleSql())))
         .orderBy(desc(products.createdAt));
 }
 
@@ -217,7 +218,7 @@ export async function getLowStockProducts(merchantId: number): Promise<Product[]
         .where(and(
             eq(products.merchantId, merchantId),
             eq(products.trackInventory, 1),
-            sql.raw(zidCatalogVisibleSql()),
+            sql.raw(catalogVisibleSql()),
             // @ts-ignore
             eq(products.isActive, true),
             sql`${products.stock} <= ${products.lowStockAlert}`,

@@ -3,7 +3,6 @@ import {
   createNotification,
   getAllSallaConnections,
   getMerchantById,
-  updateSallaConnection,
 } from '../db';
 import { SallaIntegration } from '../integrations/salla';
 import { notifyOwner } from '../_core/notification';
@@ -12,7 +11,7 @@ import { notifyOwner } from '../_core/notification';
  * Cron Jobs for Salla Integration
  * 
  * 1. Full Sync: Daily at 3 AM (all products, prices, images)
- * 2. Stock Sync: Every hour (quantities only)
+ * 2. Stock Sync: Every hour (verified current-store product snapshots)
  */
 
 // ========================================
@@ -60,21 +59,13 @@ export function startDailyFullSync() {
           
         } catch (error: any) {
           failCount++;
-          console.error(`[Cron] ❌ Full sync failed for merchant ${connection.merchantId}:`, error.message);
+          console.error(`[Cron] ❌ Full sync failed for merchant ${connection.merchantId}:`, 'catalog_sync_unavailable');
           
-          // Update connection status
-          await updateSallaConnection(connection.merchantId, {
-            syncStatus: 'error',
-            syncErrors: JSON.stringify({
-              message: error.message,
-              timestamp: new Date(),
-            }),
-          });
-          
+          // The integration records failure without modifying a reconnected store.
           // Notify owner about failure
           await notifyOwner({
             title: 'فشل مزامنة Salla',
-            content: `فشلت مزامنة المتجر للتاجر ${connection.merchantId}: ${error.message}`,
+            content: `فشلت مزامنة المتجر للتاجر ${connection.merchantId}: catalog_sync_unavailable`,
           });
         }
       }
@@ -82,7 +73,7 @@ export function startDailyFullSync() {
       console.log(`[Cron] Daily full sync completed: ${successCount} success, ${failCount} failed`);
       
     } catch (error) {
-      console.error('[Cron] Daily full sync job failed:', error);
+      console.error('[Cron] Daily full sync job failed');
     }
   });
 
@@ -112,15 +103,14 @@ export function startHourlyStockSync() {
           console.log(`[Cron] ✅ Merchant ${connection.merchantId}: ${result.updated} products updated`);
           
         } catch (error: any) {
-          console.error(`[Cron] ❌ Stock sync failed for merchant ${connection.merchantId}:`, error.message);
+          console.error(`[Cron] ❌ Stock sync failed for merchant ${connection.merchantId}:`, 'catalog_sync_unavailable');
           
-          // Don't update status to error for stock sync failures
-          // (full sync will handle it)
+          // Keep connection authority unchanged after transient catalog failures.
         }
       }
       
     } catch (error) {
-      console.error('[Cron] Hourly stock sync job failed:', error);
+      console.error('[Cron] Hourly stock sync job failed');
     }
   });
 

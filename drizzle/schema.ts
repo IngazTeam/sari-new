@@ -821,6 +821,18 @@ export const sallaWebhookReceipts = mysqlTable("salla_webhook_receipts", {
 	index('idx_salla_receipt_order_scope').on(table.merchantId,table.sallaStoreId,table.resourceId,table.eventType,table.status),
 ]);
 
+export const sallaProductProjections = mysqlTable('salla_product_projections', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  storeId:varchar('store_id',{length:32}).notNull(),externalProductId:varchar('external_product_id',{length:32}).notNull(),
+  localProductId:int('local_product_id'),connectionId:int('connection_id').notNull(),readRevision:int('read_revision').notNull(),
+  archived:tinyint().default(0).notNull(),observedAt:datetime('observed_at',{mode:'string',fsp:3}).notNull(),
+},table=>[uniqueIndex('salla_product_scope').on(table.merchantId,table.storeId,table.externalProductId),
+  uniqueIndex('salla_product_local').on(table.localProductId),
+  check('chk_salla_product_projection',sql`${table.connectionId}>0 AND ${table.readRevision}>0 AND ${table.archived} IN (0,1)
+    AND (${table.localProductId} IS NOT NULL OR ${table.archived}=1) AND (${table.localProductId} IS NULL OR ${table.localProductId}>0)
+    AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalProductId},'^[1-9][0-9]{0,19}$','c')`),
+]);
+
 export const sallaOrderCreations = mysqlTable('salla_order_creations', {
   id:int().autoincrement().primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   actorUserId:int('actor_user_id').notNull(), requestId:char('request_id',{length:36}).notNull(), requestHash:char('request_hash',{length:64}).notNull(),

@@ -2,16 +2,10 @@ import { majorToMinor, requireMinor } from '../../shared/product-money';
 import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
-import {
-  createProduct,
-  createSyncLog,
-  getProductBySallaId,
-  getProductsWithSallaId,
-  updateProduct,
-  updateProductStock,
-  updateSallaConnection,
-  updateSyncLog,
-} from '../db';
+import { createSyncLog, updateSyncLog } from '../db';
+import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync, type SallaCatalogReceipt } from './salla-catalog';
+import { readSallaProductPage, readSallaProductResponse } from './salla-product-normalization';
+import type { SallaOrderAuthority } from './salla-order-projection';
 
 const SALLA_API_BASE = 'https://api.salla.dev/admin/v2';
 const sallaHttp = axios.create({
@@ -43,20 +37,6 @@ export function normalizeSallaStoreIdentity(value: unknown): SallaStoreIdentity 
   }
 }
 
-interface SallaProduct {
-  id: string;
-  name: string;
-  description?: string;
-  price: string | number;
-  currency?: 'SAR' | 'USD';
-  sale_price?: string | number | null;
-  quantity: number;
-  sku?: string;
-  main_image?: string;
-  images?: Array<{ url: string }>;
-  categories?: Array<{ name: string }>;
-}
-
 interface SallaOrderData {
   customerName: string;
   phone: string;
@@ -82,187 +62,83 @@ export class SallaIntegration {
     this.accessToken = accessToken;
   }
 
-  /**
-   * المزامنة الكاملة - جلب جميع المنتجات من Salla
-   */
+  /** Only authenticated reads of the current store may project catalog data. */
   async fullSync(): Promise<{ success: boolean; synced: number }> {
-    console.log(`[Salla] Starting full sync for merchant ${this.merchantId}`);
-    const startTime = Date.now();
-    
+    const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
+    const revision = await createSyncLog(this.merchantId, 'full_sync', 'in_progress');
+    let synced = 0;
     try {
-      // إنشاء سجل مزامنة
-      const logId = await createSyncLog(this.merchantId, 'full_sync', 'in_progress');
-      
-      let page = 1;
-      let totalSynced = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        try {
-          const response = await sallaHttp.get(`${SALLA_API_BASE}/products`, {
-            headers: {
-              'Authorization': `Bearer ${this.accessToken}`,
-              'Accept': 'application/json'
-            },
-            params: {
-              page,
-              per_page: 50
-            }
-          });
-
-          const products: SallaProduct[] = response.data.data;
-          
-          if (!products || products.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          // حفظ المنتجات في قاعدة بياناتنا
-          for (const sallaProduct of products) {
-            await this.saveProductLocally(sallaProduct);
-            totalSynced++;
-          }
-
-          // التحقق من وجود صفحات إضافية
-          hasMore = response.data.pagination?.hasMorePages || false;
-          page++;
-          
-          // Rate limiting: 1 request per second
-          await this.sleep(1000);
-          
-        } catch (error: any) {
-          if (error.response?.status === 429) {
-            // Rate limit hit - wait 60 seconds
-            console.log('[Salla] Rate limit hit, waiting 60 seconds...');
-            await this.sleep(60000);
-            continue; // Retry same page
-          }
-          throw error;
+      const seen = new Set<string>();
+      for (let page = 1; page <= 200; page++) {
+        await assertCatalogReadAuthority(authority);
+        const response = await sallaHttp.get(SALLA_API_BASE + '/products', {
+          headers: this.catalogHeaders(), params: { page, per_page: 50 },
+        });
+        const result = readSallaProductPage(response.data, page);
+        if (result.items.some(p => seen.has(p.externalId))) throw Error('Duplicate catalog page');
+        for (const product of result.items) {
+          seen.add(product.externalId);
+          const saved = await persistSallaCatalogRead(authority, revision, product.externalId, product);
+          if (saved.applied) synced++;
         }
+        if (!result.hasMore) break;
+        await this.sleep(1000);
       }
-
-      const duration = Date.now() - startTime;
-      console.log(`[Salla] Full sync completed: ${totalSynced} products in ${duration}ms`);
-      
-      // تحديث سجل المزامنة
-      await updateSyncLog(logId, 'success', totalSynced);
-      
-      // تحديث حالة الاتصال
-      await updateSallaConnection(this.merchantId, {
-        syncStatus: 'active',
-        lastSyncAt: new Date().toISOString().slice(0, 19).replace("T", " ")
-      });
-      
-      return { success: true, synced: totalSynced };
-      
-    } catch (error: any) {
-      console.error('[Salla] Full sync failed:', error.message);
-      
-      await updateSallaConnection(this.merchantId, {
-        syncStatus: 'error',
-        syncErrors: JSON.stringify({ message: error.message, timestamp: new Date() })
-      });
-      
-      throw error;
+      await finishSallaCatalogSync(authority);
+      await updateSyncLog(revision, 'success', synced);
+      return { success: true, synced };
+    } catch {
+      return this.failCatalogSync(revision, synced);
     }
   }
 
-  /**
-   * مزامنة المخزون فقط - تحديث الكميات المتوفرة
-   */
+  /** Refresh only verified products from this store, never another integration's IDs. */
   async syncStock(): Promise<{ success: boolean; updated: number }> {
-    console.log(`[Salla] Starting stock sync for merchant ${this.merchantId}`);
-    
+    const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
+    const revision = await createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
+    let updated = 0, cursor = 0, read = 0;
     try {
-      const logId = await createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
-      
-      // جلب جميع منتجات التاجر التي لها salla_product_id
-      const localProducts = await getProductsWithSallaId(this.merchantId);
-      
-      let updated = 0;
-
-      for (const product of localProducts) {
-        try {
-          const response = await sallaHttp.get(
-            `${SALLA_API_BASE}/products/${product.sallaProductId}`,
-            {
-              headers: { 
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Accept': 'application/json'
-              }
-            }
-          );
-
-          const sallaProduct = response.data.data;
-          const newQuantity = sallaProduct.quantity || 0;
-          
-          // تحديث الكمية في قاعدة بياناتنا
-          await updateProductStock(product.id, newQuantity);
-          updated++;
-          
-          // Rate limiting
+      while (true) {
+        const products = await listSallaCatalogPage(authority, cursor);
+        if (!products.length) break;
+        for (const p of products) {
+          if (++read > 10000) throw Error('Catalog refresh limit exceeded');
+          const product = await this.readCatalogProduct(authority, p.external_product_id);
+          const saved = await persistSallaCatalogRead(authority, revision, p.external_product_id, product);
+          if (saved.applied) updated++;
+          cursor = p.id;
           await this.sleep(1000);
-          
-        } catch (error: any) {
-          console.error(`[Salla] Failed to sync stock for product ${product.id}:`, error.message);
-          // نكمل مع باقي المنتجات
         }
       }
-
-      await updateSyncLog(logId, 'success', updated);
-      
-      console.log(`[Salla] Stock sync completed: ${updated} products updated`);
+      await finishSallaCatalogSync(authority);
+      await updateSyncLog(revision, 'success', updated);
       return { success: true, updated };
-      
-    } catch (error: any) {
-      console.error('[Salla] Stock sync failed:', error);
-      throw error;
+    } catch {
+      return this.failCatalogSync(revision, updated);
     }
   }
 
-  /**
-   * حفظ منتج من Salla في قاعدة بياناتنا
-   */
-  private async saveProductLocally(sallaProduct: SallaProduct): Promise<void> {
+  private catalogHeaders() {
+    return { Authorization: 'Bearer ' + this.accessToken, Accept: 'application/json' };
+  }
+
+  private async readCatalogProduct(authority: SallaOrderAuthority, id: string) {
+    sallaExternalId.parse(id);
+    await assertCatalogReadAuthority(authority);
     try {
-      // التحقق إذا المنتج موجود
-      const existing = await getProductBySallaId(this.merchantId, sallaProduct.id);
-
-      // تحويل السعر من string إلى integer (بالهللات)
-      const price = majorToMinor(sallaProduct.price);
-      const salePrice = sallaProduct.sale_price != null && sallaProduct.sale_price !== ''
-        ? majorToMinor(sallaProduct.sale_price)
-        : null;
-
-      const productData = {
-        merchantId: this.merchantId,
-        sallaProductId: sallaProduct.id,
-        name: sallaProduct.name,
-        description: sallaProduct.description || '',
-        price: salePrice ?? price, // استخدم سعر التخفيض إذا كان موجوداً
-        currency: sallaProduct.currency || 'SAR',
-        compareAtPrice: salePrice != null ? price : null,
-        costPrice: null,
-        imageUrl: sallaProduct.main_image || sallaProduct.images?.[0]?.url || null,
-        category: sallaProduct.categories?.[0]?.name || 'عام',
-        stock: sallaProduct.quantity || 0,
-        isActive: sallaProduct.quantity > 0,
-        lastSyncedAt: new Date().toISOString().slice(0, 19).replace("T", " ")
-      };
-
-      if (existing) {
-        // تحديث المنتج الموجود
-        // @ts-ignore
-        await updateProduct(existing.id, productData);
-      } else {
-        // إضافة منتج جديد
-        // @ts-ignore
-        await createProduct(productData);
-      }
-    } catch (error) {
-      console.error(`[Salla] Failed to save product ${sallaProduct.id}:`, error);
-      throw error;
+      const response = await sallaHttp.get(SALLA_API_BASE + '/products/' + id, { headers: this.catalogHeaders() });
+      return readSallaProductResponse(response.data, id);
+    } catch (error: any) {
+      // A delete webhook is only a hint. Reconcile with a fresh authenticated GET.
+      // Transport failures, forbidden responses and malformed 404s never archive data.
+      if (error?.response?.status === 404 && error.response.data?.status === 404 && error.response.data?.success === false) return null;
+      throw Error('Salla product read unavailable');
     }
+  }
+
+  private async failCatalogSync(revision: number, count: number): Promise<never> {
+    try { await updateSyncLog(revision, 'failed', count, 'catalog_sync_unavailable'); } catch { /* preserve safe public error */ }
+    throw Error('Salla catalog synchronization unavailable');
   }
 
   /**
@@ -354,30 +230,17 @@ export class SallaIntegration {
     }
   }
 
-  /**
-   * تحديث منتج واحد فقط
-   */
-  async syncSingleProduct(sallaProductId: string): Promise<{ success: boolean }> {
+  async syncSingleProduct(id: string, receipt?: SallaCatalogReceipt): Promise<{ success: boolean }> {
+    sallaExternalId.parse(id);
+    const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken, receipt?.storeId);
+    const revision = await createSyncLog(this.merchantId, 'single_product', 'in_progress');
     try {
-      const logId = await createSyncLog(this.merchantId, 'single_product', 'in_progress');
-      
-      const response = await sallaHttp.get(
-        `${SALLA_API_BASE}/products/${sallaProductId}`,
-        {
-          headers: { 
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      await this.saveProductLocally(response.data.data);
-      await updateSyncLog(logId, 'success', 1);
-      
+      const product = await this.readCatalogProduct(authority, id);
+      const saved = await persistSallaCatalogRead(authority, revision, id, product, receipt);
+      await updateSyncLog(revision, 'success', saved.applied ? 1 : 0);
       return { success: true };
-    } catch (error: any) {
-      console.error(`[Salla] Failed to sync product ${sallaProductId}:`, error);
-      throw error;
+    } catch {
+      return this.failCatalogSync(revision, 0);
     }
   }
 

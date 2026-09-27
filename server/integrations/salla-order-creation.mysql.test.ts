@@ -9,6 +9,9 @@ import { encryptSecret } from '../security/secrets';
 import { runSallaOrderCreation,dispatchSallaCreation, type SallaCreationAttempt } from './salla-order-creation';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { createOrderFromChat } from '../automation/order-from-chat';
+import { persistSallaCatalogRead,selectSallaOrderProduct } from './salla-catalog';
+import { normalizeSallaProduct } from './salla-product-normalization';
+import { createSyncLog,updateSyncLog } from '../db';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actual order orchestration and MySQL',()=>{
   const q=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
@@ -23,7 +26,9 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
     assertDisposableDatabase();vi.stubEnv('FIELD_ENCRYPTION_KEY','synthetic-salla-creation-encryption-only');users=[];
     const m=await createDisposableMerchant('salla-create'),o=await createDisposableMerchant('salla-actor');users=[m.userId,o.userId];merchant=m.merchantId;user=m.userId;otherUser=o.userId;store=String(800000000+merchant);requestId=randomUUID();
     connectionId=Number((await q("INSERT INTO salla_connections(merchantId,salla_store_id,storeUrl,accessToken,syncStatus) VALUES (?,?,'https://synthetic.example.test',?,'active')",[merchant,store,encryptSecret('synthetic-token')])).insertId);
-    productId=Number((await q("INSERT INTO products(merchantId,sallaProductId,name,price,price_unit,currency,stock,isActive) VALUES (?,'123','Synthetic',100,'minor','SAR',5,1)",[merchant])).insertId);
+    const revision=await createSyncLog(merchant,'single_product','in_progress');
+    productId=(await persistSallaCatalogRead({merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'},revision,'123',normalizeSallaProduct({id:123,name:'Synthetic',price:{amount:1,currency:'SAR'},quantity:5,unlimited_quantity:false,status:'sale',is_available:true,type:'product',options:[],skus:[]}))).localProductId!;
+    await updateSyncLog(revision,'success',1);
     external.post.mockReset().mockResolvedValue({data:{success:true,data:{id:98765,reference_id:456,currency:'SAR',amounts:{total:{amount:1,currency:'SAR'}},urls:{checkout:'https://synthetic.example.test/pay'}}}});external.notify.mockReset().mockResolvedValue(undefined);
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
@@ -68,7 +73,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
     expect(await ledger()).toBeUndefined();expect(prepare).not.toHaveBeenCalled();expect(external.post).not.toHaveBeenCalled();
   });
   it.each(['preparing','dispatching'])('does not steal a stale %s operation after process restart',async state=>{
-    await expect(runSallaOrderCreation(input(),async a=>{if(state==='dispatching')await dispatchSallaCreation(a,{merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'});throw Error('crash');})).rejects.toThrow();
+    await expect(runSallaOrderCreation(input(),async a=>{if(state==='dispatching'){const authority={merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'};await dispatchSallaCreation(a,authority,[await selectSallaOrderProduct(authority,productId,1)]);}throw Error('crash');})).rejects.toThrow();
     await q("UPDATE salla_order_creations SET state=?,created_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 30 DAY),updated_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 30 DAY) WHERE merchant_id=?",[state,merchant]);
     await expect(run()).rejects.toMatchObject({code:'operation_pending'});expect(external.post).not.toHaveBeenCalled();
   });
@@ -106,7 +111,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
   });
   it('cannot project an operation before dispatch or with another tenant authority',async()=>{
     const draft={externalOrderId:'98765',orderNumber:'456',customerPhone:'966500000000',customerName:'Synthetic',address:'Fixture',items:'[]',totalAmount:100,paymentUrl:null,isGift:0 as const,discountCode:null};
-    await expect(runSallaOrderCreation(input(),async a=>{await expect(persistSallaOrderProjection({merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'},draft,a)).rejects.toThrow();await expect(dispatchSallaCreation(a,{merchantId:merchant+1,connectionId,storeId:store,accessToken:'synthetic-token'})).rejects.toThrow();return null;})).rejects.toMatchObject({code:'operation_rejected'});
+    await expect(runSallaOrderCreation(input(),async a=>{await expect(persistSallaOrderProjection({merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'},draft,a)).rejects.toThrow();await expect(dispatchSallaCreation(a,{merchantId:merchant+1,connectionId,storeId:store,accessToken:'synthetic-token'},[])).rejects.toThrow();return null;})).rejects.toMatchObject({code:'operation_rejected'});
     expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(0);
   });
 });
