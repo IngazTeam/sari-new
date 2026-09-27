@@ -63,7 +63,7 @@ test('the actual updater activation function never invokes PM2 for an incompatib
   const bash=process.platform==='win32'?'C:/Program Files/Git/bin/bash.exe':'bash';
   const source=fs.readFileSync('scripts/update-sary.sh','utf8').replaceAll('\r\n','\n');
   const activate=source.match(/activate\(\) \{[\s\S]*?\n\}/)?.[0];assert.ok(activate);
-  const script=`set -u\nnode_bin="$1"\nsource_dir="$2"\npm() { echo PM_CALLED; }\nmatches() { return 0; }\n${activate}\nactivate "$3"\n`;
+  const script=`set -u\nnode_bin="$1"\nrelease_dir="$2"\npm() { echo PM_CALLED; }\nmatches() { return 0; }\n${activate}\nactivate "$3"\n`;
   for(const [target,status,sends] of [[os.tmpdir(),1,false],[path.resolve('.'),0,true]]){
     const result=spawnSync(bash,['-s','--',process.execPath,path.resolve('.'),target],{input:script,encoding:'utf8',windowsHide:true});
     assert.equal(result.status,status,result.stderr);assert.equal(result.stdout.includes('PM_CALLED'),sends);

@@ -2,14 +2,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// Keep the established deployment guard, including the post-0132 staff acceptance contract.
+// Keep the established guard filename for deployed callers. These are contracts,
+// not just table existence: old readers must never resume on store-scoped data.
 // Do not infer compatibility from its age, application name or current DB data.
+export const requiredReleaseCapabilities = Object.freeze([
+  'zid-order-store-identity-0127',
+  'zid-catalog-store-identity-0129',
+  'staff-voice-acceptance-0132',
+  'salla-order-store-identity-0137',
+  'salla-order-creation-0138',
+  'salla-catalog-store-identity-0139',
+]);
+
 export function assertZidOrderReleaseCompatible(directory) {
   if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw Error('ZID_ORDER_RELEASE_INCOMPATIBLE');
   const marker = JSON.parse(fs.readFileSync(path.join(directory, 'scripts/zid-order-store-capability.json'), 'utf8'));
   if (marker?.version !== 1 || !Array.isArray(marker.capabilities)
-      || !marker.capabilities.includes('zid-order-store-identity-0127') || !marker.capabilities.includes('zid-catalog-store-identity-0129')
-      || !marker.capabilities.includes('staff-voice-acceptance-0132')) throw Error('ZID_ORDER_RELEASE_INCOMPATIBLE');
+      || !requiredReleaseCapabilities.every(capability => marker.capabilities.includes(capability))) {
+    throw Error('ZID_ORDER_RELEASE_INCOMPATIBLE');
+  }
 }
 
 export function assertManagedWritersStopped(processes) {

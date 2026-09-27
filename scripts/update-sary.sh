@@ -24,9 +24,20 @@ pm() {
     PORT=3000 SARI_WEB_CONCURRENCY=1 "$node_bin" "$pm2_bin" "$@" 9>&-
 }
 matches() { pm jlist | "$node_bin" "$ops" pm2-match "$1"; }
+quiesce_incompatible_writers() {
+  # Validate the candidate before stopping anything. Inspect actual PM2 writers,
+  # not a pointer captured earlier; use the prepared release's guard throughout.
+  "$node_bin" "$release_dir/scripts/zid-order-release.mjs" compatible "$release_dir" || return 1
+  if pm jlist | "$node_bin" "$release_dir/scripts/zid-order-release.mjs" writers-compatible 2>/dev/null; then return 0; fi
+  writers_quiesced=1
+  pm stop sari || return 1
+  pm stop sari-inbound || return 1
+  pm jlist | "$node_bin" "$release_dir/scripts/zid-order-release.mjs" stopped || return 1
+  pm save || return 1
+}
 activate() {
   local target="$1"
-  "$node_bin" "$source_dir/scripts/zid-order-release.mjs" compatible "$target" || return 1
+  "$node_bin" "$release_dir/scripts/zid-order-release.mjs" compatible "$target" || return 1
   pm startOrReload "$target/ecosystem.config.cjs" --only sari,sari-inbound \
     --interpreter "$node_bin" --update-env || return 1
   if matches "$target"; then return 0; fi
@@ -99,7 +110,7 @@ build_task test install --frozen-lockfile
 env -i HOME=/root PATH="$runtime_path" NODE_ENV=test SARI_ENV_FILE=/dev/null \
   "$node_bin" --test scripts/sary-update-ops.test.mjs
 env -i HOME=/root PATH="$runtime_path" NODE_ENV=test SARI_ENV_FILE=/dev/null \
-  "$node_bin" --test scripts/zid-order-release.test.mjs
+  "$node_bin" --test scripts/zid-order-release.test.mjs scripts/salla-release-transition.test.mjs
 build_task test check
 build_task production build
 test -s dist/index.js
@@ -119,15 +130,9 @@ env -i HOME=/root PATH="$runtime_path" SARI_BACKUP_SOURCE="$release_dir" \
   bash "$release_dir/scripts/backup-sary.sh"
 
 phase=MIGRATIONS_AND_CHECKS
-# 0127 changes the meaning of order identity. Drain old PM2 writers before DDL,
-# and persist their stopped state so a restart cannot resurrect incompatible code.
-if ! "$node_bin" "$release_dir/scripts/zid-order-release.mjs" compatible "$previous_release" 2>/dev/null; then
-  writers_quiesced=1
-  pm stop sari
-  pm stop sari-inbound
-  pm jlist | "$node_bin" "$release_dir/scripts/zid-order-release.mjs" stopped
-  pm save
-fi
+# Identity and acceptance contracts forbid mixed old/new writers (including Salla
+# 0137–0139). Persist the stopped state before any DDL or new catalog writes.
+quiesce_incompatible_writers
 runuser -u sari-deploy -- env -i HOME=/home/sari-deploy PATH="$runtime_path" \
   NODE_ENV=production SARI_ENV_FILE=/var/www/.env SARI_DB_POOL_SIZE=2 \
   "$node_bin" --import tsx "$ops" migrate

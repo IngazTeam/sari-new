@@ -194,6 +194,17 @@ run_post_migration_checks() {
   corepack pnpm preflight:whatsapp-disconnect-alerts:after
 }
 
+quiesce_incompatible_writers() {
+  node "$release_dir/scripts/zid-order-release.mjs" compatible "$release_dir" || return 1
+  if pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" writers-compatible 2>/dev/null; then return 0; fi
+  for managed_name in sari sari-inbound; do
+    if pm2 describe "$managed_name" >/dev/null 2>&1; then pm2 stop "$managed_name" || return 1; fi
+  done
+  pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" stopped || return 1
+  pm2 save || return 1
+  log 'old writers stopped; migration failure requires roll-forward to a compatible release'
+}
+
 log "running count-only preflights against backup $SARI_BACKUP_ID"
 run_pre_migration_checks
 # Older writers and notification workers cannot interpret store-scoped orders.
@@ -204,14 +215,7 @@ if [ -e "$current_link" ] && [ ! -L "$current_link" ]; then
   die 'current release pointer exists but is not a symlink'
 fi
 if [ -L "$current_link" ]; then previous_release="$(readlink -f "$current_link")"; fi
-if ! pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" writers-compatible 2>/dev/null; then
-  for managed_name in sari sari-inbound; do
-    if pm2 describe "$managed_name" >/dev/null 2>&1; then pm2 stop "$managed_name"; fi
-  done
-  pm2 jlist | node "$release_dir/scripts/zid-order-release.mjs" stopped
-  pm2 save
-  log 'old writers stopped; migration failure requires roll-forward to a compatible release'
-fi
+quiesce_incompatible_writers
 corepack pnpm db:migrate
 run_post_migration_checks
 
@@ -261,8 +265,8 @@ pm2_release_matches() {
 activate_pm2_release() {
   local target_release="$1"
   node "$release_dir/scripts/zid-order-release.mjs" compatible "$target_release" || return 1
-  mkdir -p "$target_release/logs"
-  chmod 750 "$target_release/logs"
+  mkdir -p "$target_release/logs" || return 1
+  chmod 750 "$target_release/logs" || return 1
   local managed_apps="sari"
   if [ -f "$target_release/dist/worker.js" ]; then
     managed_apps="sari,sari-inbound"
@@ -273,16 +277,16 @@ activate_pm2_release() {
     pm2 delete sari-inbound >/dev/null 2>&1 || true
   fi
   SARI_ENV_FILE="$env_file" PORT="$PORT" \
-    pm2 startOrReload "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env
+    pm2 startOrReload "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env || return 1
   if pm2_release_matches "$target_release"; then
     return 0
   fi
 
   log 'PM2 retained prior release metadata; recreating the managed application'
-  pm2 delete sari
+  pm2 delete sari || return 1
   pm2 delete sari-inbound >/dev/null 2>&1 || true
   SARI_ENV_FILE="$env_file" PORT="$PORT" \
-    pm2 start "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env
+    pm2 start "$target_release/ecosystem.config.cjs" --only "$managed_apps" --update-env || return 1
   pm2_release_matches "$target_release"
 }
 
