@@ -8,6 +8,7 @@ const onlyEvaluation = process.argv.includes('--only-evaluation');
 const onlyInspection = process.argv.includes('--only-inspection');
 const onlyCohort = process.argv.includes('--only-cohort');
 const onlyProtocol = process.argv.includes('--only-protocol');
+const onlyBooking = process.argv.includes('--only-booking');
 const dir = path.resolve('.tmp/brain-ui'), output = path.resolve(process.env.SALES_BRAIN_UI_OUTPUT || (onlyReplyReview ? '.tmp/reply-review-ui-targeted' : onlyLaunch ? '.tmp/launch-ui-targeted' : onlyPlanningReview ? '.tmp/planning-review-ui-targeted' : onlyInspection ? '.tmp/inspection-ui-targeted' : onlyCohort ? '.tmp/cohort-ui-targeted' : onlyProtocol ? '.tmp/protocol-ui-targeted' : onlyEvaluation ? '.tmp/evaluation-ui-targeted' : onlyPolicyReview ? '.tmp/policy-ui-targeted' : 'docs/audits/sales-brain-implementation-2026-09-23/ui'));
 async function main() {
   fs.mkdirSync(output, { recursive: true }); fs.mkdirSync(dir, { recursive: true });
@@ -34,6 +35,11 @@ async function main() {
   try {
     const page = await browser.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.setRequestInterception(true); page.on('request', req => req.url().startsWith(origin) || req.url().startsWith('data:') ? req.continue() : req.abort());
+    if (onlyBooking) {
+      for (const suite of ['consent','calendar','reschedule','cancellation']) {
+        await require(`./verify-booking-${suite}-ui.cjs`)(page,origin,output,results);
+      }
+    } else {
     if (onlyReplyReview || !onlyLaunch && !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-reply-review-ui.cjs')(page, origin, output, results);
     if (onlyReplyReview || !onlyLaunch && !onlyPlanningReview && !onlyInspection && !onlyCohort && !onlyPolicyReview && !onlyEvaluation && !onlyProtocol) await require('./verify-sales-reply-send-ui.cjs')(page, origin, output, results);
     if (!onlyReplyReview) {
@@ -717,6 +723,8 @@ async function main() {
     assert.equal(await page.$eval('#offer-fixture > details > summary svg',n=>getComputedStyle(n).transitionProperty),'none');
     await page.emulateMediaFeatures([]);results.push({width:320,mode:'offer_reduced_motion',passed:true});
     }
+    }
+    assert.deepEqual(errors, []);
     }
     assert.deepEqual(errors, []);
     }

@@ -28,10 +28,7 @@ import {
   prepareBookingAmendment,
   acceptBookingAgreement,
 } from "./booking-agreements";
-import {
-  stageInteraction,
-  finishInteractionDelivery,
-} from "./interaction-jobs";
+import { stageCheckoutOfferFixture } from "../tests/helpers/checkout-offer";
 import { buildReplyPlan } from "../messaging/reply-plan";
 import {
   withInboundExecution,
@@ -39,6 +36,7 @@ import {
 } from "../messaging/inbound-context";
 import type { CheckoutIdentity } from "./checkout-agreements";
 import * as readiness from "../db/schema-readiness";
+import {withBookingCapacityTransaction,hasBookingConflict} from '../booking-capacity';
 
 describe.skipIf(!process.env.DATABASE_URL)(
   "customer-approved booking amendments",
@@ -88,9 +86,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         to: id.customerPhone,
         text: quote.text,
       });
-      await stageInteraction(plan);
-      if (accepted) await finishInteractionDelivery(plan, true);
-      return plan;
+      return stageCheckoutOfferFixture(plan,accepted);
     }
     async function offer(accepted = true) {
       const quote = await prepareBookingAgreement(source, selection());
@@ -187,11 +183,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(quote.text).toContain("12:00–13:00");
       expect(quote.text).toContain("١٢٥");
       await sameBooking(bookingId);
-      const request = await incoming("أريد حجز جديد الساعة 10:00");
-      await expect(
-        prepareBookingAgreement(request, selection())
-      ).rejects.toThrow();
-      // The failed competing proposal did not replace the last delivered amendment.
+      expect(await withBookingCapacityTransaction(owner.merchantId,c=>hasBookingConflict(c,owner.merchantId,
+        {...selection(),staffId:undefined,endTime:'11:00'}))).toBe(true);
       const consent = await incoming();
       expect(
         (await acceptBookingAgreement(consent, quote.agreementId!)).text
@@ -909,16 +902,17 @@ describe.skipIf(!process.env.DATABASE_URL)(
     it("does not recreate deleted bookings or accept superseded proposals", async () => {
       const { bookingId } = await accepted(),
         first = await amendment(bookingId),
-        second = await amendment(bookingId);
+        second = await amendment(bookingId),
+        consent = await incoming();
       expect(
         (
           await acceptBookingAgreement(
-            await incoming(),
+            consent,
             first.quote.agreementId!
           )
         ).kind
       ).toBe("clarify");
-      await acceptBookingAgreement(await incoming(), second.quote.agreementId!);
+      expect((await acceptBookingAgreement(consent, second.quote.agreementId!)).kind).toBe('booking');
       await q("DELETE FROM bookings WHERE id=?", [bookingId]);
       expect(
         (

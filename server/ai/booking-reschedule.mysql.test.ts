@@ -46,10 +46,7 @@ import {
   prepareBookingAmendment,
   acceptBookingAgreement,
 } from "./booking-agreements";
-import {
-  stageInteraction,
-  finishInteractionDelivery,
-} from "./interaction-jobs";
+import { stageCheckoutOfferFixture } from "../tests/helpers/checkout-offer";
 import { buildReplyPlan } from "../messaging/reply-plan";
 const transport = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock("../channels/whatsapp/providers", () => ({
@@ -129,9 +126,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         to: id.customerPhone,
         text: quote.text,
       });
-      await stageInteraction(plan);
-      if (accepted) await finishInteractionDelivery(plan, true);
-      return plan;
+      return stageCheckoutOfferFixture(plan,accepted);
     }
     async function offer(accepted = true) {
       const quote = await prepareBookingAgreement(source, selection());
@@ -344,6 +339,29 @@ describe.skipIf(!process.env.DATABASE_URL)(
           })
         );
     });
+    it.each(['missing receipt','late receipt failure','late expiry'])(
+      'keeps the original calendar commitment and frees the prospective period on %s',async attack=>{
+        const before=(await bookings())[0],beforeLink=(await links())[0];
+        const request=await incoming(`غير موعد الحجز #${bookingId} إلى الساعة 12`);
+        const quote=await prepareBookingAmendment(request,selection({startTime:'12:00'}),bookingId);
+        const plan=await deliver(quote,true,request),consent=await incoming(),key=plan.effects[0].idempotencyKey;
+        if(attack==='missing receipt') {
+          await q('DELETE FROM whatsapp_message_deliveries WHERE idempotency_key=?',[key]);
+          expect((await acceptBookingAgreement(consent,quote.agreementId!)).kind).toBe('clarify');
+        } else {
+          const pool=(await getPool())!,get=pool.getConnection.bind(pool);let hit=false;
+          vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(target,property){
+            if(property==='execute')return async(sql:any,args:any)=>{const result=await target.execute(sql,args);
+              if(!hit&&String(sql).includes('INSERT INTO booking_calendar_reschedules')){hit=true;
+                if(attack==='late receipt failure')await q("UPDATE whatsapp_message_deliveries SET status='failed' WHERE idempotency_key=?",[key]);
+                else await target.execute('UPDATE conversation_booking_agreements SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE id=?',[quote.agreementId]);
+              }return result;};const v=Reflect.get(target,property,target);return typeof v==='function'?v.bind(target):v;}});});
+          await expect(acceptBookingAgreement(consent,quote.agreementId!)).rejects.toThrow();expect(hit).toBe(true);
+        }
+        expect(await moves()).toEqual([]);expect((await bookings())[0]).toEqual(before);expect((await links())[0]).toEqual(beforeLink);
+        expect(await conflict('10:00')).toBe(true);expect(await conflict('12:00')).toBe(false);expect(provider.move).not.toHaveBeenCalled();
+      }
+    );
     it("keeps the old commitment until assent, then holds both periods without calling Google", async () => {
       const before = (await bookings())[0];
       const { quote, accepted } = await pending();

@@ -43,10 +43,7 @@ import {
   prepareBookingAgreement,
   acceptBookingAgreement,
 } from "./booking-agreements";
-import {
-  stageInteraction,
-  finishInteractionDelivery,
-} from "./interaction-jobs";
+import { stageCheckoutOfferFixture } from "../tests/helpers/checkout-offer";
 import { buildReplyPlan } from "../messaging/reply-plan";
 import {
   withInboundExecution,
@@ -114,9 +111,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         to: id.customerPhone,
         text: quote.text,
       });
-      await stageInteraction(plan);
-      if (accepted) await finishInteractionDelivery(plan, true);
-      return plan;
+      return stageCheckoutOfferFixture(plan,accepted);
     }
     async function offer(accepted = true) {
       const quote = await prepareBookingAgreement(source, selection());

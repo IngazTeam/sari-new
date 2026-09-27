@@ -20,6 +20,7 @@ import {
   type CheckoutIdentity,
 } from "./checkout-agreements";
 import { isSalesRefusal, isShortAffirmation } from "./customer-decision";
+import { hasCheckoutOfferEvidence, recordedCheckoutOfferEvidence } from "./checkout-offer-evidence";
 import { currentInboundExecution } from "../messaging/inbound-context";
 import { resolveBookingAmendment } from "./booking-amendment-context";
 import {
@@ -350,7 +351,7 @@ async function readAmendmentTarget(
     messages.length !== 2 ||
     a.source_message_id >= a.consent_message_id ||
     !isShortAffirmation(String(messages[1].content)) ||
-    !(await wasBookingOfferDelivered(
+    !(await recordedBookingOfferEvidence(
       c,
       { ...input, incomingMessageId: a.consent_message_id },
       a
@@ -419,28 +420,53 @@ export async function wasBookingOfferDelivered(
   input: CheckoutIdentity,
   row: any
 ) {
-  const [jobs] = await c.execute<any[]>(
-    `SELECT incoming_message_id,reply_text,state FROM ai_interaction_jobs WHERE merchant_id=? AND conversation_id=?
-    AND incoming_message_id<? ORDER BY incoming_message_id DESC LIMIT 1`,
-    [input.merchantId, input.conversationId, input.incomingMessageId]
-  );
-  const job = jobs[0];
-  if (
-    !job ||
-    job.incoming_message_id !== row.source_message_id ||
-    !["pending", "processing", "completed", "failed"].includes(job.state) ||
-    job.reply_text !== row.offer_text
-  )
-    return false;
-  const [out] = await c.execute<any[]>(
-    "SELECT id,content,aiResponse FROM messages WHERE conversationId=? AND direction='outgoing' AND id<? ORDER BY id DESC LIMIT 1",
-    [input.conversationId, input.incomingMessageId]
-  );
-  return (
-    !out[0] ||
-    out[0].id < row.source_message_id ||
-    (!!out[0].aiResponse && out[0].content === row.offer_text)
-  );
+  let text:string;
+  try { text=bookingAgreementOfferText(input,row); } catch { return false; }
+  return hasCheckoutOfferEvidence(c,input,row.source_message_id,text);
+}
+/** Render from the saved agreement, not a caller-supplied offer string. */
+function bookingAgreementOfferText(input:CheckoutIdentity,row:any) {
+  if (!row || row.merchant_id!==input.merchantId || row.conversation_id!==input.conversationId
+    || row.customer_phone!==input.customerPhone) throw unavailable();
+  const snapshot=json(row.snapshot);
+  if (!snapshot || digest(snapshot)!==row.snapshot_hash) throw unavailable();
+  let text:string;
+  if (row.target_booking_id) {
+    const before=json(row.before_snapshot);
+    if (!before || digest(before)!==row.before_hash || before.id!==row.target_booking_id
+      || before.customer_agreement_id!==row.prior_agreement_id) throw unavailable();
+    text=amendmentOfferText(row.id,snapshot,before);
+  } else {
+    if(row.prior_agreement_id || row.before_snapshot || row.before_hash) throw unavailable();
+    text=offerText(row.id,snapshot);
+  }
+  if(text!==row.offer_text) throw unavailable();
+  return text;
+}
+/** Review of an already accepted booking retains its historical proof after a
+ * legitimate employee takeover. New booking effects still require live authority. */
+export async function recordedBookingOfferEvidence(c:PoolConnection,input:CheckoutIdentity,row:any) {
+  let text:string;
+  try { text=bookingAgreementOfferText(input,row); } catch { return null; }
+  return recordedCheckoutOfferEvidence(c,input,row.source_message_id,text);
+}
+async function assertFinalBookingConsent(c:PoolConnection,input:CheckoutIdentity,row:any,content:string) {
+  const [consents]=await c.execute<any[]>(`SELECT content FROM messages
+    WHERE id=? AND conversationId=? AND direction='incoming' FOR SHARE`,[input.incomingMessageId,input.conversationId]);
+  const current=await assertCheckoutIdentity(c,input);
+  if(consents.length!==1 || consents[0].content!==content || current.content!==content
+    || !isShortAffirmation(current.content) || !await wasBookingOfferDelivered(c,input,row)) throw unavailable();
+}
+async function commitBookingConsent(c:PoolConnection,input:CheckoutIdentity,row:any,content:string,bookingId:number) {
+  // Booking/calendar capacity checks can wait. Roll back every provisional write
+  // if consent or delivery changed, or the offer expired during that wait.
+  await assertFinalBookingConsent(c,input,row,content);
+  const [saved]=await c.execute<any>(`UPDATE conversation_booking_agreements
+    SET state='accepted',consent_message_id=?,booking_reference=?
+    WHERE id=? AND merchant_id=? AND state='proposed' AND consent_message_id IS NULL
+      AND booking_reference IS NULL AND expires_at>UTC_TIMESTAMP(3)`,
+    [input.incomingMessageId,bookingId,row.id,input.merchantId]);
+  if(saved.affectedRows!==1) throw unavailable();
 }
 export async function prepareBookingAgreement(
   input: CheckoutIdentity,
@@ -647,6 +673,13 @@ export async function acceptBookingAgreement(
       "SELECT id FROM conversation_booking_agreements WHERE merchant_id=? AND conversation_id=? ORDER BY id DESC LIMIT 1",
       [input.merchantId, input.conversationId]
     );
+    const old = json(row.snapshot);
+    if (!old || digest(old) !== row.snapshot_hash) throw unavailable();
+    try { bookingAgreementOfferText(input,row); }
+    catch {
+      if(row.state==='proposed')await c.execute("UPDATE conversation_booking_agreements SET state='expired' WHERE id=?",[agreementId]);
+      return {kind:'changed',text:'تغير ملخص الحجز المحفوظ أو ارتباطه بالحجز السابق. لم أطبّق أي تغيير؛ نحتاج ملخصًا جديدًا وموافقتك عليه.'};
+    }
     if (
       !row.valid ||
       row.state !== "proposed" ||
@@ -658,11 +691,6 @@ export async function acceptBookingAgreement(
         kind: "clarify",
         text: "أحتاج موافقتك على آخر ملخص حجز أُرسل لك وما زال صالحًا. اطلب ملخصًا جديدًا للمراجعة.",
       };
-    const old =
-      typeof row.snapshot === "string"
-        ? JSON.parse(row.snapshot)
-        : row.snapshot;
-    if (digest(old) !== row.snapshot_hash) throw unavailable();
     let fresh: Snapshot;
     try {
       if (row.target_booking_id) {
@@ -730,6 +758,7 @@ export async function acceptBookingAgreement(
       };
     }
     await currentInboundExecution()?.assertOwned();
+    await assertFinalBookingConsent(c,input,row,source.content);
     if (row.target_booking_id && json(row.before_snapshot).calendar) {
       const snapshot = {
         before: json(row.before_snapshot),
@@ -766,10 +795,7 @@ export async function acceptBookingAgreement(
           digest(snapshot),
         ]
       );
-      await c.execute(
-        "UPDATE conversation_booking_agreements SET state='accepted',consent_message_id=?,booking_reference=? WHERE id=?",
-        [input.incomingMessageId, row.target_booking_id, agreementId]
-      );
+      await commitBookingConsent(c,input,row,source.content,row.target_booking_id);
       await c.execute(
         "UPDATE booking_calendar_links SET state='reschedule_pending',revision=revision+1 WHERE merchant_id=? AND booking_reference=?",
         [input.merchantId, row.target_booking_id]
@@ -821,10 +847,7 @@ export async function acceptBookingAgreement(
       "UPDATE bookings SET customer_agreement_id=? WHERE id=? AND merchant_id=?",
       [agreementId, bookingId, input.merchantId]
     );
-    await c.execute(
-      "UPDATE conversation_booking_agreements SET state='accepted',consent_message_id=?,booking_reference=? WHERE id=?",
-      [input.incomingMessageId, bookingId, agreementId]
-    );
+    await commitBookingConsent(c,input,row,source.content,bookingId);
     return {
       kind: "booking",
       agreementId,

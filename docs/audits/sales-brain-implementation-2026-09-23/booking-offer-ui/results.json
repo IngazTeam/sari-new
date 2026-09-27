@@ -1,0 +1,1669 @@
+{
+  "generatedAt": "2026-09-27T23:52:09.322Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "screenshots": [
+    "booking-calendar-1440.png",
+    "booking-calendar-375.png",
+    "booking-cancel-notice-1440.png",
+    "booking-cancel-notice-375.png",
+    "booking-cancellation-1440.png",
+    "booking-cancellation-375.png",
+    "booking-confirm-notice-1440.png",
+    "booking-confirm-notice-375.png",
+    "booking-consent-1440.png",
+    "booking-consent-375.png",
+    "booking-notice-1440.png",
+    "booking-notice-375.png",
+    "booking-notice-review-1440.png",
+    "booking-notice-review-375.png",
+    "booking-reschedule-1440.png",
+    "booking-reschedule-375.png"
+  ],
+  "fixtureApi": true,
+  "externalRequestsBlocked": true,
+  "scope": "component UI only, not authenticated production journeys or physical iPhone/Safari",
+  "results": [
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_consent_explicit_review_fresh_evidence_and_audit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_missing",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_integrity",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_source",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_terms",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_refused",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_unavailable",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_truncated",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_loading",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_fetching",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_write-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_refresh-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_parent-error",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_untrusted_text_stays_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_consent_resets_on_booking_change",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_account",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_binding",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_in_flight",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_legacy",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_consent",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_blocked_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_parent-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_unknown",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_synced",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_calendar_operation_guards_ended",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_calendar_reschedule_history_labels",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_calendar_reschedule_history_labels",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_calendar_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_confirmation_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_confirmation_notice_write-error_no_automatic_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_confirmation_notice_refresh-error_no_automatic_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "booking_confirmation_notice_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_reschedule_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_reschedule_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_reschedule_abandon_before_dispatch",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_binding",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_financial",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_changed",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_consent",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_booking",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_inFlight",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_applied",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_blocked_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_moving",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_move-unknown",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_reschedule_parent_guard_reschedule-pending",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_reschedule_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_pending_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_dispatching_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_sent_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_delivered_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_read_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_unknown_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_failed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_suppressed_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_manual_review_truthful_no_resend",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "booking_notice_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_notice_evidence_review_audit_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_notice_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_notice_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancellation_ready_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancellation_unknown_review_and_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_binding",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_financial",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_changed",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_request",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_booking",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_inFlight",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_loading",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_error",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_fetching",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_cancelled",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_blocked_empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_write-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_refresh-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_parent-error_no_blind_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_parent_guard_cancelling",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_parent_guard_cancel-unknown",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancellation_parent_guard_cancelled",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "mode": "booking_cancellation_untrusted_text_inert",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_pending_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_dispatching_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_sent_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_delivered_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_read_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_unknown_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_failed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_suppressed_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_manual_review_truthful_without_resend",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "lang": "en",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "lang": "en",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "mode": "booking_cancel_notice_audited_review_single_submit",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancel_notice_write-error_no_automatic_retry",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "mode": "booking_cancel_notice_refresh-error_no_automatic_retry",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "mode": "booking_cancel_notice_untrusted_text_inert",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

@@ -27,10 +27,7 @@ import {
   prepareBookingAgreement,
   acceptBookingAgreement,
 } from "./booking-agreements";
-import {
-  stageInteraction,
-  finishInteractionDelivery,
-} from "./interaction-jobs";
+import { stageCheckoutOfferFixture } from "../tests/helpers/checkout-offer";
 import { buildReplyPlan } from "../messaging/reply-plan";
 import {
   withInboundExecution,
@@ -87,9 +84,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         to: id.customerPhone,
         text: quote.text,
       });
-      await stageInteraction(plan);
-      if (accepted) await finishInteractionDelivery(plan, true);
-      return plan;
+      return stageCheckoutOfferFixture(plan,accepted);
     }
     async function offer(accepted = true) {
       const quote = await prepareBookingAgreement(source, selection());
@@ -388,7 +383,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     it("accepts the actual unchanged outgoing offer alongside its transport acknowledgment", async () => {
       const quote = await offer();
       await q(
-        "INSERT INTO messages (conversationId,direction,messageType,content,aiResponse) VALUES (?,'outgoing','text',?,?)",
+        "INSERT INTO messages (conversationId,direction,sender_type,messageType,content,aiResponse,isProcessed) VALUES (?,'outgoing','assistant','text',?,?,1)",
         [source.conversationId, quote.text, quote.text]
       );
       expect(

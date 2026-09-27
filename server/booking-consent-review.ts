@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   bookingAgreementDigest,
   assertBookingAgreementSchema,
+  recordedBookingOfferEvidence,
 } from "./ai/booking-agreements";
 import { isSalesRefusal, isShortAffirmation } from "./ai/customer-decision";
 import {
@@ -148,17 +149,9 @@ export async function readBookingConsentReview(
     !latest.length
   )
     return blocked("source");
-  const [jobs] = await c.execute<any[]>(
-    "SELECT incoming_message_id,reply_text,state FROM ai_interaction_jobs WHERE merchant_id=? AND conversation_id=? AND incoming_message_id<? ORDER BY incoming_message_id DESC LIMIT 1 FOR SHARE",
-    [merchantId, row.conversation_id, consent.id]
-  );
-  if (
-    jobs.length !== 1 ||
-    jobs[0].incoming_message_id !== source.id ||
-    jobs[0].reply_text !== row.offer_text ||
-    !["pending", "processing", "completed", "failed"].includes(jobs[0].state)
-  )
-    return blocked("source");
+  const delivery=await recordedBookingOfferEvidence(c,{merchantId,conversationId:row.conversation_id,
+    customerPhone:row.customer_phone,incomingMessageId:consent.id},row);
+  if (!delivery) return blocked("source");
   if (
     [result.source, result.consent, result.latest].some(m => m?.truncated) ||
     String(row.offer_text).length > 16000
@@ -238,6 +231,10 @@ export async function readBookingConsentReview(
     )
   )
     return blocked("unavailable");
+  // Catalog/capacity reads above may wait. A receipt revoked during that wait
+  // cannot support an employee's confirmation or a calendar operation.
+  if (await recordedBookingOfferEvidence(c,{merchantId,conversationId:row.conversation_id,
+    customerPhone:row.customer_phone,incomingMessageId:consent.id},row)!==delivery) return blocked("source");
   return {
     ...result,
     state: "ready",
@@ -248,7 +245,7 @@ export async function readBookingConsentReview(
       consent,
       latest: latest[0],
       subsequent,
-      delivery: jobs[0],
+      delivery,
       service: s,
       slot,
     }),

@@ -51,26 +51,41 @@ export function checkoutOfferReceipt(row:any,e:z.infer<typeof effect>,plan:z.inf
 /** Read inside the caller's agreement transaction. No send, manual override or
  * historical backfill. Provider acceptance is not a claim of customer reading. */
 export async function hasCheckoutOfferEvidence(c:PoolConnection,input:CheckoutIdentity,sourceMessageId:number,expectedText:string) {
+  return (await readOfferEvidence(c,input,sourceMessageId,expectedText,true))!==null;
+}
+
+/** Historical transport proof for reviewing an existing agreement. This does not
+ * authorize new automation after an employee takes over the conversation. */
+export async function recordedCheckoutOfferEvidence(c:PoolConnection,input:CheckoutIdentity,sourceMessageId:number,expectedText:string) {
+  return readOfferEvidence(c,input,sourceMessageId,expectedText,false);
+}
+
+async function readOfferEvidence(c:PoolConnection,input:CheckoutIdentity,sourceMessageId:number,expectedText:string,live:boolean):Promise<string|null> {
   const [jobs]=await c.execute<any[]>(`SELECT * FROM ai_interaction_jobs WHERE merchant_id=? AND conversation_id=?
     AND incoming_message_id<? ORDER BY incoming_message_id DESC LIMIT 1`,[input.merchantId,input.conversationId,input.incomingMessageId]);
   let plan:z.infer<typeof planSchema>;
-  try{plan=checkoutOfferPlan(jobs[0],input,sourceMessageId,expectedText);}catch{return false;}
+  try{plan=checkoutOfferPlan(jobs[0],input,sourceMessageId,expectedText);}catch{return null;}
   const [owners]=await c.execute<any[]>(`SELECT c.id FROM conversations c JOIN merchants m ON m.id=c.merchantId AND m.status='active'
-    WHERE c.id=? AND c.merchantId=? AND c.customerPhone=? AND c.human_takeover=0 AND c.handoff_version=?
-      AND c.automation_after_message_id<?`,[input.conversationId,input.merchantId,input.customerPhone,plan.ownershipVersion,sourceMessageId]);
-  if(owners.length!==1)return false;
+    WHERE c.id=? AND c.merchantId=? AND c.customerPhone=?
+      ${live?'AND c.human_takeover=0 AND c.handoff_version=? AND c.automation_after_message_id<?':''}`,
+    [input.conversationId,input.merchantId,input.customerPhone,...(live?[plan.ownershipVersion,sourceMessageId]:[])]);
+  if(owners.length!==1)return null;
   const [previous]=await c.execute<any[]>(`SELECT id FROM messages WHERE conversationId=? AND direction='incoming'
     AND id<? ORDER BY id DESC LIMIT 1`,[input.conversationId,input.incomingMessageId]);
-  if(previous[0]?.id!==sourceMessageId)return false;
+  if(previous[0]?.id!==sourceMessageId)return null;
   const [outgoing]=await c.execute<any[]>(`SELECT id,content,aiResponse,sender_type,messageType,isProcessed FROM messages
     WHERE conversationId=? AND direction='outgoing' AND id<? ORDER BY id DESC LIMIT 1`,[input.conversationId,input.incomingMessageId]);
   const out=outgoing[0];
   if(!out||out.id<=sourceMessageId||out.content!==expectedText||out.aiResponse!==expectedText
-    ||out.sender_type!=='assistant'||out.messageType!=='text'||out.isProcessed!==1)return false;
+    ||out.sender_type!=='assistant'||out.messageType!=='text'||out.isProcessed!==1)return null;
   // Nonlocking outbox reads avoid reversing the channel's reservation lock order.
   const [receipts]=await c.execute<any[]>(`SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=?
     AND idempotency_key IN (${plan.effects.map(()=>'?').join(',')})`,[input.merchantId,...plan.effects.map(e=>e.idempotencyKey)]);
-  if(receipts.length!==plan.effects.length)return false;
-  try{for(const e of plan.effects)checkoutOfferReceipt(receipts.find(r=>r.idempotency_key===e.idempotencyKey),e,plan,jobs[0].reply_digest);}catch{return false;}
-  return true;
+  if(receipts.length!==plan.effects.length)return null;
+  try{for(const e of plan.effects)checkoutOfferReceipt(receipts.find(r=>r.idempotency_key===e.idempotencyKey),e,plan,jobs[0].reply_digest);}catch{return null;}
+  return hash({version:'recorded-checkout-offer.v1',merchantId:input.merchantId,conversationId:input.conversationId,
+    sourceMessageId,consentMessageId:input.incomingMessageId,planDigest:jobs[0].reply_digest,outgoingMessageId:out.id,
+    receipts:plan.effects.map(e=>{const r=receipts.find(r=>r.idempotency_key===e.idempotencyKey);return {
+      id:r.id,instanceId:r.instance_id,key:r.idempotency_key,provider:r.provider,providerMessageId:r.provider_message_id,
+      status:r.status,requestDigest:hash(decode(r.request_json))};})});
 }
