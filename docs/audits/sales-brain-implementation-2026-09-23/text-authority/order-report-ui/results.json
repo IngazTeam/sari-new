@@ -1,0 +1,263 @@
+{
+  "generatedAt": "2026-09-27T00:25:17.856Z",
+  "browser": "Chrome/153.0.8010.54",
+  "actualComponents": true,
+  "fixtureApi": true,
+  "realReactQueryAndTrpc": true,
+  "externalRequestsBlocked": true,
+  "scope": "SalesEvidence page with real React Query/tRPC hooks and simulated read transport. Desktop and mobile Chromium viewports; not physical iPhone/Safari or an authenticated production journey.",
+  "results": [
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 320,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 320,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 375,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 375,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 390,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 390,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 768,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 1440,
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "read_normalized_keyboard_details_layout",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "merchant_edit_hides_old_report_without_read",
+      "width": 1440,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty_bounded_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "unmeasured_bounded_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "refund_bounded_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "huge_bounded_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "limit_bounded_truthful_display",
+      "passed": true
+    },
+    {
+      "mode": "FORBIDDEN_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "UNAUTHORIZED_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "PRECONDITION_FAILED_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "foreign_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "range-mismatch_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "unsupported_no_stale_report_or_error_leak",
+      "passed": true
+    },
+    {
+      "mode": "untrusted_text_escaped",
+      "passed": true
+    },
+    {
+      "mode": "FORBIDDEN_refresh_hides_cached_data_then_recovers",
+      "passed": true
+    },
+    {
+      "mode": "UNAUTHORIZED_refresh_hides_cached_data_then_recovers",
+      "passed": true
+    },
+    {
+      "mode": "INTERNAL_SERVER_ERROR_refresh_hides_cached_data_then_recovers",
+      "passed": true
+    },
+    {
+      "mode": "window_refocus_rechecks_authority",
+      "passed": true
+    },
+    {
+      "mode": "refresh_replaces_snapshot_without_adding_totals",
+      "passed": true
+    },
+    {
+      "mode": "merchant_change_aborts_old_request",
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "merchant": "1e3"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "from": "0"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "from": "4",
+        "through": "3"
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_form_no_request",
+      "values": {
+        "through": "9007199254740992"
+      },
+      "passed": true
+    },
+    {
+      "mode": "range_edit_hides_old_report",
+      "passed": true
+    },
+    {
+      "mode": "contextual_navigation_discards_old_scope",
+      "passed": true
+    },
+    {
+      "mode": "offline_refresh_hides_cache_until_verified_again",
+      "passed": true
+    },
+    {
+      "mode": "loading_disables_refresh",
+      "passed": true
+    },
+    {
+      "mode": "reduced_motion_no_spinner_animation",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "report-ar-1440.png",
+    "report-ar-375.png",
+    "report-en-1440.png",
+    "report-en-375.png"
+  ]
+}

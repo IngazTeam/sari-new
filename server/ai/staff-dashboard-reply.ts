@@ -15,17 +15,26 @@ import { staffDashboardReplyInput,type StaffDashboardReplyInput,type StaffDashbo
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channels/whatsapp/types';
 import { isStaffTextCompatibility,readStaffTextCompatibility,staffCompatibilitySnapshot,staffCompatibilityCustomer,staffCompatibilityResult } from './staff-dashboard-compatibility';
+import {selectStaffCompatibilityAccount,inspectStaffCompatibilityDispatch,staffCompatibilityKey} from './staff-compatibility-authority';
+import {getWhatsAppProvider} from '../channels/whatsapp/providers';
 
 const id=z.number().int().positive().safe();
 const unavailable=():never=>{throw Error('Staff reply unavailable');};
-export type StaffCompatibilitySend=(target:{customerPhone:string})=>Promise<{success:boolean;persisted:boolean}>;
 async function reserveCompatibility(c:PoolConnection,merchant:number,actor:number,input:StaffDashboardReplyInput,conv:any){
+  if(conv.customerPhone.startsWith('group_')||conv.customerPhone.endsWith('@g.us')){
+    if(!/^(?:group_\d{8,30}|\d{8,30}@g\.us)$/.test(conv.customerPhone))return unavailable();
+  }
+  const {authority}=await selectStaffCompatibilityAccount(c,merchant),now=await clock(c);
+  const [settings]=await c.execute<any[]>('SELECT takeover_timeout_minutes FROM bot_settings WHERE merchant_id=?',[merchant]);
+  const minutes=Number(settings[0]?.takeover_timeout_minutes)||15;
+  const ownership=await transitionOwnershipInTransaction(c,input.conversationId,{humanTakeover:1,humanTakeoverAt:new Date(now),humanExpiresAt:new Date(Date.parse(now)+minutes*60000)},
+    {merchantId:merchant,expectedVersion:conv.handoff_version});
   const [saved]=await c.execute<any>(`INSERT INTO ai_sales_staff_replies
     (merchant_id,actor_user_id,conversation_id,request_id,instance_id,ownership_version,customer_phone,reply_text,next_reconcile_at)
-    VALUES (?,?,?,?,0,?,?,?,NULL)`,[merchant,actor,input.conversationId,input.requestId,conv.handoff_version,conv.customerPhone,input.message]);
-  const basis=staffCompatibilitySnapshot.parse({version:'staff-text-compatibility.v1',sourceId:Number(saved.insertId),merchantId:merchant,actorUserId:actor,
-    conversationId:input.conversationId,requestId:input.requestId,ownershipVersion:conv.handoff_version,customerKey:staffCompatibilityCustomer(merchant,conv.customerPhone),
-    replyDigest:hash(input.message),scope:'unmeasured_compatibility',result:null});
+    VALUES (?,?,?,?,0,?,?,?,NULL)`,[merchant,actor,input.conversationId,input.requestId,ownership.version,conv.customerPhone,input.message]);
+  const basis=staffCompatibilitySnapshot.parse({version:'staff-text-compatibility.v2',sourceId:Number(saved.insertId),merchantId:merchant,actorUserId:actor,
+    conversationId:input.conversationId,requestId:input.requestId,ownershipVersion:ownership.version,customerKey:staffCompatibilityCustomer(merchant,conv.customerPhone),
+    replyDigest:hash(input.message),scope:'unmeasured_compatibility',result:null,authority,reservedAt:now});
   const [updated]=await c.execute<any>('UPDATE ai_sales_staff_replies SET basis=?,basis_digest=? WHERE id=? AND merchant_id=?',[JSON.stringify(basis),hash(basis),basis.sourceId,merchant]);
   if(updated.affectedRows!==1)return unavailable();
   return {id:basis.sourceId,compatibility:true as const,basis,customer_phone:conv.customerPhone,fresh:true};
@@ -157,23 +166,37 @@ export async function reconcileDashboardStaff(merchant:number,replyId:number):Pr
   });
 }
 /** Reserve every request before any transport, including the unmeasured compatibility sender. */
-export async function trySendDashboardStaff(merchant:number,actor:number,raw:StaffDashboardReplyInput,compatibilitySend?:StaffCompatibilitySend):Promise<StaffDashboardReplyResult>{
+export async function trySendDashboardStaff(merchant:number,actor:number,raw:StaffDashboardReplyInput):Promise<StaffDashboardReplyResult>{
   id.parse(merchant);id.parse(actor);const input=staffDashboardReplyInput.parse(raw);await assertDashboardStaffSchema();
   const r=await reserve(merchant,actor,input);
   if('compatibility' in r&&r.compatibility){
     if(r.basis.result)return r.basis.result;
-    if(r.fresh&&compatibilitySend){
-      try{const sent=await compatibilitySend({customerPhone:r.customer_phone});
-        if(sent.success!==true)return {success:false,status:'pending',persisted:false};
-        const result=staffCompatibilityResult.parse({success:true,status:'accepted',persisted:sent.persisted});
-        await checkoutTransaction(async c=>{
+    if(r.fresh){
+      destroySession(merchant,input.conversationId);
+      try{const current=await inspectStaffCompatibilityDispatch(merchant,r.id,hash(r.basis));
+        const sent=current.basis.authority.source==='registered'
+          ?await sendMerchantWhatsApp({merchantId:merchant,instanceRecordId:current.basis.authority.recordId,idempotencyKey:staffCompatibilityKey(merchant,r.id),
+            kind:'text',to:current.phone,text:current.text,staffCompatibilityGuard:{id:r.id,basisDigest:hash(r.basis)}})
+          :await getWhatsAppProvider(current.config.provider).send(current.config,{kind:'text',to:current.phone,text:current.text});
+        const receipt=sent.providerMessageId;
+        if(sent.accepted!==true||!['sent','delivered','read'].includes(sent.status)||typeof receipt!=='string'||!z.string().regex(/^[^\s<>\x00-\x1f]{1,255}$/).safeParse(receipt).success||('outcome' in sent&&sent.outcome==='unknown'))return {success:false,status:'pending',persisted:false};
+        return await checkoutTransaction(async c=>{
           await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchant]);
           const [rows]=await c.execute<any[]>('SELECT * FROM ai_sales_staff_replies WHERE id=? AND merchant_id=? FOR UPDATE',[r.id,merchant]);
           if(rows.length!==1||hash(readStaffTextCompatibility(rows[0]))!==hash(r.basis))return unavailable();
+          let persisted=false;
+          const [conversations]=await c.execute<any[]>('SELECT customerPhone FROM conversations WHERE id=? AND merchantId=? FOR UPDATE',[input.conversationId,merchant]);
+          if(conversations.length===1&&staffCompatibilityCustomer(merchant,conversations[0].customerPhone)===r.basis.customerKey){
+            const [messages]=await c.execute<any[]>('SELECT * FROM messages WHERE conversationId=? AND externalId=? FOR UPDATE',[input.conversationId,receipt]);
+            if(messages.length>1||messages.some(m=>m.direction!=='outgoing'||m.messageType!=='text'||m.sender_type!=='merchant'||m.content!==input.message))return unavailable();
+            if(!messages.length)await c.execute("INSERT INTO messages (conversationId,direction,messageType,content,externalId,isProcessed,sender_type) VALUES (?,'outgoing','text',?,?,1,'merchant')",[input.conversationId,input.message,receipt]);
+            await c.execute('UPDATE conversations SET lastMessageAt=GREATEST(COALESCE(lastMessageAt,UTC_TIMESTAMP()),UTC_TIMESTAMP()) WHERE id=? AND merchantId=?',[input.conversationId,merchant]);persisted=true;
+          }
+          const result=staffCompatibilityResult.parse({success:true,status:'accepted',persisted});
           const basis=staffCompatibilitySnapshot.parse({...r.basis,result});
           const [saved]=await c.execute<any>("UPDATE ai_sales_staff_replies SET status='accepted',basis=?,basis_digest=? WHERE id=? AND merchant_id=? AND status='reserved'",[JSON.stringify(basis),hash(basis),r.id,merchant]);
-          if(saved.affectedRows!==1)return unavailable();
-        });return result;
+          if(saved.affectedRows!==1)return unavailable();return result;
+        });
       }catch{ /* An unknown transport or commit result must never trigger a second send. */ }
     }
     return {success:false,status:'pending',persisted:false};

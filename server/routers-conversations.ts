@@ -136,75 +136,7 @@ export const conversationsRouter = router({
     sendReply: permissionProcedure('conversations.reply')
         .input(staffDashboardReplyInput)
         .mutation(async ({ input, ctx }) => {
-            return routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input,async target=>{
-            const merchant = await getMerchantById(ctx.merchantId);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            // Check ownership
-            const conversation = await getConversationById(input.conversationId);
-            if (!conversation || conversation.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
-            }
-
-            if(conversation.customerPhone!==target.customerPhone)throw new TRPCError({code:'CONFLICT'});
-            // Explicit compatibility transport; the request is already durably reserved.
-            const { getPrimaryWhatsAppInstance, getWhatsAppConnectionRequestByMerchantId: getLegacyConn } = await import('./db');
-            const instance = await getPrimaryWhatsAppInstance(merchant.id);
-            let waInstanceId: string, waToken: string, waApiUrl: string;
-
-            if (instance && instance.status === 'active' && instance.instanceId && instance.token) {
-                waInstanceId = instance.instanceId;
-                waToken = instance.token;
-                waApiUrl = (instance as any).apiUrl || 'https://api.green-api.com';
-            } else {
-                // Fallback to legacy connection_requests
-                const waRequest = await getLegacyConn(merchant.id);
-                if (!waRequest || !waRequest.instanceId || !waRequest.apiToken) {
-                    throw new TRPCError({
-                        code: 'PRECONDITION_FAILED',
-                        message: 'يجب ربط حساب WhatsApp أولاً',
-                    });
-                }
-                waInstanceId = waRequest.instanceId;
-                waToken = waRequest.apiToken;
-                waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
-            }
-
-            // Claim ownership before the external send; failure leaves the bot paused for review.
-            const replySettings = await getBotSettings(merchant.id);
-            await updateConversation(input.conversationId, { humanTakeover: 1, humanTakeoverAt: new Date(),
-              humanExpiresAt: new Date(Date.now() + (replySettings.takeoverTimeoutMinutes || 15) * 60000) } as any);
-
-            // Send via WhatsApp
-            const { sendMessageWithCredentials } = await import('./whatsapp');
-            const result = await sendMessageWithCredentials(
-                waInstanceId,
-                waToken,
-                waApiUrl,
-                conversation.customerPhone,
-                input.message,
-            );
-
-            if (!result.success) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: `فشل إرسال الرسالة: ${result.error}`,
-                });
-            }
-
-            // Save to DB
-            const saved=await createMessage({
-                conversationId: input.conversationId,
-                direction: 'outgoing', senderType: 'merchant', isProcessed: 1,
-                messageType: 'text',
-                content: input.message,
-                externalId: result.messageId || null,
-            });
-
-            return { success: true, persisted: Boolean(saved) };
-            });
+            return routeDashboardStaffReply(ctx.merchantId,ctx.user.id,input);
         }),
 
     // ── Sync conversations from Green API (recover missed data) ──
