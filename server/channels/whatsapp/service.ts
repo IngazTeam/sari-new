@@ -108,7 +108,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
        SELECT ?, ?, ?, ?, ?, 'outgoing', 'queued', ? FROM merchants WHERE id=? FOR SHARE`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
-          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard,
+          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard,
           replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
     if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
@@ -125,6 +125,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     const priorRequest = typeof existing.request_json === 'string' ? JSON.parse(existing.request_json) : existing.request_json;
     // Removing the guard from a retry request cannot strip the durable reply's authority.
     if (existing.status === 'failed' && !existing.provider_message_id && input.retryFailed && !input.replyGuard && !priorRequest?.replyGuard
+        && (!priorRequest?.sallaOrderGuard || !!input.sallaOrderGuard)
         && !input.idempotencyKey.startsWith('sales_reply:') && !input.salesReplyGuard
         && !input.idempotencyKey.startsWith('staff_reply:') && !input.staffReplyGuard
         && !input.idempotencyKey.startsWith('staff_voice:') && !input.staffVoiceGuard && !priorRequest?.staffVoiceGuard
@@ -239,6 +240,13 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='sales_reply_suppressed',status_updated_at=NOW()
         WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
       return { accepted: false, duplicate: false, status: 'failed', errorCode: 'sales_reply_suppressed' };
+    }
+  }
+  if (/^salla-order(?:-v2)?:/.test(input.idempotencyKey) || input.sallaOrderGuard) {
+    const { canDispatchSallaOrderNotice } = await import('../../integrations/salla-order-projection');
+    if (!await canDispatchSallaOrderNotice(input)) {
+      await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='salla_order_suppressed',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'",[input.merchantId,input.idempotencyKey]);
+      return { accepted:false,duplicate:false,status:'failed',errorCode:'salla_order_suppressed' };
     }
   }
   const result = await provider.send(config, input).catch((error: any) => ({

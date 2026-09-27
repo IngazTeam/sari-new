@@ -14,8 +14,8 @@ import { formatProductPrice, formatMinorMoney, verifiedProductMoney, requireMino
 
 import { invokeLLM } from '../_core/llm';
 import { SallaIntegration } from '../integrations/salla';
+import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
 import {
-  createOrder,
   getMerchantById,
   getProductById,
   getProductsByMerchantId,
@@ -163,11 +163,13 @@ export async function createOrderFromChat(
     await currentInboundExecution()?.assertOwned();
     // Get Salla connection
     const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
-    if (!sallaConnection) {
+    if (!sallaConnection || sallaConnection.syncStatus !== 'active') {
       throw new Error('Salla not connected');
     }
 
     const salla = new SallaIntegration(merchantId, sallaConnection.accessToken);
+    const authority = sallaAuthoritySchema.parse({ merchantId, connectionId: sallaConnection.id,
+      storeId: sallaConnection.sallaStoreId, accessToken: sallaConnection.accessToken });
 
     // Prepare order items
     const items = [];
@@ -216,6 +218,7 @@ export async function createOrderFromChat(
     // coupon reservation before a provider order has even been accepted.
     const discountCode = message ? extractDiscountCodeFromMessage(message) : undefined;
     await currentInboundExecution()?.assertOwned();
+    await preflightSallaOrderAuthority(authority);
     providerAttempted = true;
     const sallaOrder = await salla.createOrder({
       customerName,
@@ -243,9 +246,8 @@ export async function createOrderFromChat(
     const finalAmount = requireMinor(sallaOrder.amountMinor);
     await currentInboundExecution()?.assertOwned();
     // Save order in our database
-    const order = await createOrder({
-      merchantId,
-      sallaOrderId: sallaOrder.orderId,
+    const order = await persistSallaOrderProjection(authority, {
+      externalOrderId: sallaOrder.orderId,
       orderNumber: sallaOrder.orderNumber,
       customerPhone,
       customerName,
@@ -253,7 +255,6 @@ export async function createOrderFromChat(
       city: parsedOrder.city,
       items: JSON.stringify(items),
       totalAmount: finalAmount, // Use final amount after discount
-      status: 'pending',
       paymentUrl: sallaOrder.paymentUrl || null,
       isGift: parsedOrder.isGift ? 1 : 0,
       giftRecipientName: parsedOrder.giftRecipientName,

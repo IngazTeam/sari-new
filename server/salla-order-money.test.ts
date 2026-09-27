@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
+vi.mock('./integrations/salla-order-projection', async importOriginal => ({...await importOriginal<any>(),persistSallaOrderProjection:m.create,preflightSallaOrderAuthority:m.preflight}));
 vi.mock('axios', () => ({ default: { create: () => ({ post: m.post, get: m.get }) } }));
 vi.mock('./db', () => ({
   createOrder: m.create, getProductById: m.product, getProductsByMerchantId: m.products,
-  getSallaConnectionByMerchantId: vi.fn().mockResolvedValue({accessToken:'test-only'}),
+  getSallaConnectionByMerchantId: m.connection,
   getMerchantById: vi.fn().mockResolvedValue(null), getUserById: vi.fn(),
   getReferralCodeByCode: vi.fn(), incrementDiscountCodeUsage: vi.fn(),
 }));
@@ -22,6 +23,8 @@ const parsed = () => ({shipTo, products:[{name:'Sample',productId:4,quantity:2}]
 const execution = (): InboundExecution => ({id:1,merchantId:7,instanceId:1,token:'test',eventKey:'e',partitionKey:'p',sendOrdinal:0,assertOwned:vi.fn().mockResolvedValue(undefined)});
 beforeEach(() => {
   vi.clearAllMocks();
+  m.connection.mockResolvedValue({id:12,merchantId:7,sallaStoreId:'987',syncStatus:'active',accessToken:'test-only'});
+  m.preflight.mockResolvedValue(undefined);
   m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,currency:'SAR',amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
   m.product.mockResolvedValue({id:4,merchantId:7,name:'Sample',price:9999,priceUnit:'minor',currency:'SAR',sallaProductId:'123',isActive:1,trackInventory:1,stock:5});
   m.create.mockResolvedValue({id:55,orderNumber:'456'});
@@ -52,7 +55,8 @@ describe('Salla order transport and monetary authority', () => {
     await expect(createOrderFromChat(7,'966500000009','Test',parsed())).resolves.toMatchObject({orderId:55});
     expect(m.post).toHaveBeenCalledTimes(1);
     expect(m.create).toHaveBeenCalledTimes(1);
-    expect(m.create.mock.calls[0][0]).toMatchObject({merchantId:7,sallaOrderId:'123',totalAmount:22998});
+    expect(m.create.mock.calls[0][0]).toEqual({merchantId:7,connectionId:12,storeId:'987',accessToken:'test-only'});
+    expect(m.create.mock.calls[0][1]).toMatchObject({externalOrderId:'123',totalAmount:22998});
     expect(m.link).not.toHaveBeenCalled();
   });
   it.each([{merchantId:8},{priceUnit:'unverified'},{currency:'USD'},{stock:1}])('rejects foreign, uncertain, unsupported or unavailable products: %j', async patch => {
@@ -64,6 +68,12 @@ describe('Salla order transport and monetary authority', () => {
     const input=parsed(); input.products.push({name:'Missing',quantity:1} as any);
     expect(await createOrderFromChat(7,'966500000009','Test',input)).toBeNull();
     expect(m.post).not.toHaveBeenCalled();
+  });
+  it.each([null,{id:12,sallaStoreId:null,syncStatus:'active',accessToken:'test-only'}, {id:12,sallaStoreId:'987',syncStatus:'paused',accessToken:'test-only'}])('rejects unverified/inactive connection before POST: %j',async connection=>{
+    m.connection.mockResolvedValue(connection);expect(await createOrderFromChat(7,'966500000009','Test',parsed())).toBeNull();expect(m.post).not.toHaveBeenCalled();
+  });
+  it('rechecks connection and required schema before POST',async()=>{
+    m.preflight.mockRejectedValueOnce(Error('changed'));expect(await createOrderFromChat(7,'966500000009','Test',parsed())).toBeNull();expect(m.post).not.toHaveBeenCalled();
   });
   it.each([undefined,{amount:'1.001',currency:'SAR'},{amount:100,currency:'USD'}])('parks an ambiguous provider acceptance rather than pretending it failed safely: %j', async total => {
     m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,amounts:{total}}}});

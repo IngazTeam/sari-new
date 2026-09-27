@@ -59,4 +59,5 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   staffCompatibilityVoiceGuard?: { id:number; basisDigest:string };
   appointmentReminderGuard?: import('../../appointment-reminders').AppointmentReminderGuard;
   bookingNoticeGuard?: import('../../booking-reschedule-notification').BookingNoticeGuard;
+  sallaOrderGuard?: import('../../integrations/salla-order-projection').SallaOrderNoticeGuard;
 };

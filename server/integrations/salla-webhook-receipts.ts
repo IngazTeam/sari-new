@@ -7,6 +7,7 @@ import {
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { assertSallaObservationSchema, recordSallaObservation } from '../ai/salla-sales-observations';
+import { assertSallaOrderProjectionSchema, sallaOrderProjectionId, sallaOrderNoticeKey, sallaOrderStatusMessage } from './salla-order-projection';
 import {
   sendMerchantWhatsApp,
   WhatsAppDeliveryStateError,
@@ -141,6 +142,36 @@ export async function getSallaWebhookReceiptHealth(merchantId: number): Promise<
   };
 }
 
+/** Hourly reconciliation enqueues the same durable work as webhooks. No HTTP or sending here.
+ * Persisted store provenance is mandatory; old bare IDs and another integration's aliases are excluded. */
+export async function enqueueSallaOrderPolls() {
+  await ensureSallaReceiptSchema(); await assertSallaOrderProjectionSchema();
+  const pool = await getPool(); if (!pool) throw new ReceiptProcessingError('database_unavailable');
+  const [clock] = await pool.execute<any[]>("SELECT DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%dT%H') AS period");
+  const period = clock[0].period; let cursor = 0, checked = 0, queued = 0;
+  while (true) {
+    const [rows] = await pool.execute<any[]>(`SELECT p.id,p.merchant_id,p.store_id,p.external_order_id FROM salla_order_projections p
+      JOIN orders o ON o.id=p.local_order_id AND o.merchantId=p.merchant_id
+      JOIN salla_connections c ON c.merchantId=p.merchant_id AND c.salla_store_id=p.store_id AND c.syncStatus='active'
+      WHERE p.id>? AND o.sallaOrderId=CONCAT('salla:',p.store_id,':',p.external_order_id) AND o.status NOT IN ('delivered','cancelled')
+        AND NOT EXISTS (SELECT 1 FROM salla_webhook_receipts r WHERE r.merchant_id=p.merchant_id AND r.salla_store_id=p.store_id
+          AND r.resource_id=p.external_order_id AND r.event_type='order.updated' AND r.status IN ('pending','processing','failed','manual_review'))
+      ORDER BY p.id LIMIT 500`,[cursor]);
+    if (!rows.length) break;
+    for (const row of rows) {
+      cursor = Number(row.id); checked++;
+      const key = crypto.createHash('sha256').update(JSON.stringify(['salla-order-poll.v1',row.merchant_id,row.store_id,row.external_order_id,period])).digest('hex');
+      try {
+        await pool.execute(`INSERT INTO salla_webhook_receipts
+          (merchant_id,salla_store_id,event_key,event_type,resource_id,status,attempt_count,available_at)
+          VALUES (?,?,?,'order.updated',?,'pending',0,NOW(3))`, [row.merchant_id,row.store_id,key,row.external_order_id]);
+        queued++;
+      } catch (error) { if ((error as {code?: string}).code !== 'ER_DUP_ENTRY') throw error; }
+    }
+  }
+  return { checked, queued };
+}
+
 async function recoverStaleLeases(): Promise<void> {
   const pool = await getPool();
   if (!pool) throw new ReceiptProcessingError('database_unavailable');
@@ -264,6 +295,7 @@ async function applyOrderEffect(
   trackingNumber?: string,
 ): Promise<void> {
   await assertSallaObservationSchema();
+  await assertSallaOrderProjectionSchema();
   const pool = await getPool();
   if (!pool) throw new ReceiptProcessingError('database_unavailable');
   const connection = await pool.getConnection();
@@ -276,14 +308,16 @@ async function applyOrderEffect(
       storeId: row.salla_store_id, orderId: row.resource_id, receiptId: row.id,
       processingToken: row.processing_token, eventKey: row.event_key });
     const [orders] = await connection.execute<LocalOrderRow[]>(
-      `SELECT id, status, customerPhone, customerName, orderNumber, trackingNumber
-         FROM orders
-        WHERE merchantId = ? AND sallaOrderId = ?
+      `SELECT o.id, o.status, o.customerPhone, o.customerName, o.orderNumber, o.trackingNumber
+         FROM orders o JOIN salla_order_projections p ON p.local_order_id=o.id AND p.merchant_id=o.merchantId
+        WHERE p.merchant_id=? AND p.store_id=? AND p.external_order_id=? AND o.sallaOrderId=?
         LIMIT 1 FOR UPDATE`,
-      [row.merchant_id, row.resource_id],
+      [row.merchant_id, row.salla_store_id, row.resource_id, sallaOrderProjectionId(row.salla_store_id,row.resource_id)],
     );
     const order = orders[0];
     if (!order) {
+      const [unverified] = await connection.execute<any[]>(`SELECT id FROM orders WHERE merchantId=? AND sallaOrderId IN (?,?) LIMIT 1 FOR UPDATE`,
+        [row.merchant_id,row.resource_id,sallaOrderProjectionId(row.salla_store_id,row.resource_id)]);
       const [receiptUpdate] = await connection.execute(
         `UPDATE salla_webhook_receipts
             SET effect_applied = 1, notification_required = 0, notification_status = NULL
@@ -299,6 +333,7 @@ async function applyOrderEffect(
         throw error;
       }
       row.effect_applied = 1;
+      if (unverified.length) throw new ReceiptProcessingError('order_store_unverified',true);
       return;
     }
 
@@ -353,51 +388,39 @@ async function applyOrderEffect(
   }
 }
 
-function buildOrderStatusMessage(order: LocalOrderRow, status: LocalOrderStatus): string {
-  const label: Record<LocalOrderStatus, string> = {
-    pending: 'قيد المراجعة',
-    paid: 'تم تأكيد الدفع',
-    processing: 'قيد التجهيز',
-    shipped: 'تم الشحن',
-    delivered: 'تم التوصيل',
-    cancelled: 'تم الإلغاء',
-  };
-  return [
-    `مرحباً ${String(order.customerName).trim().slice(0, 100)}،`,
-    `تحديث طلبك ${String(order.orderNumber || `#${order.id}`).slice(0, 80)}: ${label[status]}.`,
-    status === 'shipped' && order.trackingNumber
-      ? `رقم التتبع: ${String(order.trackingNumber).slice(0, 100)}`
-      : '',
-  ].filter(Boolean).join('\n');
-}
-
 async function deliverOrderNotification(row: ReceiptRow): Promise<void> {
   const status = row.notification_status;
   if (!row.notification_required || !status) return;
   const pool = await getPool();
   if (!pool) throw new ReceiptProcessingError('database_unavailable');
+  await assertSallaOrderProjectionSchema();
   const [orders] = await pool.execute<LocalOrderRow[]>(
-    `SELECT id, status, customerPhone, customerName, orderNumber, trackingNumber
-       FROM orders
-      WHERE merchantId = ? AND sallaOrderId = ? LIMIT 1`,
-    [row.merchant_id, row.resource_id],
+    `SELECT o.id, o.status, o.customerPhone, o.customerName, o.orderNumber, o.trackingNumber
+       FROM orders o JOIN salla_order_projections p ON p.local_order_id=o.id AND p.merchant_id=o.merchantId
+      WHERE p.merchant_id=? AND p.store_id=? AND p.external_order_id=? AND o.sallaOrderId=? LIMIT 1`,
+    [row.merchant_id,row.salla_store_id,row.resource_id,sallaOrderProjectionId(row.salla_store_id,row.resource_id)],
   );
   const order = orders[0];
-  if (!order || order.status !== status) return; // A newer state superseded this alert.
+  if (!order) throw new ReceiptProcessingError('order_store_unverified',true);
+  if (order.status !== status) return; // A newer state superseded this alert.
 
   try {
+    const guard = { storeId:row.salla_store_id, orderId:row.resource_id, localOrderId:order.id,
+      receiptId:row.id, processingToken:row.processing_token, status };
     const result = await sendMerchantWhatsApp({
       merchantId: Number(row.merchant_id),
-      idempotencyKey: `salla-order:${row.merchant_id}:${row.resource_id}:${status}`,
+      idempotencyKey: sallaOrderNoticeKey(Number(row.merchant_id),guard),
       to: order.customerPhone,
       kind: 'text',
-      text: buildOrderStatusMessage(order, status),
+      text: sallaOrderStatusMessage(order, status),
+      sallaOrderGuard: guard,
       retryFailed: true,
     });
     if (result.accepted) return;
     if (result.errorCode === 'delivery_in_progress') {
       throw new ReceiptProcessingError('ambiguous_notification_delivery', true);
     }
+    if (result.errorCode === 'salla_order_suppressed') throw new ReceiptProcessingError('salla_order_suppressed',true);
     throw new ReceiptProcessingError(result.errorCode || 'notification_rejected');
   } catch (error) {
     if (error instanceof ReceiptProcessingError) throw error;

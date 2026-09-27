@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 const external = vi.hoisted(() => ({ getOrderStatus: vi.fn(), send: vi.fn() }));
 vi.mock('../integrations/salla', () => ({ SallaIntegration: class { getOrderStatus = external.getOrderStatus; } }));
 vi.mock('../channels/whatsapp/service', () => ({ sendMerchantWhatsApp: external.send, WhatsAppDeliveryStateError: class extends Error {} }));
+import { sallaOrderProjectionId } from '../integrations/salla-order-projection';
 import { closeDb, getPool } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants, assertDisposableDatabase } from '../tests/helpers/disposable-merchant';
 import { encryptSecret } from '../security/secrets';
@@ -42,7 +43,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla observation actual MySQL atomi
     await receipt();await runSallaWebhookReceiptBatch();expect(await observations()).toEqual(first);expect(external.getOrderStatus).toHaveBeenCalledTimes(2);
   });
   it('preserves local order progression, tracking and notification without changing payment status', async () => {
-    const inserted:any=await query("INSERT INTO orders(merchantId,sallaOrderId,customerName,customerPhone,items,totalAmount,status) VALUES (?,'98765','Synthetic','966500000000','[]',100,'pending')",[merchant]);
+    const inserted:any=await query("INSERT INTO orders(merchantId,sallaOrderId,customerName,customerPhone,items,totalAmount,status) VALUES (?,?,'Synthetic','966500000000','[]',100,'pending')",[merchant,sallaOrderProjectionId(store,'98765')]);
+    await query("INSERT INTO salla_order_projections(merchant_id,store_id,external_order_id,local_order_id,connection_id,created_at) VALUES (?,?,'98765',?,?,UTC_TIMESTAMP(3))",[merchant,store,inserted.insertId,connectionId]);
     external.getOrderStatus.mockResolvedValue({status:'shipped',trackingNumber:'synthetic-tracking'});await receipt();await runSallaWebhookReceiptBatch();
     expect(await query('SELECT status,payment_status,trackingNumber FROM orders WHERE id=?',[inserted.insertId])).toMatchObject([{status:'shipped',payment_status:'unpaid',trackingNumber:'synthetic-tracking'}]);
     expect(await query('SELECT oldStatus,newStatus FROM order_tracking_logs WHERE orderId=?',[inserted.insertId])).toMatchObject([{oldStatus:'pending',newStatus:'shipped'}]);
@@ -51,7 +53,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla observation actual MySQL atomi
     expect((await query('SELECT status FROM orders WHERE id=?',[inserted.insertId]))[0].status).toBe('shipped');expect(await observations()).toHaveLength(2);
   });
   it('rolls back local projection and observation if tracking storage fails', async () => {
-    const inserted:any=await query("INSERT INTO orders(merchantId,sallaOrderId,customerName,customerPhone,items,totalAmount,status) VALUES (?,'98765','Synthetic','966500000000','[]',100,'pending')",[merchant]);
+    const inserted:any=await query("INSERT INTO orders(merchantId,sallaOrderId,customerName,customerPhone,items,totalAmount,status) VALUES (?,?,'Synthetic','966500000000','[]',100,'pending')",[merchant,sallaOrderProjectionId(store,'98765')]);
+    await query("INSERT INTO salla_order_projections(merchant_id,store_id,external_order_id,local_order_id,connection_id,created_at) VALUES (?,?,'98765',?,?,UTC_TIMESTAMP(3))",[merchant,store,inserted.insertId,connectionId]);
     await receipt();const pool=(await getPool())!,original=pool.getConnection.bind(pool);
     vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await original(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{
       const result=await execute(sql,args);if(sql.includes('INSERT INTO order_tracking_logs'))throw Error('synthetic tracking failure');return result;

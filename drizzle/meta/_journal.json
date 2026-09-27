@@ -960,6 +960,13 @@
       "when": 1795219200000,
       "tag": "0136_salla_sales_observations",
       "breakpoints": true
+    },
+    {
+      "idx": 137,
+      "version": "5",
+      "when": 1795305600000,
+      "tag": "0137_salla_order_projections",
+      "breakpoints": true
     }
   ]
 }

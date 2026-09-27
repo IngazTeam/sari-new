@@ -15,16 +15,8 @@ export function startOrderTrackingJob() {
       
       console.log('[Order Tracking Job] Completed:', {
         checked: stats.checked,
-        updated: stats.updated,
-        notified: stats.notified,
-        errors: stats.errors,
+        queued: stats.queued,
       });
-      
-      // إذا كان هناك أخطاء كثيرة، يمكن إرسال تنبيه للمدير
-      if (stats.errors > 5) {
-        console.warn(`[Order Tracking Job] High error count: ${stats.errors}`);
-        // TODO: إرسال إشعار للمدير
-      }
     } catch (error) {
       console.error('[Order Tracking Job] Fatal error:', error);
     }

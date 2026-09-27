@@ -818,6 +818,18 @@ export const sallaWebhookReceipts = mysqlTable("salla_webhook_receipts", {
 	index("salla_webhook_receipts_dispatch_idx").on(table.status, table.availableAt, table.id),
 	index("salla_webhook_receipts_merchant_idx").on(table.merchantId, table.createdAt),
 	index("salla_webhook_receipts_store_idx").on(table.sallaStoreId),
+	index('idx_salla_receipt_order_scope').on(table.merchantId,table.sallaStoreId,table.resourceId,table.eventType,table.status),
+]);
+
+export const sallaOrderProjections = mysqlTable('salla_order_projections', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  storeId: varchar('store_id', { length: 32 }).notNull(), externalOrderId: varchar('external_order_id', { length: 32 }).notNull(),
+  localOrderId: int('local_order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  connectionId: int('connection_id').notNull(), createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [uniqueIndex('salla_projection_scope').on(table.merchantId,table.storeId,table.externalOrderId),
+  uniqueIndex('salla_projection_local').on(table.localOrderId),
+  check('chk_salla_projection_ids', sql`${table.connectionId}>0 AND REGEXP_LIKE(${table.storeId},'^[1-9][0-9]{0,19}$','c') AND REGEXP_LIKE(${table.externalOrderId},'^[1-9][0-9]{0,19}$','c')`),
 ]);
 
 export const sallaSalesObservations = mysqlTable('salla_sales_observations', {

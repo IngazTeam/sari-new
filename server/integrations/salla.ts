@@ -328,6 +328,7 @@ export class SallaIntegration {
       const amountMinor = majorToMinor(typeof amount === 'object' ? amount.amount : amount);
       const orderId = String(sallaOrder.id);
       const orderNumber = String(sallaOrder.reference_id);
+      if ([sallaOrder.id,sallaOrder.reference_id].some(id => typeof id !== 'string' && (typeof id !== 'number' || !Number.isSafeInteger(id)))) throw new Error('Unsafe Salla order identity');
       if (![orderId, orderNumber].every(id => /^[1-9][0-9]{0,19}$/.test(id))) throw new Error('Invalid Salla order identity');
       let paymentUrl: string | undefined;
       if (typeof sallaOrder.urls?.checkout === 'string' && sallaOrder.urls.checkout) {
