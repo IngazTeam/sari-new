@@ -54,4 +54,11 @@ describe('model evaluation scoring guards (not live quality evidence)',()=>{
     expect(scoreUnderstanding(find('followup-quoted-request'),result({followup})).criticalFailure).toBe(true);
     expect(scoreUnderstanding(find('yes-to-explanation'),result({followup})).criticalFailure).toBe(true);
   });
+  it('scores appointment identity and interval and treats unintended reminder cancellation as an action',()=>{
+    const appointmentReminder:NonNullable<ConversationUnderstanding['appointmentReminder']>={status:'schedule',appointmentId:17,hoursBefore:1,evidence:[{messageId:3,excerpt:'ممتاز'}]};
+    expect(scoreUnderstanding(find('reminder-contextual-consent'),result({appointmentReminder})).passed).toBe(true);
+    expect(scoreUnderstanding(find('reminder-contextual-consent'),result({appointmentReminder:{...appointmentReminder,hoursBefore:24}})).passed).toBe(false);
+    expect(scoreUnderstanding(find('reminder-contextual-consent'),result({appointmentReminder,confidence:.5})).mismatches).toContain('reminderBlocked');
+    expect(scoreUnderstanding(find('reminder-negated-cancellation'),result({appointmentReminder:{...appointmentReminder,status:'cancel',hoursBefore:null}})).criticalFailure).toBe(true);
+  });
 });

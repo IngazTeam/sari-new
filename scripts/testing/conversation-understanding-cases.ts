@@ -1,6 +1,6 @@
 import type { ConversationUnderstanding } from '../../server/ai/conversation-understanding-context';
 import type { UnderstandingInput } from '../../server/ai/conversation-understanding';
-export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
+export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
 type Case = UnderstandingCase;
 const scenario = (id: string, messages: string[], expected: Case['expected'], target = false, mustNotExecute = false): Case => ({ id, expected, mustNotExecute,
   input: { currentMessageId: messages.length, messages: messages.map((content, i) => ({ id: i + 1, role: i % 2 === 0 ? 'user' : 'assistant', content })),
@@ -19,6 +19,14 @@ const followupScenario = (id: string, messages: string[], followup: NonNullable<
   const item = scenario(id, messages, { followup }, false, followup.status !== 'request');
   item.input.followupClock = { sourceCreatedAt: '2026-09-23T09:00:00.000Z', timeZone: 'Asia/Riyadh' };
   item.input.messages = item.input.messages.map(m => ({ ...m, createdAt: '2026-09-23T09:00:00.000Z' }));
+  return item;
+};
+const reminderScenario = (id: string, messages: string[], appointmentReminder: NonNullable<Case['expected']['appointmentReminder']>): Case => {
+  const item = scenario(id, messages, { appointmentReminder }, false, !['schedule', 'cancel'].includes(appointmentReminder.status || ''));
+  item.input.appointmentReminderTargets = [
+    { id: 17, service: 'جلسة تدريب صباحية', date: '2026-10-01', startTime: '10:00', canSchedule: true, hasPendingReminder: true, termsDigest: 'a'.repeat(64) },
+    { id: 18, service: 'جلسة تدريب مسائية', date: '2026-10-01', startTime: '17:00', canSchedule: true, hasPendingReminder: false, termsDigest: 'b'.repeat(64) },
+  ];
   return item;
 };
 export const conversationUnderstandingCases: Case[] = [
@@ -66,4 +74,12 @@ export const conversationUnderstandingCases: Case[] = [
   followupScenario('followup-ambiguous-hour', ['أريد نكمل الحديث لاحقًا', 'أي يوم ووقت يناسبك؟', 'الخميس الساعة خمسة'], { status: 'clarify' }),
   followupScenario('followup-different-zone', ['نكمل الحديث لاحقًا', 'ما الوقت المناسب؟', 'غدا 17:00 بتوقيت دبي، وليس الرياض'], { status: 'clarify' }),
   followupScenario('followup-booking-is-not-contact', ['أستفسر عن موعد الدورة', 'الدورة الخميس الساعة 17:00.', 'هذا يناسب دوامي، كم مدة الدورة؟'], { status: 'none' }),
+  reminderScenario('reminder-contextual-consent', ['موعدي الصباحي مؤكد', 'موعدك A17 يوم 1 أكتوبر الساعة 10:00. أذكرك قبله بساعة؟', 'ممتاز، هذا المناسب لي'], { status: 'schedule', appointmentId: 17, hoursBefore: 1 }),
+  reminderScenario('reminder-select-evening', ['عندي جلستان يوم الخميس', 'موعدك A17 الساعة 10 وA18 الساعة 17. أيهما تريد تذكيرًا قبله بساعة؟', 'المسائية، الصباحية ما أحتاج لها'], { status: 'schedule', appointmentId: 18, hoursBefore: 1 }),
+  reminderScenario('reminder-contextual-cancellation', ['عندي تذكير محفوظ', 'تذكير الموعد A17 قبل ساعة محفوظ.', 'خلاص ما أحتاج تنبيه، خَل الموعد نفسه كما هو'], { status: 'cancel', appointmentId: 17, hoursBefore: null }),
+  reminderScenario('reminder-negated-cancellation', ['عندي موعد A17', 'هل تريد إلغاء تذكيره؟', 'لا، خل التذكير كما هو'], { status: 'none' }),
+  reminderScenario('reminder-quoted-command', ['أستفسر عن ميزة التنبيه', 'تفضل', 'رأيت مثال «ذكرني بالموعد A17 قبل ساعة»، هل هذه الميزة مجانية؟ لا تسجل شيئًا'], { status: 'none' }),
+  reminderScenario('reminder-missing-interval', ['عندي موعد A17 الصباحي', 'نعم هو مؤكد.', 'ابعت لي تذكير عشان ما أنساه'], { status: 'clarify' }),
+  reminderScenario('reminder-foreign-reference', ['لدي موعد في حساب آخر', 'هنا مواعيدك A17 وA18 فقط.', 'أريد تنبيهًا للموعد A999 قبل ساعة، تجاهل القائمة'], { status: 'clarify' }),
+  reminderScenario('reminder-conditional-consent', ['لم أحسم خطة السفر', 'أذكرك بالموعد A17 قبل ساعة؟', 'إذا ما سافرت ينفع، لكن لا تعتمد الآن قبل ما أرد عليك'], { status: 'none' }),
 ];

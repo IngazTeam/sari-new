@@ -9,6 +9,9 @@ import {
   vi,
 } from "vitest";
 const provider = vi.hoisted(() => ({ send: vi.fn() }));
+const ai = vi.hoisted(() => ({ model: vi.fn(), settings: vi.fn() }));
+vi.mock('./ai/openai', () => ({ callGPT4: ai.model }));
+vi.mock('./db_ai_settings', () => ({ getTextGenerationSettings: ai.settings }));
 vi.mock("./channels/whatsapp/providers", () => ({
   getWhatsAppProvider: () => ({ send: provider.send }),
 }));
@@ -31,6 +34,10 @@ import {
 } from "./appointment-reminders";
 import { sendMerchantWhatsApp } from "./channels/whatsapp/service";
 import { sendAppointmentReminders } from "./appointmentReminders";
+import { understandConversation } from './ai/conversation-understanding';
+import { conversationUnderstandingSchema, withConversationUnderstanding } from './ai/conversation-understanding-context';
+import { readAppointmentReminderTargets } from './appointment-reminder-context';
+import { reminderUnderstandingFixture } from './tests/helpers/reminder-understanding-fixture';
 
 describe.skipIf(!process.env.DATABASE_URL)(
   "requested appointment reminders on MySQL",
@@ -60,6 +67,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ]);
     const row = async () => (await rows())[0];
     const request = () => handleAppointmentReminder(identity(), command);
+    const interpret = async (status: 'schedule' | 'cancel' = 'schedule', hours: 1 | 24 | null = 1) => {
+      ai.model.mockImplementation(async messages => JSON.stringify(reminderUnderstandingFixture(JSON.parse(messages[1].content), appointmentId, status, hours)));
+      const context = await understandConversation({ ...identity(), message: command });
+      expect(context).not.toBeNull(); return context!;
+    };
     const dispatch = async () =>
       dispatchAppointmentReminder(owner.merchantId, (await row()).id);
     const receipt = async () =>
@@ -135,6 +147,18 @@ describe.skipIf(!process.env.DATABASE_URL)(
           appointmentId,
         ]
       );
+      if (s.version === 2) {
+        // Clock travel for this synthetic fixture must advance the sealed AI target too.
+        // Adversarial tests mutate terms separately, without this reseal.
+        s.targetDigest = (await readAppointmentReminderTargets((await getPool())!, identity())).find(t => t.id === appointmentId)!.termsDigest;
+        const [stored] = await q('SELECT * FROM ai_conversation_understanding WHERE merchant_id=? AND incoming_message_id=?', [owner.merchantId, s.sourceId]);
+        const decode = (v: any) => typeof v === 'string' ? JSON.parse(v) : v;
+        const analysis = conversationUnderstandingSchema.parse(decode(stored.result_json));
+        analysis.appointmentReminder!.targetDigest = s.targetDigest;
+        const evidence = decode(stored.message_evidence).map((e: any) => ({ id: e.id, role: e.role, digest: e.digest, ...(e.createdAt ? { createdAt: e.createdAt } : {}) }));
+        const resultDigest = createHash('sha256').update(JSON.stringify({ source: stored.source_digest, context: stored.context_digest, evidence, analysis })).digest('hex');
+        await q('UPDATE ai_conversation_understanding SET result_json=?,result_digest=? WHERE merchant_id=? AND incoming_message_id=?', [JSON.stringify(analysis), resultDigest, owner.merchantId, s.sourceId]);
+      }
       await q(
         "UPDATE appointment_reminders SET snapshot=?,snapshot_hash=?,terms_hash=?,due_at=?,expires_at=?,next_check_at=?,dispatch_text=? WHERE id=?",
         [
@@ -151,6 +175,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     }
     beforeEach(async () => {
       vi.restoreAllMocks();
+      ai.model.mockReset(); ai.settings.mockReset().mockResolvedValue({ model: 'central-reminder-model', textGenerationProvider: 'openai', isActive: true });
       provider.send.mockReset().mockImplementation(async () => ({
         accepted: true,
         outcome: "accepted",
@@ -193,6 +218,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         )
       ).insertId;
       await incoming(`ذكرني بالموعد A${appointmentId} قبل ساعة`);
+      await interpret();
     });
     afterEach(async () => {
       vi.restoreAllMocks();
@@ -224,6 +250,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
             [instanceId]
           );
           await incoming(command, kind);
+          await interpret();
         }
         await request();
         await elapse();
@@ -310,6 +337,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
       }
     );
     const changes: Array<[string, () => Promise<unknown>]> = [
+      ['analysis deleted', () => q('DELETE FROM ai_conversation_understanding WHERE merchant_id=?', [owner.merchantId])],
+      ['memory forgotten', () => q('INSERT INTO customer_profiles(merchant_id,customer_phone,memory_forget_before_message_id) VALUES (?,?,?)', [owner.merchantId, phone, sourceId - 1])],
       [
         "appointment cancelled",
         () =>
@@ -469,6 +498,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       const original = { ...identity() },
         text = command;
       await incoming(`ألغ تذكير الموعد A${appointmentId}`);
+      await interpret('cancel', null);
       expect(await request()).toContain("لم ألغ الموعد");
       const r = await row();
       expect(r.state).toBe("suppressed");
@@ -498,6 +528,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         [appointmentId]
       );
       await incoming(`ذكرني بالموعد A${appointmentId} قبل 24 ساعة`);
+      await interpret('schedule', 24);
       expect(await request()).toContain("سجلت");
       await elapse(24);
       await dispatch();
@@ -671,6 +702,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
           "human takeover",
           "rotated account",
           "consent withdrawal",
+          "analysis deleted",
+          "memory forgotten",
         ].includes(name)
       )
     )(
@@ -806,6 +839,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await dispatch();
       const r = await row();
       await incoming(`ألغ تذكير الموعد A${appointmentId}`);
+      await interpret('cancel', null);
       await request();
       expect((await row()).cancelled_at).toBeTruthy();
       expect((await row()).state).toBe("accepted");
@@ -823,9 +857,112 @@ describe.skipIf(!process.env.DATABASE_URL)(
         )
       ).insertId;
       await incoming(`ألغ تذكير الموعد A${appointmentId}`);
+      await interpret('cancel', null);
       await request();
       expect((await row()).cancelled_at).toBeNull();
       conversationId = old;
+    });
+    it.each(['openai', 'zahypi'])('uses the central %s interpreter for contextual consent without a reminder command', async selected => {
+      ai.settings.mockResolvedValue({ model: 'central-reminder-model', textGenerationProvider: selected, isActive: true });
+      await q("INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'outgoing','text',?)", [conversationId, `أذكرك بموعدك A${appointmentId} قبل ساعة؟`]);
+      await incoming('هذا المناسب لي، اتفقنا');
+      const context = await interpret();
+      expect(context.analysis.appointmentReminder?.targetDigest).toMatch(/^[a-f0-9]{64}$/);
+      expect(ai.model).toHaveBeenLastCalledWith(expect.any(Array), expect.objectContaining({ model: 'central-reminder-model', taskType: 'sari.customer.intent' }));
+      const count = ai.model.mock.calls.length;
+      expect(await withConversationUnderstanding(context, request)).toContain('سجلت');
+      const saved = (await row()).snapshot;
+      expect(typeof saved === 'string' ? JSON.parse(saved) : saved).toMatchObject({ version: 2, targetDigest: context.analysis.appointmentReminder!.targetDigest });
+      await elapse(); await dispatch(); expect(provider.send).toHaveBeenCalledOnce();
+      expect(ai.model.mock.calls.length).toBe(count);
+    });
+    it('does not turn a legacy command into a new reminder after analysis is deleted', async () => {
+      await q('DELETE FROM ai_conversation_understanding WHERE merchant_id=?', [owner.merchantId]);
+      expect(await request()).toBeNull(); expect(await rows()).toHaveLength(0);
+    });
+    it('returns a clarification for a known appointment without an agreed reminder interval', async () => {
+      await incoming('خليني ما أنسى الموعد');
+      ai.model.mockImplementation(async messages => JSON.stringify(reminderUnderstandingFixture(JSON.parse(messages[1].content), appointmentId, 'clarify', null)));
+      expect(await understandConversation({ ...identity(), message: command })).not.toBeNull();
+      expect(await request()).toContain('بساعة أم بـ24 ساعة'); expect(await rows()).toHaveLength(0);
+    });
+    it('keeps a quoted reminder instruction as ordinary dialogue', async () => {
+      await incoming('قال صديقي «ذكرني بالموعد»، أنا أسأل عن الميزة فقط');
+      ai.model.mockImplementation(async messages => JSON.stringify(reminderUnderstandingFixture(JSON.parse(messages[1].content), null, 'none', null)));
+      expect(await understandConversation({ ...identity(), message: command })).not.toBeNull();
+      expect(await request()).toBeNull(); expect(await rows()).toHaveLength(0);
+    });
+    it.each(['analysis deleted', 'analysis tampered', 'forgotten memory', 'changed history', 'changed history time'])('blocks %s at scheduling and transport', async attack => {
+      // Include a predecessor whose content and clock are part of the interpretation seal.
+      await q("INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'outgoing','text','هل تريد التذكير قبل ساعة؟')", [conversationId]);
+      await incoming('أكيد يناسبني'); await interpret();
+      expect(await request()).toContain('سجلت'); await elapse();
+      if (attack === 'analysis deleted') await q('DELETE FROM ai_conversation_understanding WHERE merchant_id=?', [owner.merchantId]);
+      if (attack === 'analysis tampered') await q("UPDATE ai_conversation_understanding SET result_json=JSON_SET(result_json,'$.appointmentReminder.hoursBefore',24) WHERE merchant_id=?", [owner.merchantId]);
+      if (attack === 'forgotten memory') await q('INSERT INTO customer_profiles(merchant_id,customer_phone,memory_forget_before_message_id) VALUES (?,?,?)', [owner.merchantId, phone, sourceId - 1]);
+      if (attack === 'changed history') await q("UPDATE messages SET content='سؤال آخر' WHERE conversationId=? AND direction='outgoing'", [conversationId]);
+      if (attack === 'changed history time') await q("UPDATE messages SET createdAt=TIMESTAMPADD(DAY,1,createdAt) WHERE conversationId=? AND direction='outgoing'", [conversationId]);
+      expect((await request()) || '').not.toContain('سجلت'); await dispatch();
+      expect(provider.send).not.toHaveBeenCalled(); expect((await row()).state).toBe('suppressed');
+    });
+    it('ignores a changed in-memory AI instruction and rejects preview identity', async () => {
+      const context = await interpret();
+      const changed = { ...context, analysis: { ...context.analysis, appointmentReminder: { ...context.analysis.appointmentReminder!, hoursBefore: 24 as const } } };
+      expect(await withConversationUnderstanding({ ...context, mode: 'preview' }, request)).toContain('تعذر');
+      expect(await rows()).toHaveLength(0);
+      expect(await withConversationUnderstanding(changed, request)).toContain('سجلت');
+      expect((await row()).hours_before).toBe(1);
+    });
+    it('does not expose foreign customer or foreign tenant appointments to the interpreter', async () => {
+      await q(`INSERT INTO appointments(merchant_id,customer_phone,customer_name,service_id,appointment_date,start_time,end_time,status,calendar_sync_state)
+        SELECT merchant_id,'966500987655','Other',service_id,appointment_date,start_time,end_time,status,calendar_sync_state FROM appointments WHERE id=?`, [appointmentId]);
+      const targets = await readAppointmentReminderTargets((await getPool())!, identity());
+      expect(targets.map(t => t.id)).toEqual([appointmentId]);
+      expect(await readAppointmentReminderTargets((await getPool())!, { ...identity(), merchantId: other.merchantId })).toEqual([]);
+      expect(targets[0]).not.toHaveProperty('customer_phone');
+    });
+    it('records contextual cancellation without claiming to cancel the appointment', async () => {
+      await request();
+      await q("INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'outgoing','text',?)", [conversationId, `تذكير الموعد A${appointmentId} محفوظ قبل ساعة.`]);
+      await incoming('خلاص ما أحتاج تنبيه، خل الموعد مثل ما هو'); await interpret('cancel', null);
+      expect(await request()).toContain('لم ألغ الموعد');
+      expect((await row()).state).toBe('suppressed'); expect((await q('SELECT status FROM appointments WHERE id=?', [appointmentId]))[0].status).toBe('confirmed');
+      expect(await request()).toContain('لا توجد تذكيرات');
+    });
+    it('can cancel a pending reminder after its appointment was removed', async () => {
+      await request(); await q('DELETE FROM appointments WHERE id=?', [appointmentId]);
+      await incoming('ما أحتاج التنبيه المحفوظ، أوقفه');
+      const context = await interpret('cancel', null);
+      expect(context.analysis.appointmentReminder?.appointmentId).toBe(appointmentId);
+      expect(await request()).toContain('أوقفت'); expect((await row()).state).toBe('suppressed');
+    });
+    it('preserves the conversation phone identity while dispatching to its normalized number', async () => {
+      await q('UPDATE conversations SET customerPhone=? WHERE id=?', [`+${phone}`, conversationId]);
+      const alias = { ...identity(), customerPhone: `+${phone}` };
+      expect(await handleAppointmentReminder(alias, command)).toContain('سجلت');
+      await elapse(); await dispatch(); expect(provider.send).toHaveBeenCalledOnce();
+    });
+    it('retains original strict consent for an existing version-one reminder', async () => {
+      await request(); const saved = await row();
+      const snapshot = typeof saved.snapshot === 'string' ? JSON.parse(saved.snapshot) : saved.snapshot;
+      snapshot.version = 1; delete snapshot.targetDigest; delete snapshot.conversationPhone;
+      await q('UPDATE appointment_reminders SET snapshot=?,snapshot_hash=? WHERE id=?', [JSON.stringify(snapshot), hash(snapshot), saved.id]);
+      await q('DELETE FROM ai_conversation_understanding WHERE merchant_id=?', [owner.merchantId]);
+      await elapse(); await dispatch(); expect(provider.send).toHaveBeenCalledOnce();
+    });
+    it.each(['provider failure', 'foreign reference', 'time changed', 'ownership changed', 'conditional'])('does not schedule after %s during contextual analysis', async attack => {
+      await incoming('ممتاز، نبّهني قبلها بساعة');
+      ai.model.mockImplementation(async messages => {
+        if (attack === 'provider failure') throw Error('synthetic outage');
+        const value = reminderUnderstandingFixture(JSON.parse(messages[1].content), appointmentId);
+        if (attack === 'foreign reference') value.appointmentReminder!.appointmentId = appointmentId + 99999999;
+        if (attack === 'time changed') await q("UPDATE appointments SET start_time='00:01' WHERE id=?", [appointmentId]);
+        if (attack === 'ownership changed') await q("UPDATE appointments SET customer_phone='966500987655' WHERE id=?", [appointmentId]);
+        if (attack === 'conditional') value.conditional = true;
+        return JSON.stringify(value);
+      });
+      expect(await understandConversation({ ...identity(), message: command })).toBeNull();
+      expect(await request()).toBeNull(); expect(await rows()).toHaveLength(0); expect(provider.send).not.toHaveBeenCalled();
     });
     it("exposes an owned, read-only view without credentials, account IDs or snapshots", async () => {
       await request();

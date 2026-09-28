@@ -1619,12 +1619,6 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
       return 'تعذر التحقق من ذاكرة المحادثة الآن. حاول مجدداً أو اطلب المساعدة من فريق المتجر.';
     }
   }
-  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
-    const { handleAppointmentReminder } = await import('../appointment-reminders');
-    const reminder = await handleAppointmentReminder({ merchantId: params.merchantId, conversationId: params.conversationId,
-      incomingMessageId: params.incomingMessageId, customerPhone: params.customerPhone }, params.message);
-    if (reminder) return reminder;
-  }
   // The durable shared budget fails closed; exhaustion never starts a cheaper or full paid retry.
   try {
     const { getAiBudgetStatus } = await import('./budget-ledger');
@@ -1659,6 +1653,10 @@ async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryC
     return escalation.message;
   }
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+    const { handleAppointmentReminder } = await import('../appointment-reminders');
+    const reminder = await handleAppointmentReminder({ merchantId: params.merchantId, conversationId: params.conversationId,
+      incomingMessageId: params.incomingMessageId, customerPhone: params.customerPhone }, params.message);
+    if (reminder) return reminder;
     const { handleByaanCheckout } = await import('./byaan-checkout-conversation');
     const enrollmentReply = await handleByaanCheckout({ merchantId:params.merchantId, conversationId:params.conversationId,
       incomingMessageId:params.incomingMessageId, customerPhone:params.customerPhone, message:params.message, memoryHistoryCutoff });

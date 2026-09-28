@@ -20,6 +20,11 @@ import {
   parseAppointmentReminderIntent,
   appointmentReminderDue,
 } from "./appointment-reminder-intent";
+import {
+  readContextualAppointmentReminder,
+  contextualReminderTargetMatches,
+  hasContextualAppointmentReminderProof,
+} from './appointment-reminder-context';
 
 const parse = (value: any) => {
   try {
@@ -40,7 +45,7 @@ export const appointmentReminderKey = (merchantId: number, id: number) =>
   `appointment_reminder:${merchantId}:${id}`;
 export type AppointmentReminderGuard = { id: number; token: string };
 const clarify =
-  "لطلب تذكير، اكتب رقم الموعد مثل: ذكرني بالموعد A123 قبل ساعة، أو قبل 24 ساعة. للإلغاء: ألغ تذكير الموعد A123. لا يُسجل تذكير قبل التحقق من الطلب والموعد.";
+  "أي موعد تقصد، وهل يناسبك التذكير قبله بساعة أم بـ24 ساعة؟ إذا أردت إلغاء تذكير فحدد الموعد. لم أغيّر الموعد أو أسجل تذكيرًا بعد.";
 const unavailable =
   "تعذر اعتماد تذكير لهذا الموعد. تحقق من رقم الموعد وأنه مؤكد، واختر تذكيرًا يقع خلال 24 ساعة من رسالتك الحالية. لم أضف تذكيرًا جديدًا.";
 
@@ -224,14 +229,16 @@ const message = (s: any) =>
   `تذكير بالموعد A${s.appointmentId}\nالخدمة: ${s.terms.serviceName}\nالموعد: ${s.terms.date}، من ${s.terms.startTime} إلى ${s.terms.endTime} بتوقيت الرياض.\n${s.terms.staffName ? `الموظف: ${s.terms.staffName}\n` : ""}إذا احتجت تعديل الموعد تواصل مع الفريق واذكر رقم الموعد.`;
 function intact(r: any, s: any): boolean {
   try {
-    const intent = parseAppointmentReminderIntent(s.sourceText);
+    const intent = s.version === 1 ? parseAppointmentReminderIntent(s.sourceText)
+      : s.version === 2 && /^[a-f0-9]{64}$/.test(s.targetDigest) && privateSalesPhone(s.conversationPhone) === s.phone
+        ? { kind: 'schedule', appointmentId: s.appointmentId, hours: s.hours } : null;
     const due = appointmentReminderDue(
       s.terms.date,
       s.terms.startTime,
       s.hours
     );
     return (
-      s.version === 1 &&
+      [1, 2].includes(s.version) &&
       s.merchantId === r.merchant_id &&
       s.appointmentId === r.appointment_reference &&
       s.sourceId === r.source_message_id &&
@@ -291,17 +298,20 @@ async function sourceState(
       : "blocked";
 }
 
-/** Exact customer message is the authority; no staff action, flag or LLM output can enroll an appointment. */
+/** AI interprets consent; persisted source, owned terms and transport guards authorize execution. */
 export async function handleAppointmentReminder(
   input: CheckoutIdentity,
   raw: string
 ): Promise<string | null> {
-  if (!parseAppointmentReminderIntent(raw)) return null;
   try {
+    const pool = await getPool();
+    if (!pool) throw Error('Reminder storage unavailable');
+    const initial = await readContextualAppointmentReminder(pool, input);
+    if (!initial.intent) return null;
     await assertAppointmentReminderSchema();
     return await withBookingCapacityTransaction(input.merchantId, async c => {
-      const identity = await assertCheckoutIdentity(c, input),
-        intent = parseAppointmentReminderIntent(identity.content);
+      const identity = await assertCheckoutIdentity(c, input);
+      const { intent, analysis } = await readContextualAppointmentReminder(c, input);
       if (identity.content !== raw || !intent || intent.kind === "clarify")
         return clarify;
       const phone = privateSalesPhone(input.customerPhone);
@@ -330,6 +340,7 @@ export async function handleAppointmentReminder(
       };
       if ((await sourceState(c, context)) === "blocked") return unavailable;
       if (intent.kind === "cancel") {
+        let cancelled = 0;
         const [rows] = await c.execute<any[]>(
           "SELECT * FROM appointment_reminders WHERE merchant_id=? AND appointment_reference=? FOR UPDATE",
           [input.merchantId, intent.appointmentId]
@@ -340,7 +351,7 @@ export async function handleAppointmentReminder(
             !intact(row, saved) ||
             saved.phone !== phone ||
             saved.conversationId !== input.conversationId ||
-            saved.sourceId >= input.incomingMessageId
+            saved.sourceId >= input.incomingMessageId || row.cancelled_at
           )
             continue;
           await c.execute(
@@ -349,7 +360,9 @@ export async function handleAppointmentReminder(
             WHERE id=? AND merchant_id=?`,
             [input.incomingMessageId, row.id, input.merchantId]
           );
+          if (['pending', 'dispatching', 'unknown'].includes(row.state)) cancelled++;
         }
+        if (!cancelled) return `لا توجد تذكيرات معلقة قابلة للإلغاء تخص محادثتك للموعد A${intent.appointmentId}. لم ألغ الموعد نفسه.`;
         return `أوقفت التذكيرات المعلقة التي تخص محادثتك للموعد A${intent.appointmentId}. لم ألغ الموعد نفسه. لا يمكن سحب رسالة بدأ إرسالها بالفعل.`;
       }
       const [prior] = await c.execute<any[]>(
@@ -357,9 +370,10 @@ export async function handleAppointmentReminder(
         [input.merchantId, input.incomingMessageId]
       );
       if (prior.length)
-        return intact(prior[0], parse(prior[0].snapshot))
+        return intact(prior[0], parse(prior[0].snapshot)) && await hasContextualAppointmentReminderProof(c, parse(prior[0].snapshot))
           ? savedReply(prior[0])
           : unavailable;
+      if (!analysis || !await contextualReminderTargetMatches(c, input, analysis)) return unavailable;
       const terms = await appointmentTerms(
         c,
         input.merchantId,
@@ -373,7 +387,9 @@ export async function handleAppointmentReminder(
       if (!Number.isFinite(due) || due <= now || due >= windowEnd)
         return unavailable;
       const snapshot = {
-        version: 1,
+        version: 2,
+        targetDigest: analysis.appointmentReminder!.targetDigest,
+        conversationPhone: input.customerPhone,
         ...context,
         appointmentId: intent.appointmentId,
         sourceText: source.content,
@@ -438,6 +454,7 @@ async function eligible(c: PoolConnection, r: any, s: any): Promise<boolean> {
     (await sourceState(c, s)) !== "ready"
   )
     return false;
+  if (!await hasContextualAppointmentReminderProof(c, s)) return false;
   // Do not take an exclusive parent-merchant lock after the capacity lock: another
   // capacity claimant may hold the parent's FK share lock while waiting for us.
   const [merchants] = await c.execute<any[]>(

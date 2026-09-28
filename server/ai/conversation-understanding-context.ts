@@ -24,6 +24,14 @@ export const conversationUnderstandingSchema = z.object({
     sourceCreatedAt: z.string().datetime().nullable(),
     evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
   }).strict().optional(),
+  appointmentReminder: z.object({
+    status: z.enum(['none', 'schedule', 'cancel', 'clarify']),
+    appointmentId: z.number().int().positive().max(2147483647).nullable(),
+    hoursBefore: z.union([z.literal(1), z.literal(24)]).nullable(),
+    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+    // Server-attached terms digest, optional without a default for historic seals.
+    targetDigest: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  }).strict().optional(),
   requestKind: z.enum(['ordinary', 'catalog', 'purchase_process', 'loyalty_balance', 'loyalty_rewards']),
   sentiment: z.enum(['positive', 'negative', 'neutral', 'angry', 'happy', 'sad', 'frustrated']),
   topicChanged: z.boolean(),

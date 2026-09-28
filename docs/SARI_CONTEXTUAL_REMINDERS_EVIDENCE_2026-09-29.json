@@ -1,0 +1,432 @@
+{
+  "recordedAt": "2026-09-28T21:32:25.254Z",
+  "timezone": "Asia/Riyadh",
+  "startHead": "54174be7e7fd4136685fbca6a2a77dd161d46f3e",
+  "baseHead": "087a75a072911ec10ca20f45defa8324a7847344",
+  "branch": "main",
+  "scope": "Appointment reminder scheduling and cancellation use centrally interpreted, sealed dialogue and owned appointment terms; revalidated at scheduling, worker and transport admission.",
+  "sourceSha256": {
+    "server/ai/conversation-understanding-context.ts": "5a1a5ab39e164173f3e84105962967a31de11b028d914dd0abeb9e9905cd9336",
+    "server/ai/conversation-understanding.ts": "f8a582c6000def316c825ac23ef3affe9eade95b922f73951e2e18a3afca94a0",
+    "server/ai/sari-personality.ts": "b881849030657898c8f3ec0f50aafc00b19f6978fc5fa121d23f66c0961e4ef1",
+    "server/appointment-reminders.ts": "a29e6f0c9a99893c31d4387249767f1ee5b52fc74f0e65e350e009adb58fb462",
+    "server/appointment-reminder-context.ts": "bb8b4d1c130b9b9936d7b2ca7100132ec5ff878cd91d350e7cb8413b378c2108",
+    "server/appointment-reminder-context.test.ts": "798e7b00ef83736a8125df5b279d8f59dbcd38d878c2ecfba1c5fe296a1b6370",
+    "server/appointment-reminders.mysql.test.ts": "43da4d41042b96ec4caadfea553e2d38f4db201ff7707ad5966a6ddfd00cf10e",
+    "server/appointment-reminder-pentest.test.ts": "ae77d8f971b81e9f9ba6431fe90329329028a99edf968f7514963ca07f9ac5dd",
+    "server/tests/helpers/reminder-understanding-fixture.ts": "e5a5ecf367175fb3ccca7c9584682ede0d19a7ab15b8791c53740cf5890f741e",
+    "scripts/testing/conversation-understanding-cases.ts": "3e44fe2ba6260e3e7c855de94bc463ab5d5880dcd6d6617ddda01f489998658e",
+    "scripts/testing/conversation-understanding-scoring.ts": "caac6d713442a709a6733df802af18135df5e0fb126b9d4ee79aa6e6675b40d1",
+    "server/ai/conversation-understanding-evaluation.test.ts": "3369bf428ee0eb48ea25d32c1463c3f5cb2c65856873daf5841a07125bd59c36"
+  },
+  "verification": {
+    "tests": 1041,
+    "testFiles": 45,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "file": "tests.json",
+        "sha256": "aef10b07995e391e7aa8da594114ba309426c0910ae0bd69d5b8da267b2dfde2",
+        "passed": 816,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai-settings-provider-routing.test.ts",
+            "passed": 10
+          },
+          {
+            "path": "server/appointment-reminder-access-pentest.test.ts",
+            "passed": 30
+          },
+          {
+            "path": "server/appointment-reminder-context.test.ts",
+            "passed": 21
+          },
+          {
+            "path": "server/appointment-reminder-pentest.test.ts",
+            "passed": 41
+          },
+          {
+            "path": "server/assistant-reply-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/bot-audit-pentest.test.ts",
+            "passed": 93
+          },
+          {
+            "path": "server/byaan-conversation-routing.test.ts",
+            "passed": 39
+          },
+          {
+            "path": "server/merchant-persona-routing.test.ts",
+            "passed": 17
+          },
+          {
+            "path": "server/persona-preview-history.test.ts",
+            "passed": 16
+          },
+          {
+            "path": "server/persona-preview.test.ts",
+            "passed": 24
+          },
+          {
+            "path": "server/remediation-regression.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/sales-hardening-pentest.test.ts",
+            "passed": 34
+          },
+          {
+            "path": "server/sari-quick-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/virtual-team-page.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/budget-boundaries.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/contextual-agent-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/contextual-followup.test.ts",
+            "passed": 32
+          },
+          {
+            "path": "server/ai/contextual-generation.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/contextual-reply-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/conversation-understanding-evaluation.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/conversation-understanding.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/customer-memory-chat.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/followup-policy.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/openai-zahypi.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/preview-prompt.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/preview-provider-routing.test.ts",
+            "passed": 8
+          },
+          {
+            "path": "server/ai/requested-followup-time.test.ts",
+            "passed": 27
+          },
+          {
+            "path": "server/ai/sales-brain-decisions.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/sales-reply-prompt.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/sales-reply-transport.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/sales-turn-policy.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/sari-preview.test.ts",
+            "passed": 42
+          },
+          {
+            "path": "server/ai/task-catalog.test.ts",
+            "passed": 9
+          },
+          {
+            "path": "server/ai/transactional-truth.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/zahypi-callsite-governance.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/zahypi-client.test.ts",
+            "passed": 103
+          },
+          {
+            "path": "server/ai/zahypi-context-propagation.test.ts",
+            "passed": 14
+          },
+          {
+            "path": "server/ai/zahypi-runtime-config.test.ts",
+            "passed": 11
+          }
+        ]
+      },
+      {
+        "file": "transport-tests.json",
+        "sha256": "4c7245432910725dea7d24699a009a029a171d65c795455a284ffca48b17506b",
+        "passed": 163,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/appointment-reminder-context.test.ts",
+            "passed": 21
+          },
+          {
+            "path": "server/appointment-reminder-pentest.test.ts",
+            "passed": 41
+          },
+          {
+            "path": "server/byaan-conversation-routing.test.ts",
+            "passed": 39
+          },
+          {
+            "path": "server/ai/contextual-generation.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/conversation-understanding-evaluation.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/conversation-understanding.test.ts",
+            "passed": 20
+          }
+        ]
+      },
+      {
+        "file": "mysql-tests.json",
+        "sha256": "aea97e2b8b82358dabb5bffe294e1a48d7aac3f00827efa31f27e2e14fd2e3b7",
+        "passed": 225,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/appointment-reminders.mysql.test.ts",
+            "passed": 93
+          },
+          {
+            "path": "server/ai/contextual-followup.mysql.test.ts",
+            "passed": 35
+          },
+          {
+            "path": "server/ai/conversation-understanding.mysql.test.ts",
+            "passed": 38
+          },
+          {
+            "path": "server/ai/followup-policy.mysql.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/persona-context.mysql.test.ts",
+            "passed": 2
+          },
+          {
+            "path": "server/ai/proactive-followup.mysql.test.ts",
+            "passed": 32
+          },
+          {
+            "path": "server/ai/sari-preview.mysql.test.ts",
+            "passed": 5
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "name": "regression",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/appointment-reminder-context.test.ts",
+          "server/appointment-reminder-pentest.test.ts",
+          "server/appointment-reminder-access-pentest.test.ts",
+          "server/ai/customer-memory-chat.test.ts",
+          "server/ai/contextual-followup.test.ts",
+          "server/ai/requested-followup-time.test.ts",
+          "server/ai/followup-policy.test.ts",
+          "server/ai/contextual-agent-routing.test.ts",
+          "server/ai/contextual-generation.test.ts",
+          "server/ai/sales-reply-prompt.test.ts",
+          "server/ai/sales-reply-transport.test.ts",
+          "server/ai/preview-prompt.test.ts",
+          "server/ai/preview-provider-routing.test.ts",
+          "server/ai/sari-preview.test.ts",
+          "server/ai/contextual-reply-routing.test.ts",
+          "server/ai/conversation-understanding.test.ts",
+          "server/ai/conversation-understanding-evaluation.test.ts",
+          "server/ai/sales-turn-policy.test.ts",
+          "server/ai/sales-brain-decisions.test.ts",
+          "server/ai/task-catalog.test.ts",
+          "server/ai/budget-boundaries.test.ts",
+          "server/ai/openai-zahypi.test.ts",
+          "server/ai/zahypi-client.test.ts",
+          "server/ai/zahypi-context-propagation.test.ts",
+          "server/ai/zahypi-callsite-governance.test.ts",
+          "server/ai/zahypi-runtime-config.test.ts",
+          "server/ai-settings-provider-routing.test.ts",
+          "server/ai/transactional-truth.test.ts",
+          "server/byaan-conversation-routing.test.ts",
+          "server/sales-hardening-pentest.test.ts",
+          "server/bot-audit-pentest.test.ts",
+          "server/remediation-regression.test.ts",
+          "server/merchant-persona-routing.test.ts",
+          "server/virtual-team-page.test.ts",
+          "server/assistant-reply-preview.test.ts",
+          "server/persona-preview.test.ts",
+          "server/persona-preview-history.test.ts",
+          "server/sari-quick-preview.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\reminder-context-checks\\tests.json"
+        ]
+      },
+      {
+        "name": "transport",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/appointment-reminder-pentest.test.ts",
+          "server/appointment-reminder-context.test.ts",
+          "server/byaan-conversation-routing.test.ts",
+          "server/ai/contextual-generation.test.ts",
+          "server/ai/conversation-understanding.test.ts",
+          "server/ai/conversation-understanding-evaluation.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\reminder-context-checks\\transport-tests.json"
+        ]
+      },
+      {
+        "name": "mysql",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "--with-database",
+          "server/appointment-reminders.mysql.test.ts",
+          "server/ai/contextual-followup.mysql.test.ts",
+          "server/ai/proactive-followup.mysql.test.ts",
+          "server/ai/followup-policy.mysql.test.ts",
+          "server/ai/conversation-understanding.mysql.test.ts",
+          "server/ai/sari-preview.mysql.test.ts",
+          "server/ai/persona-context.mysql.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\reminder-context-checks\\mysql-tests.json"
+        ]
+      },
+      {
+        "name": "types",
+        "exitCode": 0,
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit"
+        ]
+      },
+      {
+        "name": "translations",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/check-translation-keys.ts"
+        ]
+      },
+      {
+        "name": "eval-dry-run",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/testing/evaluate-conversation-understanding.ts"
+        ]
+      },
+      {
+        "name": "build",
+        "exitCode": 0,
+        "args": [
+          ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+          "run",
+          "build"
+        ]
+      }
+    ],
+    "translations": {
+      "advertisedLocale": "ar",
+      "callsChecked": 8211,
+      "dynamicKeysChecked": 346,
+      "unresolvedDynamicCalls": [],
+      "missing": [],
+      "interpolationErrors": []
+    },
+    "liveSuite": {
+      "cases": 50,
+      "mode": "dry-run"
+    },
+    "logs": {
+      "regression.log": "3b04de2e6ad7db2e2eec010aad2c6795eed03a357bdd95fa3e8638ec6464660d",
+      "transport.log": "7d19dbd6e707ac1f6e0c704b12458e0c51fcde244fdac3835b1cd1cd01a7c0cc",
+      "mysql.log": "4d79336cc4f77aaa84e44a0c1e2690b5c61e33df83bddd84686d48f18097c462",
+      "types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "translations.log": "a5965e5fce4e6ec838c9002ac759fbee5044f0e1d4530c7290e110851712b1c5",
+      "eval-dry-run.log": "36b92b9b3289d9012ccf5221d140cdb4195580a67ba9cb8b503a7f1e58b35e3c",
+      "build.log": "dce14c3baf9748b7bd8408bd432157480fbe090882654de4de731b41170cd638"
+    },
+    "initialTypesCheck": "Two concurrently edited knowledge UI errors were observed in the first check; the final TypeScript check passed after that independent work stabilized at 087a75a0. Those files are excluded from this repair.",
+    "build": "passed",
+    "buildWarnings": "Existing large-chunk warning; main entry bundle budget passed",
+    "security": "Local synthetic evidence and identity tampering, missing analysis, forgotten memory, changed appointments, provider failure, duplicate scheduling, transaction races and transport-time revalidation. Not a full production penetration test."
+  },
+  "completed": [
+    "Scheduling and cancellation share the central OpenAI/ZahyPi conversation analysis",
+    "No new reminder uses keyword fallback",
+    "Server scopes appointment targets to the customer and tenant and seals their terms",
+    "Persisted analysis is required at scheduling and is revalidated by the worker and final WhatsApp guard",
+    "Version 2 retains the original conversation identity while delivery normalizes the phone",
+    "Cancellation preserves the appointment and audit receipts, including deleted-appointment references",
+    "Legacy version 1 reminders retain their original strict consent and validation contract",
+    "Existing source, calendar, 24-hour and expiry guards remain active",
+    "50-case offline evaluation suite scores unintended reminder execution and target/time accuracy"
+  ],
+  "limitations": [
+    "Live provider quality evaluation not executed; previous application DB access denial remains unresolved",
+    "Automated sales follow-ups, group routing and remaining memory branches need separate review",
+    "Synthetic AI outputs prove software boundaries, not natural-language accuracy, persuasion or conversion",
+    "Appointment context is limited to 30 nearest appointments since yesterday UTC and 20 pending reminder references"
+  ],
+  "workspace": "Concurrent unrelated tenant knowledge/UI edits were present during verification and excluded from this commit. Source fingerprints identify this repair.",
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "migration": "none; existing understanding and reminder migrations required",
+    "rollback": "Stop reminder workers and review pending version 2 reminders before reverting. Older versions reject these snapshots; do not downgrade their version or remove analysis to bypass the guard. Retain delivery audit records."
+  }
+}
