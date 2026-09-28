@@ -2,6 +2,7 @@ import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { getFollowupPolicy } from './followup-policy';
 import { isFollowupTimeAllowed } from '../../shared/followup-policy';
+import { hasContextualFollowupProof } from './contextual-followup';
 
 export function followupPhoneForms(raw: string): string[] {
   const phone = normalizeCampaignPhone(raw);
@@ -18,7 +19,7 @@ export async function canDispatchSalesFollowup(pool: Pool, input: {
     || input.idempotencyKey !== `sales_followup:${input.merchantId}:${guard.id}` || !phone) return false;
   const forms = followupPhoneForms(input.to);
   const placeholders = forms.map(() => '?').join(',');
-  const eligibilitySql = `SELECT f.id FROM sales_followups f
+  const eligibilitySql = `SELECT f.* FROM sales_followups f
     JOIN conversations c ON c.id = f.conversation_id AND c.merchantId = f.merchant_id AND c.customerPhone = f.customer_phone
     JOIN messages anchor ON anchor.id = f.anchor_message_id AND anchor.conversationId = c.id AND anchor.direction = 'incoming'
     WHERE f.id = ? AND f.merchant_id = ? AND f.customer_phone = ? AND f.processing_token = ?
@@ -45,6 +46,7 @@ export async function canDispatchSalesFollowup(pool: Pool, input: {
     if (!isFollowupTimeAllowed(policy)) return false;
     const [eligible] = await connection.execute<RowDataPacket[]>(eligibilitySql, parameters);
     if (eligible.length !== 1) return false;
+    if (!await hasContextualFollowupProof(connection, eligible[0])) return false;
     const [prior] = await connection.execute<RowDataPacket[]>('SELECT * FROM sales_followup_dispatches WHERE followup_id=?', [guard.id]);
     if (prior.length) return prior[0].merchant_id === input.merchantId && prior[0].customer_phone === phone && prior[0].state !== 'released';
     const [counts] = await connection.execute<RowDataPacket[]>(`SELECT

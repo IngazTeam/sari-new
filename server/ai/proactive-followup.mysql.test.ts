@@ -1,25 +1,43 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const transport = vi.hoisted(() => vi.fn());
+const ai = vi.hoisted(() => ({ model: vi.fn(), settings: vi.fn() }));
 vi.mock('../channels/whatsapp/service', () => ({ sendMerchantWhatsApp: transport }));
+vi.mock('./openai', () => ({ callGPT4: ai.model }));
+vi.mock('../db_ai_settings', () => ({ getTextGenerationSettings: ai.settings }));
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { scheduleFollowUp, runFollowUps, cancelFollowUps } from './proactive-followup';
 import { updateFollowupPolicy } from './followup-policy';
 import { defaultFollowupPolicy } from '../../shared/followup-policy';
 import { canDispatchSalesFollowup } from './followup-send-guard';
-import { handleRequestedFollowup } from './requested-followup';
+import { handleRequestedFollowup as handleSavedFollowup } from './requested-followup';
+import { understandConversation, readStoredUnderstanding } from './conversation-understanding';
+import { followupUnderstandingFixture } from '../tests/helpers/followup-understanding-fixture';
+import type { ConversationUnderstanding } from './conversation-understanding-context';
+import type { CheckoutIdentity } from './checkout-agreements';
 
 describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
   let conversationId: number;
   const phone = '966500000086';
+  let interpretation: Partial<NonNullable<ConversationUnderstanding['followup']>>;
   const query = async (sql: string, params: any[] = []) => (await (await getPool())!.execute<any>(sql, params))[0];
+  const interpret = async (input: CheckoutIdentity) => {
+    const [source] = await query('SELECT content FROM messages WHERE id=?', [input.incomingMessageId]);
+    if (!await readStoredUnderstanding((await getPool())!, input)) {
+      expect(await understandConversation({ ...input, message: source.content })).not.toBeNull();
+    }
+  };
+  const handleRequestedFollowup = async (input: CheckoutIdentity) => { await interpret(input); return handleSavedFollowup(input); };
   const schedule = () => scheduleFollowUp({ merchantId: fixture.merchantId, customerPhone: phone, conversationId,
     followUpType: 'recovery_price', customDelayMs: 0 });
   const due = () => query('UPDATE sales_followups SET scheduled_at = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE merchant_id = ?', [fixture.merchantId]);
   const state = async () => (await query('SELECT * FROM sales_followups WHERE merchant_id = ?', [fixture.merchantId]))[0];
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-09-23T09:00:00Z'));
+    interpretation = {};
+    ai.settings.mockReset().mockResolvedValue({ model: 'central-followup-model', textGenerationProvider: 'openai', isActive: true });
+    ai.model.mockReset().mockImplementation(async messages => JSON.stringify(followupUnderstandingFixture(JSON.parse(messages[1].content), interpretation)));
     transport.mockReset().mockResolvedValue({ accepted: true, status: 'sent', providerMessageId: 'fake-id' });
     fixture = await createDisposableMerchant('sales-followup');
     await query(`INSERT INTO campaign_consent_state (merchant_id, customer_phone, status, consent_version, source, evidence_digest, last_decided_at)
@@ -50,6 +68,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء', createdAt='2026-09-23 09:00:00' WHERE conversationId=?", [conversationId]);
     const [message] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
     const input = { merchantId: fixture.merchantId, conversationId, incomingMessageId: message.id, customerPhone: phone };
+    await interpret(input);
     const result = await Promise.all([handleRequestedFollowup(input), handleRequestedFollowup(input)]);
     expect(result.every(text => text?.includes('سجلت متابعة واحدة'))).toBe(true);
     const rows = await query('SELECT * FROM sales_followups WHERE merchant_id=?', [fixture.merchantId]); expect(rows).toHaveLength(1);
@@ -57,6 +76,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     expect(await query('SELECT * FROM campaign_consent_state WHERE merchant_id=?', [fixture.merchantId])).toHaveLength(0);
   });
   it('requests clarification instead of inventing a time and refuses stale source substitution', async () => {
+    interpretation = { status: 'clarify', localTime: null };
     await query("UPDATE messages SET content='كلمني الخميس' WHERE conversationId=?", [conversationId]);
     const [message] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
     const input = { merchantId: fixture.merchantId, conversationId, incomingMessageId: message.id, customerPhone: phone };
@@ -73,6 +93,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     const input = { merchantId: fixture.merchantId, conversationId, customerPhone: phone };
     await handleRequestedFollowup({ ...input, incomingMessageId: first.id });
     const next = await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text','ذكرني الجمعة الساعة 5 مساء','2026-09-23 10:00:00')", [conversationId]);
+    interpretation = { localDate: '2026-09-25' };
     await handleRequestedFollowup({ ...input, incomingMessageId: next.insertId });
     const rows = await query('SELECT * FROM sales_followups WHERE merchant_id=? ORDER BY id', [fixture.merchantId]);
     expect(rows).toHaveLength(2); expect(rows[0].cancel_reason).toBe('customer_rescheduled');
@@ -83,7 +104,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء', createdAt='2026-09-23 09:00:00' WHERE conversationId=?", [conversationId]);
     const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
     await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id });
-    await due(); const fu = await state();
+    const fu = await state();
     await query("UPDATE sales_followups SET processing_token='claim_fixture', claimed_at=UTC_TIMESTAMP(3) WHERE id=?", [fu.id]);
     const input = { merchantId: fixture.merchantId, to: phone, idempotencyKey: `sales_followup:${fixture.merchantId}:${fu.id}`, followUpGuard: { id: fu.id, token: 'claim_fixture' } };
     expect(await canDispatchSalesFollowup((await getPool())!, input)).toBe(true);
@@ -176,7 +197,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء',createdAt='2026-09-23 09:00:00' WHERE conversationId=?", [conversationId]);
     const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
     await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id });
-    await due(); const original = new Date((await state()).scheduled_at).getTime();
+    const original = new Date((await state()).scheduled_at).getTime();
     await policy({ startHour: 14, endHour: 20 });
     expect((await runFollowUps()).cancelled).toBe(1);
     expect((await state()).cancel_reason).toBe('requested_outside_hours');

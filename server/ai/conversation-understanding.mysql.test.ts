@@ -9,6 +9,7 @@ import { withConversationUnderstanding, currentConversationUnderstanding, semant
 import type { CheckoutIdentity } from './checkout-agreements';
 import { captureDirectCustomerMemory } from './customer-memory';
 import { resolveContextualAgent } from './contextual-agent-routing';
+import { createHash } from 'node:crypto';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable semantic interpretation and hostile context changes', () => {
   const q = async (sql: string, args: unknown[] = []): Promise<any> => (await (await getPool())!.execute(sql, args))[0];
@@ -193,5 +194,17 @@ describe.skipIf(!process.env.DATABASE_URL)('durable semantic interpretation and 
     await withConversationUnderstanding({ ...context!, analysis: { ...context!.analysis, virtualAgentId: altered } }, async () => {
       expect((await resolveContextualAgent(input))?.id).toBe(chosen);
     });
+  });
+  it('keeps historical seals readable without message timestamps or the optional follow-up field', async () => {
+    const context = await understandConversation(input); expect(context).not.toBeNull();
+    const [row] = await q('SELECT * FROM ai_conversation_understanding WHERE merchant_id=?', [input.merchantId]);
+    const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
+    const evidence = decode(row.message_evidence).map(({ id, role, digest }: any) => ({ id, role, digest }));
+    // MySQL JSON normalizes key order; historical writers hashed the schema-parsed order.
+    const analysis = context!.analysis;
+    expect(analysis).not.toHaveProperty('followup');
+    const digest = createHash('sha256').update(JSON.stringify({ source: row.source_digest, context: row.context_digest, evidence, analysis })).digest('hex');
+    await q('UPDATE ai_conversation_understanding SET message_evidence=?,result_digest=? WHERE merchant_id=?', [JSON.stringify(evidence), digest, input.merchantId]);
+    expect((await readStoredUnderstanding((await getPool())!, input))?.analysis).toEqual(context!.analysis);
   });
 });

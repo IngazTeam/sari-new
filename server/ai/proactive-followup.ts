@@ -25,7 +25,8 @@ import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import { isSalesRefusal } from './customer-decision';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { hasActiveCampaignConsent, withCampaignOptOutNotice } from '../automation/campaign-guard';
-import { parseRequestedFollowupTime } from './requested-followup-time';
+import { CONTEXTUAL_FOLLOWUP_SOURCE, readContextualFollowup, resolveContextualFollowup, hasContextualFollowupProof } from './contextual-followup';
+import { assertCheckoutIdentity } from './checkout-agreements';
 import { getFollowupPolicy } from './followup-policy';
 import { isFollowupTimeAllowed, nextFollowupSendTime } from '../../shared/followup-policy';
 import { followupPhoneForms } from './followup-send-guard';
@@ -148,11 +149,11 @@ async function followUpContext(executor: Pick<Pool, 'execute'>, merchantId: numb
   return rows[0];
 }
 
-function suppressReason(context: RowDataPacket | undefined): string | undefined {
+function suppressReason(context: RowDataPacket | undefined, contextualRequest = false): string | undefined {
   if (!context || !context.incoming_id) return 'context_unavailable';
   if (context.human_owned) return 'human_takeover';
   if (['paid', 'purchased'].includes(context.deal_stage)) return 'purchase_completed';
-  if (context.deal_stage === 'lost' || isSalesRefusal(context.last_message || '')) return 'customer_declined';
+  if (context.deal_stage === 'lost' || !contextualRequest && isSalesRefusal(context.last_message || '')) return 'customer_declined';
 }
 
 /**
@@ -182,6 +183,7 @@ export async function scheduleFollowUp(params: {
     // Interest or a past purchase is not permission for unsolicited sales follow-ups.
     if (followUpType !== 'customer_requested' && !await hasActiveCampaignConsent(merchantId, customerPhone)) return false;
     connection = await pool.getConnection();
+    await connection.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
     await connection.beginTransaction();
     // Serialize the short scheduling transaction across this merchant, including different conversations.
     await connection.execute('SELECT id FROM merchants WHERE id = ? FOR UPDATE', [merchantId]);
@@ -190,9 +192,14 @@ export async function scheduleFollowUp(params: {
     const phoneForms = followupPhoneForms(customerPhone);
     if (!phoneForms.length) return false;
     const context = await followUpContext(connection, merchantId, conversationId, customerPhone);
-    if (suppressReason(context)) return false;
-    const requested = followUpType === 'customer_requested'
-      ? parseRequestedFollowupTime(context!.last_message || '', new Date(context!.source_created_at), new Date(), policy) : null;
+    if (suppressReason(context, followUpType === 'customer_requested')) return false;
+    let requested = null;
+    if (followUpType === 'customer_requested') {
+      const identity = { merchantId, conversationId, customerPhone, incomingMessageId: params.requestedSourceMessageId! };
+      await assertCheckoutIdentity(connection, identity);
+      const analysis = await readContextualFollowup(connection, identity);
+      requested = resolveContextualFollowup(analysis, new Date(context!.source_created_at), policy);
+    }
     if (followUpType === 'customer_requested' && (requested?.kind !== 'requested' || params.requestedSourceMessageId !== Number(context!.incoming_id))) return false;
     if (requested?.kind === 'requested') {
       const [existing] = await connection.execute<RowDataPacket[]>(`SELECT id FROM sales_followups WHERE merchant_id=? AND conversation_id=?
@@ -239,16 +246,17 @@ export async function scheduleFollowUp(params: {
     if (!Number.isFinite(delayMs) || delayMs < 0 || messageText.length > 4096) return false;
     const scheduledAt = requested?.kind === 'requested' ? requested.at : nextFollowupSendTime(policy, new Date(Date.now() + delayMs));
     if (!scheduledAt) return false;
+    const schedulingSource = followUpType === 'customer_requested' ? CONTEXTUAL_FOLLOWUP_SOURCE : params.source || 'proactive';
 
     await connection.execute(
       `INSERT INTO sales_followups 
        (merchant_id, conversation_id, customer_phone, follow_up_type, scheduled_at, message_text, customer_name, source, anchor_message_id, schedule_timezone)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, params.source || 'proactive', context!.incoming_id, policy.timeZone]
+      [merchantId, conversationId, customerPhone, followUpType, scheduledAt, messageText, name, schedulingSource, context!.incoming_id, policy.timeZone]
     );
     await connection.commit();
 
-    console.log(`[FollowUp] Scheduled ${followUpType} for ***${customerPhone.slice(-4)} at ${scheduledAt.toISOString()} (source: ${params.source || 'proactive'})`);
+    console.log(`[FollowUp] Scheduled ${followUpType} for ***${customerPhone.slice(-4)} at ${scheduledAt.toISOString()} (source: ${schedulingSource})`);
     return true;
   } catch (err: any) {
     console.warn(`[FollowUp] Schedule failed: ${err.message}`);
@@ -321,7 +329,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     const [rows] = await pool.execute(
       `SELECT f.id, f.merchant_id, f.conversation_id, f.customer_phone, 
-              f.follow_up_type, f.message_text, f.customer_name, f.anchor_message_id
+              f.follow_up_type, f.message_text, f.customer_name, f.anchor_message_id, f.source, f.scheduled_at, f.schedule_timezone
        FROM sales_followups f
        WHERE f.processing_token = ?`,
       [claimToken]
@@ -350,7 +358,8 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           continue;
         }
         const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
-        const suppression = suppressReason(context)
+        const suppression = suppressReason(context, fu.source === CONTEXTUAL_FOLLOWUP_SOURCE)
+          || (!await hasContextualFollowupProof(pool, fu) ? 'interpretation_changed' : undefined)
           || (fu.follow_up_type !== 'customer_requested' && !await hasActiveCampaignConsent(fu.merchant_id, fu.customer_phone) ? 'consent_unavailable' : undefined)
           || (fu.anchor_message_id === null ? 'context_unavailable' : Number(context?.incoming_id) > fu.anchor_message_id ? 'customer_replied' : undefined);
         if (suppression) {

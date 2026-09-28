@@ -15,6 +15,15 @@ export const conversationUnderstandingSchema = z.object({
   sessionIndex: z.number().int().min(1).max(20).nullable(),
   // Optional without a default: older sealed interpretations must hash identically.
   virtualAgentId: z.number().int().positive().nullable().optional(),
+  // No default: existing sealed results retain their original digest.
+  followup: z.object({
+    status: z.enum(['none', 'request', 'clarify']),
+    localDate: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/).nullable(),
+    localTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullable(),
+    timeZone: z.string().max(64).nullable(),
+    sourceCreatedAt: z.string().datetime().nullable(),
+    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+  }).strict().optional(),
   requestKind: z.enum(['ordinary', 'catalog', 'purchase_process', 'loyalty_balance', 'loyalty_rewards']),
   sentiment: z.enum(['positive', 'negative', 'neutral', 'angry', 'happy', 'sad', 'frustrated']),
   topicChanged: z.boolean(),

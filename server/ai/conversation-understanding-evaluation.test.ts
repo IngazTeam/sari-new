@@ -46,4 +46,12 @@ describe('model evaluation scoring guards (not live quality evidence)',()=>{
       expect(scoreUnderstanding(item,result({virtualAgentId:42,...change}))).toMatchObject({passed:false,mismatches:['agentRoutingBlocked']});
     expect(scoreUnderstanding(item,result({virtualAgentId:42,nextStep:'handoff'})).criticalFailure).toBe(true);
   });
+  it('scores the agreed time and flags unintended follow-ups even when action is respond',()=>{
+    const followup: NonNullable<ConversationUnderstanding['followup']> = {status:'request',localDate:'2026-09-24',localTime:'17:00',timeZone:'Asia/Riyadh',sourceCreatedAt:'2026-09-23T09:00:00.000Z',evidence:[{messageId:3,excerpt:'اتفقنا'}]};
+    expect(scoreUnderstanding(find('followup-contextual-yes'),result({followup})).passed).toBe(true);
+    expect(scoreUnderstanding(find('followup-contextual-yes'),result({followup:{...followup,localTime:'05:00'}})).passed).toBe(false);
+    expect(scoreUnderstanding(find('followup-contextual-yes'),result({followup,confidence:.5})).mismatches).toContain('followupBlocked');
+    expect(scoreUnderstanding(find('followup-quoted-request'),result({followup})).criticalFailure).toBe(true);
+    expect(scoreUnderstanding(find('yes-to-explanation'),result({followup})).criticalFailure).toBe(true);
+  });
 });

@@ -1,0 +1,397 @@
+{
+  "recordedAt": "2026-09-28T21:04:57.657Z",
+  "timezone": "Asia/Riyadh",
+  "startHead": "ae08f12a7280c5f58570e7208b57a90cd77e35b5",
+  "baseHead": "ae08f12a7280c5f58570e7208b57a90cd77e35b5",
+  "branch": "main",
+  "scope": "Customer-requested follow-ups use centrally interpreted, sealed dialogue consent and time; revalidated at schedule, worker and transport admission.",
+  "sourceSha256": {
+    "scripts/testing/conversation-understanding-cases.ts": "cafaad8d5ceeaa55aae8e2a24e3a1b5d99799c7bab2144dd644c3fd47f08683d",
+    "scripts/testing/conversation-understanding-scoring.ts": "1f9f3b07871ccf85f9c504f107422eaf29545f8dceae7885c215b4c43a104f86",
+    "server/ai/conversation-understanding-context.ts": "47455fb47460514a00668653075b19f88921322392b5f46f1c04e02850b69d38",
+    "server/ai/conversation-understanding.ts": "97d109a82edb01ecebd548f4df052b91c1015d62ae585380cf3e6f41d608c7d8",
+    "server/ai/contextual-followup.ts": "eef58824487bdbd5ce2b5d65136895dd97a9711c7b91ddfd2d85e007522caf35",
+    "server/ai/followup-send-guard.ts": "6a2b657a062dec312d27a6e9500bdea5f01c5d78391d9ca763fa7f5a20a91ef0",
+    "server/ai/proactive-followup.ts": "17e70f252017e161f0601d02e83fa2bef5a0af01da8258be12caae38f61ab69c",
+    "server/ai/requested-followup.ts": "648e23d2ae1099b7612975fbe1006dcd656b3f13a4e72dac142fd4b7c7a837e7",
+    "server/ai/contextual-followup.test.ts": "708c8d2ce59e7f5b9d50676940e3ac0da23475de4006a822e705e4b4f7e130b4",
+    "server/ai/contextual-followup.mysql.test.ts": "3bd33dc14a5655274b7ec1e8ff61bbdaaaadbf981e31a640b6ad199cc535c726",
+    "server/ai/conversation-understanding.mysql.test.ts": "1c46ee5d768f0bb6a28521252f0538851517a8de583282232e5956df15834a66",
+    "server/ai/conversation-understanding-evaluation.test.ts": "d88ac252810d441e80a4e3fbb08d08dc502a632baba55f3a744309f1c68a80fb",
+    "server/ai/proactive-followup.mysql.test.ts": "cbf824a9a6466395f665a4521a945733844c495767b00066bafd26bf5bdd796d",
+    "server/tests/helpers/followup-understanding-fixture.ts": "69603d8178f9a6ef4c400ffd40c5ff7bc1ff533a09dba041425688e6d8243423"
+  },
+  "verification": {
+    "tests": 849,
+    "testFiles": 40,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "file": "tests.json",
+        "sha256": "afbb57773a44021dfff4d3e8e5525e9bd50f75073ca2f29e6596f1960954a5e3",
+        "passed": 714,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai-settings-provider-routing.test.ts",
+            "passed": 10
+          },
+          {
+            "path": "server/assistant-reply-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/bot-audit-pentest.test.ts",
+            "passed": 93
+          },
+          {
+            "path": "server/byaan-conversation-routing.test.ts",
+            "passed": 39
+          },
+          {
+            "path": "server/merchant-persona-routing.test.ts",
+            "passed": 17
+          },
+          {
+            "path": "server/persona-preview-history.test.ts",
+            "passed": 16
+          },
+          {
+            "path": "server/persona-preview.test.ts",
+            "passed": 24
+          },
+          {
+            "path": "server/remediation-regression.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/sales-hardening-pentest.test.ts",
+            "passed": 34
+          },
+          {
+            "path": "server/sari-quick-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/virtual-team-page.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/budget-boundaries.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/contextual-agent-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/contextual-followup.test.ts",
+            "passed": 29
+          },
+          {
+            "path": "server/ai/contextual-generation.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/contextual-reply-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/conversation-understanding-evaluation.test.ts",
+            "passed": 19
+          },
+          {
+            "path": "server/ai/conversation-understanding.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/followup-policy.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/openai-zahypi.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/preview-prompt.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/preview-provider-routing.test.ts",
+            "passed": 8
+          },
+          {
+            "path": "server/ai/requested-followup-time.test.ts",
+            "passed": 27
+          },
+          {
+            "path": "server/ai/sales-brain-decisions.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/sales-reply-prompt.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/sales-reply-transport.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/sales-turn-policy.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/sari-preview.test.ts",
+            "passed": 42
+          },
+          {
+            "path": "server/ai/task-catalog.test.ts",
+            "passed": 9
+          },
+          {
+            "path": "server/ai/transactional-truth.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/zahypi-callsite-governance.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/zahypi-client.test.ts",
+            "passed": 103
+          },
+          {
+            "path": "server/ai/zahypi-context-propagation.test.ts",
+            "passed": 14
+          },
+          {
+            "path": "server/ai/zahypi-runtime-config.test.ts",
+            "passed": 11
+          }
+        ]
+      },
+      {
+        "file": "transport-tests.json",
+        "sha256": "4f0ffa66b6972abe4de1a28c3972800e80c92c11922cfbec077df6efc3a7019a",
+        "passed": 71,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai/contextual-followup.test.ts",
+            "passed": 32
+          },
+          {
+            "path": "server/ai/conversation-understanding-evaluation.test.ts",
+            "passed": 19
+          },
+          {
+            "path": "server/ai/conversation-understanding.test.ts",
+            "passed": 20
+          }
+        ]
+      },
+      {
+        "file": "mysql-tests.json",
+        "sha256": "c7f1d13c3fe4204ce2f797cee0d0451fe750e4362355acb18a8ec4c841145eed",
+        "passed": 132,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai/contextual-followup.mysql.test.ts",
+            "passed": 35
+          },
+          {
+            "path": "server/ai/conversation-understanding.mysql.test.ts",
+            "passed": 38
+          },
+          {
+            "path": "server/ai/followup-policy.mysql.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/persona-context.mysql.test.ts",
+            "passed": 2
+          },
+          {
+            "path": "server/ai/proactive-followup.mysql.test.ts",
+            "passed": 32
+          },
+          {
+            "path": "server/ai/sari-preview.mysql.test.ts",
+            "passed": 5
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "name": "regression",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/ai/contextual-followup.test.ts",
+          "server/ai/requested-followup-time.test.ts",
+          "server/ai/followup-policy.test.ts",
+          "server/ai/contextual-agent-routing.test.ts",
+          "server/ai/contextual-generation.test.ts",
+          "server/ai/sales-reply-prompt.test.ts",
+          "server/ai/sales-reply-transport.test.ts",
+          "server/ai/preview-prompt.test.ts",
+          "server/ai/preview-provider-routing.test.ts",
+          "server/ai/sari-preview.test.ts",
+          "server/ai/contextual-reply-routing.test.ts",
+          "server/ai/conversation-understanding.test.ts",
+          "server/ai/conversation-understanding-evaluation.test.ts",
+          "server/ai/sales-turn-policy.test.ts",
+          "server/ai/sales-brain-decisions.test.ts",
+          "server/ai/task-catalog.test.ts",
+          "server/ai/budget-boundaries.test.ts",
+          "server/ai/openai-zahypi.test.ts",
+          "server/ai/zahypi-client.test.ts",
+          "server/ai/zahypi-context-propagation.test.ts",
+          "server/ai/zahypi-callsite-governance.test.ts",
+          "server/ai/zahypi-runtime-config.test.ts",
+          "server/ai-settings-provider-routing.test.ts",
+          "server/ai/transactional-truth.test.ts",
+          "server/byaan-conversation-routing.test.ts",
+          "server/sales-hardening-pentest.test.ts",
+          "server/bot-audit-pentest.test.ts",
+          "server/remediation-regression.test.ts",
+          "server/merchant-persona-routing.test.ts",
+          "server/virtual-team-page.test.ts",
+          "server/assistant-reply-preview.test.ts",
+          "server/persona-preview.test.ts",
+          "server/persona-preview-history.test.ts",
+          "server/sari-quick-preview.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\followup-context-checks\\tests.json"
+        ]
+      },
+      {
+        "name": "transport",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/ai/contextual-followup.test.ts",
+          "server/ai/conversation-understanding.test.ts",
+          "server/ai/conversation-understanding-evaluation.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\followup-context-checks\\transport-tests.json"
+        ]
+      },
+      {
+        "name": "mysql",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "--with-database",
+          "server/ai/contextual-followup.mysql.test.ts",
+          "server/ai/proactive-followup.mysql.test.ts",
+          "server/ai/followup-policy.mysql.test.ts",
+          "server/ai/conversation-understanding.mysql.test.ts",
+          "server/ai/sari-preview.mysql.test.ts",
+          "server/ai/persona-context.mysql.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\followup-context-checks\\mysql-tests.json"
+        ]
+      },
+      {
+        "name": "types",
+        "exitCode": 0,
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit"
+        ]
+      },
+      {
+        "name": "translations",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/check-translation-keys.ts"
+        ]
+      },
+      {
+        "name": "eval-dry-run",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/testing/evaluate-conversation-understanding.ts"
+        ]
+      },
+      {
+        "name": "build",
+        "exitCode": 0,
+        "args": [
+          ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+          "run",
+          "build"
+        ]
+      }
+    ],
+    "translations": {
+      "advertisedLocale": "ar",
+      "callsChecked": 8189,
+      "dynamicKeysChecked": 346,
+      "unresolvedDynamicCalls": [],
+      "missing": [],
+      "interpolationErrors": []
+    },
+    "liveSuite": {
+      "cases": 42,
+      "mode": "dry-run"
+    },
+    "logs": {
+      "regression.log": "affefbbb49e8c8e69c85f46ae4009c5ca71c5b9d1d36c78b5e63805be4d1fadf",
+      "transport.log": "6cfff4a86dfb9a882b446f9de98c6e3bbd7200bc07723d1c45433aa1a84ca590",
+      "mysql.log": "94096166f1096e9af9d0f0cf1b6b53f6803d1f3738dcd7aab8620710eaf32c34",
+      "types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "translations.log": "bef4bc3b1c423ec097ee300fba6366703f4a3b2e70647dfe626e5258f5bd5a9c",
+      "eval-dry-run.log": "e31c2b88ffb01495eb2bcac810050c73091b13c055c38e8785187faea56ce679",
+      "build.log": "182067e11f974f389be9023515b14a9ac98e548147b8f16e14e1d6f9bb8d4b2a"
+    },
+    "correctedTestFixture": {
+      "issue": "The compatibility fixture initially hashed MySQL JSON key order instead of historical schema-parsed order. Corrected test data; no production digest weakening.",
+      "failedRunSha256": "b3ce3db84bfb0ca1b66ea4f93c237c5bdfdcef590b51345c4b3242420585ef69",
+      "finalRun": "mysql-tests.json"
+    },
+    "build": "passed",
+    "buildWarnings": "Existing large-chunk warning; main entry bundle budget passed",
+    "security": "Local synthetic evidence/identity/timing tampering, forgotten memory, newer messages, provider/configuration failure, reservation replay and transport-time races. Not a full production penetration test."
+  },
+  "completed": [
+    "Contextual consent and full-date time extraction share the central AI call",
+    "No new requested follow-up can use keyword fallback",
+    "Persisted message timestamps seal the relative-date basis",
+    "Calendar, future horizon, DST and send-window checks",
+    "Transaction ownership and duplicate scheduling protections",
+    "Durable source marker fails closed after interpretation deletion",
+    "Worker and transport recheck saved evidence and the exact agreed instant",
+    "Historical seal compatibility and existing pre-contextual job behavior",
+    "42-case offline evaluation suite with follow-up execution/time scoring"
+  ],
+  "limitations": [
+    "Live provider quality evaluation not executed; previous application DB access denial remains unresolved",
+    "Automated sales follow-ups, appointment reminders, group routing and other remaining lexical branches require separate review",
+    "Synthetic AI outputs prove software boundaries, not natural-language accuracy, persuasion or conversion"
+  ],
+  "workspace": "Concurrent unrelated tenant knowledge/UI edits were present during verification and excluded from this commit. Source fingerprints identify this repair.",
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "migration": "none; existing understanding and follow-up migrations required",
+    "rollback": "Stop worker and resolve pending contextual_customer_request jobs before reverting to an older guard; retain analysis and delivery audit records"
+  }
+}
