@@ -16,6 +16,8 @@ import { prepareSallaConversationOffer,acceptSallaConversationOffer,SALLA_CART_C
 import { handleSallaCheckout } from './salla-checkout-conversation';
 import type { CheckoutIdentity } from './checkout-agreements';
 import { readSallaCheckoutCart } from '../integrations/salla-checkout-carts';
+import { recoverSallaCart } from '../integrations/salla-cart-recovery';
+import { policyArtifactDigest as digest } from './learning-policy-evaluation-bundle';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla conversation cart with actual SQL and ordinary WhatsApp transport',()=>{
   const q=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
@@ -46,6 +48,149 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla conversation cart with actual 
     mocks.send.mockReset().mockImplementation(async()=>({accepted:true,status:'sent',providerMessageId:randomUUID()}));mocks.llm.mockReset().mockResolvedValue(JSON.stringify([{productId,quantity:2}]));
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
+  const decode=(v:any)=>typeof v==='string'?JSON.parse(v):v;
+  async function parked(recover=true){
+    const {quote}=await offer(),consent=await incoming('نعم');mocks.get.mockRejectedValueOnce(Error('lost final read'));
+    expect(await acceptSallaConversationOffer(consent,quote.id)).toBe(SALLA_CART_UNCERTAIN);
+    const saved=await row(),requestId=decode(saved.external_snapshot).value.requestId;
+    if(recover)await recoverSallaCart(merchant,user,{requestId});
+    return {quote:saved,consent,requestId};
+  }
+  it('resumes a recovered cart only after a new explicit customer request and uses a new ordinary reply identity',async()=>{
+    const {quote,consent}=await parked();await deliver(consent,SALLA_CART_UNCERTAIN);
+    expect((await row()).execution_state).toBe('unknown');const request=await incoming('أعد إرسال رابط السلة');mocks.post.mockClear();mocks.get.mockClear();mocks.llm.mockClear();
+    const text=await handleSallaCheckout({...request,message:'أعد إرسال رابط السلة'});expect(text).toContain('/checkout/cart123');expect(mocks.llm).not.toHaveBeenCalled();
+    const saved=await row(),record=decode(saved.external_reconciliation).value;
+    expect(saved).toMatchObject({id:quote.id,consent_message_id:consent.incomingMessageId,execution_state:'succeeded',order_id:null,external_order_key:null});
+    expect(record).toMatchObject({version:'salla-cart-resume.v1',incomingMessageId:request.incomingMessageId,consentMessageId:consent.incomingMessageId});
+    const p=await deliver(request,text!);expect(await dispatchReplyPlan(p)).toBe('sent');expect(mocks.send).toHaveBeenCalledTimes(3);expect(mocks.post).not.toHaveBeenCalled();
+    expect(mocks.get).toHaveBeenCalledTimes(2);expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toEqual([]);
+    for(const table of ['ai_sales_payment_facts','ai_sales_order_facts'])expect(await q(`SELECT * FROM ${table} WHERE merchant_id=?`,[merchant])).toEqual([]);
+    expect(await row()).toEqual(saved);
+  });
+  it('reuses an already succeeded cart for an explicit resend while preserving the original consent and cart',async()=>{
+    const {consent,text,quote}=await approved();await deliver(consent,text);const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();
+    expect(await acceptSallaConversationOffer(request,quote.id)).toBe(text);const first=await row();
+    expect(await acceptSallaConversationOffer(request,quote.id)).toBe(text);expect(await row()).toEqual(first);await deliver(request,text);
+    const next=await incoming('resend the cart link');expect(await handleSallaCheckout({...next,message:'resend the cart link'})).toBe(text);await deliver(next,text);
+    expect((await row()).consent_message_id).toBe(consent.incomingMessageId);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.send).toHaveBeenCalledTimes(4);
+  });
+  it.each(['نعم','جهز السلة','نعم لكن الكمية 3'])('does not resume the original unknown attempt for %s',async message=>{
+    const {quote}=await parked(),request=await incoming(message);mocks.post.mockClear();mocks.get.mockClear();
+    expect(await acceptSallaConversationOffer(request,quote.id)).not.toContain('/checkout/');expect((await row()).execution_state).toBe('unknown');expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it.each(['review','missing','dispatching','processing'])('never adopts or creates a %s operation while resuming',async mode=>{
+    const {quote}=await parked(mode==='processing');
+    if(mode==='missing')await q('DELETE FROM salla_checkout_carts WHERE merchant_id=?',[merchant]);
+    if(mode==='dispatching')await q("UPDATE salla_checkout_carts SET state='dispatching' WHERE merchant_id=?",[merchant]);
+    if(mode==='processing')await q("UPDATE sales_quotations SET execution_state='processing' WHERE id=?",[quote.id]);
+    const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();mocks.get.mockClear();
+    expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();expect((await row()).external_reconciliation).toBeNull();
+  });
+  it.each(['لا ترسل','غير الكمية إلى 3','كم السعر؟','نعم'])('requires a new agreement after an intervening %s',async message=>{
+    const {quote}=await parked();await incoming(message);const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();mocks.get.mockClear();
+    expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it.each(['source','consent','receipt','offer-text','expired','stock','owner','handoff','connection','attempt','financial','result'])('blocks changed original %s before resumption GET',async mode=>{
+    const {quote,consent}=await parked();
+    if(mode==='source')await q("UPDATE messages SET content='أريد ثلاثة' WHERE id=?",[identity.incomingMessageId]);
+    if(mode==='consent')await q("UPDATE messages SET content='لا أريد' WHERE id=?",[consent.incomingMessageId]);
+    if(mode==='receipt')await q("UPDATE whatsapp_message_deliveries SET status='failed' WHERE merchant_id=?",[merchant]);
+    if(mode==='offer-text')await q("UPDATE messages SET content='changed' WHERE conversationId=? AND direction='outgoing'",[identity.conversationId]);
+    if(mode==='expired')await q('UPDATE sales_quotations SET offer_expires_at=UTC_TIMESTAMP() WHERE id=?',[quote.id]);
+    if(mode==='stock')await q('UPDATE products SET stock=0 WHERE id=?',[productId]);
+    if(mode==='owner')await q("UPDATE users SET account_status='deletion_pending' WHERE id=?",[user]);
+    if(mode==='handoff')await q('UPDATE conversations SET handoff_version=handoff_version+1 WHERE id=?',[identity.conversationId]);
+    if(mode==='connection')await q("UPDATE salla_connections SET syncStatus='paused' WHERE id=?",[connectionId]);
+    if(mode==='attempt')await q('UPDATE sales_quotations SET execution_attempt_id=? WHERE id=?',[randomUUID(),quote.id]);
+    if(mode==='financial')await q("UPDATE sales_quotations SET external_order_key='unrelated-order' WHERE id=?",[quote.id]);
+    if(mode==='result')await q("UPDATE sales_quotations SET external_result=JSON_OBJECT() WHERE id=?",[quote.id]);
+    const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();mocks.get.mockClear();
+    await expect(acceptSallaConversationOffer(request,quote.id).catch(()=>SALLA_CART_UNCERTAIN)).resolves.toBe(SALLA_CART_UNCERTAIN);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it.each(['source','request','new-message','human','receipt','quote','cart','deleted-ledger','ledger-proof','ledger-result'])('blocks %s changing during a resume read',async mode=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة');mocks.post.mockClear();
+    mocks.get.mockImplementationOnce(async()=>{
+      if(mode==='source')await q("UPDATE messages SET content='غير الكمية' WHERE id=?",[identity.incomingMessageId]);
+      if(mode==='request')await q("UPDATE messages SET content='لا ترسل' WHERE id=?",[request.incomingMessageId]);
+      if(mode==='new-message')await incoming('أريد منتجا آخر');if(mode==='human')await q('UPDATE conversations SET human_takeover=1 WHERE id=?',[identity.conversationId]);
+      if(mode==='receipt')await q("UPDATE whatsapp_message_deliveries SET status='failed' WHERE merchant_id=?",[merchant]);
+      if(mode==='quote')await q("UPDATE sales_quotations SET status='rejected' WHERE id=?",[quote.id]);
+      if(mode==='deleted-ledger')await q('DELETE FROM salla_checkout_carts WHERE merchant_id=?',[merchant]);
+      if(mode==='ledger-proof')await q("UPDATE salla_checkout_carts SET snapshot=JSON_REMOVE(snapshot,'$.digest') WHERE merchant_id=?",[merchant]);
+      if(mode==='ledger-result')await q("UPDATE salla_checkout_carts SET result_json=JSON_SET(result_json,'$.value.observedTotalMinor',999) WHERE merchant_id=?",[merchant]);
+      const cart=rawCart();if(mode==='cart')cart.data.items[0].quantity=3;return{data:cart};
+    });expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);expect((await row()).external_reconciliation).toBeNull();expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it.each(['refusal','human','expired','corrupt','request','total'])('rechecks %s immediately before sending a resumed link',async mode=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),text=await acceptSallaConversationOffer(request,quote.id);expect(text).toContain('/checkout/');mocks.post.mockClear();
+    if(mode==='refusal')await incoming('لا ترسل');if(mode==='human')await q('UPDATE conversations SET human_takeover=1 WHERE id=?',[identity.conversationId]);
+    if(mode==='expired')await q('UPDATE sales_quotations SET offer_expires_at=UTC_TIMESTAMP() WHERE id=?',[quote.id]);
+    if(mode==='corrupt')await q("UPDATE sales_quotations SET external_reconciliation=JSON_REMOVE(external_reconciliation,'$.digest') WHERE id=?",[quote.id]);
+    if(mode==='request')await q("UPDATE messages SET content='غير الكمية' WHERE id=?",[request.incomingMessageId]);
+    if(mode==='total'){const cart=rawCart();cart.data.amounts.total.amount.value=99;mocks.get.mockResolvedValue({data:cart});}
+    await dispatchReplyPlan(plan(request,text)).catch(()=>undefined);expect(mocks.send).toHaveBeenCalledTimes(1);expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('cannot use a link marker as authorization before the customer request is reconciled',async()=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),text=`[SC-${quote.id}] https://salla.sa/synthetic/checkout/cart123`,p=plan(request,text);
+    expect(await canDispatchSallaCheckoutReply({...p.effects[0],replyGuard:{conversationId:request.conversationId,incomingMessageId:request.incomingMessageId,version:0}})).toBe(false);
+    expect((await row()).external_reconciliation).toBeNull();
+  });
+  it('recovers a lost resume commit acknowledgement with the same message and no provider writes',async()=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),pool=(await getPool())!,get=pool.getConnection.bind(pool);let hit=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c),commit=c.commit.bind(c);let selected=false;
+      vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{if(sql.includes('external_result=?,external_reconciliation=?'))selected=true;return execute(sql,args);})as any);
+      vi.spyOn(c,'commit').mockImplementation(async()=>{await commit();if(selected&&!hit){hit=true;throw Error('lost acknowledgement');}});return c;});
+    mocks.post.mockClear();expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);vi.restoreAllMocks();const saved=await row();
+    const text=await acceptSallaConversationOffer(request,quote.id);expect(text).toContain('/checkout/');expect(await row()).toEqual(saved);await deliver(request,text);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.send).toHaveBeenCalledTimes(2);
+  });
+  it('rolls back resume storage without losing the original claim or creating another cart',async()=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),before=await row(),pool=(await getPool())!,get=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:string,args:any[])=>{
+      const r=await execute(sql,args);if(sql.includes('external_result=?,external_reconciliation=?'))throw Error('resume write lost');return r;})as any);return c;});
+    mocks.post.mockClear();expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);vi.restoreAllMocks();expect(await row()).toEqual(before);
+    expect(await acceptSallaConversationOffer(request,quote.id)).toContain('/checkout/');expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('converges concurrent resume attempts on one source and fences the original reply',async()=>{
+    const {quote,consent}=await parked(),request=await incoming('أرسل رابط السلة');mocks.post.mockClear();
+    const replies=await Promise.all(Array.from({length:3},()=>acceptSallaConversationOffer(request,quote.id)));expect(replies.some(t=>t.includes('/checkout/'))).toBe(true);
+    const text=await acceptSallaConversationOffer(request,quote.id),saved=await row();expect(decode(saved.external_reconciliation).value.incomingMessageId).toBe(request.incomingMessageId);
+    const original=plan(consent,text);expect(await canDispatchSallaCheckoutReply({...original.effects[0],replyGuard:{conversationId:consent.conversationId,incomingMessageId:consent.incomingMessageId,version:0}})).toBe(false);
+    const p=plan(request,text),deliveries=await Promise.allSettled([dispatchReplyPlan(p),dispatchReplyPlan(p)]);
+    expect(deliveries.some(r=>r.status==='fulfilled'&&r.value==='sent')).toBe(true);
+    for(const r of deliveries)if(r.status==='rejected')expect(r.reason.message).toBe('Reply effect requires delivery review');
+    expect(await dispatchReplyPlan(p)).toBe('sent');expect(mocks.send).toHaveBeenCalledTimes(2);expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it('resumes a completed cart when only quote projection was lost',async()=>{
+    const {quote}=await approved();await q("UPDATE sales_quotations SET execution_state='unknown',external_result=NULL WHERE id=?",[quote.id]);
+    const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();
+    const text=await acceptSallaConversationOffer(request,quote.id);expect(text).toContain('/checkout/');await deliver(request,text);expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it.each(['tenant','recipient','conversation'])('does not resume across another %s identity',async mode=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),other=await createDisposableMerchant('cart-resume-other');users.push(other.userId);
+    const changed={...request,...(mode==='tenant'?{merchantId:other.merchantId}:mode==='recipient'?{customerPhone:'966500009999'}:{conversationId:request.conversationId+1000000})};
+    mocks.post.mockClear();mocks.get.mockClear();await expect(acceptSallaConversationOffer(changed,quote.id)).rejects.toThrow();expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it.each(['quote','recipient','snapshot','consent','request-id','consent-message'])('rejects rehashed resume %s evidence inconsistent with its source',async mode=>{
+    const {quote,consent}=await parked(),request=await incoming('أرسل رابط السلة');expect(await acceptSallaConversationOffer(request,quote.id)).toContain('/checkout/');
+    const raw=decode((await row()).external_reconciliation);
+    if(mode==='quote')raw.value.quoteId++;if(mode==='recipient')raw.value.recipientDigest='0'.repeat(64);if(mode==='snapshot')raw.value.snapshotDigest='0'.repeat(64);
+    if(mode==='consent')raw.value.consentMessageId++;if(mode==='request-id')raw.value.requestId=randomUUID();
+    if(mode==='consent-message')await q("UPDATE messages SET content='موافق' WHERE id=?",[consent.incomingMessageId]);
+    raw.digest=digest(raw.value);await q('UPDATE sales_quotations SET external_reconciliation=? WHERE id=?',[JSON.stringify(raw),quote.id]);
+    mocks.post.mockClear();mocks.get.mockClear();expect(await acceptSallaConversationOffer(request,quote.id)).toBe(SALLA_CART_UNCERTAIN);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it('bounds repeated link requests and does not reuse a superseded resume authorization',async()=>{
+    const {quote}=await parked(),request=await incoming('أرسل رابط السلة'),text=await acceptSallaConversationOffer(request,quote.id);
+    const next=await incoming('أعد إرسال رابط السلة');expect(await acceptSallaConversationOffer(next,quote.id)).toBe(text);
+    const old=plan(request,text);expect(await canDispatchSallaCheckoutReply({...old.effects[0],replyGuard:{conversationId:request.conversationId,incomingMessageId:request.incomingMessageId,version:0}})).toBe(false);
+    for(let i=0;i<20;i++)await incoming('أرسل رابط السلة');const overflow=await incoming('أرسل رابط السلة');mocks.post.mockClear();mocks.get.mockClear();
+    expect(await acceptSallaConversationOffer(overflow,quote.id)).toBe(SALLA_CART_UNCERTAIN);expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it('does not cross a forgotten context boundary when resuming',async()=>{
+    await parked();const request=await incoming('أرسل رابط السلة');mocks.post.mockClear();mocks.get.mockClear();
+    expect(await handleSallaCheckout({...request,message:'أرسل رابط السلة',memoryHistoryCutoff:identity.incomingMessageId})).not.toContain('/checkout/');expect(mocks.post).not.toHaveBeenCalled();expect(mocks.get).not.toHaveBeenCalled();
+  });
   it('takes selection through delivered review, customer consent and verified checkout link without recording a sale',async()=>{
     const offerText=await handleSallaCheckout({...identity,message:'أريد شراء عدد 2 سماعة ساري'});expect(offerText).toContain('سماعة ساري × 2');expect(mocks.post).not.toHaveBeenCalled();
     await deliver(identity,offerText!);const consent=await incoming('نعم'),text=await handleSallaCheckout({...consent,message:'نعم'});expect(text).toContain('/checkout/cart123');
