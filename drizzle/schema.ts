@@ -885,6 +885,18 @@ export const sallaCreationEffects = mysqlTable('salla_creation_effects', {
       OR (${table.state}='review' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NULL AND ${table.acceptedAt} IS NULL))`),
 ]);
 
+export const sallaCheckoutCarts = mysqlTable('salla_checkout_carts', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  actorUserId:int('actor_user_id').notNull(),requestId:char('request_id',{length:36}).notNull(),requestHash:char('request_hash',{length:64}).notNull(),
+  attemptToken:char('attempt_token',{length:36}).notNull(),state:mysqlEnum(['preparing','dispatching','ready','rejected','review']).notNull(),
+  snapshot:json('snapshot'),resultJson:json('result_json'),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull(),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull(),
+},table=>[uniqueIndex('salla_cart_request').on(table.merchantId,table.requestId),index('salla_cart_review').on(table.merchantId,table.state,table.id),
+  check('chk_salla_cart_state',sql`${table.actorUserId}>0 AND REGEXP_LIKE(${table.requestHash},'^[0-9a-f]{64}$','c')
+    AND (${table.state} NOT IN ('dispatching','ready') OR ${table.snapshot} IS NOT NULL)
+    AND ((${table.state}='ready' AND ${table.resultJson} IS NOT NULL) OR (${table.state}<>'ready' AND ${table.resultJson} IS NULL))`),
+]);
+
 export const sallaOrderCreations = mysqlTable('salla_order_creations', {
   id:int().autoincrement().primaryKey(), merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   actorUserId:int('actor_user_id').notNull(), requestId:char('request_id',{length:36}).notNull(), requestHash:char('request_hash',{length:64}).notNull(),

@@ -1009,6 +1009,13 @@
       "when": 1795392000005,
       "tag": "0143_salla_notice_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 144,
+      "version": "5",
+      "when": 1795392000006,
+      "tag": "0144_salla_checkout_carts",
+      "breakpoints": true
     }
   ]
 }

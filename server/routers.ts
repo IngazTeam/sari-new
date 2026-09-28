@@ -15,6 +15,8 @@ import { reconcileBookingCheckoutSchema } from '../shared/booking-checkout-recon
 import { bookingPaymentLinkRenewalSchema } from '../shared/booking-payment-link-renewal';
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaOrderCreateSchema } from '../shared/salla-order-create';
+import { sallaCheckoutCartInput } from '../shared/salla-checkout-cart';
+import { runSallaCheckoutCart, SallaCheckoutCartError } from './integrations/salla-checkout-carts';
 import { sallaEffectReviewProcedures } from './routers-salla-effect-review';
 import { runSallaOrderCreation, readSallaCreationConfirmation, SallaCreationError } from './integrations/salla-order-creation';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
@@ -2164,6 +2166,25 @@ export const appRouter = router({
   // Orders from WhatsApp Chat
   orders: router({
     // Create order from chat
+    prepareSallaCheckout: permissionProcedure('orders.manage')
+      .input(sallaCheckoutCartInput)
+      .mutation(async ({ctx,input})=>{
+        try{return await runSallaCheckoutCart(input,ctx.merchantId,ctx.user.id);}
+        catch(error){
+          if(error instanceof SallaCheckoutCartError){
+            const messages={
+              request_conflict:'معرف العملية مرتبط بطلب مختلف. راجع العملية الأصلية.',
+              cart_pending:'تجهيز السلة قيد التحقق. احتفظ بمعرف العملية نفسه للاستعلام.',
+              cart_review:'لم تتأكد نتيجة تجهيز السلة. يلزم مراجعتها؛ لا تُنشئ محاولة بديلة تلقائيًا.',
+              cart_rejected:'تعذر تجهيز السلة بهذه المنتجات. راجع الاختيار والاتصال قبل طلب جديد.',
+              cart_unavailable:'تعذر التحقق من السلة الحالية. راجع محتواها واتصال المتجر قبل مشاركتها.',
+            };
+            throw new TRPCError({code:'CONFLICT',message:messages[error.code]});
+          }
+          throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر التحقق من تجهيز السلة. احتفظ بمعرف العملية وراجع حالتها قبل المحاولة مجددًا.'});
+        }
+      }),
+
     createFromChat: permissionProcedure('orders.manage')
       .input(sallaOrderCreateSchema)
       .mutation(async ({ input, ctx }) => {
