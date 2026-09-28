@@ -51,7 +51,7 @@ function normalizeText(value: unknown, maxLength: number, required: boolean): st
   return clean || null;
 }
 
-function normalizePhone(value: unknown): string {
+export function normalizeApiConversionPhone(value: unknown): string {
   if (typeof value !== 'string' || CONTROL_CHARACTERS.test(value)) invalid();
   let phone = value.trim().replace(/[\s().-]/g, '');
   if (phone.startsWith('00')) phone = `+${phone.slice(2)}`;
@@ -84,7 +84,7 @@ export function normalizeApiConversion(input: unknown): NormalizedApiConversion 
 
   const externalRef = normalizeText(raw.externalRef, 100, true) as string;
   return {
-    customerPhone: normalizePhone(raw.customerPhone),
+    customerPhone: normalizeApiConversionPhone(raw.customerPhone),
     customerName: normalizeText(raw.customerName, 255, false),
     actionType,
     productName: normalizeText(raw.productName, 255, true) as string,

@@ -26,6 +26,11 @@ import { enqueueByaanLifecycleEvent } from './byaan-outbox';
 import { ByaanSyncValidationError } from './byaan-sync-errors';
 import type { ConversionApiAuthority } from './api-conversion-history';
 import {
+  byaanEnrollmentInput, byaanPaymentInput, byaanMerchantId,
+  byaanSalesFailure, readByaanSalesResult,
+  type ByaanSalesFailure, type ByaanSalesReceipt,
+} from './byaan-sales-contract';
+import {
   getConversionPage,
   getConversionSummary,
   recordApiConversion,
@@ -910,16 +915,26 @@ export function getTerminology(source: string): Record<string, string> {
 // Used for real-time operations: enroll, payment, results, etc.
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Make an authenticated call to Byaan's Live API
- * Uses the connection's api_base_url + webhook_secret for HMAC signing
- */
+/** Revalidate the connection snapshot and owning account before a sales write. */
+async function assertByaanSalesAuthority(merchantId: number, expected: any) {
+  const current = await getByaanConnection(merchantId);
+  if (!current?.is_active || !current.verified_at || current.merchant_id !== merchantId
+    || ['id', 'tenant_domain', 'api_base_url', 'webhook_secret'].some(key => current[key] !== expected[key])
+    || String(current.verified_at) !== String(expected.verified_at)) throw Error('Byaan connection changed');
+  const pool = await getPool();
+  if (!pool) throw Error('Byaan authority unavailable');
+  const [rows] = await pool.execute<any[]>(`SELECT m.id FROM merchants m JOIN users u ON u.id=m.userId
+    WHERE m.id=? AND m.status='active' AND u.account_status='active'`, [merchantId]);
+  if (rows.length !== 1) throw Error('Byaan authority unavailable');
+}
+
+/** Make an authenticated call using the verified connection and signed bytes. */
 async function callByaanApi(
   merchantId: number,
   method: 'GET' | 'POST',
   endpoint: string,
   data?: Record<string, any>
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: any; error?: string; dispatched?: boolean }> {
   const connection = await getByaanConnection(merchantId);
   if (!connection || !connection.api_base_url) {
     return { success: false, error: 'Byaan connection not configured or missing api_base_url' };
@@ -965,9 +980,15 @@ async function callByaanApi(
   });
   headers['X-Sari-Signature'] = signByaanRequest(canonical, secret);
 
+  let dispatched = false;
   try {
+    const salesWrite = method === 'POST' && (endpoint === '/enroll' || endpoint === '/create-payment-link');
+    if (salesWrite) await assertByaanSalesAuthority(merchantId, connection);
     const httpsAgent = await createPinnedByaanHttpsAgent(url);
     const axios = (await import('axios')).default;
+    // Recheck after DNS resolution/module loading, immediately before dispatch.
+    if (salesWrite) await assertByaanSalesAuthority(merchantId, connection);
+    dispatched = true;
     const response = await axios({
       method,
       url,
@@ -977,15 +998,24 @@ async function callByaanApi(
       headers,
       timeout: 15000, // 15s timeout for live operations
       maxRedirects: 0,
+      maxContentLength: 1024 * 1024,
+      maxBodyLength: 1024 * 1024,
+      responseType: 'json',
+      transitional: { silentJSONParsing: false },
+      proxy: false,
       httpsAgent,
     });
 
-    return { success: true, data: response.data };
+    if (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300) {
+      return { success: false, dispatched, error: 'Byaan API request failed' };
+    }
+    return { success: true, data: response.data, dispatched };
   } catch (e: any) {
-    const status = e?.response?.status;
-    const errMsg = e?.response?.data?.message || e?.message || 'Unknown error';
-    console.error(`[Byaan Live] ${method} ${endpoint} failed (${status}):`, errMsg);
-    return { success: false, error: `Byaan API error (${status}): ${errMsg}` };
+    // Provider errors can echo signed headers, request bodies and trainee data.
+    // Never expose or log them. A dispatched write may have taken effect.
+    const status = Number.isInteger(e?.response?.status) ? e.response.status : undefined;
+    console.warn('[Byaan Live] Request failed', { method, status, dispatched });
+    return { success: false, dispatched, error: 'Byaan API request failed' };
   }
 }
 
@@ -998,33 +1028,38 @@ async function callByaanApi(
 export async function enrollTrainee(
   merchantId: number,
   data: { traineePhone: string; traineeName: string; courseId: string | number; courseTitle?: string }
-): Promise<{ success: boolean; enrollmentId?: string; paymentUrl?: string; error?: string }> {
-  const result = await callByaanApi(merchantId, 'POST', '/enroll', {
-    phone: data.traineePhone,
-    name: data.traineeName,
-    course_id: data.courseId,
+): Promise<(ByaanSalesReceipt & { enrollmentId: string; paymentUrl?: string }) | ByaanSalesFailure> {
+  const input = byaanEnrollmentInput.safeParse(data);
+  if (!byaanMerchantId.safeParse(merchantId).success || !input.success) return byaanSalesFailure('not_sent');
+  data = input.data;
+  let result: Awaited<ReturnType<typeof callByaanApi>>;
+  try {
+    result = await callByaanApi(merchantId, 'POST', '/enroll', {
+      phone: data.traineePhone, name: data.traineeName, course_id: data.courseId,
+    });
+  } catch { return byaanSalesFailure('not_sent'); }
+  if (!result.success) return byaanSalesFailure(result.dispatched ? 'unknown' : 'not_sent');
+  let receipt: ReturnType<typeof readByaanSalesResult>;
+  try { receipt = readByaanSalesResult(result.data, 'enrollment'); }
+  catch { return byaanSalesFailure('unknown'); }
+  const tracking = await trackByaanSalesResult(merchantId, {
+    customerPhone: data.traineePhone, customerName: data.traineeName,
+    actionType: 'enrollment', productName: data.courseTitle || `Course #${data.courseId}`,
+    externalRef: receipt.externalId, status: 'completed',
   });
+  return { success: true, outcome: 'reported', paymentEvidence: 'not_verified',
+    enrollmentId: receipt.externalId, paymentUrl: receipt.paymentUrl, ...tracking };
+}
 
-  if (result.success && result.data) {
-    // Record conversion for tracking
-    try {
-      await recordConversion(merchantId, {
-        customerPhone: data.traineePhone,
-        customerName: data.traineeName,
-        actionType: 'enrollment',
-        productName: data.courseTitle || `Course #${data.courseId}`,
-        externalRef: result.data.enrollment_id || result.data.enrollmentId,
-        status: 'completed',
-      });
-    } catch (e) { /* non-blocking */ }
+/** Tracking failure must not turn an acknowledged external effect into a failed
+ * operation that callers might repeat. It is visible for reconciliation instead. */
+async function trackByaanSalesResult(merchantId: number, data: ByaanConversion): Promise<Pick<ByaanSalesReceipt, 'tracking' | 'conversionId'>> {
+  try {
+    const result = await recordConversion(merchantId, data);
+    return { tracking: 'recorded', conversionId: result.id };
+  } catch {
+    return { tracking: 'unavailable' };
   }
-
-  return {
-    success: result.success,
-    enrollmentId: result.data?.enrollment_id || result.data?.enrollmentId,
-    paymentUrl: result.data?.payment_url || result.data?.paymentUrl,
-    error: result.error,
-  };
 }
 
 /**
@@ -1034,34 +1069,27 @@ export async function enrollTrainee(
 export async function createPaymentLink(
   merchantId: number,
   data: { traineePhone: string; courseId: string | number; amount: number; description?: string }
-): Promise<{ success: boolean; paymentUrl?: string; invoiceId?: string; error?: string }> {
-  const result = await callByaanApi(merchantId, 'POST', '/create-payment-link', {
-    phone: data.traineePhone,
-    course_id: data.courseId,
-    amount: data.amount,
-    description: data.description,
+): Promise<(ByaanSalesReceipt & { paymentUrl: string; invoiceId: string }) | ByaanSalesFailure> {
+  const input = byaanPaymentInput.safeParse(data);
+  if (!byaanMerchantId.safeParse(merchantId).success || !input.success) return byaanSalesFailure('not_sent');
+  data = input.data;
+  let result: Awaited<ReturnType<typeof callByaanApi>>;
+  try {
+    result = await callByaanApi(merchantId, 'POST', '/create-payment-link', {
+      phone: data.traineePhone, course_id: data.courseId, amount: data.amount, description: data.description,
+    });
+  } catch { return byaanSalesFailure('not_sent'); }
+  if (!result.success) return byaanSalesFailure(result.dispatched ? 'unknown' : 'not_sent');
+  let receipt: ReturnType<typeof readByaanSalesResult>;
+  try { receipt = readByaanSalesResult(result.data, 'payment'); }
+  catch { return byaanSalesFailure('unknown'); }
+  const tracking = await trackByaanSalesResult(merchantId, {
+    customerPhone: data.traineePhone, customerName: '', actionType: 'payment',
+    productName: data.description || `Course #${data.courseId}`, amount: data.amount,
+    externalRef: receipt.externalId, status: 'pending',
   });
-
-  if (result.success && result.data) {
-    try {
-      await recordConversion(merchantId, {
-        customerPhone: data.traineePhone,
-        customerName: '',
-        actionType: 'payment',
-        productName: data.description || `Course #${data.courseId}`,
-        amount: data.amount,
-        externalRef: result.data.invoice_id || result.data.invoiceId,
-        status: 'pending',
-      });
-    } catch (e) { /* non-blocking */ }
-  }
-
-  return {
-    success: result.success,
-    paymentUrl: result.data?.payment_url || result.data?.paymentUrl,
-    invoiceId: result.data?.invoice_id || result.data?.invoiceId,
-    error: result.error,
-  };
+  return { success: true, outcome: 'reported', paymentEvidence: 'not_verified',
+    paymentUrl: receipt.paymentUrl!, invoiceId: receipt.externalId, ...tracking };
 }
 
 export async function requestByaanResync(merchantId: number): Promise<{ success: boolean; error?: string }> {
