@@ -77,3 +77,12 @@ describe('production persona form contract',()=>{
     const source=readFileSync('client/src/pages/merchant/VirtualTeamPage.tsx','utf8');expect(source).toContain('shiftStart: draft.shiftStart || null');expect(source).toContain('shiftEnd: draft.shiftEnd || null');
   });
 });
+
+
+it('previews persona routing and persists priority changes',()=>{
+  route('virtual-team');input('routing-message','السعر لو سمحت');expect(w.document.getElementById('as-routing-result').textContent).toContain('فهد');
+  click('move-up','[data-id="2"]');expect(data().agents.map((a:any)=>a.id)).toEqual([2,1,3]);
+  click('edit','[data-id="2"]');click('agent-tab','[data-value="routing"]');input('shiftStart','22:00');input('shiftEnd','06:00');submit('agent');
+  input('routing-time','12:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('سارة');
+  input('routing-time','23:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('فهد');
+});

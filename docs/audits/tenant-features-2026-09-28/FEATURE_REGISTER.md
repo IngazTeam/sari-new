@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 178 ملف واجهة متصلًا، 1563 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 179 ملف واجهة متصلًا، 1585 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و7 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -44,7 +44,7 @@
 | /merchant/analytics — تحليلات المبيعات | 2 | 7 | 9 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/message-analytics — تحليلات الرسائل | 2 | 5 | 7 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/overview-analytics — نظرة الأداء | 1 | 0 | 5 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/orders — الطلبات | 8 | 40 | 9 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/orders — الطلبات | 9 | 48 | 11 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-instances — أرقام واتساب | 1 | 24 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-setup — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-test — تشخيص واتساب | 1 | 15 | 1 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -54,8 +54,8 @@
 | /merchant/whatsapp-webhook-setup — تشخيص Webhook | 1 | 6 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/bot-settings — سلوك المساعد | 3 | 37 | 4 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/human-takeover — التدخل البشري | 1 | 4 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/virtual-team — شخصيات المساعد | 2 | 27 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sari-brain — عقل ساري | 21 | 265 | 35 / 33 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/virtual-team — شخصيات المساعد | 2 | 31 | 1 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sari-brain — عقل ساري | 21 | 275 | 35 / 33 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-playground — ساحة التجربة | 1 | 4 | 0 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-analytics — تحليلات الرسائل | 2 | 5 | 7 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sales-hub — عروض الأسعار | 1 | 24 | 3 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -104,11 +104,11 @@
 | /merchant/integrations-dashboard — صحة التكاملات | 1 | 8 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/platform-integrations — التكاملات | 1 | 10 | 7 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notification-settings — تفضيلات الإشعارات | 1 | 17 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/currency-settings — عملة المتجر | 1 | 2 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/currency-settings — عملة المتجر | 1 | 2 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/push-notifications — إشعارات المتصفح | 1 | 3 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/scheduled-reports — التقارير المجدولة | 1 | 21 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/whatsapp-auto-notifications — أتمتة رسائل العملاء | 1 | 17 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/reports — التقارير | 2 | 11 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/scheduled-reports — التقارير المجدولة | 1 | 24 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/whatsapp-auto-notifications — أتمتة رسائل العملاء | 1 | 20 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/reports — التقارير | 1 | 5 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/subscriptions — الباقة والفواتير | 1 | 7 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage — استهلاك الرسائل | 1 | 2 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage-dashboard — حدود الاستخدام | 1 | 5 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1107,18 +1107,18 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 231 | Input | ابحث برقم الطلب، اسم العميل، أو رقم الجوال... | الطلبات |
-| 239 | Select | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
-| 287 | Button | عرض | الطلبات |
-| 319 | Button | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
-| 330 | Button | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
-| 348 | DialogContent | تفاصيل الطلب تاريخ الطلب : معلومات العميل الاسم : رقم الجوال : البريد الإلكتروني : العنوان : المنتجات الكمية : الإجمالي : cancelled الحالة : رقم التتبع : ملاحظات : تحديث الحالة cancelled delivered إلغاء الطلب | الطلبات |
-| 441 | Button | تحديث الحالة | المنتجات |
-| 453 | Button | إلغاء الطلب | المنتجات |
-| 472 | DialogContent | تحديث حالة الطلب الحالة الجديدة pending paid processing shipped delivered shipped delivered رقم التتبع (اختياري) جاري التحديث... تحديث | المنتجات |
-| 480 | Select | الحالة الجديدة | تحديث حالة الطلب |
-| 502 | Input | رقم التتبع (اختياري) | تحديث حالة الطلب |
-| 510 | Button | جاري التحديث... تحديث | تحديث حالة الطلب |
+| 234 | Input | ابحث برقم الطلب، اسم العميل، أو رقم الجوال... | الطلبات |
+| 242 | Select | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
+| 290 | Button | عرض | الطلبات |
+| 322 | Button | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
+| 333 | Button | تسمية ديناميكية / تحتاج مراجعة | الطلبات |
+| 351 | DialogContent | تفاصيل الطلب تاريخ الطلب : معلومات العميل الاسم : رقم الجوال : البريد الإلكتروني : العنوان : المنتجات الكمية : الإجمالي : cancelled الحالة : رقم التتبع : ملاحظات : تحديث الحالة cancelled delivered إلغاء الطلب | الطلبات |
+| 444 | Button | تحديث الحالة | المنتجات |
+| 456 | Button | إلغاء الطلب | المنتجات |
+| 475 | DialogContent | تحديث حالة الطلب الحالة الجديدة pending paid processing shipped delivered shipped delivered رقم التتبع (اختياري) جاري التحديث... تحديث | المنتجات |
+| 483 | Select | الحالة الجديدة | تحديث حالة الطلب |
+| 505 | Input | رقم التتبع (اختياري) | تحديث حالة الطلب |
+| 513 | Button | جاري التحديث... تحديث | تحديث حالة الطلب |
 
 ## client/src/components/CheckoutInvoiceReview.tsx
 
@@ -1177,6 +1177,19 @@
 | 53 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidCheckoutReconciliation |
 | 60 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidCheckoutReconciliation |
 | 61 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidCheckoutReconciliation |
+
+## client/src/components/SallaCheckoutReview.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 73 | input | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 76 | input | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 78 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 102 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 108 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 109 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
+| 119 | summary | تسمية ديناميكية / تحتاج مراجعة | SallaCheckoutReview |
 
 ## client/src/pages/merchant/WhatsAppTest.tsx
 
@@ -1248,28 +1261,28 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 235 | Button | basics assistantSectionsUx.basics schedule assistantSectionsUx.schedule groups assistantSectionsUx.groups sales assistantSectionsUx.sales assistantSectionsUx.preview | إعدادات الروبوت |
-| 261 | summary | القوالب الجاهزة | القوالب الجاهزة |
-| 317 | Button | ✓ مُطبّق تطبيق | BotSettings |
-| 358 | Button | تطبيق | BotSettings |
-| 441 | Switch | تفعيل الرد التلقائي | الرد التلقائي |
-| 478 | Switch | تفعيل ساعات العمل | ساعات العمل |
-| 496 | Input | وقت البداية | ساعات العمل |
-| 512 | Input | وقت النهاية | ساعات العمل |
-| 572 | Textarea | رسالة الترحيب | الرسائل |
-| 590 | Textarea | رسالة خارج أوقات العمل | الرسائل |
-| 631 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
-| 658 | Select | اللغة | سلوك الذكاء الاصطناعي |
-| 691 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
-| 713 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
-| 913 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك الجروبات |
-| 950 | button | t("merchantUx.actions.removeNamed", {                             name: kw,                           }) | سلوك الجروبات |
-| 968 | Input | الكلمات المفتاحية | سلوك الجروبات |
-| 984 | Button | الكلمات المفتاحية | سلوك الجروبات |
-| 1011 | Textarea | رسالة التوجيه الخاص | سلوك الجروبات |
-| 1058 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للذكاء الاصطناعي |
-| 1107 | Button | جاري الإرسال... إرسال رسالة تجريبية | تعليمات مخصصة للذكاء الاصطناعي |
-| 1120 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للذكاء الاصطناعي |
+| 259 | Button | basics assistantSectionsUx.basics schedule assistantSectionsUx.schedule groups assistantSectionsUx.groups sales assistantSectionsUx.sales assistantSectionsUx.preview | إعدادات الروبوت |
+| 285 | summary | القوالب الجاهزة | القوالب الجاهزة |
+| 341 | Button | ✓ مُطبّق تطبيق | BotSettings |
+| 382 | Button | تطبيق | BotSettings |
+| 470 | Switch | تفعيل الرد التلقائي | الرد التلقائي |
+| 507 | Switch | تفعيل ساعات العمل | ساعات العمل |
+| 525 | Input | وقت البداية | ساعات العمل |
+| 541 | Input | وقت النهاية | ساعات العمل |
+| 601 | Textarea | رسالة الترحيب | الرسائل |
+| 619 | Textarea | رسالة خارج أوقات العمل | الرسائل |
+| 660 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
+| 687 | Select | اللغة | سلوك الذكاء الاصطناعي |
+| 720 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
+| 742 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
+| 942 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك الجروبات |
+| 983 | button | t("merchantUx.actions.removeNamed", {                             name: kw,                           }) | سلوك الجروبات |
+| 1001 | Input | الكلمات المفتاحية | سلوك الجروبات |
+| 1018 | Button | الكلمات المفتاحية | سلوك الجروبات |
+| 1048 | Textarea | رسالة التوجيه الخاص | سلوك الجروبات |
+| 1096 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للذكاء الاصطناعي |
+| 1145 | Button | جاري الإرسال... إرسال رسالة تجريبية | تعليمات مخصصة للذكاء الاصطناعي |
+| 1158 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للذكاء الاصطناعي |
 
 ## client/src/components/CheckoutMarginPolicySettings.tsx
 
@@ -1309,107 +1322,121 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 202 | Input | name virtualTeamUx.name role virtualTeamUx.role virtualTeamUx.department department  * | VirtualTeamPage |
-| 235 | Button | شخصية جديدة | شخصيات فريقك الافتراضي |
-| 251 | Link | إعدادات المساعد | شخصيات فريقك الافتراضي |
-| 257 | Link | جرّب ساري | شخصيات فريقك الافتراضي |
-| 267 | Input | ابحث بالاسم أو الدور | شخصيات فريقك الافتراضي |
-| 284 | Button | جارٍ التحميل… استخدام فريق جاهز | ابدأ بفريق يناسب عملك |
-| 369 | Button | `${t("virtualTeamUx.edit")} ${agent.name}` | VirtualTeamPage |
-| 379 | Button | `${t("virtualTeamUx.delete")} ${agent.name}` | VirtualTeamPage |
-| 412 | DialogContent | virtualTeamUx.edit virtualTeamUx.new الأساسيات أولًا، وخيارات التحويل والدوام في قسم مستقل. identity routing identity virtualTeamUx.identity virtualTeamUx.routing identity name role department الصورة الرمزية · support vi | كيف يتوزع العمل؟ |
-| 437 | Button | identity virtualTeamUx.identity virtualTeamUx.routing | virtualTeamUx.edit virtualTeamUx.new |
-| 461 | summary | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTe | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 495 | button | support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.mark | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 538 | Button | friendly virtualTeamUx.tones.friendly professional virtualTeamUx.tones.professional casual virtualTeamUx.tones.casual empathetic virtualTeamUx.tones.empathetic virtualTeamUx.tones.persuasive | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 570 | Textarea | مهمة الشخصية وحدودها * | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 595 | Input | كلمات التحويل | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 608 | Button | كلمات التحويل | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 621 | button | `${t("virtualTeamUx.delete")} ${k}` | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 650 | Input | من | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 668 | Input | إلى | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 678 | Button | إلغاء جدول الشخصية | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 698 | Switch | الشخصية الافتراضية | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 714 | Switch | الشخصية نشطة | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 736 | Button | إلغاء | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 744 | Button | virtualTeamUx.saving virtualTeamUx.save | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 761 | DialogContent | حذف الشخصية ستُحذف هذه الشخصية وإعداداتها. لا يمكن التراجع عن هذا الإجراء. تعذّر الحفظ. بقيت بياناتك هنا؛ أعد المحاولة. إلغاء virtualTeamUx.saving virtualTeamUx.delete | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
-| 776 | Button | إلغاء | حذف الشخصية |
-| 784 | Button | virtualTeamUx.saving virtualTeamUx.delete | حذف الشخصية |
+| 224 | Input | name virtualTeamUx.name role virtualTeamUx.role virtualTeamUx.department department  * | VirtualTeamPage |
+| 257 | Button | شخصية جديدة | شخصيات فريقك الافتراضي |
+| 273 | Link | إعدادات المساعد | شخصيات فريقك الافتراضي |
+| 279 | Link | جرّب ساري | شخصيات فريقك الافتراضي |
+| 289 | Input | ابحث بالاسم أو الدور | شخصيات فريقك الافتراضي |
+| 306 | Button | جارٍ التحميل… استخدام فريق جاهز | ابدأ بفريق يناسب عملك |
+| 330 | Button | رفع أولوية {{name}} | ابدأ بفريق يناسب عملك |
+| 348 | Button | t("virtualTeamUx.moveDown", {                       name: agent.name,                     }) | ابدأ بفريق يناسب عملك |
+| 438 | Button | `${t("virtualTeamUx.edit")} ${agent.name}` | VirtualTeamPage |
+| 448 | Button | `${t("virtualTeamUx.delete")} ${agent.name}` | VirtualTeamPage |
+| 486 | Input | رسالة العميل | من سيستقبل هذا الطلب؟ |
+| 497 | Input | الوقت · الرياض | من سيستقبل هذا الطلب؟ |
+| 529 | DialogContent | virtualTeamUx.edit virtualTeamUx.new الأساسيات أولًا، وخيارات التحويل والدوام في قسم مستقل. identity routing identity virtualTeamUx.identity virtualTeamUx.routing identity name role department الصورة الرمزية · support vi | من سيستقبل هذا الطلب؟ |
+| 554 | Button | identity virtualTeamUx.identity virtualTeamUx.routing | virtualTeamUx.edit virtualTeamUx.new |
+| 578 | summary | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTe | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 612 | button | support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.mark | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 655 | Button | friendly virtualTeamUx.tones.friendly professional virtualTeamUx.tones.professional casual virtualTeamUx.tones.casual empathetic virtualTeamUx.tones.empathetic virtualTeamUx.tones.persuasive | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 687 | Textarea | مهمة الشخصية وحدودها * | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 712 | Input | كلمات التحويل | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 725 | Button | كلمات التحويل | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 738 | button | `${t("virtualTeamUx.delete")} ${k}` | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 767 | Input | من | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 785 | Input | إلى | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 795 | Button | إلغاء جدول الشخصية | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 815 | Switch | الشخصية الافتراضية | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 831 | Switch | الشخصية نشطة | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 853 | Button | إلغاء | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 861 | Button | virtualTeamUx.saving virtualTeamUx.save | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 878 | DialogContent | حذف الشخصية ستُحذف هذه الشخصية وإعداداتها. لا يمكن التراجع عن هذا الإجراء. تعذّر الحفظ. بقيت بياناتك هنا؛ أعد المحاولة. إلغاء virtualTeamUx.saving virtualTeamUx.delete | الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية |
+| 893 | Button | إلغاء | حذف الشخصية |
+| 901 | Button | virtualTeamUx.saving virtualTeamUx.delete | حذف الشخصية |
 
 ## client/src/pages/merchant/SariBrain.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 452 | Button | رفع ملف جديد | عقل ساري |
-| 458 | Button | إعادة ضبط كاملة | عقل ساري |
-| 463 | AlertDialogContent | ⚠️ إعادة ضبط عقل ساري بالكامل سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع). هذا الإجراء لا يمكن التراجع عنه! إلغاء جاري الحذف... نعم، أعد الضبط | عقل ساري |
-| 473 | AlertDialogCancel | إلغاء | ⚠️ إعادة ضبط عقل ساري بالكامل |
-| 474 | AlertDialogAction | جاري الحذف... نعم، أعد الضبط | ⚠️ إعادة ضبط عقل ساري بالكامل |
-| 531 | Button | 🔄 إعادة تحليل الموقع | products |
-| 536 | AlertDialogContent | 🔄 إعادة تحليل الموقع سيتم استبدال جميع البيانات المسحوبة الحالية ( صفحة) ببيانات جديدة من الموقع. تنبيهات مهمة ⚠️ البيانات الحالية ستُستبدل بالكامل ⏳ قد تتأثر ردود ساري على العملاء لمدة قصيرة أثناء التحديث ❓ هل يوجد بيا | products |
-| 557 | AlertDialogCancel | إلغاء | 🔄 إعادة تحليل الموقع |
-| 558 | AlertDialogAction | نعم، أعد التحليل | 🔄 إعادة تحليل الموقع |
-| 566 | Button | 🌐 تحليل موقعك | 🔄 إعادة تحليل الموقع |
-| 571 | Button | إدارة products | 🔄 إعادة تحليل الموقع |
-| 575 | Button | الإعدادات | 🔄 إعادة تحليل الموقع |
-| 583 | DialogContent | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... بعد التحليل سيقوم ساري بـ: ✓ بناء قاعدة معرفة ذكية ✓ فهم خدماتك ومنتجاتك ✓ تجهيز ردود ذكية للعملاء ✓ اكتشاف فرص زيادة المبيعات ✅ ✅ — ✅ % التقييم التقني | 🔄 إعادة تحليل الموقع |
-| 742 | Button | 👍 ممتاز، إغلاق إغلاق | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
-| 786 | Button | ✅ قبول | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
-| 789 | Button | ❌ رفض | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
-| 940 | Button | إضافة قسم | 🧠 أقسام المعرفة المصنفة |
-| 945 | DialogContent | إضافة قسم معرفة جديد أضف معلومات يدوية لساري (خدمات، سياسات، أسئلة شائعة...) نوع القسم 🏢 هوية النشاط 🛍️ خدمات/منتجات 📋 سياسات ❓ أسئلة شائعة 📞 بيانات تواصل 👥 فريق العمل 🏆 إنجازات 📝 مخصص العنوان المحتوى جاري الحفظ.. | 🧠 أقسام المعرفة المصنفة |
-| 953 | Select | نوع القسم | إضافة قسم معرفة جديد |
-| 969 | Input | العنوان | إضافة قسم معرفة جديد |
-| 973 | Textarea | المحتوى | إضافة قسم معرفة جديد |
-| 977 | Button | جاري الحفظ... 💾 حفظ | إضافة قسم معرفة جديد |
-| 1026 | Button | تسمية ديناميكية / تحتاج مراجعة | إضافة قسم معرفة جديد |
-| 1036 | AlertDialogContent | حذف " " سيتم حذف هذا القسم وجميع أقسامه الفرعية من ذاكرة ساري. إلغاء حذف | إضافة قسم معرفة جديد |
-| 1042 | AlertDialogCancel | إلغاء | حذف " " |
-| 1043 | AlertDialogAction | حذف | حذف " " |
-| 1055 | Button | تسمية ديناميكية / تحتاج مراجعة | حذف " " |
-| 1079 | Button | إعادة المحاولة | حذف " " |
-| 1104 | Textarea | اكتب سؤال مثل: كم سعر الدورة؟ وش الخدمات المتاحة؟ فين موقعكم؟ | 🧪 اختبر ساري |
-| 1112 | Button | ... 🤖 اسأل | 🧪 اختبر ساري |
-| 1137 | Button | تسمية ديناميكية / تحتاج مراجعة | 🧪 اختبر ساري |
-| 1178 | Button | تسمية ديناميكية / تحتاج مراجعة | 📦 مصادر المعرفة |
-| 1188 | AlertDialogContent | حذف " " سيتم حذف هذا المصدر من ذاكرة ساري. لن يستطيع ساري الرد على أسئلة متعلقة بهذه البيانات بعد الحذف. إلغاء حذف | 📦 مصادر المعرفة |
-| 1196 | AlertDialogCancel | إلغاء | حذف " " |
-| 1197 | AlertDialogAction | حذف | حذف " " |
-| 1214 | Button | رفع ملف تعريفي | حذف " " |
-| 1298 | a | عرض | 🌐 معرفة الموقع |
-| 1304 | Button | تسمية ديناميكية / تحتاج مراجعة | 🌐 معرفة الموقع |
-| 1313 | Button | t(                             page.useInBot                               ? 'merchantUx.actions.deactivateNamed'                               : 'merchantUx.actions.activateNamed',                             { name | 🌐 معرفة الموقع |
-| 1329 | Button | تسمية ديناميكية / تحتاج مراجعة | 🌐 معرفة الموقع |
-| 1340 | AlertDialogContent | 🗑️ حذف " " سيتم حذف هذه الصفحة من ذاكرة ساري بالكامل، بما في ذلك المحتوى والأسئلة الشائعة المرتبطة بها. لا يمكن التراجع عن هذا الإجراء. إلغاء جاري الحذف... حذف نهائي | 🌐 معرفة الموقع |
-| 1350 | AlertDialogCancel | إلغاء | 🗑️ حذف " " |
-| 1351 | AlertDialogAction | جاري الحذف... حذف نهائي | 🗑️ حذف " " |
-| 1405 | Link | h-4 w-4 | 🗑️ حذف " " |
-| 1409 | Input | https://example.com/services | 🗑️ حذف " " |
-| 1417 | Button | جاري السحب... معاينة | 🗑️ حذف " " |
-| 1430 | DialogContent | 🔍 تحليل المحتوى المسحوب تم تحليل المحتوى وتصنيفه تلقائياً — راجع الأقسام واعتمدها لإضافتها لذاكرة ساري كلمة نقطة • // @ts-ignore لم يتم التصنيف التلقائي — المحتوى المنظّف: ... (تم اختصار المحتوى) إلغاء جاري الإضافة... م | 🗑️ حذف " " |
-| 1445 | a | تسمية ديناميكية / تحتاج مراجعة | 🔍 تحليل المحتوى المسحوب |
-| 1506 | Button | إلغاء | 🔍 تحليل المحتوى المسحوب |
-| 1507 | Button | جاري الإضافة... موافق — أضف للمعرفة | 🔍 تحليل المحتوى المسحوب |
-| 1526 | DialogContent | 📖 محتوى الصفحة جاري تحميل المحتوى... كلمة ✅ مفعّل ⏸️ متوقف ... (تم اختصار المحتوى) إغلاق | 🔍 تحليل المحتوى المسحوب |
-| 1540 | a | تسمية ديناميكية / تحتاج مراجعة | 📖 محتوى الصفحة |
-| 1557 | Button | إغلاق | 📖 محتوى الصفحة |
-| 1601 | Input | السؤال (مثل: كم مدة التوصيل؟) | ❓ الأسئلة الشائعة |
-| 1607 | Input | الجواب (مثل: يتم التوصيل خلال 2-3 أيام عمل) | ❓ الأسئلة الشائعة |
-| 1614 | Button | جاري الإضافة... إضافة | ❓ الأسئلة الشائعة |
-| 1640 | Button | تسمية ديناميكية / تحتاج مراجعة | ❓ الأسئلة الشائعة |
-| 1680 | input | تسمية ديناميكية / تحتاج مراجعة | 🔬 الفحص الذكي — Smart Intake |
-| 1681 | Button | اختر ملف TXT/CSV | 🔬 الفحص الذكي — Smart Intake |
-| 1687 | Textarea | الصق هنا محتوى الملف الذي تريد فحصه... (أسعار، منتجات، سياسات، معلومات عامة) | 🔬 الفحص الذكي — Smart Intake |
-| 1696 | Button | جاري الفحص... فحص المحتوى بالذكاء الاصطناعي | 🔬 الفحص الذكي — Smart Intake |
-| 1708 | Button | تغيير المحتوى | 🔬 الفحص الذكي — Smart Intake |
-| 1796 | Button | تجاهل | 📊 تقرير الفحص الذكي |
-| 1799 | Button | جاري الحفظ... اعتماد وإضافة لذاكرة ساري | 📊 تقرير الفحص الذكي |
-| 2003 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
-| 2066 | button | ← السابق | 📋 مسار ساري |
-| 2085 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
-| 2098 | button | التالي → | 📋 مسار ساري |
-| 2114 | button | عرض كل الأنشطة | 📋 مسار ساري |
+| 453 | Button | رفع ملف جديد | عقل ساري |
+| 459 | Button | إعادة ضبط كاملة | عقل ساري |
+| 464 | AlertDialogContent | ⚠️ إعادة ضبط عقل ساري بالكامل سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع). هذا الإجراء لا يمكن التراجع عنه! إلغاء جاري الحذف... نعم، أعد الضبط | عقل ساري |
+| 474 | AlertDialogCancel | إلغاء | ⚠️ إعادة ضبط عقل ساري بالكامل |
+| 475 | AlertDialogAction | جاري الحذف... نعم، أعد الضبط | ⚠️ إعادة ضبط عقل ساري بالكامل |
+| 485 | Button | عرض تقدم التحليل | ⚠️ إعادة ضبط عقل ساري بالكامل |
+| 487 | Button | تسمية ديناميكية / تحتاج مراجعة | ⚠️ إعادة ضبط عقل ساري بالكامل |
+| 499 | Button | اختبر الإجابة وجودتها | مؤشر احتراف المبيعات |
+| 499 | Button | راجع المعرفة والفجوات | مؤشر احتراف المبيعات |
+| 502 | summary | تجارب البيع وتقييم النتائج | تجارب البيع وتقييم النتائج |
+| 503 | summary | مراجعة الرد واعتماد إرساله | مراجعة الرد واعتماد إرساله |
+| 504 | summary | سياسة المتابعة | سياسة المتابعة |
+| 505 | summary | صلاحيات الخصم وهامش الربح | صلاحيات الخصم وهامش الربح |
+| 551 | Button | 🔄 إعادة تحليل الموقع | products |
+| 556 | AlertDialogContent | 🔄 إعادة تحليل الموقع سيتم استبدال جميع البيانات المسحوبة الحالية ( صفحة) ببيانات جديدة من الموقع. تنبيهات مهمة ⚠️ البيانات الحالية ستُستبدل بالكامل ⏳ قد تتأثر ردود ساري على العملاء لمدة قصيرة أثناء التحديث ❓ هل يوجد بيا | products |
+| 577 | AlertDialogCancel | إلغاء | 🔄 إعادة تحليل الموقع |
+| 578 | AlertDialogAction | نعم، أعد التحليل | 🔄 إعادة تحليل الموقع |
+| 586 | Button | 🌐 تحليل موقعك | 🔄 إعادة تحليل الموقع |
+| 591 | Button | إدارة products | 🔄 إعادة تحليل الموقع |
+| 595 | Button | الإعدادات | 🔄 إعادة تحليل الموقع |
+| 605 | DialogContent | متابعة في الخلفية تعذر تحديث حالة التحليل. قد يستمر العمل في الخلفية. إعادة المحاولة ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... بعد التحليل سيقوم ساري بـ: ✓ بناء قاعدة معرفة ذكية ✓ فهم خدماتك وم | 🔄 إعادة تحليل الموقع |
+| 613 | Button | متابعة في الخلفية | 🔄 إعادة تحليل الموقع |
+| 614 | Button | إعادة المحاولة | 🔄 إعادة تحليل الموقع |
+| 766 | Button | 👍 ممتاز، إغلاق إغلاق | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
+| 811 | Button | ✅ قبول | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
+| 814 | Button | ❌ رفض | ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... |
+| 974 | Button | إضافة قسم | 🧠 أقسام المعرفة المصنفة |
+| 979 | DialogContent | إضافة قسم معرفة جديد أضف معلومات يدوية لساري (خدمات، سياسات، أسئلة شائعة...) نوع القسم 🏢 هوية النشاط 🛍️ خدمات/منتجات 📋 سياسات ❓ أسئلة شائعة 📞 بيانات تواصل 👥 فريق العمل 🏆 إنجازات 📝 مخصص العنوان المحتوى جاري الحفظ.. | 🧠 أقسام المعرفة المصنفة |
+| 987 | Select | نوع القسم | إضافة قسم معرفة جديد |
+| 1003 | Input | العنوان | إضافة قسم معرفة جديد |
+| 1007 | Textarea | المحتوى | إضافة قسم معرفة جديد |
+| 1011 | Button | جاري الحفظ... 💾 حفظ | إضافة قسم معرفة جديد |
+| 1060 | Button | تسمية ديناميكية / تحتاج مراجعة | إضافة قسم معرفة جديد |
+| 1070 | AlertDialogContent | حذف " " سيتم حذف هذا القسم وجميع أقسامه الفرعية من ذاكرة ساري. إلغاء حذف | إضافة قسم معرفة جديد |
+| 1076 | AlertDialogCancel | إلغاء | حذف " " |
+| 1077 | AlertDialogAction | حذف | حذف " " |
+| 1089 | Button | تسمية ديناميكية / تحتاج مراجعة | حذف " " |
+| 1113 | Button | إعادة المحاولة | حذف " " |
+| 1141 | Textarea | اكتب سؤال مثل: كم سعر الدورة؟ وش الخدمات المتاحة؟ فين موقعكم؟ | 🧪 اختبر ساري |
+| 1149 | Button | ... 🤖 اسأل | 🧪 اختبر ساري |
+| 1174 | Button | تسمية ديناميكية / تحتاج مراجعة | 🧪 اختبر ساري |
+| 1218 | Button | تسمية ديناميكية / تحتاج مراجعة | 📦 مصادر المعرفة |
+| 1228 | AlertDialogContent | حذف " " سيتم حذف هذا المصدر من ذاكرة ساري. لن يستطيع ساري الرد على أسئلة متعلقة بهذه البيانات بعد الحذف. إلغاء حذف | 📦 مصادر المعرفة |
+| 1236 | AlertDialogCancel | إلغاء | حذف " " |
+| 1237 | AlertDialogAction | حذف | حذف " " |
+| 1254 | Button | رفع ملف تعريفي | حذف " " |
+| 1338 | a | عرض | 🌐 معرفة الموقع |
+| 1344 | Button | تسمية ديناميكية / تحتاج مراجعة | 🌐 معرفة الموقع |
+| 1353 | Button | t(                             page.useInBot                               ? 'merchantUx.actions.deactivateNamed'                               : 'merchantUx.actions.activateNamed',                             { name: pa | 🌐 معرفة الموقع |
+| 1369 | Button | تسمية ديناميكية / تحتاج مراجعة | 🌐 معرفة الموقع |
+| 1380 | AlertDialogContent | 🗑️ حذف " " سيتم حذف هذه الصفحة من ذاكرة ساري بالكامل، بما في ذلك المحتوى والأسئلة الشائعة المرتبطة بها. لا يمكن التراجع عن هذا الإجراء. إلغاء جاري الحذف... حذف نهائي | 🌐 معرفة الموقع |
+| 1390 | AlertDialogCancel | إلغاء | 🗑️ حذف " " |
+| 1391 | AlertDialogAction | جاري الحذف... حذف نهائي | 🗑️ حذف " " |
+| 1445 | Link | h-4 w-4 | 🗑️ حذف " " |
+| 1449 | Input | https://example.com/services | 🗑️ حذف " " |
+| 1457 | Button | جاري السحب... معاينة | 🗑️ حذف " " |
+| 1470 | DialogContent | 🔍 تحليل المحتوى المسحوب تم تحليل المحتوى وتصنيفه تلقائياً — راجع الأقسام واعتمدها لإضافتها لذاكرة ساري كلمة نقطة • // @ts-ignore لم يتم التصنيف التلقائي — المحتوى المنظّف: ... (تم اختصار المحتوى) إلغاء جاري الإضافة... م | 🗑️ حذف " " |
+| 1485 | a | تسمية ديناميكية / تحتاج مراجعة | 🔍 تحليل المحتوى المسحوب |
+| 1546 | Button | إلغاء | 🔍 تحليل المحتوى المسحوب |
+| 1547 | Button | جاري الإضافة... موافق — أضف للمعرفة | 🔍 تحليل المحتوى المسحوب |
+| 1566 | DialogContent | 📖 محتوى الصفحة جاري تحميل المحتوى... كلمة ✅ مفعّل ⏸️ متوقف ... (تم اختصار المحتوى) إغلاق | 🔍 تحليل المحتوى المسحوب |
+| 1580 | a | تسمية ديناميكية / تحتاج مراجعة | 📖 محتوى الصفحة |
+| 1597 | Button | إغلاق | 📖 محتوى الصفحة |
+| 1644 | Input | السؤال (مثل: كم مدة التوصيل؟) | ❓ الأسئلة الشائعة |
+| 1650 | Input | الجواب (مثل: يتم التوصيل خلال 2-3 أيام عمل) | ❓ الأسئلة الشائعة |
+| 1657 | Button | جاري الإضافة... إضافة | ❓ الأسئلة الشائعة |
+| 1683 | Button | تسمية ديناميكية / تحتاج مراجعة | ❓ الأسئلة الشائعة |
+| 1726 | input | تسمية ديناميكية / تحتاج مراجعة | 🔬 الفحص الذكي — Smart Intake |
+| 1727 | Button | اختر ملف TXT/CSV | 🔬 الفحص الذكي — Smart Intake |
+| 1733 | Textarea | الصق هنا محتوى الملف الذي تريد فحصه... (أسعار، منتجات، سياسات، معلومات عامة) | 🔬 الفحص الذكي — Smart Intake |
+| 1742 | Button | جاري الفحص... فحص المحتوى بالذكاء الاصطناعي | 🔬 الفحص الذكي — Smart Intake |
+| 1754 | Button | تغيير المحتوى | 🔬 الفحص الذكي — Smart Intake |
+| 1842 | Button | تجاهل | 📊 تقرير الفحص الذكي |
+| 1845 | Button | جاري الحفظ... اعتماد وإضافة لذاكرة ساري | 📊 تقرير الفحص الذكي |
+| 2055 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
+| 2118 | button | ← السابق | 📋 مسار ساري |
+| 2137 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
+| 2150 | button | التالي → | 📋 مسار ساري |
+| 2166 | button | عرض كل الأنشطة | 📋 مسار ساري |
 
 ## client/src/components/LearningAnalysisStatusCard.tsx
 
@@ -2185,14 +2212,14 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 16 | Calendar | تسمية ديناميكية / تحتاج مراجعة | IntegrationsDashboard |
-| 58 | Button | لوحة تحكم التكاملات | حالة التكاملات |
-| 69 | TabsTrigger | نسبة النجاح | نسبة النجاح |
-| 69 | TabsTrigger | الإحصائيات | الإحصائيات |
-| 69 | TabsTrigger | الأخطاء | الأخطاء |
-| 92 | Link | نظرة عامة | IntegrationsDashboard |
-| 92 | Button | نظرة عامة | IntegrationsDashboard |
-| 128 | Button | إحصائيات المزامنة | متصل |
+| 34 | Calendar | تسمية ديناميكية / تحتاج مراجعة | IntegrationsDashboard |
+| 111 | Button | تحديث | حالة التكاملات |
+| 180 | TabsTrigger | نظرة عامة | نظرة عامة |
+| 183 | TabsTrigger | الإحصائيات | الإحصائيات |
+| 186 | TabsTrigger | الأخطاء | الأخطاء |
+| 239 | Link | إعدادات | IntegrationsDashboard |
+| 245 | Button | إعدادات | IntegrationsDashboard |
+| 366 | Button | تم الحل | الأخطاء غير المحلولة |
 
 ## client/src/pages/PlatformIntegrations.tsx
 
@@ -2235,8 +2262,8 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 80 | Select | دولار أمريكي | العملة الأساسية |
-| 126 | Button | جاري الحفظ... حفظ التغييرات | العملة الأساسية |
+| 118 | Select | اختر العملة | العملة الأساسية |
+| 182 | Button | جاري الحفظ... حفظ التغييرات | العملة الأساسية |
 
 ## client/src/pages/merchant/PushNotificationsSettings.tsx
 
@@ -2250,65 +2277,65 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 46 | Button | يرجى إدخال اسم التقرير | التقارير المجدولة |
-| 47 | DialogContent | تعديل التقرير إنشاء تقرير جديد التقارير المجدولة تقرير جديد نوع التقرير يومي أسبوعي شهري // @ts-ignore weekly قم بتخصيص إعدادات التقرير المجدول monthly يوم الشهر وقت الإرسال اسم التقرير بريد إلكتروني واتساب كلاهما email  | التقارير المجدولة |
-| 49 | Input | تقرير جديد | تعديل التقرير إنشاء تقرير جديد |
-| 49 | Select | نوع التقرير | تعديل التقرير إنشاء تقرير جديد |
-| 51 | Select | قم بتخصيص إعدادات التقرير المجدول | تعديل التقرير إنشاء تقرير جديد |
-| 51 | Input | يوم الشهر | تعديل التقرير إنشاء تقرير جديد |
-| 51 | Input | وقت الإرسال | تعديل التقرير إنشاء تقرير جديد |
-| 53 | Select | اسم التقرير | تعديل التقرير إنشاء تقرير جديد |
-| 53 | Input | البريد الإلكتروني | تعديل التقرير إنشاء تقرير جديد |
-| 53 | Input | رقم الواتساب | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | المحادثات | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | الطلبات | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | الإيرادات | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | المنتجات | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | العملاء | تعديل التقرير إنشاء تقرير جديد |
-| 54 | Switch | المواعيد | تعديل التقرير إنشاء تقرير جديد |
-| 56 | Button | طريقة الإرسال | تعديل التقرير إنشاء تقرير جديد |
-| 56 | Button | تحديث إنشاء | تعديل التقرير إنشاء تقرير جديد |
-| 62 | Button | إنشاء تقرير | تعديل التقرير إنشاء تقرير جديد |
-| 63 | Button | setIsDialogOpen(false)}>إلغاء | ScheduledReports |
-| 63 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledReports |
+| 200 | Button | تقرير جديد | التقارير المجدولة |
+| 205 | DialogContent | تعديل التقرير إنشاء تقرير جديد قم بتخصيص إعدادات التقرير المجدول اسم التقرير نوع التقرير يومي أسبوعي شهري weekly يوم الإرسال monthly يوم الشهر وقت الإرسال طريقة الإرسال بريد إلكتروني واتساب كلاهما email both البريد الإلك | التقارير المجدولة |
+| 227 | Input | اسم التقرير | تعديل التقرير إنشاء تقرير جديد |
+| 242 | Select | نوع التقرير | تعديل التقرير إنشاء تقرير جديد |
+| 275 | Select | يوم الإرسال | تعديل التقرير إنشاء تقرير جديد |
+| 299 | Input | يوم الشهر | تعديل التقرير إنشاء تقرير جديد |
+| 319 | Input | وقت الإرسال | تعديل التقرير إنشاء تقرير جديد |
+| 335 | Select | طريقة الإرسال | تعديل التقرير إنشاء تقرير جديد |
+| 363 | Input | البريد الإلكتروني | تعديل التقرير إنشاء تقرير جديد |
+| 384 | Input | رقم الواتساب | تعديل التقرير إنشاء تقرير جديد |
+| 408 | Switch | المحادثات | تعديل التقرير إنشاء تقرير جديد |
+| 420 | Switch | الطلبات | تعديل التقرير إنشاء تقرير جديد |
+| 432 | Switch | الإيرادات | تعديل التقرير إنشاء تقرير جديد |
+| 444 | Switch | المنتجات | تعديل التقرير إنشاء تقرير جديد |
+| 456 | Switch | العملاء | تعديل التقرير إنشاء تقرير جديد |
+| 468 | Switch | المواعيد | تعديل التقرير إنشاء تقرير جديد |
+| 480 | Button | إلغاء | تعديل التقرير إنشاء تقرير جديد |
+| 483 | Button | تحديث إنشاء | تعديل التقرير إنشاء تقرير جديد |
+| 503 | Button | إنشاء تقرير | تعديل التقرير إنشاء تقرير جديد |
+| 559 | Button | تعديل | ScheduledReports |
+| 567 | Button | حذف | ScheduledReports |
+| 588 | DialogContent | حذف هذا الإعداد؟ سيتوقف استخدام هذا الإعداد بعد حذفه. يمكنك الإلغاء ومراجعة بياناته أولًا. إلغاء حذف | ScheduledReports |
+| 596 | Button | إلغاء | حذف هذا الإعداد؟ |
+| 599 | Button | حذف | حذف هذا الإعداد؟ |
 
 ## client/src/pages/WhatsAppAutoNotifications.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 21 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
-| 22 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
-| 23 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
-| 24 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
-| 56 | Button | حجز موعد | أتمتة إشعارات العملاء |
-| 57 | DialogContent | تعديل الإشعار إنشاء إشعار جديد تذكير بالموعد إلغاء الموعد - تغيير الموعد استعادة القالب الافتراضي المتغيرات المتاحة: {{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deliveryDate}}, {{ser | أتمتة إشعارات العملاء |
-| 59 | Select | إلغاء الموعد | تعديل الإشعار إنشاء إشعار جديد |
-| 60 | Button | تغيير الموعد | تعديل الإشعار إنشاء إشعار جديد |
-| 60 | Textarea | أدخل نص الرسالة... | تعديل الإشعار إنشاء إشعار جديد |
-| 61 | Switch | تم إنشاء الإشعار بنجاح | تعديل الإشعار إنشاء إشعار جديد |
-| 63 | Button | تم تحديث الإشعار بنجاح | تعديل الإشعار إنشاء إشعار جديد |
-| 63 | Button | تحديث إنشاء | تعديل الإشعار إنشاء إشعار جديد |
-| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | تم حذف الإشعار بنجاح |
-| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | تم حذف الإشعار بنجاح |
-| 78 | Calendar | تسمية ديناميكية / تحتاج مراجعة | تم حذف الإشعار بنجاح |
-| 82 | Button | تسمية ديناميكية / تحتاج مراجعة | إشعارات WhatsApp التلقائية |
-| 82 | Button | تسمية ديناميكية / تحتاج مراجعة | إشعارات WhatsApp التلقائية |
+| 75 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
+| 80 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
+| 85 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
+| 90 | Calendar | تسمية ديناميكية / تحتاج مراجعة | WhatsAppAutoNotifications |
+| 229 | Button | إشعار جديد | أتمتة إشعارات العملاء |
+| 234 | DialogContent | تعديل الإشعار إنشاء إشعار جديد قم بتخصيص الرسالة التلقائية للعملاء نوع الحدث - نص الرسالة استعادة القالب الافتراضي المتغيرات المتاحة: {{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deli | أتمتة إشعارات العملاء |
+| 255 | Select | نوع الحدث | تعديل الإشعار إنشاء إشعار جديد |
+| 287 | Button | نص الرسالة | تعديل الإشعار إنشاء إشعار جديد |
+| 297 | Textarea | نص الرسالة | تعديل الإشعار إنشاء إشعار جديد |
+| 323 | Switch | تفعيل الإشعار | تعديل الإشعار إنشاء إشعار جديد |
+| 333 | Button | إلغاء | تعديل الإشعار إنشاء إشعار جديد |
+| 336 | Button | تحديث إنشاء | تعديل الإشعار إنشاء إشعار جديد |
+| 390 | Button | تعديل | إشعارات الطلبات |
+| 398 | Button | حذف | إشعارات الطلبات |
+| 419 | Calendar | تسمية ديناميكية / تحتاج مراجعة | إشعارات الطلبات |
+| 457 | Button | تعديل | إشعارات المواعيد |
+| 465 | Button | حذف | إشعارات المواعيد |
+| 489 | DialogContent | حذف هذا الإعداد؟ سيتوقف استخدام هذا الإعداد بعد حذفه. يمكنك الإلغاء ومراجعة بياناته أولًا. إلغاء حذف | إشعارات المواعيد |
+| 497 | Button | إلغاء | حذف هذا الإعداد؟ |
+| 500 | Button | حذف | حذف هذا الإعداد؟ |
 
 ## client/src/pages/Reports.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 132 | Select | تسمية ديناميكية / تحتاج مراجعة | التقارير والإحصائيات |
-| 148 | TabsTrigger | قبول الحملات عبر الزمن | قبول الحملات عبر الزمن |
-| 149 | TabsTrigger | رسائل قبلها مزود الإرسال؛ لا يُفترض منها التسليم أو القراءة | رسائل قبلها مزود الإرسال؛ لا يُفترض منها التسليم أو القراءة |
-| 150 | TabsTrigger | 7 أيام | 7 أيام |
-| 158 | Button | تصدير PDF | 30 يوم |
-| 166 | Button | تصدير Excel | 30 يوم |
-| 278 | Button | تصدير PDF | أرسل بموافقة صريحة |
-| 286 | Button | تصدير Excel | أرسل بموافقة صريحة |
-| 397 | Button | تصدير PDF | ملخص الإرسال المثبت |
-| 405 | Button | تصدير Excel | ملخص الإرسال المثبت |
-| 437 | Calendar | تسمية ديناميكية / تحتاج مراجعة | متوسط وقت الرد |
+| 259 | Button | تسمية ديناميكية / تحتاج مراجعة | التقارير |
+| 272 | select | الفترة | التقارير |
+| 290 | select | عملة الطلبات | التقارير |
+| 301 | Button | جارٍ تجهيز الملف… تصدير Excel | التقارير |
+| 310 | Button | طباعة / حفظ PDF | التقارير |
 
 ## client/src/pages/merchant/MySubscription.tsx
 

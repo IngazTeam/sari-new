@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-09-28T09:18:27.674Z",
+  "scope": "Local tenant audit and targeted repairs; not production acceptance or a complete security certification",
+  "sourceInventory": {
+    "routes": 126,
+    "files": 179,
+    "controls": 1585,
+    "queryCalls": 288,
+    "errorSignalMissing": 187,
+    "choices": 54,
+    "conditions": 652
+  },
+  "designCoverage": {
+    "موك أب عام": 112,
+    "إعادة توجيه": 8,
+    "تفصيلي": 5,
+    "تفصيلي جزئي": 1
+  },
+  "testFiles": 23,
+  "testsPassed": 740,
+  "testsFailed": 0,
+  "typecheck": "passed",
+  "translationCheck": {
+    "advertisedLocale": "ar",
+    "callsChecked": 7884,
+    "dynamicKeysChecked": 311,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "frontendBuild": "passed; Vite 11.40 seconds; lazy ExcelJS chunk size warning",
+  "entryBundle": {
+    "rawBytes": 334430,
+    "gzipBytes": 102317,
+    "budget": "passed"
+  },
+  "live": {
+    "baseUrl": "http://127.0.0.1:3018",
+    "routesVisited": 126,
+    "cssWidth": 480,
+    "rootHorizontalOverflow": 0,
+    "evidence": "deep-route-recheck.json",
+    "followup": "settings-recheck.json",
+    "providerTraffic": "blocked",
+    "cron": "disabled"
+  },
+  "blockers": [
+    "112 routes retain generic standalone prototypes; all forms and conditional states are not represented there.",
+    "scheduled_reports, whatsapp_auto_notifications, integration_stats, integration_errors are missing from the local migrated database; no registered migrations were found for these table names.",
+    "Scheduled report updates currently omit all six include-content flags in server/db-notifications.ts.",
+    "No production sales proficiency percentage is measured. Prototype 74% is explicitly synthetic.",
+    "Live provider sends, all roles, concurrent writes, native PDF output and every conditional UI state remain unverified."
+  ],
+  "deployment": "No push, no deployment, no production migration"
+}

@@ -2412,38 +2412,10 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       const agents = await pool!.select().from(virtualAgents)
         .where(eq(virtualAgents.merchantId, params.merchantId));
 
-      const activeAgents = agents.filter(a => a.isActive);
-
-      if (activeAgents.length > 0) {
-        // Filter by shift hours (agents without shifts are always available)
-        const now = new Date();
-        const currentHHmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const onShiftAgents = activeAgents.filter(a => {
-          if (!a.shiftStart || !a.shiftEnd) return true; // no shift = always on
-          return currentHHmm >= a.shiftStart && currentHHmm <= a.shiftEnd;
-        });
-        // Use on-shift agents if any, otherwise fall back to all active
-        const eligibleAgents = onShiftAgents.length > 0 ? onShiftAgents : activeAgents;
-        const messageLwr = params.message.toLowerCase();
-        let selectedAgent = null;
-
-        // 1. Try keyword matching
-        for (const agent of eligibleAgents) {
-          if (agent.triggerKeywords) {
-            try {
-              const keywords: string[] = JSON.parse(agent.triggerKeywords);
-              if (keywords.some(kw => messageLwr.includes(kw.toLowerCase()))) {
-                selectedAgent = agent;
-                break;
-              }
-            } catch { /* ignore parse errors */ }
-          }
-        }
-
-        // 2. Fallback to default agent
-        if (!selectedAgent) {
-          selectedAgent = eligibleAgents.find(a => a.isDefault) || eligibleAgents[0];
-        }
+      const { selectVirtualAgent } = await import('../../shared/virtual-agent-routing');
+      const selection = selectVirtualAgent(agents, params.message);
+      if (selection) {
+        const selectedAgent = selection.agent;
 
         if (selectedAgent) {
           activeAgentName = selectedAgent.name;

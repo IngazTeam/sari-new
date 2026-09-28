@@ -67,11 +67,11 @@ window.SaryBrainPreview = (() => {
   }
   function render() {
     const active = data.files.filter(f => f.active && f.status === 'ready').length;
-    const tabs = [['results', 'النتائج'], ['files', 'ملفات المعرفة'], ['gaps', 'الفجوات'], ['sales', 'احتراف المبيعات']];
+    const tabs = [['results', 'النتائج'], ['files', 'ملفات المعرفة'], ['gaps', 'الفجوات'], ['sales', 'احتراف المبيعات'], ['learning', 'مراجعات التعلم']];
     return `<section class="brain-workspace" data-brain-workspace>
       <nav class="brain-nav" aria-label="أقسام عقل ساري">${tabs.map(([id, title]) => `<button id="brain-nav-${id}" data-brain-action="navigate" data-id="${id}" aria-pressed="${section === id}">${title}${id === 'gaps' ? `<span>${remaining().length}</span>` : ''}</button>`).join('')}</nav>
       <div class="brain-metrics">${metric(`${score()}<small>%</small>`, 'احتراف المبيعات', 'آخر تقييم توضيحي · 40 محادثة', 'sales')}${metric(data.files.length, 'ملفات المعرفة', `${active} معتمدة ومفعّلة في المعاينة`, 'files')}${metric(remaining().length, 'فجوات تحتاج متابعة', 'تعارض أو معلومة ناقصة أو غير واضحة', 'gaps')}</div>
-      <div id="brain-section">${({ results, files, gaps, sales })[section]()}</div>
+      <div id="brain-section">${({ results, files, gaps, sales, learning })[section]()}</div>
       <p class="brain-footnote">معاينة تصميم · كل المصادر والإجابات والدرجات المعروضة توضيحية. لم يُحلَّل تيننتك أو أي ملف حقيقي.</p>
     </section>`;
   }
@@ -164,9 +164,24 @@ window.SaryBrainPreview = (() => {
     const result = correction ? { text: match.answer, source: file(match.chosenSource) } : !match && /كولومبيا|سعر/.test(question) && catalog.active ? { text: catalog.facts[0].text, source: catalog } : null;
     return result ? `<div class="brain-answer"><h3>إجابة بمصدر</h3><p>${escape(result.text)}</p>${button(`المصدر: ${result.source.name}`, 'file', result.source.id)}</div>` : '<div class="brain-warning"><h3>نحتاج معلومة مؤكدة</h3><p>لا توجد في أمثلة المعرفة المفعّلة إجابة مؤكدة لهذا السؤال. سأطلب مساعدة الفريق بدل تقديم معلومة غير موثقة.</p></div>';
   }
+
+  const reviewCases=['فهم الاحتياج','المقارنة بين الخيارات','اعتراض السعر','الموافقة على المتابعة','احترام رفض العميل','صحة المعلومات','التحويل إلى موظف','التعليمات المخالفة داخل الرسالة'];
+  let reviewStep=0,reviewDraft=reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''}));
+  function reviewComplete(r){return r.baseline.trim()&&r.candidate.trim()&&r.baselineVerdict&&r.candidateVerdict&&r.reason.trim();}
+  function learning(){return '<section class="panel panel-pad"><h2>اقتراح لتحسين أسلوب البيع</h2><p>مثال توضيحي: سؤال العميل عن أداة التحضير قبل اقتراح الطحن. الاقتراح يحتاج مراجعة بشرية، ولا يصبح تعليمات فعالة تلقائيًا.</p><details><summary>الأدلة المؤيدة والمخالفة</summary><blockquote>العميل: عندي أداة تقطير وأحتاج طحن مناسب.</blockquote><blockquote>حالة مخالفة: عميل متكرر طلب إعادة نفس الطحن؛ السؤال مرة أخرى غير ضروري.</blockquote></details><h3>مراجعة مستقلة من 8 حالات</h3><p>قارن الرد الحالي والمقترح، دوّن الحكم والسبب، ثم راجع النتيجة. الحفظ لا يطلق تجربة ولا يرسل رسالة.</p>'+button('ابدأ / أكمل المراجعة','review-open')+(data.review?'<p role="status">آخر نتيجة محلية: '+escape(data.review.outcome)+' · لا تُغيّر نسبة احتراف المبيعات.</p>':'')+'<div class="as-note"><h3>تجارب المبيعات والردود</h3><p>في التطبيق: تصميم التجربة، حجم العينة، تأهيل الجمهور، التسجيل، المراجعة، التشغيل والسحب، ثم مراجعة الرد قبل إرساله. هذه الإجراءات لا ينفذها هذا المثال.</p><a href="#/page/merchant/bot-settings">سياسات الخصم والهامش وإعدادات الرد ←</a></div></section>';}
+  function reviewDialog(){
+    const r=reviewDraft[reviewStep],done=reviewDraft.filter(reviewComplete).length;
+    openDialog('مراجعة التعلم · مثال محلي', '<form class="form-stack" data-brain-form="review"><p>الحالة '+(reviewStep+1)+' من 8 · '+done+' مكتملة</p><h3>'+reviewCases[reviewStep]+'</h3>'+[['baseline','الرد الحالي'],['candidate','الرد المقترح'],['reason','سبب الحكم']].map(([key,label])=>'<label for="brain-review-'+key+'">'+label+'</label><textarea id="brain-review-'+key+'" data-review-field="'+key+'" required maxlength="2000">'+escape(r[key])+'</textarea>').join('')+[['baselineVerdict','حكم الرد الحالي'],['candidateVerdict','حكم الرد المقترح']].map(([key,label])=>'<label for="brain-review-'+key+'">'+label+'</label><select id="brain-review-'+key+'" data-review-field="'+key+'" required>'+[['','اختر الحكم'],['pass','اجتاز'],['fail','لم يجتز']].map(([value,label])=>'<option value="'+value+'" '+(r[key]===value?'selected':'')+'>'+label+'</option>').join('')+'</select>').join('')+'<div class="dialog-foot">'+button('السابق','review-prev','','',reviewStep===0?'disabled':'')+button('التالي','review-next','','',reviewStep===7?'disabled':'')+'</div><label class="check-label"><input id="brain-review-attest" type="checkbox" required>راجعت الردين والحكم لكل الحالات الثماني</label><button class="button primary" type="submit">حفظ نتيجة المراجعة المحلية</button><p id="brain-review-error" role="alert"></p></form>');
+  }
+  document.addEventListener('input',event=>{if(event.target.dataset.reviewField){reviewDraft[reviewStep][event.target.dataset.reviewField]=event.target.value;const checkbox=document.getElementById('brain-review-attest');if(checkbox)checkbox.checked=false;}});
+  document.addEventListener('change',event=>{if(event.target.dataset.reviewField){reviewDraft[reviewStep][event.target.dataset.reviewField]=event.target.value;document.getElementById('brain-review-attest').checked=false;}});
+  document.addEventListener('submit',event=>{if(event.target.dataset.brainForm!=='review')return;event.preventDefault();if(!reviewDraft.every(reviewComplete)){document.getElementById('brain-review-error').textContent='أكمل الردين والحكم والسبب في كل الحالات الثماني.';return;}if(!document.getElementById('brain-review-attest').checked)return;data.review={outcome:reviewDraft.every(r=>r.candidateVerdict==='pass')?'اجتاز التقييم التوضيحي':'لم يجتز التقييم التوضيحي',cases:JSON.parse(JSON.stringify(reviewDraft))};persist();close();refresh();});
+
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-brain-action]'); if (!target) return;
     const { brainAction: action, id } = target.dataset;
+    if(action==='review-open')reviewDialog();
+    if(action==='review-prev'||action==='review-next'){reviewStep=Math.max(0,Math.min(7,reviewStep+(action==='review-prev'?-1:1)));reviewDialog();}
     if (action === 'navigate') navigate(id);
     if (action === 'file') fileDialog(id);
     if (action === 'add') openAdd();

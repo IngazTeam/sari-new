@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T08:05:08.499Z",
+  "generatedAt": "2026-09-28T09:11:12.062Z",
   "scope": "Static JSX, local feature-component imports, query/mutation hooks, static choice arrays, conditional controls and literal merchant links. Dynamic controls, permissions, provider states and runtime behavior require separate testing.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5409,7 +5409,7 @@
     },
     {
       "file": "client/src/pages/merchant/Orders.tsx",
-      "hash": "afa68bf44785",
+      "hash": "5266a81d9000",
       "queries": [
         "merchants.getCurrent",
         "orders.getWithFilters",
@@ -5422,57 +5422,57 @@
       "sections": [
         {
           "label": "إدارة الطلبات",
-          "line": 159,
+          "line": 161,
           "tag": "h1"
         },
         {
           "label": "إجمالي الطلبات",
-          "line": 171,
+          "line": 174,
           "tag": "CardTitle"
         },
         {
           "label": "معلقة",
-          "line": 181,
+          "line": 184,
           "tag": "CardTitle"
         },
         {
           "label": "قيد التنفيذ",
-          "line": 191,
+          "line": 194,
           "tag": "CardTitle"
         },
         {
           "label": "مكتملة",
-          "line": 201,
+          "line": 204,
           "tag": "CardTitle"
         },
         {
-          "label": "إجمالي الإيرادات",
-          "line": 211,
+          "label": "قيمة الطلبات غير الملغاة · لكل عملة",
+          "line": 214,
           "tag": "CardTitle"
         },
         {
           "label": "الطلبات",
-          "line": 224,
+          "line": 227,
           "tag": "CardTitle"
         },
         {
           "label": "تفاصيل الطلب",
-          "line": 350,
+          "line": 353,
           "tag": "DialogTitle"
         },
         {
           "label": "معلومات العميل",
-          "line": 360,
+          "line": 363,
           "tag": "h3"
         },
         {
           "label": "المنتجات",
-          "line": 387,
+          "line": 390,
           "tag": "h3"
         },
         {
           "label": "تحديث حالة الطلب",
-          "line": 474,
+          "line": 477,
           "tag": "DialogTitle"
         }
       ],
@@ -5480,14 +5480,14 @@
       "handlers": [
         {
           "name": "handleUpdateStatus",
-          "line": 102,
+          "line": 104,
           "calls": [
             "updateStatusMutation"
           ]
         },
         {
           "name": "handleCancelOrder",
-          "line": 112,
+          "line": 114,
           "calls": [
             "cancelOrderMutation"
           ]
@@ -5497,7 +5497,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "{ data: merchant }",
-          "line": 55,
+          "line": 57,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!!user "
@@ -5505,7 +5505,7 @@
         {
           "query": "orders.getWithFilters",
           "binding": "{ data: orders, isLoading, refetch }",
-          "line": 62,
+          "line": 64,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": "!!merchant "
@@ -5513,7 +5513,7 @@
         {
           "query": "orders.getStats",
           "binding": "{ data: stats }",
-          "line": 73,
+          "line": 75,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!!merchant "
@@ -5526,7 +5526,8 @@
         "client/src/components/CheckoutDiscountBreakdown.tsx",
         "client/src/components/OrderCheckoutAttempts.tsx",
         "client/src/components/CheckoutDiscountRelease.tsx",
-        "client/src/components/ZidCheckoutReconciliation.tsx"
+        "client/src/components/ZidCheckoutReconciliation.tsx",
+        "client/src/components/SallaCheckoutReview.tsx"
       ],
       "controlCount": 12
     },
@@ -5732,6 +5733,78 @@
       "conditions": [],
       "imports": [],
       "controlCount": 6
+    },
+    {
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "hash": "dfafdce800b7",
+      "queries": [
+        "orders.listSallaCheckoutCarts",
+        "orders.checkoutEvidenceAccess"
+      ],
+      "mutations": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 69,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 119,
+          "tag": "summary"
+        }
+      ],
+      "choices": [
+        {
+          "name": "comparison",
+          "line": 20,
+          "values": [
+            {
+              "title": "merchantUx.sallaCheckout.checkout",
+              "reference": "value.order.checkoutId",
+              "state": "value.comparison.checkoutReference"
+            },
+            {
+              "title": "merchantUx.sallaCheckout.transactionOrder",
+              "reference": "value.transaction?.orderId",
+              "state": "value.comparison.transactionOrderReference"
+            },
+            {
+              "title": "merchantUx.sallaCheckout.transactionCart",
+              "reference": "value.transaction?.cartId",
+              "state": "value.comparison.transactionCartReference"
+            }
+          ]
+        }
+      ],
+      "handlers": [
+        {
+          "name": "submit",
+          "line": 54,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "orders.listSallaCheckoutCarts",
+          "binding": "query",
+          "line": 88,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "orders.checkoutEvidenceAccess",
+          "binding": "access",
+          "line": 116,
+          "errorSignal": true,
+          "loadingSignal": false,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 8
     },
     {
       "file": "client/src/pages/merchant/WhatsAppTest.tsx",
@@ -6208,7 +6281,7 @@
     },
     {
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "hash": "edc1378ff3ac",
+      "hash": "04a4278bbadf",
       "queries": [
         "botSettings.get",
         "botSettings.shouldRespond"
@@ -6220,79 +6293,79 @@
       "sections": [
         {
           "label": "إعدادات الروبوت",
-          "line": 224,
+          "line": 248,
           "tag": "h1"
         },
         {
           "label": "القوالب الجاهزة",
-          "line": 261,
+          "line": 285,
           "tag": "summary"
         },
         {
           "label": "القوالب الجاهزة",
-          "line": 266,
+          "line": 290,
           "tag": "CardTitle"
         },
         {
           "label": "قوالب عامة",
-          "line": 277,
+          "line": 301,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 288,
+          "line": 312,
           "tag": "CardTitle"
         },
         {
           "label": "قوالب متخصصة حسب نوع النشاط",
-          "line": 341,
+          "line": 365,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 352,
+          "line": 376,
           "tag": "CardTitle"
         },
         {
           "label": "الرد التلقائي",
-          "line": 423,
+          "line": 452,
           "tag": "CardTitle"
         },
         {
           "label": "ساعات العمل",
-          "line": 460,
+          "line": 489,
           "tag": "CardTitle"
         },
         {
           "label": "الرسائل",
-          "line": 559,
+          "line": 588,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك الذكاء الاصطناعي",
-          "line": 619,
+          "line": 648,
           "tag": "CardTitle"
         },
         {
           "label": "معاينة مباشرة",
-          "line": 742,
+          "line": 771,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك الجروبات",
-          "line": 876,
+          "line": 905,
           "tag": "CardTitle"
         },
         {
           "label": "تعليمات مخصصة للذكاء الاصطناعي",
-          "line": 1044,
+          "line": 1082,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "weekDays",
-          "line": 175,
+          "line": 199,
           "values": [
             {
               "value": "0",
@@ -6328,14 +6401,14 @@
       "handlers": [
         {
           "name": "handleSubmit",
-          "line": 149,
+          "line": 170,
           "calls": [
             "updateMutation"
           ]
         },
         {
           "name": "handleWorkingDayToggle",
-          "line": 160,
+          "line": 184,
           "calls": []
         }
       ],
@@ -6343,7 +6416,7 @@
         {
           "query": "botSettings.get",
           "binding": "settingsQuery",
-          "line": 59,
+          "line": 64,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -6351,7 +6424,7 @@
         {
           "query": "botSettings.shouldRespond",
           "binding": "{ data: shouldRespond }",
-          "line": 63,
+          "line": 68,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -6515,11 +6588,12 @@
     },
     {
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "hash": "d3d27cc2b2f7",
+      "hash": "9a355ab546cf",
       "queries": [
         "virtualAgents.list"
       ],
       "mutations": [
+        "virtualAgents.reorder",
         "virtualAgents.create",
         "virtualAgents.update",
         "virtualAgents.delete",
@@ -6528,37 +6602,42 @@
       "sections": [
         {
           "label": "شخصيات فريقك الافتراضي",
-          "line": 230,
+          "line": 252,
           "tag": "h1"
         },
         {
           "label": "ابدأ بفريق يناسب عملك",
-          "line": 278,
+          "line": 300,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 307,
+          "line": 376,
           "tag": "h2"
         },
         {
           "label": "كيف يتوزع العمل؟",
-          "line": 401,
+          "line": 470,
+          "tag": "h2"
+        },
+        {
+          "label": "من سيستقبل هذا الطلب؟",
+          "line": 477,
           "tag": "h2"
         },
         {
           "label": "virtualTeamUx.edit virtualTeamUx.new",
-          "line": 417,
+          "line": 534,
           "tag": "DialogTitle"
         },
         {
           "label": "الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.marketing consultant virtualTeamUx.avatars.consultant creative virtualTeamUx.avatars.creative analyst virtualTeamUx.avatars.analyst hr virtualTeamUx.avatars.hr finance virtualTeamUx.avatars.finance virtualTeamUx.avatars.default الصورة الحالية",
-          "line": 461,
+          "line": 578,
           "tag": "summary"
         },
         {
           "label": "حذف الشخصية",
-          "line": 763,
+          "line": 880,
           "tag": "DialogTitle"
         }
       ],
@@ -6566,7 +6645,7 @@
       "handlers": [
         {
           "name": "saved",
-          "line": 58,
+          "line": 75,
           "calls": []
         }
       ],
@@ -6574,7 +6653,7 @@
         {
           "query": "virtualAgents.list",
           "binding": "query",
-          "line": 45,
+          "line": 53,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -6584,7 +6663,7 @@
       "imports": [
         "client/src/components/AgentAvatars.tsx"
       ],
-      "controlCount": 27
+      "controlCount": 31
     },
     {
       "file": "client/src/components/AgentAvatars.tsx",
@@ -6601,7 +6680,7 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "a4eff05cea9a",
+      "hash": "56eff249b451",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
@@ -6634,147 +6713,195 @@
       "sections": [
         {
           "label": "عقل ساري",
-          "line": 443,
+          "line": 444,
           "tag": "h1"
         },
         {
           "label": "⚠️ إعادة ضبط عقل ساري بالكامل",
-          "line": 465,
+          "line": 466,
           "tag": "AlertDialogTitle"
         },
         {
+          "label": "مؤشر احتراف المبيعات",
+          "line": 496,
+          "tag": "h2"
+        },
+        {
+          "label": "تجارب البيع وتقييم النتائج",
+          "line": 502,
+          "tag": "summary"
+        },
+        {
+          "label": "مراجعة الرد واعتماد إرساله",
+          "line": 503,
+          "tag": "summary"
+        },
+        {
+          "label": "سياسة المتابعة",
+          "line": 504,
+          "tag": "summary"
+        },
+        {
+          "label": "صلاحيات الخصم وهامش الربح",
+          "line": 505,
+          "tag": "summary"
+        },
+        {
           "label": "مصادر المعرفة",
-          "line": 495,
+          "line": 512,
           "tag": "CardTitle"
         },
         {
           "label": "الملفات المرفقة",
-          "line": 505,
+          "line": 522,
           "tag": "CardTitle"
         },
         {
           "label": "products",
-          "line": 515,
+          "line": 532,
           "tag": "CardTitle"
         },
         {
           "label": "🔄 إعادة تحليل الموقع",
-          "line": 538,
+          "line": 558,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله...",
-          "line": 592,
+          "line": 616,
           "tag": "DialogTitle"
         },
         {
           "label": "🏥 صحة المعرفة",
-          "line": 809,
+          "line": 837,
           "tag": "CardTitle"
         },
         {
           "label": "💎 ذكاء المبيعات",
-          "line": 856,
+          "line": 887,
           "tag": "CardTitle"
         },
         {
           "label": "🎯 فرص التطوير",
-          "line": 905,
+          "line": 936,
           "tag": "CardTitle"
         },
         {
           "label": "🧠 أقسام المعرفة المصنفة",
-          "line": 932,
+          "line": 966,
           "tag": "CardTitle"
         },
         {
           "label": "إضافة قسم معرفة جديد",
-          "line": 947,
+          "line": 981,
           "tag": "DialogTitle"
         },
         {
           "label": "حذف \" \"",
-          "line": 1038,
+          "line": 1072,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "🧪 اختبر ساري",
-          "line": 1094,
+          "line": 1131,
           "tag": "CardTitle"
         },
         {
           "label": "📦 مصادر المعرفة",
-          "line": 1148,
+          "line": 1188,
           "tag": "CardTitle"
         },
         {
           "label": "حذف \" \"",
-          "line": 1190,
+          "line": 1230,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "🌐 معرفة الموقع",
-          "line": 1229,
+          "line": 1269,
           "tag": "CardTitle"
         },
         {
           "label": "🗑️ حذف \" \"",
-          "line": 1342,
+          "line": 1382,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "🔍 تحليل المحتوى المسحوب",
-          "line": 1432,
+          "line": 1472,
           "tag": "DialogTitle"
         },
         {
           "label": "📖 محتوى الصفحة",
-          "line": 1528,
+          "line": 1568,
           "tag": "DialogTitle"
         },
         {
           "label": "❓ الأسئلة الشائعة",
-          "line": 1588,
+          "line": 1631,
           "tag": "CardTitle"
         },
         {
           "label": "🔬 الفحص الذكي — Smart Intake",
-          "line": 1667,
+          "line": 1713,
           "tag": "CardTitle"
         },
         {
           "label": "📊 تقرير الفحص الذكي",
-          "line": 1718,
+          "line": 1764,
           "tag": "h3"
         },
         {
           "label": "📊 مقاييس الجودة",
-          "line": 1892,
+          "line": 1941,
           "tag": "CardTitle"
         },
         {
           "label": "📋 مسار ساري",
-          "line": 1985,
+          "line": 2037,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
-          "name": "STEP_PROGRESS",
-          "line": 104,
+          "name": "brainViews",
+          "line": 65,
           "values": [
-            "8",
-            "22",
-            "41",
-            "67",
-            "85",
-            "93",
-            "100"
+            {
+              "id": "overview",
+              "label": "الملخص",
+              "help": "ابدأ بحالة المعرفة والأدلة والخطوة التي تحتاج اهتمامك."
+            },
+            {
+              "id": "sources",
+              "label": "المصادر والملفات",
+              "help": "راجع الملفات وصفحات الموقع، وفحص المحتوى قبل اعتماده."
+            },
+            {
+              "id": "knowledge",
+              "label": "المعرفة والفجوات",
+              "help": "أقسام المعرفة والأسئلة الشائعة والتعارضات التي تحتاج حسمًا."
+            },
+            {
+              "id": "sales",
+              "label": "احتراف المبيعات",
+              "help": "راجع الفرص وأدلة المبيعات؛ التجارب وصلاحيات البيع متاحة عند الحاجة."
+            },
+            {
+              "id": "testing",
+              "label": "التجربة والجودة",
+              "help": "اختبر ردًا، ثم راجع جودة الإجابات وحجم العينة."
+            },
+            {
+              "id": "history",
+              "label": "سجل التغييرات",
+              "help": "اعرف ما تغيّر في معرفة المساعد ومتى."
+            }
           ]
         },
         {
           "name": "REASSURANCE",
-          "line": 106,
+          "line": 121,
           "values": [
             "ساري يبني فهمًا عميقًا لنشاطك...",
             "يتعرف على خدماتك ومنتجاتك...",
@@ -6785,7 +6912,7 @@
         },
         {
           "name": "STEP_INSIGHTS",
-          "line": 114,
+          "line": 129,
           "values": [
             [
               "🌐 جارٍ الاتصال بالموقع والتحقق من استجابته..."
@@ -6812,7 +6939,7 @@
         },
         {
           "name": "ANALYSIS_STEPS",
-          "line": 124,
+          "line": 139,
           "values": [
             {
               "label": "فهم الموقع",
@@ -6853,7 +6980,7 @@
         },
         {
           "name": "HIDDEN_TYPES",
-          "line": 1000,
+          "line": 1034,
           "values": [
             "sales_intel",
             "opportunities"
@@ -6861,7 +6988,7 @@
         },
         {
           "name": "FILTER_OPTIONS",
-          "line": 1971,
+          "line": 2023,
           "values": [
             {
               "value": "all",
@@ -6899,28 +7026,28 @@
       "handlers": [
         {
           "name": "handleTest",
-          "line": 312,
+          "line": 313,
           "calls": [
             "testSariMutation"
           ]
         },
         {
           "name": "handleAddFaq",
-          "line": 341,
+          "line": 342,
           "calls": [
             "createFaqMutation"
           ]
         },
         {
           "name": "handleAnalyze",
-          "line": 349,
+          "line": 350,
           "calls": [
             "analyzeMutation"
           ]
         },
         {
           "name": "handleFileSelect",
-          "line": 361,
+          "line": 362,
           "calls": []
         }
       ],
@@ -6928,7 +7055,7 @@
         {
           "query": "sariBrain.getSources",
           "binding": "{ data: sources, isLoading }",
-          "line": 66,
+          "line": 83,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -6936,7 +7063,7 @@
         {
           "query": "sariBrain.getActivityLog",
           "binding": "{ data: activityLogData }",
-          "line": 69,
+          "line": 86,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -6944,7 +7071,7 @@
         {
           "query": "sariBrain.getFaqs",
           "binding": "{ data: faqs }",
-          "line": 70,
+          "line": 87,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -6952,7 +7079,7 @@
         {
           "query": "sariBrain.getHealthScore",
           "binding": "{ data: healthScore }",
-          "line": 73,
+          "line": 90,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -6960,7 +7087,7 @@
         {
           "query": "sariBrain.getKnowledgeSections",
           "binding": "{ data: knowledgeSections, isLoading: sectionsLoading, error: sectionsError }",
-          "line": 74,
+          "line": 91,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -6968,7 +7095,7 @@
         {
           "query": "sariBrain.getPendingReviews",
           "binding": "{ data: pendingReviews }",
-          "line": 75,
+          "line": 92,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -6976,15 +7103,15 @@
         {
           "query": "sariBrain.getAnalysisStatus",
           "binding": "statusQuery",
-          "line": 172,
-          "errorSignal": false,
+          "line": 187,
+          "errorSignal": true,
           "loadingSignal": false,
           "enabled": "polling"
         },
         {
           "query": "sariBrain.getWebsiteKnowledge",
           "binding": "{ data: websiteKnowledge, isLoading: knowledgeLoading }",
-          "line": 382,
+          "line": 383,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -6992,7 +7119,7 @@
         {
           "query": "sariBrain.getPageContent",
           "binding": "{ data: pageContentData, isLoading: pageContentLoading }",
-          "line": 414,
+          "line": 415,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": "viewingPageId !== null "
@@ -7000,7 +7127,7 @@
         {
           "query": "sariBrain.getQualityDashboard",
           "binding": "{ data: qualityData }",
-          "line": 1881,
+          "line": 1930,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -7018,7 +7145,7 @@
         "client/src/components/FollowupPolicySettings.tsx",
         "client/src/hooks/useIntegration.tsx"
       ],
-      "controlCount": 69
+      "controlCount": 79
     },
     {
       "file": "client/src/components/LearningAnalysisStatusCard.tsx",
@@ -10940,7 +11067,7 @@
     },
     {
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "hash": "9feece9e6fd6",
+      "hash": "5e43db2d5638",
       "queries": [
         "advancedNotifications.getIntegrationsDashboard"
       ],
@@ -10950,57 +11077,57 @@
       "sections": [
         {
           "label": "حالة التكاملات",
-          "line": 55,
+          "line": 104,
           "tag": "h1"
         },
         {
-          "label": "إدارة ومراقبة جميع التكاملات المفعلة",
-          "line": 62,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تحديث",
-          "line": 63,
-          "tag": "CardTitle"
-        },
-        {
           "label": "التكاملات النشطة",
-          "line": 64,
+          "line": 120,
           "tag": "CardTitle"
         },
         {
           "label": "عمليات المزامنة",
-          "line": 65,
+          "line": 135,
           "tag": "CardTitle"
         },
         {
           "label": "نسبة النجاح",
-          "line": 69,
+          "line": 148,
+          "tag": "CardTitle"
+        },
+        {
+          "label": "أخطاء غير محلولة",
+          "line": 163,
+          "tag": "CardTitle"
+        },
+        {
+          "label": "نظرة عامة",
+          "line": 180,
           "tag": "TabsTrigger"
         },
         {
           "label": "الإحصائيات",
-          "line": 69,
+          "line": 183,
           "tag": "TabsTrigger"
         },
         {
           "label": "الأخطاء",
-          "line": 69,
+          "line": 186,
           "tag": "TabsTrigger"
         },
         {
           "label": "",
-          "line": 80,
+          "line": 205,
           "tag": "CardTitle"
         },
         {
-          "label": "لم تتم المزامنة بعد",
-          "line": 102,
+          "label": "إحصائيات المزامنة",
+          "line": 260,
           "tag": "CardTitle"
         },
         {
-          "label": "متصل",
-          "line": 120,
+          "label": "الأخطاء غير المحلولة",
+          "line": 323,
           "tag": "CardTitle"
         }
       ],
@@ -11009,9 +11136,9 @@
       "queryStates": [
         {
           "query": "advancedNotifications.getIntegrationsDashboard",
-          "binding": "{ data: dashboardData, isLoading, refetch }",
-          "line": 37,
-          "errorSignal": false,
+          "binding": "{\n    data: dashboardData,\n    isLoading,\n    isError,\n    refetch,\n  }",
+          "line": 60,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
@@ -11268,23 +11395,27 @@
     },
     {
       "file": "client/src/pages/CurrencySettings.tsx",
-      "hash": "d1a22b679954",
-      "queries": [],
-      "mutations": [],
+      "hash": "347b9e833bb1",
+      "queries": [
+        "merchants.getCurrent"
+      ],
+      "mutations": [
+        "merchants.update"
+      ],
       "sections": [
         {
           "label": "إعدادات العملة",
-          "line": 60,
+          "line": 82,
           "tag": "h1"
         },
         {
           "label": "العملة الأساسية",
-          "line": 66,
+          "line": 92,
           "tag": "CardTitle"
         },
         {
-          "label": "الاسم:",
-          "line": 144,
+          "label": "ملاحظات هامة",
+          "line": 208,
           "tag": "CardTitle"
         }
       ],
@@ -11292,13 +11423,22 @@
       "handlers": [
         {
           "name": "handleSave",
-          "line": 38,
+          "line": 58,
           "calls": [
             "updateMutation"
           ]
         }
       ],
-      "queryStates": [],
+      "queryStates": [
+        {
+          "query": "merchants.getCurrent",
+          "binding": "{\n    data: merchant,\n    isLoading: merchantLoading,\n    isError,\n    refetch,\n  }",
+          "line": 37,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
       "conditions": [],
       "imports": [],
       "controlCount": 2
@@ -11409,7 +11549,7 @@
     },
     {
       "file": "client/src/pages/ScheduledReports.tsx",
-      "hash": "834c6798e966",
+      "hash": "fcf1966b9a26",
       "queries": [
         "advancedNotifications.getScheduledReports"
       ],
@@ -11421,24 +11561,29 @@
       "sections": [
         {
           "label": "التقارير المجدولة",
-          "line": 44,
+          "line": 185,
           "tag": "h1"
         },
         {
           "label": "تعديل التقرير إنشاء تقرير جديد",
-          "line": 47,
+          "line": 207,
           "tag": "DialogTitle"
         },
         {
           "label": "",
-          "line": 63,
+          "line": 519,
           "tag": "CardTitle"
+        },
+        {
+          "label": "حذف هذا الإعداد؟",
+          "line": 590,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [
         {
           "name": "dayLabels",
-          "line": 18,
+          "line": 56,
           "values": [
             "الأحد",
             "الإثنين",
@@ -11453,7 +11598,7 @@
       "handlers": [
         {
           "name": "handleSubmit",
-          "line": 36,
+          "line": 141,
           "calls": [
             "updateMutation",
             "createMutation"
@@ -11461,27 +11606,27 @@
         },
         {
           "name": "handleEdit",
-          "line": 37,
+          "line": 152,
           "calls": []
         }
       ],
       "queryStates": [
         {
           "query": "advancedNotifications.getScheduledReports",
-          "binding": "{ data: reports, isLoading, refetch }",
-          "line": 30,
-          "errorSignal": false,
+          "binding": "{\n    data: reports,\n    isLoading,\n    isError,\n    refetch,\n  }",
+          "line": 92,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [],
-      "controlCount": 21
+      "controlCount": 24
     },
     {
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "hash": "d95ec5838acb",
+      "hash": "4aedca3d8ee3",
       "queries": [
         "advancedNotifications.getWhatsappAutoNotifications",
         "advancedNotifications.getDefaultTemplates"
@@ -11494,30 +11639,35 @@
       "sections": [
         {
           "label": "أتمتة إشعارات العملاء",
-          "line": 54,
+          "line": 214,
           "tag": "h1"
         },
         {
           "label": "تعديل الإشعار إنشاء إشعار جديد",
-          "line": 57,
+          "line": 236,
           "tag": "DialogTitle"
         },
         {
-          "label": "تم حذف الإشعار بنجاح",
-          "line": 69,
+          "label": "إشعارات الطلبات",
+          "line": 353,
           "tag": "CardTitle"
         },
         {
-          "label": "إشعارات WhatsApp التلقائية",
-          "line": 78,
+          "label": "إشعارات المواعيد",
+          "line": 420,
           "tag": "CardTitle"
+        },
+        {
+          "label": "حذف هذا الإعداد؟",
+          "line": 491,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
       "handlers": [
         {
           "name": "handleSubmit",
-          "line": 40,
+          "line": 154,
           "calls": [
             "updateMutation",
             "createMutation"
@@ -11525,23 +11675,23 @@
         },
         {
           "name": "handleEdit",
-          "line": 41,
+          "line": 165,
           "calls": []
         }
       ],
       "queryStates": [
         {
           "query": "advancedNotifications.getWhatsappAutoNotifications",
-          "binding": "{ data: notifications, isLoading, refetch }",
-          "line": 33,
-          "errorSignal": false,
+          "binding": "{\n    data: notifications,\n    isLoading,\n    isError,\n    refetch,\n  }",
+          "line": 112,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
           "query": "advancedNotifications.getDefaultTemplates",
           "binding": "{ data: defaultTemplates }",
-          "line": 34,
+          "line": 114,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -11549,174 +11699,106 @@
       ],
       "conditions": [],
       "imports": [],
-      "controlCount": 17
+      "controlCount": 20
     },
     {
       "file": "client/src/pages/Reports.tsx",
-      "hash": "42db6f866310",
+      "hash": "a21bd886179c",
       "queries": [
         "reports.getSalesReport",
         "reports.getCustomersReport",
         "reports.getConversationsReport"
       ],
-      "mutations": [
-        "messageAnalytics.exportPDF",
-        "messageAnalytics.exportExcel"
-      ],
+      "mutations": [],
       "sections": [
         {
-          "label": "التقارير والإحصائيات",
-          "line": 128,
+          "label": "",
+          "line": 189,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 207,
+          "tag": "h3"
+        },
+        {
+          "label": "التقارير",
+          "line": 252,
           "tag": "h1"
-        },
-        {
-          "label": "قبول الحملات عبر الزمن",
-          "line": 148,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "رسائل قبلها مزود الإرسال؛ لا يُفترض منها التسليم أو القراءة",
-          "line": 149,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "7 أيام",
-          "line": 150,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "30 يوم",
-          "line": 156,
-          "tag": "h2"
-        },
-        {
-          "label": "إجمالي المبيعات",
-          "line": 184,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عدد الطلبات",
-          "line": 200,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوسط قيمة الطلب",
-          "line": 213,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل التحويل",
-          "line": 226,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تشغيل آمن للحملات",
-          "line": 241,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "أرسل بموافقة صريحة",
-          "line": 276,
-          "tag": "h2"
-        },
-        {
-          "label": "إجمالي العملاء",
-          "line": 304,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عملاء جدد",
-          "line": 317,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عملاء نشطين",
-          "line": 330,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل الاحتفاظ",
-          "line": 343,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "استخدم وسائط HTTPS عامة",
-          "line": 358,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "ملخص الإرسال المثبت",
-          "line": 395,
-          "tag": "h2"
-        },
-        {
-          "label": "إجمالي المحادثات",
-          "line": 423,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوسط وقت الرد",
-          "line": 436,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل الرضا",
-          "line": 449,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل التحويل",
-          "line": 462,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تحتاج مراجعة قبل إعادة المحاولة",
-          "line": 477,
-          "tag": "CardTitle"
         }
       ],
-      "choices": [],
-      "handlers": [
+      "choices": [
         {
-          "name": "handleExportReport",
-          "line": 110,
-          "calls": [
-            "exportExcelMutation",
-            "exportPDFMutation"
+          "name": "periods",
+          "line": 31,
+          "values": [
+            {
+              "id": "day",
+              "label": "اليوم"
+            },
+            {
+              "id": "week",
+              "label": "آخر 7 أيام"
+            },
+            {
+              "id": "month",
+              "label": "آخر شهر"
+            },
+            {
+              "id": "year",
+              "label": "آخر سنة"
+            }
+          ]
+        },
+        {
+          "name": "kinds",
+          "line": 37,
+          "values": [
+            {
+              "id": "sales",
+              "label": "المبيعات"
+            },
+            {
+              "id": "customers",
+              "label": "العملاء"
+            },
+            {
+              "id": "conversations",
+              "label": "المحادثات"
+            }
           ]
         }
       ],
+      "handlers": [],
       "queryStates": [
         {
           "query": "reports.getSalesReport",
-          "binding": "{ data: salesReport, isLoading: loadingSales }",
-          "line": 48,
+          "binding": "sales",
+          "line": 23,
           "errorSignal": false,
-          "loadingSignal": true,
+          "loadingSignal": false,
           "enabled": null
         },
         {
           "query": "reports.getCustomersReport",
-          "binding": "{ data: customersReport, isLoading: loadingCustomers }",
-          "line": 51,
+          "binding": "customers",
+          "line": 24,
           "errorSignal": false,
-          "loadingSignal": true,
+          "loadingSignal": false,
           "enabled": null
         },
         {
           "query": "reports.getConversationsReport",
-          "binding": "{ data: conversationsReport, isLoading: loadingConversations }",
-          "line": 54,
+          "binding": "conversations",
+          "line": 25,
           "errorSignal": false,
-          "loadingSignal": true,
+          "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [
-        "client/src/contexts/CurrencyContext.tsx"
-      ],
-      "controlCount": 11
+      "imports": [],
+      "controlCount": 5
     },
     {
       "file": "client/src/pages/merchant/MySubscription.tsx",
@@ -14469,21 +14551,22 @@
         "client/src/components/CheckoutDiscountBreakdown.tsx",
         "client/src/components/OrderCheckoutAttempts.tsx",
         "client/src/components/CheckoutDiscountRelease.tsx",
-        "client/src/components/ZidCheckoutReconciliation.tsx"
+        "client/src/components/ZidCheckoutReconciliation.tsx",
+        "client/src/components/SallaCheckoutReview.tsx"
       ],
       "controls": [
-        "c61271e0b4f3",
-        "d73a8faa5ddd",
-        "cebbff4f7efd",
-        "17283260c277",
-        "22e283fd006a",
-        "ba0e6c707382",
-        "a95fb358f8d8",
-        "4847261350a3",
-        "64f0f6a5ae3b",
-        "fe47b7a21bf2",
-        "d43cd6e4b33b",
-        "fb956aee107f",
+        "85b753bcaba5",
+        "e524e40b80fa",
+        "c082723a229c",
+        "78355e6ed93a",
+        "429291ea8a39",
+        "0b62fe78be05",
+        "81e1519d9008",
+        "275a2ade1fa9",
+        "cfb97815585f",
+        "2c8507643ca7",
+        "a874f98e6fb1",
+        "76476613997f",
         "8363bc0ffaaa",
         "eba292deff5b",
         "2da43e08176e",
@@ -14511,7 +14594,15 @@
         "2c0b2192a30a",
         "dc1a295c854f",
         "d2573344fc3a",
-        "7b29a74ca1f2"
+        "7b29a74ca1f2",
+        "6744d13ef55d",
+        "5137ae415e2e",
+        "ff74c28ad8e1",
+        "548eede4b6b7",
+        "1fbdb1b30684",
+        "bd274e0c75c9",
+        "dcf7378b2a9d",
+        "53192ddaf4f2"
       ],
       "queries": [
         "merchants.getCurrent",
@@ -14522,7 +14613,9 @@
         "orders.getCheckoutMarginException",
         "orders.getCheckoutAttempts",
         "orders.getCheckoutDiscountRelease",
-        "orders.listZidReconciliations"
+        "orders.listZidReconciliations",
+        "orders.listSallaCheckoutCarts",
+        "orders.checkoutEvidenceAccess"
       ],
       "mutations": [
         "orders.updateStatus",
@@ -14724,28 +14817,28 @@
         "client/src/components/DiscountPolicySettings.tsx"
       ],
       "controls": [
-        "359f9c1bff36",
-        "29b7ad27807c",
-        "67be352a6191",
-        "ab9c8bff7f8c",
-        "70879d9da960",
-        "0f6f9a7ded06",
-        "35a3744d57a5",
-        "0f3c1dd03d7d",
-        "408d6009c284",
-        "b6e23f2dc11d",
-        "af5898e09e44",
-        "fe9d29c04e74",
-        "c89a0ba916c1",
-        "a9465c45a531",
-        "cd40885d529c",
-        "718128f746a0",
-        "61a9dd688751",
-        "4b179beeb810",
-        "55171c6a70da",
-        "aaf3263bb253",
-        "b4e473a1992b",
-        "7a67e6b43062",
+        "da99f02f62fc",
+        "92de00caded6",
+        "824ca130e95d",
+        "422234a3b983",
+        "c7581186d8d1",
+        "c4e9874d495e",
+        "bf5eb49c1976",
+        "63acef1f18db",
+        "bd41ec1f6233",
+        "4a4982088ec1",
+        "86acfbae76ba",
+        "1fd26dc0de36",
+        "ede737da7805",
+        "3f9196bc3bff",
+        "944cbc06922d",
+        "e23bdad31be8",
+        "69c3f20a1af4",
+        "931d6e2f9062",
+        "d5d1ff9c7ba5",
+        "8325c28e95cd",
+        "e68f304f3f69",
+        "bf8893541da0",
         "2692da1f4a5b",
         "cca56a3275c5",
         "8d88f795e5d0",
@@ -14805,38 +14898,43 @@
         "client/src/components/AgentAvatars.tsx"
       ],
       "controls": [
-        "e29fb9a6bffe",
-        "00feb4a93e0a",
-        "00024dd5e7a2",
-        "5b804ae0d9eb",
-        "ad84603fb051",
-        "2850883874cd",
-        "00860fba375b",
-        "47901129acf3",
-        "ae21826073bb",
-        "92b8c5cc4207",
-        "208477477633",
-        "5ba68448bc25",
-        "9cadf2d46eae",
-        "386526ea2997",
-        "65989272fe19",
-        "d9b1a723506b",
-        "fb430a77464b",
-        "acc839731ebe",
-        "58329ebde8c8",
-        "dd11a22aecc3",
-        "ab268c999cb3",
-        "745b549cb949",
-        "a6f1230f9ecf",
-        "35aff8e7d32b",
-        "8aa55f6b0233",
-        "303d75e938cf",
-        "7bbda1076433"
+        "78793fe9058a",
+        "207f030d8949",
+        "b670191c4d11",
+        "41b5124a5a5d",
+        "cde08dff45c5",
+        "ed030286409a",
+        "02a609891278",
+        "da80d7419384",
+        "3d55b42d1b5f",
+        "31054d453608",
+        "94a80ed706b5",
+        "b25d4bd14b9f",
+        "8cda02f6466e",
+        "119e3e49f11c",
+        "bfc6d5cc08e7",
+        "4fef98d38806",
+        "9a77c8419338",
+        "13c69e5f9ed6",
+        "a0f2d8cda37a",
+        "6b96e3b2f84e",
+        "90a2fc43a8dc",
+        "fd2f1da17d5e",
+        "ff98e5038818",
+        "cef7b4da1566",
+        "5d654e247f3d",
+        "bed1b8e8292b",
+        "dee886b132cf",
+        "0df1b3a29ab7",
+        "32feaf282838",
+        "b09d986853db",
+        "685d95cd7210"
       ],
       "queries": [
         "virtualAgents.list"
       ],
       "mutations": [
+        "virtualAgents.reorder",
         "virtualAgents.create",
         "virtualAgents.update",
         "virtualAgents.delete",
@@ -14871,75 +14969,85 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controls": [
-        "f9298f930201",
-        "dcff409b9704",
-        "b462eebe4982",
-        "51720c8f4052",
-        "3e2bd6fe765b",
-        "a7673be1ddc0",
-        "aae82c0807f1",
-        "898422e9c8e5",
-        "65a69fd4b8ee",
-        "3697ec7d9f15",
-        "a61f62098518",
-        "eb24cd684eb2",
-        "12fcf7d817be",
-        "a7ecc1f5db5b",
-        "45abd1cb5a5d",
-        "a0b11006ce06",
-        "18306a566bb5",
-        "b2eee570906c",
-        "9cdce31ed74f",
-        "0110ed25c6ff",
-        "0e9217cf1439",
-        "6013e9058879",
-        "f018e7cd48da",
-        "6b4678af5821",
-        "367c3cf8f475",
-        "9a78839e7156",
-        "3ea243e9c3dc",
-        "8bfc9e0ae2b2",
-        "34d39e9fc509",
-        "9a0557f0304b",
-        "024fcfeab821",
-        "c3dc72fb85a8",
-        "c02d93c75bf2",
-        "b5003d4932ba",
-        "500d8c47325f",
-        "35f28f7c5dec",
-        "76b481c7b280",
-        "dac9baf94640",
-        "73b33192c472",
-        "d78db1e4e6b6",
-        "ca81a6b181af",
-        "d4973daeb84c",
-        "aed7fff22ac3",
-        "b158a07fbd9b",
-        "102475a93bd7",
-        "8efa8a29d0e9",
-        "6d73aed0e935",
-        "89e01c813829",
-        "7d033e552c76",
-        "815abf0be22d",
-        "062676aebfe2",
-        "1d073e72b8e8",
-        "acc5a16d03e9",
-        "0ae85d7996ed",
-        "4a532d59b6ce",
-        "aa121cbf652a",
-        "ba378c0b38f1",
-        "ec5cd3aea7f8",
-        "2cd62b87afdd",
-        "fa2f1485fe55",
-        "00462891bd0a",
-        "aa7e2c3013d8",
-        "8355d9367ea0",
-        "2800bb0bced2",
-        "134feb74c3df",
-        "f5c92933f1c8",
-        "639a3311d7cc",
-        "a57b7468f7e1",
-        "095a05f39033",
+        "39a25e237d4f",
+        "d170df1c837a",
+        "07456bb52303",
+        "c8329adc247f",
+        "3f87f703b582",
+        "fc5f2f17edb4",
+        "7e1c2164097e",
+        "184a5575917e",
+        "5a59b139ed76",
+        "9d77dba2592a",
+        "b375afed841b",
+        "2f1ba19d2b00",
+        "de1ecd4f4424",
+        "9adcdbdeece9",
+        "e6b1d588ffb8",
+        "f0864c0cdacc",
+        "743adc21164b",
+        "f6f4bfa620bd",
+        "c2173342eee5",
+        "d3356a653ab5",
+        "162958ffd1d3",
+        "17651ffa59a7",
+        "aef49c97e575",
+        "ddf3787e6885",
+        "b7b74ef0f16f",
+        "69dbafba57b6",
+        "48a4fcc07ee6",
+        "0b7ae6d87453",
+        "dc5944b20089",
+        "29640bd1afa3",
+        "49bb5f06de2f",
+        "f3b46bc67078",
+        "b9dbdc8786e2",
+        "52d0e5c76e59",
+        "317a129bd804",
+        "ce79f3b73af1",
+        "47f6681081f3",
+        "9774b110faee",
+        "c9c0f100084c",
+        "5216d03dd2b0",
+        "1c4e50c4ab29",
+        "159eda841d83",
+        "e5bc056e0066",
+        "d6ffc87bb578",
+        "c92d006f275c",
+        "e221c540d1df",
+        "0ea7ed54d76a",
+        "491a8357ed72",
+        "0df2e1177f72",
+        "83db6e231aff",
+        "cc84adee97a4",
+        "1d310c6521e2",
+        "3aab35b0580e",
+        "6534fe7da4ef",
+        "74f94d722eb4",
+        "90dd0fb38673",
+        "29d742a4ceb3",
+        "98c56c6ba6dd",
+        "df5265871682",
+        "a4677b8563d4",
+        "26c8e8f1fa72",
+        "25ced5f1f18a",
+        "0ff9a98f4db2",
+        "10ada8cac45b",
+        "0f0c5afd8f7c",
+        "3fd7aac6ac6c",
+        "7959bcfe2a91",
+        "e4024e9d35f6",
+        "5bab70606039",
+        "d920d779c941",
+        "ac3dbd9ae43e",
+        "a1ba492f2018",
+        "131a437d6322",
+        "9862e711bd25",
+        "dcca824db675",
+        "72859fb3dfb8",
+        "7b0d382b0c7d",
+        "e1689b21acb6",
+        "4012fe713edc",
         "2692da1f4a5b",
         "cca56a3275c5",
         "8d88f795e5d0",
@@ -16519,14 +16627,14 @@
         "client/src/pages/IntegrationsDashboard.tsx"
       ],
       "controls": [
-        "0ff03de80b40",
-        "74bdb4ae3961",
-        "9f4f33ee0da8",
-        "5eeb7e28d0a3",
-        "93962e92040d",
-        "db2cec26d188",
-        "119d59b0a422",
-        "9acbf1e770a9"
+        "e08492c202c9",
+        "96791e6d0419",
+        "b9a1458e947c",
+        "72cfd0c5ca07",
+        "a5ca94af0eba",
+        "c72a44b8b260",
+        "e596b223e470",
+        "bbedfe81a4b8"
       ],
       "queries": [
         "advancedNotifications.getIntegrationsDashboard"
@@ -16611,11 +16719,15 @@
         "client/src/pages/CurrencySettings.tsx"
       ],
       "controls": [
-        "4c1c200f8a0b",
-        "fd8ac432cd0d"
+        "75a0ddec7b47",
+        "a54baf8cd8a9"
       ],
-      "queries": [],
-      "mutations": []
+      "queries": [
+        "merchants.getCurrent"
+      ],
+      "mutations": [
+        "merchants.update"
+      ]
     },
     {
       "route": "/merchant/push-notifications",
@@ -16648,27 +16760,30 @@
         "client/src/pages/ScheduledReports.tsx"
       ],
       "controls": [
-        "a1f10281adb5",
-        "c17fd7675b70",
-        "7296c24a2a82",
-        "c7a2e1bed18c",
-        "8f6abad6aa88",
-        "70463f80b3ea",
-        "bef9038cc09a",
-        "b51ac7594001",
-        "118e3fa4500d",
-        "9077e0c120f0",
-        "24826c7e32aa",
-        "07703f6755cd",
-        "f55329f6afa0",
-        "8b5d60331a14",
-        "e754e857adc2",
-        "0b2066134ee7",
-        "a4660a24265d",
-        "fc5f1f9de7c1",
-        "eb70df96dc72",
-        "fb0d2afe33b3",
-        "bbfbe9253da7"
+        "32261b92d23a",
+        "928c3a999c64",
+        "64ccdb09a4fd",
+        "48b30cfc98c0",
+        "ec4b4d0f1aed",
+        "3f1a8d524bec",
+        "dbbc53ea3783",
+        "77a582c77061",
+        "2e1415c81541",
+        "2269424e12fe",
+        "4fe378e3bce3",
+        "24c609aeab9f",
+        "cd9a76bbabf6",
+        "ffd7b259b9ab",
+        "b6f7258b722a",
+        "2fb893f5e283",
+        "6699b9d7bd54",
+        "4b0dc2bc5028",
+        "5ea402004862",
+        "481054c36d97",
+        "60879156d3b1",
+        "36234b4f6a2a",
+        "c7a20147043a",
+        "abf928b7ea55"
       ],
       "queries": [
         "advancedNotifications.getScheduledReports"
@@ -16687,23 +16802,26 @@
         "client/src/pages/WhatsAppAutoNotifications.tsx"
       ],
       "controls": [
-        "74cba9144d31",
-        "d978b6ccfbcc",
-        "574fa82c479d",
-        "9bee841f1763",
-        "4d802135c7f8",
-        "a4e8c091a729",
-        "c0f0bb81ce84",
-        "866f85cafcd1",
-        "faf1bf9f094f",
-        "dfacff53c50d",
-        "93a2e60a2f67",
-        "f32db9a6980b",
-        "90566d2f4f01",
-        "51c98a371b07",
-        "f4057488ba90",
-        "677e45f59331",
-        "f135560f1f76"
+        "d064abb43de7",
+        "754a0934d008",
+        "89678eb74d4d",
+        "7c39e94c2104",
+        "107581d819de",
+        "35b1e0353590",
+        "bc347f910f91",
+        "a9a7c90632ee",
+        "d6824b7650e0",
+        "9e061450d9a6",
+        "c2ff29943227",
+        "9785b4f15033",
+        "21d44aea1d5b",
+        "947a1f12e357",
+        "d6011a809fcc",
+        "d6495a905407",
+        "879696584ef8",
+        "4aee8a78ba43",
+        "4b1d51c39597",
+        "215a77bdf9fe"
       ],
       "queries": [
         "advancedNotifications.getWhatsappAutoNotifications",
@@ -16720,31 +16838,21 @@
       "title": "التقارير",
       "prototype": true,
       "files": [
-        "client/src/pages/Reports.tsx",
-        "client/src/contexts/CurrencyContext.tsx"
+        "client/src/pages/Reports.tsx"
       ],
       "controls": [
-        "8b001a695617",
-        "89add645beec",
-        "9446f52a0fa9",
-        "61787882ac3b",
-        "d0d3ae845625",
-        "889fb9475588",
-        "e54b78b8f158",
-        "8a52b3ad24a9",
-        "24a57afa4442",
-        "20e797c720ed",
-        "c3993f6bff07"
+        "bff86c3c06da",
+        "34587fa1dc9a",
+        "d49b081f42ae",
+        "3aba8702de84",
+        "1bf6d8d87491"
       ],
       "queries": [
         "reports.getSalesReport",
         "reports.getCustomersReport",
         "reports.getConversationsReport"
       ],
-      "mutations": [
-        "messageAnalytics.exportPDF",
-        "messageAnalytics.exportExcel"
-      ]
+      "mutations": []
     },
     {
       "route": "/merchant/subscriptions",
@@ -31295,9 +31403,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c61271e0b4f3",
+      "id": "85b753bcaba5",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 231,
+      "line": 234,
       "tag": "Input",
       "kind": "field",
       "label": "ابحث برقم الطلب، اسم العميل، أو رقم الجوال...",
@@ -31315,9 +31423,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d73a8faa5ddd",
+      "id": "e524e40b80fa",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 239,
+      "line": 242,
       "tag": "Select",
       "kind": "field",
       "label": "",
@@ -31364,9 +31472,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cebbff4f7efd",
+      "id": "c082723a229c",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 287,
+      "line": 290,
       "tag": "Button",
       "kind": "action",
       "label": "عرض",
@@ -31386,9 +31494,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "17283260c277",
+      "id": "78355e6ed93a",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 319,
+      "line": 322,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -31408,9 +31516,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "22e283fd006a",
+      "id": "429291ea8a39",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 330,
+      "line": 333,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -31430,9 +31538,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba0e6c707382",
+      "id": "0b62fe78be05",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 348,
+      "line": 351,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "تفاصيل الطلب تاريخ الطلب : معلومات العميل الاسم : رقم الجوال : البريد الإلكتروني : العنوان : المنتجات الكمية : الإجمالي : cancelled الحالة : رقم التتبع : ملاحظات : تحديث الحالة cancelled delivered إلغاء الطلب",
@@ -31450,9 +31558,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a95fb358f8d8",
+      "id": "81e1519d9008",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 441,
+      "line": 444,
       "tag": "Button",
       "kind": "action",
       "label": "تحديث الحالة",
@@ -31472,9 +31580,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4847261350a3",
+      "id": "275a2ade1fa9",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 453,
+      "line": 456,
       "tag": "Button",
       "kind": "action",
       "label": "إلغاء الطلب",
@@ -31495,9 +31603,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "64f0f6a5ae3b",
+      "id": "cfb97815585f",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 472,
+      "line": 475,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "تحديث حالة الطلب الحالة الجديدة pending paid processing shipped delivered shipped delivered رقم التتبع (اختياري) جاري التحديث... تحديث",
@@ -31520,9 +31628,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fe47b7a21bf2",
+      "id": "2c8507643ca7",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 480,
+      "line": 483,
       "tag": "Select",
       "kind": "field",
       "label": "الحالة الجديدة",
@@ -31545,9 +31653,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d43cd6e4b33b",
+      "id": "a874f98e6fb1",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 502,
+      "line": 505,
       "tag": "Input",
       "kind": "field",
       "label": "رقم التتبع (اختياري)",
@@ -31567,9 +31675,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fb956aee107f",
+      "id": "76476613997f",
       "file": "client/src/pages/merchant/Orders.tsx",
-      "line": 510,
+      "line": 513,
       "tag": "Button",
       "kind": "action",
       "label": "جاري التحديث... تحديث",
@@ -32201,6 +32309,171 @@
       "conditions": [
         "query.data?.nextCursor"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6744d13ef55d",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 69,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "onClose",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5137ae415e2e",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 73,
+      "tag": "input",
+      "kind": "field",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "order",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "40",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ff74c28ad8e1",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 76,
+      "tag": "input",
+      "kind": "field",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "transaction",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "40",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "548eede4b6b7",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 78,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1fbdb1b30684",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 102,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "()=>setSelected(item.requestId)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "item.cart",
+        "query.isError||!valid"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bd274e0c75c9",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 108,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "refresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "loading",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dcf7378b2a9d",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 109,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "()=>{setSelected(undefined);setBeforeId(page.data.nextCursor!);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!loading&&!query.isError&&valid&&page.data.nextCursor"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "53192ddaf4f2",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 119,
+      "tag": "summary",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
@@ -33060,9 +33333,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "359f9c1bff36",
+      "id": "da99f02f62fc",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 235,
+      "line": 259,
       "tag": "Button",
       "kind": "action",
       "label": "basics assistantSectionsUx.basics schedule assistantSectionsUx.schedule groups assistantSectionsUx.groups sales assistantSectionsUx.sales assistantSectionsUx.preview",
@@ -33080,9 +33353,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "29b7ad27807c",
+      "id": "92de00caded6",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 261,
+      "line": 285,
       "tag": "summary",
       "kind": "action",
       "label": "القوالب الجاهزة",
@@ -33100,9 +33373,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "67be352a6191",
+      "id": "824ca130e95d",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 317,
+      "line": 341,
       "tag": "Button",
       "kind": "action",
       "label": "✓ مُطبّق تطبيق",
@@ -33120,9 +33393,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ab9c8bff7f8c",
+      "id": "422234a3b983",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 358,
+      "line": 382,
       "tag": "Button",
       "kind": "action",
       "label": "تطبيق",
@@ -33140,9 +33413,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "70879d9da960",
+      "id": "c7581186d8d1",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 441,
+      "line": 470,
       "tag": "Switch",
       "kind": "field",
       "label": "تفعيل الرد التلقائي",
@@ -33160,9 +33433,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f6f9a7ded06",
+      "id": "c4e9874d495e",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 478,
+      "line": 507,
       "tag": "Switch",
       "kind": "field",
       "label": "تفعيل ساعات العمل",
@@ -33180,9 +33453,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35a3744d57a5",
+      "id": "bf5eb49c1976",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 496,
+      "line": 525,
       "tag": "Input",
       "kind": "field",
       "label": "وقت البداية",
@@ -33202,9 +33475,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f3c1dd03d7d",
+      "id": "63acef1f18db",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 512,
+      "line": 541,
       "tag": "Input",
       "kind": "field",
       "label": "وقت النهاية",
@@ -33224,9 +33497,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "408d6009c284",
+      "id": "bd41ec1f6233",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 572,
+      "line": 601,
       "tag": "Textarea",
       "kind": "field",
       "label": "رسالة الترحيب",
@@ -33244,9 +33517,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b6e23f2dc11d",
+      "id": "4a4982088ec1",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 590,
+      "line": 619,
       "tag": "Textarea",
       "kind": "field",
       "label": "رسالة خارج أوقات العمل",
@@ -33264,9 +33537,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "af5898e09e44",
+      "id": "86acfbae76ba",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 631,
+      "line": 660,
       "tag": "Select",
       "kind": "field",
       "label": "نبرة الصوت",
@@ -33297,9 +33570,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fe9d29c04e74",
+      "id": "1fd26dc0de36",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 658,
+      "line": 687,
       "tag": "Select",
       "kind": "field",
       "label": "اللغة",
@@ -33346,9 +33619,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c89a0ba916c1",
+      "id": "ede737da7805",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 691,
+      "line": 720,
       "tag": "Input",
       "kind": "field",
       "label": "تأخير الرد (ثواني)",
@@ -33366,9 +33639,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a9465c45a531",
+      "id": "3f9196bc3bff",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 713,
+      "line": 742,
       "tag": "Input",
       "kind": "field",
       "label": "الحد الأقصى لطول الرد",
@@ -33386,9 +33659,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd40885d529c",
+      "id": "944cbc06922d",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 913,
+      "line": 942,
       "tag": "button",
       "kind": "action",
       "label": "",
@@ -33406,9 +33679,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "718128f746a0",
+      "id": "e23bdad31be8",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 950,
+      "line": 983,
       "tag": "button",
       "kind": "action",
       "label": "t(\"merchantUx.actions.removeNamed\", {\n                            name: kw,\n                          })",
@@ -33428,9 +33701,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "61a9dd688751",
+      "id": "69c3f20a1af4",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 968,
+      "line": 1001,
       "tag": "Input",
       "kind": "field",
       "label": "الكلمات المفتاحية",
@@ -33450,9 +33723,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4b179beeb810",
+      "id": "931d6e2f9062",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 984,
+      "line": 1018,
       "tag": "Button",
       "kind": "action",
       "label": "الكلمات المفتاحية",
@@ -33472,9 +33745,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "55171c6a70da",
+      "id": "d5d1ff9c7ba5",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1011,
+      "line": 1048,
       "tag": "Textarea",
       "kind": "field",
       "label": "رسالة التوجيه الخاص",
@@ -33494,9 +33767,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aaf3263bb253",
+      "id": "8325c28e95cd",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1058,
+      "line": 1096,
       "tag": "Textarea",
       "kind": "field",
       "label": "تعليمات التعامل مع العميل",
@@ -33514,9 +33787,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b4e473a1992b",
+      "id": "e68f304f3f69",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1107,
+      "line": 1145,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الإرسال... إرسال رسالة تجريبية",
@@ -33534,9 +33807,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7a67e6b43062",
+      "id": "bf8893541da0",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1120,
+      "line": 1158,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الحفظ... حفظ الإعدادات",
@@ -33998,9 +34271,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e29fb9a6bffe",
+      "id": "78793fe9058a",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 202,
+      "line": 224,
       "tag": "Input",
       "kind": "field",
       "label": "name virtualTeamUx.name role virtualTeamUx.role virtualTeamUx.department department  *",
@@ -34018,9 +34291,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "00feb4a93e0a",
+      "id": "207f030d8949",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 235,
+      "line": 257,
       "tag": "Button",
       "kind": "action",
       "label": "شخصية جديدة",
@@ -34038,9 +34311,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "00024dd5e7a2",
+      "id": "b670191c4d11",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 251,
+      "line": 273,
       "tag": "Link",
       "kind": "action",
       "label": "إعدادات المساعد",
@@ -34058,9 +34331,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5b804ae0d9eb",
+      "id": "41b5124a5a5d",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 257,
+      "line": 279,
       "tag": "Link",
       "kind": "action",
       "label": "جرّب ساري",
@@ -34078,9 +34351,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ad84603fb051",
+      "id": "cde08dff45c5",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 267,
+      "line": 289,
       "tag": "Input",
       "kind": "field",
       "label": "ابحث بالاسم أو الدور",
@@ -34100,9 +34373,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2850883874cd",
+      "id": "ed030286409a",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 284,
+      "line": 306,
       "tag": "Button",
       "kind": "action",
       "label": "جارٍ التحميل… استخدام فريق جاهز",
@@ -34122,9 +34395,53 @@
       "review": "source-inventoried"
     },
     {
-      "id": "00860fba375b",
+      "id": "02a609891278",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 369,
+      "line": 330,
+      "tag": "Button",
+      "kind": "action",
+      "label": "رفع أولوية {{name}}",
+      "section": "ابدأ بفريق يناسب عملك",
+      "binding": "() =>\n                      reorder.mutate({\n                        orderedIds: moveAgentIds(\n                          agents.map(a => a.id),\n                          agent.id,\n                          -1\n                        ),\n                      })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!agents.length"
+      ],
+      "disabled": "reorder.isPending || agents[0]?.id === agent.id",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "da80d7419384",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "line": 348,
+      "tag": "Button",
+      "kind": "action",
+      "label": "t(\"virtualTeamUx.moveDown\", {\n                      name: agent.name,\n                    })",
+      "section": "ابدأ بفريق يناسب عملك",
+      "binding": "() =>\n                      reorder.mutate({\n                        orderedIds: moveAgentIds(\n                          agents.map(a => a.id),\n                          agent.id,\n                          1\n                        ),\n                      })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!agents.length"
+      ],
+      "disabled": "reorder.isPending ||\n                      agents[agents.length - 1]?.id === agent.id",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3d55b42d1b5f",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "line": 438,
       "tag": "Button",
       "kind": "action",
       "label": "`${t(\"virtualTeamUx.edit\")} ${agent.name}`",
@@ -34144,9 +34461,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "47901129acf3",
+      "id": "31054d453608",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 379,
+      "line": 448,
       "tag": "Button",
       "kind": "action",
       "label": "`${t(\"virtualTeamUx.delete\")} ${agent.name}`",
@@ -34166,13 +34483,53 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ae21826073bb",
+      "id": "94a80ed706b5",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 412,
+      "line": 486,
+      "tag": "Input",
+      "kind": "field",
+      "label": "رسالة العميل",
+      "section": "من سيستقبل هذا الطلب؟",
+      "binding": "routingMessage",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "500",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b25d4bd14b9f",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "line": 497,
+      "tag": "Input",
+      "kind": "field",
+      "label": "الوقت · الرياض",
+      "section": "من سيستقبل هذا الطلب؟",
+      "binding": "routingTime",
+      "type": "time",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8cda02f6466e",
+      "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+      "line": 529,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "virtualTeamUx.edit virtualTeamUx.new الأساسيات أولًا، وخيارات التحويل والدوام في قسم مستقل. identity routing identity virtualTeamUx.identity virtualTeamUx.routing identity name role department الصورة الرمزية · support vi",
-      "section": "كيف يتوزع العمل؟",
+      "section": "من سيستقبل هذا الطلب؟",
       "binding": "",
       "type": "text",
       "options": [],
@@ -34186,9 +34543,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "92b8c5cc4207",
+      "id": "119e3e49f11c",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 437,
+      "line": 554,
       "tag": "Button",
       "kind": "action",
       "label": "identity virtualTeamUx.identity virtualTeamUx.routing",
@@ -34206,9 +34563,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "208477477633",
+      "id": "bfc6d5cc08e7",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 461,
+      "line": 578,
       "tag": "summary",
       "kind": "action",
       "label": "الصورة الرمزية · support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTe",
@@ -34228,9 +34585,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5ba68448bc25",
+      "id": "4fef98d38806",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 495,
+      "line": 612,
       "tag": "button",
       "kind": "action",
       "label": "support virtualTeamUx.avatars.support sales virtualTeamUx.avatars.sales reception virtualTeamUx.avatars.reception manager virtualTeamUx.avatars.manager tech virtualTeamUx.avatars.tech marketing virtualTeamUx.avatars.mark",
@@ -34250,9 +34607,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9cadf2d46eae",
+      "id": "9a77c8419338",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 538,
+      "line": 655,
       "tag": "Button",
       "kind": "action",
       "label": "friendly virtualTeamUx.tones.friendly professional virtualTeamUx.tones.professional casual virtualTeamUx.tones.casual empathetic virtualTeamUx.tones.empathetic virtualTeamUx.tones.persuasive",
@@ -34272,9 +34629,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "386526ea2997",
+      "id": "13c69e5f9ed6",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 570,
+      "line": 687,
       "tag": "Textarea",
       "kind": "field",
       "label": "مهمة الشخصية وحدودها *",
@@ -34294,9 +34651,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "65989272fe19",
+      "id": "a0f2d8cda37a",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 595,
+      "line": 712,
       "tag": "Input",
       "kind": "field",
       "label": "كلمات التحويل",
@@ -34316,9 +34673,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d9b1a723506b",
+      "id": "6b96e3b2f84e",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 608,
+      "line": 725,
       "tag": "Button",
       "kind": "action",
       "label": "كلمات التحويل",
@@ -34338,9 +34695,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fb430a77464b",
+      "id": "90a2fc43a8dc",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 621,
+      "line": 738,
       "tag": "button",
       "kind": "action",
       "label": "`${t(\"virtualTeamUx.delete\")} ${k}`",
@@ -34360,9 +34717,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "acc839731ebe",
+      "id": "fd2f1da17d5e",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 650,
+      "line": 767,
       "tag": "Input",
       "kind": "field",
       "label": "من",
@@ -34382,9 +34739,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "58329ebde8c8",
+      "id": "ff98e5038818",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 668,
+      "line": 785,
       "tag": "Input",
       "kind": "field",
       "label": "إلى",
@@ -34404,9 +34761,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dd11a22aecc3",
+      "id": "cef7b4da1566",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 678,
+      "line": 795,
       "tag": "Button",
       "kind": "action",
       "label": "إلغاء جدول الشخصية",
@@ -34426,9 +34783,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ab268c999cb3",
+      "id": "5d654e247f3d",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 698,
+      "line": 815,
       "tag": "Switch",
       "kind": "field",
       "label": "الشخصية الافتراضية",
@@ -34448,9 +34805,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "745b549cb949",
+      "id": "bed1b8e8292b",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 714,
+      "line": 831,
       "tag": "Switch",
       "kind": "field",
       "label": "الشخصية نشطة",
@@ -34471,9 +34828,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a6f1230f9ecf",
+      "id": "dee886b132cf",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 736,
+      "line": 853,
       "tag": "Button",
       "kind": "action",
       "label": "إلغاء",
@@ -34491,9 +34848,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35aff8e7d32b",
+      "id": "0df1b3a29ab7",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 744,
+      "line": 861,
       "tag": "Button",
       "kind": "action",
       "label": "virtualTeamUx.saving virtualTeamUx.save",
@@ -34511,9 +34868,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8aa55f6b0233",
+      "id": "32feaf282838",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 761,
+      "line": 878,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "حذف الشخصية ستُحذف هذه الشخصية وإعداداتها. لا يمكن التراجع عن هذا الإجراء. تعذّر الحفظ. بقيت بياناتك هنا؛ أعد المحاولة. إلغاء virtualTeamUx.saving virtualTeamUx.delete",
@@ -34531,9 +34888,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "303d75e938cf",
+      "id": "b09d986853db",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 776,
+      "line": 893,
       "tag": "Button",
       "kind": "action",
       "label": "إلغاء",
@@ -34551,9 +34908,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7bbda1076433",
+      "id": "685d95cd7210",
       "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-      "line": 784,
+      "line": 901,
       "tag": "Button",
       "kind": "action",
       "label": "virtualTeamUx.saving virtualTeamUx.delete",
@@ -34571,9 +34928,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f9298f930201",
+      "id": "39a25e237d4f",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 452,
+      "line": 453,
       "tag": "Button",
       "kind": "action",
       "label": "رفع ملف جديد",
@@ -34591,9 +34948,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dcff409b9704",
+      "id": "d170df1c837a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 458,
+      "line": 459,
       "tag": "Button",
       "kind": "action",
       "label": "إعادة ضبط كاملة",
@@ -34611,9 +34968,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b462eebe4982",
+      "id": "07456bb52303",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 463,
+      "line": 464,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "⚠️ إعادة ضبط عقل ساري بالكامل سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع). هذا الإجراء لا يمكن التراجع عنه! إلغاء جاري الحذف... نعم، أعد الضبط",
@@ -34631,9 +34988,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "51720c8f4052",
+      "id": "c8329adc247f",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 473,
+      "line": 474,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -34651,9 +35008,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3e2bd6fe765b",
+      "id": "3f87f703b582",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 474,
+      "line": 475,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "جاري الحذف... نعم، أعد الضبط",
@@ -34671,9 +35028,171 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a7673be1ddc0",
+      "id": "fc5f2f17edb4",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 531,
+      "line": 485,
+      "tag": "Button",
+      "kind": "action",
+      "label": "عرض تقدم التحليل",
+      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
+      "binding": "()=>setAnalysisDialogOpen(true)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "polling && !analysisDialogOpen"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7e1c2164097e",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 487,
+      "tag": "Button",
+      "kind": "action",
+      "label": "",
+      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
+      "binding": "()=>changeBrainView(view.id)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "184a5575917e",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 499,
+      "tag": "Button",
+      "kind": "action",
+      "label": "اختبر الإجابة وجودتها",
+      "section": "مؤشر احتراف المبيعات",
+      "binding": "()=>changeBrainView('testing')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5a59b139ed76",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 499,
+      "tag": "Button",
+      "kind": "action",
+      "label": "راجع المعرفة والفجوات",
+      "section": "مؤشر احتراف المبيعات",
+      "binding": "()=>changeBrainView('knowledge')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9d77dba2592a",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 502,
+      "tag": "summary",
+      "kind": "action",
+      "label": "تجارب البيع وتقييم النتائج",
+      "section": "تجارب البيع وتقييم النتائج",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b375afed841b",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 503,
+      "tag": "summary",
+      "kind": "action",
+      "label": "مراجعة الرد واعتماد إرساله",
+      "section": "مراجعة الرد واعتماد إرساله",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2f1ba19d2b00",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 504,
+      "tag": "summary",
+      "kind": "action",
+      "label": "سياسة المتابعة",
+      "section": "سياسة المتابعة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "de1ecd4f4424",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 505,
+      "tag": "summary",
+      "kind": "action",
+      "label": "صلاحيات الخصم وهامش الربح",
+      "section": "صلاحيات الخصم وهامش الربح",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9adcdbdeece9",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 551,
       "tag": "Button",
       "kind": "action",
       "label": "🔄 إعادة تحليل الموقع",
@@ -34693,9 +35212,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aae82c0807f1",
+      "id": "e6b1d588ffb8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 536,
+      "line": 556,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "🔄 إعادة تحليل الموقع سيتم استبدال جميع البيانات المسحوبة الحالية ( صفحة) ببيانات جديدة من الموقع. تنبيهات مهمة ⚠️ البيانات الحالية ستُستبدل بالكامل ⏳ قد تتأثر ردود ساري على العملاء لمدة قصيرة أثناء التحديث ❓ هل يوجد بيا",
@@ -34715,9 +35234,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "898422e9c8e5",
+      "id": "f0864c0cdacc",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 557,
+      "line": 577,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -34737,9 +35256,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "65a69fd4b8ee",
+      "id": "743adc21164b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 558,
+      "line": 578,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "نعم، أعد التحليل",
@@ -34759,9 +35278,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3697ec7d9f15",
+      "id": "f6f4bfa620bd",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 566,
+      "line": 586,
       "tag": "Button",
       "kind": "action",
       "label": "🌐 تحليل موقعك",
@@ -34781,9 +35300,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a61f62098518",
+      "id": "c2173342eee5",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 571,
+      "line": 591,
       "tag": "Button",
       "kind": "action",
       "label": "إدارة products",
@@ -34801,9 +35320,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "eb24cd684eb2",
+      "id": "d3356a653ab5",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 575,
+      "line": 595,
       "tag": "Button",
       "kind": "action",
       "label": "الإعدادات",
@@ -34821,12 +35340,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "12fcf7d817be",
+      "id": "162958ffd1d3",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 583,
+      "line": 605,
       "tag": "DialogContent",
       "kind": "dialog",
-      "label": "ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... بعد التحليل سيقوم ساري بـ: ✓ بناء قاعدة معرفة ذكية ✓ فهم خدماتك ومنتجاتك ✓ تجهيز ردود ذكية للعملاء ✓ اكتشاف فرص زيادة المبيعات ✅ ✅ — ✅ % التقييم التقني",
+      "label": "متابعة في الخلفية تعذر تحديث حالة التحليل. قد يستمر العمل في الخلفية. إعادة المحاولة ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله... بعد التحليل سيقوم ساري بـ: ✓ بناء قاعدة معرفة ذكية ✓ فهم خدماتك وم",
       "section": "🔄 إعادة تحليل الموقع",
       "binding": "",
       "type": "text",
@@ -34841,14 +35360,58 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a7ecc1f5db5b",
+      "id": "17651ffa59a7",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 742,
+      "line": 613,
+      "tag": "Button",
+      "kind": "action",
+      "label": "متابعة في الخلفية",
+      "section": "🔄 إعادة تحليل الموقع",
+      "binding": "()=>setAnalysisDialogOpen(false)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "polling"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aef49c97e575",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 614,
+      "tag": "Button",
+      "kind": "action",
+      "label": "إعادة المحاولة",
+      "section": "🔄 إعادة تحليل الموقع",
+      "binding": "()=>void statusQuery.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "statusQuery.isError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ddf3787e6885",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 766,
       "tag": "Button",
       "kind": "action",
       "label": "👍 ممتاز، إغلاق إغلاق",
       "section": "ساري جاهز لخدمة عملائك! ❌ حدث خطأ أثناء التحليل 🧠 ساري يبني عقله...",
-      "binding": "() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setFakeProgress(0); }",
+      "binding": "() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setReportedProgress(0); }",
       "type": "text",
       "options": [],
       "min": "",
@@ -34863,9 +35426,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "45abd1cb5a5d",
+      "id": "b7b74ef0f16f",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 786,
+      "line": 811,
       "tag": "Button",
       "kind": "action",
       "label": "✅ قبول",
@@ -34883,9 +35446,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a0b11006ce06",
+      "id": "69dbafba57b6",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 789,
+      "line": 814,
       "tag": "Button",
       "kind": "action",
       "label": "❌ رفض",
@@ -34903,9 +35466,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "18306a566bb5",
+      "id": "48a4fcc07ee6",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 940,
+      "line": 974,
       "tag": "Button",
       "kind": "action",
       "label": "إضافة قسم",
@@ -34923,9 +35486,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b2eee570906c",
+      "id": "0b7ae6d87453",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 945,
+      "line": 979,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "إضافة قسم معرفة جديد أضف معلومات يدوية لساري (خدمات، سياسات، أسئلة شائعة...) نوع القسم 🏢 هوية النشاط 🛍️ خدمات/منتجات 📋 سياسات ❓ أسئلة شائعة 📞 بيانات تواصل 👥 فريق العمل 🏆 إنجازات 📝 مخصص العنوان المحتوى جاري الحفظ..",
@@ -34976,9 +35539,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9cdce31ed74f",
+      "id": "dc5944b20089",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 953,
+      "line": 987,
       "tag": "Select",
       "kind": "field",
       "label": "نوع القسم",
@@ -35029,9 +35592,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0110ed25c6ff",
+      "id": "29640bd1afa3",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 969,
+      "line": 1003,
       "tag": "Input",
       "kind": "field",
       "label": "العنوان",
@@ -35049,9 +35612,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0e9217cf1439",
+      "id": "49bb5f06de2f",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 973,
+      "line": 1007,
       "tag": "Textarea",
       "kind": "field",
       "label": "المحتوى",
@@ -35069,9 +35632,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6013e9058879",
+      "id": "f3b46bc67078",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 977,
+      "line": 1011,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الحفظ... 💾 حفظ",
@@ -35089,9 +35652,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f018e7cd48da",
+      "id": "b9dbdc8786e2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1026,
+      "line": 1060,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35109,9 +35672,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6b4678af5821",
+      "id": "52d0e5c76e59",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1036,
+      "line": 1070,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "حذف \" \" سيتم حذف هذا القسم وجميع أقسامه الفرعية من ذاكرة ساري. إلغاء حذف",
@@ -35129,9 +35692,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "367c3cf8f475",
+      "id": "317a129bd804",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1042,
+      "line": 1076,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -35149,9 +35712,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9a78839e7156",
+      "id": "ce79f3b73af1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1043,
+      "line": 1077,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "حذف",
@@ -35169,9 +35732,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3ea243e9c3dc",
+      "id": "47f6681081f3",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1055,
+      "line": 1089,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35191,9 +35754,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8bfc9e0ae2b2",
+      "id": "9774b110faee",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1079,
+      "line": 1113,
       "tag": "Button",
       "kind": "action",
       "label": "إعادة المحاولة",
@@ -35215,9 +35778,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "34d39e9fc509",
+      "id": "c9c0f100084c",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1104,
+      "line": 1141,
       "tag": "Textarea",
       "kind": "field",
       "label": "اكتب سؤال مثل: كم سعر الدورة؟ وش الخدمات المتاحة؟ فين موقعكم؟",
@@ -35235,9 +35798,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9a0557f0304b",
+      "id": "5216d03dd2b0",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1112,
+      "line": 1149,
       "tag": "Button",
       "kind": "action",
       "label": "... 🤖 اسأل",
@@ -35255,9 +35818,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "024fcfeab821",
+      "id": "1c4e50c4ab29",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1137,
+      "line": 1174,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35275,9 +35838,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c3dc72fb85a8",
+      "id": "159eda841d83",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1178,
+      "line": 1218,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35297,9 +35860,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c02d93c75bf2",
+      "id": "e5bc056e0066",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1188,
+      "line": 1228,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "حذف \" \" سيتم حذف هذا المصدر من ذاكرة ساري. لن يستطيع ساري الرد على أسئلة متعلقة بهذه البيانات بعد الحذف. إلغاء حذف",
@@ -35319,9 +35882,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b5003d4932ba",
+      "id": "d6ffc87bb578",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1196,
+      "line": 1236,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -35341,9 +35904,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "500d8c47325f",
+      "id": "c92d006f275c",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1197,
+      "line": 1237,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "حذف",
@@ -35363,9 +35926,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35f28f7c5dec",
+      "id": "e221c540d1df",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1214,
+      "line": 1254,
       "tag": "Button",
       "kind": "action",
       "label": "رفع ملف تعريفي",
@@ -35386,9 +35949,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "76b481c7b280",
+      "id": "0ea7ed54d76a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1298,
+      "line": 1338,
       "tag": "a",
       "kind": "action",
       "label": "عرض",
@@ -35406,9 +35969,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dac9baf94640",
+      "id": "491a8357ed72",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1304,
+      "line": 1344,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35426,12 +35989,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "73b33192c472",
+      "id": "0df2e1177f72",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1313,
+      "line": 1353,
       "tag": "Button",
       "kind": "action",
-      "label": "t(\r\n                            page.useInBot\r\n                              ? 'merchantUx.actions.deactivateNamed'\r\n                              : 'merchantUx.actions.activateNamed',\r\n                            { name",
+      "label": "t(\n                            page.useInBot\n                              ? 'merchantUx.actions.deactivateNamed'\n                              : 'merchantUx.actions.activateNamed',\n                            { name: pa",
       "section": "🌐 معرفة الموقع",
       "binding": "() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })",
       "type": "button",
@@ -35446,9 +36009,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d78db1e4e6b6",
+      "id": "83db6e231aff",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1329,
+      "line": 1369,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35466,9 +36029,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ca81a6b181af",
+      "id": "cc84adee97a4",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1340,
+      "line": 1380,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "🗑️ حذف \" \" سيتم حذف هذه الصفحة من ذاكرة ساري بالكامل، بما في ذلك المحتوى والأسئلة الشائعة المرتبطة بها. لا يمكن التراجع عن هذا الإجراء. إلغاء جاري الحذف... حذف نهائي",
@@ -35486,9 +36049,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d4973daeb84c",
+      "id": "1d310c6521e2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1350,
+      "line": 1390,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -35506,9 +36069,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aed7fff22ac3",
+      "id": "3aab35b0580e",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1351,
+      "line": 1391,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "جاري الحذف... حذف نهائي",
@@ -35526,9 +36089,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b158a07fbd9b",
+      "id": "6534fe7da4ef",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1405,
+      "line": 1445,
       "tag": "Link",
       "kind": "action",
       "label": "h-4 w-4",
@@ -35548,9 +36111,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "102475a93bd7",
+      "id": "74f94d722eb4",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1409,
+      "line": 1449,
       "tag": "Input",
       "kind": "field",
       "label": "https://example.com/services",
@@ -35570,9 +36133,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8efa8a29d0e9",
+      "id": "90dd0fb38673",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1417,
+      "line": 1457,
       "tag": "Button",
       "kind": "action",
       "label": "جاري السحب... معاينة",
@@ -35592,9 +36155,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6d73aed0e935",
+      "id": "29d742a4ceb3",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1430,
+      "line": 1470,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "🔍 تحليل المحتوى المسحوب تم تحليل المحتوى وتصنيفه تلقائياً — راجع الأقسام واعتمدها لإضافتها لذاكرة ساري كلمة نقطة • // @ts-ignore لم يتم التصنيف التلقائي — المحتوى المنظّف: ... (تم اختصار المحتوى) إلغاء جاري الإضافة... م",
@@ -35614,9 +36177,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "89e01c813829",
+      "id": "98c56c6ba6dd",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1445,
+      "line": 1485,
       "tag": "a",
       "kind": "action",
       "label": "",
@@ -35636,9 +36199,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7d033e552c76",
+      "id": "df5265871682",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1506,
+      "line": 1546,
       "tag": "Button",
       "kind": "action",
       "label": "إلغاء",
@@ -35658,14 +36221,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "815abf0be22d",
+      "id": "a4677b8563d4",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1507,
+      "line": 1547,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الإضافة... موافق — أضف للمعرفة",
       "section": "🔍 تحليل المحتوى المسحوب",
-      "binding": "() => {\r\n                      if (urlPreview) {\r\n                        addUrlMutation.mutate({ url: urlPreview.url, title: urlPreview.title });\r\n                        setUrlPreview(null);\r\n                      }\r\n                    }",
+      "binding": "() => {\n                      if (urlPreview) {\n                        addUrlMutation.mutate({ url: urlPreview.url, title: urlPreview.title });\n                        setUrlPreview(null);\n                      }\n                    }",
       "type": "text",
       "options": [],
       "min": "",
@@ -35680,9 +36243,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "062676aebfe2",
+      "id": "26c8e8f1fa72",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1526,
+      "line": 1566,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "📖 محتوى الصفحة جاري تحميل المحتوى... كلمة ✅ مفعّل ⏸️ متوقف ... (تم اختصار المحتوى) إغلاق",
@@ -35702,9 +36265,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1d073e72b8e8",
+      "id": "25ced5f1f18a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1540,
+      "line": 1580,
       "tag": "a",
       "kind": "action",
       "label": "",
@@ -35725,9 +36288,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "acc5a16d03e9",
+      "id": "0ff9a98f4db2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1557,
+      "line": 1597,
       "tag": "Button",
       "kind": "action",
       "label": "إغلاق",
@@ -35747,9 +36310,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0ae85d7996ed",
+      "id": "10ada8cac45b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1601,
+      "line": 1644,
       "tag": "Input",
       "kind": "field",
       "label": "السؤال (مثل: كم مدة التوصيل؟)",
@@ -35767,9 +36330,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4a532d59b6ce",
+      "id": "0f0c5afd8f7c",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1607,
+      "line": 1650,
       "tag": "Input",
       "kind": "field",
       "label": "الجواب (مثل: يتم التوصيل خلال 2-3 أيام عمل)",
@@ -35787,9 +36350,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aa121cbf652a",
+      "id": "3fd7aac6ac6c",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1614,
+      "line": 1657,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الإضافة... إضافة",
@@ -35807,9 +36370,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba378c0b38f1",
+      "id": "7959bcfe2a91",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1640,
+      "line": 1683,
       "tag": "Button",
       "kind": "action",
       "label": "",
@@ -35829,9 +36392,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ec5cd3aea7f8",
+      "id": "e4024e9d35f6",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1680,
+      "line": 1726,
       "tag": "input",
       "kind": "field",
       "label": "",
@@ -35851,9 +36414,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2cd62b87afdd",
+      "id": "5bab70606039",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1681,
+      "line": 1727,
       "tag": "Button",
       "kind": "action",
       "label": "اختر ملف TXT/CSV",
@@ -35873,9 +36436,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa2f1485fe55",
+      "id": "d920d779c941",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1687,
+      "line": 1733,
       "tag": "Textarea",
       "kind": "field",
       "label": "الصق هنا محتوى الملف الذي تريد فحصه... (أسعار، منتجات، سياسات، معلومات عامة)",
@@ -35895,9 +36458,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "00462891bd0a",
+      "id": "ac3dbd9ae43e",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1696,
+      "line": 1742,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الفحص... فحص المحتوى بالذكاء الاصطناعي",
@@ -35917,9 +36480,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aa7e2c3013d8",
+      "id": "a1ba492f2018",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1708,
+      "line": 1754,
       "tag": "Button",
       "kind": "action",
       "label": "تغيير المحتوى",
@@ -35939,9 +36502,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8355d9367ea0",
+      "id": "131a437d6322",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1796,
+      "line": 1842,
       "tag": "Button",
       "kind": "action",
       "label": "تجاهل",
@@ -35961,14 +36524,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2800bb0bced2",
+      "id": "9862e711bd25",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 1799,
+      "line": 1845,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الحفظ... اعتماد وإضافة لذاكرة ساري",
       "section": "📊 تقرير الفحص الذكي",
-      "binding": "() => {\r\n                      ingestMutation.mutate({\r\n                        content: previewText,\r\n                        contentType: 'document',\r\n                        fileName: previewFileName || 'محتوى مفحوص',\r\n                      });\r\n                    }",
+      "binding": "() => {\n                      ingestMutation.mutate({\n                        content: previewText,\n                        contentType: 'document',\n                        fileName: previewFileName || 'محتوى مفحوص',\n                      });\n                    }",
       "type": "text",
       "options": [],
       "min": "",
@@ -35983,9 +36546,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "134feb74c3df",
+      "id": "dcca824db675",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 2003,
+      "line": 2055,
       "tag": "button",
       "kind": "action",
       "label": "",
@@ -36005,9 +36568,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f5c92933f1c8",
+      "id": "72859fb3dfb8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 2066,
+      "line": 2118,
       "tag": "button",
       "kind": "action",
       "label": "← السابق",
@@ -36028,9 +36591,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "639a3311d7cc",
+      "id": "7b0d382b0c7d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 2085,
+      "line": 2137,
       "tag": "button",
       "kind": "action",
       "label": "",
@@ -36050,9 +36613,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a57b7468f7e1",
+      "id": "e1689b21acb6",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 2098,
+      "line": 2150,
       "tag": "button",
       "kind": "action",
       "label": "التالي →",
@@ -36073,9 +36636,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "095a05f39033",
+      "id": "4012fe713edc",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 2114,
+      "line": 2166,
       "tag": "button",
       "kind": "action",
       "label": "عرض كل الأنشطة",
@@ -46768,9 +47331,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0ff03de80b40",
+      "id": "e08492c202c9",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 16,
+      "line": 34,
       "tag": "Calendar",
       "kind": "field",
       "label": "",
@@ -46788,12 +47351,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "74bdb4ae3961",
+      "id": "96791e6d0419",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 58,
+      "line": 111,
       "tag": "Button",
       "kind": "action",
-      "label": "لوحة تحكم التكاملات",
+      "label": "تحديث",
       "section": "حالة التكاملات",
       "binding": "() => refetch()",
       "type": "text",
@@ -46808,13 +47371,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9f4f33ee0da8",
+      "id": "b9a1458e947c",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 69,
+      "line": 180,
       "tag": "TabsTrigger",
       "kind": "action",
-      "label": "نسبة النجاح",
-      "section": "نسبة النجاح",
+      "label": "نظرة عامة",
+      "section": "نظرة عامة",
       "binding": "overview",
       "type": "text",
       "options": [],
@@ -46828,9 +47391,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5eeb7e28d0a3",
+      "id": "72cfd0c5ca07",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 69,
+      "line": 183,
       "tag": "TabsTrigger",
       "kind": "action",
       "label": "الإحصائيات",
@@ -46848,9 +47411,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "93962e92040d",
+      "id": "a5ca94af0eba",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 69,
+      "line": 186,
       "tag": "TabsTrigger",
       "kind": "action",
       "label": "الأخطاء",
@@ -46868,14 +47431,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "db2cec26d188",
+      "id": "c72a44b8b260",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 92,
+      "line": 239,
       "tag": "Link",
       "kind": "action",
-      "label": "نظرة عامة",
+      "label": "إعدادات",
       "section": "IntegrationsDashboard",
-      "binding": "`/merchant/integrations/${integration.platform}`",
+      "binding": "settingsLinks[integration.platform] ||\n                        \"/merchant/platform-integrations\"",
       "type": "text",
       "options": [],
       "min": "",
@@ -46888,12 +47451,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "119d59b0a422",
+      "id": "e596b223e470",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 92,
+      "line": 245,
       "tag": "Button",
       "kind": "action",
-      "label": "نظرة عامة",
+      "label": "إعدادات",
       "section": "IntegrationsDashboard",
       "binding": "",
       "type": "text",
@@ -46908,14 +47471,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9acbf1e770a9",
+      "id": "bbedfe81a4b8",
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "line": 128,
+      "line": 366,
       "tag": "Button",
       "kind": "action",
-      "label": "إحصائيات المزامنة",
-      "section": "متصل",
-      "binding": "() => resolveErrorMutation.mutate({ id: error.id })",
+      "label": "تم الحل",
+      "section": "الأخطاء غير المحلولة",
+      "binding": "() =>\n                              resolveErrorMutation.mutate({ id: error.id })",
       "type": "text",
       "options": [],
       "min": "",
@@ -47483,23 +48046,23 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4c1c200f8a0b",
+      "id": "75a0ddec7b47",
       "file": "client/src/pages/CurrencySettings.tsx",
-      "line": 80,
+      "line": 118,
       "tag": "Select",
       "kind": "field",
-      "label": "دولار أمريكي",
+      "label": "اختر العملة",
       "section": "العملة الأساسية",
       "binding": "selectedCurrency",
       "type": "select",
       "options": [
         {
           "value": "SAR",
-          "label": "﷼ اختر العملة (SAR)"
+          "label": "﷼ ريال سعودي (SAR)"
         },
         {
           "value": "USD",
-          "label": "$ ريال سعودي (USD)"
+          "label": "$ دولار أمريكي (USD)"
         }
       ],
       "min": "",
@@ -47512,9 +48075,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fd8ac432cd0d",
+      "id": "a54baf8cd8a9",
       "file": "client/src/pages/CurrencySettings.tsx",
-      "line": 126,
+      "line": 182,
       "tag": "Button",
       "kind": "action",
       "label": "جاري الحفظ... حفظ التغييرات",
@@ -47528,7 +48091,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "updateMutation.isPending || selectedCurrency === merchant?.currency",
+      "disabled": "!merchant ||\n                updateMutation.isPending ||\n                selectedCurrency === merchant?.currency",
       "review": "source-inventoried"
     },
     {
@@ -47598,12 +48161,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a1f10281adb5",
+      "id": "32261b92d23a",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 46,
+      "line": 200,
       "tag": "Button",
       "kind": "action",
-      "label": "يرجى إدخال اسم التقرير",
+      "label": "تقرير جديد",
       "section": "التقارير المجدولة",
       "binding": "",
       "type": "text",
@@ -47618,12 +48181,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c17fd7675b70",
+      "id": "928c3a999c64",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 47,
+      "line": 205,
       "tag": "DialogContent",
       "kind": "dialog",
-      "label": "تعديل التقرير إنشاء تقرير جديد التقارير المجدولة تقرير جديد نوع التقرير يومي أسبوعي شهري // @ts-ignore weekly قم بتخصيص إعدادات التقرير المجدول monthly يوم الشهر وقت الإرسال اسم التقرير بريد إلكتروني واتساب كلاهما email ",
+      "label": "تعديل التقرير إنشاء تقرير جديد قم بتخصيص إعدادات التقرير المجدول اسم التقرير نوع التقرير يومي أسبوعي شهري weekly يوم الإرسال monthly يوم الشهر وقت الإرسال طريقة الإرسال بريد إلكتروني واتساب كلاهما email both البريد الإلك",
       "section": "التقارير المجدولة",
       "binding": "",
       "type": "text",
@@ -47667,29 +48230,29 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7296c24a2a82",
+      "id": "64ccdb09a4fd",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 49,
+      "line": 227,
       "tag": "Input",
       "kind": "field",
-      "label": "تقرير جديد",
+      "label": "اسم التقرير",
       "section": "تعديل التقرير إنشاء تقرير جديد",
       "binding": "formData.name",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
-      "required": false,
+      "maxLength": "200",
+      "required": true,
       "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "c7a2e1bed18c",
+      "id": "48b30cfc98c0",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 49,
+      "line": 242,
       "tag": "Select",
       "kind": "field",
       "label": "نوع التقرير",
@@ -47714,18 +48277,18 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8f6abad6aa88",
+      "id": "ec4b4d0f1aed",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 51,
+      "line": 275,
       "tag": "Select",
       "kind": "field",
-      "label": "قم بتخصيص إعدادات التقرير المجدول",
+      "label": "يوم الإرسال",
       "section": "تعديل التقرير إنشاء تقرير جديد",
       "binding": "String(formData.scheduleDay)",
       "type": "select",
@@ -47747,9 +48310,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "70463f80b3ea",
+      "id": "3f1a8d524bec",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 51,
+      "line": 299,
       "tag": "Input",
       "kind": "field",
       "label": "يوم الشهر",
@@ -47760,7 +48323,7 @@
       "min": "1",
       "max": "28",
       "maxLength": "",
-      "required": false,
+      "required": true,
       "conditional": false,
       "conditions": [
         "formData.reportType === \"monthly\""
@@ -47769,9 +48332,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bef9038cc09a",
+      "id": "dbbc53ea3783",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 51,
+      "line": 319,
       "tag": "Input",
       "kind": "field",
       "label": "وقت الإرسال",
@@ -47782,19 +48345,19 @@
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": false,
+      "required": true,
       "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "b51ac7594001",
+      "id": "77a582c77061",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 53,
+      "line": 335,
       "tag": "Select",
       "kind": "field",
-      "label": "اسم التقرير",
+      "label": "طريقة الإرسال",
       "section": "تعديل التقرير إنشاء تقرير جديد",
       "binding": "formData.deliveryMethod",
       "type": "select",
@@ -47822,9 +48385,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "118e3fa4500d",
+      "id": "2e1415c81541",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 53,
+      "line": 363,
       "tag": "Input",
       "kind": "field",
       "label": "البريد الإلكتروني",
@@ -47835,40 +48398,40 @@
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": false,
+      "required": true,
       "conditional": false,
       "conditions": [
-        "(formData.deliveryMethod === \"email\" || formData.deliveryMethod === \"both\")"
+        "(formData.deliveryMethod === \"email\" ||\n                  formData.deliveryMethod === \"both\")"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "9077e0c120f0",
+      "id": "2269424e12fe",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 53,
+      "line": 384,
       "tag": "Input",
       "kind": "field",
       "label": "رقم الواتساب",
       "section": "تعديل التقرير إنشاء تقرير جديد",
       "binding": "formData.recipientPhone",
-      "type": "text",
+      "type": "tel",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": false,
-      "conditional": false,
+      "required": true,
+      "conditional": true,
       "conditions": [
-        "(formData.deliveryMethod === \"whatsapp\" || formData.deliveryMethod === \"both\")"
+        "(formData.deliveryMethod === \"whatsapp\" ||\n                  formData.deliveryMethod === \"both\")"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "24826c7e32aa",
+      "id": "4fe378e3bce3",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 408,
       "tag": "Switch",
       "kind": "field",
       "label": "المحادثات",
@@ -47886,9 +48449,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "07703f6755cd",
+      "id": "24c609aeab9f",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 420,
       "tag": "Switch",
       "kind": "field",
       "label": "الطلبات",
@@ -47906,9 +48469,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f55329f6afa0",
+      "id": "cd9a76bbabf6",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 432,
       "tag": "Switch",
       "kind": "field",
       "label": "الإيرادات",
@@ -47926,9 +48489,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8b5d60331a14",
+      "id": "ffd7b259b9ab",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 444,
       "tag": "Switch",
       "kind": "field",
       "label": "المنتجات",
@@ -47946,9 +48509,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e754e857adc2",
+      "id": "b6f7258b722a",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 456,
       "tag": "Switch",
       "kind": "field",
       "label": "العملاء",
@@ -47966,9 +48529,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0b2066134ee7",
+      "id": "2fb893f5e283",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 54,
+      "line": 468,
       "tag": "Switch",
       "kind": "field",
       "label": "المواعيد",
@@ -47986,12 +48549,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a4660a24265d",
+      "id": "6699b9d7bd54",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 56,
+      "line": 480,
       "tag": "Button",
       "kind": "action",
-      "label": "طريقة الإرسال",
+      "label": "إلغاء",
       "section": "تعديل التقرير إنشاء تقرير جديد",
       "binding": "() => setIsDialogOpen(false)",
       "type": "text",
@@ -48006,15 +48569,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fc5f1f9de7c1",
+      "id": "4b0dc2bc5028",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 56,
+      "line": 483,
       "tag": "Button",
       "kind": "action",
       "label": "تحديث إنشاء",
       "section": "تعديل التقرير إنشاء تقرير جديد",
-      "binding": "handleSubmit",
-      "type": "text",
+      "binding": "",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
@@ -48026,9 +48589,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "eb70df96dc72",
+      "id": "5ea402004862",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 62,
+      "line": 503,
       "tag": "Button",
       "kind": "action",
       "label": "إنشاء تقرير",
@@ -48048,12 +48611,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fb0d2afe33b3",
+      "id": "481054c36d97",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 63,
+      "line": 559,
       "tag": "Button",
       "kind": "action",
-      "label": "setIsDialogOpen(false)}>إلغاء",
+      "label": "تعديل",
       "section": "ScheduledReports",
       "binding": "() => handleEdit(report)",
       "type": "text",
@@ -48070,14 +48633,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bbfbe9253da7",
+      "id": "60879156d3b1",
       "file": "client/src/pages/ScheduledReports.tsx",
-      "line": 63,
+      "line": 567,
       "tag": "Button",
       "kind": "action",
-      "label": "",
+      "label": "حذف",
       "section": "ScheduledReports",
-      "binding": "() => deleteMutation.mutate({ id: report.id })",
+      "binding": "() => setDeleteId(report.id)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48092,13 +48655,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "74cba9144d31",
-      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 21,
-      "tag": "Calendar",
-      "kind": "field",
-      "label": "",
-      "section": "WhatsAppAutoNotifications",
+      "id": "36234b4f6a2a",
+      "file": "client/src/pages/ScheduledReports.tsx",
+      "line": 588,
+      "tag": "DialogContent",
+      "kind": "dialog",
+      "label": "حذف هذا الإعداد؟ سيتوقف استخدام هذا الإعداد بعد حذفه. يمكنك الإلغاء ومراجعة بياناته أولًا. إلغاء حذف",
+      "section": "ScheduledReports",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48112,72 +48675,132 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d978b6ccfbcc",
-      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 22,
-      "tag": "Calendar",
-      "kind": "field",
-      "label": "",
-      "section": "WhatsAppAutoNotifications",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "574fa82c479d",
-      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 23,
-      "tag": "Calendar",
-      "kind": "field",
-      "label": "",
-      "section": "WhatsAppAutoNotifications",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9bee841f1763",
-      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 24,
-      "tag": "Calendar",
-      "kind": "field",
-      "label": "",
-      "section": "WhatsAppAutoNotifications",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4d802135c7f8",
-      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 56,
+      "id": "c7a20147043a",
+      "file": "client/src/pages/ScheduledReports.tsx",
+      "line": 596,
       "tag": "Button",
       "kind": "action",
-      "label": "حجز موعد",
+      "label": "إلغاء",
+      "section": "حذف هذا الإعداد؟",
+      "binding": "() => setDeleteId(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "abf928b7ea55",
+      "file": "client/src/pages/ScheduledReports.tsx",
+      "line": 599,
+      "tag": "Button",
+      "kind": "action",
+      "label": "حذف",
+      "section": "حذف هذا الإعداد؟",
+      "binding": "() => {\n                if (deleteId !== null) deleteMutation.mutate({ id: deleteId });\n              }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "deleteMutation.isPending",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d064abb43de7",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 75,
+      "tag": "Calendar",
+      "kind": "field",
+      "label": "",
+      "section": "WhatsAppAutoNotifications",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "754a0934d008",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 80,
+      "tag": "Calendar",
+      "kind": "field",
+      "label": "",
+      "section": "WhatsAppAutoNotifications",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "89678eb74d4d",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 85,
+      "tag": "Calendar",
+      "kind": "field",
+      "label": "",
+      "section": "WhatsAppAutoNotifications",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7c39e94c2104",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 90,
+      "tag": "Calendar",
+      "kind": "field",
+      "label": "",
+      "section": "WhatsAppAutoNotifications",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "107581d819de",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 229,
+      "tag": "Button",
+      "kind": "action",
+      "label": "إشعار جديد",
       "section": "أتمتة إشعارات العملاء",
       "binding": "",
       "type": "text",
@@ -48192,12 +48815,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a4e8c091a729",
+      "id": "35b1e0353590",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 57,
+      "line": 234,
       "tag": "DialogContent",
       "kind": "dialog",
-      "label": "تعديل الإشعار إنشاء إشعار جديد تذكير بالموعد إلغاء الموعد - تغيير الموعد استعادة القالب الافتراضي المتغيرات المتاحة: {{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deliveryDate}}, {{ser",
+      "label": "تعديل الإشعار إنشاء إشعار جديد قم بتخصيص الرسالة التلقائية للعملاء نوع الحدث - نص الرسالة استعادة القالب الافتراضي المتغيرات المتاحة: {{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deli",
       "section": "أتمتة إشعارات العملاء",
       "binding": "",
       "type": "text",
@@ -48217,12 +48840,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c0f0bb81ce84",
+      "id": "bc347f910f91",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 59,
+      "line": 255,
       "tag": "Select",
       "kind": "field",
-      "label": "إلغاء الموعد",
+      "label": "نوع الحدث",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
       "binding": "formData.triggerType",
       "type": "select",
@@ -48242,15 +48865,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "866f85cafcd1",
+      "id": "a9a7c90632ee",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 60,
+      "line": 287,
       "tag": "Button",
       "kind": "action",
-      "label": "تغيير الموعد",
+      "label": "نص الرسالة",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
       "binding": "loadDefaultTemplate",
-      "type": "text",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
@@ -48262,32 +48885,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "faf1bf9f094f",
+      "id": "d6824b7650e0",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 60,
+      "line": 297,
       "tag": "Textarea",
       "kind": "field",
-      "label": "أدخل نص الرسالة...",
+      "label": "نص الرسالة",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
       "binding": "formData.messageTemplate",
       "type": "textarea",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
-      "required": false,
+      "maxLength": "4000",
+      "required": true,
       "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "dfacff53c50d",
+      "id": "9e061450d9a6",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 61,
+      "line": 323,
       "tag": "Switch",
       "kind": "field",
-      "label": "تم إنشاء الإشعار بنجاح",
+      "label": "تفعيل الإشعار",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
       "binding": "formData.isActive",
       "type": "checkbox",
@@ -48302,12 +48925,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "93a2e60a2f67",
+      "id": "c2ff29943227",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 63,
+      "line": 333,
       "tag": "Button",
       "kind": "action",
-      "label": "تم تحديث الإشعار بنجاح",
+      "label": "إلغاء",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
       "binding": "() => setIsDialogOpen(false)",
       "type": "text",
@@ -48322,15 +48945,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f32db9a6980b",
+      "id": "9785b4f15033",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 63,
+      "line": 336,
       "tag": "Button",
       "kind": "action",
       "label": "تحديث إنشاء",
       "section": "تعديل الإشعار إنشاء إشعار جديد",
-      "binding": "handleSubmit",
-      "type": "text",
+      "binding": "",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
@@ -48342,13 +48965,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "90566d2f4f01",
+      "id": "21d44aea1d5b",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 73,
+      "line": 390,
       "tag": "Button",
       "kind": "action",
-      "label": "",
-      "section": "تم حذف الإشعار بنجاح",
+      "label": "تعديل",
+      "section": "إشعارات الطلبات",
       "binding": "() => handleEdit(notification)",
       "type": "text",
       "options": [],
@@ -48364,14 +48987,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "51c98a371b07",
+      "id": "947a1f12e357",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 73,
+      "line": 398,
       "tag": "Button",
       "kind": "action",
-      "label": "",
-      "section": "تم حذف الإشعار بنجاح",
-      "binding": "() => deleteMutation.mutate({ id: notification.id })",
+      "label": "حذف",
+      "section": "إشعارات الطلبات",
+      "binding": "() => setDeleteId(notification.id)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48386,13 +49009,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f4057488ba90",
+      "id": "d6011a809fcc",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 78,
+      "line": 419,
       "tag": "Calendar",
       "kind": "field",
       "label": "",
-      "section": "تم حذف الإشعار بنجاح",
+      "section": "إشعارات الطلبات",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48406,13 +49029,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "677e45f59331",
+      "id": "d6495a905407",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 82,
+      "line": 457,
       "tag": "Button",
       "kind": "action",
-      "label": "",
-      "section": "إشعارات WhatsApp التلقائية",
+      "label": "تعديل",
+      "section": "إشعارات المواعيد",
       "binding": "() => handleEdit(notification)",
       "type": "text",
       "options": [],
@@ -48428,14 +49051,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f135560f1f76",
+      "id": "879696584ef8",
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "line": 82,
+      "line": 465,
       "tag": "Button",
       "kind": "action",
-      "label": "",
-      "section": "إشعارات WhatsApp التلقائية",
-      "binding": "() => deleteMutation.mutate({ id: notification.id })",
+      "label": "حذف",
+      "section": "إشعارات المواعيد",
+      "binding": "() => setDeleteId(notification.id)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48450,31 +49073,128 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8b001a695617",
+      "id": "4aee8a78ba43",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 489,
+      "tag": "DialogContent",
+      "kind": "dialog",
+      "label": "حذف هذا الإعداد؟ سيتوقف استخدام هذا الإعداد بعد حذفه. يمكنك الإلغاء ومراجعة بياناته أولًا. إلغاء حذف",
+      "section": "إشعارات المواعيد",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4b1d51c39597",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 497,
+      "tag": "Button",
+      "kind": "action",
+      "label": "إلغاء",
+      "section": "حذف هذا الإعداد؟",
+      "binding": "() => setDeleteId(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "215a77bdf9fe",
+      "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
+      "line": 500,
+      "tag": "Button",
+      "kind": "action",
+      "label": "حذف",
+      "section": "حذف هذا الإعداد؟",
+      "binding": "() => {\n                if (deleteId !== null) deleteMutation.mutate({ id: deleteId });\n              }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "deleteMutation.isPending",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bff86c3c06da",
       "file": "client/src/pages/Reports.tsx",
-      "line": 132,
-      "tag": "Select",
-      "kind": "field",
+      "line": 259,
+      "tag": "Button",
+      "kind": "action",
       "label": "",
-      "section": "التقارير والإحصائيات",
+      "section": "التقارير",
+      "binding": "() => setKind(k.id as Kind)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "34587fa1dc9a",
+      "file": "client/src/pages/Reports.tsx",
+      "line": 272,
+      "tag": "select",
+      "kind": "field",
+      "label": "الفترة",
+      "section": "التقارير",
       "binding": "period",
-      "type": "select",
+      "type": "text",
       "options": [
         {
-          "value": "day",
-          "label": "إجمالي الحملات"
+          "value": "p.id",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d49b081f42ae",
+      "file": "client/src/pages/Reports.tsx",
+      "line": 290,
+      "tag": "select",
+      "kind": "field",
+      "label": "عملة الطلبات",
+      "section": "التقارير",
+      "binding": "currency",
+      "type": "text",
+      "options": [
+        {
+          "value": "SAR",
+          "label": "SAR"
         },
         {
-          "value": "week",
-          "label": "قبلها مزود الإرسال"
-        },
-        {
-          "value": "month",
-          "label": "نسبة قبول المزود"
-        },
-        {
-          "value": "year",
-          "label": "قبول غير مؤكد"
+          "value": "USD",
+          "label": "USD"
         }
       ],
       "min": "",
@@ -48482,210 +49202,50 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "89add645beec",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 148,
-      "tag": "TabsTrigger",
-      "kind": "action",
-      "label": "قبول الحملات عبر الزمن",
-      "section": "قبول الحملات عبر الزمن",
-      "binding": "sales",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9446f52a0fa9",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 149,
-      "tag": "TabsTrigger",
-      "kind": "action",
-      "label": "رسائل قبلها مزود الإرسال؛ لا يُفترض منها التسليم أو القراءة",
-      "section": "رسائل قبلها مزود الإرسال؛ لا يُفترض منها التسليم أو القراءة",
-      "binding": "customers",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "61787882ac3b",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 150,
-      "tag": "TabsTrigger",
-      "kind": "action",
-      "label": "7 أيام",
-      "section": "7 أيام",
-      "binding": "conversations",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d0d3ae845625",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 158,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير PDF",
-      "section": "30 يوم",
-      "binding": "() => handleExportReport(\"المبيعات\", \"pdf\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "889fb9475588",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 166,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير Excel",
-      "section": "30 يوم",
-      "binding": "() => handleExportReport(\"المبيعات\", \"excel\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e54b78b8f158",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 278,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير PDF",
-      "section": "أرسل بموافقة صريحة",
-      "binding": "() => handleExportReport(\"العملاء\", \"pdf\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8a52b3ad24a9",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 286,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير Excel",
-      "section": "أرسل بموافقة صريحة",
-      "binding": "() => handleExportReport(\"العملاء\", \"excel\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "24a57afa4442",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 397,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير PDF",
-      "section": "ملخص الإرسال المثبت",
-      "binding": "() => handleExportReport(\"المحادثات\", \"pdf\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "20e797c720ed",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 405,
-      "tag": "Button",
-      "kind": "action",
-      "label": "تصدير Excel",
-      "section": "ملخص الإرسال المثبت",
-      "binding": "() => handleExportReport(\"المحادثات\", \"excel\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isExporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c3993f6bff07",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 437,
-      "tag": "Calendar",
-      "kind": "field",
-      "label": "",
-      "section": "متوسط وقت الرد",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
       "conditions": [
-        "loadingConversations"
+        "kind === \"sales\""
       ],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3aba8702de84",
+      "file": "client/src/pages/Reports.tsx",
+      "line": 301,
+      "tag": "Button",
+      "kind": "action",
+      "label": "جارٍ تجهيز الملف… تصدير Excel",
+      "section": "التقارير",
+      "binding": "exportExcel",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || exporting",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1bf6d8d87491",
+      "file": "client/src/pages/Reports.tsx",
+      "line": 310,
+      "tag": "Button",
+      "kind": "action",
+      "label": "طباعة / حفظ PDF",
+      "section": "التقارير",
+      "binding": "print",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || exporting",
       "review": "source-inventoried"
     },
     {

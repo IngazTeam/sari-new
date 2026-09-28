@@ -31,7 +31,7 @@ function draftReturn(answer = 'يمكن استرجاع المنتج غير ال�
 
 it('separates results, source files, actionable gaps and a sourced sales rubric', () => {
   expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
-  expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(4);
+  expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(5);
   expect(text()).toContain('نتائج مرتبطة بمصادرها');
   click('file', 'catalog'); expect(dialog()).toContain('ورقة المنتجات · صف 2');
   click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
@@ -114,4 +114,17 @@ it.each([{ name: 'payload.html', size: 20 }, { name: 'large.pdf', size: 6 * 1024
   Object.defineProperty(node('#brain-upload'), 'files', { value: [{ name, size }] });
   node('[data-brain-form="upload"]').reportValidity = () => true; submit('upload');
   expect(saved()).toBeNull(); expect(node('#brain-upload-error').textContent).toContain('لا يتجاوز 5 ميغابايت');
+});
+
+
+it('reviews eight learning cases without activating a policy or inflating sales proficiency',()=>{
+  click('navigate','learning');click('review-open');submit('review');expect(node('#brain-review-error').textContent).toContain('الثماني');
+  for(let i=0;i<8;i++){
+    set('#brain-review-baseline','الرد الحالي '+i);set('#brain-review-candidate','الرد المقترح '+i);set('#brain-review-reason','السبب '+i);
+    set('#brain-review-baselineVerdict','pass','change');set('#brain-review-candidateVerdict',i===7?'fail':'pass','change');
+    if(i<7)click('review-next');
+  }
+  node('#brain-review-attest').checked=true;set('#brain-review-reason','تعديل يستوجب مراجعة جديدة');expect(node('#brain-review-attest').checked).toBe(false);
+  node('#brain-review-attest').checked=true;submit('review');expect(saved().review.cases).toHaveLength(8);expect(saved().review.outcome).toContain('لم يجتز');
+  click('navigate','sales');expect(node('[data-brain-score]').textContent).toBe('74%');
 });

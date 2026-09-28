@@ -9,7 +9,8 @@ import { CheckoutDiscountRelease } from '@/components/CheckoutDiscountRelease';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
 import { SallaCheckoutReview } from '@/components/SallaCheckoutReview';
 import { trpc } from '@/lib/trpc';
-import { formatCurrency } from '@/../../shared/currency';
+import { formatMinorMoney } from '@shared/product-money';
+import type { Currency } from '@shared/currency';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -140,8 +141,8 @@ export default function Orders() {
     );
   };
 
-  const formatPrice = (price: number) => {
-    return formatCurrency(price, currency);
+  const formatPrice = (price: number, orderCurrency: Currency = currency) => {
+    return formatMinorMoney(price, orderCurrency, i18n.language);
   };
 
   if (isLoading) {
@@ -210,11 +211,11 @@ export default function Orders() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('ordersPage.totalRevenue')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reportWorkspaceUx.orderValueByCurrency')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
+              <div className="text-2xl font-bold">{stats.valuesByCurrency.map(value=><p key={value.currency}>{formatPrice(value.totalMinor,value.currency)}</p>)}</div>
             </CardContent>
           </Card>
         </div>
@@ -280,7 +281,7 @@ export default function Orders() {
                       <td className="p-4 font-medium">{order.orderNumber || `ORD-${order.id}`}</td>
                       <td className="p-4">{order.customerName}</td>
                       <td className="p-4 text-muted-foreground">{order.customerPhone}</td>
-                      <td className="p-4 font-medium">{formatPrice(order.totalAmount)}</td>
+                      <td className="p-4 font-medium">{formatPrice(order.totalAmount,order.currency)}</td>
                       <td className="p-4">{getStatusBadge(order.status)}</td>
                       <td className="p-4 text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
@@ -394,7 +395,7 @@ export default function Orders() {
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-muted-foreground">{t('ordersPage.quantity')}: {item.quantity}</p>
                       </div>
-                      <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
+                      <p className="font-medium">{formatPrice(item.price * item.quantity,selectedOrder.currency)}</p>
                     </div>
                   ))}
                 </div>
@@ -404,7 +405,7 @@ export default function Orders() {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>{t('ordersPage.total')}:</span>
-                  <span>{formatPrice(selectedOrder.totalAmount)}</span>
+                  <span>{formatPrice(selectedOrder.totalAmount,selectedOrder.currency)}</span>
                 </div>
               </div>
 

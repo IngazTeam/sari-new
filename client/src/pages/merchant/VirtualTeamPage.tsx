@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  ArrowUp,
+  ArrowDown,
   Plus,
   Pencil,
   Trash2,
@@ -39,6 +41,12 @@ import {
   type VirtualAgentDraft,
 } from "../../../../shared/virtual-agent-form";
 
+import {
+  agentLocalTime,
+  moveAgentIds,
+  selectVirtualAgent,
+} from "@shared/virtual-agent-routing";
+
 export default function VirtualTeamPage() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
@@ -55,6 +63,15 @@ export default function VirtualTeamPage() {
   const [deleting, setDeleting] = useState<Agent | null>(null);
   const [filter, setFilter] = useState("");
   const [saveError, setSaveError] = useState(false);
+  const [routingMessage, setRoutingMessage] = useState("");
+  const [routingTime, setRoutingTime] = useState(agentLocalTime);
+  const reorder = trpc.virtualAgents.reorder.useMutation({
+    onSuccess: () => {
+      void query.refetch();
+      toast.success(t("virtualTeamUx.reordered"));
+    },
+    onError: () => toast.error(t("virtualTeamUx.reorderFailed")),
+  });
   const saved = () => {
     void utils.virtualAgents.list.invalidate();
     setOpen(false);
@@ -85,6 +102,11 @@ export default function VirtualTeamPage() {
   });
   const busy = create.isPending || update.isPending;
   const agents = query.data || [];
+  const routingPreview = selectVirtualAgent(
+    agents,
+    routingMessage,
+    routingTime
+  );
   function edit(agent?: Agent) {
     setEditing(agent?.id ?? null);
     setKeywords("");
@@ -300,6 +322,53 @@ export default function VirtualTeamPage() {
             )
             .map(agent => (
               <Card key={agent.id} className="flex flex-col">
+                <div className="flex items-center gap-2 px-5 pt-4">
+                  <span className="text-xs text-muted-foreground flex-1">
+                    {t("virtualTeamUx.order")}{" "}
+                    {agents.findIndex(a => a.id === agent.id) + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t("virtualTeamUx.moveUp", { name: agent.name })}
+                    disabled={reorder.isPending || agents[0]?.id === agent.id}
+                    onClick={() =>
+                      reorder.mutate({
+                        orderedIds: moveAgentIds(
+                          agents.map(a => a.id),
+                          agent.id,
+                          -1
+                        ),
+                      })
+                    }
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t("virtualTeamUx.moveDown", {
+                      name: agent.name,
+                    })}
+                    disabled={
+                      reorder.isPending ||
+                      agents[agents.length - 1]?.id === agent.id
+                    }
+                    onClick={() =>
+                      reorder.mutate({
+                        orderedIds: moveAgentIds(
+                          agents.map(a => a.id),
+                          agent.id,
+                          1
+                        ),
+                      })
+                    }
+                  >
+                    <ArrowDown className="size-4" />
+                  </Button>
+                </div>
                 <CardContent className="flex flex-1 flex-col gap-4 p-5">
                   <div className="flex items-center gap-3">
                     <AgentAvatar avatar={agent.avatarEmoji || "default"} />
@@ -403,6 +472,54 @@ export default function VirtualTeamPage() {
           {t("virtualTeamUx.howDescription")}
         </p>
       </section>
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <h2 className="font-semibold">{t("virtualTeamUx.routingPreview")}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t("virtualTeamUx.routingPreviewHelp")}
+          </p>
+          <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+            <div>
+              <Label htmlFor="routing-message">
+                {t("virtualTeamUx.customerMessage")}
+              </Label>
+              <Input
+                id="routing-message"
+                value={routingMessage}
+                maxLength={500}
+                onChange={e => setRoutingMessage(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="routing-time">
+                {t("virtualTeamUx.riyadhTime")}
+              </Label>
+              <Input
+                id="routing-time"
+                type="time"
+                value={routingTime}
+                onChange={e => setRoutingTime(e.target.value)}
+              />
+            </div>
+          </div>
+          <p role="status" className="rounded-xl bg-muted p-4">
+            {routingPreview ? (
+              <>
+                <strong>{routingPreview.agent.name}</strong> ·{" "}
+                {t(
+                  routingPreview.reason === "keyword"
+                    ? "virtualTeamUx.matchKeyword"
+                    : routingPreview.reason === "default"
+                      ? "virtualTeamUx.matchDefault"
+                      : "virtualTeamUx.matchOrder"
+                )}
+              </>
+            ) : (
+              t("virtualTeamUx.noAvailablePersona")
+            )}
+          </p>
+        </CardContent>
+      </Card>
       <Dialog
         open={open}
         onOpenChange={value => {

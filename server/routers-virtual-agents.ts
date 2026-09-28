@@ -5,15 +5,20 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import { getDb, getMerchantByUserId } from './db';
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
+import { getDb, getMerchantById } from './db';
 import { eq, and } from "drizzle-orm";
+import { isCompleteAgentOrder } from "../shared/virtual-agent-routing";
 import { virtualAgents } from "../drizzle/schema";
+
+function checkShift(start:unknown,end:unknown) {
+  if(Boolean(start)!==Boolean(end)||(start&&start===end))throw new TRPCError({code:'BAD_REQUEST',message:'أدخل وقتين مختلفين للدوام أو أفرغهما معًا'});
+}
 
 export const virtualAgentsRouter = router({
   // List all agents for the current merchant
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  list: merchantProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const pool = await getDb();
@@ -25,12 +30,12 @@ export const virtualAgentsRouter = router({
   }),
 
   // Create a new agent
-  create: protectedProcedure
+  create: permissionProcedure('bot_settings.manage')
     .input(z.object({
-      name: z.string().min(1).max(100),
-      role: z.string().min(1).max(100),
+      name: z.string().trim().min(1).max(100),
+      role: z.string().trim().min(1).max(100),
       department: z.string().max(100).optional(),
-      personalityPrompt: z.string().min(1).max(2000),
+      personalityPrompt: z.string().trim().min(1).max(2000),
       tone: z.enum(['friendly', 'professional', 'casual', 'empathetic', 'persuasive']).optional(),
       avatarEmoji: z.string().max(10).optional(),
       isDefault: z.boolean().optional(),
@@ -40,12 +45,19 @@ export const virtualAgentsRouter = router({
       shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),   // HH:mm
     }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
     if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
 
+      checkShift(input.shiftStart,input.shiftEnd);
+      // Get max sort order + enforce limit
+      const existing = await pool.select().from(virtualAgents)
+        .where(eq(virtualAgents.merchantId, merchant.id));
+      if (existing.length >= 10) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 10 شخصيات' });
+      }
       // If setting as default, unset existing default
       if (input.isDefault) {
         await pool.update(virtualAgents)
@@ -53,12 +65,6 @@ export const virtualAgentsRouter = router({
           .where(eq(virtualAgents.merchantId, merchant.id));
       }
 
-      // Get max sort order + enforce limit
-      const existing = await pool.select().from(virtualAgents)
-        .where(eq(virtualAgents.merchantId, merchant.id));
-      if (existing.length >= 10) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 10 شخصيات' });
-      }
       const maxSort = existing.length > 0 ? Math.max(...existing.map(a => a.sortOrder)) : -1;
 
       const result = await pool.insert(virtualAgents).values({
@@ -82,13 +88,13 @@ export const virtualAgentsRouter = router({
     }),
 
   // Update an agent
-  update: protectedProcedure
+  update: permissionProcedure('bot_settings.manage')
     .input(z.object({
-      id: z.number(),
-      name: z.string().min(1).max(100).optional(),
-      role: z.string().min(1).max(100).optional(),
+      id: z.number().int().positive(),
+      name: z.string().trim().min(1).max(100).optional(),
+      role: z.string().trim().min(1).max(100).optional(),
       department: z.string().max(100).optional(),
-      personalityPrompt: z.string().max(2000).optional(),
+      personalityPrompt: z.string().trim().min(1).max(2000).optional(),
       tone: z.enum(['friendly', 'professional', 'casual', 'empathetic', 'persuasive']).optional(),
       avatarEmoji: z.string().max(10).optional(),
       isDefault: z.boolean().optional(),
@@ -99,7 +105,7 @@ export const virtualAgentsRouter = router({
       shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
@@ -111,6 +117,7 @@ export const virtualAgentsRouter = router({
         .where(and(eq(virtualAgents.id, id), eq(virtualAgents.merchantId, merchant.id)));
       if (!existing.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Agent not found' });
 
+      checkShift(data.shiftStart!==undefined?data.shiftStart:existing[0].shiftStart,data.shiftEnd!==undefined?data.shiftEnd:existing[0].shiftEnd);
       // If setting as default, unset existing default
       if (data.isDefault === true) {
         await pool.update(virtualAgents)
@@ -140,10 +147,10 @@ export const virtualAgentsRouter = router({
     }),
 
   // Delete an agent
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
+  delete: permissionProcedure('bot_settings.manage')
+    .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
@@ -155,10 +162,10 @@ export const virtualAgentsRouter = router({
     }),
 
   // Reorder agents
-  reorder: protectedProcedure
-    .input(z.object({ orderedIds: z.array(z.number()).max(10) }))
+  reorder: permissionProcedure('bot_settings.manage')
+    .input(z.object({ orderedIds: z.array(z.number().int().positive()).max(10) }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
@@ -168,13 +175,14 @@ export const virtualAgentsRouter = router({
       const existing = await pool.select().from(virtualAgents)
         .where(eq(virtualAgents.merchantId, merchant.id));
       const existingIds = new Set(existing.map(a => a.id));
-      const allValid = input.orderedIds.every(id => existingIds.has(id));
+      const allValid = isCompleteAgentOrder(Array.from(existingIds), input.orderedIds);
       if (!allValid) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid agent IDs' });
       }
 
+      await pool.transaction(async tx => {
       for (let i = 0; i < input.orderedIds.length; i++) {
-        await pool.update(virtualAgents)
+        await tx.update(virtualAgents)
           .set({ sortOrder: i })
           .where(and(
             eq(virtualAgents.id, input.orderedIds[i]),
@@ -182,12 +190,13 @@ export const virtualAgentsRouter = router({
           ));
       }
 
+      });
       return { success: true };
     }),
 
   // Seed template agents (convenience)
-  seedTemplates: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  seedTemplates: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const pool = await getDb();

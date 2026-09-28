@@ -1,0 +1,21 @@
+[
+  {
+    "route": "http://127.0.0.1:3018/merchant/scheduled-reports",
+    "result": "visible error state with retry",
+    "text": "500\n\nمساحة التاجر · ساري\n\nتعذّر عرض الصفحة\n\nحدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n\nإعادة المحاولة\nابحث عن أداة\n\nتحتاج مساعدة؟ تواصل مع الدعم"
+  },
+  {
+    "route": "http://127.0.0.1:3018/merchant/whatsapp-auto-notifications",
+    "result": "visible error state with retry",
+    "text": "500\n\nمساحة التاجر · ساري\n\nتعذّر عرض الصفحة\n\nحدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n\nإعادة المحاولة\nابحث عن أداة\n\nتحتاج مساعدة؟ تواصل مع الدعم"
+  },
+  {
+    "route": "http://127.0.0.1:3018/merchant/integrations-dashboard",
+    "result": "visible error state with retry; missing local notification tables",
+    "text": "500\n\nمساحة التاجر · ساري\n\nتعذّر عرض الصفحة\n\nحدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n\nإعادة المحاولة\nابحث عن أداة\n\nتحتاج مساعدة؟ تواصل مع الدعم"
+  },
+  {
+    "route": "/merchant/currency-settings",
+    "result": "USD saved, reload confirmed, restored SAR successfully"
+  }
+]

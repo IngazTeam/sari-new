@@ -62,6 +62,23 @@ const RISK_LABELS: Record<string, string> = {
 export default function SariBrain() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const brainViews = [
+    {id:'overview',label:t('brainWorkspaceUx.overview'),help:t('brainWorkspaceUx.overviewHelp')},
+    {id:'sources',label:t('brainWorkspaceUx.sources'),help:t('brainWorkspaceUx.sourcesHelp')},
+    {id:'knowledge',label:t('brainWorkspaceUx.knowledge'),help:t('brainWorkspaceUx.knowledgeHelp')},
+    {id:'sales',label:t('brainWorkspaceUx.sales'),help:t('brainWorkspaceUx.salesHelp')},
+    {id:'testing',label:t('brainWorkspaceUx.testing'),help:t('brainWorkspaceUx.testingHelp')},
+    {id:'history',label:t('brainWorkspaceUx.history'),help:t('brainWorkspaceUx.historyHelp')},
+  ];
+  const [brainView,setBrainView] = useState(() => {
+    const requested = new URLSearchParams(window.location.search).get('view');
+    return brainViews.some(v=>v.id===requested) ? requested! : 'overview';
+  });
+  const changeBrainView = (next:string) => {
+    setBrainView(next);
+    const url = new URL(window.location.href); url.searchParams.set('view',next);
+    window.history.replaceState(window.history.state,'',url);
+  };
   const utils = trpc.useUtils();
   const { data: sources, isLoading } = trpc.sariBrain.getSources.useQuery();
   const [logPage, setLogPage] = useState(1);
@@ -97,11 +114,9 @@ export default function SariBrain() {
   const [analysisStep, setAnalysisStep] = useState(0);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [fakeProgress, setFakeProgress] = useState(0);
+  const [reportedProgress, setReportedProgress] = useState(0);
   const [reassuranceIdx, setReassuranceIdx] = useState(0);
 
-  // Fake progressive progress targets per step (never shows 0%)
-  const STEP_PROGRESS = [8, 22, 41, 67, 85, 93, 100];
   // Cycling reassurance messages
   const REASSURANCE = [
     'ساري يبني فهمًا عميقًا لنشاطك...',
@@ -184,7 +199,7 @@ export default function SariBrain() {
     if (data.status === 'completed') {
       setPolling(false);
       setAnalysisStep(ANALYSIS_STEPS.length);
-      setFakeProgress(100);
+      setReportedProgress(100);
       setAnalysisResults(data);
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
@@ -200,36 +215,22 @@ export default function SariBrain() {
         setAnalysisStep(STEP_MAP[data.currentStep]);
       }
       if (data.progress && data.progress > 0) {
-        setFakeProgress(prev => Math.max(prev, data.progress)); // Never go backward
+        setReportedProgress(Math.max(0, Math.min(100, Number(data.progress) || 0)));
       }
     }
   }, [statusQuery.data, polling]);
 
-  // Smooth interpolation + reassurance (while polling) — no more fake step advancement
   useEffect(() => {
-    if (!polling) {
-      if (!analysisResults && !analysisError) { setAnalysisStep(0); setFakeProgress(0); }
-      return;
-    }
-    // Smooth progress interpolation between server updates (fills gaps between 3s polls)
-    const progressTimer = setInterval(() => {
-      setFakeProgress(prev => {
-        const target = STEP_PROGRESS[Math.min(analysisStep, STEP_PROGRESS.length - 1)];
-        if (prev >= target) return prev;
-        return Math.min(prev + Math.random() * 1.5 + 0.5, target); // Slower than before — just smoothing
-      });
-    }, 600);
-    const reassTimer = setInterval(() => {
-      setReassuranceIdx(prev => (prev + 1) % REASSURANCE.length);
-    }, 4000);
-    return () => { clearInterval(progressTimer); clearInterval(reassTimer); };
-  }, [polling, analysisStep]);
+    if (!polling) return;
+    const timer=setInterval(()=>setReassuranceIdx(prev=>(prev+1)%REASSURANCE.length),4000);
+    return ()=>clearInterval(timer);
+  },[polling]);
 
   const startAnalysis = () => {
     setAnalysisResults(null);
     setAnalysisError(null);
     setAnalysisStep(0);
-    setFakeProgress(8); // Start at 8%, never 0%
+    setReportedProgress(0);
     setReassuranceIdx(0);
     setAnalysisDialogOpen(true);
     reanalyzeMutation.mutate();
@@ -481,14 +482,30 @@ export default function SariBrain() {
       </div>
 
       {/* Stats Cards */}
-      <LearningAnalysisStatusCard />
-      <LearningEvidenceCard showManageLink={false} />
-      <SalesSectorSettings />
-      <SalesExperimentProtocol />
-      <SalesReplyReview />
-      <FollowupPolicySettings />
-      <DiscountPolicySettings />
-      <CheckoutMarginPolicySettings />
+      {polling && !analysisDialogOpen && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
+      <nav className="mw-feature-nav" aria-label={t('brainWorkspaceUx.navigation')}>
+        {brainViews.map(view=><Button key={view.id} type="button" variant={brainView===view.id?'secondary':'ghost'} aria-pressed={brainView===view.id} onClick={()=>changeBrainView(view.id)}>{view.label}</Button>)}
+      </nav>
+      <p className="text-sm text-muted-foreground" role="status">{brainViews.find(v=>v.id===brainView)?.help}</p>
+      <section hidden={brainView!=='overview'} className="space-y-6" data-brain-section="overview">
+        <LearningAnalysisStatusCard />
+        <LearningEvidenceCard showManageLink={false} />
+      </section>
+      <section hidden={brainView!=='sales'} className="space-y-5" data-brain-section="sales">
+        <Card><CardContent className="space-y-3 p-5">
+          <h2 className="font-semibold">{t('brainWorkspaceUx.proficiencyTitle')}</h2>
+          <p className="text-3xl font-semibold">— <span className="text-sm font-normal text-muted-foreground">{t('brainWorkspaceUx.proficiencyUnavailable')}</span></p>
+          <p className="text-sm text-muted-foreground">{t('brainWorkspaceUx.proficiencyHelp')}</p>
+          <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>changeBrainView('testing')}>{t('brainWorkspaceUx.openTesting')}</Button><Button variant="outline" onClick={()=>changeBrainView('knowledge')}>{t('brainWorkspaceUx.openKnowledge')}</Button></div>
+        </CardContent></Card>
+        <SalesSectorSettings />
+        <details className="mw-feature-details"><summary>{t('brainWorkspaceUx.experiments')}</summary><SalesExperimentProtocol /></details>
+        <details className="mw-feature-details"><summary>{t('brainWorkspaceUx.replyReview')}</summary><SalesReplyReview /></details>
+        <details className="mw-feature-details"><summary>{t('brainWorkspaceUx.followup')}</summary><FollowupPolicySettings /></details>
+        <details className="mw-feature-details"><summary>{t('brainWorkspaceUx.permissions')}</summary><div className="space-y-4"><DiscountPolicySettings /><CheckoutMarginPolicySettings /></div></details>
+      </section>
+      <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
+{/* Summary counters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -522,7 +539,10 @@ export default function SariBrain() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      </section>
+
+      <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
+{/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
         {websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
           /* ── Re-analysis: show warning dialog ── */
@@ -578,9 +598,11 @@ export default function SariBrain() {
         </Button>
       </div>
 
+      </section>
+
       {/* ═══ Analysis Progress Modal ═══ */}
-      <Dialog open={analysisDialogOpen} onOpenChange={(open) => { if (analysisResults || analysisError) setAnalysisDialogOpen(open); }}>
-        <DialogContent className="max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }}>
+      <Dialog open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}>
+        <DialogContent className="max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto">
           <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
               @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
               .insight-enter { animation: fadeInUp 0.5s ease-out; }`}</style>
@@ -588,6 +610,8 @@ export default function SariBrain() {
           {!analysisResults && !analysisError && (
             <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
           )}
+          {polling && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(false)}>{t('brainWorkspaceUx.background')}</Button>}
+          {statusQuery.isError && <p role="alert">{t('brainWorkspaceUx.statusError')} <Button variant="outline" onClick={()=>void statusQuery.refetch()}>{t('brainWorkspaceUx.retry')}</Button></p>}
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-3 justify-end">
               {analysisResults ? (
@@ -672,14 +696,14 @@ export default function SariBrain() {
               );
             })}
 
-            {/* Smooth progressive progress */}
+            {/* Progress reported by the analysis worker */}
             {!analysisResults && !analysisError && (
               <div className="mt-3">
                 <div className="flex justify-end mb-1.5">
-                  <span className="font-mono font-semibold text-primary text-xs">{Math.round(fakeProgress)}%</span>
+                  <span className="font-mono font-semibold text-primary text-xs">{reportedProgress > 0 ? `${Math.round(reportedProgress)}%` : t('brainWorkspaceUx.waiting')}</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${fakeProgress}%` }} />
+                  <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${reportedProgress}%` }} />
                 </div>
               </div>
             )}
@@ -739,7 +763,7 @@ export default function SariBrain() {
           {/* Footer — only show close button when done */}
           {(analysisResults || analysisError) && (
             <DialogFooter className="flex-row-reverse">
-              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setFakeProgress(0); }}>
+              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setReportedProgress(0); }}>
                 {analysisResults ? '👍 ممتاز، إغلاق' : 'إغلاق'}
               </Button>
             </DialogFooter>
@@ -747,7 +771,8 @@ export default function SariBrain() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ Knowledge Engine v4: Health Score + Sections + Conflicts ═══ */}
+      <section hidden={brainView !== 'knowledge'} className="space-y-6" data-brain-section="knowledge">
+{/* ═══ Knowledge Engine v4: Health Score + Sections + Conflicts ═══ */}
 
       {/* Pending Conflicts Banner */}
       {pendingReviews && pendingReviews.length > 0 && (
@@ -802,7 +827,10 @@ export default function SariBrain() {
         </Card>
       )}
 
-      {/* Health Score Card */}
+      </section>
+
+      <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
+{/* Health Score Card */}
       {healthScore && (
         <Card className="border-primary/20 overflow-hidden">
           <CardHeader className="bg-accent pb-3">
@@ -841,7 +869,10 @@ export default function SariBrain() {
         </Card>
       )}
 
-      {/* ═══ 💎 Sales Intelligence Card ═══ */}
+      </section>
+
+      <section hidden={brainView !== 'sales'} className="space-y-6" data-brain-section="sales">
+{/* ═══ 💎 Sales Intelligence Card ═══ */}
       {(() => {
         const intelSection = (knowledgeSections as any[] || []).find((s: any) => (s.section_type || s.sectionType) === 'sales_intel');
         if (!intelSection) return null;
@@ -924,7 +955,10 @@ export default function SariBrain() {
         );
       })()}
 
-      {/* Knowledge Sections Tree */}
+      </section>
+
+      <section hidden={brainView !== 'knowledge'} className="space-y-6" data-brain-section="knowledge">
+{/* Knowledge Sections Tree */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -1088,7 +1122,10 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
-      {/* ═══ Test Sari — Ask a test question ═══ */}
+      </section>
+
+      <section hidden={brainView !== 'testing'} className="space-y-6" data-brain-section="testing">
+{/* ═══ Test Sari — Ask a test question ═══ */}
       <Card className="border-primary/20 bg-accent">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1142,7 +1179,10 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
-      {/* Knowledge Sources */}
+      </section>
+
+      <section hidden={brainView !== 'sources'} className="space-y-6" data-brain-section="sources">
+{/* Knowledge Sources */}
       <Card>
         <CardHeader>
           <CardTitle>📦 مصادر المعرفة</CardTitle>
@@ -1582,7 +1622,10 @@ export default function SariBrain() {
         </Card>
       )}
 
-      {/* ═══ FAQ Management — Custom Q&A ═══ */}
+      </section>
+
+      <section hidden={brainView !== 'knowledge'} className="space-y-6" data-brain-section="knowledge">
+{/* ═══ FAQ Management — Custom Q&A ═══ */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1661,7 +1704,10 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
-      {/* ═══ Phase 2: Smart Intake — Content Preview & Analysis ═══ */}
+      </section>
+
+      <section hidden={brainView !== 'sources'} className="space-y-6" data-brain-section="sources">
+{/* ═══ Phase 2: Smart Intake — Content Preview & Analysis ═══ */}
       <Card className="border-2 border-dashed border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1876,7 +1922,10 @@ export default function SariBrain() {
           )}
         </CardContent>
       </Card>
-      {/* ═══ Quality Metrics Dashboard ═══ */}
+      </section>
+
+      <section hidden={brainView !== 'testing'} className="space-y-6" data-brain-section="testing">
+{/* ═══ Quality Metrics Dashboard ═══ */}
       {(() => {
         const { data: qualityData } = trpc.sariBrain.getQualityDashboard.useQuery({ days: 30 });
         if (!qualityData || qualityData.totalResponses === 0) return null;
@@ -1963,6 +2012,9 @@ export default function SariBrain() {
         );
       })()}
 
+      </section>
+
+      <section hidden={brainView !== 'history'} className="space-y-6" data-brain-section="history">
       {/* Activity Log — with filter + pagination */}
       {(() => {
         const logItems = activityLogData?.items || [];
@@ -2127,6 +2179,7 @@ export default function SariBrain() {
         </Card>
         );
       })()}
+      </section>
     </div>
   );
 }

@@ -52,6 +52,12 @@ body.merchant-surface [data-slot="dialog-content"].mw-persona-dialog {
   overflow: hidden;
 }
 .merchant-workspace [hidden] { display: none !important; }
+.mw-feature-nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--border); background: var(--card); border-radius: 14px; }
+.mw-feature-nav button { min-height: 44px; }
+.mw-feature-details { border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--card); }
+.mw-feature-details > summary { cursor: pointer; padding: 8px; font-weight: 600; min-height: 44px; }
+.mw-feature-details[open] > summary { margin-bottom: 16px; }
+.mw-feature-details > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
 body.merchant-surface [data-slot$="dialog-content"] {
   border-radius: 18px;
   max-height: calc(100dvh - 32px);
@@ -1417,4 +1423,12 @@ html:has(.merchant-workspace) {
   padding: 9px 12px;
   background: var(--card);
   font-size: 14px;
+}
+.sary-report-print { display: none; }
+@media print {
+  body:has(> .sary-report-print) > :not(.sary-report-print) { display: none !important; }
+  body > .sary-report-print { display: block; color: #111; background: white; padding: 12mm; }
+  .sary-report-print table { border-collapse: collapse; }
+  .sary-report-print tr, .sary-report-print dl > * { break-inside: avoid; }
+  .sary-report-print .overflow-x-auto { overflow: visible; }
 }

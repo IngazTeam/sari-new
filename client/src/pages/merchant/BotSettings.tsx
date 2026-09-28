@@ -1,7 +1,7 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { CheckoutMarginPolicySettings } from "@/components/CheckoutMarginPolicySettings";
 import { DiscountPolicySettings } from "@/components/DiscountPolicySettings";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -50,10 +50,15 @@ import {
   resolveTemplate,
 } from "@/constants/botTemplates";
 
+import { parseAgentKeywords } from "@shared/virtual-agent-form";
+
 export default function BotSettings() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [activeSection, setActiveSection] = useState("basics");
+
+  const initialized = useRef(false);
+  const [savedSnapshot, setSavedSnapshot] = useState("");
 
   // Get current settings
   const settingsQuery = trpc.botSettings.get.useQuery(undefined, {
@@ -64,7 +69,8 @@ export default function BotSettings() {
 
   // Update mutation
   const updateMutation = trpc.botSettings.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (_result, submitted) => {
+      setSavedSnapshot(JSON.stringify(submitted));
       toast.success(t("botSettingsPage.saveSuccess"));
       utils.botSettings.get.invalidate();
       utils.botSettings.shouldRespond.invalidate();
@@ -111,15 +117,16 @@ export default function BotSettings() {
 
   // Update form when settings load
   useEffect(() => {
-    if (settings) {
-      setFormData({
+    if (settings && !initialized.current) {
+      initialized.current = true;
+      const loadedForm = {
         // @ts-ignore
-        autoReplyEnabled: settings.autoReplyEnabled,
+        autoReplyEnabled: Boolean(settings.autoReplyEnabled),
         // @ts-ignore
-        workingHoursEnabled: settings.workingHoursEnabled,
+        workingHoursEnabled: Boolean(settings.workingHoursEnabled),
         workingHoursStart: settings.workingHoursStart || "09:00",
         workingHoursEnd: settings.workingHoursEnd || "18:00",
-        workingDays: settings.workingDays || "1,2,3,4,5",
+        workingDays: settings.workingDays ?? "1,2,3,4,5",
         welcomeMessage: settings.welcomeMessage || "",
         outOfHoursMessage: settings.outOfHoursMessage || "",
         responseDelay: settings.responseDelay ?? 2,
@@ -131,27 +138,44 @@ export default function BotSettings() {
         language: settings.language,
         // Custom Instructions
         customInstructions: (settings as any).customInstructions || "",
-      });
+      };
+      setFormData(loadedForm);
+      setSavedSnapshot(
+        JSON.stringify({
+          ...loadedForm,
+          groupMode: settings.groupMode || "disabled",
+          groupKeywords: JSON.stringify(
+            parseAgentKeywords(settings.groupKeywords)
+          ),
+          groupRedirectMessage: settings.groupRedirectMessage || "",
+          customInstructions: loadedForm.customInstructions || null,
+        })
+      );
       setGroupMode((settings as any).groupMode || "disabled");
-      try {
-        setGroupKeywords(
-          (settings as any).groupKeywords
-            ? JSON.parse((settings as any).groupKeywords)
-            : []
-        );
-      } catch {
-        setGroupKeywords([]);
-      }
+      setGroupKeywords(parseAgentKeywords(settings.groupKeywords));
       setGroupRedirectMessage((settings as any).groupRedirectMessage || "");
     }
   }, [settings]);
 
+  const currentSnapshot = JSON.stringify({
+    ...formData,
+    groupMode,
+    groupKeywords: JSON.stringify(
+      parseAgentKeywords([...groupKeywords, keywordInput])
+    ),
+    groupRedirectMessage,
+    customInstructions: formData.customInstructions || null,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const words = parseAgentKeywords([...groupKeywords, keywordInput]);
+    setGroupKeywords(words);
+    setKeywordInput("");
     updateMutation.mutate({
       ...formData,
       groupMode,
-      groupKeywords: JSON.stringify(groupKeywords),
+      groupKeywords: JSON.stringify(words),
       groupRedirectMessage,
       customInstructions: formData.customInstructions || null,
     } as any);
@@ -400,6 +424,11 @@ export default function BotSettings() {
         </Alert>
       )}
 
+      <p className="text-sm text-muted-foreground" role="status">
+        {savedSnapshot && currentSnapshot !== savedSnapshot
+          ? t("assistantSectionsUx.unsaved")
+          : t("assistantSectionsUx.saved")}
+      </p>
       <form
         onSubmit={handleSubmit}
         className="space-y-6"
@@ -913,6 +942,7 @@ export default function BotSettings() {
                 <button
                   key={opt.value}
                   type="button"
+                  aria-pressed={groupMode === opt.value}
                   onClick={() => setGroupMode(opt.value as any)}
                   className={`w-full text-right p-4 rounded-xl border-2 transition-all ${
                     groupMode === opt.value
@@ -935,7 +965,10 @@ export default function BotSettings() {
               {/* Keywords Input — shown when keyword_only */}
               {groupMode === "keyword_only" && (
                 <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
-                  <Label className="font-semibold flex items-center gap-2">
+                  <Label
+                    htmlFor="bot-group-keyword"
+                    className="font-semibold flex items-center gap-2"
+                  >
                     <KeyRound className="h-4 w-4" />
                     الكلمات المفتاحية
                   </Label>
@@ -966,6 +999,7 @@ export default function BotSettings() {
                   </div>
                   <div className="flex gap-2">
                     <Input
+                      id="bot-group-keyword"
                       value={keywordInput}
                       onChange={e => setKeywordInput(e.target.value)}
                       onKeyDown={e => {
@@ -1004,11 +1038,15 @@ export default function BotSettings() {
               {/* Redirect Message — shown when private_redirect */}
               {groupMode === "private_redirect" && (
                 <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
-                  <Label className="font-semibold flex items-center gap-2">
+                  <Label
+                    htmlFor="bot-group-redirect"
+                    className="font-semibold flex items-center gap-2"
+                  >
                     <ArrowUpRight className="h-4 w-4" />
                     رسالة التوجيه الخاص
                   </Label>
                   <Textarea
+                    id="bot-group-redirect"
                     value={groupRedirectMessage}
                     onChange={e => setGroupRedirectMessage(e.target.value)}
                     placeholder="مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊"

@@ -1,3 +1,4 @@
+import { orderValuesByCurrency } from "../shared/order-value-summary";
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
@@ -3952,6 +3953,7 @@ export async function getOrderStats(merchantId: number): Promise<{
   completed: number;
   cancelled: number;
   totalRevenue: number;
+  valuesByCurrency: {currency:"SAR"|"USD";totalMinor:number}[];
 }> {
   const db = await getDb();
   if (!db) return {
@@ -3960,6 +3962,7 @@ export async function getOrderStats(merchantId: number): Promise<{
     processing: 0,
     completed: 0,
     cancelled: 0,
+    valuesByCurrency: [],
     totalRevenue: 0
   };
 
@@ -3969,6 +3972,7 @@ export async function getOrderStats(merchantId: number): Promise<{
     .where(eq(orders.merchantId, merchantId));
 
   const stats = {
+    valuesByCurrency: orderValuesByCurrency(allOrders),
     total: allOrders.length,
     pending: allOrders.filter(o => o.status === 'pending').length,
     processing: allOrders.filter(o => o.status === 'processing' || o.status === 'shipped').length,

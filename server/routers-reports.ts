@@ -42,6 +42,7 @@ export const reportsRouter = router({
     getSalesReport: permissionProcedure('analytics.read')
         .input(z.object({
             period: z.enum(['day', 'week', 'month', 'year']),
+            currency: z.enum(['SAR','USD']).default('SAR'),
         }))
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -51,7 +52,7 @@ export const reportsRouter = router({
 
             const db = await getDb();
             if (!db) {
-                return { totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, conversionRate: 0, growth: 0, topProducts: [] };
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
             }
 
             const periodStart = getPeriodStartDate(input.period);
@@ -67,6 +68,7 @@ export const reportsRouter = router({
             .from(orders)
             .where(and(
                 eq(orders.merchantId, merchant.id),
+                eq(orders.currency, input.currency),
                 gte(orders.createdAt, periodStartStr),
                 inArray(orders.status, revenueStatuses),
             ));
@@ -83,6 +85,7 @@ export const reportsRouter = router({
             .from(orders)
             .where(and(
                 eq(orders.merchantId, merchant.id),
+                eq(orders.currency, input.currency),
                 gte(orders.createdAt, prevPeriodStartStr),
                 sql`${orders.createdAt} < ${periodStartStr}`,
                 inArray(orders.status, revenueStatuses),
@@ -115,6 +118,7 @@ export const reportsRouter = router({
                 .from(orders)
                 .where(and(
                     eq(orders.merchantId, merchant.id),
+                eq(orders.currency, input.currency),
                     gte(orders.createdAt, periodStartStr),
                     inArray(orders.status, revenueStatuses),
                 ));
@@ -147,6 +151,8 @@ export const reportsRouter = router({
                 averageOrderValue: Math.round(Number(stats?.averageOrderValue || 0)),
                 conversionRate,
                 growth,
+                growthAvailable: prevRevenue > 0,
+                currency: input.currency,
                 topProducts: topProductsList,
             };
         }),
@@ -164,7 +170,7 @@ export const reportsRouter = router({
 
             const db = await getDb();
             if (!db) {
-                return { totalCustomers: 0, newCustomers: 0, activeCustomers: 0, retentionRate: 0, topCustomers: [] };
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
             }
 
             const periodStart = getPeriodStartDate(input.period);
@@ -239,7 +245,7 @@ export const reportsRouter = router({
 
             const db = await getDb();
             if (!db) {
-                return { totalConversations: 0, averageResponseTime: 0, satisfactionRate: 0, conversionRate: 0, topTopics: [] };
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
             }
 
             const periodStart = getPeriodStartDate(input.period);
@@ -291,6 +297,9 @@ export const reportsRouter = router({
                 totalConversations: totalConvs,
                 averageResponseTime: 0, // TODO: Calculate from message timestamps when enough data
                 satisfactionRate,
+                responseTimeAvailable: false,
+                satisfactionAvailable: false,
+                topicsAvailable: false,
                 conversionRate,
                 topTopics: [], // TODO: Aggregate from keywordAnalysis table
             };

@@ -1,0 +1,1505 @@
+{
+  "sourceCommit": "52a4f0c8",
+  "scope": "API feature preservation per registered route; this does not prove each workflow is correct.",
+  "routes": [
+    {
+      "route": "/merchant/setup-wizard",
+      "queries": [
+        "setupWizard.getProgress",
+        "setupWizard.getTemplates"
+      ],
+      "mutations": [
+        "setupWizard.saveProgress",
+        "setupWizard.completeSetup",
+        "setupWizard.applyTemplate",
+        "analysis.previewAnalysis",
+        "testSari.sendMessage"
+      ]
+    },
+    {
+      "route": "/merchant",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/dashboard",
+      "queries": [
+        "merchants.getCurrent",
+        "merchants.getOnboardingStatus",
+        "dashboard.getSummary",
+        "conversations.listRecent",
+        "conversations.count",
+        "campaigns.getStats",
+        "reviews.getStats",
+        "dashboard.getAiInsights",
+        "sariBrain.getIntegrationSyncStatus",
+        "merchantSubscription.getCurrentSubscription",
+        "sariBrain.getLearningDashboard",
+        "sariBrain.getLearningPolicyReview",
+        "sariBrain.getLearningPolicyCandidate",
+        "sariBrain.getLearningPolicyEvaluation",
+        "sariBrain.getLearningPolicyOutputReview",
+        "sariBrain.getLearningPolicyEvaluationHistory",
+        "sariBrain.getLearningPolicyOutputReviewHistory",
+        "sariBrain.getLearningPolicyOutputReviewRecord",
+        "sariBrain.getSalesSector",
+        "sariBrain.getSalesExperimentProtocolHistory",
+        "sariBrain.getSalesExperimentProtocol",
+        "sariBrain.getSalesExperimentLaunchStatus",
+        "sariBrain.prepareSalesExperimentLaunch",
+        "sariBrain.prepareSalesExperimentCohort",
+        "sariBrain.listSalesExperimentCohortSources",
+        "sariBrain.inspectSalesExperimentCohort",
+        "sariBrain.getSalesExperimentReviewWorkspace",
+        "sariBrain.getSalesExperimentReviewHistory"
+      ],
+      "mutations": [
+        "sariBrain.recordLearningPolicyReview",
+        "sariBrain.createLearningPolicyCandidate",
+        "sariBrain.startLearningPolicyEvaluation",
+        "sariBrain.advanceLearningPolicyEvaluation",
+        "sariBrain.cancelLearningPolicyEvaluation",
+        "sariBrain.recordLearningPolicyOutputReview",
+        "sariBrain.registerSalesExperimentProtocol",
+        "sariBrain.withdrawSalesExperimentProtocol",
+        "sariBrain.authorizeSalesExperimentLaunch",
+        "sariBrain.revokeSalesExperimentLaunch",
+        "sariBrain.freezeSalesExperimentCohort",
+        "sariBrain.recordSalesExperimentReview"
+      ]
+    },
+    {
+      "route": "/merchant/ai-hub",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/analytics-hub",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/campaigns",
+      "queries": [
+        "campaigns.list",
+        "campaigns.getSendProgress",
+        "campaigns.getManualReviewSummary"
+      ],
+      "mutations": [
+        "campaigns.delete",
+        "campaigns.send",
+        "campaigns.acknowledgeManualReview"
+      ]
+    },
+    {
+      "route": "/merchant/campaigns/new",
+      "queries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "mutations": [
+        "campaigns.create",
+        "campaigns.update"
+      ]
+    },
+    {
+      "route": "/merchant/campaigns/:id/edit",
+      "queries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "mutations": [
+        "campaigns.create",
+        "campaigns.update"
+      ]
+    },
+    {
+      "route": "/merchant/campaigns/:id",
+      "queries": [
+        "campaigns.getById"
+      ],
+      "mutations": [
+        "campaigns.send"
+      ]
+    },
+    {
+      "route": "/merchant/campaigns/:id/report",
+      "queries": [
+        "campaigns.getReport"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/products",
+      "queries": [
+        "merchants.getCurrent",
+        "products.list"
+      ],
+      "mutations": [
+        "products.create",
+        "products.update",
+        "products.delete",
+        "products.bulkDelete"
+      ]
+    },
+    {
+      "route": "/merchant/products/upload",
+      "queries": [
+        "products.getSheetSyncStatus"
+      ],
+      "mutations": [
+        "products.uploadCSV",
+        "products.uploadExcel",
+        "products.smartImport",
+        "products.syncFromGoogleSheets"
+      ]
+    },
+    {
+      "route": "/merchant/conversations",
+      "queries": [
+        "conversations.list",
+        "merchants.getCurrent",
+        "conversations.connectionStatus",
+        "conversations.getMessages",
+        "conversations.listTeamStaffAttempts",
+        "conversations.listStaffTeamReviews",
+        "conversations.staffTeamReviewAccess",
+        "conversations.getHandoff",
+        "conversations.getHandoffSource",
+        "conversations.listEscalationRelays",
+        "conversations.listSalesOfferAttempts",
+        "conversations.listStaffAttempts",
+        "aiSuggestions.getQuickSuggestions"
+      ],
+      "mutations": [
+        "conversations.sendReply",
+        "conversations.sendVoiceReply",
+        "conversations.syncFromWhatsApp",
+        "conversations.diagnoseWebhook",
+        "conversations.checkTeamStaffAttempt",
+        "conversations.setOwnership",
+        "conversations.reviewEscalationRelay",
+        "conversations.reviewSalesOffer",
+        "conversations.checkStaffAttempt",
+        "aiSuggestions.generateSuggestions"
+      ]
+    },
+    {
+      "route": "/merchant/whatsapp",
+      "queries": [
+        "merchants.getCurrent",
+        "whatsappInstances.listSafe",
+        "whatsappInstances.getUsage",
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection",
+        "whatsappInstances.getReconnectQR",
+        "whatsappInstances.confirmReconnect"
+      ],
+      "mutations": [
+        "whatsappRequests.create",
+        "whatsappInstances.toggleStatus",
+        "whatsappInstances.setPrimary",
+        "whatsappInstances.completeMetaEmbeddedSignup",
+        "whatsappInstances.refreshInstance",
+        "whatsappInstances.reconnect"
+      ]
+    },
+    {
+      "route": "/merchant/salla",
+      "queries": [
+        "salla.getConnection",
+        "salla.getSyncLogs",
+        "salla.listEffects",
+        "salla.listEffectReviews",
+        "salla.effectReviewAccess"
+      ],
+      "mutations": [
+        "salla.connect",
+        "salla.disconnect",
+        "salla.syncNow",
+        "salla.checkEffect"
+      ]
+    },
+    {
+      "route": "/merchant/integrations/byaan",
+      "queries": [
+        "integrations.getByaanStatus"
+      ],
+      "mutations": [
+        "integrations.connectByaan",
+        "integrations.testByaanConnection"
+      ]
+    },
+    {
+      "route": "/merchant/byaan-dashboard",
+      "queries": [
+        "byaan.getStatus",
+        "byaan.getTrainees",
+        "byaan.getFaqs"
+      ],
+      "mutations": [
+        "byaan.triggerResync",
+        "byaan.toggleFaq"
+      ]
+    },
+    {
+      "route": "/merchant/integrations/zid",
+      "queries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "mutations": [
+        "zid.beginOAuth",
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ]
+    },
+    {
+      "route": "/merchant/zid/settings",
+      "queries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "mutations": [
+        "zid.beginOAuth",
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ]
+    },
+    {
+      "route": "/merchant/zid/callback",
+      "queries": [],
+      "mutations": [
+        "zid.handleOAuthCallback"
+      ]
+    },
+    {
+      "route": "/merchant/zid/products",
+      "queries": [
+        "zid.getConnection"
+      ],
+      "mutations": [
+        "zid.syncNow"
+      ]
+    },
+    {
+      "route": "/merchant/zid/sync-logs",
+      "queries": [
+        "zid.getSyncLogs",
+        "zid.getSyncStats"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/woocommerce/settings",
+      "queries": [
+        "woocommerce.getSettings"
+      ],
+      "mutations": [
+        "woocommerce.saveSettings",
+        "woocommerce.testConnection",
+        "woocommerce.syncProducts",
+        "woocommerce.syncOrders",
+        "woocommerce.reconcileWebhookIncidents",
+        "woocommerce.disconnect"
+      ]
+    },
+    {
+      "route": "/merchant/woocommerce/products",
+      "queries": [
+        "woocommerce.getProducts",
+        "woocommerce.searchProducts"
+      ],
+      "mutations": [
+        "woocommerce.syncProducts"
+      ]
+    },
+    {
+      "route": "/merchant/woocommerce/orders",
+      "queries": [
+        "woocommerce.getOrders"
+      ],
+      "mutations": [
+        "woocommerce.syncOrders",
+        "woocommerce.updateOrderStatus",
+        "woocommerce.sendOrderNotification"
+      ]
+    },
+    {
+      "route": "/merchant/woocommerce/analytics",
+      "queries": [
+        "woocommerce.getSalesStats",
+        "woocommerce.getTopProducts",
+        "woocommerce.getConversionRate",
+        "woocommerce.getCustomerStats"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/integrations/calendly",
+      "queries": [
+        "calendly.getConnection",
+        "calendly.getUpcomingEvents",
+        "calendly.getEventTypes",
+        "calendly.getStats"
+      ],
+      "mutations": [
+        "calendly.connect",
+        "calendly.disconnect",
+        "calendly.syncNow",
+        "calendly.updateSettings"
+      ]
+    },
+    {
+      "route": "/merchant/chat-orders",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/discounts",
+      "queries": [
+        "discounts.list",
+        "discounts.getStats"
+      ],
+      "mutations": [
+        "discounts.create",
+        "discounts.update",
+        "discounts.delete"
+      ]
+    },
+    {
+      "route": "/merchant/referrals",
+      "queries": [
+        "referrals.getMyCode",
+        "referrals.getMyReferrals",
+        "referrals.getMyRewards",
+        "referrals.getStats"
+      ],
+      "mutations": [
+        "referrals.claimReward"
+      ]
+    },
+    {
+      "route": "/merchant/abandoned-carts",
+      "queries": [
+        "merchants.getCurrent",
+        "abandonedCarts.list",
+        "abandonedCarts.getStats"
+      ],
+      "mutations": [
+        "abandonedCarts.sendReminder",
+        "abandonedCarts.markRecovered"
+      ]
+    },
+    {
+      "route": "/merchant/occasion-campaigns",
+      "queries": [
+        "occasionCampaigns.list",
+        "occasionCampaigns.getStats",
+        "occasionCampaigns.getUpcoming"
+      ],
+      "mutations": [
+        "occasionCampaigns.toggle",
+        "occasionCampaigns.create"
+      ]
+    },
+    {
+      "route": "/merchant/promotions",
+      "queries": [
+        "promotions.list",
+        "promotions.getStats"
+      ],
+      "mutations": [
+        "promotions.create",
+        "promotions.update",
+        "promotions.toggleActive",
+        "promotions.delete"
+      ]
+    },
+    {
+      "route": "/merchant/analytics",
+      "queries": [
+        "merchants.getCurrent",
+        "analytics.getDashboardKPIs",
+        "analytics.getRevenueTrends",
+        "analytics.getTopProducts",
+        "analytics.getCampaignAnalytics",
+        "analytics.getCustomerSegments",
+        "analytics.getHourlyAnalytics",
+        "analytics.getWeekdayAnalytics",
+        "analytics.getDiscountCodeAnalytics"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/message-analytics",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/overview-analytics",
+      "queries": [
+        "merchants.getCurrent",
+        "abandonedCarts.getStats",
+        "messageAnalytics.getConversionRate",
+        "referrals.getStats",
+        "orders.getStats"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/orders",
+      "queries": [
+        "merchants.getCurrent",
+        "orders.getWithFilters",
+        "orders.getStats",
+        "botSettings.getMarginPolicy",
+        "orders.previewCheckoutMargin",
+        "orders.getCheckoutMarginException",
+        "orders.getCheckoutAttempts",
+        "orders.getCheckoutDiscountRelease",
+        "orders.listZidReconciliations"
+      ],
+      "mutations": [
+        "orders.updateStatus",
+        "orders.cancel",
+        "orders.approveCheckoutInvoice",
+        "orders.reconcileCheckoutAttempt",
+        "orders.releaseCheckoutDiscount",
+        "orders.reconcileZidCheckout"
+      ]
+    },
+    {
+      "route": "/merchant/whatsapp-instances",
+      "queries": [
+        "merchants.getCurrent",
+        "whatsappInstances.listSafe",
+        "whatsappInstances.getUsage",
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection",
+        "whatsappInstances.getReconnectQR",
+        "whatsappInstances.confirmReconnect"
+      ],
+      "mutations": [
+        "whatsappRequests.create",
+        "whatsappInstances.toggleStatus",
+        "whatsappInstances.setPrimary",
+        "whatsappInstances.completeMetaEmbeddedSignup",
+        "whatsappInstances.refreshInstance",
+        "whatsappInstances.reconnect"
+      ]
+    },
+    {
+      "route": "/merchant/whatsapp-setup",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-test",
+      "queries": [
+        "whatsapp.getPrimaryInstance"
+      ],
+      "mutations": [
+        "whatsapp.saveInstance",
+        "whatsapp.deleteInstance",
+        "whatsapp.sendTestMessage",
+        "whatsapp.sendTestImage",
+        "whatsapp.testConnection"
+      ]
+    },
+    {
+      "route": "/merchant/greenapi-setup",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/test-sari",
+      "queries": [],
+      "mutations": [
+        "testSari.createConversation",
+        "testSari.saveMessage",
+        "testSari.markAsDeal",
+        "testSari.sendMessage",
+        "testSari.resetConversation"
+      ]
+    },
+    {
+      "route": "/merchant/metrics-dashboard",
+      "queries": [
+        "testSari.getMetrics"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-webhook-setup",
+      "queries": [
+        "auth.me"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/bot-settings",
+      "queries": [
+        "botSettings.get",
+        "botSettings.shouldRespond",
+        "botSettings.getMarginPolicy",
+        "botSettings.getDiscountPolicy"
+      ],
+      "mutations": [
+        "botSettings.update",
+        "botSettings.sendTestMessage",
+        "botSettings.updateMarginPolicy",
+        "botSettings.updateDiscountPolicy"
+      ]
+    },
+    {
+      "route": "/merchant/human-takeover",
+      "queries": [
+        "botSettings.get",
+        "botSettings.getTakeoverConversations"
+      ],
+      "mutations": [
+        "botSettings.update"
+      ]
+    },
+    {
+      "route": "/merchant/virtual-team",
+      "queries": [
+        "virtualAgents.list"
+      ],
+      "mutations": [
+        "virtualAgents.create",
+        "virtualAgents.update",
+        "virtualAgents.delete",
+        "virtualAgents.seedTemplates"
+      ]
+    },
+    {
+      "route": "/merchant/sari-brain",
+      "queries": [
+        "sariBrain.getSources",
+        "sariBrain.getActivityLog",
+        "sariBrain.getFaqs",
+        "sariBrain.getHealthScore",
+        "sariBrain.getKnowledgeSections",
+        "sariBrain.getPendingReviews",
+        "sariBrain.getAnalysisStatus",
+        "sariBrain.getWebsiteKnowledge",
+        "sariBrain.getPageContent",
+        "sariBrain.getQualityDashboard",
+        "botSettings.getMarginPolicy",
+        "botSettings.getDiscountPolicy",
+        "sariBrain.getLearningAnalysisStatus",
+        "sariBrain.getLearningDashboard",
+        "sariBrain.getLearningPolicyReview",
+        "sariBrain.getLearningPolicyCandidate",
+        "sariBrain.getLearningPolicyEvaluation",
+        "sariBrain.getLearningPolicyOutputReview",
+        "sariBrain.getLearningPolicyEvaluationHistory",
+        "sariBrain.getLearningPolicyOutputReviewHistory",
+        "sariBrain.getLearningPolicyOutputReviewRecord",
+        "sariBrain.getSalesSector",
+        "sariBrain.getSalesExperimentProtocolHistory",
+        "sariBrain.getSalesExperimentProtocol",
+        "sariBrain.getSalesExperimentLaunchStatus",
+        "sariBrain.prepareSalesExperimentLaunch",
+        "sariBrain.prepareSalesExperimentCohort",
+        "sariBrain.listSalesExperimentCohortSources",
+        "sariBrain.inspectSalesExperimentCohort",
+        "sariBrain.getSalesExperimentReviewWorkspace",
+        "sariBrain.getSalesExperimentReviewHistory",
+        "sariBrain.listSalesReplyReviews",
+        "sariBrain.getSalesReplyReviewWorkspace",
+        "sariBrain.getSalesReplySendWorkspace",
+        "sariBrain.getFollowupPolicy"
+      ],
+      "mutations": [
+        "sariBrain.deleteSource",
+        "sariBrain.resetBrain",
+        "sariBrain.reanalyzeWebsite",
+        "sariBrain.createSection",
+        "sariBrain.deleteSection",
+        "sariBrain.approveSection",
+        "sariBrain.analyzeContent",
+        "sariBrain.ingestAnalyzedContent",
+        "sariBrain.testSari",
+        "sariBrain.createFaq",
+        "sariBrain.deleteFaq",
+        "sariBrain.addCustomUrl",
+        "sariBrain.togglePageInBot",
+        "sariBrain.deleteDiscoveredPage",
+        "sariBrain.previewUrl",
+        "botSettings.updateMarginPolicy",
+        "botSettings.updateDiscountPolicy",
+        "sariBrain.recordLearningPolicyReview",
+        "sariBrain.createLearningPolicyCandidate",
+        "sariBrain.startLearningPolicyEvaluation",
+        "sariBrain.advanceLearningPolicyEvaluation",
+        "sariBrain.cancelLearningPolicyEvaluation",
+        "sariBrain.recordLearningPolicyOutputReview",
+        "sariBrain.registerSalesExperimentProtocol",
+        "sariBrain.withdrawSalesExperimentProtocol",
+        "sariBrain.authorizeSalesExperimentLaunch",
+        "sariBrain.revokeSalesExperimentLaunch",
+        "sariBrain.freezeSalesExperimentCohort",
+        "sariBrain.recordSalesExperimentReview",
+        "sariBrain.updateSalesSector",
+        "sariBrain.submitSalesReplyReview",
+        "sariBrain.submitSalesReplySend",
+        "sariBrain.updateFollowupPolicy"
+      ]
+    },
+    {
+      "route": "/merchant/sari-playground",
+      "queries": [],
+      "mutations": [
+        "ai.chat"
+      ]
+    },
+    {
+      "route": "/merchant/sari-analytics",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/sales-hub",
+      "queries": [
+        "sariBrain.getQuotations",
+        "sariBrain.getQuotationStats",
+        "sariBrain.getCurrentTarget"
+      ],
+      "mutations": [
+        "sariBrain.createQuotation",
+        "sariBrain.updateQuotationStatus",
+        "sariBrain.setMonthlyTarget",
+        "sariBrain.sendQuotationToCustomer"
+      ]
+    },
+    {
+      "route": "/merchant/sales-pipeline",
+      "queries": [
+        "salesPipeline.getActionCounts",
+        "salesPipeline.getKPIs",
+        "salesPipeline.getPipeline",
+        "salesPipeline.getLossBreakdown"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/acquisition-report",
+      "queries": [
+        "merchants.getCurrent",
+        "analytics.getAcquisitionSources"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/quotation-templates",
+      "queries": [
+        "sariBrain.getQuotationTemplates"
+      ],
+      "mutations": [
+        "sariBrain.createQuotationTemplate",
+        "sariBrain.updateQuotationTemplate",
+        "sariBrain.deleteQuotationTemplate"
+      ]
+    },
+    {
+      "route": "/merchant/media-library",
+      "queries": [
+        "media.list",
+        "media.getStats"
+      ],
+      "mutations": [
+        "media.upload",
+        "media.delete"
+      ]
+    },
+    {
+      "route": "/merchant/scheduled-messages",
+      "queries": [
+        "scheduledMessages.list"
+      ],
+      "mutations": [
+        "scheduledMessages.create",
+        "scheduledMessages.update",
+        "scheduledMessages.delete",
+        "scheduledMessages.toggle"
+      ]
+    },
+    {
+      "route": "/merchant/sari-personality",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/quick-responses",
+      "queries": [
+        "quickResponses.list",
+        "quickResponses.getStats"
+      ],
+      "mutations": [
+        "quickResponses.create",
+        "quickResponses.update",
+        "quickResponses.delete"
+      ]
+    },
+    {
+      "route": "/merchant/insights",
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/advanced-analytics",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/analytics-dashboard",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/performance-metrics",
+      "queries": [
+        "performance.getPerformanceMetrics"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/data-sync",
+      "queries": [
+        "sheets.getStatus"
+      ],
+      "mutations": [
+        "sheets.syncInventory"
+      ]
+    },
+    {
+      "route": "/merchant/reviews",
+      "queries": [
+        "merchants.getCurrent",
+        "reviews.list",
+        "reviews.getStats"
+      ],
+      "mutations": [
+        "reviews.reply"
+      ]
+    },
+    {
+      "route": "/merchant/booking-reviews",
+      "queries": [
+        "bookingReviews.list"
+      ],
+      "mutations": [
+        "bookingReviews.reply"
+      ]
+    },
+    {
+      "route": "/merchant/order-notifications",
+      "queries": [
+        "orderNotifications.getTemplates",
+        "orderNotifications.getHealth"
+      ],
+      "mutations": [
+        "orderNotifications.updateTemplate",
+        "orderNotifications.acknowledgeIncidents"
+      ]
+    },
+    {
+      "route": "/merchant/settings",
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "knowledgeDocs.getCurrent"
+      ],
+      "mutations": [
+        "knowledgeDocs.delete",
+        "knowledgeDocs.reprocess",
+        "auth.updateProfile",
+        "auth.emailVerification.sendVerificationEmail",
+        "merchants.update",
+        "setupWizard.resetWizard"
+      ]
+    },
+    {
+      "route": "/merchant/privacy-center",
+      "queries": [
+        "accountData.getState"
+      ],
+      "mutations": [
+        "accountData.setMarketingConsent",
+        "accountData.exportPersonalData",
+        "accountData.requestDeletion",
+        "accountData.submitRequest"
+      ]
+    },
+    {
+      "route": "/merchant/notifications",
+      "queries": [
+        "notifications.list",
+        "notifications.unreadCount"
+      ],
+      "mutations": [
+        "notifications.markAsRead",
+        "notifications.markAllAsRead",
+        "notifications.delete"
+      ]
+    },
+    {
+      "route": "/merchant/language-settings",
+      "queries": [
+        "botSettings.get"
+      ],
+      "mutations": [
+        "botSettings.update"
+      ]
+    },
+    {
+      "route": "/merchant/calendar/settings",
+      "queries": [
+        "calendar.getStatus"
+      ],
+      "mutations": [
+        "calendar.disconnect"
+      ]
+    },
+    {
+      "route": "/merchant/calendar",
+      "queries": [
+        "calendar.listAppointments",
+        "calendar.getStatus",
+        "calendar.getSyncReview",
+        "calendar.getReminderReview"
+      ],
+      "mutations": [
+        "calendar.cancelAppointment",
+        "calendar.reconcileSync"
+      ]
+    },
+    {
+      "route": "/merchant/staff",
+      "queries": [
+        "staff.list"
+      ],
+      "mutations": [
+        "staff.create",
+        "staff.update",
+        "staff.delete"
+      ]
+    },
+    {
+      "route": "/merchant/team",
+      "queries": [
+        "team.list"
+      ],
+      "mutations": [
+        "team.invite",
+        "team.remove",
+        "team.revokeInvite"
+      ]
+    },
+    {
+      "route": "/merchant/services",
+      "queries": [
+        "services.list",
+        "serviceCategories.list"
+      ],
+      "mutations": [
+        "services.delete"
+      ]
+    },
+    {
+      "route": "/merchant/services/new",
+      "queries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "mutations": [
+        "services.create",
+        "services.update"
+      ]
+    },
+    {
+      "route": "/merchant/services/:id/edit",
+      "queries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "mutations": [
+        "services.create",
+        "services.update"
+      ]
+    },
+    {
+      "route": "/merchant/services/:id",
+      "queries": [
+        "services.getById"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/bookings",
+      "queries": [
+        "bookings.list",
+        "bookings.getStats",
+        "services.list",
+        "bookings.getCheckoutAttempts",
+        "bookings.getPaymentLinkRenewal",
+        "bookings.getCalendarReview",
+        "bookings.getConsentReview",
+        "bookings.getOperationHistory",
+        "bookings.getCancellationReview",
+        "bookings.getRescheduleReview"
+      ],
+      "mutations": [
+        "bookings.create",
+        "bookings.reconcileCheckoutAttempt",
+        "bookings.renewPaymentLink",
+        "bookings.update",
+        "bookings.delete",
+        "bookings.synchronizeCalendar",
+        "bookings.reviewBookingNotification",
+        "bookings.cancelCalendar",
+        "bookings.rescheduleCalendar"
+      ]
+    },
+    {
+      "route": "/merchant/service-categories",
+      "queries": [
+        "serviceCategories.list"
+      ],
+      "mutations": [
+        "serviceCategories.create",
+        "serviceCategories.update",
+        "serviceCategories.delete"
+      ]
+    },
+    {
+      "route": "/merchant/service-packages",
+      "queries": [
+        "servicePackages.list",
+        "services.list"
+      ],
+      "mutations": [
+        "servicePackages.create",
+        "servicePackages.update",
+        "servicePackages.delete"
+      ]
+    },
+    {
+      "route": "/merchant/sheets/settings",
+      "queries": [
+        "sheets.getStatus",
+        "sheets.getReportSettings",
+        "sheets.getAuthUrl"
+      ],
+      "mutations": [
+        "sheets.setupSpreadsheet",
+        "sheets.updateReportSettings",
+        "sheets.disconnect"
+      ]
+    },
+    {
+      "route": "/merchant/sheets/export",
+      "queries": [
+        "conversations.list"
+      ],
+      "mutations": [
+        "sheets.exportConversations"
+      ]
+    },
+    {
+      "route": "/merchant/sheets/reports",
+      "queries": [],
+      "mutations": [
+        "sheets.generateDailyReport",
+        "sheets.generateWeeklyReport",
+        "sheets.generateMonthlyReport",
+        "sheets.sendReportViaWhatsApp"
+      ]
+    },
+    {
+      "route": "/merchant/sheets/inventory",
+      "queries": [],
+      "mutations": [
+        "sheets.syncInventory",
+        "sheets.updateInventoryFromSheets"
+      ]
+    },
+    {
+      "route": "/merchant/payments",
+      "queries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/payments/:id",
+      "queries": [
+        "payments.getById"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/payment-links",
+      "queries": [
+        "payments.listLinks"
+      ],
+      "mutations": [
+        "payments.createLink",
+        "payments.disableLink"
+      ]
+    },
+    {
+      "route": "/merchant/payment-settings",
+      "queries": [
+        "merchantPayments.getSettings"
+      ],
+      "mutations": [
+        "merchantPayments.saveSettings",
+        "merchantPayments.testConnection"
+      ]
+    },
+    {
+      "route": "/merchant/loyalty/settings",
+      "queries": [
+        "loyalty.getSettings"
+      ],
+      "mutations": [
+        "loyalty.updateSettings"
+      ]
+    },
+    {
+      "route": "/merchant/loyalty/tiers",
+      "queries": [
+        "loyalty.getTiers"
+      ],
+      "mutations": [
+        "loyalty.updateTier"
+      ]
+    },
+    {
+      "route": "/merchant/loyalty/rewards",
+      "queries": [
+        "loyalty.getRewards"
+      ],
+      "mutations": [
+        "loyalty.createReward",
+        "loyalty.updateReward",
+        "loyalty.deleteReward"
+      ]
+    },
+    {
+      "route": "/merchant/loyalty/customers",
+      "queries": [
+        "loyalty.getAllCustomersPoints",
+        "loyalty.getStats"
+      ],
+      "mutations": [
+        "loyalty.addPoints",
+        "loyalty.deductPoints"
+      ]
+    },
+    {
+      "route": "/merchant/integrations-dashboard",
+      "queries": [
+        "advancedNotifications.getIntegrationsDashboard"
+      ],
+      "mutations": [
+        "advancedNotifications.resolveError"
+      ]
+    },
+    {
+      "route": "/merchant/platform-integrations",
+      "queries": [
+        "integrations.getByaanStatus",
+        "sheets.getStatus",
+        "calendar.getStatus",
+        "integrations.getCurrentPlatform",
+        "salla.getConnection",
+        "zid.getConnection",
+        "woocommerce.getSettings"
+      ],
+      "mutations": [
+        "integrations.testByaanConnection",
+        "salla.disconnect",
+        "zid.disconnect",
+        "woocommerce.disconnect"
+      ]
+    },
+    {
+      "route": "/merchant/notification-settings",
+      "queries": [
+        "notificationPreferences.get"
+      ],
+      "mutations": [
+        "notificationPreferences.update"
+      ]
+    },
+    {
+      "route": "/merchant/currency-settings",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/push-notifications",
+      "queries": [
+        "push.getVapidPublicKey",
+        "push.getStats",
+        "push.getLogs"
+      ],
+      "mutations": [
+        "push.subscribe",
+        "push.unsubscribe",
+        "push.sendTest"
+      ]
+    },
+    {
+      "route": "/merchant/scheduled-reports",
+      "queries": [
+        "advancedNotifications.getScheduledReports"
+      ],
+      "mutations": [
+        "advancedNotifications.createScheduledReport",
+        "advancedNotifications.updateScheduledReport",
+        "advancedNotifications.deleteScheduledReport"
+      ]
+    },
+    {
+      "route": "/merchant/whatsapp-auto-notifications",
+      "queries": [
+        "advancedNotifications.getWhatsappAutoNotifications",
+        "advancedNotifications.getDefaultTemplates"
+      ],
+      "mutations": [
+        "advancedNotifications.createWhatsappAutoNotification",
+        "advancedNotifications.updateWhatsappAutoNotification",
+        "advancedNotifications.deleteWhatsappAutoNotification"
+      ]
+    },
+    {
+      "route": "/merchant/reports",
+      "queries": [
+        "reports.getSalesReport",
+        "reports.getCustomersReport",
+        "reports.getConversationsReport"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/subscriptions",
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ]
+    },
+    {
+      "route": "/merchant/usage",
+      "queries": [
+        "subscriptions.getUsage"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/usage-dashboard",
+      "queries": [
+        "usage.getCurrentUsage"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/subscription/plans",
+      "queries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "mutations": [
+        "merchantSubscription.subscribe"
+      ]
+    },
+    {
+      "route": "/merchant/subscription/compare",
+      "queries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "mutations": [
+        "merchantSubscription.upgradePlan"
+      ]
+    },
+    {
+      "route": "/merchant/subscription",
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ]
+    },
+    {
+      "route": "/merchant/checkout",
+      "queries": [
+        "subscriptionPlans.listPlans"
+      ],
+      "mutations": [
+        "merchantSubscription.subscribe"
+      ]
+    },
+    {
+      "route": "/merchant/payment/success",
+      "queries": [
+        "subscriptionPayments.verifyPayment"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/payment/cancel",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/tools",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/customers",
+      "queries": [
+        "customers.list",
+        "customers.getStats",
+        "customers.exportCsv"
+      ],
+      "mutations": [
+        "customers.addNote",
+        "customers.addTag",
+        "customers.removeTag"
+      ]
+    },
+    {
+      "route": "/merchant/website-analysis",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/smart-analysis",
+      "queries": [
+        "analysis.getStatus",
+        "analysis.getExistingData",
+        "analysis.getDiscoveredPages",
+        "analysis.getExtractedFaqs",
+        "analysis.getStats",
+        "websiteAnalysis.listAnalyses",
+        "websiteAnalysis.getAnalysis",
+        "websiteAnalysis.getInsights"
+      ],
+      "mutations": [
+        "websiteAnalysis.analyze",
+        "websiteAnalysis.deleteAnalysis",
+        "analysis.previewAnalysis",
+        "analysis.applyAnalysis",
+        "analysis.deletePage",
+        "analysis.deleteFaq"
+      ]
+    },
+    {
+      "route": "/merchant/competitor-analysis",
+      "queries": [
+        "websiteAnalysis.listCompetitors"
+      ],
+      "mutations": [
+        "websiteAnalysis.addCompetitor",
+        "websiteAnalysis.deleteCompetitor"
+      ]
+    },
+    {
+      "route": "/merchant/customers/:phone",
+      "queries": [
+        "customers.getByPhone"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/ai-suggestions",
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/keywords",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/voice-messages",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/analysis",
+      "queries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "mutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ]
+    },
+    {
+      "route": "/merchant/weekly-reports",
+      "queries": [],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/ab-tests",
+      "queries": [
+        "merchants.getCurrent",
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/try-sari-analytics",
+      "queries": [
+        "testSari.getMetrics"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/merchant-payments",
+      "queries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "mutations": []
+    },
+    {
+      "route": "/merchant/my-subscription",
+      "queries": [
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
+      ],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ]
+    }
+  ],
+  "approvedReplacements": [
+    {
+      "route": "/merchant/reports",
+      "removed": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "replacement": "Export the currently displayed ReportDocument to Excel; browser Print / Save PDF. Previous endpoints exported message analytics regardless of selected report."
+    },
+    {
+      "route": "/merchant/currency-settings",
+      "removed": [
+        "merchant.get",
+        "merchant.update"
+      ],
+      "replacement": "Use registered merchants.getCurrent and merchants.update; the singular merchant router does not exist."
+    }
+  ]
+}
