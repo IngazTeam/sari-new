@@ -9126,6 +9126,13 @@
     "keepEditing": "Keep editing",
     "discard": "Discard changes"
   },
+  "assistantSaveUx": {
+    "time": "Enter a valid time between 00:00 and 23:59.",
+    "differentTimes": "Choose an end time different from the start. For all-day availability, turn off working hours.",
+    "days": "Select the working days again to remove invalid legacy values.",
+    "emptyWeek": "No days selected. Scheduled replies will be unavailable until you select a day or turn off working hours.",
+    "failed": "Could not save settings. Your draft is still here; review working hours and try again."
+  },
   "assistantSettingsReviewUx": {
     "sendWhatsApp": "Send WhatsApp test",
     "styleExample": "Style example · not a store fact",

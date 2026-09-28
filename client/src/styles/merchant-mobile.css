@@ -54,6 +54,12 @@ body.merchant-surface .mw-form-dialog > :is([data-slot="dialog-header"], [data-s
   }
   body.merchant-surface[data-mw-keyboard] .mw-bottom-nav { display: none; }
 }
+@media (max-width: 900px) {
+  body.merchant-surface .mw-assistant-savebar {
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+  body.merchant-surface[data-mw-keyboard] .mw-assistant-savebar { bottom: 12px; }
+}
 @media (max-width: 620px) {
   .mw-inbox-main {
     height: calc(var(--mw-visible-height) - 129px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));

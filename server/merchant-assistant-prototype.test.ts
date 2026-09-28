@@ -66,6 +66,18 @@ describe('assistant feature workflows',()=>{
     click('section','[data-value="schedule"]');input('welcomeMessage','أهلًا من المسودة');submit('settings');
     expect(data().settings).toMatchObject({autoReplyEnabled:false,language:'fr',responseDelay:4,groupMode:'keyword_only',groupKeywords:'دورة، تسجيل',customInstructions:'تعليمات اختبار',welcomeMessage:'أهلًا من المسودة'});
   });
+  it('matches the real schedule rules with inline errors, overnight shifts and an empty week',()=>{
+    route('bot-settings');click('section','[data-value="schedule"]');input('workingHoursEnabled',true);
+    input('workingHoursEnd','09:00');submit('settings');
+    expect(w.document.getElementById('as-workingHoursEnd').getAttribute('aria-invalid')).toBe('true');
+    expect(w.document.getElementById('as-workingHoursEnd-error').textContent).toContain('وقت نهاية يختلف');
+    expect(data()).toBeNull();
+    input('workingHoursStart','22:00');input('workingHoursEnd','02:00');
+    for(const day of ['0','1','2','3','4'])click('day',`[data-value="${day}"]`);
+    expect(w.document.body.textContent).toContain('لم تحدد أي يوم');
+    submit('settings');
+    expect(data().settings).toMatchObject({workingHoursStart:'22:00',workingHoursEnd:'02:00',workingDays:[]});
+  });
   it('requires separate policy review and never saves sales authority through the general save',()=>{
     route('bot-settings');click('section','[data-value="sales"]');input('maxPercent','25');click('policy','[data-kind="discount"]');expect(data()).toBeNull();
     w.document.getElementById('as-review-discount').checked=true;input('maxPercent','20');expect(w.document.getElementById('as-review-discount').checked).toBe(false);

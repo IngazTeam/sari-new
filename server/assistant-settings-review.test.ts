@@ -76,9 +76,13 @@ async function click(label: string) {
 }
 async function fill(id: string, value: string) {
   await act(async () => {
-    const el = container.querySelector<HTMLTextAreaElement>(`#${id}`)!;
+    const el = container.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+      `#${id}`
+    )!;
     Object.getOwnPropertyDescriptor(
-      HTMLTextAreaElement.prototype,
+      el instanceof HTMLInputElement
+        ? HTMLInputElement.prototype
+        : HTMLTextAreaElement.prototype,
       "value"
     )!.set!.call(el, value);
     el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -123,6 +127,59 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("assistant settings review", () => {
+  it("shows a local field error, selects the schedule section, and preserves the draft without sending invalid endpoints", async () => {
+    await render();
+    await fill("endTime", "09:00");
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).not.toHaveBeenCalled();
+    expect(
+      container.querySelector<HTMLElement>(
+        '[data-assistant-section="schedule"]'
+      )!.hidden
+    ).toBe(false);
+    expect(
+      container.querySelector("#endTime")!.getAttribute("aria-invalid")
+    ).toBe("true");
+    expect(container.querySelector("#endTime-error")!.textContent).toBe(
+      ar.assistantSaveUx.differentTimes
+    );
+    await fill("endTime", "02:00");
+    expect(container.querySelector("#endTime-error")).toBeNull();
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({ workingHoursEnd: "02:00" })
+    );
+  });
+  it("requires a cleared time to be corrected and keeps errors reachable when scheduling is disabled", async () => {
+    await render();
+    await fill("startTime", "");
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>("#workingHours")!.click()
+    );
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).not.toHaveBeenCalled();
+    expect(container.querySelector("#startTime-error")!.textContent).toBe(
+      ar.assistantSaveUx.time
+    );
+    expect(container.querySelector("#startTime")).not.toBeNull();
+  });
+  it("explains an empty week and never renders server internals on a failed save", async () => {
+    await render();
+    expect(container.querySelector("#workingDays-hint")!.textContent).toBe(
+      ar.assistantSaveUx.emptyWeek
+    );
+    await fill("welcomeMessage", "keep my draft");
+    await click(ar.botSettingsPage.saveSettings);
+    await act(async () => {
+      m.callbacks.onError(new Error("SQL password=secret"));
+      m.callbacks.onSettled();
+    });
+    expect(container.textContent).not.toContain("password=secret");
+    expect(container.textContent).toContain(ar.assistantSaveUx.failed);
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("keep my draft");
+  });
   it("selects a day from an empty schedule without saving NaN and exposes native button state", async () => {
     await render();
     await click(ar.assistantSectionsUx.schedule);
@@ -145,7 +202,9 @@ describe("assistant settings review", () => {
   });
   it("separates draft text from saved AI settings and prevents sending an unsaved WhatsApp test", async () => {
     await render();
-    expect(button(ar.assistantSettingsReviewUx.sendWhatsApp).disabled).toBe(false);
+    expect(button(ar.assistantSettingsReviewUx.sendWhatsApp).disabled).toBe(
+      false
+    );
     await fill("welcomeMessage", "draft welcome");
     await click(ar.assistantSectionsUx.preview);
     const preview = container.querySelector(
@@ -158,7 +217,9 @@ describe("assistant settings review", () => {
     expect(preview.textContent).toContain(
       ar.assistantSettingsReviewUx.noQualityScore
     );
-    expect(button(ar.assistantSettingsReviewUx.sendWhatsApp).disabled).toBe(true);
+    expect(button(ar.assistantSettingsReviewUx.sendWhatsApp).disabled).toBe(
+      true
+    );
     expect(m.send).not.toHaveBeenCalled();
     expect(preview.querySelector("form")).toBeNull();
   });

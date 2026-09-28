@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { workingTimeSchema, workingDaysSchema, InvalidWorkingScheduleError } from '../shared/bot-working-schedule';
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { hasPermission } from './_core/permissions';
 import { discountPolicyUpdateSchema, hasDiscountSettings } from '../shared/discount-policy';
@@ -55,9 +56,9 @@ export const botSettingsRouter = router({
         .input(z.object({
             autoReplyEnabled: z.boolean().optional(),
             workingHoursEnabled: z.boolean().optional(),
-            workingHoursStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-            workingHoursEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-            workingDays: z.string().optional(),
+            workingHoursStart: workingTimeSchema.optional(),
+            workingHoursEnd: workingTimeSchema.optional(),
+            workingDays: workingDaysSchema.optional(),
             welcomeMessage: z.string().optional(),
             outOfHoursMessage: z.string().optional(),
             responseDelay: z.number().min(1).max(10).optional(),
@@ -97,8 +98,16 @@ export const botSettingsRouter = router({
                 normalizedInput.tone = 'friendly';
             }
 
-            // @ts-ignore
-            const result = await updateBotSettings(merchant.id, normalizedInput);
+            let result;
+            try {
+                // Boolean API flags are converted to tinyint by updateBotSettings.
+                result = await updateBotSettings(merchant.id, normalizedInput as any);
+            } catch (error) {
+                throw new TRPCError({
+                    code: error instanceof InvalidWorkingScheduleError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',
+                    message: error instanceof InvalidWorkingScheduleError ? 'Review the working schedule' : 'Unable to save bot settings',
+                });
+            }
 
             // Sync tone to personality settings so AI engine uses it
             if (input.tone) {

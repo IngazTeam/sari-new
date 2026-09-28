@@ -4199,14 +4199,25 @@ export async function updateBotSettings(
     dbUpdates.takeoverCommandsEnabled = dbUpdates.takeoverCommandsEnabled ? 1 : 0;
   }
 
-  // Update
-  await db
-    .update(botSettings)
-    .set(dbUpdates)
-    .where(eq(botSettings.merchantId, merchantId));
-
-  // Return updated settings
-  return getBotSettings(merchantId);
+  const { getWorkingScheduleErrors, InvalidWorkingScheduleError } = await import('../shared/bot-working-schedule');
+  return db.transaction(async tx => {
+    // Use the same parent -> settings lock order as reviewed monetary policies.
+    const [merchant] = await tx.select({ id: merchants.id }).from(merchants)
+      .where(eq(merchants.id, merchantId)).for('update');
+    if (!merchant) throw new Error('Merchant not found');
+    const rows = await tx.select().from(botSettings)
+      .where(eq(botSettings.merchantId, merchantId)).for('update');
+    if (rows.length !== 1) throw new Error('Bot settings unavailable');
+    const errors = getWorkingScheduleErrors(dbUpdates, rows[0]);
+    if (Object.keys(errors).length) throw new InvalidWorkingScheduleError(errors);
+    if (Object.keys(dbUpdates).length) {
+      await tx.update(botSettings).set(dbUpdates)
+        .where(and(eq(botSettings.id, rows[0].id), eq(botSettings.merchantId, merchantId)));
+    }
+    const [saved] = await tx.select().from(botSettings)
+      .where(and(eq(botSettings.id, rows[0].id), eq(botSettings.merchantId, merchantId)));
+    return { ...saved, autoReplyEnabled: Boolean(saved.autoReplyEnabled), workingHoursEnabled: Boolean(saved.workingHoursEnabled) } as any;
+  });
 }
 
 /**

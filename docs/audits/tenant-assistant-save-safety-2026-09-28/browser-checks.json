@@ -1,0 +1,36 @@
+{
+  "environment": "Local test tenant on 127.0.0.1:3018; Chrome viewport emulation",
+  "date": "2026-09-28",
+  "mobile320": {
+    "clientWidth": 305,
+    "error": "اختر وقت نهاية يختلف عن البداية. للعمل طوال اليوم، أوقف تحديد أوقات العمل.",
+    "focus": "endTime",
+    "font": "16px",
+    "height": 568,
+    "navTop": 506,
+    "saveBottom": 494,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  "mobile390": {
+    "width": 390,
+    "height": 844,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "timeFont": "16px",
+    "saveBottom": 770,
+    "navTop": 782
+  },
+  "beforeFix": {
+    "saveButtonTop": 771,
+    "saveButtonBottom": 815,
+    "navTop": 782,
+    "observedClickDestination": "/merchant/conversations"
+  },
+  "validation": "Equal endpoints rejected visibly; error field focused; corrected schedule saved",
+  "limitations": [
+    "No physical iPhone or Safari/WebKit run",
+    "No outbound WhatsApp or real AI provider call",
+    "Only assistant settings live UI checked in this batch"
+  ]
+}

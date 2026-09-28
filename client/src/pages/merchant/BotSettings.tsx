@@ -1,6 +1,7 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { AssistantReplyPreview } from "@/components/merchant/AssistantReplyPreview";
 import { parseWorkingDays, toggleWorkingDay } from "@shared/bot-working-days";
+import { getWorkingScheduleErrors } from "@shared/bot-working-schedule";
 import { CheckoutMarginPolicySettings } from "@/components/CheckoutMarginPolicySettings";
 import { DiscountPolicySettings } from "@/components/DiscountPolicySettings";
 import { useState, useEffect, useRef } from "react";
@@ -62,6 +63,8 @@ export default function BotSettings() {
   const initialized = useRef(false);
   const saveLock = useRef(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
+  const [reviewSchedule, setReviewSchedule] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   // Get current settings
   const settingsQuery = trpc.botSettings.get.useQuery(undefined, {
@@ -73,13 +76,15 @@ export default function BotSettings() {
   // Update mutation
   const updateMutation = trpc.botSettings.update.useMutation({
     onSuccess: (_result, submitted) => {
+      setSaveFailed(false);
       setSavedSnapshot(JSON.stringify(submitted));
       toast.success(t("botSettingsPage.saveSuccess"));
       utils.botSettings.get.invalidate();
       utils.botSettings.shouldRespond.invalidate();
     },
-    onError: (error: any) => {
-      toast.error(t("botSettingsPage.saveError") + error.message);
+    onError: () => {
+      setSaveFailed(true);
+      toast.error(t("assistantSaveUx.failed"));
     },
     onSettled: () => {
       saveLock.current = false;
@@ -176,6 +181,19 @@ export default function BotSettings() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (saveLock.current) return;
+    setSaveFailed(false);
+    setReviewSchedule(true);
+    const errors = getWorkingScheduleErrors(formData);
+    if (Object.keys(errors).length) {
+      setActiveSection("schedule");
+      const id = errors.workingHoursStart
+        ? "startTime"
+        : errors.workingHoursEnd
+          ? "endTime"
+          : "workingDays";
+      requestAnimationFrame(() => document.getElementById(id)?.focus());
+      return;
+    }
     saveLock.current = true;
     const words = parseAgentKeywords([...groupKeywords, keywordInput]);
     setGroupKeywords(words);
@@ -188,6 +206,10 @@ export default function BotSettings() {
       customInstructions: formData.customInstructions || null,
     } as any);
   };
+
+  const scheduleErrors = reviewSchedule
+    ? getWorkingScheduleErrors(formData)
+    : {};
 
   const handleWorkingDayToggle = (day: number) => {
     setFormData(old => ({
@@ -513,7 +535,8 @@ export default function BotSettings() {
                 />
               </div>
 
-              {formData.workingHoursEnabled && (
+              {(formData.workingHoursEnabled ||
+                Object.keys(scheduleErrors).length > 0) && (
                 <>
                   <Separator />
 
@@ -525,6 +548,13 @@ export default function BotSettings() {
                       <Input
                         id="startTime"
                         type="time"
+                        className="min-h-11 text-base"
+                        aria-invalid={Boolean(scheduleErrors.workingHoursStart)}
+                        aria-describedby={
+                          scheduleErrors.workingHoursStart
+                            ? "startTime-error"
+                            : undefined
+                        }
                         value={formData.workingHoursStart}
                         onChange={e =>
                           setFormData({
@@ -533,6 +563,15 @@ export default function BotSettings() {
                           })
                         }
                       />
+                      {scheduleErrors.workingHoursStart && (
+                        <p
+                          id="startTime-error"
+                          className="text-sm text-destructive"
+                          role="alert"
+                        >
+                          {t("assistantSaveUx.time")}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="endTime">
@@ -541,6 +580,13 @@ export default function BotSettings() {
                       <Input
                         id="endTime"
                         type="time"
+                        className="min-h-11 text-base"
+                        aria-invalid={Boolean(scheduleErrors.workingHoursEnd)}
+                        aria-describedby={
+                          scheduleErrors.workingHoursEnd
+                            ? "endTime-error"
+                            : undefined
+                        }
                         value={formData.workingHoursEnd}
                         onChange={e =>
                           setFormData({
@@ -549,12 +595,39 @@ export default function BotSettings() {
                           })
                         }
                       />
+                      {scheduleErrors.workingHoursEnd && (
+                        <p
+                          id="endTime-error"
+                          className="text-sm text-destructive"
+                          role="alert"
+                        >
+                          {t(
+                            scheduleErrors.workingHoursEnd === "differentTimes"
+                              ? "assistantSaveUx.differentTimes"
+                              : "assistantSaveUx.time"
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t("botSettingsPage.workingDays")}</Label>
-                    <div className="flex flex-wrap gap-2">
+                    <Label id="workingDays-label">
+                      {t("botSettingsPage.workingDays")}
+                    </Label>
+                    <div
+                      id="workingDays"
+                      role="group"
+                      tabIndex={-1}
+                      aria-labelledby="workingDays-label"
+                      aria-invalid={Boolean(scheduleErrors.workingDays)}
+                      aria-describedby={
+                        scheduleErrors.workingDays
+                          ? "workingDays-error"
+                          : "workingDays-hint"
+                      }
+                      className="flex flex-wrap gap-2"
+                    >
                       {weekDays.map(day => (
                         <Button
                           key={day.value}
@@ -570,8 +643,24 @@ export default function BotSettings() {
                         </Button>
                       ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {t("botSettingsPage.clickDayToggle")}
+                    {scheduleErrors.workingDays && (
+                      <p
+                        id="workingDays-error"
+                        className="text-sm text-destructive"
+                        role="alert"
+                      >
+                        {t("assistantSaveUx.days")}
+                      </p>
+                    )}
+                    <p
+                      id="workingDays-hint"
+                      className="text-sm text-muted-foreground"
+                    >
+                      {t(
+                        formData.workingDays === ""
+                          ? "assistantSaveUx.emptyWeek"
+                          : "botSettingsPage.clickDayToggle"
+                      )}
                     </p>
                   </div>
                 </>
@@ -1097,8 +1186,16 @@ export default function BotSettings() {
         >
           {t("assistantSettingsReviewUx.testSavedHint")}
         </p>
+        {saveFailed && (
+          <p
+            role="alert"
+            className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          >
+            {t("assistantSaveUx.failed")}
+          </p>
+        )}
         <div
-          className="sticky bottom-3 z-10 flex flex-wrap justify-between items-center gap-3 rounded-xl border bg-card p-4 shadow-sm"
+          className="mw-assistant-savebar sticky bottom-3 z-10 flex flex-wrap justify-between items-center gap-3 rounded-xl border bg-card p-4 shadow-sm"
           hidden={activeSection === "sales"}
         >
           <Button
