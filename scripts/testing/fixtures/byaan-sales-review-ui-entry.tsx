@@ -1,0 +1,58 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { observable } from '@trpc/server/observable';
+import { TRPCClientError } from '@trpc/client';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import { trpc } from '../../../client/src/lib/trpc';
+import { ByaanSalesReview } from '../../../client/src/components/ByaanSalesReview';
+import ByaanDashboard from '../../../client/src/pages/ByaanDashboard';
+import ar from '../../../client/src/locales/merchant-ux.ar';
+import en from '../../../client/src/locales/merchant-ux.en';
+
+const w = window as any, params = new URLSearchParams(location.search), mode = params.get('case') || 'ready';
+w.__reads = []; w.__writes = []; w.__revoked = false; w.__error = false; w.__scope = 20;
+const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+w.__refresh = () => qc.invalidateQueries(); w.__online = (value: boolean) => onlineManager.setOnline(value);
+const time = '2026-09-28T00:00:00.000Z';
+const item = (id: number, index: number) => {
+  const state = ['reported', 'unknown', 'preparing', 'dispatching', 'not_sent', 'reported'][index % 6];
+  const evidence = index % 6 === 5 ? 'invalid' : ['preparing', 'dispatching'].includes(state) ? 'pending' : 'consistent';
+  return { id, requestId: `00000000-0000-4000-8000-${String(id).padStart(12, '0')}`, kind: index % 2 ? 'payment' : 'enrollment', state, evidence,
+    reference: state === 'reported' && evidence === 'consistent' ? '9'.repeat(100) : null, createdAt: time, updatedAt: time,
+    paymentEvidence: 'not_verified', providerStatus: 'not_checked' };
+};
+const client = trpc.createClient({ links: [() => ({ op }) => observable(observer => {
+  if (op.type !== 'query') { w.__writes.push(op.path); observer.error(Error('Unexpected write')); return; }
+  w.__reads.push({ path: op.path, input: op.input });
+  const timer = setTimeout(() => {
+    const fail = () => observer.error(TRPCClientError.from({ error: { message: 'private SQL token <img src=x onerror=window.__xss=1>', code: -32603, data: { code: 'FORBIDDEN' } } } as any));
+    if (op.path === 'byaan.getStatus') {
+      if (mode === 'status-error') { fail(); return; }
+      observer.next({ result: { data: { connected: false } } }); observer.complete(); return;
+    }
+    if (w.__revoked || mode === 'denied') { fail(); return; }
+    if (op.path === 'byaan.salesReviewAccess') { observer.next({ result: { data: { merchantId: w.__scope } } }); observer.complete(); return; }
+    if (op.path !== 'byaan.listSalesOperations' || mode === 'error' || w.__error) { fail(); return; }
+    const input = op.input as any;
+    const result: any = { merchantId: mode === 'wrong-scope' ? 999 : w.__scope,
+      items: mode === 'empty' ? [] : Array.from({ length: input.beforeId ? 2 : mode === 'paged' ? 20 : 6 }, (_, n) => item((input.beforeId ? input.beforeId - 1 : 30) - n, n)),
+      nextCursor: mode === 'paged' && !input.beforeId ? 11 : null };
+    if (mode === 'extra') result.secret = 'private';
+    if (mode === 'duplicate') result.items[1].id = 30;
+    if (mode === 'xss') result.items[0].reference = '<img src=x onerror=window.__xss=1>';
+    if (mode === 'false-payment') result.items[0].paymentEvidence = 'paid';
+    if (mode === 'old-page' && input.beforeId) result.items = [item(30, 0)];
+    if (mode === 'old-page' && !input.beforeId) { result.items = Array.from({ length: 20 }, (_, n) => item(30 - n, n)); result.nextCursor = 11; }
+    observer.next({ result: { data: result } }); observer.complete();
+  }, mode === 'slow' ? 1500 : 60);
+  return () => clearTimeout(timer);
+})] });
+(async () => {
+  const lng = params.get('lang') === 'en' ? 'en' : 'ar'; document.documentElement.lang = lng; document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+  await i18n.use(initReactI18next).init({ lng, resources: { ar: { translation: { merchantUx: ar } }, en: { translation: { merchantUx: en } } }, interpolation: { escapeValue: false } });
+  createRoot(document.getElementById('root')!).render(<trpc.Provider client={client} queryClient={qc}><QueryClientProvider client={qc}>
+    <main className="mx-auto max-w-5xl p-3">{['disconnected', 'status-error'].includes(mode) ? <ByaanDashboard/> : <ByaanSalesReview/>}</main>
+  </QueryClientProvider></trpc.Provider>);
+})();

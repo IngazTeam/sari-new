@@ -74,6 +74,14 @@ function checkedResult(raw: unknown, kind: Kind): ByaanOperationResult {
   } else if (result.error !== byaanSalesFailure(result.outcome).error) throw Error('Invalid failure');
   return result;
 }
+/** Local historical integrity only. Does not validate present provider state,
+ * customer consent, conversion history, or the currently connected academy. */
+export function readByaanSalesHistoricalReceipt(row: any): ByaanOperationResult {
+  const kind = z.enum(['enrollment', 'payment']).parse(row.operation_kind);
+  const result = checkedResult(typeof row.result_json === 'string' ? JSON.parse(row.result_json) : row.result_json, kind);
+  if (row.state !== result.outcome || seal(row, result) !== row.result_hash) throw Error('Historical receipt unavailable');
+  return result;
+}
 async function verifyTracking(c: PoolConnection, merchantId: number, kind: Kind, intent: Intent, result: ByaanOperationResult) {
   if (!result.success || result.tracking !== 'recorded') return;
   const [rows] = await c.execute<any[]>('SELECT * FROM sari_conversions WHERE id=? AND merchant_id=? FOR UPDATE', [id.parse(result.conversionId), merchantId]);

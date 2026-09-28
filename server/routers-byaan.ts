@@ -12,8 +12,10 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getMerchantByUserId, getPool } from './db';
+import { byaanSalesReviewInput } from '../shared/byaan-sales-review';
+import { byaanSalesReviewAuthority, listByaanSalesOperations } from './integrations/byaan-sales-review';
 
 // ═══════════════════════════════════════════════════════════════
 // Helpers
@@ -110,6 +112,15 @@ import('./cron/memory-cleanup').then(({ registerMemoryCleanup }) => {
 // ═══════════════════════════════════════════════════════════════
 
 export const byaanRouter = router({
+
+  salesReviewAccess: permissionProcedure('orders.manage').query(async ({ ctx }) => {
+    try { return await byaanSalesReviewAuthority(ctx.merchantId, ctx.user.id); }
+    catch { throw new TRPCError({ code: 'FORBIDDEN', message: 'تعذر التحقق من صلاحية مراجعة عمليات بيان' }); }
+  }),
+  listSalesOperations: permissionProcedure('orders.manage').input(byaanSalesReviewInput).query(async ({ ctx, input }) => {
+    try { return await listByaanSalesOperations(ctx.merchantId, ctx.user.id, input); }
+    catch { throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر قراءة سجل عمليات بيان' }); }
+  }),
 
   // ── Get connection status + sync stats ──
   getStatus: protectedProcedure.query(async ({ ctx }) => {

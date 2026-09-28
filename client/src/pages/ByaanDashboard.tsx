@@ -27,8 +27,13 @@ import {
   Loader2, Link2, BarChart3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ByaanSalesReview } from '@/components/ByaanSalesReview';
 
 export default function ByaanDashboard() {
+  return <><div className="container pt-6"><ByaanSalesReview/></div><ByaanDashboardContent/></>;
+}
+
+function ByaanDashboardContent() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());

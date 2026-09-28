@@ -1,3 +1,4 @@
+import {byaanSalesReviewAr} from './byaan-sales-review';
 import {staffTeamReviewAr} from './staff-team-review';
 import {sallaEffectReviewAr} from './salla-effect-review';
 import {sallaCheckoutReviewAr} from './salla-checkout-review';
@@ -14,6 +15,7 @@ import { learningPolicyEvaluationAr } from './learning-policy-evaluation';
 import { salesExperimentProtocolAr } from './sales-experiment-protocol';
 
 const merchantUxAr: MerchantUxCopy = {
+  byaanSales: byaanSalesReviewAr,
   sallaEffects: sallaEffectReviewAr,
   sallaCheckout: sallaCheckoutReviewAr,
   teamAttempts: staffTeamReviewAr,
