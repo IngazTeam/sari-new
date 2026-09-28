@@ -20,8 +20,8 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
     await page.setRequestInterception(true); page.on('request', r => r.url().startsWith(origin) || r.url().startsWith('data:') ? r.continue() : r.abort());
     const visit = async (mode, lang) => { await page.goto(`${origin}/?case=${mode}&lang=${lang}`, { waitUntil: 'networkidle0' }); assert.equal(await page.evaluate(() => window.__reads.filter(r => r.path !== 'byaan.getStatus').length), 0); await page.click('[data-byaan-sales-review] > summary'); };
     const list = () => page.waitForSelector('[data-byaan-review-list]');
-    const inspect = async () => {
-      assert.deepEqual(await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, raw: /merchantUx\./.test(document.body.innerText), secret: /private SQL|customerPhone|webhook_secret/.test(document.body.innerText), xss: !!window.__xss, writes: window.__writes.length })), { overflow: false, raw: false, secret: false, xss: false, writes: 0 });
+    const inspect = async (writes = 0) => {
+      assert.deepEqual(await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, raw: /merchantUx\./.test(document.body.innerText), secret: /private SQL|customerPhone|webhook_secret/.test(document.body.innerText), xss: !!window.__xss, writes: window.__writes.length })), { overflow: false, raw: false, secret: false, xss: false, writes });
       assert.deepEqual(errors, []);
     };
     const record = (mode, lang, extra = {}) => results.push({ mode, lang, ...extra, passed: true });
@@ -31,7 +31,8 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
         assert.equal(await page.$eval('[data-byaan-sales-review]', n => n.dir), lang === 'ar' ? 'rtl' : 'ltr');
         assert.equal((await page.$$('[data-byaan-review-row]')).length, 6);
         assert.equal((await page.$$('[data-byaan-review-reference]')).length, 1);
-        for (const selector of ['[data-byaan-sales-review] > summary', '[data-byaan-review-refresh]']) assert.ok(await page.$eval(selector, n => n.getBoundingClientRect().height) >= 44);
+        assert.equal((await page.$$('[data-byaan-recover]')).length, 1);
+        for (const selector of ['[data-byaan-sales-review] > summary', '[data-byaan-review-refresh]', '[data-byaan-recover]']) assert.ok(await page.$eval(selector, n => n.getBoundingClientRect().height) >= 44);
         if ([375, 1440].includes(width)) await page.screenshot({ path: path.join(output, `byaan-${lang}-${width}.png`), fullPage: true });
         record('responsive_states', lang, { width });
       }
@@ -51,6 +52,21 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
       await visit('slow', lang); await page.waitForSelector('[data-byaan-review-loading]'); await page.focus('[data-byaan-sales-review] > summary'); await page.keyboard.press('Enter');
       await page.waitForFunction(() => !document.querySelector('[data-byaan-sales-review]').open); assert.equal(await page.$('[data-byaan-review-list]'), null); await inspect(); record('keyboard_close_during_load', lang);
       await visit('ready', lang); await list(); await page.evaluate(() => { window.__scope = 21; window.__refresh(); }); await page.waitForFunction(() => window.__reads.filter(r => r.path === 'byaan.listSalesOperations').length >= 2); await list(); await inspect(); record('merchant_scope_refresh', lang);
+      await visit('ready', lang); await list(); await page.focus('[data-byaan-recover]'); await page.keyboard.press('Enter'); await page.waitForSelector('[data-byaan-recovery-result]');
+      assert.deepEqual(await page.evaluate(() => window.__writes), [{ path: 'byaan.recoverEnrollmentProjection', input: { operationId: 30 } }]); await inspect(1);
+      await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-result]'); assert.equal(await page.evaluate(() => window.__recoveries.length), 1); await inspect(2); record('restore_and_idempotent_recheck', lang);
+      for (const mode of ['recover-error', 'recover-scope', 'recover-operation', 'recover-request', 'recover-private', 'recover-paid']) {
+        await visit(mode, lang); await list(); await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-error]'); assert.equal(await page.$('[data-byaan-recovery-result]'), null); await inspect(1); record(mode, lang);
+      }
+      await visit('recover-lost', lang); await list(); await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-error]');
+      await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-result]'); assert.equal(await page.evaluate(() => window.__recoveries.length), 1); await inspect(2); record('lost_acknowledgement_recheck', lang);
+      await visit('recover-slow', lang); await list(); await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-busy]'); assert.equal(await page.$eval('[data-byaan-recover]', n => n.disabled), true);
+      await page.click('[data-byaan-sales-review] > summary'); await page.waitForFunction(() => !document.querySelector('[data-byaan-sales-review]').open);
+      await page.waitForFunction(() => window.__recoveries.length === 1); assert.equal(await page.$('[data-byaan-recovery-result]'), null);
+      await page.click('[data-byaan-sales-review] > summary'); await list(); assert.equal(await page.$('[data-byaan-recovery-result]'), null);
+      await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-result]'); assert.equal(await page.evaluate(() => window.__recoveries.length), 1); await inspect(2); record('close_during_save_and_recheck', lang);
+      await visit('ready', lang); await list(); await page.click('[data-byaan-recover]'); await page.waitForSelector('[data-byaan-recovery-result]'); await page.evaluate(() => { window.__revoked = true; window.__refresh(); });
+      await page.waitForSelector('[data-byaan-review-error]'); assert.equal(await page.$('[data-byaan-recovery-result]'), null); await inspect(1); record('revocation_hides_restoration', lang);
     }
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ version: 'byaan-sales-review-ui.v1', passed: results.length, failed: 0, browser: await browser.version(), realSafari: false, scope: 'Actual React components and production CSS; synthetic query responses; no real accounts or external networking.', results, pageErrors: errors }, null, 2) + '\n');
     console.log(JSON.stringify({ passed: results.length, output }));

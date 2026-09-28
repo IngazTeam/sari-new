@@ -15,6 +15,7 @@ import { TRPCError } from "@trpc/server";
 import { permissionProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getMerchantByUserId, getPool } from './db';
 import { byaanSalesReviewInput } from '../shared/byaan-sales-review';
+import { byaanEnrollmentRecoveryInput } from '../shared/byaan-enrollment-recovery';
 import { byaanSalesReviewAuthority, listByaanSalesOperations } from './integrations/byaan-sales-review';
 
 // ═══════════════════════════════════════════════════════════════
@@ -112,6 +113,13 @@ import('./cron/memory-cleanup').then(({ registerMemoryCleanup }) => {
 // ═══════════════════════════════════════════════════════════════
 
 export const byaanRouter = router({
+
+  recoverEnrollmentProjection: permissionProcedure('orders.manage').input(byaanEnrollmentRecoveryInput).mutation(async ({ ctx, input }) => {
+    try {
+      const { recoverByaanEnrollmentProjection } = await import('./ai/byaan-enrollment-agreements');
+      return await recoverByaanEnrollmentProjection(ctx.merchantId, ctx.user.id, input);
+    } catch { throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر التحقق من استعادة نتيجة اتفاق بيان' }); }
+  }),
 
   salesReviewAccess: permissionProcedure('orders.manage').query(async ({ ctx }) => {
     try { return await byaanSalesReviewAuthority(ctx.merchantId, ctx.user.id); }

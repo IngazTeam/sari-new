@@ -7,10 +7,12 @@ import { currentInboundExecution } from '../messaging/inbound-context';
 import { databaseTimeEpoch } from '../db/time';
 import { formatMinorMoney, verifiedProductMoney } from '../../shared/product-money';
 import { enrollTrainee } from '../integrations/byaan';
-import { byaanEnrollmentInput, byaanMerchantId } from '../integrations/byaan-sales-contract';
+import { byaanEnrollmentInput, byaanMerchantId, byaanSalesFailure } from '../integrations/byaan-sales-contract';
 import { byaanSalesTransaction as tx, lockByaanSalesAuthority, readByaanSalesOperationResult, type ByaanSalesAuthorization } from '../integrations/byaan-sales-operations';
 import { assertCheckoutAgreementSchema, assertCheckoutIdentity, type CheckoutIdentity } from './checkout-agreements';
-import { hasCheckoutOfferEvidence } from './checkout-offer-evidence';
+import { hasCheckoutOfferEvidence, recordedCheckoutOfferEvidence } from './checkout-offer-evidence';
+import { authorizeByaanSalesReviewer } from '../integrations/byaan-sales-review';
+import { byaanEnrollmentRecoveryInput, byaanEnrollmentRecoveryOutput, byaanEnrollmentRecoveryStamp } from '../../shared/byaan-enrollment-recovery';
 import { isSalesRefusal, isShortAffirmation, normalizeCustomerText } from './customer-decision';
 import { policyArtifactDigest as digest } from './learning-policy-evaluation-bundle';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
@@ -34,6 +36,8 @@ const snapshotSchema = z.object({ version: z.literal(1), merchantId: id, convers
   course: courseSchema, requestId: z.string().uuid() }).strict();
 const consentSchema = z.object({ version: z.literal(1), quoteId: id, incomingMessageId: id,
   snapshotDigest: hash, contentDigest: hash, offerTextDigest: hash }).strict();
+const recoverySchema = byaanEnrollmentRecoveryStamp.extend({ version: z.literal(1), quotationId: id, operationId: id,
+  receiptDigest: hash, offerEvidenceDigest: hash, previousState: z.enum(['processing', 'unknown', 'succeeded']), previousProjectionDigest: hash }).strict();
 type Snapshot = z.infer<typeof snapshotSchema>;
 type Consent = z.infer<typeof consentSchema>;
 const decode = (v: any) => typeof v === 'string' ? JSON.parse(v) : v;
@@ -119,7 +123,7 @@ async function latest(c: PoolConnection, input: CheckoutIdentity) {
   [input.merchantId, input.conversationId, input.customerPhone]);
   return rows[0];
 }
-function readAgreement(q: any) {
+function readAgreement(q: any, allowMissingProjection = false) {
   if (q.external_provider !== BYAAN_ENROLLMENT_PROVIDER || q.currency !== 'SAR' || q.order_id !== null
     || q.checkout_snapshot !== null || q.external_order_key !== null || q.external_reconciliation !== null || q.projection_pending !== 0) throw Error('Agreement unavailable');
   const envelope = decode(q.external_snapshot), snapshot = snapshotSchema.parse(envelope?.value);
@@ -141,7 +145,12 @@ function readAgreement(q: any) {
     const saved = decode(q.external_result), value = saved?.value;
     if (!consent || !value || value.version !== 1 || value.binding !== digest({ snapshot, consent }) || saved.digest !== digest(value)
       || (q.execution_state === 'succeeded') !== (value.receipt?.success === true)) throw Error('Receipt projection changed');
-  } else if (q.execution_state === 'succeeded') throw Error('Receipt projection missing');
+    if (value.recovery !== undefined) {
+      const recovery = recoverySchema.parse(value.recovery);
+      if (digest(recovery) !== digest(value.recovery) || recovery.quotationId !== q.id || recovery.operationId !== value.receipt?.operationId
+        || recovery.receiptDigest !== digest(value.receipt) || q.execution_state !== 'succeeded' || q.status !== 'accepted') throw Error('Recovery audit changed');
+    }
+  } else if (q.execution_state === 'succeeded' && !allowMissingProjection) throw Error('Receipt projection missing');
   return { snapshot, consent };
 }
 function items(s: Snapshot) { return [{ productId: s.course.productId, name: s.course.name, quantity: 1, price: s.course.priceMinor }]; }
@@ -265,10 +274,78 @@ export async function acceptByaanEnrollmentOffer(rawInput: CheckoutIdentity, quo
   return { kind: 'operation' as const, quotationId, result };
 }
 
+/** Restore a local projection from an already reported, bound operation. Never
+ * call enrollment, infer provider success, recreate deleted agreements, or send.
+ * Historical takeover/new messages/catalog changes do not grant new automation. */
+export async function recoverByaanEnrollmentProjection(merchantId: number, actorId: number, raw: z.infer<typeof byaanEnrollmentRecoveryInput>) {
+  try {
+    id.parse(merchantId); id.parse(actorId); const input = byaanEnrollmentRecoveryInput.parse(raw);
+    await assertCheckoutAgreementSchema();
+    return await tx(async c => {
+      const authority = await lockByaanSalesAuthority(c, merchantId);
+      await authorizeByaanSalesReviewer(c, merchantId, actorId);
+      const [operations] = await c.execute<any[]>('SELECT request_id FROM byaan_sales_operations WHERE id=? AND merchant_id=? FOR SHARE', [input.operationId, merchantId]);
+      if (operations.length !== 1) throw Error('Operation unavailable');
+      const requestId = operations[0].request_id;
+      const [candidates] = await c.execute<any[]>(`SELECT id,conversation_id,customer_phone FROM sales_quotations
+        WHERE merchant_id=? AND external_provider=? AND execution_attempt_id=? LIMIT 2`, [merchantId, BYAAN_ENROLLMENT_PROVIDER, requestId]);
+      if (candidates.length !== 1) throw Error('Agreement unavailable');
+      const candidate = candidates[0];
+      // Use the memory writer's profile-before-conversation order. Do not create
+      // a missing profile or reconstruct any forgotten source/consent.
+      const [profiles] = await c.execute<any[]>('SELECT memory_forget_before_message_id FROM customer_profiles WHERE merchant_id=? AND customer_phone=? FOR SHARE', [merchantId, candidate.customer_phone]);
+      const [conversations] = await c.execute<any[]>('SELECT id FROM conversations WHERE id=? AND merchantId=? AND customerPhone=? FOR UPDATE', [candidate.conversation_id, merchantId, candidate.customer_phone]);
+      const [quotes] = await c.execute<any[]>('SELECT * FROM sales_quotations WHERE id=? AND merchant_id=? FOR UPDATE', [candidate.id, merchantId]);
+      if (conversations.length !== 1 || quotes.length !== 1) throw Error('Agreement ownership changed');
+      const q = quotes[0], agreement = readAgreement(q, true), { snapshot: s, consent } = agreement;
+      const cutoff = Number(profiles[0]?.memory_forget_before_message_id || 0);
+      if (!consent || s.authorityHash !== authority.hash || s.requestId !== requestId || s.conversationId !== candidate.conversation_id
+        || s.customerPhone !== candidate.customer_phone || s.sourceMessageId <= cutoff || consent.incomingMessageId <= cutoff
+        || s.sourceMessageId >= consent.incomingMessageId || !Number.isFinite(databaseTimeEpoch(q.execution_started_at))
+        || (q.execution_state === 'succeeded' ? q.status !== 'accepted' : q.status !== 'viewed')) throw Error('Agreement binding unavailable');
+      const [sources] = await c.execute<any[]>('SELECT id,content FROM messages WHERE conversationId=? AND direction=\'incoming\' AND id IN (?,?) ORDER BY id FOR SHARE', [s.conversationId, s.sourceMessageId, consent.incomingMessageId]);
+      if (sources.length !== 2 || sources[0].id !== s.sourceMessageId || digest(sources[0].content) !== s.sourceDigest
+        || sources[1].id !== consent.incomingMessageId || digest(sources[1].content) !== consent.contentDigest
+        || !isByaanEnrollmentConsent(sources[1].content)) throw Error('Consent unavailable');
+      const identity = { merchantId, conversationId: s.conversationId, customerPhone: s.customerPhone, incomingMessageId: consent.incomingMessageId };
+      const offerEvidence = await recordedCheckoutOfferEvidence(c, identity, s.sourceMessageId, byaanEnrollmentOfferText(q.id, s));
+      if (!offerEvidence) throw Error('Offer evidence unavailable');
+      const binding = digest(agreement);
+      const receipt = await readByaanSalesOperationResult(c, merchantId, 'enrollment', { requestId }, intent(s), binding);
+      if (receipt.operationId !== input.operationId) throw Error('Operation identity changed');
+      const prior = q.external_result === null ? null : decode(q.external_result).value;
+      const output = (replayed: boolean, recovery: z.infer<typeof byaanEnrollmentRecoveryStamp> | null) => byaanEnrollmentRecoveryOutput.parse({
+        merchantId, operationId: input.operationId, quotationId: q.id, requestId, outcome: 'projection_present', replayed, recovery,
+        providerStatus: 'not_checked', paymentEvidence: 'not_verified', externalRequest: 'not_sent', customerMessage: 'not_sent',
+      });
+      if (prior?.receipt?.success === true) {
+        if (digest(prior.receipt) !== digest(receipt)) throw Error('Conflicting projection');
+        return output(true, prior.recovery ? { reviewerUserId: prior.recovery.reviewerUserId, restoredAt: prior.recovery.restoredAt } : null);
+      }
+      if (prior) {
+        const failure = prior.receipt, { operationId, ...result } = failure || {};
+        if (q.execution_state !== 'unknown' || prior.recovery !== undefined
+          || operationId !== undefined && operationId !== receipt.operationId
+          || digest(result) !== digest(byaanSalesFailure('unknown'))) throw Error('Conflicting projection');
+      }
+      // Verify the nonlocking transport evidence again just before the local write.
+      if (await recordedCheckoutOfferEvidence(c, identity, s.sourceMessageId, byaanEnrollmentOfferText(q.id, s)) !== offerEvidence) throw Error('Offer evidence changed');
+      const [[clock]] = await c.query<any[]>('SELECT UTC_TIMESTAMP(3) AS now');
+      const recovery = recoverySchema.parse({ version: 1, quotationId: q.id, operationId: receipt.operationId, reviewerUserId: actorId,
+        restoredAt: new Date(databaseTimeEpoch(clock.now)).toISOString(), receiptDigest: digest(receipt), offerEvidenceDigest: offerEvidence,
+        previousState: q.execution_state, previousProjectionDigest: digest(q.external_result === null ? null : decode(q.external_result)) });
+      const value = { version: 1, binding, receipt, recovery };
+      await c.execute("UPDATE sales_quotations SET execution_state='succeeded',status='accepted',external_result=? WHERE id=? AND merchant_id=?", [JSON.stringify({ value, digest: digest(value) }), q.id, merchantId]);
+      return output(false, { reviewerUserId: recovery.reviewerUserId, restoredAt: recovery.restoredAt });
+    });
+  } catch { throw Error('Byaan enrollment recovery unavailable'); }
+}
+
 async function currentReply(c: PoolConnection, input: CheckoutIdentity, quotationId: number, ownershipVersion?: number) {
   const authority = await lockByaanSalesAuthority(c, input.merchantId), customer = await currentCustomer(c, input), q = await latest(c, input);
   if (!q || q.id !== quotationId) throw Error('Reply agreement unavailable');
   const agreement = readAgreement(q), s = agreement.snapshot;
+  if (q.external_result !== null && decode(q.external_result).value.recovery !== undefined) throw Error('Recovered enrollment requires human follow-up');
   if (s.authorityHash !== authority.hash || s.ownershipVersion !== customer.version || s.traineeName !== customer.name
     || s.traineePhone !== customer.phone || s.sourceMessageId <= customer.cutoff
     || ownershipVersion !== undefined && ownershipVersion !== customer.version) throw Error('Reply authority changed');

@@ -8,7 +8,7 @@ import { byaanSalesReviewAccess, byaanSalesReviewInput, byaanSalesReviewPage } f
 
 const id = z.number().int().positive().max(2147483647);
 const unavailable = (): never => { throw Error('Byaan sales review unavailable'); };
-async function authorize(c: PoolConnection, merchantId: number, actorId: number) {
+export async function authorizeByaanSalesReviewer(c: PoolConnection, merchantId: number, actorId: number) {
   // Fresh persisted authority, including the owner's account, even for team members.
   // No provider connection is needed to inspect historical local operations.
   const [merchants] = await c.execute<any[]>('SELECT userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
@@ -23,7 +23,7 @@ export async function byaanSalesReviewAuthority(merchantId: number, actorId: num
   try {
     id.parse(merchantId); id.parse(actorId);
     return await byaanSalesTransaction(async c => {
-      await authorize(c, merchantId, actorId);
+      await authorizeByaanSalesReviewer(c, merchantId, actorId);
       return byaanSalesReviewAccess.parse({ merchantId });
     });
   } catch { return unavailable(); }
@@ -36,7 +36,7 @@ export async function listByaanSalesOperations(merchantId: number, actorId: numb
     const input = byaanSalesReviewInput.parse(raw);
     await assertRuntimeSchema('Byaan sales review', BYAAN_SALES_OPERATION_REQUIREMENTS, { cacheSuccess: false });
     return await byaanSalesTransaction(async c => {
-      await authorize(c, merchantId, actorId);
+      await authorizeByaanSalesReviewer(c, merchantId, actorId);
       const [rows] = await c.execute<any[]>(`SELECT * FROM byaan_sales_operations WHERE merchant_id=?
         ${input.beforeId ? 'AND id<?' : ''} ORDER BY id DESC LIMIT 21 FOR SHARE`, [merchantId, ...(input.beforeId ? [input.beforeId] : [])]);
       const items = rows.slice(0, 20).map(row => {

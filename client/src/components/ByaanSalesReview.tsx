@@ -3,8 +3,35 @@ import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { byaanSalesReviewAccess, byaanSalesReviewPage } from '@shared/byaan-sales-review';
+import { byaanEnrollmentRecoveryOutput } from '@shared/byaan-enrollment-recovery';
+import type { z } from 'zod';
 
 const button = 'h-auto min-h-11 whitespace-normal';
+function Recovery({ merchantId, operationId, requestId }: { merchantId: number; operationId: number; requestId: string }) {
+  const { t, i18n } = useTranslation();
+  const mutation = trpc.byaan.recoverEnrollmentProjection.useMutation({ retry: false });
+  const [result, setResult] = useState<z.infer<typeof byaanEnrollmentRecoveryOutput> | null>(null), [failed, setFailed] = useState(false);
+  const recover = async () => {
+    if (mutation.isPending) return;
+    setResult(null); setFailed(false);
+    try {
+      const value = byaanEnrollmentRecoveryOutput.parse(await mutation.mutateAsync({ operationId }));
+      if (value.merchantId !== merchantId || value.operationId !== operationId || value.requestId !== requestId) throw Error('Restoration scope changed');
+      setResult(value);
+    } catch { setFailed(true); }
+  };
+  return <div data-byaan-recovery className="space-y-3 border-t pt-3">
+    <p className="leading-relaxed">{t('merchantUx.byaanSales.recoveryScope')}</p>
+    <Button data-byaan-recover className={button + ' w-full'} variant="outline" type="button" disabled={mutation.isPending} onClick={() => void recover()}>{mutation.isPending ? t('merchantUx.byaanSales.recovering') : t('merchantUx.byaanSales.recover')}</Button>
+    {mutation.isPending && <p role="status" data-byaan-recovery-busy>{t('merchantUx.byaanSales.recoveryPendingClose')}</p>}
+    {failed && <p role="alert" data-byaan-recovery-error>{t('merchantUx.byaanSales.recoveryFailed')}</p>}
+    {result && <div data-byaan-recovery-result role="status" className="space-y-2">
+      <p>{t('merchantUx.byaanSales.recoveryPresent')}</p>
+      {result.recovery && <><p>{t('merchantUx.byaanSales.recoveredAt')}: <time dateTime={result.recovery.restoredAt}>{new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(result.recovery.restoredAt))}</time></p>
+        <p>{t('merchantUx.byaanSales.recoveredBy')}: {result.recovery.reviewerUserId}</p></>}
+    </div>}
+  </div>;
+}
 function Records({ merchantId }: { merchantId: number }) {
   const { t, i18n } = useTranslation(), [beforeId, setBeforeId] = useState<number>();
   const query = trpc.byaan.listSalesOperations.useQuery({ beforeId }, {
@@ -35,6 +62,8 @@ function Records({ merchantId }: { merchantId: number }) {
               <div><dt className="text-muted-foreground">{t('merchantUx.byaanSales.created')}</dt><dd><time dateTime={item.createdAt}>{format(item.createdAt)}</time></dd></div>
               <div><dt className="text-muted-foreground">{t('merchantUx.byaanSales.updated')}</dt><dd><time dateTime={item.updatedAt}>{format(item.updatedAt)}</time></dd></div>
             </dl>
+            {item.kind === 'enrollment' && item.state === 'reported' && item.evidence === 'consistent'
+              && <Recovery key={item.requestId + ':' + query.dataUpdatedAt} merchantId={merchantId} operationId={item.id} requestId={item.requestId}/>}
           </article>)}
         </div>}
     <div className="flex flex-wrap gap-2">
