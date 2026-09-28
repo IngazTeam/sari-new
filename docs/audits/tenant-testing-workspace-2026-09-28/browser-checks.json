@@ -1,0 +1,262 @@
+{
+  "engine": "Chrome",
+  "nativeSafariTested": false,
+  "physicalIPhoneTested": false,
+  "measurements": [
+    {
+      "name": "deal-errors-390",
+      "dialog": {
+        "bottom": 667.984375,
+        "height": 491.9765625,
+        "width": 343,
+        "x": 16,
+        "y": 176.0078125
+      },
+      "document": {
+        "client": 375,
+        "scroll": 375
+      },
+      "fieldSize": [
+        "16px",
+        "16px"
+      ],
+      "focus": "tp-value",
+      "footer": {
+        "bottom": 666.984375,
+        "height": 77,
+        "width": 341,
+        "x": 17,
+        "y": 589.984375
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "name": "deal-errors-320",
+      "dialog": {
+        "bottom": 552,
+        "height": 536,
+        "width": 273,
+        "x": 16,
+        "y": 16
+      },
+      "document": {
+        "client": 305,
+        "scroll": 305
+      },
+      "fieldSize": [
+        "16px",
+        "16px"
+      ],
+      "focus": "tp-value",
+      "footer": {
+        "bottom": 551,
+        "height": 92.59375,
+        "width": 271,
+        "x": 17,
+        "y": 458.40625
+      },
+      "viewport": {
+        "height": 568,
+        "width": 320
+      }
+    },
+    {
+      "name": "deal-landscape",
+      "dialog": {
+        "bottom": 374,
+        "height": 358,
+        "width": 600,
+        "x": 114.5,
+        "y": 16
+      },
+      "document": {
+        "client": 829,
+        "scroll": 829
+      },
+      "fieldSize": [
+        "16px",
+        "16px"
+      ],
+      "focus": "tp-value",
+      "footer": {
+        "bottom": 373,
+        "height": 77,
+        "width": 598,
+        "x": 115.5,
+        "y": 296
+      },
+      "viewport": {
+        "height": 390,
+        "width": 844
+      }
+    },
+    {
+      "name": "composer-375",
+      "dialog": null,
+      "document": {
+        "client": 360,
+        "scroll": 360
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "tp-question",
+      "footer": null,
+      "viewport": {
+        "height": 812,
+        "width": 375
+      }
+    },
+    {
+      "name": "uncertain-375",
+      "dialog": null,
+      "document": {
+        "client": 360,
+        "scroll": 360
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "",
+      "footer": null,
+      "viewport": {
+        "height": 812,
+        "width": 375
+      }
+    },
+    {
+      "name": "quick-retry-320",
+      "dialog": null,
+      "document": {
+        "client": 305,
+        "scroll": 305
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "tp-question",
+      "footer": null,
+      "viewport": {
+        "height": 568,
+        "width": 320
+      }
+    },
+    {
+      "name": "conversation-desktop",
+      "dialog": null,
+      "document": {
+        "client": 1425,
+        "scroll": 1425
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "",
+      "footer": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "name": "conversation-desktop-top",
+      "dialog": null,
+      "document": {
+        "client": 1425,
+        "scroll": 1425
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "main",
+      "footer": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "name": "conversation-tablet-768",
+      "dialog": null,
+      "document": {
+        "client": 753,
+        "scroll": 753
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "main",
+      "footer": null,
+      "viewport": {
+        "height": 1024,
+        "width": 768
+      }
+    },
+    {
+      "name": "reset-390",
+      "dialog": {
+        "bottom": 639.265625,
+        "height": 434.53125,
+        "width": 343,
+        "x": 16,
+        "y": 204.734375
+      },
+      "document": {
+        "client": 375,
+        "scroll": 375
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "",
+      "footer": {
+        "bottom": 638.265625,
+        "height": 77,
+        "width": 341,
+        "x": 17,
+        "y": 561.265625
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "name": "reset-390-corrected",
+      "dialog": {
+        "bottom": 578.0390625,
+        "height": 312.0859375,
+        "width": 343,
+        "x": 16,
+        "y": 265.953125
+      },
+      "document": {
+        "client": 375,
+        "scroll": 375
+      },
+      "fieldSize": [
+        "16px"
+      ],
+      "focus": "",
+      "footer": {
+        "bottom": 577.0390625,
+        "height": 77,
+        "width": 341,
+        "x": 17,
+        "y": 500.0390625
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  ],
+  "console": [],
+  "notes": [
+    "The first reset-390 measure preceded the correction of a stale scenario label; reset-390-corrected is the final state.",
+    "A full-page screenshot timed out; viewport captures were used instead."
+  ]
+}

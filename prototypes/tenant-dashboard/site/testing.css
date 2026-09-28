@@ -1,0 +1,370 @@
+.tp-preview {
+  min-width: 0;
+}
+.tp-scope {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.tp-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 20px;
+  align-items: start;
+}
+.tp-main {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.tp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tp-chips .button {
+  background: var(--soft);
+  border-color: transparent;
+}
+.tp-chat {
+  overflow: hidden;
+  min-width: 0;
+}
+.tp-chat-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tp-chat-head h2 {
+  font-size: 18px;
+}
+.tp-chat-head p,
+.tp-chat-head a {
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+.tp-messages {
+  max-height: 460px;
+  max-height: min(460px, 60dvh);
+  min-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px;
+  background: #fafbf7;
+}
+.tp-empty {
+  text-align: center;
+  max-width: 320px;
+  margin: 50px auto;
+  line-height: 1.9;
+}
+.tp-empty h2 {
+  margin: 9px 0;
+}
+.tp-message {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px 4px 16px 16px;
+  background: white;
+  max-width: 88%;
+  margin: 0 0 16px auto;
+  overflow-wrap: anywhere;
+}
+.tp-message header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.tp-message p {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.9;
+  margin: 10px 0;
+}
+.tp-message small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.tp-customer {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+  background: #eef3e5;
+  border-radius: 4px 16px 16px 16px;
+}
+.tp-ratings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.tp-ratings .button {
+  font-size: 11px;
+  min-height: 44px;
+}
+.tp-ratings [aria-pressed="true"] {
+  background: var(--forest);
+  color: white;
+  border-color: var(--forest);
+}
+.tp-composer {
+  padding: 20px 24px;
+  background: white;
+  border-top: 1px solid var(--line);
+}
+.tp-composer label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.tp-composer textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 86px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+  background: white;
+}
+.tp-compose-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.tp-compose-foot small {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.tp-warning {
+  color: #873919;
+  background: #fff4e9;
+  border: 1px solid #e9caaa;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.tp-notice {
+  padding: 16px 22px;
+  background: #f1f4e9;
+  line-height: 1.8;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+.tp-notice p {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.tp-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 20px 0;
+}
+.tp-counts strong {
+  display: block;
+  font-size: 26px;
+  color: var(--forest);
+}
+.tp-counts span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.tp-metrics h2 {
+  font-size: 17px;
+}
+.tp-metrics p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.tp-metrics a {
+  display: block;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--forest);
+}
+.tp-rating-summary,
+.tp-deal-summary {
+  border-top: 1px solid var(--line);
+  padding: 18px 0;
+}
+.tp-rating-summary progress {
+  width: 100%;
+  accent-color: var(--forest);
+}
+.tp-metrics details {
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+.tp-history {
+  padding-inline-start: 22px;
+  line-height: 2;
+}
+.tp-history span {
+  color: var(--muted);
+}
+.tp-deal-summary .button {
+  width: 100%;
+  margin: 10px 0;
+}
+.tp-lab {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  font-size: 12px;
+}
+.tp-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.tp-controls select,
+.tp-scenarios select {
+  width: 100%;
+  font-size: 16px;
+}
+.tp-lab p {
+  margin-top: 12px;
+}
+.tp-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.9;
+  font-size: 13px;
+  margin-top: 20px;
+}
+.tp-check input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 3px;
+  accent-color: var(--forest);
+}
+.tp-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tp-editor-scroll {
+  padding: 22px;
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.tp-editor-scroll p {
+  font-size: 13px;
+  line-height: 1.9;
+  margin-bottom: 14px;
+}
+.tp-editor .field input {
+  font-size: 16px;
+  width: 100%;
+  min-height: 48px;
+}
+.tp-savebar {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding: 16px 22px calc(16px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+  background: white;
+}
+dialog:has(.tp-editor) {
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: hidden;
+}
+dialog:has(.tp-editor) .dialog-body {
+  padding: 0;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+dialog:has(.tp-editor)[open] {
+  display: flex;
+  flex-direction: column;
+}
+dialog:has(.tp-editor) .dialog-head {
+  flex-shrink: 0;
+}
+.tp-preview [aria-invalid="true"],
+.tp-editor [aria-invalid="true"] {
+  border-color: #ad4d29;
+}
+@media (max-width: 1100px) {
+  .tp-workspace {
+    grid-template-columns: minmax(0, 1fr) 240px;
+  }
+}
+@media (max-width: 760px) {
+  .tp-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tp-messages {
+    padding: 16px;
+    min-height: 190px;
+  }
+  .tp-message {
+    max-width: 96%;
+  }
+  .tp-chat-head,
+  .tp-composer {
+    padding: 16px;
+  }
+  .tp-compose-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .tp-compose-foot .button {
+    width: 100%;
+    min-height: 48px;
+  }
+  .tp-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tp-counts strong {
+    font-size: 24px;
+  }
+  .tp-editor-scroll {
+    padding: 18px;
+  }
+  .tp-savebar {
+    padding-inline: 18px;
+    flex-wrap: wrap;
+  }
+  .tp-savebar .button {
+    flex: 1;
+    white-space: normal;
+  }
+  .tp-scenarios .panel-head {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .tp-notice {
+    padding: 16px;
+  }
+  .tp-message header {
+    flex-wrap: wrap;
+  }
+  .tp-check {
+    font-size: 12px;
+  }
+}
