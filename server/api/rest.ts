@@ -503,8 +503,9 @@ async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Respons
     const [rows] = await pool.execute(
       `SELECT m.*, bc.webhook_secret
        FROM merchants m INNER JOIN byaan_connections bc ON bc.merchant_id = m.id
+       INNER JOIN users owner ON owner.id = m.userId
        WHERE bc.tenant_domain = ? AND bc.is_active = 1 AND bc.verified_at IS NOT NULL
-         AND m.status = 'active' LIMIT 1`,
+         AND m.status = 'active' AND owner.account_status = 'active' LIMIT 1`,
       [String(req.tenantDomain).trim().toLowerCase().replace(/\.$/, '')]
     );
     const tenant = (rows as any[])?.[0];
@@ -517,6 +518,7 @@ async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Respons
         timestamp: req.headers['x-sari-timestamp'] as string | undefined,
         deliveryId: req.headers['x-sari-delivery-id'] as string | undefined,
         signature: req.headers['x-sari-signature'] as string | undefined,
+        version: req.headers['x-sari-signature-version'] as string | undefined,
       },
       method: req.method,
       path: req.originalUrl,
@@ -543,18 +545,11 @@ async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Respons
       throw error;
     }
 
-    // Validation/client errors are deterministic and keep their receipt. A 5xx
-    // means the operation was not acknowledged, so release the claim after the
-    // response and allow the sender to retry the same delivery ID safely.
-    res.once('finish', () => {
-      if (res.statusCode < 500) return;
-      void pool.execute(
-        `DELETE FROM byaan_webhook_receipts WHERE merchant_id = ? AND delivery_id = ? AND payload_hash = ?`,
-        [tenant.id, verification.deliveryId, verification.payloadHash]
-      ).catch(() => console.error('[SariAPI] Failed to release unsuccessful tenant delivery receipt'));
-    });
+    // Even a 5xx can follow a committed effect. Preserve the delivery claim;
+    // a retry is a conflict requiring reconciliation, never permission to rerun.
 
-    req.tenantMerchant = tenant;
+    const { webhook_secret: _secret, ...merchant } = tenant;
+    req.tenantMerchant = merchant;
     next();
   } catch (error) {
     console.error('[SariAPI] Tenant signature verification failed');
@@ -1292,7 +1287,7 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   const { products, mode: rawMode } = req.body ?? {};
@@ -1352,7 +1347,7 @@ sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Resp
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   const { trainees, mode: rawTraineeMode } = req.body ?? {};
@@ -1410,7 +1405,7 @@ sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Resp
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   const { settings } = req.body ?? {};
@@ -1460,7 +1455,7 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   const { faqs, mode: rawFaqMode } = req.body;
@@ -1505,6 +1500,23 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
   }
 });
 
+// Complete public CMS snapshot, separate from the academy's short business description.
+sariPlatformRouter.post('/sync/site-content', async (req: PlatformRequest, res: Response) => {
+  const merchant = req.tenantMerchant;
+  if (!merchant) return merchantNotFound(res);
+  const { byaanSiteSnapshot } = await import('../integrations/byaan-site-contract');
+  const input = byaanSiteSnapshot.safeParse(req.body);
+  if (!input.success) return res.status(422).json({ error: 'Invalid public site snapshot', errorAr: 'محتوى الموقع غير صالح أو يتجاوز الحد المدعوم' });
+  try {
+    const { syncByaanSiteContent, updateByaanSyncStatus } = await import('../integrations/byaan');
+    await syncByaanSiteContent(merchant.id, 'public_snapshot', input.data.title, input.data.content);
+    await updateByaanSyncStatus(merchant.id, 'active');
+    return res.json({ success: true, contentLength: input.data.content.length });
+  } catch {
+    return res.status(503).json({ error: 'Public site sync unavailable', errorAr: 'مزامنة محتوى الموقع غير متاحة مؤقتًا' });
+  }
+});
+
 // ── POST /api/v1/platform/sync/knowledge — Feed synced data into Knowledge Engine ──
 // Called AFTER all other syncs complete. Reads merchant's products + FAQs + settings,
 // composes rich text, and runs it through ingestContent + embedAllSections.
@@ -1520,12 +1532,21 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
     const merchantId = merchant.id;
     const parts: string[] = [];
+
+    const sourcePool = await getPool();
+    if (!sourcePool) throw new Error('Byaan source content unavailable');
+    const [sourcePages] = await sourcePool.execute<any[]>(
+      `SELECT title, content FROM byaan_site_content WHERE merchant_id = ? AND page_type = 'public_snapshot'`, [merchantId],
+    );
+    for (const page of sourcePages) {
+      parts.push(`--- ${page.title} ---\n${page.content}`);
+    }
 
     // Accept optional siteContent from Byaan (vision, mission, about, policies)
     const { siteContent } = req.body || {};
@@ -1747,7 +1768,7 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) {
     return res.json({
       connected: false,
@@ -1857,7 +1878,7 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -1883,11 +1904,12 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
         messageAr: 'فشل الاتصال الآمن بـ API بيان الموثق',
       });
     }
-    await updateByaanSyncStatus(merchant.id, 'active');
     const { logBrainActivity } = await import('../routers-sari-brain');
     await logBrainActivity(merchant.id, 'settings_changed', 'طلب إعادة مزامنة موقع من بيان — تم بنجاح', { source: 'platform' });
-    return res.json({
+    return res.status(202).json({
       success: true,
+      accepted: true,
+      status: 'queued',
       message: 'Signed resync request sent to Byaan successfully',
       messageAr: 'تم إرسال طلب إعادة المزامنة الموقع لبيان بنجاح',
     });
@@ -1913,7 +1935,7 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
   );
   if (limitResponse) return limitResponse;
 
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -1948,7 +1970,7 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
 
 // ── GET /api/v1/platform/merchant/conversations — Paginated conversations ──
 sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, res: Response) => {
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -1988,7 +2010,7 @@ sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, r
 
 // ── GET /api/v1/platform/merchant/instances — WhatsApp instances ──
 sariPlatformRouter.get('/merchant/instances', async (req: PlatformRequest, res: Response) => {
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -2005,7 +2027,7 @@ sariPlatformRouter.get('/merchant/instances', async (req: PlatformRequest, res: 
 
 // ── GET /api/v1/platform/merchant/enrollments — Enrollment report ──
 sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res: Response) => {
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -2062,7 +2084,7 @@ sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res
 
 // ── GET /api/v1/platform/merchant/status — Connection status ──
 sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Response) => {
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
 
   if (!merchant) {
     return res.json({ connected: false, merchant: null });
@@ -2103,7 +2125,7 @@ sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Res
 
 // ── PUT /api/v1/platform/merchant/instances/:id — Toggle WhatsApp instance ──
 sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, res: Response) => {
-  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  const merchant = req.tenantMerchant;
   if (!merchant) return merchantNotFound(res);
 
   try {
@@ -2228,7 +2250,13 @@ sariApiRouter.post('/sync/settings', async (req: AuthenticatedRequest, res: Resp
 
 // ── POST /api/v1/connect/byaan — Activate Byaan integration ─
 sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Response) => {
-  const { tenantDomain, permissions } = req.body;
+  const { tenantDomain, permissions, apiBaseUrl, webhookSecret } = req.body;
+  if ((webhookSecret !== undefined && (typeof webhookSecret !== 'string' || !/^[A-Za-z0-9_-]{32,128}$/.test(webhookSecret)))
+    || (apiBaseUrl !== undefined && (typeof apiBaseUrl !== 'string' || apiBaseUrl.length > 300))
+    || (permissions !== undefined && (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)
+      || Object.values(permissions).some(value => typeof value !== 'boolean')))) {
+    return res.status(422).json({ error: 'Invalid Byaan connection parameters', errorAr: 'إعدادات ربط بيان غير صالحة' });
+  }
   if (!tenantDomain) {
     return res.status(400).json({ error: 'tenantDomain is required', errorAr: 'نطاق التيننت مطلوب' });
   }
@@ -2242,10 +2270,9 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
     // PEN-R2-04: Check if merchant is already connected to another platform
     const { checkExistingIntegrations } = await import('../integrations/platform-checker');
     const existing = await checkExistingIntegrations(req.merchant.id);
-    // @ts-ignore
-    if (existing.salla || existing.zid || existing.woocommerce) {
-      // @ts-ignore
-      const connectedTo = existing.salla ? 'سلة' : existing.zid ? 'زد' : 'ووكومرس';
+    const otherPlatform = existing.find(connection => connection.platform !== 'byaan');
+    if (otherPlatform) {
+      const connectedTo = otherPlatform.name;
       return res.status(409).json({
         error: `Already connected to ${connectedTo}. Disconnect first.`,
         errorAr: `التاجر مربوط بـ${connectedTo} بالفعل. افصل المنصة الحالية أولاً.`,
@@ -2253,7 +2280,7 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
     }
 
     const { createByaanConnection } = await import('../integrations/byaan');
-    const connection = await createByaanConnection(req.merchant.id, cleanDomain, permissions);
+    const connection = await createByaanConnection(req.merchant.id, cleanDomain, permissions, apiBaseUrl, webhookSecret);
 
     const { logBrainActivity } = await import('../routers-sari-brain');
     await logBrainActivity(req.merchant.id, 'settings_changed', `تم ربط بيان: ${cleanDomain}`, { tenantDomain: cleanDomain });
@@ -2267,7 +2294,7 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
       connection,
     });
   } catch (e) {
-    console.error('[SariAPI] Byaan connect failed:', e);
+    console.error('[SariAPI] Byaan connect failed');
     res.status(500).json({ error: 'Connection failed', errorAr: 'فشل الربط' });
   }
 });

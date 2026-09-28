@@ -23,6 +23,7 @@ import {
   signByaanRequest,
 } from './byaan-security';
 import { enqueueByaanLifecycleEvent } from './byaan-outbox';
+import { byaanCheckoutInput, readByaanCheckoutQuote } from './byaan-checkout-contract';
 import { ByaanSyncValidationError } from './byaan-sync-errors';
 import type { ConversionApiAuthority } from './api-conversion-history';
 import {
@@ -156,9 +157,15 @@ async function verifyByaanDomainOwnership(input: {
       'X-Sari-Timestamp': timestamp,
       'X-Sari-Delivery-Id': deliveryId,
       'X-Sari-Signature': signByaanRequest(canonical, input.signingSecret),
+      'X-Tenant-Domain': tenantDomain,
     },
     timeout: 8_000,
     maxRedirects: 0,
+    maxContentLength: 64 * 1024,
+    maxBodyLength: 64 * 1024,
+    proxy: false,
+    responseType: 'json',
+    transitional: { silentJSONParsing: false },
     httpsAgent,
     validateStatus: () => true,
   });
@@ -211,6 +218,13 @@ export async function createByaanConnection(
   const baseUrl = normalizeByaanApiBaseUrl(normalizedDomain, apiBaseUrl);
   const secret = webhookSecret?.trim() || '';
   if (secret && secret.length < 32) throw new Error('Byaan webhook secret must contain at least 32 characters');
+  const previous = await getByaanConnection(merchantId);
+  // Retrying the same pairing or opening the existing connection must not revoke
+  // its verification timestamp and invalidate in-flight sales consent.
+  if (previous?.is_active && previous.verified_at && previous.tenant_domain === normalizedDomain
+    && previous.api_base_url === baseUrl && (!secret || previous.webhook_secret === secret)) {
+    return toPublicByaanConnection(previous);
+  }
   const challenge = crypto.randomBytes(32).toString('base64url');
   const challengeHash = crypto.createHash('sha256').update(challenge).digest('hex');
   const verificationExpiresAt = new Date(Date.now() + 15 * 60_000).toISOString().slice(0, 19).replace('T', ' ');
@@ -270,7 +284,7 @@ export async function createByaanConnection(
       signingSecret: secret,
     });
   } catch (error: any) {
-    console.warn(`[Byaan] ownership verification failed for merchant ${merchantId}:`, String(error?.message || 'verification failed').slice(0, 160));
+    console.warn('[Byaan] ownership verification failed', { merchantId });
   }
   if (!verified) return toPublicByaanConnection(await getByaanConnection(merchantId));
 
@@ -283,7 +297,8 @@ export async function createByaanConnection(
       `UPDATE byaan_connections
        SET sync_status = 'active', verified_at = NOW(), is_active = 1, verification_token_hash = NULL,
            verification_expires_at = NULL, sync_errors = NULL
-       WHERE merchant_id = ? AND tenant_domain = ? AND verification_token_hash = ?`,
+       WHERE merchant_id = ? AND tenant_domain = ? AND verification_token_hash = ?
+         AND verification_expires_at >= NOW()`,
       [merchantId, normalizedDomain, challengeHash]
     );
     if (Number((activation as any)?.affectedRows || 0) !== 1) {
@@ -354,8 +369,8 @@ export async function updateByaanSyncStatus(merchantId: number, status: string, 
   const safeStatus = validStatuses.includes(status) ? status : 'error';
 
   await (dbConn as any).execute(
-    `UPDATE byaan_connections SET sync_status = ?, last_sync_at = NOW(), sync_errors = ? WHERE merchant_id = ?`,
-    [safeStatus, errors ? String(errors).substring(0, 500) : null, merchantId]
+    `UPDATE byaan_connections SET sync_status = ?, last_sync_at = IF(? = 'active', NOW(), last_sync_at), sync_errors = ? WHERE merchant_id = ?`,
+    [safeStatus, safeStatus, errors ? String(errors).substring(0, 500) : null, merchantId]
   );
 }
 
@@ -800,7 +815,7 @@ export async function getByaanFaqsForKnowledge(merchantId: number): Promise<Byaa
 export async function syncByaanSiteContent(merchantId: number, pageType: string, title: string, content: string): Promise<void> {
   await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return;
+  if (!dbConn) throw new Error('Database unavailable');
   await (dbConn as any).execute(
     `INSERT INTO byaan_site_content (merchant_id, page_type, title, content, synced_at)
      VALUES (?, ?, ?, ?, NOW())
@@ -936,6 +951,7 @@ async function callByaanApi(
   endpoint: string,
   data?: Record<string, any>,
   beforeSalesDispatch?: (connection: unknown) => Promise<void>,
+  operationDeliveryId?: string,
 ): Promise<{ success: boolean; data?: any; error?: string; dispatched?: boolean }> {
   const connection = await getByaanConnection(merchantId);
   if (!connection || !connection.api_base_url) {
@@ -963,13 +979,14 @@ async function callByaanApi(
   const bodyStr = method === 'POST' && data ? JSON.stringify(data) : '';
   const rawBody = Buffer.from(bodyStr, 'utf8');
   const timestamp = Math.floor(Date.now() / 1000);
-  const deliveryId = crypto.randomUUID();
+  const deliveryId = operationDeliveryId ?? crypto.randomUUID();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'X-Sari-Timestamp': String(timestamp),
     'X-Sari-Delivery-Id': deliveryId,
+    'X-Tenant-Domain': tenantDomain,
   };
 
   const canonical = buildByaanCanonicalRequest({
@@ -1027,6 +1044,33 @@ async function callByaanApi(
 
 // ─── Live Operations ───────────────────────────────────────
 
+export async function getByaanHealth(merchantId: number): Promise<{ success: boolean; capabilities?: Record<string, boolean> }> {
+  const result = await callByaanApi(merchantId, 'GET', '/health');
+  const body = result.data;
+  if (!result.success || body?.success !== true || body.contract !== 'sari-byaan/1'
+    || body.merchant_id !== String(merchantId) || !body.capabilities || typeof body.capabilities !== 'object'
+    || Array.isArray(body.capabilities) || Object.values(body.capabilities).some(value => typeof value !== 'boolean')) {
+    return { success: false };
+  }
+  return { success: true, capabilities: body.capabilities };
+}
+
+/** Public checkout invitation only; never an enrollment, invoice or payment acknowledgement. */
+export async function getByaanCheckoutQuote(merchantId: number, input: { courseId: string; sessionId?: string }) {
+  const parsed = byaanCheckoutInput.safeParse(input);
+  if (!byaanMerchantId.safeParse(merchantId).success || !parsed.success) return { success: false as const };
+  const connection = await getByaanConnection(merchantId);
+  if (!connection?.is_active || !connection.verified_at) return { success: false as const };
+  const result = await callByaanApi(merchantId, 'POST', '/checkout-quote', {
+    course_id: parsed.data.courseId, ...(parsed.data.sessionId ? { session_id: parsed.data.sessionId } : {}),
+  });
+  if (!result.success) return { success: false as const };
+  try {
+    await assertByaanSalesAuthority(merchantId, connection);
+    return { success: true as const, quote: readByaanCheckoutQuote(result.data, parsed.data, normalizeByaanTenantDomain(connection.tenant_domain)) };
+  } catch { return { success: false as const }; }
+}
+
 /**
  * Enroll a trainee in a course via Byaan
  * Called when the AI bot completes a sale
@@ -1046,7 +1090,7 @@ export async function enrollTrainee(
     try {
       result = await callByaanApi(merchantId, 'POST', '/enroll', {
         phone: data.traineePhone, name: data.traineeName, course_id: data.courseId,
-      }, beforeDispatch);
+      }, beforeDispatch, operation.data.requestId);
     } catch { return byaanSalesFailure('not_sent'); }
     if (!result.success) return byaanSalesFailure(result.dispatched ? 'unknown' : 'not_sent');
     let receipt: ReturnType<typeof readByaanSalesResult>;
@@ -1091,7 +1135,7 @@ export async function createPaymentLink(
     try {
       result = await callByaanApi(merchantId, 'POST', '/create-payment-link', {
         phone: data.traineePhone, course_id: data.courseId, amount: data.amount, description: data.description,
-      }, beforeDispatch);
+      }, beforeDispatch, operation.data.requestId);
     } catch { return byaanSalesFailure('not_sent'); }
     if (!result.success) return byaanSalesFailure(result.dispatched ? 'unknown' : 'not_sent');
     let receipt: ReturnType<typeof readByaanSalesResult>;
@@ -1111,7 +1155,7 @@ export async function requestByaanResync(merchantId: number): Promise<{ success:
   const result = await callByaanApi(merchantId, 'POST', '/request-resync', {
     merchant_id: String(merchantId),
   });
-  return { success: result.success, error: result.error };
+  return { success: result.success && result.data?.accepted === true && result.data?.status === 'queued', error: result.error };
 }
 
 /**
@@ -1123,8 +1167,8 @@ export async function getTraineeResults(
 ): Promise<{ success: boolean; results?: any[]; error?: string }> {
   const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/results`);
   return {
-    success: result.success,
-    results: result.data?.results || result.data,
+    success: result.success && Array.isArray(result.data?.results),
+    results: result.success && Array.isArray(result.data?.results) ? result.data.results : undefined,
     error: result.error,
   };
 }
@@ -1138,8 +1182,8 @@ export async function getTraineeCertificates(
 ): Promise<{ success: boolean; certificates?: any[]; error?: string }> {
   const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/certificates`);
   return {
-    success: result.success,
-    certificates: result.data?.certificates || result.data,
+    success: result.success && Array.isArray(result.data?.certificates),
+    certificates: result.success && Array.isArray(result.data?.certificates) ? result.data.certificates : undefined,
     error: result.error,
   };
 }
@@ -1153,8 +1197,8 @@ export async function getTraineeAttendance(
 ): Promise<{ success: boolean; attendance?: any[]; error?: string }> {
   const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/attendance`);
   return {
-    success: result.success,
-    attendance: result.data?.attendance || result.data,
+    success: result.success && Array.isArray(result.data?.attendance),
+    attendance: result.success && Array.isArray(result.data?.attendance) ? result.data.attendance : undefined,
     error: result.error,
   };
 }
@@ -1168,10 +1212,13 @@ export async function identifyTrainee(
   phone: string
 ): Promise<{ success: boolean; found: boolean; trainee?: any; error?: string }> {
   const result = await callByaanApi(merchantId, 'POST', '/identify', { phone });
+  const valid = result.success && typeof result.data?.found === 'boolean'
+    && (!result.data.found || (result.data.trainee && typeof result.data.trainee === 'object'
+      && !Array.isArray(result.data.trainee) && result.data.trainee.id != null));
   return {
-    success: result.success,
-    found: result.data?.found || false,
-    trainee: result.data?.trainee,
+    success: Boolean(valid),
+    found: Boolean(valid && result.data.found),
+    trainee: valid && result.data.found ? result.data.trainee : undefined,
     error: result.error,
   };
 }

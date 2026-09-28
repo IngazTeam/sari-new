@@ -1,0 +1,119 @@
+{
+  "version": "sari-byaan-contract.1",
+  "verifiedAt": "2026-09-28T17:21:04.956Z",
+  "scope": "Local bidirectional API contract, signatures, synchronization, lifecycle ordering, course checkout invitation; not autonomous financial completion.",
+  "productionAccess": false,
+  "realPayments": false,
+  "whatsappMessagesSent": false,
+  "liveProviderVerified": false,
+  "pushed": false,
+  "deployed": false,
+  "sari": {
+    "baseCommit": "ecd6e867b0eec339a65356cb62cc5a6d78dc5d96",
+    "testsPassed": 558,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "checks": [
+      {
+        "name": "types",
+        "exitCode": 0
+      },
+      {
+        "name": "translations",
+        "exitCode": 0
+      },
+      {
+        "name": "sql-contracts",
+        "exitCode": 0
+      },
+      {
+        "name": "build",
+        "exitCode": 0
+      }
+    ],
+    "translations": {
+      "advertisedLocale": "ar",
+      "callsChecked": 8134,
+      "dynamicKeysChecked": 340,
+      "unresolvedDynamicCalls": [],
+      "missing": [],
+      "interpolationErrors": []
+    },
+    "sourceSha256": {
+      "server/api/rest.ts": "a7f52f9d4ec1e090326e68ca0f559ed992560fccc32f227110bcba4746b66b75",
+      "server/integrations/byaan.ts": "4ba5cc9f88191a1d2d5a19f1c457e7b87989534dec90f164b792e05bba991488",
+      "server/integrations/byaan-security.ts": "e30b2c520d68037fda7df12b9cb4bbee9e08f5cd91dcbcce8db30ac7163adf79",
+      "server/integrations/byaan-outbox.ts": "6fe69403fe9dc6450b5ab909ef6de3bd2397636bae99e9b877c42fe40900f970",
+      "server/integrations/byaan-site-contract.ts": "aaacb9bb61a611ad42748a89608bb6979a7d94f3a8d62b927a858dda8614d7c2",
+      "server/integrations/byaan-checkout-contract.ts": "ec06bd26230f530c6d4c8372bae963ae024d501cb90b2e9ce05c7790e8f03d2a",
+      "server/integrations/byaan-outbox.mysql.test.ts": "ad31fb4bf6cc8cf61cae857111b5d90eb3107838e3784764b670eebbd3bc287a",
+      "server/routers-integrations.ts": "f0d36fadb620330f9cd2732cc1d7d6f50ee745e0c569768fbc541f1a746a6432",
+      "server/whatsapp-byaan-channel-pentest.test.ts": "3889d96046da09bc14f493970465f0956f53e94f74a6977e54026f4379d2d5ad",
+      "server/byaan-sales-boundary-pentest.test.ts": "d2d24c3addac1625ae647bbf0ff763708dbe89eb0f70acf7db0718d3493a1f53",
+      "server/byaan-site-contract.test.ts": "d889c56c5a2151206d9e2da163b22b938b3024d3a223a87730547db887578768",
+      "server/byaan-signature-v2.test.ts": "5266ea3c1d33882e4dc1673a1205726a8911a0cc65c3f237d30ef98f263c4b13",
+      "server/byaan-checkout-contract.test.ts": "5b07a2170d0c4e343f60c3686effac67fff9f79378ff0451e8bec2c64a321e1a",
+      "scripts/testing/verify-byaan-wire-contract.ts": "6b58b7448cb2ecb2069d2876496fe5c3dcadfa8ccd3ba60b1340e89ec6ef02a7"
+    }
+  },
+  "byaan": {
+    "baseCommit": "966c777309837bb677917349ce32e1351820ce04",
+    "testsPassed": 83,
+    "assertions": 329,
+    "phpstan": {
+      "errors": 0,
+      "file_errors": 0
+    },
+    "phpLintFiles": 30,
+    "translationKeys": 121,
+    "translationMissing": [],
+    "sourceSha256": {
+      "app/Console/Commands/SariConnect.php": "4f320abbdb58d1dd8ef9420a56ad75dcc18b1659058c319107440b8df0e8c667",
+      "app/Console/Commands/SariInitialSync.php": "02d20d0483ba538e1be91567255498159983f813ca37f9b8f42f90b3a7af9c8b",
+      "app/Console/Commands/SariSyncCheck.php": "f620798b362f0aa49448fc17dac7ba3cacf71b3c65fb1d7e81a0b386971aa4f0",
+      "app/Console/Commands/SariSyncCommand.php": "f257c83515f5c36e48b993477910a0de14f20e45513500d473e99190968dd948",
+      "app/Http/Controllers/Admin/SariController.php": "7a5b2cc16b49cc061a128435ada12eae753c3a17646c7b937bdb84b3ca2c1ab8",
+      "app/Http/Controllers/Admin/SariSubscriptionController.php": "f72b7c8f7d54194adfa16dd915736fa4feb8d0d1b3064200845b1a53631c95b2",
+      "app/Http/Controllers/Api/SariCheckoutController.php": "cf54daa901953539ba6c108de875ef5f25d4da84f293137af6035c723381381a",
+      "app/Http/Controllers/Api/SariConnectionController.php": "fb6248d8d2b6602759af0bf260f6db56d5e524cbc194b7806aa6fdbd3c8efe63",
+      "app/Http/Controllers/Api/SariLiveApiController.php": "57302d9c2c2459095670e38054e01d1ccca4bccb84e4e116c2f85e77e735ff35",
+      "app/Http/Controllers/Api/SariWebhookController.php": "fddf562e8f80edbad7d0deff5d961e02503f771369c1606b3e45c677076b3edf",
+      "app/Http/Middleware/SariSignedApiAuth.php": "c311f73257f8a8f4cfda6b727424d1403e1f77a3ac5da5e61c6098dc01e689f6",
+      "app/Jobs/Sari/SyncSariAcademy.php": "250d4fec76f61be7f7ca50c5ccce9dd368c6b4ae2277dc916ca36c0effa8fe17",
+      "app/Models/SariConnection.php": "87e01b3c71cc2afa9b3a509fe110a860a94dab9b68daaf16336091b91c622530",
+      "app/Models/SariRequestReceipt.php": "14821013b76ff0a11296b188c9ecc25b62f76c00be1b3116e53d8dd9c5b69f02",
+      "app/Services/Sari/SariPlatformClient.php": "477736d31ceda4836736409e39a290bb935c679b0b0b4602d85486e5b34e0bf8",
+      "app/Services/Sari/SariPublicContent.php": "9ef83e7a9d41a3edaa28b6606672eff601266778e993fbc7a0fd1410507a8a07",
+      "app/Services/Sari/SariRequestSignature.php": "d6452b282bd5655ccd70a36df32477af5da5f25f0b1ab2450a04909d53d35765",
+      "app/Services/Sari/SariSyncService.php": "09916bb93d0c207a24af34c9917ea7d2bedd505bb95422be60acc3520e13dc01",
+      "database/migrations/2026_09_28_230000_create_sari_signed_connections.php": "1701e4af229aa77342e27937c58ca9eb7a2d8c723140f596b00631fecc0e9f08",
+      "resources/lang/ar/sari.php": "e0444d5b4eea9665dc863b6aa8cb5d3aeda4986e13a40f6a95152a643e5eaaea",
+      "resources/lang/en/sari.php": "864c1856e1a9f4b897c969d4ac213435b7cffcb6ab33f9e71ddff76ef2b416f7",
+      "routes/api.php": "7a2cd896dd1c7d3ba5bc7bb94ad340412a8aed650076c54ce25658557fd34ab9",
+      "scripts/testing/verify-sari-contract.php": "c19dbf83e8858cac42892e314e37e4f24feee83a69a4a94749ebf254fe21a470",
+      "tests/Feature/Sari/SariDirectEnrollmentFinancialTest.php": "ed6fd64c22693b52ebde387c51a644458ff11792021c21b911dbef2ab416121a",
+      "tests/Feature/Sari/SariIntegrationPenetrationTest.php": "2eb7cd49c8de7d5fae896538a5d97348597fbf99f1d3703811604ca4a9b82f07",
+      "tests/Feature/Sari/SariSignedContractTest.php": "3b3be652fb300f17f85b382b52dc227b4794dbcf34efcf9301c057722e3c2c34",
+      "tests/Feature/Sari/SariWebhookPenetrationTest.php": "979fb88c682526241fc7aadde3e7410b17b6c7e99340c44f87c835b827f6b530",
+      "tests/Security/SariSyncPayloadPenTest.php": "030263f84cd2424c938613aa56bac786e04115d7be17e04ed782ea9c6e9500a4",
+      "tests/Support/SignsSariRequests.php": "2ecab5e8fcb80b52ffb1cce93a2fe09608b7e84cca422bf745d2d04b085967de",
+      "tests/Support/UsesSariTransactions.php": "9b98ce5a7068ccf2aa7f057d30f5ee39b0e0ac49ccc3bb734ac862a1c9d8e4a4"
+    }
+  },
+  "crossProjectSignatures": {
+    "fixtures": 7,
+    "actualPhpSigner": true,
+    "actualTypeScriptSigner": true,
+    "network": "none",
+    "database": "none"
+  },
+  "remaining": [
+    "WhatsApp agreement integration for checkout invitations",
+    "provider-verified invoice/payment/refund attribution and reconciliation",
+    "atomic large snapshot finalization",
+    "attendance contract",
+    "end-to-end sync run state",
+    "controlled production acceptance"
+  ],
+  "report": "SARI_BYAAN_BIDIRECTIONAL_CONTRACT_2026-09-28.md"
+}

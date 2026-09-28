@@ -11,6 +11,7 @@ export type ByaanSignedHeaders = {
   timestamp: string;
   deliveryId: string;
   signature: string;
+  version?: string;
 };
 
 export type ByaanSignatureVerification =
@@ -131,9 +132,10 @@ export function buildByaanCanonicalRequest(input: {
   path: string;
   tenantDomain: string;
   rawBody: Buffer;
+  version?: '1' | '2';
 }): string {
-  const pathOnly = input.path.split('?')[0] || '/';
-  return [
+  const pathOnly = (input.version === '2' ? input.path : input.path.split('?')[0]) || '/';
+  const canonical = [
     input.timestamp,
     input.deliveryId.toLowerCase(),
     input.method.toUpperCase(),
@@ -141,6 +143,7 @@ export function buildByaanCanonicalRequest(input: {
     normalizeByaanTenantDomain(input.tenantDomain),
     hashByaanPayload(input.rawBody),
   ].join('.');
+  return input.version === '2' ? `v2.${canonical}` : canonical;
 }
 
 export function signByaanRequest(canonicalRequest: string, secret: string): string {
@@ -158,11 +161,14 @@ export function verifyByaanSignedRequest(input: {
 }): ByaanSignatureVerification {
   const { timestamp, deliveryId, signature } = input.headers;
   if (!timestamp || !deliveryId || !signature || !input.secret) return { ok: false, code: 'missing_headers' };
+  const version = input.headers.version ?? '1';
+  if (!['1', '2'].includes(version)) return { ok: false, code: 'invalid_signature' };
+  if (input.secret.length < 32 || (version === '1' && input.path.includes('?'))) return { ok: false, code: 'invalid_signature' };
   if (!DELIVERY_ID_PATTERN.test(deliveryId)) return { ok: false, code: 'invalid_delivery_id' };
 
   const parsedTimestamp = Number(timestamp);
   const now = input.nowSeconds ?? Math.floor(Date.now() / 1000);
-  if (!Number.isInteger(parsedTimestamp) || Math.abs(now - parsedTimestamp) > SIGNATURE_TOLERANCE_SECONDS) {
+  if (!/^[0-9]{1,12}$/.test(timestamp) || !Number.isInteger(parsedTimestamp) || Math.abs(now - parsedTimestamp) > SIGNATURE_TOLERANCE_SECONDS) {
     return { ok: false, code: 'stale_request' };
   }
 
@@ -173,6 +179,7 @@ export function verifyByaanSignedRequest(input: {
     path: input.path,
     tenantDomain: input.tenantDomain,
     rawBody: input.rawBody,
+    version: version as '1' | '2',
   });
   const expected = signByaanRequest(canonical, input.secret);
   const receivedBuffer = Buffer.from(signature, 'utf8');

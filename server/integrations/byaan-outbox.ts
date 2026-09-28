@@ -62,15 +62,18 @@ async function claimOutboxRows(limit: number): Promise<any[]> {
      WHERE status = 'processing' AND last_attempt_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)`
   );
   const [rows] = await pool.execute(
-    `SELECT id FROM byaan_outbox
-     WHERE status IN ('pending', 'failed') AND available_at <= NOW() AND attempts < 8
-     ORDER BY available_at ASC, id ASC LIMIT ${Math.max(1, Math.min(limit, 25))}`
+    `SELECT current_event.id FROM byaan_outbox current_event
+     WHERE current_event.status IN ('pending', 'failed') AND current_event.available_at <= NOW() AND current_event.attempts < 8
+       AND NOT EXISTS (SELECT 1 FROM byaan_outbox predecessor
+         WHERE predecessor.merchant_id = current_event.merchant_id AND predecessor.id < current_event.id
+           AND predecessor.status <> 'delivered')
+     ORDER BY current_event.available_at ASC, current_event.id ASC LIMIT ${Math.max(1, Math.min(limit, 25))}`
   );
   const claimed: any[] = [];
   for (const candidate of rows as any[]) {
     const [result] = await pool.execute(
       `UPDATE byaan_outbox SET status = 'processing', attempts = attempts + 1, last_attempt_at = NOW()
-       WHERE id = ? AND status IN ('pending', 'failed') AND available_at <= NOW()`,
+       WHERE id = ? AND status IN ('pending', 'failed') AND available_at <= NOW() AND attempts < 8`,
       [candidate.id]
     );
     if ((result as any).affectedRows === 1) {
@@ -111,26 +114,35 @@ async function dispatchOutboxRow(row: any): Promise<void> {
         'X-Sari-Timestamp': timestamp,
         'X-Sari-Delivery-Id': deliveryId,
         'X-Sari-Signature': signByaanRequest(canonical, secret),
+        'X-Tenant-Domain': tenantDomain,
       },
       timeout: 10_000,
       maxRedirects: 0,
+      maxContentLength: 64 * 1024,
+      maxBodyLength: 64 * 1024,
+      responseType: 'json',
+      transitional: { silentJSONParsing: false },
+      proxy: false,
       httpsAgent,
       validateStatus: () => true,
     });
-    if (response.status < 200 || response.status >= 300) throw new Error(`Byaan returned HTTP ${response.status}`);
+    const expectedStatus = row.event_type === 'subscription.activated' ? 'activated' : 'deactivated';
+    if (response.status < 200 || response.status >= 300 || response.data?.status !== expectedStatus) {
+      throw new Error('Byaan lifecycle acknowledgement missing');
+    }
     await pool.execute(
-      `UPDATE byaan_outbox SET status = 'delivered', delivered_at = NOW(), last_error = NULL WHERE id = ? AND status = 'processing'`,
-      [row.id]
+      `UPDATE byaan_outbox SET status = 'delivered', delivered_at = NOW(), last_error = NULL WHERE id = ? AND status = 'processing' AND attempts = ?`,
+      [row.id, row.attempts]
     );
   } catch (error: any) {
     const attempts = Number(row.attempts || 1);
     const delaySeconds = Math.min(3600, 30 * (2 ** Math.max(0, attempts - 1)));
-    const safeError = String(error?.message || 'Byaan delivery failed').replace(/[\r\n]/g, ' ').slice(0, 500);
+    const safeError = 'Byaan lifecycle delivery was not acknowledged';
     await pool.execute(
       `UPDATE byaan_outbox
        SET status = 'failed', available_at = DATE_ADD(NOW(), INTERVAL ? SECOND), last_error = ?
-       WHERE id = ? AND status = 'processing'`,
-      [delaySeconds, safeError, row.id]
+       WHERE id = ? AND status = 'processing' AND attempts = ?`,
+      [delaySeconds, safeError, row.id, row.attempts]
     );
   }
 }

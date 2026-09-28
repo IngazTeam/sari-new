@@ -118,54 +118,17 @@ export const integrationsRouter = router({
             };
         }
 
-        // Reachability is only a health signal. It can never activate an unverified domain.
-        try {
-            const { createPinnedByaanHttpsAgent, normalizeByaanTenantDomain } = await import('./integrations/byaan-security');
-            const axios = (await import('axios')).default;
-            const domain = normalizeByaanTenantDomain(connection.tenant_domain);
-            const testUrl = `https://${domain}/api/sari/health`;
-            const httpsAgent = await createPinnedByaanHttpsAgent(testUrl);
-            const response = await axios.get(testUrl, {
-                timeout: 10000,
-                validateStatus: () => true,
-                maxRedirects: 0,
-                httpsAgent,
-            });
-
-            const isReachable = response.status >= 200 && response.status < 500;
-
-            // Update sync status based on test
-            const { updateByaanSyncStatus } = await import('./integrations/byaan');
-            if (isReachable) {
-                await updateByaanSyncStatus(merchant.id, 'active');
-            } else {
-                await updateByaanSyncStatus(merchant.id, 'error', `Domain returned ${response.status}`);
-            }
-
-            return {
-                success: isReachable,
-                message: isReachable
-                    ? `✅ النطاق ${connection.tenant_domain} يعمل — الربط نشط`
-                    : `❌ النطاق ${connection.tenant_domain} أرجع حالة ${response.status}`,
-                status: isReachable ? 'active' as const : 'error' as const,
-                httpStatus: response.status,
-                tenantDomain: connection.tenant_domain,
-                stats: {
-                    syncStatus: connection.sync_status,
-                    lastSyncAt: connection.last_sync_at,
-                },
-            };
-        } catch (e: any) {
-            const { updateByaanSyncStatus } = await import('./integrations/byaan');
-            await updateByaanSyncStatus(merchant.id, 'error', e?.message || 'Connection failed');
-
-            return {
-                success: false,
-                message: `فشل الاتصال بـ ${connection.tenant_domain}: ${e?.message || 'خطأ غير معروف'}`,
-                status: 'error' as const,
-                tenantDomain: connection.tenant_domain,
-            };
-        }
+        const { getByaanHealth } = await import('./integrations/byaan');
+        const health = await getByaanHealth(merchant.id);
+        // Health never changes lastSyncAt: only acknowledged data sync does.
+        return {
+            success: health.success,
+            message: health.success ? 'تم التحقق من اتصال بيان الموقّع' : 'تعذر التحقق من واجهة بيان الموقّعة',
+            status: health.success ? 'active' as const : 'error' as const,
+            tenantDomain: connection.tenant_domain,
+            capabilities: health.capabilities,
+            stats: { syncStatus: connection.sync_status, lastSyncAt: connection.last_sync_at },
+        };
     }),
 });
 
