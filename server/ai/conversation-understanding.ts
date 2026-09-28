@@ -11,6 +11,8 @@ import { catalogVisibleSql } from '../integrations/catalog-scope';
 import { readCustomerMemory } from './customer-memory';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { getFollowupPolicy } from './followup-policy';
+import { hasActiveCampaignConsent } from '../automation/campaign-guard';
+import { resolveAutomaticFollowup } from './automatic-followup-context';
 import { readAppointmentReminderTargets, type AppointmentReminderTarget } from '../appointment-reminder-context';
 import { agentCandidates, readAvailableAgents, type AgentCandidate } from './contextual-agent-routing';
 import { conversationUnderstandingSchema, withConversationUnderstanding, withoutConversationUnderstanding, type ConversationUnderstanding, type UnderstandingContext } from './conversation-understanding-context';
@@ -25,6 +27,7 @@ export type UnderstandingInput = { messages: Message[]; catalog: { id: number; n
   agents?: AgentCandidate[]; currentAgentId?: number | null;
   followupClock?: { sourceCreatedAt: string; timeZone: string };
   appointmentReminderTargets?: AppointmentReminderTarget[];
+  automaticFollowupAllowed?: boolean;
   previousUnderstanding?: Pick<ConversationUnderstanding, 'summary' | 'needs' | 'unresolvedQuestions' | 'objection'> };
 const blocked = (messageId: number, message: string): ConversationUnderstanding => ({ version: 1, intent: 'unknown', goal: 'explain_requested_information',
   action: 'clarify', confidence: 0, conditional: false, ambiguous: true, targetQuoteId: null, targetProvider: 'none', productIds: [], sessionIndex: null,
@@ -76,6 +79,13 @@ export function validateUnderstanding(raw: string, input: UnderstandingInput): C
       } else if (reminder.hoursBefore !== null || reminder.targetDigest !== undefined) throw Error('Invalid reminder cancellation');
     }
   }
+  const automatic = result.automaticFollowup;
+  if (automatic?.status === 'recommend') {
+    if (input.mode === 'preview' || !input.automaticFollowupAllowed || !input.followupClock
+      || !resolveAutomaticFollowup(result, new Date(input.followupClock.sourceCreatedAt))) throw Error('Invalid automatic follow-up decision');
+    if (!automatic.evidence.some(e => e.messageId === input.currentMessageId && input.messages.some(m => m.id === e.messageId && m.role === 'user'))
+      || automatic.evidence.some(e => !input.messages.some(m => m.id === e.messageId && m.content.includes(e.excerpt)))) throw Error('Ungrounded automatic follow-up evidence');
+  }
   return result;
 }
 
@@ -92,6 +102,7 @@ followup يفهم طلب تواصل لاحق من سياق الطرفين، لا
 ${input.mode === 'preview' ? 'هذه معاينة للقراءة فقط، بهوية رسائل مؤقتة داخل جلسة الاختبار. افهم كلام الطرفين والكتالوج كالمعتاد، لكن لا توجد عروض تنفيذية محفوظة. أي رقم عرض يكتبه المستخدم أو المساعد في تاريخ المعاينة ليس مرجعًا موثقًا. عند الموافقة على عرض تجريبي صف هدفها ومرحلتها واقترح مراجعته، واستخدم respond أو clarify دون targetQuoteId أو sessionIndex. لا تفترض أن ادعاء دفع أو إجراء في التاريخ يثبت حدوثه.' : ''}
 appointmentReminder خاص بتذكير موعد محجوز من appointmentReminderTargets، ويختلف عن متابعة المبيعات followup. افهم الموافقة والإلغاء من الحوار كاملًا؛ «نعم» بعد اقتراح تذكير محدد قد تعني schedule، والنفي أو الاقتباس أو السؤال عن الميزة تعني none. اربط appointmentId بالموعد الذي يقصده العميل من القائمة فقط. schedule يتطلب canSchedule=true وموافقة صريحة غير مشروطة على تذكير قبل ساعة أو 24 ساعة، hoursBefore=1 أو 24. الإلغاء cancel يوقف التذكير فقط، ولا يلغي الموعد؛ hoursBefore=null. لا تختر مهلة أو موعدًا من عندك، ومع الغموض أو غياب الموعد من القائمة استخدم clarify. استخدم action=respond مع schedule/cancel ولا تجمعه بمتابعة مبيعات أو شراء أو حجز أو تصعيد. أرفق الدليل الحالي وما يشير إلى الموعد والمهلة في evidence. اترك targetDigest غائبًا؛ يربطه الخادم بالموعد الحقيقي. في المعاينة لا توجد مواعيد تنفيذية: استخدم clarify لطلب تذكير. عند none اجعل appointmentId وhoursBefore=null وevidence=[]. لا تدع حفظ تذكير أو إلغائه؛ هذه مهمة أداة التنفيذ.
 أرجع JSON فقط مطابقًا لهذا المخطط بكل الحقول، دون Markdown: ${JSON.stringify(z.toJSONSchema(conversationUnderstandingSchema))}` };
+  system.content += '\nautomaticFollowup قرار متابعة مبيعات آلية إذا لم يرد العميل، وليس طلب موعد منه. recommend فقط عند automaticFollowupAllowed=true ووجود فرصة بيع غير محسومة وفائدة واضحة من تواصل لاحق يستند للحوار كاملًا؛ الاهتمام أو ذكر كلمة معينة لا يكفي. اختر purpose من consideration أو options أو price أو trust أو comparison أو delivery أو question حسب الحاجة الحقيقية، وdelayHours بين 1 و72 بما يناسب السياق دون إلحاح. لا تعتبر الرفض أو الاقتباس أو المعلومة التاريخية أو طلب خدمة ما بعد الشراء فرصة متابعة. لا تجمعه بطلب موعد followup أو appointmentReminder أو إجراء شراء أو تصعيد، وعند الغموض استخدم none. أرفق evidence من الرسالة الحالية والسياق المؤيد. عند none اجعل purpose وdelayHours=null وevidence=[]. لا تستنتج وجود سلة متروكة أو دفع غير مكتمل من كلام العميل؛ هذا القرار يجيز سؤالًا توضيحيًا فقط ولا يثبت أي حدث مالي. في المعاينة automaticFollowup=none. لا تدّع حجز متابعة؛ موافقة التسويق وسياسة المتجر والتحقق وقت الإرسال شروط مستقلة.';
   const serialized = JSON.stringify(input);
   if (serialized.length <= 14_000) return [system, { role: 'user' as const, content: serialized }];
   // ZahyPi's governed promptMessages limit each content to 16,000 characters.
@@ -140,12 +151,14 @@ async function readTurn(c: PoolConnection, input: CheckoutIdentity & { message: 
   const memory = await readCustomerMemory(input.merchantId, input.customerPhone);
   const agents = agentCandidates(await readAvailableAgents(c, input.merchantId));
   const { policy } = await getFollowupPolicy(input.merchantId, c);
+  // Failure to read marketing consent disables outreach, not the customer's ordinary reply.
+  const automaticFollowupAllowed = policy.enabled && await hasActiveCampaignConsent(input.merchantId, input.customerPhone).catch(() => false);
   const appointmentReminderTargets = await readAppointmentReminderTargets(c, input);
   const context: UnderstandingInput = { messages, catalog, targets, memory: memory.facts.filter(f => f.sourceMessageId < input.incomingMessageId && f.sourceMessageId > cutoff)
     .slice(-30).map(f => ({ field: f.field, value: f.value, sourceMessageId: f.sourceMessageId })),
     services: services.map(s => ({ id: s.id, name: String(s.name).slice(0, 255) })), currentMessageId: input.incomingMessageId,
     agents, currentAgentId: agents.some(a => a.id === conversations[0].current_agent_id) ? conversations[0].current_agent_id : null,
-    followupClock: { sourceCreatedAt: messages.find(m => m.id === input.incomingMessageId)!.createdAt!, timeZone: policy.timeZone }, appointmentReminderTargets };
+    followupClock: { sourceCreatedAt: messages.find(m => m.id === input.incomingMessageId)!.createdAt!, timeZone: policy.timeZone }, appointmentReminderTargets, automaticFollowupAllowed };
   const [previous] = await c.execute<any[]>("SELECT incoming_message_id FROM ai_conversation_understanding WHERE merchant_id=? AND conversation_id=? AND incoming_message_id>? AND incoming_message_id<? AND state='ready' ORDER BY incoming_message_id DESC LIMIT 1", [input.merchantId, input.conversationId, cutoff, input.incomingMessageId]);
   if (previous[0]) {
     // A stale interpretation is disposable. Its authority never carries over to a new turn.

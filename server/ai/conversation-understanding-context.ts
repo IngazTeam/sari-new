@@ -24,6 +24,12 @@ export const conversationUnderstandingSchema = z.object({
     sourceCreatedAt: z.string().datetime().nullable(),
     evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
   }).strict().optional(),
+  automaticFollowup: z.object({
+    status: z.enum(['none', 'recommend']),
+    purpose: z.enum(['consideration', 'options', 'price', 'trust', 'comparison', 'delivery', 'question']).nullable(),
+    delayHours: z.number().int().min(1).max(72).nullable(),
+    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+  }).strict().optional(),
   appointmentReminder: z.object({
     status: z.enum(['none', 'schedule', 'cancel', 'clarify']),
     appointmentId: z.number().int().positive().max(2147483647).nullable(),

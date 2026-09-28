@@ -1,28 +1,13 @@
 /**
- * Proactive Follow-up Engine — DB-Persisted
- * 
- * Schedules and sends follow-up messages to customers who:
- * - Said "بفكر" (hesitating) → after 2.5 hours
- * - Abandoned cart → after 1 hour
- * - Asked about price but didn't respond → after 4 hours
- * - Ghost (inactive 48h) → after 48 hours
- * 
- * Safety Guards:
- * - Max 1 follow-up per customer per conversation
- * - Max 3 follow-ups per customer per week
- * - Cancel if customer replies before scheduled time
- * - Never send if humanTakeover is active
- * 
- * BUG-FIX: Migrated from in-memory array to `sales_followups` DB table.
- * Previously all follow-ups were lost on server restart, and 3 systems
- * (proactive-followup, followup-reminders, action-selector) competed
- * on the same `agent_history` TEXT field.
+ * Durable follow-ups: customer-requested times or centrally interpreted sales recommendations.
+ * Recommendations require independently recorded marketing consent and current sealed dialogue.
+ * Source checks, ownership, quiet hours and weekly limits run again at transport admission.
  */
 
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
-import { isSalesRefusal } from './customer-decision';
+import { AUTOMATIC_FOLLOWUP_SOURCE, AUTOMATIC_FOLLOWUP_TYPE, readAutomaticFollowup, resolveAutomaticFollowup, hasAutomaticFollowupProof } from './automatic-followup-context';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { hasActiveCampaignConsent, withCampaignOptOutNotice } from '../automation/campaign-guard';
 import { CONTEXTUAL_FOLLOWUP_SOURCE, readContextualFollowup, resolveContextualFollowup, hasContextualFollowupProof } from './contextual-followup';
@@ -30,12 +15,14 @@ import { assertCheckoutIdentity } from './checkout-agreements';
 import { getFollowupPolicy } from './followup-policy';
 import { isFollowupTimeAllowed, nextFollowupSendTime } from '../../shared/followup-policy';
 import { followupPhoneForms } from './followup-send-guard';
+import type { CheckoutIdentity } from './checkout-agreements';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
 
 export type FollowUpType = 'hesitating' | 'abandoned_cart' | 'price_no_reply' | 'ghost' | 'post_interest' | 'action_selector'
+  | 'contextual_sales'
   | 'customer_requested'
   | 'recovery_price' | 'recovery_trust' | 'recovery_competitor' | 'recovery_delivery' | 'recovery_payment' | 'recovery_general';
 
@@ -57,71 +44,8 @@ export interface FollowUpRecord {
 // Follow-up Templates (Gulf Arabic, natural tone)
 // ═══════════════════════════════════════════════════════════════
 
-const FOLLOW_UP_TEMPLATES: Record<string, string[]> = {
-  customer_requested: ['مرحباً {name}، أتابع معك في الموعد الذي طلبته. هل يناسبك إكمال حديثنا السابق؟'],
-  hesitating: [
-    'مرحبا {name} 🙌 قدرت تفكر في الموضوع؟ لو عندك أي سؤال أنا هنا أساعدك',
-    'هلا {name}! رجعت أتطمن عليك 😊 إذا تحتاج أي توضيح ثاني ترى أنا جاهز',
-    '{name} 👋 بس حبيت أتأكد ما فاتك شي — لو تحتاج مساعدة أنا موجود',
-  ],
-  abandoned_cart: [
-    'مرحبا {name}! تحتاج مساعدة بخصوص المنتجات اللي كنت مهتماً بها؟',
-    '{name} 👋 تحتاج مساعدة في تفاصيل الطلب اللي ناقشناه؟',
-  ],
-  price_no_reply: [
-    'هلا {name}! أرسلت لك السعر قبل — هل في شي ثاني تحتاج تعرفه؟ 😊',
-    '{name} 🙌 لو السعر مناسب تبي أحجز لك؟ ولو عندك استفسار أنا هنا',
-  ],
-  ghost: [
-    'مرحبا {name}! هل ما زلت تبحث عن الحل اللي ناقشناه؟ أقدر أوضح لك الخيارات.',
-    'هلا {name}! حبيت أتابع استفسارك السابق، تحتاج توضيحاً إضافياً؟',
-  ],
-  post_interest: [
-    '{name} 😊 حبيت أتأكد إنك لقيت اللي تبيه — تحتاج مساعدة ثانية؟',
-  ],
-  action_selector: [
-    'مرحباً! 😊 رجعت أتطمن عليك — هل قدرت تاخذ قرار بخصوص ما ناقشناه؟ إذا عندك أي سؤال أنا هنا 🙏',
-    'أهلاً! 👋 أبغى أتأكد إنك لقيت اللي تبحث عنه — تبي أساعدك بشي إضافي؟',
-    'هلا! 😄 حبيت أتابع معك — لا تتردد إذا فيه أي استفسار!',
-  ],
-  // ═══════ P2: Loss-Reason Recovery Templates ═══════
-  recovery_price: [
-    '{name}، لو تحب نراجع الخيارات حسب ميزانيتك، أقدر أوضح لك الفروق.',
-    'هلا {name}! هل تحتاج توضيح ما يشمله السعر قبل اتخاذ قرارك؟',
-  ],
-  recovery_trust: [
-    '{name}، هل بقيت نقطة تحتاج تتأكد منها قبل القرار؟ أراجع لك المعلومات المتاحة.',
-    'هلا {name}! أقدر أوضح لك السياسات وتفاصيل الخدمة إذا احتجت.',
-  ],
-  recovery_competitor: [
-    '{name}، ما أهم نقطة بالنسبة لك في المقارنة؟ أقدر أوضح لك تفاصيل خيارنا.',
-    'هلا {name}! حبيت أقارن لك بالضبط وش الفرق بيننا وبين البدائل الثانية — عندك دقيقتين؟ 🤝',
-  ],
-  recovery_delivery: [
-    '{name}، لو ما زال عندك استفسار عن التوصيل أقدر أتحقق من الخيارات لمنطقتك.',
-    'هلا {name}! هل تحتاج نراجع تفاصيل التوصيل قبل إكمال الطلب؟',
-  ],
-  recovery_payment: [
-    '{name} 😊 لاحظت إن الدفع ما اكتمل — لو واجهت مشكلة تقنية أنا أقدر أساعدك',
-    'هلا {name}! لو تحتاج رابط دفع جديد أو طريقة دفع بديلة، أنا جاهز أساعدك 💳',
-  ],
-  recovery_general: [
-    '{name}، أتابع معك بخصوص استفسارك السابق. هل تحتاج معلومة إضافية؟',
-    'هلا {name}! هل ما زال الموضوع مناسباً لك أم تفضل نوقف المتابعة؟',
-  ],
-};
+const FOLLOW_UP_TEMPLATES = { customer_requested: ['مرحباً {name}، أتابع معك في الموعد الذي طلبته. هل يناسبك إكمال حديثنا السابق؟'] };
 
-// Delay per follow-up type (in ms)
-const FOLLOW_UP_DELAYS: Record<string, number> = {
-  hesitating: 2.5 * 60 * 60 * 1000,    // 2.5 hours
-  abandoned_cart: 1 * 60 * 60 * 1000,    // 1 hour
-  price_no_reply: 4 * 60 * 60 * 1000,    // 4 hours
-  ghost: 48 * 60 * 60 * 1000,            // 48 hours
-  post_interest: 3 * 60 * 60 * 1000,     // 3 hours
-  action_selector: 4 * 60 * 60 * 1000,   // 4 hours (default for action-selector)
-};
-
-// ═══════════════════════════════════════════════════════════════
 // DB Table Auto-Create
 // ═══════════════════════════════════════════════════════════════
 
@@ -142,18 +66,17 @@ async function followUpContext(executor: Pick<Pool, 'execute'>, merchantId: numb
   const [rows] = await executor.execute<RowDataPacket[]>(`SELECT c.deal_stage,
     (c.human_takeover = 1 AND (c.human_expires_at IS NULL OR c.human_expires_at > UTC_TIMESTAMP())) AS human_owned,
     COALESCE((SELECT MAX(m.id) FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming'), 0) AS incoming_id,
-    (SELECT m.content FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS last_message
-    , (SELECT m.createdAt FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS source_created_at
+    (SELECT m.createdAt FROM messages m WHERE m.conversationId = c.id AND m.direction = 'incoming' ORDER BY m.id DESC LIMIT 1) AS source_created_at
     FROM conversations c WHERE c.id = ? AND c.merchantId = ? AND c.customerPhone = ?`,
   [conversationId, merchantId, phone]);
   return rows[0];
 }
 
-function suppressReason(context: RowDataPacket | undefined, contextualRequest = false): string | undefined {
+function suppressReason(context: RowDataPacket | undefined): string | undefined {
   if (!context || !context.incoming_id) return 'context_unavailable';
   if (context.human_owned) return 'human_takeover';
   if (['paid', 'purchased'].includes(context.deal_stage)) return 'purchase_completed';
-  if (context.deal_stage === 'lost' || !contextualRequest && isSalesRefusal(context.last_message || '')) return 'customer_declined';
+  if (context.deal_stage === 'lost') return 'customer_declined';
 }
 
 /**
@@ -173,8 +96,10 @@ export async function scheduleFollowUp(params: {
   customMessage?: string;
   source?: string;
   requestedSourceMessageId?: number;
+  automaticSourceMessageId?: number;
 }): Promise<boolean> {
-  const { merchantId, customerPhone, conversationId, followUpType, customerName } = params;
+  const { merchantId, customerPhone, conversationId, customerName } = params;
+  const followUpType = params.followUpType === 'customer_requested' ? 'customer_requested' : AUTOMATIC_FOLLOWUP_TYPE;
   let connection: Awaited<ReturnType<Pool['getConnection']>> | undefined;
   try {
     await ensureTable();
@@ -192,7 +117,21 @@ export async function scheduleFollowUp(params: {
     const phoneForms = followupPhoneForms(customerPhone);
     if (!phoneForms.length) return false;
     const context = await followUpContext(connection, merchantId, conversationId, customerPhone);
-    if (suppressReason(context, followUpType === 'customer_requested')) return false;
+    if (suppressReason(context)) return false;
+    let automatic = null;
+    if (followUpType !== 'customer_requested') {
+      const identity = { merchantId, conversationId, customerPhone, incomingMessageId: params.automaticSourceMessageId! };
+      await assertCheckoutIdentity(connection, identity);
+      if (identity.incomingMessageId !== Number(context!.incoming_id)) return false;
+      const stored = await readAutomaticFollowup(connection, identity);
+      automatic = resolveAutomaticFollowup(stored?.analysis, new Date(context!.source_created_at));
+      if (!automatic || automatic.due.getTime() <= Date.now()) return false;
+      const [previous] = await connection.execute<RowDataPacket[]>('SELECT id FROM sales_followups WHERE merchant_id=? AND conversation_id=? AND anchor_message_id=? AND follow_up_type=? LIMIT 1',
+        [merchantId, conversationId, identity.incomingMessageId, AUTOMATIC_FOLLOWUP_TYPE]);
+      if (previous.length) return false; // Cancellation/delivery never grants another send for the same turn.
+      // Recheck consent after acquiring the transaction lock; model interpretation never grants it.
+      if (!await hasActiveCampaignConsent(merchantId, customerPhone)) return false;
+    }
     let requested = null;
     if (followUpType === 'customer_requested') {
       const identity = { merchantId, conversationId, customerPhone, incomingMessageId: params.requestedSourceMessageId! };
@@ -236,17 +175,17 @@ export async function scheduleFollowUp(params: {
     }
 
     // Pick template
-    const templates = FOLLOW_UP_TEMPLATES[followUpType] || FOLLOW_UP_TEMPLATES.action_selector;
+    const templates = FOLLOW_UP_TEMPLATES.customer_requested;
     const template = templates[Math.floor(Math.random() * templates.length)];
     const name = customerName || 'عميلنا';
-    const messageText = withCampaignOptOutNotice((followUpType !== 'customer_requested' && params.customMessage) || template.replace(/{name}/g, name));
+    const messageText = automatic?.text || withCampaignOptOutNotice(template.replace(/{name}/g, name));
 
     // Calculate scheduled time
-    const delayMs = params.customDelayMs ?? FOLLOW_UP_DELAYS[followUpType] ?? FOLLOW_UP_DELAYS.action_selector;
-    if (!Number.isFinite(delayMs) || delayMs < 0 || messageText.length > 4096) return false;
-    const scheduledAt = requested?.kind === 'requested' ? requested.at : nextFollowupSendTime(policy, new Date(Date.now() + delayMs));
+    if (messageText.length > 4096) return false;
+    const scheduledAt = requested?.kind === 'requested' ? requested.at : automatic && nextFollowupSendTime(policy, automatic.due);
     if (!scheduledAt) return false;
-    const schedulingSource = followUpType === 'customer_requested' ? CONTEXTUAL_FOLLOWUP_SOURCE : params.source || 'proactive';
+    if (automatic && scheduledAt.getTime() > automatic.due.getTime() + 86_400_000) return false;
+    const schedulingSource = followUpType === 'customer_requested' ? CONTEXTUAL_FOLLOWUP_SOURCE : AUTOMATIC_FOLLOWUP_SOURCE;
 
     await connection.execute(
       `INSERT INTO sales_followups 
@@ -264,6 +203,10 @@ export async function scheduleFollowUp(params: {
   } finally {
     if (connection) { await connection.rollback(); connection.release(); }
   }
+}
+
+export function scheduleAutomaticFollowup(input: CheckoutIdentity & { customerName?: string }) {
+  return scheduleFollowUp({ ...input, followUpType: AUTOMATIC_FOLLOWUP_TYPE, automaticSourceMessageId: input.incomingMessageId });
 }
 
 /**
@@ -345,6 +288,14 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           await pool.execute("UPDATE sales_followups SET cancelled_at=UTC_TIMESTAMP(),cancel_reason='policy_disabled' WHERE id=? AND processing_token=?", [fu.id, claimToken]);
           cancelled++; continue;
         }
+        const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
+        const earlySuppression = suppressReason(context)
+          || (fu.anchor_message_id === null ? 'context_unavailable' : Number(context?.incoming_id) > fu.anchor_message_id ? 'customer_replied' : undefined)
+          || (!await hasAutomaticFollowupProof(pool, fu) ? 'interpretation_changed' : undefined);
+        if (earlySuppression) {
+          await pool.execute("UPDATE sales_followups SET cancelled_at=UTC_TIMESTAMP(),cancel_reason=? WHERE id=? AND processing_token=?", [earlySuppression, fu.id, claimToken]);
+          cancelled++; continue;
+        }
         if (!isFollowupTimeAllowed(policy)) {
           if (fu.follow_up_type === 'customer_requested') {
             // A requested appointment is an absolute instant. Never move it silently after a policy change.
@@ -357,11 +308,8 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
           }
           continue;
         }
-        const context = await followUpContext(pool, fu.merchant_id, fu.conversation_id, fu.customer_phone);
-        const suppression = suppressReason(context, fu.source === CONTEXTUAL_FOLLOWUP_SOURCE)
-          || (!await hasContextualFollowupProof(pool, fu) ? 'interpretation_changed' : undefined)
-          || (fu.follow_up_type !== 'customer_requested' && !await hasActiveCampaignConsent(fu.merchant_id, fu.customer_phone) ? 'consent_unavailable' : undefined)
-          || (fu.anchor_message_id === null ? 'context_unavailable' : Number(context?.incoming_id) > fu.anchor_message_id ? 'customer_replied' : undefined);
+        const suppression = (!await hasContextualFollowupProof(pool, fu) ? 'interpretation_changed' : undefined)
+          || (fu.follow_up_type !== 'customer_requested' && !await hasActiveCampaignConsent(fu.merchant_id, fu.customer_phone) ? 'consent_unavailable' : undefined);
         if (suppression) {
           await pool.execute(
             `UPDATE sales_followups SET cancelled_at = NOW(), cancel_reason = ? WHERE id = ? AND processing_token = ?`,

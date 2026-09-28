@@ -3,6 +3,7 @@ import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { getFollowupPolicy } from './followup-policy';
 import { isFollowupTimeAllowed } from '../../shared/followup-policy';
 import { hasContextualFollowupProof } from './contextual-followup';
+import { hasAutomaticFollowupProof } from './automatic-followup-context';
 
 export function followupPhoneForms(raw: string): string[] {
   const phone = normalizeCampaignPhone(raw);
@@ -12,7 +13,7 @@ export function followupPhoneForms(raw: string): string[] {
 /** Executed inside transport after account loading and delivery reservation.
  * A customer reply/withdrawal arriving during those awaits must prevent dispatch. */
 export async function canDispatchSalesFollowup(pool: Pool, input: {
-  merchantId: number; to: string; idempotencyKey: string; followUpGuard?: { id: number; token: string };
+  merchantId: number; to: string; idempotencyKey: string; kind?: string; text?: string; followUpGuard?: { id: number; token: string };
 }): Promise<boolean> {
   const guard = input.followUpGuard, phone = normalizeCampaignPhone(input.to);
   if (!guard || !Number.isSafeInteger(guard.id) || guard.id <= 0 || !/^claim_[\w]+$/.test(guard.token)
@@ -47,6 +48,8 @@ export async function canDispatchSalesFollowup(pool: Pool, input: {
     const [eligible] = await connection.execute<RowDataPacket[]>(eligibilitySql, parameters);
     if (eligible.length !== 1) return false;
     if (!await hasContextualFollowupProof(connection, eligible[0])) return false;
+    if (!await hasAutomaticFollowupProof(connection, eligible[0])) return false;
+    if (eligible[0].follow_up_type !== 'customer_requested' && (input.kind !== 'text' || input.text !== eligible[0].message_text)) return false;
     const [prior] = await connection.execute<RowDataPacket[]>('SELECT * FROM sales_followup_dispatches WHERE followup_id=?', [guard.id]);
     if (prior.length) return prior[0].merchant_id === input.merchantId && prior[0].customer_phone === phone && prior[0].state !== 'released';
     const [counts] = await connection.execute<RowDataPacket[]>(`SELECT

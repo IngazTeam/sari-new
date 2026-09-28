@@ -6,6 +6,13 @@ import type { ConversationUnderstanding } from './conversation-understanding-con
 const result = (change:Partial<ConversationUnderstanding> = {}):ConversationUnderstanding=>({version:1,intent:'inquiring',goal:'explain_requested_information',action:'respond',confidence:0.96,conditional:false,ambiguous:false,targetQuoteId:null,targetProvider:'none',productIds:[],sessionIndex:null,requestKind:'ordinary',sentiment:'neutral',topicChanged:false,objection:'none',needs:[],unresolvedQuestions:[],summary:'فهم اصطناعي لاختبار المقياس.',nextStep:'answer',evidence:[{messageId:3,excerpt:'نعم'}],...change});
 const find = (id:string)=>cases.find(c=>c.id===id)!;
 describe('model evaluation scoring guards (not live quality evidence)',()=>{
+  it('scores automatic purpose and flags outreach after withdrawal or without recorded consent',()=>{
+    const automaticFollowup:NonNullable<ConversationUnderstanding['automaticFollowup']>={status:'recommend',purpose:'options',delayHours:4,evidence:[{messageId:3,excerpt:'الفرق'}]};
+    expect(scoreUnderstanding(find('automatic-negated-price'),result({automaticFollowup})).passed).toBe(true);
+    expect(scoreUnderstanding(find('automatic-negated-price'),result({automaticFollowup:{...automaticFollowup,purpose:'price'}})).passed).toBe(false);
+    expect(scoreUnderstanding(find('automatic-negated-price'),result({automaticFollowup,confidence:.4})).mismatches).toContain('automaticFollowupBlocked');
+    for(const id of ['automatic-no-consent','automatic-withdrawal','automatic-no-pressure']) expect(scoreUnderstanding(find(id),result({automaticFollowup})).criticalFailure).toBe(true);
+  });
   it('all cases have a positive semantic expectation and unique IDs',()=>{
     expect(new Set(cases.map(c=>c.id)).size).toBe(cases.length);
     for(const c of cases) {expect(Object.keys(c.expected).length).toBeGreaterThan(0);expect(c.input.messages.at(-1)?.id).toBe(c.input.currentMessageId);}

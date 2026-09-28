@@ -1,6 +1,6 @@
 import type { ConversationUnderstanding } from '../../server/ai/conversation-understanding-context';
 import type { UnderstandingInput } from '../../server/ai/conversation-understanding';
-export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
+export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>>; automaticFollowup?: Partial<NonNullable<ConversationUnderstanding['automaticFollowup']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
 type Case = UnderstandingCase;
 const scenario = (id: string, messages: string[], expected: Case['expected'], target = false, mustNotExecute = false): Case => ({ id, expected, mustNotExecute,
   input: { currentMessageId: messages.length, messages: messages.map((content, i) => ({ id: i + 1, role: i % 2 === 0 ? 'user' : 'assistant', content })),
@@ -29,7 +29,22 @@ const reminderScenario = (id: string, messages: string[], appointmentReminder: N
   ];
   return item;
 };
+const automaticScenario = (id: string, messages: string[], automaticFollowup: NonNullable<Case['expected']['automaticFollowup']>, allowed = true): Case => {
+  const item = scenario(id, messages, { automaticFollowup }, false, automaticFollowup.status !== 'recommend');
+  item.input.automaticFollowupAllowed = allowed;
+  item.input.followupClock = { sourceCreatedAt: '2026-09-29T09:00:00.000Z', timeZone: 'Asia/Riyadh' };
+  item.input.messages = item.input.messages.map(m => ({ ...m, createdAt: '2026-09-29T09:00:00.000Z' }));
+  return item;
+};
 export const conversationUnderstandingCases: Case[] = [
+  automaticScenario('automatic-consideration', ['الخيارات مناسبة لاحتياجي', 'هذه الفروق بينها.', 'أحتاج وقتًا أوازن المزايا قبل أقرر'], { status: 'recommend', purpose: 'consideration' }),
+  automaticScenario('automatic-price-context', ['الرسوم أعلى من ميزانيتي الحالية', 'نراجع ما يشمله كل خيار؟', 'نعم، ما زلت أقارن القيمة بالميزانية المتاحة'], { status: 'recommend', purpose: 'price' }),
+  automaticScenario('automatic-negated-price', ['أقارن الدورات', 'هل المشكلة في السعر؟', 'مو غالي، محتاج أفهم الفرق بين المستويين'], { status: 'recommend', purpose: 'options' }),
+  automaticScenario('automatic-withdrawal', ['كنت أفكر بالدورة', 'هل بقي شيء أوضحه؟', 'غيّرت خطتي بالكامل وانتهى الموضوع بالنسبة لي'], { status: 'none' }),
+  automaticScenario('automatic-no-consent', ['الدورة مناسبة', 'هل تحتاج وقت للمقارنة؟', 'أراجعها مع شريكي'], { status: 'none' }, false),
+  automaticScenario('automatic-quoted-objection', ['أرسل لك ملاحظة عن الإعلان', 'تفضل.', 'العميل السابق كتب «غالي وبفكر»، أنا أبلغك عن خطأ إملائي فقط'], { status: 'none' }),
+  automaticScenario('automatic-post-purchase', ['اشتريت الدورة بالفعل', 'كيف أساعدك؟', 'عندي مشكلة في الدخول، مو موضوع السعر'], { status: 'none' }),
+  automaticScenario('automatic-no-pressure', ['أقارن الخيارات', 'هل تحتاج توضيحًا؟', 'خلني آخذ راحتي وأنا أكلمكم، لا تتابعوا معي'], { status: 'none' }),
   scenario('yes-to-explanation', ['ما الفرق بين الدورات؟', 'تحب أوضح الفرق؟', 'نعم'], { action: 'respond' }, false, true),
   scenario('yes-to-specific-offer', ['اخترت دورة المبيعات', 'عرض دورة المبيعات [BC-19]، 115 ريال، 3 أكتوبر الساعة 10:00. هل توافق على هذا العرض لمشاركة رابط إتمامه؟', 'نعم'], { action: 'confirm_offer', targetQuoteId: 19 }, true),
   {...scenario('conditional-yes', ['اخترت دورة المبيعات', 'هل توافق على عرض الدورة [BC-19]؟', 'نعم إذا نقلتوها للجمعة'], {conditional:true}, true, true),allowedActions:['clarify','modify_offer','respond']},

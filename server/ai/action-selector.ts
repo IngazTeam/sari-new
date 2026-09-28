@@ -390,17 +390,14 @@ export async function executeAction(params: {
       case 'schedule_followup': {
         // BUG-FIX: Use unified sales_followups table instead of overwriting agent_history
         try {
-          const { scheduleFollowUp } = await import('./proactive-followup');
-          await scheduleFollowUp({
+          const { scheduleAutomaticFollowup } = await import('./proactive-followup');
+          const scheduled = await scheduleAutomaticFollowup({
             merchantId,
             customerPhone,
             conversationId,
-            followUpType: 'action_selector',
-            customDelayMs: action.delayHours * 3600 * 1000,
-            customMessage: undefined, // use default template
-            source: 'action_selector',
+            incomingMessageId: params.incomingMessageId!,
           });
-          console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
+          if (scheduled) console.log(`[ActionSelector] Contextual follow-up saved for conv #${conversationId}`);
         } catch (fuErr: any) {
           throw fuErr;
         }

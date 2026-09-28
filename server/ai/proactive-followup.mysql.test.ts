@@ -13,6 +13,7 @@ import { canDispatchSalesFollowup } from './followup-send-guard';
 import { handleRequestedFollowup as handleSavedFollowup } from './requested-followup';
 import { understandConversation, readStoredUnderstanding } from './conversation-understanding';
 import { followupUnderstandingFixture } from '../tests/helpers/followup-understanding-fixture';
+import { automaticFollowupFixture } from '../tests/helpers/automatic-followup-fixture';
 import type { ConversationUnderstanding } from './conversation-understanding-context';
 import type { CheckoutIdentity } from './checkout-agreements';
 
@@ -21,6 +22,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
   let conversationId: number;
   const phone = '966500000086';
   let interpretation: Partial<NonNullable<ConversationUnderstanding['followup']>>;
+  let automaticPrepared: boolean, automaticMode: boolean, automaticChanges: Partial<ConversationUnderstanding>;
   const query = async (sql: string, params: any[] = []) => (await (await getPool())!.execute<any>(sql, params))[0];
   const interpret = async (input: CheckoutIdentity) => {
     const [source] = await query('SELECT content FROM messages WHERE id=?', [input.incomingMessageId]);
@@ -29,27 +31,39 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     }
   };
   const handleRequestedFollowup = async (input: CheckoutIdentity) => { await interpret(input); return handleSavedFollowup(input); };
-  const schedule = () => scheduleFollowUp({ merchantId: fixture.merchantId, customerPhone: phone, conversationId,
-    followUpType: 'recovery_price', customDelayMs: 0 });
-  const due = () => query('UPDATE sales_followups SET scheduled_at = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE merchant_id = ?', [fixture.merchantId]);
+  const schedule = async () => {
+    const [m] = await query("SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming' ORDER BY id DESC LIMIT 1", [conversationId]);
+    if (!automaticPrepared) {
+      automaticPrepared = true; automaticMode = true;
+      try { await understandConversation({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id, message: m.content }); }
+      finally { automaticMode = false; }
+    }
+    return scheduleFollowUp({ merchantId: fixture.merchantId, customerPhone: phone, conversationId,
+      followUpType: 'recovery_price', automaticSourceMessageId: m.id, customDelayMs: 0 });
+  };
+  const due = () => query("UPDATE sales_followups SET scheduled_at='2026-09-23 10:00:00' WHERE merchant_id=? AND follow_up_type='contextual_sales'", [fixture.merchantId]);
   const state = async () => (await query('SELECT * FROM sales_followups WHERE merchant_id = ?', [fixture.merchantId]))[0];
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-09-23T09:00:00Z'));
     interpretation = {};
+    automaticPrepared = false; automaticMode = false; automaticChanges = {};
     ai.settings.mockReset().mockResolvedValue({ model: 'central-followup-model', textGenerationProvider: 'openai', isActive: true });
-    ai.model.mockReset().mockImplementation(async messages => JSON.stringify(followupUnderstandingFixture(JSON.parse(messages[1].content), interpretation)));
+    ai.model.mockReset().mockImplementation(async messages => JSON.stringify(automaticMode
+      ? automaticFollowupFixture(JSON.parse(messages[1].content), automaticChanges)
+      : followupUnderstandingFixture(JSON.parse(messages[1].content), interpretation)));
     transport.mockReset().mockResolvedValue({ accepted: true, status: 'sent', providerMessageId: 'fake-id' });
     fixture = await createDisposableMerchant('sales-followup');
     await query(`INSERT INTO campaign_consent_state (merchant_id, customer_phone, status, consent_version, source, evidence_digest, last_decided_at)
       VALUES (?, ?, 'granted', 'fixture-v1', 'whatsapp_text', ?, UTC_TIMESTAMP(3))`, [fixture.merchantId, phone, 'a'.repeat(64)]);
     const created = await query("INSERT INTO conversations (merchantId, customerPhone, status) VALUES (?, ?, 'active')", [fixture.merchantId, phone]);
     conversationId = created.insertId;
-    await query("INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', 'بفكر في الموضوع')", [conversationId]);
+    await query("INSERT INTO messages (conversationId, direction, messageType, content,createdAt) VALUES (?, 'incoming', 'text', 'بفكر في الموضوع','2026-09-23 09:00:00')", [conversationId]);
   });
   afterEach(async () => { vi.useRealTimers(); await cleanupDisposableMerchants([fixture.userId]); });
   afterAll(closeDb);
 
   it('serializes duplicate scheduling and sends a grounded message through the durable transport', async () => {
+    await schedule(); await query('DELETE FROM sales_followups WHERE merchant_id=?', [fixture.merchantId]);
     expect((await Promise.all([schedule(), schedule()])).filter(Boolean)).toHaveLength(1);
     await due(); expect((await runFollowUps()).sent).toBe(1);
     expect(transport).toHaveBeenCalledWith(expect.objectContaining({ merchantId: fixture.merchantId, to: phone,
@@ -129,6 +143,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     expect((await runFollowUps()).cancelled).toBe(1); expect(transport).not.toHaveBeenCalled();
   });
   it('does not schedule against a refusal even before the deal stage is updated', async () => {
+    automaticChanges = { intent: 'declined' };
     await query("UPDATE messages SET content = 'لا أريد الشراء' WHERE conversationId = ?", [conversationId]);
     expect(await schedule()).toBe(false); expect(transport).not.toHaveBeenCalled();
   });
@@ -170,9 +185,8 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     expect(await schedule()).toBe(false);
     expect(await runFollowUps()).toMatchObject({ sent: 0, cancelled: 1 });
     expect((await state()).cancel_reason).toBe('policy_disabled'); expect(transport).not.toHaveBeenCalled();
-    await query("UPDATE messages SET content='ذكرني الخميس الساعة 5 مساء' WHERE conversationId=?", [conversationId]);
-    const [m] = await query('SELECT id FROM messages WHERE conversationId=?', [conversationId]);
-    expect(await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.id }))
+    const m = await query("INSERT INTO messages (conversationId,direction,messageType,content,createdAt) VALUES (?,'incoming','text','ذكرني الخميس الساعة 5 مساء','2026-09-23 09:00:00')", [conversationId]);
+    expect(await handleRequestedFollowup({ merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: m.insertId }))
       .toContain('المتابعات متوقفة');
   });
   it('defers automatic messages to the configured local window and releases the claim', async () => {
@@ -215,7 +229,7 @@ describe.skipIf(!process.env.DATABASE_URL)('sales follow-up lifecycle', () => {
     ('fences %s in the last transport read after an earlier successful eligibility check', async change => {
       await schedule(); await due(); const fu = await state();
       await query("UPDATE sales_followups SET processing_token = 'claim_fixture', claimed_at = UTC_TIMESTAMP(3) WHERE id = ?", [fu.id]);
-      const input: any = { merchantId: fixture.merchantId, to: phone, idempotencyKey: `sales_followup:${fixture.merchantId}:${fu.id}`, followUpGuard: { id: fu.id, token: 'claim_fixture' } };
+      const input: any = { merchantId: fixture.merchantId, to: phone, kind: 'text', text: fu.message_text, idempotencyKey: `sales_followup:${fixture.merchantId}:${fu.id}`, followUpGuard: { id: fu.id, token: 'claim_fixture' } };
       expect(await canDispatchSalesFollowup((await getPool())!, input)).toBe(true);
       if (change === 'new reply') await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','لا')", [conversationId]);
       if (change === 'withdrawal') await query("UPDATE campaign_consent_state SET status='withdrawn' WHERE merchant_id=?", [fixture.merchantId]);

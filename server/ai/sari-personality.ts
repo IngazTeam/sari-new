@@ -81,7 +81,7 @@ import { detectSentimentFast, detectSentimentWithSignals } from './fast-sentimen
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
 import { filterProductsAvailableForSale } from './product-availability';
-import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
+import { scheduleAutomaticFollowup, cancelFollowUps } from './proactive-followup';
 import { validateResponse, recordValidation } from './response-validator';
 import { critiqueResponse, fixResponse, recordCritique } from './response-critic';
 import dbZid from '../db_zid';
@@ -2246,17 +2246,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         // v2 is non-blocking
       }
 
-      // Proactive Follow-up: schedule if customer is hesitating
-      // The follow-up scheduler rechecks consent and policy; sentiment never upgrades purchase intent.
-      if (effectiveIntent === 'hesitating' || effectiveIntent === 'objecting') {
-        const followUpType: FollowUpType = effectiveIntent === 'hesitating' ? 'hesitating' : 'post_interest';
-        scheduleFollowUp({
-          merchantId: params.merchantId,
-          customerPhone: params.customerPhone,
-          conversationId: params.conversationId || 0,
-          followUpType,
-          customerName: params.customerName,
-        });
+      if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+        await scheduleAutomaticFollowup({ ...params, conversationId: params.conversationId, incomingMessageId: params.incomingMessageId });
       }
       console.log(`[chatWithSari] ⚡ FAST PATH: msg #${existingSession.messageCount + 1}, ${Date.now() - _startTime}ms, strategy=${persuasion.strategy}`);
       return response.trim();
@@ -2665,6 +2656,9 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       customerSentiment: sentiment?.sentiment || null,
     }).catch(() => { });
 
+    if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+      await scheduleAutomaticFollowup({ ...params, conversationId: params.conversationId, incomingMessageId: params.incomingMessageId });
+    }
     return response.trim();
   } catch (error: any) {
     console.error('[chatWithSari] ERROR:', {

@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   escalate: vi.fn(),
   understanding: vi.fn(),
   agent: vi.fn(),
+  automatic: vi.fn(),
 }));
 vi.mock("./openai", () => ({ callGPT4: m.call }));
 vi.mock("./contextual-agent-routing", async original => ({
@@ -108,7 +109,7 @@ vi.mock("./next-best-action", () => ({
 }));
 vi.mock("./proactive-followup", () => ({
   cancelFollowUps: async () => {},
-  scheduleFollowUp: vi.fn(),
+  scheduleAutomaticFollowup: m.automatic,
 }));
 vi.mock("./lightweight-arsenal", () => ({
   loadLightweightArsenal: async () => ({ bestSellers: [] }),
@@ -327,6 +328,8 @@ describe.each(["fast", "full"])(
         "الفرق في موعد الاستخدام، ويمكنك اختيار الأنسب لوقتك."
       );
       expect(m.call).toHaveBeenCalledOnce();
+      expect(m.automatic).toHaveBeenCalledOnce();
+      expect(m.automatic).toHaveBeenCalledWith(expect.objectContaining({ merchantId: input.merchantId, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId }));
       expect(
         m.call.mock.calls[0][0].every((message: any) => message.content !== "")
       ).toBe(true);

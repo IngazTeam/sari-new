@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ products: vi.fn(), orders: vi.fn(), followup: vi.fn(), escalate: vi.fn() }));
 vi.mock('./openai', () => ({ callGPT4: vi.fn() }));
 vi.mock('../db', () => ({ getProductsByMerchantId: mocks.products, getOrdersByCustomerPhone: mocks.orders }));
-vi.mock('./proactive-followup', () => ({ scheduleFollowUp: mocks.followup }));
+vi.mock('./proactive-followup', () => ({ scheduleAutomaticFollowup: mocks.followup }));
 vi.mock('./smart-escalation', () => ({ handleSmartEscalation: mocks.escalate }));
 import { executeAction } from './action-selector';
 import { withInboundExecution, type InboundExecution } from '../messaging/inbound-context';
@@ -14,6 +14,11 @@ beforeEach(() => { vi.clearAllMocks(); });
 // Order-effect tests now run against real SQL in checkout-agreements.mysql.test.ts,
 // including exact amounts, choices, stock, consent, concurrent INSERT and replay.
 describe('supplementary actions cannot bypass checkout agreements', () => {
+  it('uses the central source interpretation rather than the secondary action delay', async () => {
+    mocks.followup.mockResolvedValue(false);
+    await executeAction({ ...request(), incomingMessageId: 21, action: { type: 'schedule_followup', delayHours: 999, reason: 'legacy suggestion' } });
+    expect(mocks.followup).toHaveBeenCalledWith({ merchantId: 7, conversationId: 8, customerPhone: '966500000009', incomingMessageId: 21 });
+  });
   describe.each([
     { type: 'escalate_to_merchant' as const, reason: 'طلب موظف', urgency: 'high' as const },
     { type: 'request_merchant_info' as const, question: 'موعد آخر' },
