@@ -4,7 +4,7 @@ const calls=vi.hoisted(()=>({memory:vi.fn(),budget:vi.fn(),byaan:vi.fn(),salla:v
 vi.mock('./ai/customer-memory',async original=>({...await original<typeof import('./ai/customer-memory')>(),captureDirectCustomerMemory:calls.memory}));
 vi.mock('./ai/budget-ledger',()=>({getAiBudgetStatus:calls.budget}));
 vi.mock('./appointment-reminders',()=>({handleAppointmentReminder:calls.reminder}));
-vi.mock('./ai/byaan-enrollment-conversation',async original=>({...await original<typeof import('./ai/byaan-enrollment-conversation')>(),handleByaanEnrollment:calls.byaan}));
+vi.mock('./ai/byaan-checkout-conversation',()=>({handleByaanCheckout:calls.byaan}));
 vi.mock('./ai/salla-checkout-conversation',()=>({handleSallaCheckout:calls.salla}));
 vi.mock('./ai/zahypi-client',async original=>({...await original<typeof import('./ai/zahypi-client')>(),runWithZahyPiContext:async(_:unknown,run:()=>Promise<unknown>)=>run()}));
 import {chatWithSari} from './ai/sari-personality';

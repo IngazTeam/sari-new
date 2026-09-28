@@ -89,7 +89,7 @@ export async function readByaanEnrollmentSelectionContext(input: CheckoutIdentit
 }
 
 /** Local, explicitly priced Byaan catalog only. Fresh sync is not a live seat reservation. */
-async function currentCourse(c: PoolConnection, merchantId: number, productId: number) {
+export async function currentByaanCourse(c: PoolConnection, merchantId: number, productId: number) {
   const [rows] = await c.execute<any[]>(`SELECT p.*,UTC_TIMESTAMP(3) AS checked_at,b.verified_at AS connection_verified_at
     FROM products p JOIN byaan_connections b ON b.merchant_id=p.merchantId
     WHERE p.id=? AND p.merchantId=? FOR SHARE`, [id.parse(productId), merchantId]);
@@ -116,6 +116,7 @@ async function currentCourse(c: PoolConnection, merchantId: number, productId: n
     catalogDigest: digest({ reference: p.sallaProductId, name: p.name, nameAr: p.nameAr, price: p.price, priceUnit: p.price_unit,
       currency: p.currency, synced, startsAt, endsAt, capacity: p.max_students, enrolled: count }) });
 }
+const currentCourse = currentByaanCourse;
 
 async function latest(c: PoolConnection, input: CheckoutIdentity) {
   const [rows] = await c.execute<any[]>(`SELECT *,offer_expires_at>UTC_TIMESTAMP(3) AS valid FROM sales_quotations

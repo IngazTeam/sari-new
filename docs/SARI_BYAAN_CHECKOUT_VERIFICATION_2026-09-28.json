@@ -1,0 +1,263 @@
+{
+  "recordedAt": "2026-09-28T17:52:22.298Z",
+  "scope": "Byaan checkout invitation conversation and API schedule; no payment/enrollment execution or production acceptance",
+  "sari": {
+    "branch": "main",
+    "baseCommit": "8d0cfa8296ac77fef3dcbfc032eb4516e67c2423",
+    "tests": {
+      "files": 26,
+      "passed": 624,
+      "failed": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "file": "server/api-instance-lifecycle-pentest.test.ts",
+          "status": "passed",
+          "passed": 11
+        },
+        {
+          "file": "server/auth.platformProvision.test.ts",
+          "status": "passed",
+          "passed": 3
+        },
+        {
+          "file": "server/byaan-checkout-contract.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "server/byaan-conversation-routing.test.ts",
+          "status": "passed",
+          "passed": 31
+        },
+        {
+          "file": "server/byaan-dashboard-hardening-pentest.test.ts",
+          "status": "passed",
+          "passed": 7
+        },
+        {
+          "file": "server/byaan-enrollment-consent-pentest.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "server/byaan-enrollment-recovery-pentest.test.ts",
+          "status": "passed",
+          "passed": 26
+        },
+        {
+          "file": "server/byaan-faq-knowledge-pentest.test.ts",
+          "status": "passed",
+          "passed": 11
+        },
+        {
+          "file": "server/byaan-pagination-pentest.test.ts",
+          "status": "passed",
+          "passed": 6
+        },
+        {
+          "file": "server/byaan-sales-boundary-pentest.test.ts",
+          "status": "passed",
+          "passed": 67
+        },
+        {
+          "file": "server/byaan-sales-review-pentest.test.ts",
+          "status": "passed",
+          "passed": 34
+        },
+        {
+          "file": "server/byaan-settings-sync-pentest.test.ts",
+          "status": "passed",
+          "passed": 10
+        },
+        {
+          "file": "server/byaan-signature-v2.test.ts",
+          "status": "passed",
+          "passed": 9
+        },
+        {
+          "file": "server/byaan-site-contract.test.ts",
+          "status": "passed",
+          "passed": 6
+        },
+        {
+          "file": "server/byaan-trainee-sync-pentest.test.ts",
+          "status": "passed",
+          "passed": 9
+        },
+        {
+          "file": "server/platform-read-model-pentest.test.ts",
+          "status": "passed",
+          "passed": 9
+        },
+        {
+          "file": "server/training-byaan-marketing-pentest.test.ts",
+          "status": "passed",
+          "passed": 8
+        },
+        {
+          "file": "server/whatsapp-byaan-channel-pentest.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "server/ai/byaan-checkout-conversation.mysql.test.ts",
+          "status": "passed",
+          "passed": 60
+        },
+        {
+          "file": "server/ai/byaan-enrollment-agreements.mysql.test.ts",
+          "status": "passed",
+          "passed": 67
+        },
+        {
+          "file": "server/ai/byaan-enrollment-conversation.mysql.test.ts",
+          "status": "passed",
+          "passed": 48
+        },
+        {
+          "file": "server/ai/byaan-enrollment-recovery.mysql.test.ts",
+          "status": "passed",
+          "passed": 52
+        },
+        {
+          "file": "server/integrations/byaan-outbox.mysql.test.ts",
+          "status": "passed",
+          "passed": 4
+        },
+        {
+          "file": "server/integrations/byaan-sales-boundary.mysql.test.ts",
+          "status": "passed",
+          "passed": 18
+        },
+        {
+          "file": "server/integrations/byaan-sales-operations.mysql.test.ts",
+          "status": "passed",
+          "passed": 36
+        },
+        {
+          "file": "server/integrations/byaan-sales-review.mysql.test.ts",
+          "status": "passed",
+          "passed": 29
+        }
+      ]
+    },
+    "checks": [
+      {
+        "name": "types",
+        "exitCode": 0
+      },
+      {
+        "name": "translations",
+        "exitCode": 0
+      },
+      {
+        "name": "sql-contracts",
+        "exitCode": 0
+      },
+      {
+        "name": "build",
+        "exitCode": 0
+      }
+    ],
+    "translations": {
+      "advertisedLocale": "ar",
+      "callsChecked": 8181,
+      "dynamicKeysChecked": 348,
+      "unresolvedDynamicCalls": [],
+      "missing": [],
+      "interpolationErrors": []
+    },
+    "sourceSha256": {
+      "server/ai/byaan-enrollment-agreements.ts": "c137c017083871a43e9e05d867b05f415fc6748c03a1c44dc951216daa0ccc6c",
+      "server/ai/byaan-checkout-agreements.ts": "daf7f9fd87d993f1f6d9c50b469bcedd2039b604383dde37e9ea4b8b9454f2e1",
+      "server/ai/byaan-checkout-conversation.ts": "c11c67c4e98fb36254d7f81882728835a6b2706548c39d301331bccf7c2abe4d",
+      "server/ai/byaan-checkout-conversation.mysql.test.ts": "4d1fd0c23fa7760200cefb04af55e59db2ba18d5f39c98c60a8d2e171b869ed6",
+      "server/ai/sari-personality.ts": "2e31ec73c5cb470848ca4057444857e18042ba95de1daa0c02226d313effca67",
+      "server/channels/whatsapp/service.ts": "862fc883c6868b51ed774def6ae590b724b1635c340edb88462a63e4c8386730",
+      "server/byaan-checkout-contract.test.ts": "38fba2e2c5b52028da9f114de5f7578b3dcdde4a30c037d347ef689680606503",
+      "server/byaan-conversation-routing.test.ts": "66d4a568bc75b3bf08b67490133127b65ed89742b3391d10b67a128b2cdbaa20",
+      "server/integrations/byaan-checkout-contract.ts": "a15e53c9b93eb2f21cb824287a67eb77a58851b6f1256bf4b8bccc17f8bef0db",
+      "server/integrations/byaan.ts": "3666d5288bc5b94155a1f6ea23e9ce79b3ec032fa89bbd8564faa2d6d7b55d28",
+      "docs/SARI_BYAAN_BIDIRECTIONAL_CONTRACT_2026-09-28.md": "b54e4ab3772e1257998510edfce567441467877de1c0d0009926e9e9effcba02",
+      "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "73e2b0f01224dca489bd577398eed79a110075e92f95d901d72ae56f2e1e906a"
+    }
+  },
+  "byaan": {
+    "branch": "master",
+    "baseCommit": "c18337e6a00e014d99527c58d2a4812e6e5e066f",
+    "tests": {
+      "passed": 85,
+      "assertions": 352,
+      "failed": 0,
+      "skipped": 0
+    },
+    "phpstan": {
+      "errors": 0,
+      "file_errors": 0
+    },
+    "phpLint": {
+      "files": 2,
+      "errors": 0
+    },
+    "translations": {
+      "keys": 121,
+      "missing": []
+    },
+    "sourceSha256": {
+      "app/Http/Controllers/Api/SariCheckoutController.php": "6cd834cad47679ccb6b0768b2fba9d516987c3e6f72d090e8d3097a1ca8845d9",
+      "tests/Feature/Sari/SariSignedContractTest.php": "99538aa93bc11c4ce9e5aa39704129c13ad95add23cf5584abe195cc94442590",
+      "docs/SARI_BYAAN_BIDIRECTIONAL_CONTRACT_2026-09-28.md": "b54e4ab3772e1257998510edfce567441467877de1c0d0009926e9e9effcba02"
+    }
+  },
+  "wireContract": {
+    "bidirectionalFixtures": 7,
+    "status": "passed",
+    "network": "none"
+  },
+  "security": {
+    "scope": "Local SQL/API/WhatsApp regression and negative tests; provider transports are synthetic",
+    "covered": [
+      "Tenant/course/session isolation",
+      "Explicit delivered offer and separate consent",
+      "Price/tax/date/timezone/availability revalidation",
+      "Customer refusal and forgotten session source",
+      "Human handoff, newer messages and worker lease expiry",
+      "Exact recipient, message and verified academy URL",
+      "Modified snapshots, consent, transport evidence and receipt projection",
+      "Concurrent confirmation and replay without duplicate financial facts",
+      "Legacy enrollment confirmation goes to review",
+      "Read-only timeout does not create unknown financial effects"
+    ],
+    "productionProbe": false
+  },
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "requiresBothRepositories": true,
+    "newMigrations": 0,
+    "requirement": "Deploy Byaan schedule field and Sari consumer together; retain invitation records on rollback."
+  },
+  "outstanding": [
+    "Causal attribution of later Byaan checkout/order/payment to Sari agreement",
+    "Invoice, captured payment and refund read/reconciliation contracts and durable events",
+    "Attendance API with explicit learner permission",
+    "Atomic large snapshot staging/finalization",
+    "Complete sync run status and external unknown-result reconciliation",
+    "Dedicated live account and coordinated production acceptance"
+  ],
+  "plan": {
+    "complete": 4,
+    "partial": 62,
+    "open": 5,
+    "rating10of10": false
+  },
+  "logsSha256": {
+    ".tmp/byaan-checkout-final/types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/byaan-checkout-final/translations.log": "294b3a12e45a6904f62aa4ae93997932eee9e15a2b3db6cbedc2c5713a43ee56",
+    ".tmp/byaan-checkout-final/tests.json": "478a4f63e0a7758860b5494ffcff9bde5c10c5f4349ab230f036a6d5fe4e2bdf",
+    ".tmp/byaan-checkout-final/build.log": "bd4c23a6b4f6b21b1f76539f5bf40f698fc2139d9eea53f7aba92fa1bd7dbbcf",
+    ".tmp/byaan-checkout-php-tests.log": "ed400285743a678d2211228c8ec98b6b1f7201ae64eae5226b62579f46af4df9",
+    ".tmp/byaan-checkout-phpstan.json": "54e6eb194ee0b354574ec566f17799b533a8be4c7d81b0e9a532389caf087687"
+  }
+}

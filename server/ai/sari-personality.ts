@@ -1609,8 +1609,8 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
     return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
   }
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
-    const { handleByaanEnrollment } = await import('./byaan-enrollment-conversation');
-    const enrollmentReply = await handleByaanEnrollment({ merchantId:params.merchantId, conversationId:params.conversationId,
+    const { handleByaanCheckout } = await import('./byaan-checkout-conversation');
+    const enrollmentReply = await handleByaanCheckout({ merchantId:params.merchantId, conversationId:params.conversationId,
       incomingMessageId:params.incomingMessageId, customerPhone:params.customerPhone, message:params.message, memoryHistoryCutoff });
     if (enrollmentReply !== null) return enrollmentReply;
     const { handleSallaCheckout } = await import('./salla-checkout-conversation');

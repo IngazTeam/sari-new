@@ -1002,15 +1002,13 @@ async function callByaanApi(
   let dispatched = false;
   try {
     const salesWrite = method === 'POST' && (endpoint === '/enroll' || endpoint === '/create-payment-link');
-    if (salesWrite) await assertByaanSalesAuthority(merchantId, connection);
+    if (salesWrite || endpoint === '/checkout-quote') await assertByaanSalesAuthority(merchantId, connection);
     const httpsAgent = await createPinnedByaanHttpsAgent(url);
     const axios = (await import('axios')).default;
     // Recheck after DNS resolution/module loading, immediately before dispatch.
-    if (salesWrite) await assertByaanSalesAuthority(merchantId, connection);
-    if (salesWrite) {
-      if (!beforeSalesDispatch) throw Error('Durable sales request required');
-      await beforeSalesDispatch(connection);
-    }
+    if (salesWrite || endpoint === '/checkout-quote') await assertByaanSalesAuthority(merchantId, connection);
+    if (salesWrite && !beforeSalesDispatch) throw Error('Durable sales request required');
+    if (beforeSalesDispatch) await beforeSalesDispatch(connection);
     dispatched = true;
     const response = await axios({
       method,
@@ -1056,14 +1054,14 @@ export async function getByaanHealth(merchantId: number): Promise<{ success: boo
 }
 
 /** Public checkout invitation only; never an enrollment, invoice or payment acknowledgement. */
-export async function getByaanCheckoutQuote(merchantId: number, input: { courseId: string; sessionId?: string }) {
+export async function getByaanCheckoutQuote(merchantId: number, input: { courseId: string; sessionId?: string }, beforeDispatch?: (connection: unknown) => Promise<void>) {
   const parsed = byaanCheckoutInput.safeParse(input);
   if (!byaanMerchantId.safeParse(merchantId).success || !parsed.success) return { success: false as const };
   const connection = await getByaanConnection(merchantId);
   if (!connection?.is_active || !connection.verified_at) return { success: false as const };
   const result = await callByaanApi(merchantId, 'POST', '/checkout-quote', {
     course_id: parsed.data.courseId, ...(parsed.data.sessionId ? { session_id: parsed.data.sessionId } : {}),
-  });
+  }, beforeDispatch);
   if (!result.success) return { success: false as const };
   try {
     await assertByaanSalesAuthority(merchantId, connection);

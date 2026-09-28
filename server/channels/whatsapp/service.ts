@@ -263,6 +263,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     }
   }
   if (execution) await execution.assertOwned();
+  if (input.replyGuard || /\[BC-\d+\]/.test(input.text || '')) {
+    const { canDispatchByaanCheckoutReply } = await import('../../ai/byaan-checkout-agreements');
+    if (!await canDispatchByaanCheckoutReply(input)) {
+      await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='byaan_checkout_superseded',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'", [input.merchantId, input.idempotencyKey]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: 'byaan_checkout_superseded' };
+    }
+  }
+  if (execution) await execution.assertOwned();
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,
