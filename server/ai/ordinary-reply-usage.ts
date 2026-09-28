@@ -55,7 +55,7 @@ function accepted(r: any) {
 function rejected(r: any) {
   // Only definitive provider rejections free capacity. A crash or transport ambiguity keeps it held.
   return r.status === 'failed' && !r.provider_message_id && (/^http_4\d\d$/.test(r.error_code || '') && r.error_code !== 'http_408'
-    || ['conversation_superseded','sales_reply_suppressed','followup_suppressed','escalation_suppressed',
+    || ['conversation_superseded','byaan_enrollment_superseded','sales_reply_suppressed','followup_suppressed','escalation_suppressed',
       'appointment_reminder_suppressed','booking_notice_suppressed','sales_offer_suppressed',
       'invalid_request','configuration_missing','unsupported_template','mock_disabled'].includes(r.error_code));
 }

@@ -1,17 +1,27 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
+import { getPool } from '../db/connection';
+import type { SendMerchantWhatsAppInput } from '../channels/whatsapp/types';
+import { currentInboundExecution } from '../messaging/inbound-context';
 import { databaseTimeEpoch } from '../db/time';
 import { formatMinorMoney, verifiedProductMoney } from '../../shared/product-money';
 import { enrollTrainee } from '../integrations/byaan';
 import { byaanEnrollmentInput, byaanMerchantId } from '../integrations/byaan-sales-contract';
-import { byaanSalesTransaction as tx, lockByaanSalesAuthority, type ByaanSalesAuthorization } from '../integrations/byaan-sales-operations';
+import { byaanSalesTransaction as tx, lockByaanSalesAuthority, readByaanSalesOperationResult, type ByaanSalesAuthorization } from '../integrations/byaan-sales-operations';
 import { assertCheckoutAgreementSchema, assertCheckoutIdentity, type CheckoutIdentity } from './checkout-agreements';
 import { hasCheckoutOfferEvidence } from './checkout-offer-evidence';
 import { isSalesRefusal, isShortAffirmation, normalizeCustomerText } from './customer-decision';
 import { policyArtifactDigest as digest } from './learning-policy-evaluation-bundle';
+import { normalizeCampaignPhone } from '../automation/campaign-guard';
+import { ordinaryReplyDigest, ordinaryReplyText } from './reply-reservation';
+import type { ReplyPlan } from '../messaging/reply-plan';
 
 export const BYAAN_ENROLLMENT_PROVIDER = 'byaan_enrollment';
+export const BYAAN_ENROLLMENT_CLARIFY = 'حدد دورة واحدة واسم المتدرب الصحيح في المحادثة، لأعرض تفاصيل التسجيل وتراجعها قبل التأكيد.';
+export const BYAAN_ENROLLMENT_UNCERTAIN = 'يحتاج تسجيل بيان إلى مراجعة من المتجر. لا أستطيع تأكيد النتيجة الآن، ولن أرسل تسجيلًا بديلًا تلقائيًا.';
+export const BYAAN_ENROLLMENT_DECLINED = 'توقفت عن متابعة هذا التسجيل آليًا. إذا سبق إرساله إلى بيان، يحتاج إلغاؤه إلى مراجعة من المتجر.';
+export const BYAAN_ENROLLMENT_CHANGED = 'تغيّرت تفاصيل التسجيل أو انتهت صلاحية العرض. حدد الدورة من جديد لأعرض ملخصًا تراجعه قبل التأكيد.';
 const id = byaanMerchantId, hash = z.string().regex(/^[a-f0-9]{64}$/);
 const label = z.string().trim().min(1).max(255)
   .refine(v => !/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff\[\]<>]/.test(v));
@@ -48,7 +58,30 @@ async function currentCustomer(c: PoolConnection, input: CheckoutIdentity) {
   if (rows.length !== 1) throw Error('Customer message unavailable');
   const name = label.parse(rows[0].customerName);
   const normalized = byaanEnrollmentInput.parse({ traineeName: name, traineePhone: input.customerPhone, courseId: 'identity' });
-  return { content: source.content, name: normalized.traineeName, phone: normalized.traineePhone, version: Number(rows[0].handoff_version) };
+  const [profiles] = await c.execute<any[]>('SELECT memory_forget_before_message_id FROM customer_profiles WHERE merchant_id=? AND customer_phone=?', [input.merchantId, input.customerPhone]);
+  const cutoff = Number(profiles[0]?.memory_forget_before_message_id || 0);
+  if (input.incomingMessageId <= cutoff) throw Error('Customer history withdrawn');
+  return { content: source.content, name: normalized.traineeName, phone: normalized.traineePhone, version: Number(rows[0].handoff_version), cutoff };
+}
+
+async function assertExecution(input: CheckoutIdentity) {
+  const execution = currentInboundExecution();
+  if (execution) {
+    if (execution.merchantId !== input.merchantId) throw Error('Inbound owner mismatch');
+    await execution.assertOwned();
+  }
+}
+
+/** Bounded, tenant-owned identifiers for extraction. No secrets, prices or customer profile. */
+export async function readByaanEnrollmentSelectionContext(input: CheckoutIdentity) {
+  return tx(async c => {
+    await lockByaanSalesAuthority(c, input.merchantId);
+    const customer = await currentCustomer(c, input);
+    const [catalog] = await c.execute<any[]>(`SELECT id AS productId,COALESCE(NULLIF(nameAr,''),name) AS name,sallaProductId AS reference FROM products
+      WHERE merchantId=? AND isActive=1 AND status='active' AND product_type='service' AND has_variants=0
+      AND registration_open=1 AND sallaProductId LIKE 'byaan:%' ORDER BY id LIMIT 150`, [input.merchantId]);
+    return { content: customer.content, cutoff: customer.cutoff, catalog: catalog.filter(p => label.safeParse(p.name).success) as Array<{productId:number;name:string;reference:string}> };
+  });
 }
 
 /** Local, explicitly priced Byaan catalog only. Fresh sync is not a live seat reservation. */
@@ -119,7 +152,7 @@ async function verifiedClaim(c: PoolConnection, input: CheckoutIdentity, quotati
   if (!q || q.id !== quotationId || !['sent', 'viewed', 'accepted'].includes(q.status)) throw Error('Agreement unavailable');
   const { snapshot, consent } = readAgreement(q);
   if (snapshot.authorityHash !== authority.hash || snapshot.ownershipVersion !== customer.version || snapshot.traineeName !== customer.name
-    || snapshot.traineePhone !== customer.phone || !isByaanEnrollmentConsent(customer.content) || snapshot.sourceMessageId >= input.incomingMessageId
+    || snapshot.traineePhone !== customer.phone || snapshot.sourceMessageId <= customer.cutoff || !isByaanEnrollmentConsent(customer.content) || snapshot.sourceMessageId >= input.incomingMessageId
     || consent && (consent.incomingMessageId !== input.incomingMessageId || consent.contentDigest !== digest(customer.content))) throw Error('Consent unavailable');
   if (requireCurrentCatalog) {
     if (!q.valid || digest(await currentCourse(c, input.merchantId, snapshot.course.productId)) !== digest(snapshot.course)) throw Error('Course changed');
@@ -135,13 +168,17 @@ async function verifiedClaim(c: PoolConnection, input: CheckoutIdentity, quotati
 
 /** Server adapter only: neither creates a provider operation nor sends WhatsApp.
  * The caller must deliver the exact offer through the existing guarded reply path. */
-export async function prepareByaanEnrollmentOffer(rawInput: CheckoutIdentity, productId: number) {
+export async function prepareByaanEnrollmentOffer(rawInput: CheckoutIdentity, productId: number,
+  extraction?: {sourceText:string;memoryCutoff:number;product:{productId:number;name:string;reference:string}}) {
   const input = { ...rawInput };
   await assertCheckoutAgreementSchema(); id.parse(productId);
   return tx(async c => {
     const authority = await lockByaanSalesAuthority(c, input.merchantId), customer = await currentCustomer(c, input);
     if (isSalesRefusal(customer.content)) return { kind: 'declined' as const };
     const previous = await latest(c, input), course = await currentCourse(c, input.merchantId, productId);
+    if (extraction && (customer.content !== extraction.sourceText || customer.cutoff !== extraction.memoryCutoff
+      || course.productId !== extraction.product.productId || course.name !== extraction.product.name.trim()
+      || `byaan:${course.courseId}` !== extraction.product.reference)) throw Error('Extraction source changed');
     // Block new identities over unresolved effects, including attempts from another
     // conversation for the same normalized recipient. A reported enrollment of the
     // same course also needs human review instead of accidental re-enrollment.
@@ -166,6 +203,7 @@ export async function prepareByaanEnrollmentOffer(rawInput: CheckoutIdentity, pr
       customerPhone: input.customerPhone, sourceMessageId: input.incomingMessageId,
       traineePhone: customer.phone, traineeName: customer.name, authorityHash: authority.hash, ownershipVersion: customer.version,
       sourceDigest: digest(customer.content), course, requestId: randomUUID() });
+    await assertExecution(input);
     await c.execute(`UPDATE sales_quotations SET status='expired' WHERE merchant_id=? AND conversation_id=? AND status IN ('sent','viewed')
       AND consent_message_id IS NULL AND order_id IS NULL AND (checkout_snapshot IS NOT NULL OR external_snapshot IS NOT NULL)`, [input.merchantId, input.conversationId]);
     const [r] = await c.execute<any>(`INSERT INTO sales_quotations (merchant_id,customer_phone,customer_name,quotation_number,items,subtotal,tax_amount,total,currency,
@@ -185,6 +223,7 @@ export async function acceptByaanEnrollmentOffer(rawInput: CheckoutIdentity, quo
   const input = { ...rawInput }; id.parse(quotationId);
   await assertCheckoutAgreementSchema();
   const claim = await tx(async c => {
+    await assertExecution(input);
     await lockByaanSalesAuthority(c, input.merchantId);
     const customer = await currentCustomer(c, input), q = await latest(c, input);
     if (!q || q.id !== quotationId) throw Error('Agreement unavailable');
@@ -206,6 +245,7 @@ export async function acceptByaanEnrollmentOffer(rawInput: CheckoutIdentity, quo
   const authorization: ByaanSalesAuthorization = { binding, assert: async (c, phase) => {
     const current = await verifiedClaim(c, input, quotationId, phase !== 'replay');
     if (!current.consent || digest({ snapshot: current.snapshot, consent: current.consent }) !== binding) throw Error('Agreement binding changed');
+    await assertExecution(input);
   } };
   const result = await enrollTrainee(input.merchantId, intent(claim.snapshot), { requestId: claim.snapshot.requestId }, authorization);
   try {
@@ -223,4 +263,58 @@ export async function acceptByaanEnrollmentOffer(rawInput: CheckoutIdentity, quo
     });
   } catch { return { kind: 'review' as const, quotationId, result }; }
   return { kind: 'operation' as const, quotationId, result };
+}
+
+async function currentReply(c: PoolConnection, input: CheckoutIdentity, quotationId: number, ownershipVersion?: number) {
+  const authority = await lockByaanSalesAuthority(c, input.merchantId), customer = await currentCustomer(c, input), q = await latest(c, input);
+  if (!q || q.id !== quotationId) throw Error('Reply agreement unavailable');
+  const agreement = readAgreement(q), s = agreement.snapshot;
+  if (s.authorityHash !== authority.hash || s.ownershipVersion !== customer.version || s.traineeName !== customer.name
+    || s.traineePhone !== customer.phone || s.sourceMessageId <= customer.cutoff
+    || ownershipVersion !== undefined && ownershipVersion !== customer.version) throw Error('Reply authority changed');
+  if (s.sourceMessageId === input.incomingMessageId) {
+    if (!q.valid || !['sent','viewed'].includes(q.status) || q.execution_state !== 'ready' || agreement.consent
+      || s.sourceDigest !== digest(customer.content) || digest(await currentCourse(c,input.merchantId,s.course.productId)) !== digest(s.course)) throw Error('Offer changed');
+    if ((await assertCheckoutIdentity(c,input)).content !== customer.content) throw Error('Offer source changed');
+    return byaanEnrollmentOfferText(q.id,s);
+  }
+  const current = await verifiedClaim(c,input,quotationId,false);
+  if (!current.consent || q.execution_state !== 'succeeded' || q.status !== 'accepted') throw Error('Enrollment not reported');
+  const receipt = await readByaanSalesOperationResult(c,input.merchantId,'enrollment',{requestId:s.requestId},intent(s),digest(agreement));
+  if (digest(receipt) !== digest(decode(q.external_result).value.receipt)) throw Error('Receipt projection mismatch');
+  if ((await assertCheckoutIdentity(c,input)).content !== current.content) throw Error('Reply source superseded');
+  return `ورد تأكيد التسجيل من بيان [BE-${q.id}]\nالدورة: ${s.course.name}\nرقم التسجيل: ${receipt.enrollmentId}\n`
+    + 'هذا إقرار تسجيل، ولا يثبت سداد رسوم الدورة. راجع الفاتورة وطريقة الدفع مع المتجر قبل السداد.';
+}
+
+export async function readByaanEnrollmentReply(input: CheckoutIdentity, quotationId: number) {
+  await assertCheckoutAgreementSchema();
+  return tx(c => currentReply(c,input,quotationId));
+}
+
+/** Final transport gate. Reads the saved operation and its evidence; never calls Byaan. */
+export async function canDispatchByaanEnrollmentReply(input: SendMerchantWhatsAppInput) {
+  const marker = /\[BE-\d+\]/.test(input.text || ''), guard = input.replyGuard;
+  if (!guard?.incomingMessageId) return !marker;
+  try {
+    const pool = await getPool(); if (!pool) return false;
+    const [rows] = await pool.execute<any[]>(`SELECT id,customer_phone FROM sales_quotations WHERE merchant_id=? AND conversation_id=?
+      AND external_provider=? AND (source_message_id=? OR consent_message_id=?) ORDER BY id DESC LIMIT 1`,
+    [input.merchantId,guard.conversationId,BYAAN_ENROLLMENT_PROVIDER,guard.incomingMessageId,guard.incomingMessageId]);
+    const q = rows[0]; if (!q) return !marker;
+    if (input.kind !== 'text' || !normalizeCampaignPhone(input.to) || normalizeCampaignPhone(input.to) !== normalizeCampaignPhone(q.customer_phone)) return false;
+    const [jobs] = await pool.execute<any[]>('SELECT * FROM ai_interaction_jobs WHERE merchant_id=? AND conversation_id=? AND incoming_message_id=?',
+      [input.merchantId,guard.conversationId,guard.incomingMessageId]);
+    const job=jobs[0], plan:ReplyPlan=decode(job?.reply_plan);
+    const {replyGuard: _guard,...effect}=input;
+    if (!job || job.reply_origin !== 'ordinary' || job.state !== 'waiting_delivery' || job.reply_digest !== guard.reservationDigest
+      || ordinaryReplyDigest(plan) !== job.reply_digest || ordinaryReplyText(plan) !== job.reply_text
+      || plan.conversationId !== guard.conversationId || plan.incomingMessageId !== guard.incomingMessageId || plan.ownershipVersion !== guard.version
+      || plan.effects.some(e=>e.kind !== 'text') || !plan.effects.some(e=>digest(e)===digest(effect))) return false;
+    const endsWith = (expected:string) => plan.effects.some((_,index)=>plan.effects.slice(index).map(e=>e.text).join('')===expected);
+    if (!plan.effects.some(e=>/\[BE-\d+\]/.test(e.text||''))
+      && [BYAAN_ENROLLMENT_CLARIFY,BYAAN_ENROLLMENT_UNCERTAIN,BYAAN_ENROLLMENT_DECLINED,BYAAN_ENROLLMENT_CHANGED].some(endsWith)) return true;
+    const identity={merchantId:input.merchantId,conversationId:guard.conversationId,incomingMessageId:guard.incomingMessageId,customerPhone:q.customer_phone};
+    return await tx(async c=>endsWith(await currentReply(c,identity,q.id,guard.version)));
+  } catch { return false; }
 }

@@ -86,6 +86,24 @@ async function verifyTracking(c: PoolConnection, merchantId: number, kind: Kind,
     status: kind === 'enrollment' ? 'completed' : 'pending' });
   if (!history.length || history[0].observation.payloadDigest !== conversionPayloadDigest(merchantId, expected)) throw Error('Tracking identity mismatch');
 }
+/** Read-only receipt verification for reply dispatch. Never reserve or resume a POST. */
+export async function readByaanSalesOperationResult(c: PoolConnection, merchantId: number, kind: Kind,
+  request: unknown, rawIntent: unknown, authorizationBinding: string) {
+  merchantId = id.parse(merchantId);
+  const requestId = byaanSalesRequest.parse(request).requestId;
+  const intent = kind === 'enrollment' ? byaanEnrollmentInput.parse(rawIntent) : byaanPaymentInput.parse(rawIntent);
+  const binding = z.string().regex(/^[a-f0-9]{64}$/).parse(authorizationBinding);
+  const hash = digest({ version: 1, merchantId, kind, intent, authorization: binding });
+  const authority = await lockByaanSalesAuthority(c, merchantId);
+  const [rows] = await c.execute<any[]>('SELECT * FROM byaan_sales_operations WHERE merchant_id=? AND request_id=? FOR SHARE', [merchantId, requestId]);
+  const row = rows[0];
+  if (rows.length !== 1 || row.request_hash !== hash || row.authority_hash !== authority.hash || row.operation_kind !== kind
+    || row.state !== 'reported') throw Error('Reported operation unavailable');
+  const result = checkedResult(typeof row.result_json === 'string' ? JSON.parse(row.result_json) : row.result_json, kind);
+  if (!result.success || seal(row, result) !== row.result_hash) throw Error('Reported operation changed');
+  await verifyTracking(c, merchantId, kind, intent, result);
+  return { ...result, operationId: row.id as number };
+}
 /** Server-only guard. A caller must persist one request ID per agreed operation;
  * a new ID is a different operation, not a safe retry of an unknown one. */
 export async function runByaanSalesOperation(merchantId: number, kind: Kind, request: unknown, rawIntent: unknown,

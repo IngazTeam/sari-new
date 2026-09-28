@@ -255,6 +255,14 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       return { accepted:false,duplicate:false,status:'failed',errorCode:'salla_order_suppressed' };
     }
   }
+  if (input.replyGuard || /\[BE-\d+\]/.test(input.text || '')) {
+    const { canDispatchByaanEnrollmentReply } = await import('../../ai/byaan-enrollment-agreements');
+    if (!await canDispatchByaanEnrollmentReply(input)) {
+      await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='byaan_enrollment_superseded',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'",[input.merchantId,input.idempotencyKey]);
+      return {accepted:false,duplicate:false,status:'failed',errorCode:'byaan_enrollment_superseded'};
+    }
+  }
+  if (execution) await execution.assertOwned();
   const result = await provider.send(config, input).catch((error: any) => ({
     accepted: false as const,
     outcome: 'unknown' as const,
