@@ -61,6 +61,27 @@ beforeEach(() => {
   m.call.mockResolvedValue("The watch costs 40.");
 });
 describe("isolated preview engine", () => {
+  it("uses the saved persona identity and tone with merchant knowledge and the same simulation guards", async () => {
+    m.call.mockResolvedValue("أنا ساري. الساعة بسعر 40.");
+    const persona = {
+      id: 12,
+      name: "نورة",
+      role: "دعم",
+      department: "الفريق",
+      tone: "empathetic",
+      personalityPrompt: "تعليمات خاصة",
+    };
+    const result = await previewSari({ ...input, persona, history: [] });
+    const prompt = m.call.mock.calls[0][0][0].content;
+    expect(m.prompt).not.toHaveBeenCalled();
+    expect(prompt).toContain('"name":"نورة"');
+    expect(prompt).toContain('"tone":"empathetic"');
+    expect(prompt).toContain("تعليمات خاصة");
+    expect(prompt).toContain("watch costs 40");
+    expect(prompt).toContain("No tools or live customer actions are available");
+    expect(result.response).toBe("أنا نورة. الساعة بسعر 40.");
+    expect(m.call.mock.calls[0][1]).not.toHaveProperty("conversationId");
+  });
   it("does not cut a long knowledge fact in the middle", async () => {
     m.context.mockResolvedValue("Complete fact.\n" + "x".repeat(48000));
     await previewSari(input);

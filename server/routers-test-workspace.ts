@@ -35,7 +35,7 @@ async function run<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 const manage = permissionProcedure("bot_settings.manage");
-function previewRateLimit(merchantId: number, userId: number) {
+export function previewRateLimit(merchantId: number, userId: number) {
   if (!checkRateLimit(`test_sari:${merchantId}:${userId}`, 15, 60000).allowed)
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",

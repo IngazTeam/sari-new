@@ -21,6 +21,23 @@ const input=(name:string,value:string|boolean)=>{const el=w.document.getElementB
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
+  it('previews a specific persona, preserves a failed question, and labels the result as a static design example',()=>{
+    route('virtual-team');click('preview-persona','[data-id="2"]');
+    expect(w.document.getElementById('dialog').textContent).toContain('فهد · مسؤول مبيعات');
+    input('preview-question','<img src=x onerror=alert(1)>');click('preview-failure');
+    expect(w.document.querySelector('#as-preview-result [role="alert"]')).toBeTruthy();
+    expect(w.document.getElementById('as-preview-question').value).toContain('<img');
+    click('preview-send');expect(w.document.getElementById('as-preview-result').textContent).toContain('مثال ثابت');
+    expect(w.document.querySelector('#as-preview-result img')).toBeNull();expect(data()).toBeNull();
+  });
+  it('does not claim a scheduled draft response when auto-reply or the schedule is disabled',()=>{
+    route('bot-settings');input('autoReplyEnabled',false);click('section','[data-value="preview"]');
+    expect(w.document.querySelector('.as-chat').textContent).toContain('الرد التلقائي متوقف');
+    expect(w.document.querySelector('.as-chat').textContent).not.toContain('وصلتنا رسالتك');
+    click('section','[data-value="basics"]');input('autoReplyEnabled',true);click('section','[data-value="preview"]');
+    expect(w.document.querySelector('.as-chat').textContent).toContain('جدول العمل متوقف');
+    click('preview-store');expect(w.document.getElementById('dialog').textContent).toContain('المعاينة المحفوظة فقط');
+  });
   it('keeps all 12 avatars and five tones; validates required fields in both sections',()=>{
     route('virtual-team');w.document.querySelector('[data-page-action="primary"]').click();
     expect(w.document.querySelectorAll('[data-as-action="avatar"]')).toHaveLength(12);

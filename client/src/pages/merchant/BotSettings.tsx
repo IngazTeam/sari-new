@@ -1,4 +1,6 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import { AssistantReplyPreview } from "@/components/merchant/AssistantReplyPreview";
+import { parseWorkingDays, toggleWorkingDay } from "@shared/bot-working-days";
 import { CheckoutMarginPolicySettings } from "@/components/CheckoutMarginPolicySettings";
 import { DiscountPolicySettings } from "@/components/DiscountPolicySettings";
 import { useState, useEffect, useRef } from "react";
@@ -58,6 +60,7 @@ export default function BotSettings() {
   const [activeSection, setActiveSection] = useState("basics");
 
   const initialized = useRef(false);
+  const saveLock = useRef(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
 
   // Get current settings
@@ -77,6 +80,9 @@ export default function BotSettings() {
     },
     onError: (error: any) => {
       toast.error(t("botSettingsPage.saveError") + error.message);
+    },
+    onSettled: () => {
+      saveLock.current = false;
     },
   });
 
@@ -169,6 +175,8 @@ export default function BotSettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (saveLock.current) return;
+    saveLock.current = true;
     const words = parseAgentKeywords([...groupKeywords, keywordInput]);
     setGroupKeywords(words);
     setKeywordInput("");
@@ -182,18 +190,14 @@ export default function BotSettings() {
   };
 
   const handleWorkingDayToggle = (day: number) => {
-    const days = formData.workingDays.split(",").map(d => parseInt(d));
-    const newDays = days.includes(day)
-      ? days.filter(d => d !== day)
-      : [...days, day].sort();
-    setFormData({ ...formData, workingDays: newDays.join(",") });
+    setFormData(old => ({
+      ...old,
+      workingDays: toggleWorkingDay(old.workingDays, day),
+    }));
   };
 
   const isWorkingDay = (day: number) => {
-    return formData.workingDays
-      .split(",")
-      .map(d => parseInt(d))
-      .includes(day);
+    return parseWorkingDays(formData.workingDays).includes(day);
   };
 
   const weekDays = [
@@ -318,23 +322,21 @@ export default function BotSettings() {
                       {/* Live example */}
                       <div className="p-3 rounded-lg bg-muted/50 text-sm">
                         <p className="text-xs text-muted-foreground mb-1 font-semibold">
-                          💬 مثال على الرد:
+                          {t("assistantSettingsReviewUx.styleExample")}
                         </p>
                         {template.settings.tone === "professional" && (
                           <p className="text-foreground leading-relaxed">
-                            "نشكرك على تواصلك معنا. نودّ إعلامك بأن المنتج متوفر
-                            حالياً. هل تودّ الاطلاع على مزيد من التفاصيل؟"
+                            {t("assistantSettingsReviewUx.professionalExample")}
                           </p>
                         )}
                         {template.settings.tone === "friendly" && (
                           <p className="text-foreground leading-relaxed">
-                            "أهلاً وسهلاً! 😊 أكيد المنتج موجود عندنا. تبي أرسلك
-                            الأسعار والصور؟"
+                            {t("assistantSettingsReviewUx.friendlyExample")}
                           </p>
                         )}
                         {template.settings.tone === "casual" && (
                           <p className="text-foreground leading-relaxed">
-                            "هلا! ✌️ إيه موجود. أرسلك التفاصيل الحين؟"
+                            {t("assistantSettingsReviewUx.casualExample")}
                           </p>
                         )}
                       </div>
@@ -348,9 +350,7 @@ export default function BotSettings() {
                         className="w-full"
                         onClick={() => applyTemplate(template)}
                       >
-                        {formData.tone === template.settings.tone
-                          ? "✓ مُطبّق"
-                          : t("botSettingsPage.apply")}
+                        {t("assistantSettingsReviewUx.applyToDraft")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -556,16 +556,18 @@ export default function BotSettings() {
                     <Label>{t("botSettingsPage.workingDays")}</Label>
                     <div className="flex flex-wrap gap-2">
                       {weekDays.map(day => (
-                        <Badge
+                        <Button
                           key={day.value}
+                          type="button"
+                          aria-pressed={isWorkingDay(day.value)}
                           variant={
                             isWorkingDay(day.value) ? "default" : "outline"
                           }
-                          className="cursor-pointer"
+                          className="min-h-11"
                           onClick={() => handleWorkingDayToggle(day.value)}
                         >
                           {day.label}
-                        </Badge>
+                        </Button>
                       ))}
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -761,127 +763,77 @@ export default function BotSettings() {
           </Card>
         </section>
 
-        {/* Preview Section */}
+        {/* Draft copy and saved-model testing are explicitly separate. */}
         <section
           hidden={activeSection !== "preview"}
           data-assistant-section="preview"
+          className="space-y-4"
         >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                {t("botSettingsPage.previewTitle")}
+                <Eye className="h-5 w-5" aria-hidden="true" />
+                {t("assistantSettingsReviewUx.draftTitle")}
               </CardTitle>
               <CardDescription>
-                {t("botSettingsPage.previewDesc")}
+                {t("assistantSettingsReviewUx.draftHelp")}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="bg-accent rounded-lg p-6 space-y-4">
-                {/* WhatsApp-style messages */}
-                <div className="space-y-3">
-                  {/* Customer message */}
-                  <div className="flex justify-start">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
-                      <p className="text-sm">
-                        {t("botSettingsPage.previewCustomerMsg")}
+            <CardContent className="space-y-4">
+              {!formData.autoReplyEnabled ? (
+                <p role="status" className="rounded-xl bg-muted p-4 text-sm">
+                  {t("assistantSettingsReviewUx.replyOff")}
+                </p>
+              ) : (
+                <>
+                  <div className="rounded-xl border p-4">
+                    <h3 className="mb-2 text-sm font-medium">
+                      {t("botSettingsPage.welcomeMessage")}
+                    </h3>
+                    <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
+                      {formData.welcomeMessage ||
+                        t("botSettingsPage.previewDefaultWelcome")}
+                    </p>
+                  </div>
+                  {formData.workingHoursEnabled ? (
+                    <div className="rounded-xl border bg-muted/30 p-4">
+                      <h3 className="mb-2 text-sm font-medium">
+                        {t("botSettingsPage.previewOutsideHours")}
+                      </h3>
+                      <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
+                        {formData.outOfHoursMessage ||
+                          t("botSettingsPage.previewDefaultOutOfHours")}
                       </p>
-                      <span className="text-xs text-muted-foreground">
-                        {t("merchantBotSettingsPage.text0")}
-                      </span>
                     </div>
-                  </div>
-
-                  {/* Sari welcome message */}
-                  <div className="flex justify-end">
-                    <div className="bg-green-500 text-white rounded-lg rounded-tr-none px-4 py-2 max-w-[80%] shadow-sm">
-                      <div className="flex items-start gap-2 mb-1">
-                        <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium mb-1">
-                            {t("botSettingsPage.sari")}
-                          </p>
-                          <p className="text-sm whitespace-pre-wrap">
-                            {formData.welcomeMessage ||
-                              t("botSettingsPage.previewDefaultWelcome")}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs opacity-90">
-                        {t("merchantBotSettingsPage.text1")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Separator */}
-                  <div className="flex items-center gap-2 py-2">
-                    <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
-                    <span className="text-xs text-muted-foreground">
-                      {t("botSettingsPage.previewOutsideHours")}
-                    </span>
-                    <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
-                  </div>
-
-                  {/* Customer message after hours */}
-                  <div className="flex justify-start">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
-                      <p className="text-sm">
-                        {t("botSettingsPage.previewAfterHoursMsg")}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {t("merchantBotSettingsPage.text2")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sari out of hours message */}
-                  <div className="flex justify-end">
-                    <div className="bg-green-500 text-white rounded-lg rounded-tr-none px-4 py-2 max-w-[80%] shadow-sm">
-                      <div className="flex items-start gap-2 mb-1">
-                        <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium mb-1">
-                            {t("merchantBotSettingsPage.text3")}
-                          </p>
-                          <p className="text-sm whitespace-pre-wrap">
-                            {formData.outOfHoursMessage ||
-                              t("botSettingsPage.previewDefaultOutOfHours")}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs opacity-90">
-                        {t("merchantBotSettingsPage.text4")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Settings summary */}
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mt-4">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">
-                        {t("botSettingsPage.toneLabel")}
-                      </span>
-                      <Badge variant="outline" className="mr-2">
-                        {formData.tone === "professional"
-                          ? t("botSettingsPage.toneFormalLabel")
-                          : formData.tone === "friendly"
-                            ? t("botSettingsPage.toneFriendlyLabel")
-                            : t("botSettingsPage.toneModernLabel")}
-                      </Badge>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        {t("botSettingsPage.responseDelayLabel")}
-                      </span>
-                      <Badge variant="outline" className="mr-2">
-                        {formData.responseDelay} {t("botSettingsPage.seconds")}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t("assistantSettingsReviewUx.scheduleOff")}
+                    </p>
+                  )}
+                </>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {t("assistantSettingsReviewUx.noQualityScore")}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("assistantSettingsReviewUx.savedTitle")}</CardTitle>
+              <CardDescription>
+                {t("personaPreviewUx.savedOnly")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {savedSnapshot !== currentSnapshot && (
+                <p
+                  role="note"
+                  className="rounded-xl border bg-muted p-3 text-sm"
+                >
+                  {t("assistantSettingsReviewUx.unsavedPreview")}
+                </p>
+              )}
+              <AssistantReplyPreview selection={{ mode: "store" }} />
             </CardContent>
           </Card>
         </section>
@@ -906,10 +858,10 @@ export default function BotSettings() {
                 <div className="p-1.5 rounded-lg bg-primary text-white">
                   <Users className="h-4 w-4" />
                 </div>
-                سلوك الجروبات
+                {t("assistantSettingsReviewUx.groupsTitle")}
               </CardTitle>
               <CardDescription>
-                تحكم في كيفية تعامل ساري مع رسائل الجروبات المشترك بها
+                {t("assistantSettingsReviewUx.groupsHelp")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -917,26 +869,26 @@ export default function BotSettings() {
                 {
                   value: "disabled",
                   icon: "🔴",
-                  label: "إيقاف كامل",
-                  desc: "لا يرد على أي رسالة في الجروبات",
+                  label: t("assistantSettingsReviewUx.groupOff"),
+                  desc: t("assistantSettingsReviewUx.groupOffHelp"),
                 },
                 {
                   value: "mention_only",
                   icon: "🟡",
-                  label: "رد عند المنشن فقط",
-                  desc: "يرد فقط عندما يُذكر بـ @",
+                  label: t("assistantSettingsReviewUx.groupMention"),
+                  desc: t("assistantSettingsReviewUx.groupMentionHelp"),
                 },
                 {
                   value: "keyword_only",
                   icon: "🟢",
-                  label: "رد على كلمات مفتاحية",
-                  desc: "يرد عند ذكر كلمات محددة",
+                  label: t("assistantSettingsReviewUx.groupKeywords"),
+                  desc: t("assistantSettingsReviewUx.groupKeywordsHelp"),
                 },
                 {
                   value: "private_redirect",
                   icon: "🔵",
-                  label: "رد خاص",
-                  desc: "يراسل العميل في محادثة خاصة",
+                  label: t("assistantSettingsReviewUx.groupPrivate"),
+                  desc: t("assistantSettingsReviewUx.groupPrivateHelp"),
                 },
               ].map(opt => (
                 <button
@@ -970,7 +922,7 @@ export default function BotSettings() {
                     className="font-semibold flex items-center gap-2"
                   >
                     <KeyRound className="h-4 w-4" />
-                    الكلمات المفتاحية
+                    {t("assistantSettingsReviewUx.keywords")}
                   </Label>
                   <div className="flex flex-wrap gap-2 min-h-[40px]">
                     {groupKeywords.map((kw, i) => (
@@ -1012,7 +964,9 @@ export default function BotSettings() {
                           setKeywordInput("");
                         }
                       }}
-                      placeholder="اكتب كلمة ثم Enter..."
+                      placeholder={t(
+                        "assistantSettingsReviewUx.keywordPlaceholder"
+                      )}
                       className="flex-1"
                     />
                     <Button
@@ -1029,7 +983,7 @@ export default function BotSettings() {
                         }
                       }}
                     >
-                      أضف
+                      {t("assistantSettingsReviewUx.addKeyword")}
                     </Button>
                   </div>
                 </div>
@@ -1043,13 +997,15 @@ export default function BotSettings() {
                     className="font-semibold flex items-center gap-2"
                   >
                     <ArrowUpRight className="h-4 w-4" />
-                    رسالة التوجيه الخاص
+                    {t("assistantSettingsReviewUx.privateMessage")}
                   </Label>
                   <Textarea
                     id="bot-group-redirect"
                     value={groupRedirectMessage}
                     onChange={e => setGroupRedirectMessage(e.target.value)}
-                    placeholder="مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊"
+                    placeholder={t(
+                      "assistantSettingsReviewUx.privatePlaceholder"
+                    )}
                     rows={2}
                     maxLength={500}
                   />
@@ -1081,11 +1037,10 @@ export default function BotSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                تعليمات مخصصة للذكاء الاصطناعي
+                {t("assistantSettingsReviewUx.instructionsTitle")}
               </CardTitle>
               <CardDescription>
-                اكتب قواعد وتعليمات خاصة لساري — مثالي للحملات الإعلانية وقواعد
-                البيع
+                {t("assistantSettingsReviewUx.instructionsHelp")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1124,9 +1079,7 @@ export default function BotSettings() {
                   <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                   <div className="text-xs text-muted-foreground space-y-1">
                     <p>{t("assistantSectionsUx.instructionsDraft")}</p>
-                    <p>
-                      💡 لتعطيلها مؤقتاً (بعد انتهاء الحملة) امسح النص واحفظ
-                    </p>
+                    <p>{t("assistantSettingsReviewUx.clearInstructions")}</p>
                   </div>
                 </div>
               )}
@@ -1138,6 +1091,12 @@ export default function BotSettings() {
           {t("assistantSectionsUx.saveScope")}
         </p>
         {/* Action Buttons */}
+        <p
+          className="text-xs text-muted-foreground"
+          hidden={activeSection === "sales"}
+        >
+          {t("assistantSettingsReviewUx.testSavedHint")}
+        </p>
         <div
           className="sticky bottom-3 z-10 flex flex-wrap justify-between items-center gap-3 rounded-xl border bg-card p-4 shadow-sm"
           hidden={activeSection === "sales"}
@@ -1147,12 +1106,16 @@ export default function BotSettings() {
             variant="outline"
             size="lg"
             onClick={() => sendTestMutation.mutate()}
-            disabled={sendTestMutation.isPending}
+            disabled={
+              sendTestMutation.isPending ||
+              savedSnapshot !== currentSnapshot ||
+              updateMutation.isPending
+            }
           >
             <Send className="h-4 w-4 ml-2" />
             {sendTestMutation.isPending
               ? t("botSettingsPage.sendingTest")
-              : t("botSettingsPage.sendTestMessage")}
+              : t("assistantSettingsReviewUx.sendWhatsApp")}
           </Button>
 
           <Button type="submit" size="lg" disabled={updateMutation.isPending}>

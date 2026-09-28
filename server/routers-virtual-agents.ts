@@ -10,12 +10,14 @@ import { getDb, getMerchantById } from './db';
 import { eq, and } from "drizzle-orm";
 import { isCompleteAgentOrder } from "../shared/virtual-agent-routing";
 import { virtualAgents } from "../drizzle/schema";
+import { personaPreviewProcedure } from "./routers-persona-preview";
 
 function checkShift(start:unknown,end:unknown) {
   if(Boolean(start)!==Boolean(end)||(start&&start===end))throw new TRPCError({code:'BAD_REQUEST',message:'أدخل وقتين مختلفين للدوام أو أفرغهما معًا'});
 }
 
 export const virtualAgentsRouter = router({
+  preview: personaPreviewProcedure,
   // List all agents for the current merchant
   list: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);

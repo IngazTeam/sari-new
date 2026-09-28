@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import {
+  AssistantReplyPreview,
+  type PreviewSelection,
+} from "@/components/merchant/AssistantReplyPreview";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,8 +67,17 @@ export default function VirtualTeamPage() {
   const [deleting, setDeleting] = useState<Agent | null>(null);
   const [filter, setFilter] = useState("");
   const [saveError, setSaveError] = useState(false);
+  const saveLock = useRef(false);
+  const initialDraft = useRef("");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [routingMessage, setRoutingMessage] = useState("");
   const [routingTime, setRoutingTime] = useState(agentLocalTime);
+  const [preview, setPreview] = useState<{
+    selection: PreviewSelection;
+    question?: string;
+    name?: string;
+  } | null>(null);
+  const previewBusy = useRef(false);
   const reorder = trpc.virtualAgents.reorder.useMutation({
     onSuccess: () => {
       void query.refetch();
@@ -82,10 +95,16 @@ export default function VirtualTeamPage() {
   const create = trpc.virtualAgents.create.useMutation({
     onSuccess: saved,
     onError: failed,
+    onSettled: () => {
+      saveLock.current = false;
+    },
   });
   const update = trpc.virtualAgents.update.useMutation({
     onSuccess: saved,
     onError: failed,
+    onSettled: () => {
+      saveLock.current = false;
+    },
   });
   const remove = trpc.virtualAgents.delete.useMutation({
     onSuccess: () => {
@@ -102,34 +121,34 @@ export default function VirtualTeamPage() {
   });
   const busy = create.isPending || update.isPending;
   const agents = query.data || [];
-  const routingPreview = selectVirtualAgent(
-    agents,
-    routingMessage,
-    routingTime
-  );
+  const validRoutingTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime);
+  const routingPreview = validRoutingTime
+    ? selectVirtualAgent(agents, routingMessage, routingTime)
+    : null;
   function edit(agent?: Agent) {
     setEditing(agent?.id ?? null);
     setKeywords("");
     setErrors({});
     setSaveError(false);
     setTab("identity");
-    setForm(
-      agent
-        ? {
-            name: agent.name,
-            role: agent.role,
-            department: agent.department || "",
-            personalityPrompt: agent.personalityPrompt,
-            tone: agent.tone,
-            avatarEmoji: agent.avatarEmoji || "default",
-            isDefault: Boolean(agent.isDefault),
-            isActive: Boolean(agent.isActive),
-            triggerKeywords: parseAgentKeywords(agent.triggerKeywords),
-            shiftStart: agent.shiftStart || "",
-            shiftEnd: agent.shiftEnd || "",
-          }
-        : { ...emptyVirtualAgent, triggerKeywords: [] }
-    );
+    const initial: VirtualAgentDraft = agent
+      ? {
+          name: agent.name,
+          role: agent.role,
+          department: agent.department || "",
+          personalityPrompt: agent.personalityPrompt,
+          tone: agent.tone,
+          avatarEmoji: agent.avatarEmoji || "default",
+          isDefault: Boolean(agent.isDefault),
+          isActive: Boolean(agent.isActive),
+          triggerKeywords: parseAgentKeywords(agent.triggerKeywords),
+          shiftStart: agent.shiftStart || "",
+          shiftEnd: agent.shiftEnd || "",
+        }
+      : { ...emptyVirtualAgent, triggerKeywords: [] };
+    setForm(initial);
+    initialDraft.current = JSON.stringify(initial);
+    setConfirmDiscard(false);
     setOpen(true);
   }
   const set = <K extends keyof VirtualAgentDraft>(
@@ -152,6 +171,7 @@ export default function VirtualTeamPage() {
     setKeywords("");
   }
   function save() {
+    if (saveLock.current) return;
     const draft = {
       ...form,
       triggerKeywords: parseAgentKeywords([
@@ -175,6 +195,7 @@ export default function VirtualTeamPage() {
       return;
     }
     const payload = virtualAgentPayload(draft);
+    saveLock.current = true;
     // null explicitly removes an existing shift; undefined leaves it unchanged.
     if (editing !== null)
       update.mutate({
@@ -190,6 +211,12 @@ export default function VirtualTeamPage() {
         shiftStart: draft.shiftStart || undefined,
         shiftEnd: draft.shiftEnd || undefined,
       });
+  }
+  function closeEditor() {
+    if (saveLock.current) return;
+    if (JSON.stringify(form) !== initialDraft.current || keywords.trim())
+      setConfirmDiscard(true);
+    else setOpen(false);
   }
   const error = (key: keyof VirtualAgentDraft) =>
     errors[key] ? (
@@ -437,6 +464,22 @@ export default function VirtualTeamPage() {
                   <div className="flex flex-wrap gap-2 border-t pt-3">
                     <Button
                       type="button"
+                      className="min-h-11"
+                      variant="outline"
+                      aria-label={t("personaPreviewUx.testNamed", {
+                        name: agent.name,
+                      })}
+                      onClick={() =>
+                        setPreview({
+                          selection: { mode: "manual", agentId: agent.id },
+                          name: agent.name,
+                        })
+                      }
+                    >
+                      {t("personaPreviewUx.test")}
+                    </Button>
+                    <Button
+                      type="button"
                       className="flex-1"
                       variant="outline"
                       onClick={() => edit(agent)}
@@ -498,8 +541,21 @@ export default function VirtualTeamPage() {
                 id="routing-time"
                 type="time"
                 value={routingTime}
+                aria-invalid={!validRoutingTime}
+                aria-describedby={
+                  !validRoutingTime ? "routing-time-error" : undefined
+                }
                 onChange={e => setRoutingTime(e.target.value)}
               />
+              {!validRoutingTime && (
+                <p
+                  id="routing-time-error"
+                  role="alert"
+                  className="mt-1 text-xs text-destructive"
+                >
+                  {t("personaPreviewUx.validTime")}
+                </p>
+              )}
             </div>
           </div>
           <p role="status" className="rounded-xl bg-muted p-4">
@@ -518,16 +574,37 @@ export default function VirtualTeamPage() {
               t("virtualTeamUx.noAvailablePersona")
             )}
           </p>
+          <Button
+            type="button"
+            className="min-h-11"
+            disabled={
+              !routingPreview ||
+              !routingMessage.trim() ||
+              !/^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime)
+            }
+            onClick={() =>
+              setPreview({
+                selection: { mode: "automatic", time: routingTime },
+                question: routingMessage,
+              })
+            }
+          >
+            {t("personaPreviewUx.testRouting")}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {t("personaPreviewUx.routingHelp")}
+          </p>
         </CardContent>
       </Card>
       <Dialog
         open={open}
         onOpenChange={value => {
-          if (!busy) setOpen(value);
+          if (!value) closeEditor();
         }}
       >
         <DialogContent
-          className="mw-persona-dialog flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+          closeLabel={t("testSariPage.closeDialog")}
+          className="mw-team-dialog mw-persona-dialog flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
           onInteractOutside={e => e.preventDefault()}
         >
           <DialogHeader className="border-b p-5 pe-12 text-start">
@@ -566,7 +643,10 @@ export default function VirtualTeamPage() {
                 </Button>
               ))}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+            <fieldset
+              disabled={busy}
+              className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-5"
+            >
               {tab === "identity" ? (
                 <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -716,7 +796,11 @@ export default function VirtualTeamPage() {
                         aria-invalid={!!errors.triggerKeywords}
                         onChange={e => setKeywords(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === "Enter") {
+                          if (
+                            e.key === "Enter" &&
+                            !e.nativeEvent.isComposing &&
+                            e.keyCode !== 229
+                          ) {
                             e.preventDefault();
                             addKeyword();
                           }
@@ -837,9 +921,38 @@ export default function VirtualTeamPage() {
                   )}
                 </div>
               )}
-            </div>
+            </fieldset>
             <DialogFooter className="border-t bg-card p-4">
               <div className="w-full space-y-3">
+                {confirmDiscard && (
+                  <div
+                    role="alert"
+                    className="space-y-2 rounded-xl border bg-muted p-3 text-sm"
+                  >
+                    <p>{t("personaPreviewUx.discardHint")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() => setConfirmDiscard(false)}
+                      >
+                        {t("personaPreviewUx.keepEditing")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        className="min-h-11"
+                        onClick={() => {
+                          setOpen(false);
+                          setConfirmDiscard(false);
+                        }}
+                      >
+                        {t("personaPreviewUx.discard")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {saveError && (
                   <p role="alert" className="text-sm text-destructive">
                     {t("virtualTeamUx.saveFailed")}
@@ -854,7 +967,7 @@ export default function VirtualTeamPage() {
                       type="button"
                       variant="outline"
                       disabled={busy}
-                      onClick={() => setOpen(false)}
+                      onClick={closeEditor}
                     >
                       {t("virtualTeamUx.cancel")}
                     </Button>
@@ -875,7 +988,10 @@ export default function VirtualTeamPage() {
           if (!v && !remove.isPending) setDeleting(null);
         }}
       >
-        <DialogContent>
+        <DialogContent
+          className="mw-team-dialog"
+          closeLabel={t("testSariPage.closeDialog")}
+        >
           <DialogHeader>
             <DialogTitle>
               {t("virtualTeamUx.deleteTitle")} {deleting?.name}
@@ -911,6 +1027,38 @@ export default function VirtualTeamPage() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={preview !== null}
+        onOpenChange={open => {
+          if (!open && !previewBusy.current) setPreview(null);
+        }}
+      >
+        <DialogContent
+          closeLabel={t("testSariPage.closeDialog")}
+          className="mw-team-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl"
+          onInteractOutside={event => event.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {t("personaPreviewUx.title")}
+              {preview?.name ? ` · ${preview.name}` : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {t("personaPreviewUx.savedOnly")}
+            </DialogDescription>
+          </DialogHeader>
+          {preview && (
+            <AssistantReplyPreview
+              key={JSON.stringify(preview.selection)}
+              selection={preview.selection}
+              initialQuestion={preview.question}
+              onBusyChange={busy => {
+                previewBusy.current = busy;
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

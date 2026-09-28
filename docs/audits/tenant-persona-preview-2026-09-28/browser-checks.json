@@ -1,0 +1,237 @@
+{
+  "browser": "Chrome on Windows",
+  "deviceEmulation": false,
+  "safariTested": false,
+  "notes": [
+    "Measurements taken after layout settled; preliminary immediate-resize readings excluded.",
+    "No WhatsApp test or financial policy changes were submitted.",
+    "The provider failed inside the network-isolated preview; no real model quality result is claimed."
+  ],
+  "checks": [
+    {
+      "close": [
+        44,
+        44
+      ],
+      "dialogFits": true,
+      "dialogOverflow": false,
+      "documentOverflow": false,
+      "error": "لم يصل الرد. إعادة المحاولة تطلب ردًا جديدًا وقد تحتسب استخدامًا إضافيًا.",
+      "inputFont": "16px",
+      "screen": "manual-preview",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "dialogFits": true,
+      "dialogOverflow": false,
+      "documentOverflow": false,
+      "screen": "routing-preview-stable",
+      "viewport": [
+        320,
+        568
+      ]
+    },
+    {
+      "clientHeight": 356,
+      "dialogFits": true,
+      "dialogOverflow": false,
+      "documentOverflow": false,
+      "screen": "routing-preview-stable",
+      "scrollHeight": 440,
+      "viewport": [
+        844,
+        390
+      ]
+    },
+    {
+      "buttons": [
+        {
+          "height": 44,
+          "name": "الشخصية والأسلوب"
+        },
+        {
+          "height": 44,
+          "name": "التحويل والدوام"
+        },
+        {
+          "height": 82,
+          "name": "مبيعات"
+        },
+        {
+          "height": 82,
+          "name": "استقبال"
+        },
+        {
+          "height": 82,
+          "name": "مدير"
+        },
+        {
+          "height": 82,
+          "name": "تقني"
+        },
+        {
+          "height": 82,
+          "name": "تسويق"
+        },
+        {
+          "height": 82,
+          "name": "استشاري"
+        },
+        {
+          "height": 82,
+          "name": "إبداعي"
+        },
+        {
+          "height": 82,
+          "name": "محلل"
+        },
+        {
+          "height": 82,
+          "name": "موارد بشرية"
+        },
+        {
+          "height": 82,
+          "name": "$مالي"
+        },
+        {
+          "height": 82,
+          "name": "عام"
+        },
+        {
+          "height": 44,
+          "name": "ودود"
+        },
+        {
+          "height": 44,
+          "name": "رسمي"
+        },
+        {
+          "height": 44,
+          "name": "عفوي"
+        },
+        {
+          "height": 44,
+          "name": "متعاطف"
+        },
+        {
+          "height": 44,
+          "name": "مقنع"
+        },
+        {
+          "height": 44,
+          "name": "متابعة التعديل"
+        },
+        {
+          "height": 44,
+          "name": "تجاهل التعديلات"
+        },
+        {
+          "height": 44,
+          "name": "إلغاء"
+        },
+        {
+          "height": 44,
+          "name": "حفظ الشخصية"
+        },
+        {
+          "height": 44,
+          "name": "إغلاق النافذة"
+        }
+      ],
+      "dialogFits": true,
+      "dialogOverflow": false,
+      "documentOverflow": false,
+      "screen": "editor-dirty-confirm",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "documentOverflow": false,
+      "inputFonts": [
+        "16px"
+      ],
+      "screen": "settings-preview",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "dayButtons": [
+        {
+          "height": 44,
+          "name": "الأحد",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "الإثنين",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "الثلاثاء",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "الأربعاء",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "الخميس",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "الجمعة",
+          "pressed": "true"
+        },
+        {
+          "height": 44,
+          "name": "السبت",
+          "pressed": "false"
+        }
+      ],
+      "documentOverflow": false,
+      "screen": "settings-schedule-keyboard",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "documentOverflow": false,
+      "screen": "settings-sales-readonly",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "documentOverflow": false,
+      "inputFonts": [
+        "16px"
+      ],
+      "screen": "settings-preview-stable",
+      "viewport": [
+        320,
+        568
+      ]
+    },
+    {
+      "documentOverflow": false,
+      "screen": "settings-preview-stable",
+      "viewport": [
+        1440,
+        900
+      ]
+    }
+  ]
+}

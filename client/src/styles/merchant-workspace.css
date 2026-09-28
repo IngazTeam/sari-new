@@ -51,6 +51,15 @@ body.merchant-surface [data-slot="dialog-content"].mw-persona-dialog {
   height: min(760px, calc(100dvh - 32px));
   overflow: hidden;
 }
+body.merchant-surface .mw-team-dialog > [data-slot="dialog-close"] {
+  top: 8px; right: auto; inset-inline-end: 8px;
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px;
+}
+body.merchant-surface .mw-team-dialog > [data-slot="dialog-header"] {
+  padding-inline-end: 56px;
+  text-align: start;
+}
 .merchant-workspace [hidden] { display: none !important; }
 .mw-feature-nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--border); background: var(--card); border-radius: 14px; }
 .mw-feature-nav button { min-height: 44px; }
