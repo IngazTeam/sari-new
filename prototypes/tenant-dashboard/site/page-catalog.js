@@ -766,19 +766,19 @@ window.TENANT_PAGES = [
   },
   {
     "route": "/merchant/sari-brain",
-    "title": "معرفة المساعد",
+    "title": "عقل ساري",
     "group": "ai",
     "file": "client/src/pages/merchant/SariBrain.tsx",
     "note": "تقسيم الصفحة الكبيرة إلى مصادر ومراجعات وقواعد؛ فصل إعادة الضبط في منطقة مستقلة.",
     "kind": "knowledge",
-    "action": "إضافة مصدر",
+    "action": "إضافة ملف معرفة",
     "labels": [
-      "المصدر",
-      "نوع المعرفة",
-      "آخر مراجعة",
-      "الحالة"
+      "النتائج",
+      "ملفات المعرفة",
+      "الفجوات",
+      "احتراف المبيعات"
     ],
-    "sample": "سياسة الشحن والاسترجاع"
+    "sample": "نتائج عقل ساري"
   },
   {
     "route": "/merchant/sari-playground",

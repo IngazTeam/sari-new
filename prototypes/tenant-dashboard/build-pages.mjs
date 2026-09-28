@@ -11,7 +11,7 @@ for (const row of context.window.PAGE_DESIGN_ROWS.split('\n')) {
 const pages = inventory.routes.map(item => {
   const spec = specs[item.route] || specs[item.redirect];
   if (!spec) throw Error(`Missing page design: ${item.route}`);
-  return { route: item.route, title: item.route === '/merchant/tools' ? 'جميع الأدوات' : item.title, group: item.group, file: item.file, redirect: item.redirect, note: item.note, ...spec };
+  return { route: item.route, title: item.route === '/merchant/tools' ? 'جميع الأدوات' : item.route === '/merchant/sari-brain' ? 'عقل ساري' : item.title, group: item.group, file: item.file, redirect: item.redirect, note: item.note, ...spec };
 });
 const states = ['missing', 'error', 'offline', 'forbidden', 'session', 'loading', 'empty'];
 for (const state of states) pages.push({ route: `/merchant/preview-state/${state}`, title: { missing: 'صفحة غير موجودة', error: 'تعذّر تحميل الصفحة', offline: 'انقطاع الاتصال', forbidden: 'صلاحية غير كافية', session: 'تسجيل الدخول', loading: 'تحميل البيانات', empty: 'بداية جديدة' }[state], group: 'overview', kind: 'state', state, action: 'إعادة المحاولة', labels: [], sample: '', note: 'حالة واضحة، سبب مختصر، وإجراء متابعة.' });

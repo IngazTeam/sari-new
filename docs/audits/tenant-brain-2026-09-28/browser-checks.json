@@ -1,0 +1,148 @@
+{
+  "date": "2026-09-28",
+  "checks": [
+    {
+      "heading": "المعرفة موجودة. هذه خطوتك لتحسينها.",
+      "height": 843,
+      "overflow": false,
+      "section": "results",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "ملفات المعرفة ونتائجها",
+      "height": 843,
+      "overflow": false,
+      "section": "files",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "فجوات المعرفة",
+      "height": 843,
+      "overflow": false,
+      "section": "gaps",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "نسبة احتراف المبيعات",
+      "height": 843,
+      "overflow": false,
+      "section": "sales",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "المعرفة موجودة. هذه خطوتك لتحسينها.",
+      "height": 1000,
+      "overflow": false,
+      "section": "results",
+      "smallControls": 0,
+      "width": 1440
+    },
+    {
+      "heading": "ملفات المعرفة ونتائجها",
+      "height": 1000,
+      "overflow": false,
+      "section": "files",
+      "smallControls": 0,
+      "width": 1440
+    },
+    {
+      "heading": "فجوات المعرفة",
+      "height": 1000,
+      "overflow": false,
+      "section": "gaps",
+      "smallControls": 0,
+      "width": 1440
+    },
+    {
+      "heading": "نسبة احتراف المبيعات",
+      "height": 1000,
+      "overflow": false,
+      "section": "sales",
+      "smallControls": 0,
+      "width": 1440
+    },
+    {
+      "heading": "المعرفة موجودة. هذه خطوتك لتحسينها.",
+      "height": 1200,
+      "overflow": false,
+      "section": "results",
+      "smallControls": 0,
+      "width": 922
+    },
+    {
+      "heading": "ملفات المعرفة ونتائجها",
+      "height": 1000,
+      "overflow": false,
+      "section": "files",
+      "smallControls": 0,
+      "width": 768
+    },
+    {
+      "heading": "فجوات المعرفة",
+      "height": 1000,
+      "overflow": false,
+      "section": "gaps",
+      "smallControls": 0,
+      "width": 768
+    },
+    {
+      "heading": "نسبة احتراف المبيعات",
+      "height": 1000,
+      "overflow": false,
+      "section": "sales",
+      "smallControls": 0,
+      "width": 768
+    },
+    {
+      "heading": "المعرفة موجودة. هذه خطوتك لتحسينها.",
+      "height": 1000,
+      "overflow": false,
+      "section": "results",
+      "smallControls": 0,
+      "width": 768
+    },
+    {
+      "heading": "المعرفة موجودة. هذه خطوتك لتحسينها.",
+      "height": 843,
+      "overflow": false,
+      "section": "results",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "ملفات المعرفة ونتائجها",
+      "height": 843,
+      "overflow": false,
+      "section": "files",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "فجوات المعرفة",
+      "height": 843,
+      "overflow": false,
+      "section": "gaps",
+      "smallControls": 0,
+      "width": 400
+    },
+    {
+      "heading": "نسبة احتراف المبيعات",
+      "height": 843,
+      "overflow": false,
+      "section": "sales",
+      "smallControls": 0,
+      "width": 400
+    }
+  ],
+  "interactions": {
+    "insufficientSampleHidesScore": true,
+    "reviewApprovalAndRetestFlow": true,
+    "scoreUnchangedAfterCorrection": 74,
+    "dialogFitsMobile": true
+  },
+  "notes": "Effective CSS viewport dimensions recorded after existing browser zoom. Scores and knowledge are synthetic."
+}

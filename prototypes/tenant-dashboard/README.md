@@ -10,6 +10,7 @@ node prototypes/tenant-dashboard/serve.mjs
 
 - [دليل جميع الصفحات](http://127.0.0.1:4329/#/page/merchant/tools)
 - [تصميم 404](http://127.0.0.1:4329/#/page/merchant/preview-state/missing)
+- [عقل ساري: النتائج والملفات والفجوات والمبيعات](http://127.0.0.1:4329/#/page/merchant/sari-brain)
 - [تقرير الفحص الحالي](http://127.0.0.1:4329/report-latest.html)
 - [ملف التقرير](../../docs/audits/tenant-pages-2026-09-27/REPORT.md)
 
@@ -19,9 +20,12 @@ node prototypes/tenant-dashboard/serve.mjs
 
 ## بنية المقترح
 
+تحديث 28 سبتمبر: توسعة عقل ساري بأربعة أقسام وتقييم مبيعات قابل للتفسير. التفاصيل وعقد التنفيذ في [تقرير عقل ساري](../../docs/audits/tenant-brain-2026-09-28/REPORT.md). الأرقام والأدلة في الموك أب توضيحية، ولا تُعرض بوصفها نتائج التيننت الفعلية.
+
 - `site/page-designs.js`: مواصفات كل صفحة: نمط العرض، الإجراء الأساسي، الحقول والبيانات التوضيحية.
 - `site/page-catalog.js`: فهرس يولّد من مسارات التطبيق، ويشمل بدائل الروابط وحالات الخطأ.
 - `site/pages.js` و`site/pages.css`: الصفحات والتفاعلات والاستجابة للشاشات.
+- `site/brain.js` و`site/brain.css`: نتائج عقل ساري والملفات والفجوات ومعايير تقييم المبيعات.
 - `site/app.js` و`site/style.css`: مساحة العمل والمحادثات والتفاعلات المشتركة.
 
 لتحديث الحصر والفهرس:
