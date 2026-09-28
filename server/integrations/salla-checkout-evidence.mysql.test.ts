@@ -6,7 +6,7 @@ import { getPool,closeDb } from '../db/connection';
 import { assertDisposableDatabase,createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { encryptSecret } from '../security/secrets';
 import { runSallaCheckoutCart } from './salla-checkout-carts';
-import { inspectSallaCheckoutEvidence } from './salla-checkout-evidence';
+import { inspectSallaCheckoutEvidence,listSallaCheckoutCarts } from './salla-checkout-evidence';
 import { persistSallaCatalogRead } from './salla-catalog';
 import { normalizeSallaProduct } from './salla-product-normalization';
 import { createSyncLog,updateSyncLog } from '../db';
@@ -104,5 +104,35 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla checkout reconciliation eviden
   });
   it('can repeat concurrent read-only inspections without modifying the operation',async()=>{
     const before=await ledger();const results=await Promise.all(Array.from({length:3},run));expect(results).toHaveLength(3);expect(await ledger()).toEqual(before);expect(http.post).not.toHaveBeenCalled();
+  });
+  it('discovers owned ready carts without provider calls or private content',async()=>{
+    const before=await ledger(),result=await listSallaCheckoutCarts(merchant,user,{});
+    expect(result).toEqual({merchantId:merchant,items:[{id:before.id,requestId,createdAt:expect.any(String),cart:{cartId,preparedTotalMinor:230,currency:'SAR'}}],nextCursor:null});
+    expect(await ledger()).toEqual(before);expect(http.get).not.toHaveBeenCalled();expect(http.post).not.toHaveBeenCalled();
+    for(const key of ['token','snapshot','customer','actor_user_id','checkoutUrl','sku'])expect(JSON.stringify(result)).not.toContain(key);
+    expect((await listSallaCheckoutCarts(otherMerchant,otherUser,{})).items).toHaveLength(0);
+  });
+  it.each(['other-user','viewer','revoked','inactive-user','inactive-merchant'])('refuses %s listing in persisted authorization',async mode=>{
+    let actor=otherUser;
+    if(mode==='viewer'||mode==='revoked')await q('INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,?,?)',[merchant,actor,mode==='viewer'?'viewer':'manager',mode==='viewer'?1:0]);
+    if(mode==='inactive-user'){actor=user;await q("UPDATE users SET account_status='deletion_pending' WHERE id=?",[user]);}
+    if(mode==='inactive-merchant'){actor=user;await q("UPDATE merchants SET status='suspended' WHERE id=?",[merchant]);}
+    await expect(listSallaCheckoutCarts(merchant,actor,{})).rejects.toThrow(/^Salla checkout evidence unavailable$/);expect(http.get).not.toHaveBeenCalled();
+  });
+  it.each(['corruption','store','connection','token'])('shows the operation but withholds %s evidence',async mode=>{
+    if(mode==='corruption')await q("UPDATE salla_checkout_carts SET result_json=JSON_REMOVE(result_json,'$.digest') WHERE merchant_id=?",[merchant]);
+    if(mode==='store')await q('UPDATE salla_connections SET salla_store_id=? WHERE id=?',[store+'1',connectionId]);
+    if(mode==='connection')await q("UPDATE salla_connections SET syncStatus='paused' WHERE id=?",[connectionId]);
+    if(mode==='token')await q("UPDATE salla_connections SET accessToken='' WHERE id=?",[connectionId]);
+    expect((await listSallaCheckoutCarts(merchant,user,{})).items).toMatchObject([{requestId,cart:null}]);expect(http.get).not.toHaveBeenCalled();
+  });
+  it('paginates twenty descending ready operations without overlap or adoption of unknown attempts',async()=>{
+    const row=await ledger();
+    for(let i=0;i<24;i++)await q(`INSERT INTO salla_checkout_carts(merchant_id,actor_user_id,request_id,request_hash,attempt_token,state,snapshot,result_json,created_at,updated_at)
+      SELECT merchant_id,actor_user_id,?,request_hash,?,'ready',snapshot,result_json,created_at,updated_at FROM salla_checkout_carts WHERE id=?`,[randomUUID(),randomUUID(),row.id]);
+    await q("INSERT INTO salla_checkout_carts(merchant_id,actor_user_id,request_id,request_hash,attempt_token,state,created_at,updated_at) VALUES (?,?,?,?,?,'review',UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",[merchant,user,randomUUID(),row.request_hash,randomUUID()]);
+    const first=await listSallaCheckoutCarts(merchant,user,{}),second=await listSallaCheckoutCarts(merchant,user,{beforeId:first.nextCursor!});
+    expect(first.items).toHaveLength(20);expect(first.nextCursor).toBe(first.items.at(-1)?.id);expect(second.items).toHaveLength(5);expect(second.nextCursor).toBeNull();
+    expect(new Set([...first.items,...second.items].map(i=>i.id)).size).toBe(25);expect(second.items.at(-1)?.requestId).toBe(requestId);expect(http.get).not.toHaveBeenCalled();
   });
 });

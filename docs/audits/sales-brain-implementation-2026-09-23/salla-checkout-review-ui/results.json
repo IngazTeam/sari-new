@@ -1,0 +1,337 @@
+{
+  "generatedAt": "2026-09-28T09:02:42.591Z",
+  "browser": "Chrome/153.0.8010.54",
+  "scope": "Actual SallaCheckoutReview component and tRPC client with simulated read-only API; loopback Chromium at mobile/desktop widths, not physical iPhone/Safari or live Salla.",
+  "externalRequestsBlocked": true,
+  "results": [
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "bad-page",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-scope",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "invalid_input_no_request",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "arabic_digits_keyboard_optional_transaction",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "inspect-error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-order",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-cart",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "false-sale",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "private-result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "different",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "draft",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "edit_hides_previous_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "same_input_refetched_and_failure_hides_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_edit",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_switch",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_close",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_evidence",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "paused_refresh_hides_cached_evidence",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "bad-page",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-scope",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "invalid_input_no_request",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "arabic_digits_keyboard_optional_transaction",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "inspect-error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-order",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-cart",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "false-sale",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "private-result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "different",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "draft",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "edit_hides_previous_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "same_input_refetched_and_failure_hides_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_edit",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_switch",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_close",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_evidence",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "paused_refresh_hides_cached_evidence",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "checkout-ar-1440.png",
+    "checkout-ar-375.png",
+    "checkout-en-1440.png",
+    "checkout-en-375.png"
+  ]
+}

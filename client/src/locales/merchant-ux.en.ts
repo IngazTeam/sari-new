@@ -1,5 +1,6 @@
 import {staffTeamReviewEn} from './staff-team-review';
 import {sallaEffectReviewEn} from './salla-effect-review';
+import {sallaCheckoutReviewEn} from './salla-checkout-review';
 import { salesExperimentLaunchEn } from './sales-experiment-launch';
 import { staffAttemptReviewEn } from './staff-attempt-review';
 import { salesReplyReviewEn } from './sales-reply-review';
@@ -14,6 +15,7 @@ import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
 const merchantUxEn: MerchantUxCopy = {
   sallaEffects: sallaEffectReviewEn,
+  sallaCheckout: sallaCheckoutReviewEn,
   teamAttempts: staffTeamReviewEn,
   staffAttempts: staffAttemptReviewEn,
   replyReview: salesReplyReviewEn,

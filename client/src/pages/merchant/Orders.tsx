@@ -7,6 +7,7 @@ import { CheckoutDiscountBreakdown } from '@/components/CheckoutDiscountBreakdow
 import { OrderCheckoutAttempts } from '@/components/OrderCheckoutAttempts';
 import { CheckoutDiscountRelease } from '@/components/CheckoutDiscountRelease';
 import { ZidCheckoutReconciliation } from '@/components/ZidCheckoutReconciliation';
+import { SallaCheckoutReview } from '@/components/SallaCheckoutReview';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -163,6 +164,7 @@ export default function Orders() {
       </div>
 
       {merchant && <ZidCheckoutReconciliation />}
+      {merchant && <SallaCheckoutReview key={merchant.id} />}
       {/* Stats Cards */}
       {stats && (
         <div className="mw-summary-cards grid gap-4 md:grid-cols-2 lg:grid-cols-5">

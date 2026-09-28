@@ -6,6 +6,15 @@ const sallaExternalId = sallaEvidenceExternalId;
 export const sallaCheckoutReference = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).refine(v => v === v.trim());
 const minor = z.number().int().min(0).max(2147483647);
 const status = z.string().regex(/^[a-z_]{1,40}$/).refine(v => v === v.trim());
+const localId = z.number().int().positive().max(2147483647);
+export const sallaCheckoutCartEvidence = z.object({cartId:sallaCheckoutReference,preparedTotalMinor:minor,currency:z.literal('SAR')}).strict();
+export const sallaCheckoutEvidenceAccess = z.object({canInspect:z.boolean(),merchantId:localId}).strict();
+export const sallaCheckoutCartListInput = z.object({beforeId:localId.optional()}).strict();
+export const sallaCheckoutCartListItem = z.object({id:localId,requestId:z.string().uuid(),createdAt:z.string().datetime({precision:3}),cart:sallaCheckoutCartEvidence.nullable()}).strict();
+export const sallaCheckoutCartListOutput = z.object({merchantId:localId,items:z.array(sallaCheckoutCartListItem).max(20),nextCursor:localId.nullable()}).strict().superRefine((v,c)=>{
+  if(new Set(v.items.map(i=>i.requestId.toLowerCase())).size!==v.items.length||v.items.some((i,n)=>n>0&&i.id>=v.items[n-1].id)
+    ||v.nextCursor!==null&&(v.items.length!==20||v.items.at(-1)?.id!==v.nextCursor))c.addIssue({code:'custom',message:'Invalid cart page'});
+});
 export const sallaCheckoutEvidenceInput = z.object({
   requestId: z.string().uuid().transform(v => v.toLowerCase()),
   orderId: sallaExternalId,
@@ -22,7 +31,7 @@ export const sallaTransactionEvidence = z.object({
 }).strict();
 export const sallaCheckoutEvidenceOutput = z.object({
   requestId: z.string().uuid(), observedAt: z.string().datetime({ precision: 3 }),
-  cart: z.object({ cartId: sallaCheckoutReference, preparedTotalMinor: minor, currency: z.literal('SAR') }).strict(),
+  cart: sallaCheckoutCartEvidence,
   order: sallaOrderEvidence, transaction: sallaTransactionEvidence.nullable(),
   comparison: z.object({
     checkoutReference: z.enum(['equal', 'different', 'absent']),
