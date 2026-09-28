@@ -24,7 +24,7 @@ export const conversationUnderstandingSchema = z.object({
   evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).min(1).max(5),
 }).strict();
 export type ConversationUnderstanding = z.infer<typeof conversationUnderstandingSchema>;
-export type UnderstandingContext = { merchantId: number; conversationId: number; incomingMessageId: number; message: string;
+export type UnderstandingContext = { merchantId: number; conversationId: number; incomingMessageId: number; message: string; mode?: 'preview';
   analysis: ConversationUnderstanding; model?: string };
 const storage = new AsyncLocalStorage<UnderstandingContext>();
 export const withConversationUnderstanding = <T>(value: UnderstandingContext, work: () => Promise<T>) => storage.run(value, work);
@@ -38,21 +38,25 @@ export function currentConversationUnderstanding(message?: string) {
 export const hasConversationUnderstanding = () => storage.getStore() !== undefined;
 export const conversationUnderstandingIdentity = () => storage.getStore();
 export function semanticAction(message: string, actions: ConversationUnderstanding['action'][], provider?: ConversationUnderstanding['targetProvider']) {
+  if (storage.getStore()?.mode === 'preview') return false;
   const value = currentConversationUnderstanding(message);
   if (!value) return hasConversationUnderstanding() ? false : undefined;
   return value.confidence >= 0.85 && !value.conditional && !value.ambiguous && actions.includes(value.action)
     && (provider === undefined || value.targetProvider === provider);
 }
 export function semanticQuoteMatches(quotationId: number, provider: ConversationUnderstanding['targetProvider']) {
+  if (storage.getStore()?.mode === 'preview') return false;
   const analysis = currentConversationUnderstanding();
   return !analysis || analysis.targetQuoteId === quotationId && analysis.targetProvider === provider;
 }
 /** Historical checks must open an ID-scoped persisted context, never match by text. */
 export function semanticIdentityMatches(input: { merchantId: number; conversationId: number; incomingMessageId: number }) {
   const value = storage.getStore();
+  if (value?.mode === 'preview') return false;
   return !value || value.merchantId === input.merchantId && value.conversationId === input.conversationId && value.incomingMessageId === input.incomingMessageId;
 }
 export function contextualHandoffRequested(message: string): boolean {
+  if (storage.getStore()?.mode === 'preview') return false;
   const value = currentConversationUnderstanding(message);
   return !!value && value.confidence >= 0.85 && !value.conditional && !value.ambiguous
     && (value.action === 'request_human' || value.nextStep === 'handoff');

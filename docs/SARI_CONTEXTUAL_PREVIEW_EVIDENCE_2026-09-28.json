@@ -1,0 +1,319 @@
+{
+  "at": "2026-09-28T19:40:56.709Z",
+  "baselineCommit": "a4066672cf6617574d44a49372eafd6339a1ea36",
+  "workspaceHead": "27504dbea8eed778e004592696218535d39426c5",
+  "branch": "main",
+  "scope": "Read-only merchant preview uses shared contextual analysis and central provider; bounded prompts; MySQL schema readiness respects server table case semantics.",
+  "testEvidence": {
+    "singleRegressionRun": {
+      "files": 26,
+      "passed": 409,
+      "failed": 0,
+      "pending": 0,
+      "suites": [
+        {
+          "file": "server/ai-settings-provider-routing.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-conversation-routing.test.ts",
+          "passed": 39,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/persona-preview.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/remediation-regression.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/sari-quick-preview.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/test-sari-access.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/test-sari-page.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/test-sari-session.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/test-sari-store.mysql.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/whatsapp-primary-schema-readiness-pentest.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/budget-boundaries.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/byaan-checkout-conversation.mysql.test.ts",
+          "passed": 61,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/contextual-reply-routing.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding-evaluation.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding.mysql.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/openai-zahypi.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/preview-prompt.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/preview-provider-routing.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-brain-decisions.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-turn-policy.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sari-preview.mysql.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sari-preview.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/task-catalog.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/transactional-truth.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/db/schema-readiness.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        }
+      ]
+    },
+    "focusedSql": {
+      "files": 2,
+      "passed": 12,
+      "failed": 0,
+      "note": "Included in the 409-test regression run, not additional tests."
+    },
+    "initialFailure": "11 SQL tests failed the workspace schema gate. Applied existing migration 0149 on owned disposable database; persisting failures exposed lowercase metadata mismatching camelCase table requirements. Corrected table normalization using the server lower_case_table_names setting. Transient TypeScript errors from concurrent WhatsApp changes resolved independently before the final static run."
+  },
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "sari-preview",
+        "preview-prompt",
+        "preview-provider-routing",
+        "test-sari",
+        "sari-quick-preview",
+        "persona-preview",
+        "contextual-reply-routing",
+        "conversation-understanding",
+        "byaan-conversation-routing",
+        "byaan-checkout-conversation",
+        "sales-turn-policy",
+        "sales-brain-decisions",
+        "task-catalog",
+        "budget-boundaries",
+        "openai-zahypi",
+        "ai-settings-provider-routing",
+        "transactional-truth",
+        "remediation-regression",
+        "schema-readiness",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\preview-context-checks\\tests.json"
+      ]
+    },
+    {
+      "name": "sql-focused",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/ai/sari-preview.mysql.test.ts",
+        "server/test-sari-store.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\preview-context-checks\\sql-tests.json"
+      ]
+    },
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ]
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ]
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ]
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8085,
+    "dynamicKeysChecked": 348,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "evaluationDryRun": {
+    "mode": "dry-run",
+    "cases": 30
+  },
+  "databasePreparation": {
+    "migration": "0149_test_workspace_integrity",
+    "database": "sari_salla_catalog_20260927_test",
+    "port": 33089,
+    "passed": true
+  },
+  "liveEvaluation": {
+    "performed": false,
+    "providerCalls": 0,
+    "casesPrepared": 30,
+    "blocker": "Local application database rejected configured credentials (ER_ACCESS_DENIED_ERROR). Need connected runtime and designated test merchant; no direct-key or budget bypass."
+  },
+  "securityScope": "Local adversarial inputs, tenant ownership, forged evidence, fake provider transports, preview authority checks and disposable MySQL integration. External network blocked. Not a production penetration test.",
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "newMigration": false,
+    "existingPrerequisites": [
+      "0149_test_workspace_integrity.sql",
+      "0150_conversation_understanding.sql"
+    ]
+  },
+  "limitations": [
+    "Fake provider outputs prove propagation and validation, not live comprehension or sales quality.",
+    "Preview does not read live customer memory or executable quotations and does not simulate all booking services.",
+    "Group semantic parity is outside this change.",
+    "Preview history <=20 messages/16000 total characters, current message <=16000, initial catalog <=200, rendered products <=20, knowledge <=48000 characters cut at a line boundary.",
+    "One interpretation request plus one reply request for a successful turn; real latency and cost not measured.",
+    "Shared workspace included concurrent WhatsApp work outside this commit. Static/build success describes the workspace at check time; owned files are fingerprinted."
+  ],
+  "sourceSha256": {
+    "server/ai/conversation-understanding-context.ts": "7d5b15e44e04c9dae1cd777d53deab377ead5dc346e1eb1af15eaf4b1145e1f1",
+    "server/ai/conversation-understanding.ts": "5cb885badf5afc22af65f25d626306d5452333b8b61cb48293b24325787d1808",
+    "server/ai/sari-preview.ts": "425bd110215cf42adf614d4b0489112096a2371a738d2742edb88b3031628b1f",
+    "server/ai/sari-preview.test.ts": "7f7b65a74bd5ce611b7e731bb98353ce394eb2211ca67fd2b2068cabd8343231",
+    "server/ai/preview-prompt.ts": "0a3f7a853141c80167f94c806e635a7468d87884355cdf875829706dd6865a97",
+    "server/ai/preview-prompt.test.ts": "2759752c43e91f12cabb047a0f7b85e5252feccf1cf3799bc29ab36c1db6d9df",
+    "server/ai/preview-provider-routing.test.ts": "31efc50a88e8a5b437689e8c7ec4f48bf9cbd40a876cee8dafa7e047bf4aa727",
+    "server/ai/sari-preview.mysql.test.ts": "e0f9bd819d483d78c8dac383bde9db62d09224e3dd72f3e8d52c2e8d2bd8f1c2",
+    "server/db/schema-readiness.ts": "2e9cb8137a0020563a2b12f56436d465bd4845e94d1207ea5a6689d1e5e2cdb5",
+    "server/db/schema-readiness.test.ts": "41d2d45044417705e0d6edf5dfa6eda7497060d2da3d2d7fcbb04748bcfc98eb",
+    "docs/SARI_CONTEXTUAL_PREVIEW_2026-09-28.md": "35815ab15dd97d848ec1d545162cf184799b4c6d7d2b60809940d2ddc7fbcebe",
+    "docs/SARI_CONTEXTUAL_AI_FOLLOWUP_2026-09-28.md": "1d08096910745d3eb6e872276473f84bf922cfd80faea796e6382e943ecf6d81",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "0ca1f50f476246b5e6a569adb946d6ea615fbe31f9364aa32dc4507c3de8fadc"
+  }
+}

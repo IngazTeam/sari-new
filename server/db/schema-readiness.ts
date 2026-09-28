@@ -247,7 +247,8 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
   const [columnResult, indexResult, checkResult] = await Promise.all([
     pool.execute(
       `SELECT TABLE_NAME AS tableName, COLUMN_NAME AS columnName, EXTRA AS extra,
-              GENERATION_EXPRESSION AS generationExpression
+              GENERATION_EXPRESSION AS generationExpression,
+              @@lower_case_table_names AS lowerCaseTableNames
          FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (${placeholders})`,
       tableNames,
@@ -278,6 +279,10 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
   ]);
 
   const [rows] = columnResult;
+  // Windows MySQL reports lowercase table names even for camelCase declarations.
+  // Only fold names when the server itself does; Linux mode 0 remains exact.
+  const tableCaseMode = Number((rows as Array<{ lowerCaseTableNames?: number | string }>)[0]?.lowerCaseTableNames);
+  const tableKey = (name: string) => tableCaseMode === 1 || tableCaseMode === 2 ? name.toLowerCase() : name;
   const indexRows = indexResult[0] as unknown as Array<{
     tableName: string;
     indexName: string;
@@ -299,22 +304,22 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
     extra: string;
     generationExpression: string | null;
   }>) {
-    const columns = available.get(row.tableName) ?? new Map<string, { extra: string; generationExpression: string }>();
+    const columns = available.get(tableKey(row.tableName)) ?? new Map<string, { extra: string; generationExpression: string }>();
     columns.set(row.columnName, {
       extra: row.extra ?? '',
       generationExpression: row.generationExpression ?? '',
     });
-    available.set(row.tableName, columns);
+    available.set(tableKey(row.tableName), columns);
   }
   const uniqueIndexes = new Map<string, string[]>();
   for (const row of indexRows.filter(row => Number(row.nonUnique) === 0)) {
-    const key = `${row.tableName}.${row.indexName}`;
+    const key = `${tableKey(row.tableName)}.${row.indexName}`;
     const columns = uniqueIndexes.get(key) ?? [];
     columns[Number(row.seqInIndex) - 1] = row.columnName;
     uniqueIndexes.set(key, columns);
   }
   const checkConstraints = new Map(
-    checkRows.map(row => [`${row.tableName}.${row.constraintName}`, {
+    checkRows.map(row => [`${tableKey(row.tableName)}.${row.constraintName}`, {
       expression: row.checkClause ?? '',
       enforced: String(row.enforced).toUpperCase() === 'YES',
     }]),
@@ -322,7 +327,7 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
 
   const missing: string[] = [];
   for (const requirement of requirements) {
-    const columns = available.get(requirement.table);
+    const columns = available.get(tableKey(requirement.table));
     if (!columns) {
       missing.push(`table:${requirement.table}`);
       continue;
@@ -350,7 +355,7 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
     }
     for (const indexRequirement of requirement.uniqueIndexes ?? []) {
       const indexName = requirementName(indexRequirement);
-      const actualColumns = uniqueIndexes.get(`${requirement.table}.${indexName}`);
+      const actualColumns = uniqueIndexes.get(`${tableKey(requirement.table)}.${indexName}`);
       if (!actualColumns) {
         missing.push(`unique-index:${requirement.table}.${indexName}`);
       } else if (
@@ -363,7 +368,7 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
     }
     for (const checkRequirement of requirement.checkConstraints ?? []) {
       const constraintName = requirementName(checkRequirement);
-      const actualConstraint = checkConstraints.get(`${requirement.table}.${constraintName}`);
+      const actualConstraint = checkConstraints.get(`${tableKey(requirement.table)}.${constraintName}`);
       if (actualConstraint === undefined) {
         missing.push(`check:${requirement.table}.${constraintName}`);
       } else if (
