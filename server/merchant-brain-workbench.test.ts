@@ -1,3 +1,4 @@
+import { evaluationDriver } from "../scripts/testing/fixtures/brain-evaluation-driver";
 import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
 import { JSDOM, VirtualConsole } from "jsdom";
@@ -162,9 +163,13 @@ function cohort() {
 }
 function evaluated() {
   click("evaluation");
-  click("run-evaluation");
-  click("review-evaluation");
-  reviewLearning();
+  const d = evaluationDriver(w);
+  d.completeRun();
+  d.click("review");
+  d.fillReview();
+  d.consent("attest");
+  d.click("save-review");
+  d.click("close");
   experiments();
   click("protocol");
 }
@@ -513,8 +518,8 @@ it("does not authorize rejected plans or reuse an approved review after the eval
   experiments();
   click("protocol");
   click("evaluation");
-  click("run-evaluation");
-  node('[data-action="close"]').click();
+  evaluationDriver(w).click("create");
+  evaluationDriver(w).click("close");
   click("protocol");
   expect(node('[data-bw-action="authorize"]').disabled).toBe(true);
 });

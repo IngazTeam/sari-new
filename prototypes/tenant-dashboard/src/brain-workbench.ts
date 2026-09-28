@@ -15,6 +15,8 @@ import { salesSectorPlaybooks } from "../../../shared/sales-sector-playbooks";
 import { salesCohortRules } from "../../../shared/sales-experiment-cohort";
 import { replyReviewCriteria } from "../../../shared/sales-reply-review";
 
+import { createBrainEvaluation } from "./brain-evaluation";
+
 window.SaryBrainWorkbench = (() => {
   const key = "sary-brain-workbench-v1",
     clone = value => JSON.parse(JSON.stringify(value));
@@ -323,6 +325,7 @@ window.SaryBrainWorkbench = (() => {
           ["followup", "المتابعة"],
           ["experiments", "تجارب البيع"],
           ["replies", "مراجعة الردود"],
+          ["evaluation", "التقييم والأرشيف"],
         ],
         opsTab,
         "ops-tab"
@@ -333,7 +336,9 @@ window.SaryBrainWorkbench = (() => {
           ? followup()
           : opsTab === "experiments"
             ? experiments()
-            : replies())
+            : opsTab === "evaluation"
+              ? evaluationWorkbench.summary()
+              : replies())
     );
   }
   function sector() {
@@ -357,15 +362,27 @@ window.SaryBrainWorkbench = (() => {
     Boolean(data.candidate && data.candidateReview === reviewedLearning());
   const sentReview = () =>
     data.sends.some(s => s.reviewId === data.replyReviews[0]?.id);
+  const evaluatedOutputs = () =>
+    candidateReady() &&
+    String(data.run?.id).startsWith("evaluation:") &&
+    data.run?.candidate === data.candidateReview &&
+    data.run?.status === "reviewed" &&
+    Boolean(data.run?.reviewSnapshot);
   const canAuthorize = p =>
     p?.review?.verdict === "approved" &&
+    evaluatedOutputs() &&
     p.review.runId === data.run?.id &&
     Boolean(data.run?.reviewSnapshot) &&
-    p.review.resultSnapshot === data.run.reviewSnapshot &&
-    data.run?.status === "reviewed";
+    p.review.resultSnapshot === data.run.reviewSnapshot;
   const protocol = () => data.protocols.find(p => p.id === Number(selectedId));
+  const experimentDisabled = () =>
+    dis() + (evaluationWorkbench.hasDraft() ? " disabled" : "");
+  const evaluationDraftNotice = () =>
+    evaluationWorkbench.hasDraft()
+      ? '<p class="bw-warning">لديك مسودة مراجعة مخرجات. أكملها أو ألغها صراحة قبل تعديل التجربة.</p><button class="button" data-be-action="open">استئناف مراجعة المخرجات</button>'
+      : "";
   function experiments() {
-    return `<section class="panel panel-pad"><div class="panel-head"><div><h2>تجربة بيع بخطوات قابلة للمراجعة</h2><p>تجهيز المرشح ← التصميم ← التأهيل ← مراجعة مستقلة ← إذن التشغيل.</p></div>${btn("تصميم تجربة جديدة", "new-protocol", `${dis()} ${!candidateReady() || activeProtocol() ? "disabled" : ""}`, true)}</div><article class="bw-card"><h3>المرشح التوضيحي</h3><p>تحسين سؤال احتياج العميل قبل اقتراح المنتج. تجهيز المرشح لا يفعّل سياسة جديدة.</p>${badge(candidateReady() ? "مرشح محلي محفوظ" : "لم يُجهّز المرشح أو تغيّرت مراجعته")}${btn("تجهيز مرشح من مراجعة التعلم", "prepare-candidate", dis())}</article><div class="bw-cards">${data.protocols.map(p => `<article class="bw-card"><h3>${esc(p.design.title)}</h3>${badge(p.state === "withdrawn" ? "مسحوبة دون فائز" : p.launch === "revoked" ? "إذن التشغيل مسحوب" : p.launch === "authorized" ? "إذن محلي فقط" : p.review?.verdict === "approved" ? (canAuthorize(p) ? "خطة مراجَعة" : "المراجعة تحتاج تحديثًا") : "خطة مسجلة")}<p>قطاع ${sectorNames[p.sector]} · ${p.design.sample.minimumCustomersPerArm} عميل لكل مجموعة</p>${btn("تفاصيل وخطوات التجربة", "protocol", idAttr(p.id))}</article>`).join("") || '<p class="bw-empty">لا توجد تجارب مسجلة. ابدأ بمراجعة التعلم ثم جهّز المرشح.</p>'}</div></section>`;
+    return `${evaluationDraftNotice()}<section class="panel panel-pad"><div class="panel-head"><div><h2>تجربة بيع بخطوات قابلة للمراجعة</h2><p>تجهيز المرشح ← التصميم ← التأهيل ← مراجعة مستقلة ← إذن التشغيل.</p></div>${btn("تصميم تجربة جديدة", "new-protocol", `${experimentDisabled()} ${!candidateReady() || activeProtocol() ? "disabled" : ""}`, true)}</div><article class="bw-card"><h3>المرشح التوضيحي</h3><p>تحسين سؤال احتياج العميل قبل اقتراح المنتج. تجهيز المرشح لا يفعّل سياسة جديدة.</p>${badge(candidateReady() ? "مرشح محلي محفوظ" : "لم يُجهّز المرشح أو تغيّرت مراجعته")}${btn("تجهيز مرشح من مراجعة التعلم", "prepare-candidate", experimentDisabled())}</article><div class="bw-cards">${data.protocols.map(p => `<article class="bw-card"><h3>${esc(p.design.title)}</h3>${badge(p.state === "withdrawn" ? "مسحوبة دون فائز" : p.launch === "revoked" ? "إذن التشغيل مسحوب" : p.launch === "authorized" ? "إذن محلي فقط" : p.review?.verdict === "approved" ? (canAuthorize(p) ? "خطة مراجَعة" : "المراجعة تحتاج تحديثًا") : "خطة مسجلة")}<p>قطاع ${sectorNames[p.sector]} · ${p.design.sample.minimumCustomersPerArm} عميل لكل مجموعة</p>${btn("تفاصيل وخطوات التجربة", "protocol", idAttr(p.id))}</article>`).join("") || '<p class="bw-empty">لا توجد تجارب مسجلة. ابدأ بمراجعة التعلم ثم جهّز المرشح.</p>'}</div></section>`;
   }
   const replyText =
     "بن كولومبيا في كتالوج المثال بسعر 64 ريالًا. ما طريقة التحضير التي تفضلها لأراجع خيار الطحن المناسب؟";
@@ -642,7 +659,7 @@ window.SaryBrainWorkbench = (() => {
     if (!p) return;
     window.openDialog(
       "تفاصيل تجربة البيع",
-      `<div class="bw-detail">${note}${alert()}${protocolSummary(p.design)}<p>القطاع عند التسجيل: ${sectorNames[p.sector]} · الإصدار ${p.sectorRevision}</p><ol class="bw-stages"><li>التصميم: ${p.state === "withdrawn" ? "مسحوب" : "مسجل"}</li><li>التأهيل: ${p.cohort ? "مجمّد" : "لم يُجهّز"}</li><li>مراجعة الخطة: ${p.review ? (p.review.verdict === "approved" ? (canAuthorize(p) ? "موافقة توضيحية" : "المراجعة تحتاج تحديثًا") : "مرفوضة") : "غير مراجَعة"}</li><li>التشغيل: ${p.launch === "authorized" ? "إذن محلي محفوظ" : p.launch === "revoked" ? "الإذن مسحوب" : "غير مأذون"}</li></ol>${p.withdrawal ? `<p>سبب السحب: ${esc(p.withdrawal)}</p>` : ""}${p.cohort ? `<details><summary>شروط التأهيل المحفوظة</summary><p>من ${p.cohort.minimumCharacters} إلى ${p.cohort.maximumCharacters} حرف · المراحل ${p.cohort.allowedDealStages.map(k => stages[k]).join("، ")}</p><p>${esc(p.mappingReview)}</p></details>` : ""}<div class="bw-actions">${btn("تأهيل الجمهور", "cohort", `${dis()} ${p.state !== "registered" || p.cohort ? "disabled" : ""}`)}${btn("فحص حالة تأهيل توضيحية", "inspect", !p.cohort ? "disabled" : "")}${btn("مراجعة مستقلة للخطة", "experiment-review", `${dis()} ${p.state !== "registered" || !p.cohort || data.run?.status !== "reviewed" ? "disabled" : ""}`)}${btn("إذن التشغيل", "authorize", `${dis()} ${p.state !== "registered" || !canAuthorize(p) || p.launch ? "disabled" : ""}`)}${btn("سحب الإذن", "revoke", `${dis()} ${p.launch !== "authorized" ? "disabled" : ""}`)}${btn("سحب التصميم", "withdraw", `${dis()} ${p.state !== "registered" ? "disabled" : ""}`)}</div><p>مراجعة الخطة تتطلب شروط تأهيل مجمّدة ونتائج تجربة ردود مراجَعة. السحب لا يحذف السجل ولا يعلن نجاحًا.</p>${btn("عرض تجربة الردود التوضيحية", "evaluation")}</div>`
+      `<div class="bw-detail">${note}${alert()}${evaluationDraftNotice()}${protocolSummary(p.design)}<p>القطاع عند التسجيل: ${sectorNames[p.sector]} · الإصدار ${p.sectorRevision}</p><ol class="bw-stages"><li>التصميم: ${p.state === "withdrawn" ? "مسحوب" : "مسجل"}</li><li>التأهيل: ${p.cohort ? "مجمّد" : "لم يُجهّز"}</li><li>مراجعة الخطة: ${p.review ? (p.review.verdict === "approved" ? (canAuthorize(p) ? "موافقة توضيحية" : "المراجعة تحتاج تحديثًا") : "مرفوضة") : "غير مراجَعة"}</li><li>التشغيل: ${p.launch === "authorized" ? "إذن محلي محفوظ" : p.launch === "revoked" ? "الإذن مسحوب" : "غير مأذون"}</li></ol>${p.withdrawal ? `<p>سبب السحب: ${esc(p.withdrawal)}</p>` : ""}${p.cohort ? `<details><summary>شروط التأهيل المحفوظة</summary><p>من ${p.cohort.minimumCharacters} إلى ${p.cohort.maximumCharacters} حرف · المراحل ${p.cohort.allowedDealStages.map(k => stages[k]).join("، ")}</p><p>${esc(p.mappingReview)}</p></details>` : ""}<div class="bw-actions">${btn("تأهيل الجمهور", "cohort", `${experimentDisabled()} ${p.state !== "registered" || p.cohort ? "disabled" : ""}`)}${btn("فحص حالة تأهيل توضيحية", "inspect", !p.cohort ? "disabled" : "")}${btn("مراجعة مستقلة للخطة", "experiment-review", `${experimentDisabled()} ${p.state !== "registered" || !p.cohort || !evaluatedOutputs() ? "disabled" : ""}`)}${btn("إذن التشغيل", "authorize", `${experimentDisabled()} ${p.state !== "registered" || !canAuthorize(p) || p.launch ? "disabled" : ""}`)}${btn("سحب الإذن", "revoke", `${experimentDisabled()} ${p.launch !== "authorized" ? "disabled" : ""}`)}${btn("سحب التصميم", "withdraw", `${experimentDisabled()} ${p.state !== "registered" ? "disabled" : ""}`)}</div><p>مراجعة الخطة تتطلب شروط تأهيل مجمّدة ونتائج تجربة ردود مراجَعة. السحب لا يحذف السجل ولا يعلن نجاحًا.</p>${btn("عرض تجربة الردود التوضيحية", "evaluation")}</div>`
     );
   }
   function errorsForForm() {
@@ -806,6 +823,18 @@ window.SaryBrainWorkbench = (() => {
       showEditor();
       return;
     }
+    if (
+      [
+        "protocol",
+        "cohort",
+        "experiment-review",
+        "authorize",
+        "withdraw",
+        "revoke",
+      ].includes(editorKind) &&
+      evaluationWorkbench.hasDraft()
+    )
+      return;
     const v = clone(draft),
       kind = editorKind,
       p = protocol();
@@ -828,10 +857,7 @@ window.SaryBrainWorkbench = (() => {
       (!p || p.state !== "registered")
     )
       return;
-    if (
-      kind === "experiment-review" &&
-      (!p.cohort || data.run?.status !== "reviewed")
-    )
+    if (kind === "experiment-review" && (!p.cohort || !evaluatedOutputs()))
       return;
     if (kind === "authorize" && (!canAuthorize(p) || p.launch)) return;
     if (kind === "revoke" && p.launch !== "authorized") return;
@@ -974,10 +1000,7 @@ window.SaryBrainWorkbench = (() => {
     } else showEditor();
   }
   function evaluation() {
-    window.openDialog(
-      "تجربة الردود · محاكاة",
-      `<div class="bw-detail">${note}${alert()}<h3>الحالي والمقترح في ثماني حالات</h3><p>تستخدم هذه التجربة أمثلة محفوظة، ولا تستدعي نموذجًا أو تقيس جودة التيننت.</p>${badge(data.run?.status === "reviewed" ? "نتيجة المثال مراجَعة" : data.run?.status === "cancelled" ? "أُلغيت المحاولة" : data.run ? "نتائج مثال جاهزة" : "لم تبدأ محاكاة")}<div class="bw-actions">${btn("تشغيل أمثلة محفوظة", "run-evaluation", dis())}${btn("إلغاء المحاولة", "cancel-evaluation", `${dis()} ${!data.run ? "disabled" : ""}`)}${btn("مراجعة نتائج المثال", "review-evaluation", `${dis()} ${data.run?.status !== "completed" ? "disabled" : ""}`)}</div>${data.run?.status === "completed" ? "<p>لا تُعد النتيجة اجتيازًا قبل مراجعة الردود. ستنتقل إلى مراجعة الحالات الثماني الموجودة في عقل ساري.</p>" : ""}</div>`
-    );
+    evaluationWorkbench.open();
   }
   document.addEventListener("click", event => {
     const el = event.target.closest("[data-bw-action]");
@@ -1025,11 +1048,8 @@ window.SaryBrainWorkbench = (() => {
       return;
     }
     if (a === "evaluation") return evaluation();
-    if (a === "inspect")
-      return window.openDialog(
-        "فحص تأهيل · مثال لحظي",
-        `<div class="bw-detail">${note}<h3>محادثة تحت تدخل بشري</h3><p>النتيجة: غير مؤهلة الآن. السبب: موظف يتابع المحادثة.</p><p>لم يُنشأ توزيع عميل. صلاحية الفحص اللحظي ليست إذن إرسال.</p></div>`
-      );
+    if (a === "inspect" && protocol()?.cohort)
+      return evaluationWorkbench.inspect(protocol());
     if (!owner()) return;
     if (a === "reconcile" && pending) {
       const item = pending;
@@ -1056,11 +1076,26 @@ window.SaryBrainWorkbench = (() => {
       error = "";
       attested = false;
       acknowledged = false;
-      if (draft) showEditor();
+      if (document.querySelector(".be-workspace"))
+        evaluationWorkbench.refreshBasis();
+      else if (draft) showEditor();
       else refresh();
       return;
     }
     if (pending) return;
+    if (
+      [
+        "prepare-candidate",
+        "new-protocol",
+        "cohort",
+        "experiment-review",
+        "authorize",
+        "withdraw",
+        "revoke",
+      ].includes(a) &&
+      evaluationWorkbench.hasDraft()
+    )
+      return;
     if (a === "new-section")
       start("section", { type: "custom", title: "", content: "" });
     if (a === "new-faq") start("faq", { question: "", answer: "" });
@@ -1125,11 +1160,7 @@ window.SaryBrainWorkbench = (() => {
         },
         selectedId
       );
-    if (
-      a === "experiment-review" &&
-      protocol()?.cohort &&
-      data.run?.status === "reviewed"
-    )
+    if (a === "experiment-review" && protocol()?.cohort && evaluatedOutputs())
       start(
         "experiment-review",
         {
@@ -1155,31 +1186,6 @@ window.SaryBrainWorkbench = (() => {
       !sentReview()
     )
       start("send", { account: "", reason: "" });
-    if (a === "run-evaluation" && data.candidate) {
-      commit(
-        () => {
-          data.run = { id: (data.run?.id || 0) + 1, status: "completed" };
-        },
-        "تشغيل عينة ردود محفوظة",
-        "experiment"
-      );
-      evaluation();
-    }
-    if (a === "cancel-evaluation" && data.run) {
-      commit(
-        () => {
-          data.run.status = "cancelled";
-        },
-        "إلغاء المحاكاة",
-        "experiment"
-      );
-      evaluation();
-    }
-    if (a === "review-evaluation" && data.run?.status === "completed") {
-      close();
-      window.SaryBrainPreview.navigate("learning");
-      document.querySelector('[data-brain-action="review-open"]')?.click();
-    }
     if (a === "approve-section") {
       const r = data.sections.find(s => s.id === Number(id));
       if (r) {
@@ -1315,10 +1321,24 @@ window.SaryBrainWorkbench = (() => {
     }
     save();
   });
+  const evaluationWorkbench = createBrainEvaluation({
+    esc,
+    owner,
+    blocked: () => !!pending,
+    commit,
+    alert,
+    refresh,
+    candidate: () => (candidateReady() ? data.candidateReview : null),
+    assessment: value => {
+      data.run = value;
+      persist();
+    },
+  });
   return {
     render,
     reset() {
       data = initial();
+      evaluationWorkbench.reset();
       draft = null;
       pending = null;
       role = "owner";
@@ -1333,18 +1353,7 @@ window.SaryBrainWorkbench = (() => {
       labOpen = false;
       persist();
     },
-    reviewSaved(review) {
-      if (
-        ["completed", "reviewed"].includes(data.run?.status) &&
-        review.cases.length === 8
-      ) {
-        data.run.status = review.cases.every(c => c.candidateVerdict === "pass")
-          ? "reviewed"
-          : "completed";
-        data.run.reviewSnapshot = JSON.stringify(review);
-        log("experiment", "مراجعة أمثلة الردود");
-        persist();
-      }
-    },
+    // The eight-case proposal review never approves the 32-case output review.
+    reviewSaved() {},
   };
 })();
