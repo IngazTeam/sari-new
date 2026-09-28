@@ -885,6 +885,15 @@ export const sallaCreationEffects = mysqlTable('salla_creation_effects', {
       OR (${table.state}='review' AND ${table.claimToken} IS NOT NULL AND ${table.leaseUntil} IS NULL AND ${table.acceptedAt} IS NULL))`),
 ]);
 
+export const sallaCheckoutReviews = mysqlTable('salla_checkout_reviews', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  reviewerUserId:int('reviewer_user_id').notNull(),reviewId:char('review_id',{length:36}).notNull(),
+  requestDigest:char('request_digest',{length:64}).notNull(),snapshot:json().notNull(),snapshotDigest:char('snapshot_digest',{length:64}).notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+},table=>[uniqueIndex('salla_checkout_review_once').on(table.merchantId,table.reviewId),index('salla_checkout_review_history').on(table.merchantId,table.id),
+  check('chk_salla_checkout_review',sql`${table.reviewerUserId}>0 AND REGEXP_LIKE(${table.requestDigest},'^[0-9a-f]{64}$','c') AND REGEXP_LIKE(${table.snapshotDigest},'^[0-9a-f]{64}$','c')`),
+]);
+
 export const sallaCheckoutCarts = mysqlTable('salla_checkout_carts', {
   id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
   actorUserId:int('actor_user_id').notNull(),requestId:char('request_id',{length:36}).notNull(),requestHash:char('request_hash',{length:64}).notNull(),

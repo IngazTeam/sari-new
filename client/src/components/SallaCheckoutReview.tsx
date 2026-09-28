@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { SallaCheckoutHistory } from './SallaCheckoutHistory';
+import { sallaCheckoutAuditItem } from '@shared/salla-checkout-audit';
 import { checkoutReviewInput,checkoutReviewResult } from '@/lib/salla-checkout-review';
 import { sallaCheckoutEvidenceAccess,sallaCheckoutCartListOutput,type sallaCheckoutCartListItem,type sallaCheckoutEvidenceOutput } from '@shared/salla-checkout-evidence';
 
@@ -44,16 +46,18 @@ function Result({value}:{value:Evidence}) {
     <p className="text-muted-foreground">{t('merchantUx.sallaCheckout.amountScope')}</p>
   </section>;
 }
-function Inspection({item,onClose}:{item:Item;onClose:()=>void}) {
-  const {t}=useTranslation(),client=trpc.useUtils().client;
+function Inspection({item,merchantId,onClose}:{item:Item;merchantId:number;onClose:()=>void}) {
+  const {t}=useTranslation(),utils=trpc.useUtils(),client=utils.client;
   const [order,setOrder]=useState(''),[transaction,setTransaction]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState<'invalid'|'failed'|null>(null),[result,setResult]=useState<Evidence|null>(null);
   const request=useRef<{version:number;controller?:AbortController}>({version:0});
+  const saveId=useRef<string|undefined>(undefined);
+  const [saving,setSaving]=useState(false),[saved,setSaved]=useState<number|null>(null),[saveFailed,setSaveFailed]=useState(false);
   const heading=useRef<HTMLHeadingElement>(null);
-  const clear=()=>{request.current.version++;request.current.controller?.abort();request.current.controller=undefined;setBusy(false);setResult(null);setError(null);};
+  const clear=()=>{request.current.version++;request.current.controller?.abort();request.current.controller=undefined;saveId.current=undefined;setSaving(false);setSaved(null);setSaveFailed(false);setBusy(false);setResult(null);setError(null);};
   useEffect(()=>{heading.current?.focus();return()=>{request.current.version++;request.current.controller?.abort();};},[]);
   const submit=async()=>{
     if(request.current.controller)return;
-    setResult(null);setError(null);
+    setResult(null);setError(null);saveId.current=undefined;setSaved(null);setSaveFailed(false);
     const parsed=checkoutReviewInput(item.requestId,order,transaction);
     if(!parsed.success){setError('invalid');return;}
     const controller=new AbortController(),version=++request.current.version;request.current.controller=controller;setBusy(true);
@@ -63,6 +67,24 @@ function Inspection({item,onClose}:{item:Item;onClose:()=>void}) {
       if(version===request.current.version)setResult(value);
     }catch{if(version===request.current.version)setError('failed');}
     finally{if(version===request.current.version){request.current.controller=undefined;setBusy(false);}}
+  };
+  const save=async()=>{
+    if(saving||saved||!result)return;
+    const parsed=checkoutReviewInput(item.requestId,order,transaction);if(!parsed.success)return;
+    const version=request.current.version;
+    setSaving(true);setSaveFailed(false);
+    try {
+      const reviewId=saveId.current??=crypto.randomUUID();
+      const raw=await client.orders.saveSallaCheckoutAudit.mutate({reviewId,evidence:parsed.data});
+      const audit=sallaCheckoutAuditItem.parse(raw);
+      if(audit.merchantId!==merchantId||audit.reviewId!==reviewId)throw Error('Audit scope mismatch');
+      const evidence=checkoutReviewResult(audit.evidence,parsed.data,item);
+      // A save can complete after the form closes. It stays in history but must
+      // never replace a different selection or freshly edited input.
+      void utils.orders.listSallaCheckoutAudits.invalidate();
+      if(version===request.current.version){setSaved(audit.id);setResult(evidence);}
+    }catch{if(version===request.current.version)setSaveFailed(true);}
+    finally{if(version===request.current.version)setSaving(false);}
   };
   const prefix=`salla-cart-${item.id}`,control='min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring';
   return <div data-checkout-inspection className="min-w-0 space-y-4 border-t pt-4">
@@ -75,11 +97,15 @@ function Inspection({item,onClose}:{item:Item;onClose:()=>void}) {
       <div className="min-w-0 space-y-2"><label htmlFor={prefix+'-transaction'}>{t('merchantUx.sallaCheckout.transactionId')}</label>
         <input id={prefix+'-transaction'} data-checkout-transaction value={transaction} onChange={e=>{clear();setTransaction(e.target.value);}} autoComplete="off" inputMode="numeric" maxLength={40} dir="ltr" className={control} aria-invalid={error==='invalid'} aria-describedby={prefix+'-transaction-help'}/>
         <p id={prefix+'-transaction-help'} className="text-muted-foreground">{t('merchantUx.sallaCheckout.transactionHelp')}</p></div>
-      <Button data-checkout-submit type="submit" className={button+' md:col-span-2'} disabled={busy}>{busy?t('merchantUx.sallaCheckout.checking'):t('merchantUx.sallaCheckout.check')}</Button>
+      <Button data-checkout-submit type="submit" className={button+' md:col-span-2'} disabled={busy||saving}>{busy?t('merchantUx.sallaCheckout.checking'):t('merchantUx.sallaCheckout.check')}</Button>
     </form>
     {busy&&<p role="status" data-checkout-busy>{t('merchantUx.sallaCheckout.checking')}</p>}
     {error&&<p role="alert" data-checkout-error>{error==='invalid'?t('merchantUx.sallaCheckout.invalid'):t('merchantUx.sallaCheckout.checkFailed')}</p>}
-    {result&&<Result value={result}/>}
+    {result&&<><Result value={result}/><p>{t('merchantUx.sallaCheckout.saveScope')}</p>
+      <Button data-checkout-save className={button} variant="outline" disabled={saving||saved!==null} onClick={()=>void save()}>{saving?t('merchantUx.sallaCheckout.saving'):saveFailed?t('merchantUx.sallaCheckout.retrySave'):t('merchantUx.sallaCheckout.save')}</Button>
+      {saved!==null&&<p role="status" data-checkout-saved>{t('merchantUx.sallaCheckout.saved')} #{saved}</p>}
+      {saveFailed&&<p role="alert" data-checkout-save-error>{t('merchantUx.sallaCheckout.saveFailed')}</p>}
+    </>}
   </div>;
 }
 function CartBrowser({merchantId}:{merchantId:number}) {
@@ -102,13 +128,14 @@ function CartBrowser({merchantId}:{merchantId:number}) {
             <Button ref={el=>{if(el)triggers.current.set(item.id,el);else triggers.current.delete(item.id);}} data-checkout-select aria-pressed={selected===item.requestId} variant={selected===item.requestId?'default':'outline'} className={button+' w-full'} onClick={()=>setSelected(item.requestId)}>{t('merchantUx.sallaCheckout.select')}</Button></>:<p data-checkout-unavailable>{t('merchantUx.sallaCheckout.unavailable')}</p>}
         </article>)}
       </div>
-      {active&&<Inspection key={active.requestId+':'+query.dataUpdatedAt} item={active} onClose={()=>{setSelected(undefined);triggers.current.get(active.id)?.focus();}}/>}
+      {active&&<Inspection key={active.requestId+':'+query.dataUpdatedAt} merchantId={merchantId} item={active} onClose={()=>{setSelected(undefined);triggers.current.get(active.id)?.focus();}}/>}
     </>}
     <div className="flex flex-wrap gap-2">
       <Button data-checkout-refresh className={button} variant="outline" disabled={loading} onClick={refresh}>{beforeId?t('merchantUx.sallaCheckout.latest'):t('merchantUx.sallaCheckout.refresh')}</Button>
       {!loading&&!query.isError&&valid&&page.data.nextCursor&&<Button data-checkout-older className={button} variant="outline" onClick={()=>{setSelected(undefined);setBeforeId(page.data.nextCursor!);}}>{t('merchantUx.sallaCheckout.older')}</Button>}
     </div>
     <p className="text-muted-foreground">{t('merchantUx.sallaCheckout.listScope')}</p>
+    <SallaCheckoutHistory merchantId={merchantId} renderEvidence={value=><Result value={value}/>}/>
   </div>;
 }
 export function SallaCheckoutReview() {

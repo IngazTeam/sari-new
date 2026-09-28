@@ -1,4 +1,9 @@
 export const sallaCheckoutReviewAr={
+  history:'سجل المراجعات المحفوظة',historyScope:'قراءات تاريخية محفوظة وقت المراجعة، وليست الحالة الحالية للطلب. يبقى السجل متاحًا عند تعذّر اتصال سلة أو حذف السلة الأصلية. لا يعتمد دفعًا أو إسناد بيع.',
+  historyLoading:'جارٍ قراءة سجل المراجعات…',historyFailed:'تعذّر التحقق من سجل المراجعات أو صلاحية الوصول. حدّث السجل.',historyEmpty:'لا توجد مراجعات محفوظة بعد.',savedAt:'وقت الحفظ',reviewer:'معرّف المراجع',
+  save:'قراءة جديدة وحفظ المراجعة',saving:'جارٍ التحقق وحفظ المراجعة…',saved:'حُفظت المراجعة برقم',retrySave:'التحقق من الحفظ وإعادة المحاولة',
+  saveScope:'يحفظ هذا الإجراء قراءة جديدة من سلة مع وقتها ومعرّف المراجع؛ قد تختلف عن المعروض. لا ينشئ طلبًا أو دفعًا.',
+  saveFailed:'لم يصل تأكيد الحفظ. قد تكون المراجعة محفوظة بالفعل؛ أعد المحاولة بنفس الزر لاسترجاعها دون تكرار، أو راجع السجل. إغلاق الفحص لا يلغي حفظًا بدأ بالفعل.',
   title:'مراجعة سلال سلة ونتائج الشراء',scope:'اختر سلة جهّزها ساري، ثم افحص بيانات طلب أو معاملة من سلة. المقارنة تساعد على المراجعة ولا تسجل بيعًا أو تؤكد تحصيلًا.',
   loading:'جارٍ قراءة السلال…',failed:'تعذّر التحقق من السلال أو صلاحية الوصول. أعد تحديث القائمة.',empty:'لا توجد سلال جاهزة محفوظة لهذا النشاط.',
   refresh:'تحديث القائمة',latest:'العودة إلى الأحدث',older:'عرض الأقدم',select:'فحص هذه السلة',selected:'السلة المختارة',operation:'مرجع التجهيز',cart:'معرّف السلة',created:'تاريخ التجهيز',preparedTotal:'إجمالي السلة عند التجهيز',
@@ -14,6 +19,11 @@ export const sallaCheckoutReviewAr={
   amountScope:'قد يتغير الإجمالي بسبب الشحن أو الخصومات. قيمة معاملة واحدة ليست صافي إيراد الطلب بعد الاستردادات والتسوية.',close:'إغلاق الفحص',listScope:'تظهر السلال الجاهزة فقط، 20 في الصفحة. السلة المجهزة لا تعني اكتمال طلب أو دفع.',
 };
 export const sallaCheckoutReviewEn:Record<keyof typeof sallaCheckoutReviewAr,string>={
+  history:'Saved review history',historyScope:'Historical readings saved at review time, not the current order state. History remains available if Salla is disconnected or the original cart is deleted. It does not approve payment or sales attribution.',
+  historyLoading:'Loading review history…',historyFailed:'History or access could not be verified. Refresh history.',historyEmpty:'No reviews have been saved yet.',savedAt:'Saved at',reviewer:'Reviewer ID',
+  save:'Read again and save review',saving:'Checking and saving review…',saved:'Review saved with ID',retrySave:'Check save and retry',
+  saveScope:'This action saves a new reading from Salla with its time and reviewer ID; it may differ from the preview. It does not create an order or payment.',
+  saveFailed:'Save confirmation was not received. The review may already be saved; retry with the same button to recover it without duplication, or check history. Closing the inspection does not cancel a save already started.',
   title:'Review Salla carts and purchase records',scope:'Select a cart prepared by Sari, then inspect an order or transaction from Salla. This comparison supports review; it does not record a sale or confirm collection.',
   loading:'Loading carts…',failed:'Carts or access could not be verified. Refresh the list.',empty:'No prepared carts are saved for this business.',
   refresh:'Refresh list',latest:'Back to latest',older:'Show older',select:'Inspect this cart',selected:'Selected cart',operation:'Preparation reference',cart:'Cart ID',created:'Prepared at',preparedTotal:'Cart total when prepared',

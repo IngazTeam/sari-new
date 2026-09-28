@@ -1,5 +1,5 @@
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto');
-const root = process.cwd(), output = path.resolve('.tmp/salla-checkout-review-verification');
+const root = process.cwd(), output = path.resolve('.tmp/salla-checkout-audit-verification');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const units = ['server/salla-checkout-review-pentest.test.ts','server/salla-checkout-evidence-transport-pentest.test.ts','server/salla-checkout-evidence-api-pentest.test.ts','server/salla-conversation-cart-pentest.test.ts','server/checkout-offer-evidence-pentest.test.ts','server/whatsapp-delivery-safety.test.ts','server/ai/checkout-conversation.test.ts','server/ai/reply-reservation-pentest.test.ts','server/salla-checkout-cart-pentest.test.ts','server/salla-confirmation-pentest.test.ts','server/automation/order-from-chat-utils.test.ts','server/salla-order-items-pentest.test.ts','server/salla-order-result-pentest.test.ts','server/salla-extraction-pentest.test.ts','server/conversation-order-payment-link-pentest.test.ts','server/notice-delivery-pentest.test.ts','server/salla-sheet-receipts-pentest.test.ts','server/salla-effect-review-pentest.test.ts','server/deployment-release-pentest.test.ts', 'server/runtime-schema-pentest.test.ts',
   'server/salla-catalog-pentest.test.ts', 'server/salla-order-projection-pentest.test.ts',
@@ -42,6 +42,7 @@ try {
   const startedAt = new Date().toISOString(), before = manifest(), checks = [];
   checks.push(run('types', ['node_modules/typescript/bin/tsc', '--noEmit']));
   checks.push(run('migration',['scripts/testing/verify-salla-cart-migration.cjs'],{SARI_TEST_DATABASE_URL:url.toString(),SARI_SALLA_CART_MIGRATION_OUTPUT:path.join(output,'migration.json')}));
+  checks.push(run('audit-migration',['scripts/testing/verify-salla-checkout-audit-migration.cjs'],{SARI_TEST_DATABASE_URL:url.toString(),SARI_SALLA_CHECKOUT_AUDIT_MIGRATION_OUTPUT:path.join(output,'audit-migration.json')}));
   checks.push(run('database',['scripts/testing/run-isolated.mjs','--with-database','--no-file-parallelism',...database,'--reporter=default','--reporter=json',`--outputFile.json=${path.join(output,'database.json')}`],{SARI_TEST_DATABASE_URL:url.toString()}));
   const baseCommit = cp.execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim();
   const toolingCommand = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts['test:tooling'].split(' ');
@@ -85,13 +86,14 @@ try {
   if(!dbResult.success||dbResult.numFailedTests||dbResult.numPendingTests||dbResult.numTodoTests)throw Error('Incomplete DB report');
   const dbFiles=dbResult.testResults.map(file=>path.relative(root,file.name).replaceAll('\\','/')).sort();
   if(JSON.stringify(dbFiles)!==JSON.stringify([...database].sort()))throw Error('Unexpected DB test selection');
-  const report = { version: 'salla-checkout-review.v1', startedAt, finishedAt: new Date().toISOString(),
+  const report = { version: 'salla-checkout-audit.v1', startedAt, finishedAt: new Date().toISOString(),
     baseCommit, sourceStableBeforeAndAfter: true, sourceSha256: before, checks,
-    scope: "Merchant order-page review of owned ready Salla carts with bounded local listing, strict read-only inspection, persisted permissions and safe Arabic/English display. Actual MySQL, simulated Salla, real browser components with simulated API; provider namespace relation and live checkout/payment attribution remain unverified.",
+    scope: "Durable server-derived Salla checkout review audit with idempotent saves, current persisted authorization, immutable history, no payment or sales attribution. Synthetic MySQL and mocked Salla; browser components with simulated API, not live provider acceptance.",
     tooling: { ...counts, testNames }, unitSecurity: { passed: result.numPassedTests, failed: 0, skipped: 0,
       tests: result.testResults.flatMap(file => file.assertionResults.map(test => ({
         file: path.relative(root, file.name).replaceAll('\\', '/'), name: test.fullName, status: test.status }))) },
     database:{passed:dbResult.numPassedTests,failed:0,skipped:0,tests:dbResult.testResults.flatMap(file=>file.assertionResults.map(test=>({file:path.relative(root,file.name).replaceAll('\\','/'),name:test.fullName,status:test.status})))},
+    auditMigration:JSON.parse(fs.readFileSync(path.join(output,'audit-migration.json'))),
     migration:JSON.parse(fs.readFileSync(path.join(output,'migration.json'))),
     browser, checkoutBrowser, totalTests: counts.pass + result.numPassedTests + dbResult.numPassedTests, translations, productionAccess: false, externalNetworkBlocked: true };
   fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify(report, null, 2) + '\n');

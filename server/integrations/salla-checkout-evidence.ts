@@ -19,18 +19,22 @@ const decode = (v: unknown) => typeof v === 'string' ? JSON.parse(v) : v;
 const unavailable = (): never => { throw Error('Salla checkout evidence unavailable'); };
 
 /** Read committed transactions only; no lock or snapshot spans a provider call. */
-async function read<T>(work: (c: PoolConnection) => Promise<T>) {
+export async function checkoutEvidenceTransaction<T>(work: (c: PoolConnection) => Promise<T>, commit = false) {
   const pool = await getPool(); if (!pool) return unavailable();
-  const c = await pool.getConnection(); let reusable = true;
+  const c = await pool.getConnection(); let reusable = true, committing = false;
   try {
     await c.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-    await c.beginTransaction(); const result = await work(c); await c.rollback(); return result;
+    await c.beginTransaction(); const result = await work(c);
+    if (commit) { committing = true; await c.commit(); committing = false; } else await c.rollback();
+    return result;
   } catch {
-    try { await c.rollback(); } catch { reusable = false; c.destroy(); }
+    if (committing) { reusable = false; c.destroy(); }
+    else { try { await c.rollback(); } catch { reusable = false; c.destroy(); } }
     return unavailable();
   } finally { if (reusable) c.release(); }
 }
-async function authorize(c:PoolConnection,merchantId:number,actorId:number) {
+const read = checkoutEvidenceTransaction;
+export async function authorizeCheckoutReviewer(c:PoolConnection,merchantId:number,actorId:number) {
     const [merchants] = await c.execute<any[]>('SELECT userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
     const [actors] = await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE', [actorId]);
     const [members] = await c.execute<any[]>('SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE', [merchantId,actorId]);
@@ -38,6 +42,7 @@ async function authorize(c:PoolConnection,merchantId:number,actorId:number) {
       || (members.length ? !members[0].is_active || !hasPermission(members[0].role, 'orders.manage') : merchants[0].userId !== actorId)) return unavailable();
     return {owner:merchants[0].userId,members};
 }
+const authorize = authorizeCheckoutReviewer;
 function savedCart(row:any,active:any) {
     if (!active || active.syncStatus !== 'active' || !row || row.state !== 'ready') return unavailable();
     const rawSnapshot = decode(row.snapshot), snapshot = savedSnapshot.parse(rawSnapshot?.value), result = decode(row.result_json);
@@ -56,14 +61,15 @@ function savedCart(row:any,active:any) {
     return {token,cart:{cartId:normalized.cartId,preparedTotalMinor:normalized.observedTotalMinor,currency:normalized.currency}};
 }
 async function context(merchantId: number, actorId: number, input: SallaCheckoutEvidenceInput) {
-  return read(async c => {
+  return read(c => lockedContext(c, merchantId, actorId, input));
+}
+async function lockedContext(c: PoolConnection, merchantId: number, actorId: number, input: SallaCheckoutEvidenceInput) {
     const authority=await authorize(c,merchantId,actorId);
     const [connections] = await c.execute<any[]>('SELECT id,salla_store_id,storeUrl,accessToken,syncStatus FROM salla_connections WHERE merchantId=? FOR SHARE', [merchantId]);
     const [rows] = await c.execute<any[]>('SELECT * FROM salla_checkout_carts WHERE merchant_id=? AND request_id=? FOR SHARE', [merchantId,input.requestId]);
     const active = connections[0], row = rows[0];
     if (connections.length !== 1 || rows.length !== 1) return unavailable();
     return {...savedCart(row,active),fingerprint:digest({row,connectionId:active.id,storeId:active.salla_store_id,storeUrl:active.storeUrl,...authority})};
-  });
 }
 
 /** Indexed, bounded local discovery. Invalid historical evidence remains visible
@@ -89,6 +95,13 @@ export async function listSallaCheckoutCarts(merchant:number,actor:number,raw:z.
 /** Inspection only. Reference equality does not establish a provider mapping,
  * causal sales attribution, a paid order, settlement, or a learning outcome. */
 export async function inspectSallaCheckoutEvidence(merchant: number, actor: number, raw: SallaCheckoutEvidenceInput) {
+  return withVerifiedCheckoutEvidence(merchant, actor, raw, async (_c, value) => value, false);
+}
+
+/** The callback is server-only. Fresh authority/cart locks span the final local
+ * save, never HTTP. A commit acknowledgement failure must not replay the write. */
+export async function withVerifiedCheckoutEvidence<T>(merchant: number, actor: number, raw: SallaCheckoutEvidenceInput,
+  accept: (c: PoolConnection, value: z.infer<typeof sallaCheckoutEvidenceOutput>) => Promise<T>, commit = true) {
   try {
     const merchantId = id.parse(merchant), actorId = id.parse(actor), input = sallaCheckoutEvidenceInput.parse(raw);
     await assertSallaCheckoutCartSchema();
@@ -98,11 +111,15 @@ export async function inspectSallaCheckoutEvidence(merchant: number, actor: numb
       if (initial.fingerprint !== current.fingerprint || initial.token !== current.token) return unavailable();
     };
     const order = await fetchSallaOrderEvidence(initial.token, input.orderId);
-    await verify();
+    if (input.transactionId) await verify();
     const transaction = input.transactionId ? await fetchSallaTransactionEvidence(initial.token, input.transactionId) : null;
-    if (transaction) await verify();
-    return sallaCheckoutEvidenceOutput.parse({ requestId:input.requestId, observedAt:new Date().toISOString(),cart:initial.cart,
+    return await checkoutEvidenceTransaction(async c => {
+      const current = await lockedContext(c, merchantId, actorId, input);
+      if (initial.fingerprint !== current.fingerprint || initial.token !== current.token) return unavailable();
+      const value = sallaCheckoutEvidenceOutput.parse({ requestId:input.requestId, observedAt:new Date().toISOString(),cart:initial.cart,
       order,transaction,comparison:sallaEvidenceComparison(initial.cart.cartId,order,transaction),
       providerLinkContract:'not_verified',attribution:'not_recorded',paymentFact:'not_recorded' });
+      return accept(c, value);
+    }, commit);
   } catch { return unavailable(); }
 }
