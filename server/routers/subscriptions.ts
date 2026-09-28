@@ -48,6 +48,8 @@ import {
   updateTapSettings,
 } from '../db';
 import { calculateProration } from "../_core/subscriptionManager";
+import { cancelCurrentSubscription, SubscriptionCancellationConflictError } from '../subscriptions/cancel-subscription';
+import { subscriptionDaysRemaining } from '../../shared/subscription-usage';
 import {
   completeImmediateCanonicalPlanChange,
   startCanonicalTrial,
@@ -338,7 +340,7 @@ export const merchantSubscriptionRouter = router({
     const plan = subscription.planId ? await getSubscriptionPlanById(subscription.planId) : null;
 
     // Calculate days remaining
-    const daysRemaining = await getMerchantDaysRemaining(merchant.id);
+    const daysRemaining = subscriptionDaysRemaining(subscription);
 
     return {
       ...subscription,
@@ -533,20 +535,23 @@ export const merchantSubscriptionRouter = router({
   // Cancel subscription
   cancelSubscription: protectedProcedure
     .input(z.object({
-      reason: z.string().optional(),
-    }))
+      reason: z.string().trim().max(500).optional(),
+      expectedSubscriptionId: z.number().int().positive().optional(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      const subscription = await getMerchantCurrentSubscription(merchant.id);
-      if (!subscription) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active subscription found' });
+      try {
+        await cancelCurrentSubscription(merchant.id, input.expectedSubscriptionId, input.reason);
+      } catch (error) {
+        if (error instanceof SubscriptionCancellationConflictError) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Subscription changed; refresh before cancelling' });
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not cancel subscription' });
       }
-
-      await cancelMerchantSubscription(subscription.id, input.reason);
 
       return { success: true };
     }),

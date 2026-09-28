@@ -10599,12 +10599,8 @@ export async function getMerchantDaysRemaining(merchantId: number): Promise<numb
   const subscription = await getMerchantCurrentSubscription(merchantId);
   if (!subscription) return 0;
 
-  const now = new Date();
-  const endDate = new Date(subscription.endDate);
-  const diff = endDate.getTime() - now.getTime();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-  return Math.max(0, days);
+  const { subscriptionDaysRemaining } = await import('../shared/subscription-usage');
+  return subscriptionDaysRemaining(subscription);
 }
 
 // ============================================

@@ -15,8 +15,10 @@ import { learningPolicyEvaluationEn } from './learning-policy-evaluation';
 import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
 import { campaignPerformanceEn } from './campaign-performance';
+import { subscriptionWorkspaceEn } from './subscription-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
+  subscriptionWorkspace: subscriptionWorkspaceEn,
   campaignPerformance: campaignPerformanceEn,
   byaanSales: byaanSalesReviewEn,
   sallaEffects: sallaEffectReviewEn,

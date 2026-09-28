@@ -1626,12 +1626,12 @@ window.TENANT_PAGES = [
   },
   {
     "route": "/merchant/subscriptions",
-    "title": "الباقة والفواتير",
+    "title": "الباقة والاستخدام",
     "group": "settings",
     "file": "client/src/pages/merchant/MySubscription.tsx",
     "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة.",
     "kind": "billing",
-    "action": "إدارة الباقة",
+    "action": "عرض الباقات",
     "labels": [
       "الباقة",
       "الفترة",
@@ -1704,12 +1704,12 @@ window.TENANT_PAGES = [
   },
   {
     "route": "/merchant/subscription",
-    "title": "الباقة والفواتير",
+    "title": "الباقة والاستخدام",
     "group": "settings",
     "file": "client/src/pages/merchant/MySubscription.tsx",
     "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة.",
     "kind": "billing",
-    "action": "إدارة الباقة",
+    "action": "عرض الباقات",
     "labels": [
       "الباقة",
       "الفترة",
@@ -1987,12 +1987,12 @@ window.TENANT_PAGES = [
   },
   {
     "route": "/merchant/my-subscription",
-    "title": "الباقة والفواتير",
+    "title": "الباقة والاستخدام",
     "group": "settings",
     "file": "client/src/pages/merchant/MySubscription.tsx",
     "note": "ثلاثة مسارات لنفس الصفحة؛ اعتماد واحد مع تحويل البقية والمحافظة على العودة.",
     "kind": "billing",
-    "action": "إدارة الباقة",
+    "action": "عرض الباقات",
     "labels": [
       "الباقة",
       "الفترة",

@@ -10,6 +10,8 @@ import {
   incrementSubscriptionUsage,
   updateSubscription,
 } from './db';
+import { TRIAL_USAGE_LIMITS } from '../shared/subscription-usage';
+export { TRIAL_USAGE_LIMITS } from '../shared/subscription-usage';
 
 /**
  * Get active subscription for merchant
@@ -27,12 +29,6 @@ async function getActiveSubscription(merchantId: number) {
 /**
  * Get plan limits
  */
-export const TRIAL_USAGE_LIMITS = {
-  maxConversations: 100,
-  maxMessages: -1,
-  maxVoiceMessages: 20,
-} as const;
-
 async function getPlanLimits(planId: number | null | undefined, status: string) {
   if (!planId && status === 'trial') return TRIAL_USAGE_LIMITS;
   if (!planId) throw new Error('Subscription plan missing');

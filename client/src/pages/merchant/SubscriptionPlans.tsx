@@ -7,6 +7,8 @@ import { Check, Sparkles, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
+import { QueryStateCard } from '@/components/QueryStateCard';
+import { subscriptionPlanFeatures } from '@shared/subscription-usage';
 
 export default function SubscriptionPlans() {
   const { t } = useTranslation();
@@ -14,8 +16,8 @@ export default function SubscriptionPlans() {
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const checkoutAttempts = useRef(new Map<string, string>());
 
-  const { data: plans, isLoading } = trpc.subscriptionPlans.listPlans.useQuery();
-  const { data: currentSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
+  const { data: plans, isLoading, isError: plansError, refetch: refetchPlans } = trpc.subscriptionPlans.listPlans.useQuery();
+  const { data: currentSubscription, isLoading: subscriptionLoading, isError: subscriptionError, refetch: refetchSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const subscribe = trpc.merchantSubscription.subscribe.useMutation();
 
   const checkoutAttemptFor = (key: string) => {
@@ -45,7 +47,13 @@ export default function SubscriptionPlans() {
     }
   };
 
-  if (isLoading) {
+  if (plansError || subscriptionError) {
+    return <QueryStateCard kind="error" title={t('merchantUx.subscriptionWorkspace.plansFailed')}
+      description={t('merchantUx.subscriptionWorkspace.loadHint')} retryLabel={t('merchantUx.subscriptionWorkspace.retry')}
+      onRetry={() => { void refetchPlans(); void refetchSubscription(); }} />;
+  }
+
+  if (isLoading || subscriptionLoading) {
     return (
       <div className="container py-8">
         <div className="animate-pulse space-y-4">
@@ -61,6 +69,11 @@ export default function SubscriptionPlans() {
   }
 
   // Calculate trial status
+  if (!plans?.length) {
+    return <QueryStateCard kind="empty" title={t('merchantUx.subscriptionWorkspace.noPlans')}
+      action={<Button variant="outline" onClick={() => setLocation('/merchant/subscription')}>{t('merchantUx.subscriptionWorkspace.title')}</Button>} />;
+  }
+
   const isTrial = currentSubscription?.status === 'trial';
   const isExpired = currentSubscription?.status === 'expired';
   const isActive = currentSubscription?.status === 'active';
@@ -134,7 +147,7 @@ export default function SubscriptionPlans() {
         {plans?.map((plan) => {
           const price = selectedPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
           const isCurrentPlan = currentSubscription?.planId === plan.id;
-          const features = (() => { try { return plan.features ? JSON.parse(plan.features) : []; } catch { return []; } })();
+          const features = subscriptionPlanFeatures(plan.features);
 
           return (
             <Card

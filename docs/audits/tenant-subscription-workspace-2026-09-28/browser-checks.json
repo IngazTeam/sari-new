@@ -1,0 +1,96 @@
+{
+  "date": "2026-09-28",
+  "browser": "Chrome extension, viewport overrides; no Safari/WebKit or physical iPhone",
+  "live": {
+    "origin": "http://127.0.0.1:3018",
+    "route": "/merchant/subscription",
+    "dialog320": {
+      "buttons": [
+        {
+          "height": 34.20001220703125,
+          "text": "الاحتفاظ بالاشتراك"
+        },
+        {
+          "height": 34.199981689453125,
+          "text": "نعم، إلغاء الاشتراك الآن"
+        }
+      ],
+      "dialog": {
+        "height": 229.90000915527344,
+        "width": 259.3499755859375,
+        "x": 22.825000762939453,
+        "y": 255.0500030517578
+      },
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "page320": {
+      "focused": "إلغاء الاشتراك",
+      "rows": 4,
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "dialog390": {
+      "dialog": {
+        "height": 229.9000244140625,
+        "width": 325.8499755859375,
+        "x": 24.57500267028809,
+        "y": 307.04998779296875
+      },
+      "focused": "الاحتفاظ بالاشتراك",
+      "width": 390
+    },
+    "page390": {
+      "focused": "إلغاء الاشتراك",
+      "rows": 4,
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "cancellationConfirmed": false,
+    "fixture": {
+      "added": 4,
+      "removed": 4,
+      "emptyHistoryVisibleAfterCleanup": true,
+      "subscriptionRemainsActive": true
+    }
+  },
+  "prototype": {
+    "origin": "http://127.0.0.1:4329",
+    "route": "#/page/merchant/subscription",
+    "dialog320": {
+      "dialog": {
+        "height": 319.1328125,
+        "width": 273,
+        "x": 16,
+        "y": 210.4296875
+      },
+      "focused": "الاحتفاظ بالاشتراك",
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "dialog390": {
+      "dialog": {
+        "height": 241.6875,
+        "width": 343,
+        "x": 16,
+        "y": 301.15625
+      },
+      "focused": "الاحتفاظ بالاشتراك",
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "checked": [
+      "subscription and payment errors independent",
+      "retry subscription preserves payment error",
+      "retry payment restores four rows",
+      "confirm changes mockup only and preserves history",
+      "planless trial",
+      "keep restores cancellation trigger focus"
+    ]
+  },
+  "limits": [
+    "No live payment or provider requests",
+    "Browser live check only active local plan; other states verified by unit tests and mockup",
+    "No browser English or Safari verification in this batch"
+  ]
+}
