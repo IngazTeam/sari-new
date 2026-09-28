@@ -138,6 +138,16 @@ export async function embedSection(section: KnowledgeSection, merchantId: number
  * Batch embed all sections that don't have embeddings yet.
  * forceAll=true re-embeds ALL sections (use after content updates/evolution).
  */
+export async function hasCurrentKnowledgeEmbeddings(merchantId: number): Promise<boolean> {
+  const sections = await getBotSectionsWithEmbedding(merchantId);
+  return sections.length > 0 && sections.every(section => {
+    const raw = section as any;
+    if (!raw.embedding || (raw.embeddingContentHash ?? raw.embedding_content_hash) !== sectionContentHash(section)) return false;
+    const vector = bufferToEmbedding(Buffer.from(raw.embedding));
+    return vector.length === EMBEDDING_DIMENSIONS && Array.from(vector).every(Number.isFinite);
+  });
+}
+
 export async function embedAllSections(merchantId: number, forceAll: boolean = false): Promise<number> {
   const sections = await getBotSectionsWithEmbedding(merchantId);
   let embedded = 0;
@@ -513,10 +523,11 @@ export async function buildDocumentContext(merchantId: number, question: string)
   const { getPool } = await import('../db');
   const pool = await getPool();
   if (!pool) return '';
-  // The latest uploaded document is the active source, matching deletion/lifecycle semantics.
+  // Intake archives are never raw reply context: their approved sections own retrieval.
+  // Only the latest legacy business-profile upload participates in this fallback.
   const [rows] = await pool.execute<any[]>(
     `SELECT id, file_name, extracted_text, extraction_status, uploaded_at FROM merchant_knowledge_docs
-     WHERE merchant_id = ? ORDER BY uploaded_at DESC, id DESC LIMIT 1`, [merchantId]);
+     WHERE merchant_id = ? AND intake_request_id IS NULL ORDER BY uploaded_at DESC, id DESC LIMIT 1`, [merchantId]);
   const doc = rows[0];
   if (!doc || doc.extraction_status !== 'completed' || !doc.extracted_text) return '';
   const passages = relevantPassages(doc.extracted_text, question, 3);

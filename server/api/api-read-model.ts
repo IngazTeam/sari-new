@@ -339,7 +339,7 @@ export async function getApiKnowledgeOverview(merchantId: number): Promise<ApiKn
     { table: 'extracted_faqs', columns: ['merchant_id', 'source_status', 'is_active', 'use_in_bot'] },
     {
       table: 'merchant_knowledge_docs',
-      columns: ['id', 'merchant_id', 'file_name', 'extraction_status', 'extracted_text', 'uploaded_at'],
+      columns: ['id', 'merchant_id', 'file_name', 'extraction_status', 'extracted_text', 'uploaded_at', 'intake_request_id'],
     },
   ]);
   const pool = await requiredPool();
@@ -355,11 +355,11 @@ export async function getApiKnowledgeOverview(merchantId: number): Promise<ApiKn
        (SELECT COUNT(*) FROM extracted_faqs
          WHERE merchant_id = ? AND source_status = 'active' AND is_active = 1 AND use_in_bot = 1) AS usableFaqs,
        (SELECT file_name FROM merchant_knowledge_docs
-         WHERE merchant_id = ? ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentName,
+         WHERE merchant_id = ? AND intake_request_id IS NULL ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentName,
        (SELECT extraction_status FROM merchant_knowledge_docs
-         WHERE merchant_id = ? ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentStatus,
+         WHERE merchant_id = ? AND intake_request_id IS NULL ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentStatus,
        (SELECT CHAR_LENGTH(extracted_text) FROM merchant_knowledge_docs
-         WHERE merchant_id = ? ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentTextLength`,
+         WHERE merchant_id = ? AND intake_request_id IS NULL ORDER BY uploaded_at DESC, id DESC LIMIT 1) AS documentTextLength`,
     [merchantId, merchantId, merchantId, merchantId, merchantId, merchantId, merchantId, merchantId],
   );
   const row = (rows as Array<Record<string, unknown>>)[0];

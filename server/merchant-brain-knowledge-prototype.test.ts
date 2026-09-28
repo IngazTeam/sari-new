@@ -66,12 +66,24 @@ it('explores the independent file library, text pages, literal search, and faile
   expect(w.document.querySelector('[data-kl-action="read"]')).toBeNull(); action('retry');
   set('[data-kl-search]', '<img src=x>'); action('search'); expect(node('[data-kl-library]').textContent).toContain('لا توجد ملفات مطابقة');
   expect(node('[data-kl-library]').querySelector('img')).toBeNull();
+  node('[data-kl-search]').value = 'تجريبية 12'; action('search');
+  expect(node('[data-kl-library]').textContent).toContain('1 ملفات مطابقة');
 });
 const set = (s: string, v: string, event = "input") => {
   const e = node(s);
   e.value = v;
   e.dispatchEvent(new w.Event(event, { bubbles: true }));
 };
+it('distinguishes saved, partial, processing, unknown and empty intake outcomes without repeating model work', () => {
+  sources(); node('[data-kl-action="read"]').click();
+  expect(node('[data-kl-receipt]').textContent).toContain('لم تكتمل الفهرسة');
+  for (const state of ['completed', 'processing', 'uncertain', 'empty']) {
+    set('[data-kl-receipt-state]', state, 'change');
+    expect(node('[data-kl-receipt-state]').value).toBe(state);
+    node('[data-kl-action="receipt-refresh"]').click();
+    expect(node('[data-kl-receipt]').textContent).toContain('لم يُشغّل تحليل جديد');
+  }
+});
 const option = (s: string, v: string) =>
   set(`[data-bk-option="${s}"]`, v, "change");
 const field = (s: string, v: string) => set(`[data-bk-field="${s}"]`, v);

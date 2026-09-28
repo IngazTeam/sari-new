@@ -1,4 +1,6 @@
-import { knowledgeIntakeInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
+import { getIntakeReceipt } from './knowledge/intake-receipt-store';
+import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
+import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
 import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
@@ -626,6 +628,7 @@ export const sariBrainRouter = router({
         await removeKnowledgeSource(merchant.id, input.sourceType, input.sourceId);
       } catch (error) {
         if (error instanceof KnowledgeSourceNotFoundError) throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' });
       }
 
@@ -643,7 +646,8 @@ export const sariBrainRouter = router({
     try {
       const result = await resetKnowledgeSources(merchant.id);
       return { success: true, ...result };
-    } catch {
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إعادة ضبط المعرفة. لم يتم اعتماد عملية جزئية.' });
     }
   }),
@@ -949,127 +953,25 @@ ${sanitizedContent}`
   // Phase 2.5: Ingest Analyzed Content — Save to Knowledge Base
   // Uses evolveKnowledge() to ADD/EVOLVE/CONFLICT — never blind-delete
   // ════════════════════════════════════════════════════════════════
+  getIntakeReceipt: permissionProcedure('bot_settings.manage').input(knowledgeReceiptInput).query(async ({ ctx, input }) => {
+    try { return await getIntakeReceipt(ctx.merchantId, input.requestId); }
+    catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge receipt is temporarily unavailable' }); }
+  }),
   ingestAnalyzedContent: permissionProcedure('bot_settings.manage')
-    .input(knowledgeIntakeInput)
+    .input(knowledgeIngestInput)
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // Separate rate limiter — doesn't clash with analyzeContent's destructive limiter
-      checkIngestionRateLimit(merchant.id, 10_000);
-
       try {
-        const { ingestContent } = await import('./ai/knowledge-engine');
-        const { embedAllSections } = await import('./ai/rag-engine');
-        const knowledgeDb = await import('./db/knowledge');
-
-        console.log(`[SariBrain] ingestAnalyzedContent: merchant=${merchant.id}, type=${input.contentType}, chars=${input.content.length}`);
-
-        // Sanitize content for prompt injection (same as analyzeContent)
-        const sanitizedContent = prepareKnowledgeText(input.content);
-
-        // Run the full evolution pipeline: classify → sales intel → evolve
-        const { evolveResult, salesIntel } = await ingestContent(
-          merchant.id,
-          sanitizedContent,
-          input.contentType === 'document' ? 'document' : 'manual',
-          { businessName: merchant.businessName },
-        );
-
-        // Detect zero-sections result — GPT classification may have failed silently
-        const totalChanges = evolveResult.added + evolveResult.evolved + evolveResult.conflicts;
-        if (totalChanges === 0 && evolveResult.unchanged === 0) {
-          // Nothing was classified at all — likely GPT parse failure
-          console.warn(`[SariBrain] ⚠️ ingestAnalyzedContent: 0 sections classified for merchant ${merchant.id}`);
-          await logBrainActivity(
-            merchant.id,
-            'content_analyzed',
-            `فشل تصنيف "${input.fileName || 'محتوى جديد'}" — لم يتم استخراج أي أقسام معرفية`,
-            { fileName: input.fileName, contentType: input.contentType, classificationFailed: true }
-          );
-          return {
-            success: false,
-            warning: 'لم يتمكن الذكاء الاصطناعي من استخراج أقسام معرفية من هذا المحتوى. حاول بمحتوى أطول أو أكثر تفصيلاً.',
-            evolveResult,
-            salesIntel: { hasIntel: false, hasOpportunities: false, uspsCount: 0, tipsCount: 0, opportunitiesCount: 0 },
-            embeddingsReady: false,
-          };
-        }
-
-        // Build embeddings for new/updated sections
-        let embeddingsReady = false;
-        try {
-          await embedAllSections(merchant.id, true);
-          embeddingsReady = true;
-        } catch (embErr: any) {
-          console.warn('[SariBrain] Embeddings failed (non-blocking):', embErr.message);
-        }
-
-        // Register as a knowledge source (so it appears in "مصادر المعرفة" and health score)
-        try {
-          const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
-          if (!existingDoc) {
-            // Create a lightweight doc entry for Smart Intake content
-            const { createKnowledgeDoc } = await import('./db');
-            await createKnowledgeDoc({
-              merchantId: merchant.id,
-              fileName: input.fileName || 'محتوى Smart Intake',
-              fileType: 'text',
-              fileUrl: null,
-              fileSize: Buffer.byteLength(input.content, 'utf8'),
-              extractionStatus: 'completed',
-              extractedText: sanitizedContent,
-            });
-          }
-        } catch (docErr: any) {
-          console.warn('[SariBrain] Failed to create knowledge doc entry (non-blocking):', docErr.message);
-        }
-
-        // Invalidate server-side cache
-        await knowledgeDb.invalidateCache(merchant.id);
-
-        // Log activity with detail
-        await logBrainActivity(
-          merchant.id,
-          'knowledge_ingested',
-          `تم اعتماد "${input.fileName || 'محتوى جديد'}" — +${evolveResult.added} جديد، ↗${evolveResult.evolved} تطوير، ⚠${evolveResult.conflicts} تعارض`,
-          {
-            fileName: input.fileName,
-            contentType: input.contentType,
-            ...evolveResult,
-            embeddingsReady,
-            salesIntelUsps: salesIntel.usps.length,
-            salesIntelTips: salesIntel.sellingTips.length,
-          }
-        );
-
-        console.log(`[SariBrain] ✅ ingestAnalyzedContent complete: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
-
-        return {
-          success: true,
-          evolveResult,
-          salesIntel: {
-            hasIntel: salesIntel.usps.length > 0 || salesIntel.sellingTips.length > 0,
-            hasOpportunities: salesIntel.opportunities.length > 0,
-            uspsCount: salesIntel.usps.length,
-            tipsCount: salesIntel.sellingTips.length,
-            opportunitiesCount: salesIntel.opportunities.length,
-          },
-          embeddingsReady,
-        };
-      } catch (error: any) {
-        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
-        console.error('[SariBrain] ingestAnalyzedContent failed:', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'فشل حفظ المحتوى في قاعدة المعرفة. حاول مرة أخرى.',
-        });
+        return await ingestReviewedKnowledge(merchant, input, () => checkIngestionRateLimit(merchant.id, 10_000),
+          (action, details) => logBrainActivity(merchant.id, action, 'نتيجة إضافة المعرفة محفوظة في سجل المصدر', details));
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذّر تأكيد نتيجة الحفظ. تحقق من سجل الإضافة قبل إعادة الإرسال.' });
       }
     }),
 
-  // ════════════════════════════════════════════════════════════════
-  // FAQ Management — CRUD for custom Q&A pairs
-  // ════════════════════════════════════════════════════════════════
+  // FAQ management
   getFaqs: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

@@ -19,6 +19,20 @@ export const knowledgeAnalysisSchema = z.object({
   recommendationReason: explanation,
 });
 export type KnowledgeAnalysis = z.infer<typeof knowledgeAnalysisSchema>;
+export const knowledgeIngestInput = knowledgeIntakeInput.extend({ requestId: z.uuid() });
+export const knowledgeReceiptInput = z.object({ requestId: z.uuid() });
+const count = z.number().int().nonnegative();
+export const knowledgeOutcomeSchema = z.object({
+  success: z.boolean(),
+  evolveResult: z.object({ added: count, evolved: count, conflicts: count, unchanged: count, merged: count.optional() }),
+  embeddingsReady: z.boolean(),
+});
+export type KnowledgeOutcome = z.infer<typeof knowledgeOutcomeSchema>;
+export type KnowledgeReceipt = {
+  requestId: string; documentId: number | null;
+  state: 'processing' | 'completed' | 'empty' | 'uncertain' | 'removed';
+  outcome: KnowledgeOutcome | null; updatedAt: string;
+};
 
 // Keep the complete accepted text; filtering is not a substitute for prompt boundaries.
 export function prepareKnowledgeText(content: string) {

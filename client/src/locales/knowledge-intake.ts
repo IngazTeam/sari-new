@@ -1,4 +1,12 @@
 export const knowledgeIntakeAr = {
+  receiptDetails: 'تفاصيل الإضافة',
+  receiptEmpty: 'لم تُستخرج أقسام', receiptUncertain: 'نتيجة المعالجة غير محسومة', merged: 'أقسام مدمجة',
+  receiptId: 'رقم الإضافة', receiptProcessing: 'الإضافة قيد المعالجة', receiptRemoved: 'حُذف سجل الملف؛ لن نعيد إنشاءه بهذا الطلب',
+  receiptArchive: 'هذا سجل للإضافة، وليس دليلًا على اعتماد النص كاملًا في الردود. راجع الأقسام والتعارضات قبل تجربة المساعد.',
+  receiptSupport: 'إذا بقيت النتيجة غير محسومة، اطلب مراجعة السجل بهذا الرقم قبل إعادة إضافة المحتوى. لا توجد إعادة محاولة تلقائية.',
+  receiptRefresh: 'التحقق من النتيجة المحفوظة', receiptError: 'تعذّر العثور على نتيجة مؤكدة الآن. احتفظ برقم الإضافة وراجع مكتبة الملفات؛ لا تُعد الإرسال تلقائيًا.',
+  receiptRejected: 'لم يبدأ هذا الطلب: توجد معالجة أخرى أو حد مؤقت أو قيد على الطلب. راجع المكتبة والصلاحيات قبل المحاولة.',
+  receiptEdit: 'العودة للمحتوى', receiptLibrary: 'سجل إضافة: افتح النص لقراءة نتيجة المعالجة المحفوظة.',
   title: 'فحص وإضافة المعرفة', description: 'راجع المحتوى أولًا، ثم اختر إضافته. تقرير الفحص لا يثبت دقة الردود أو نسبة احتراف المبيعات.',
   name: 'اسم المصدر (اختياري)', content: 'المحتوى', type: 'نوع المصدر', document: 'ملف نصي', products: 'بيانات منتجات', custom: 'معرفة يدوية',
   choose: 'اختيار ملف TXT أو CSV', fileHint: 'هذا المسار يقرأ النص فقط؛ CSV لا ينشئ منتجات في الكتالوج.',
@@ -17,6 +25,14 @@ export const knowledgeIntakeAr = {
 };
 export type KnowledgeIntakeCopy = { [K in keyof typeof knowledgeIntakeAr]: string };
 export const knowledgeIntakeEn: KnowledgeIntakeCopy = {
+  receiptDetails: 'Intake details',
+  receiptEmpty: 'No sections extracted', receiptUncertain: 'Processing outcome unresolved', merged: 'Merged sections',
+  receiptId: 'Intake reference', receiptProcessing: 'Intake is processing', receiptRemoved: 'The file record was deleted; this request will not recreate it',
+  receiptArchive: 'This is an intake record, not proof that the entire text is approved for responses. Review sections and conflicts before testing the assistant.',
+  receiptSupport: 'If the outcome stays unresolved, request a review using this reference before adding the content again. No automatic retry is scheduled.',
+  receiptRefresh: 'Check saved result', receiptError: 'A confirmed result is unavailable now. Keep the reference and check the file library; do not automatically resubmit.',
+  receiptRejected: 'This request did not start: another intake, a temporary limit, or a request restriction prevented it. Check the library and permissions before trying again.',
+  receiptEdit: 'Return to content', receiptLibrary: 'Intake record: open the text to inspect its saved processing result.',
   title: 'Review and add knowledge', description: 'Review the content before adding it. This report does not establish response accuracy or sales proficiency.',
   name: 'Source name (optional)', content: 'Content', type: 'Source type', document: 'Text document', products: 'Product information', custom: 'Manual knowledge',
   choose: 'Choose TXT or CSV', fileHint: 'This flow reads text only; CSV does not create catalog products.', limit: '{{count}} / {{limit}} characters',

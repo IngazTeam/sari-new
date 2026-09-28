@@ -1,0 +1,72 @@
+{
+  "engine": "Chrome",
+  "realSafariOrIPhone": false,
+  "fixtures": "synthetic; no model invoked",
+  "views": [
+    {
+      "body": 375,
+      "document": 375,
+      "height": 844,
+      "receipt": {
+        "bottom": 859.1875,
+        "height": 466,
+        "left": 48,
+        "right": 327,
+        "top": 393.1875,
+        "width": 279,
+        "x": 48,
+        "y": 393.1875
+      },
+      "view": "live",
+      "width": 390
+    },
+    {
+      "body": 305,
+      "document": 305,
+      "height": 740,
+      "receipt": {
+        "bottom": 875.6875,
+        "height": 534.5,
+        "left": 48,
+        "right": 257,
+        "top": 341.1875,
+        "width": 209,
+        "x": 48,
+        "y": 341.1875
+      },
+      "view": "live",
+      "width": 320
+    },
+    {
+      "body": 1425,
+      "document": 1425,
+      "height": 900,
+      "receipt": {
+        "bottom": 833.1875,
+        "height": 416,
+        "left": 76,
+        "right": 1111,
+        "top": 417.1875,
+        "width": 1035,
+        "x": 76,
+        "y": 417.1875
+      },
+      "view": "live",
+      "width": 1440
+    },
+    {
+      "body": 375,
+      "document": 375,
+      "height": 844,
+      "view": "mock",
+      "width": 390
+    },
+    {
+      "body": 305,
+      "document": 305,
+      "height": 740,
+      "view": "mock",
+      "width": 320
+    }
+  ]
+}

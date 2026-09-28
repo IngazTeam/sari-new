@@ -1065,6 +1065,13 @@
       "when": 1795392000013,
       "tag": "0151_knowledge_intake_text_capacity",
       "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "5",
+      "when": 1795392000014,
+      "tag": "0152_knowledge_intake_receipts",
+      "breakpoints": true
     }
   ]
 }

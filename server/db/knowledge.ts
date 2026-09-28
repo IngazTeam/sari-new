@@ -594,7 +594,7 @@ export async function calculateHealthScore(merchantId: number): Promise<Knowledg
       hasWebsiteAnalysis = (waRows as any[])[0]?.cnt > 0;
 
       const [docRows] = await pool.execute(
-        `SELECT COUNT(*) as cnt FROM merchant_knowledge_docs WHERE merchant_id = ? AND extraction_status = 'completed'`,
+        `SELECT COUNT(*) as cnt FROM merchant_knowledge_docs WHERE merchant_id = ? AND extraction_status = 'completed' AND intake_request_id IS NULL`,
         [merchantId]
       );
       hasDocument = (docRows as any[])[0]?.cnt > 0;

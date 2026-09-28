@@ -1,11 +1,13 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { merchantKnowledgeDocs as docs } from '../../drizzle/schema';
+import { merchantKnowledgeDocs as docs, knowledgeIntakeReceipts as receipts } from '../../drizzle/schema';
+import { receiptView } from './intake-receipt-store';
 import { getDb } from '../db/connection';
 import { knowledgeLibraryInput, knowledgeTextInput, KNOWLEDGE_LIBRARY_PAGE_SIZE, KNOWLEDGE_TEXT_PAGE_SIZE } from '../../shared/knowledge-library';
 
 const metadata = {
   id: docs.id, fileName: docs.fileName, fileType: docs.fileType, fileSize: docs.fileSize,
+  intakeRequestId: docs.intakeRequestId,
   extractionStatus: docs.extractionStatus, uploadedAt: docs.uploadedAt, updatedAt: docs.updatedAt,
   characterCount: sql<number>`COALESCE(CHAR_LENGTH(${docs.extractedText}), 0)`.mapWith(Number),
 };
@@ -26,7 +28,8 @@ export async function listKnowledgeDocuments(merchantId: number, raw: unknown) {
     const [count] = await tx.select({ total: sql<number>`COUNT(*)`.mapWith(Number) }).from(docs).where(where);
     const totalPages = Math.max(1, Math.ceil(count.total / KNOWLEDGE_LIBRARY_PAGE_SIZE));
     const page = Math.min(input.page, totalPages);
-    const items = await tx.select(metadata).from(docs).where(where)
+    const items = await tx.select({ ...metadata, intakeState: receipts.state }).from(docs)
+      .leftJoin(receipts, and(eq(receipts.merchantId, docs.merchantId), eq(receipts.documentId, docs.id), eq(receipts.requestId, docs.intakeRequestId))).where(where)
       .orderBy(desc(docs.uploadedAt), desc(docs.id)).limit(KNOWLEDGE_LIBRARY_PAGE_SIZE).offset((page - 1) * KNOWLEDGE_LIBRARY_PAGE_SIZE);
     return { items, total: count.total, page, totalPages };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
@@ -42,7 +45,8 @@ export async function readKnowledgeDocument(merchantId: number, raw: unknown) {
   if (input.revision && input.revision !== row.revision) throw new TRPCError({ code: 'CONFLICT', message: 'Knowledge document changed' });
   const totalPages = Math.max(1, Math.ceil(row.characterCount / KNOWLEDGE_TEXT_PAGE_SIZE));
   if (input.page > totalPages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid document page' });
-  return { ...row, page: input.page, totalPages };
+  const [receipt] = row.intakeRequestId ? await db.select().from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
+  return { ...row, page: input.page, totalPages, receipt: receipt ? receiptView(receipt) : null };
 }
 
 export async function getKnowledgeDocumentSummary(merchantId: number) {

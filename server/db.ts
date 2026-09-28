@@ -826,6 +826,7 @@ export async function getActiveKnowledgeDoc(merchantId: number): Promise<Merchan
     .from(merchantKnowledgeDocs)
     .where(and(
       eq(merchantKnowledgeDocs.merchantId, merchantId),
+      isNull(merchantKnowledgeDocs.intakeRequestId),
       eq(merchantKnowledgeDocs.extractionStatus, 'completed')
     ))
     .orderBy(desc(merchantKnowledgeDocs.uploadedAt), desc(merchantKnowledgeDocs.id))
@@ -840,8 +841,8 @@ export async function getKnowledgeDocByMerchantId(merchantId: number): Promise<M
 
   const result = await db.select()
     .from(merchantKnowledgeDocs)
-    .where(eq(merchantKnowledgeDocs.merchantId, merchantId))
-    .orderBy(desc(merchantKnowledgeDocs.uploadedAt))
+    .where(and(eq(merchantKnowledgeDocs.merchantId, merchantId), isNull(merchantKnowledgeDocs.intakeRequestId)))
+    .orderBy(desc(merchantKnowledgeDocs.uploadedAt), desc(merchantKnowledgeDocs.id))
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;

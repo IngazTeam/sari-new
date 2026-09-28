@@ -2,6 +2,15 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import { discoveredPages, extractedFaqs, knowledgeChangelog, knowledgeSections, merchantKnowledgeDocs, merchants, products, sariActivityLog, websiteAnalyses } from '../../drizzle/schema';
 import { withKnowledgeTransaction, type KnowledgeTransaction } from './transaction';
 import type { SectionSource } from '../db/knowledge';
+import { knowledgeIntakeReceipts } from '../../drizzle/schema';
+import { TRPCError } from '@trpc/server';
+
+// Called while holding the merchant lock, shared with intake reservation.
+async function assertNoRunningIntake(tx: KnowledgeTransaction, merchantId: number) {
+  const [running] = await tx.select({ id: knowledgeIntakeReceipts.id }).from(knowledgeIntakeReceipts)
+    .where(and(eq(knowledgeIntakeReceipts.merchantId, merchantId), eq(knowledgeIntakeReceipts.state, 'processing'))).limit(1);
+  if (running) throw new TRPCError({ code: 'CONFLICT', message: 'توجد إضافة معرفة قيد المعالجة. راجع نتيجتها من مكتبة الملفات قبل الحذف أو إعادة الضبط.' });
+}
 
 type Source = 'document' | 'website' | 'products' | 'faqs';
 export class KnowledgeSourceNotFoundError extends Error {
@@ -24,6 +33,7 @@ export function sectionDescendants(rows: Array<{ id: number; parentId: number | 
 }
 
 async function deleteSections(tx: KnowledgeTransaction, merchantId: number, source?: SectionSource) {
+  await assertNoRunningIntake(tx, merchantId);
   const rows = await tx.select({ id: knowledgeSections.id, parentId: knowledgeSections.parentId, source: knowledgeSections.source })
     .from(knowledgeSections).where(eq(knowledgeSections.merchantId, merchantId)).for('update');
   const ids = sectionDescendants(rows, rows.filter(row => source === undefined || row.source === source).map(row => row.id));
@@ -52,6 +62,7 @@ function validateSourceId(merchantId: number, source: Source, sourceId?: string)
 }
 
 async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source: Source, sourceId?: string) {
+  await assertNoRunningIntake(tx, merchantId);
   validateSourceId(merchantId, source, sourceId);
   let deleted = 0, sections = 0;
   if (source === 'document') {

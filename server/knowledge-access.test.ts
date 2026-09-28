@@ -38,6 +38,7 @@ describe('mounted knowledge permissions', () => {
   it.each(['viewer', 'sales_supervisor'])('blocks %s from API credentials and document mutation', async role => {
     mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
     await expect(caller().sariBrain.listApiKeys()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(caller().sariBrain.getIntakeReceipt({ requestId: '00000000-0000-4000-8000-000000000001' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().knowledgeDocs.delete()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().knowledgeDocs.reprocess()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(mocks.merchant).not.toHaveBeenCalled();

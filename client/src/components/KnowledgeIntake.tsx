@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
-import { knowledgeAnalysisSchema, type KnowledgeAnalysis } from '@shared/knowledge-intake';
+import { knowledgeAnalysisSchema, type KnowledgeAnalysis, type KnowledgeReceipt } from '@shared/knowledge-intake';
+import { KnowledgeReceiptView } from './KnowledgeReceiptView';
 import { KNOWLEDGE_PREVIEW_LIMIT, readKnowledgePreview } from '@shared/knowledge-preview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -9,7 +10,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 
-type SaveResult = { success: boolean; evolveResult?: { added: number; evolved: number; conflicts: number; unchanged: number }; embeddingsReady?: boolean };
 export function KnowledgeIntake() {
   const { t } = useTranslation();
   const labels = {
@@ -63,7 +63,12 @@ export function KnowledgeIntake() {
   const [name, setName] = useState('');
   const [type, setType] = useState<'document' | 'products' | 'custom'>('document');
   const [analysis, setAnalysis] = useState<KnowledgeAnalysis | null>(null);
-  const [result, setResult] = useState<SaveResult | null>(null);
+  const [result, setResult] = useState<KnowledgeReceipt | null>(null);
+  const requestId = useRef<string | null>(null);
+  const submitting = useRef(false);
+  const [checking, setChecking] = useState(false);
+  const [receiptError, setReceiptError] = useState(false);
+  const [rejected, setRejected] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const [errors, setErrors] = useState({ name: false, content: false });
   const [analysisError, setAnalysisError] = useState(false);
@@ -87,12 +92,23 @@ export function KnowledgeIntake() {
   });
   const ingest = trpc.sariBrain.ingestAnalyzedContent.useMutation({
     onSuccess: data => { setResult(data); refresh(); },
-    onError: () => { setUncertain(true); refresh(); },
+    onError: error => { setRejected(['CONFLICT', 'TOO_MANY_REQUESTS', 'BAD_REQUEST', 'NOT_FOUND', 'FORBIDDEN', 'UNAUTHORIZED'].includes(error.data?.code || '')); setUncertain(true); refresh(); },
   });
+  const readReceipt = async () => {
+    if (!requestId.current || checking) return;
+    const generationAtStart = generation.current;
+    setChecking(true); setReceiptError(false);
+    try {
+      const saved = await utils.sariBrain.getIntakeReceipt.fetch({ requestId: requestId.current });
+      if (generationAtStart !== generation.current) return;
+      if (saved) { setResult(saved); setUncertain(false); refresh(); } else setReceiptError(true);
+    } catch { if (generationAtStart === generation.current) setReceiptError(true); }
+    finally { if (generationAtStart === generation.current) setChecking(false); }
+  };
   const busy = reading || analyze.isPending || ingest.isPending;
   const locked = busy || !!result || uncertain;
   const invalidate = () => { generation.current++; setAnalysis(null); setReviewed(false); setAnalysisError(false); setFileError(''); };
-  const reset = () => { invalidate(); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); textField.current?.focus(); };
+  const reset = () => { invalidate(); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); requestId.current = null; submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
   const runAnalysis = () => {
     if (locked) return;
     const next = { name: name.trim().length > 255, content: content.trim().length < 10 || content.length > KNOWLEDGE_PREVIEW_LIMIT };
@@ -124,10 +140,11 @@ export function KnowledgeIntake() {
         {!!analysis.conflicts.length && <div role="note"><h4 className="font-medium">{copy('conflicts')}</h4><ul className="list-inside list-disc space-y-2 text-sm">{analysis.conflicts.map((text, index) => <li key={index}>{text}</li>)}</ul></div>}
         {!!analysis.sampleQA.length && <details><summary className="cursor-pointer py-2">{copy('samples')}</summary><div className="space-y-3">{analysis.sampleQA.map((qa, index) => <div key={index} className="rounded-lg bg-muted p-3"><p className="font-medium">{qa.question}</p><p className="mt-2 text-sm leading-7">{qa.answer}</p></div>)}</div></details>}
         <p className="font-medium">{copy(analysis.recommendation)}</p><p className="text-sm leading-7">{analysis.recommendationReason}</p>
-        {!result && !uncertain && <><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || busy} onClick={() => { if (reviewed && !busy) ingest.mutate({ content, contentType: type, fileName: name.trim() || undefined }); }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
+        {!result && !uncertain && <><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || busy} onClick={() => { if (reviewed && !busy && !submitting.current) { submitting.current = true; requestId.current = crypto.randomUUID(); ingest.mutate({ requestId: requestId.current, content, contentType: type, fileName: name.trim() || undefined }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
       </section>}
-      {result && <div role="status" className="space-y-3 rounded-xl border p-4"><h3 className="font-semibold">{copy(result.success ? 'saved' : 'emptyResult')}</h3>{result.success && <><p className="text-sm leading-7">{copy('savedHint')}</p><dl className="grid grid-cols-2 gap-3">{(['added', 'evolved', 'conflicts', 'unchanged'] as const).map(key => <div key={key} className="rounded-lg bg-muted p-3"><dt className="text-sm">{copy(key === 'conflicts' ? 'conflictCount' : key)}</dt><dd className="mt-1 text-xl font-semibold">{result.evolveResult?.[key] ?? '—'}</dd></div>)}</dl>{!result.embeddingsReady && <p className="text-sm">{copy('indexing')}</p>}</>}</div>}
-      {uncertain && <p role="alert" className="rounded-xl border p-4 text-sm leading-7">{copy('uncertain')}</p>}
-      {result && <Button variant="outline" onClick={reset}>{copy('newContent')}</Button>}
+      {result && <KnowledgeReceiptView receipt={result} onRefresh={() => void readReceipt()} busy={checking} />}
+      {uncertain && <div role="alert" className="space-y-3 rounded-xl border p-4 text-sm leading-7"><p>{rejected ? t('merchantUx.knowledgeIntake.receiptRejected') : copy('uncertain')}</p>{!rejected && <><p>{t('merchantUx.knowledgeIntake.receiptId')}: <bdi className="break-all">{requestId.current}</bdi></p><Button variant="outline" disabled={checking} onClick={() => void readReceipt()}>{t('merchantUx.knowledgeIntake.receiptRefresh')}</Button></>}{rejected && <Button variant="outline" onClick={() => { requestId.current = null; submitting.current = false; setUncertain(false); setRejected(false); }}>{t('merchantUx.knowledgeIntake.receiptEdit')}</Button>}</div>}
+      {receiptError && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.receiptError')}</p>}
+      {result && result.state !== 'processing' && result.state !== 'uncertain' && <Button variant="outline" disabled={checking} onClick={reset}>{copy('newContent')}</Button>}
     </CardContent></Card>;
 }

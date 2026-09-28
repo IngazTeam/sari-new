@@ -55,7 +55,7 @@ export const knowledgeDocsRouter = router({
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try { await removeKnowledgeSource(merchant.id, 'document'); }
-    catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' }); }
+    catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' }); }
     return { success: true };
   }),
 

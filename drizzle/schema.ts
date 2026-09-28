@@ -377,15 +377,30 @@ export const merchantKnowledgeDocs = mysqlTable("merchant_knowledge_docs", {
 	fileUrl: text("file_url"),
 	fileSize: int("file_size").notNull(),
 	extractedText: mediumtext("extracted_text"),
+	intakeRequestId: varchar('intake_request_id', { length: 36 }),
 	extractionStatus: mysqlEnum("extraction_status", ['pending', 'processing', 'completed', 'failed']).default('pending').notNull(),
 	uploadedAt: timestamp("uploaded_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, (table) => [
 	index("idx_merchant_knowledge").on(table.merchantId),
+	uniqueIndex('uq_knowledge_doc_intake').on(table.merchantId, table.intakeRequestId),
 ]);
 
 export type MerchantKnowledgeDoc = InferSelectModel<typeof merchantKnowledgeDocs>;
 export type InsertMerchantKnowledgeDoc = InferInsertModel<typeof merchantKnowledgeDocs>;
+
+export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  requestId: varchar('request_id', { length: 36 }).notNull(),
+  inputHash: char('input_hash', { length: 64 }).notNull(),
+  documentId: int('document_id').references(() => merchantKnowledgeDocs.id, { onDelete: 'set null' }),
+  contentType: mysqlEnum('content_type', ['document', 'products', 'custom']).notNull(),
+  state: mysqlEnum('state', ['processing', 'completed', 'empty', 'uncertain']).notNull(),
+  outcome: json('outcome').$type<import('../shared/knowledge-intake').KnowledgeOutcome>(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex('uq_knowledge_intake_request').on(table.merchantId, table.requestId), index('idx_knowledge_intake_state').on(table.merchantId, table.state)]);
 
 export const merchants = mysqlTable("merchants", {
 	id: int().autoincrement().primaryKey(),
