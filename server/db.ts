@@ -4088,19 +4088,13 @@ export async function markTestConversationAsDeal(data: {
   messageCount: number;
   timeToConversion: number;
 }): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  const result = await db.insert(testDeals).values({
-    merchantId: data.merchantId,
-    conversationId: data.conversationId || null,
+  const { saveOwnedTestDeal } = await import('./test-sari-store');
+  if (!data.conversationId) throw new Error('A test conversation is required');
+  const result = await saveOwnedTestDeal(data.merchantId, {
+    conversationId: data.conversationId,
     dealValue: data.dealValue,
-    messageCount: data.messageCount,
-    timeToConversion: data.timeToConversion,
-    markedAt: formatDateForDB(new Date()),
   });
-
-  return Number((result[0] as any).insertId);
+  return result.dealId;
 }
 
 /**

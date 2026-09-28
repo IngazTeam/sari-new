@@ -1,0 +1,12 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/Users/ingaz/Herd/sari[39m
+
+ [32m✓[39m server/merchant-core-accessibility-pentest.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 439[2mms[22m[39m
+     [33m[2m✓[22m[39m discovers every merchant page and requires names, types, and keyboard semantics [33m 425[2mms[22m[39m
+ [32m✓[39m server/test-sari-page.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 852[2mms[22m[39m
+     [33m[2m✓[22m[39m shows an amount field error and keeps failed deal registration visibly unconfirmed [33m 466[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 18:31:48
+[2m   Duration [22m 4.70s[2m (transform 559ms, setup 0ms, import 2.55s, tests 1.29s, environment 1.77s)[22m

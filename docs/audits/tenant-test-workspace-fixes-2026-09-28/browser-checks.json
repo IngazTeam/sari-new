@@ -1,0 +1,130 @@
+{
+  "browser": "Chrome responsive viewport (not Safari)",
+  "checks": [
+    {
+      "height": 568,
+      "inputFont": "16px",
+      "overflow": false,
+      "pageWidth": 305,
+      "sendTarget": {
+        "bottom": 1322.3984375,
+        "height": 44,
+        "left": 43,
+        "right": 87,
+        "top": 1278.3984375,
+        "width": 44,
+        "x": 43,
+        "y": 1278.3984375
+      },
+      "width": 320
+    },
+    {
+      "height": 812,
+      "inputFont": "16px",
+      "overflow": false,
+      "pageWidth": 360,
+      "sendTarget": {
+        "bottom": 1400.59375,
+        "height": 44,
+        "left": 43,
+        "right": 87,
+        "top": 1356.59375,
+        "width": 44,
+        "x": 43,
+        "y": 1356.59375
+      },
+      "width": 375
+    },
+    {
+      "height": 844,
+      "inputFont": "16px",
+      "overflow": false,
+      "pageWidth": 375,
+      "sendTarget": {
+        "bottom": 1374.1953125,
+        "height": 44,
+        "left": 43,
+        "right": 87,
+        "top": 1330.1953125,
+        "width": 44,
+        "x": 43,
+        "y": 1330.1953125
+      },
+      "width": 390
+    },
+    {
+      "height": 1024,
+      "inputFont": "16px",
+      "overflow": false,
+      "pageWidth": 753,
+      "sendTarget": {
+        "bottom": 1303,
+        "height": 44,
+        "left": 55,
+        "right": 99,
+        "top": 1259,
+        "width": 44,
+        "x": 55,
+        "y": 1259
+      },
+      "width": 768
+    },
+    {
+      "height": 390,
+      "inputFont": "16px",
+      "overflow": false,
+      "pageWidth": 829,
+      "sendTarget": {
+        "bottom": 973,
+        "height": 44,
+        "left": 55,
+        "right": 99,
+        "top": 929,
+        "width": 44,
+        "x": 55,
+        "y": 929
+      },
+      "width": 844
+    },
+    {
+      "height": 900,
+      "inputFont": "14px",
+      "overflow": false,
+      "pageWidth": 1425,
+      "sendTarget": {
+        "bottom": 1226,
+        "height": 44,
+        "left": 122.5,
+        "right": 166.5,
+        "top": 1182,
+        "width": 44,
+        "x": 122.5,
+        "y": 1182
+      },
+      "width": 1440
+    }
+  ],
+  "flows": {
+    "session": "server acknowledged",
+    "scenarios": 7,
+    "scenarioAutoSend": false,
+    "emptyDeal": "inline field error",
+    "savedDeal": 149.5,
+    "replyProvider": "external requests blocked; server fallback only",
+    "ratingToggle": "positive to negative; graph appeared"
+  },
+  "dialog320": {
+    "width": 273,
+    "height": 402,
+    "top": 83,
+    "bottom": 485,
+    "viewportHeight": 568
+  },
+  "dialogLandscape": {
+    "width": 512,
+    "height": 310,
+    "top": 40,
+    "bottom": 350,
+    "viewportHeight": 390
+  }
+}

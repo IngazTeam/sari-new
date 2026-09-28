@@ -1063,24 +1063,25 @@ export const syncLogs = mysqlTable("sync_logs", {
 export const testConversations = mysqlTable("testConversations", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	requestId: char({ length: 36 }),
 	startedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	endedAt: timestamp({ mode: 'string' }),
 	messageCount: int().default(0).notNull(),
 	hasDeal: tinyint().default(0).notNull(),
-	dealValue: int(),
+	dealValue: decimal({ precision: 12, scale: 2 }),
 	dealMarkedAt: timestamp({ mode: 'string' }),
 	satisfactionRating: int(),
 	npsScore: int(),
 	wasCompleted: tinyint().default(1).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+}, table => [uniqueIndex('test_session_request').on(table.merchantId, table.requestId)]);
 
 export const testDeals = mysqlTable("testDeals", {
 	id: int().autoincrement().primaryKey(),
 	conversationId: int(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	dealValue: int().notNull(),
+	dealValue: decimal({ precision: 12, scale: 2 }).notNull(),
 	timeToConversion: int(),
 	messageCount: int().notNull(),
 	markedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
@@ -1092,6 +1093,7 @@ export const testDeals = mysqlTable("testDeals", {
 export const testMessages = mysqlTable("testMessages", {
 	id: int().autoincrement().primaryKey(),
 	conversationId: int().notNull().references(() => testConversations.id, { onDelete: "cascade" }),
+	clientMessageId: char({ length: 36 }),
 	sender: mysqlEnum(['user', 'sari']).notNull(),
 	content: text().notNull(),
 	sentAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
@@ -1101,7 +1103,7 @@ export const testMessages = mysqlTable("testMessages", {
 	productsRecommended: text(),
 	wasClicked: tinyint().default(0).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
+}, table => [uniqueIndex('test_message_request').on(table.conversationId, table.clientMessageId)]);
 
 export const testMetricsDaily = mysqlTable("testMetricsDaily", {
 	id: int().autoincrement().primaryKey(),

@@ -1,26 +1,70 @@
-import { useState, useRef, useEffect } from "react";
+import { TestSariSession } from "@/lib/test-sari-session";
+import { testDealValue } from "@shared/test-sari-workspace";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Bot, Send, RotateCcw, User, Loader2, Sparkles, ThumbsUp, ThumbsDown, TrendingUp, BarChart3, CheckCircle2 } from "lucide-react";
+import {
+  Bot,
+  Send,
+  RotateCcw,
+  User,
+  Loader2,
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  TrendingUp,
+  BarChart3,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Tooltip as RechartsTooltip } from "recharts";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  rating?: "positive" | "negative";
-}
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LineChart,
+  Line,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 
 interface Scenario {
   id: string;
@@ -29,385 +73,308 @@ interface Scenario {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-
-
 export default function TestSari() {
   const { t } = useTranslation();
 
   const EXAMPLE_SCENARIOS: Scenario[] = [
     {
-      id: 'price-inquiry',
-      title: t('testSariPage.scenarioPriceTitle'),
-      description: t('testSariPage.scenarioPriceDesc'),
-      messages: [{ role: 'user', content: 'مرحباً، كم سعر الساعة الذكية؟' }],
+      id: "price-inquiry",
+      title: t("testSariPage.scenarioPriceTitle"),
+      description: t("testSariPage.scenarioPriceDesc"),
+      messages: [{ role: "user", content: "مرحباً، كم سعر الساعة الذكية؟" }],
     },
     {
-      id: 'product-search',
-      title: t('testSariPage.scenarioSearchTitle'),
-      description: t('testSariPage.scenarioSearchDesc'),
-      messages: [{ role: 'user', content: 'عندك عطور رجالية؟' }],
+      id: "product-search",
+      title: t("testSariPage.scenarioSearchTitle"),
+      description: t("testSariPage.scenarioSearchDesc"),
+      messages: [{ role: "user", content: "عندك عطور رجالية؟" }],
     },
     {
-      id: 'order-inquiry',
-      title: t('testSariPage.scenarioOrderTitle'),
-      description: t('testSariPage.scenarioOrderDesc'),
-      messages: [{ role: 'user', content: 'كيف أطلب؟ وكم يستغرق التوصيل؟' }],
+      id: "order-inquiry",
+      title: t("testSariPage.scenarioOrderTitle"),
+      description: t("testSariPage.scenarioOrderDesc"),
+      messages: [{ role: "user", content: "كيف أطلب؟ وكم يستغرق التوصيل؟" }],
     },
     {
-      id: 'greeting',
-      title: t('testSariPage.scenarioGreetingTitle'),
-      description: t('testSariPage.scenarioGreetingDesc'),
-      messages: [{ role: 'user', content: 'السلام عليكم، أول مرة أتعامل معكم' }],
-    },
-    {
-      id: 'recommendations',
-      title: t('testSariPage.scenarioRecommendTitle'),
-      description: t('testSariPage.scenarioRecommendDesc'),
-      messages: [{ role: 'user', content: 'أبغى هدية لصديقي، شو تقترح؟' }],
-    },
-    {
-      id: 'complaint',
-      title: t('testSariPage.scenarioComplaintTitle'),
-      description: t('testSariPage.scenarioComplaintDesc'),
-      messages: [{ role: 'user', content: 'المنتج اللي طلبته ما وصل، شو السالفة؟' }],
-    },
-    {
-      id: 'multi-turn',
-      title: t('testSariPage.scenarioMultiTitle'),
-      description: t('testSariPage.scenarioMultiDesc'),
+      id: "greeting",
+      title: t("testSariPage.scenarioGreetingTitle"),
+      description: t("testSariPage.scenarioGreetingDesc"),
       messages: [
-        { role: 'user', content: 'مرحباً' },
-        { role: 'assistant', content: 'أهلاً وسهلاً! أنا ساري، مساعدك الشخصي 😊 كيف أقدر أساعدك اليوم؟' },
-        { role: 'user', content: 'عندك ساعات ذكية؟' },
+        { role: "user", content: "السلام عليكم، أول مرة أتعامل معكم" },
+      ],
+    },
+    {
+      id: "recommendations",
+      title: t("testSariPage.scenarioRecommendTitle"),
+      description: t("testSariPage.scenarioRecommendDesc"),
+      messages: [{ role: "user", content: "أبغى هدية لصديقي، شو تقترح؟" }],
+    },
+    {
+      id: "complaint",
+      title: t("testSariPage.scenarioComplaintTitle"),
+      description: t("testSariPage.scenarioComplaintDesc"),
+      messages: [
+        { role: "user", content: "المنتج اللي طلبته ما وصل، شو السالفة؟" },
+      ],
+    },
+    {
+      id: "multi-turn",
+      title: t("testSariPage.scenarioMultiTitle"),
+      description: t("testSariPage.scenarioMultiDesc"),
+      messages: [
+        { role: "user", content: "مرحباً" },
+        {
+          role: "assistant",
+          content:
+            "أهلاً وسهلاً! أنا ساري، مساعدك الشخصي 😊 كيف أقدر أساعدك اليوم؟",
+        },
+        { role: "user", content: "عندك ساعات ذكية؟" },
       ],
     },
   ];
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: t('testSariPage.welcomeMsg'),
-      timestamp: new Date(),
-    },
-  ]);
   const [inputMessage, setInputMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [ratings, setRatings] = useState<{ positive: number; negative: number }>({
-    positive: 0,
-    negative: 0,
-  });
-  const [ratingHistory, setRatingHistory] = useState<
-    Array<{ timestamp: Date; satisfactionRate: number; positive: number; negative: number }>
-  >([]);
-  const [hasDeal, setHasDeal] = useState(false);
   const [dealValue, setDealValue] = useState("");
+  const [dealError, setDealError] = useState(false);
   const [showDealDialog, setShowDealDialog] = useState(false);
-  const [conversationStartTime] = useState(new Date());
-  const [conversationId, setConversationId] = useState<number | null>(null);
-
-  // Create conversation on mount
-  const createConversationMutation = trpc.testSari.createConversation.useMutation({
-    onSuccess: (data: any) => {
-      setConversationId(data.conversationId);
-    },
-  });
-
+  const [scenarioId, setScenarioId] = useState("");
+  const selectedScenario = EXAMPLE_SCENARIOS.find(s => s.id === scenarioId);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const create = trpc.testSari.createConversation.useMutation();
+  const save = trpc.testSari.saveMessage.useMutation();
+  const send = trpc.testSari.sendMessage.useMutation();
+  const deal = trpc.testSari.markAsDeal.useMutation();
+  const operations = useRef({ create, save, send, deal });
+  operations.current = { create, save, send, deal };
+  const [session] = useState(
+    () =>
+      new TestSariSession({
+        create: input => operations.current.create.mutateAsync(input),
+        save: input => operations.current.save.mutateAsync(input),
+        send: input => operations.current.send.mutateAsync(input),
+        deal: input => operations.current.deal.mutateAsync(input),
+      })
+  );
+  const state = useSyncExternalStore(session.subscribe, session.snapshot);
+  const { messages, busy, error, deal: savedDeal, ratingHistory } = state;
+  const hasDeal = !!savedDeal;
+  const isTyping = busy && send.isPending;
+  const disabled = busy || !!error || !state.conversationId;
+  const ratings = {
+    positive: messages.filter(m => m.rating === "positive").length,
+    negative: messages.filter(m => m.rating === "negative").length,
+  };
   useEffect(() => {
-    createConversationMutation.mutate();
-  }, []);
-
-  const saveMessageMutation = trpc.testSari.saveMessage.useMutation();
-  const markAsDealMutation = trpc.testSari.markAsDeal.useMutation();
-
-  const sendMessageMutation = trpc.testSari.sendMessage.useMutation({
-    onSuccess: (data: any) => {
-      const assistantMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: data.response,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsTyping(false);
-
-      // Save assistant message to database
-      if (conversationId) {
-        saveMessageMutation.mutate({
-          conversationId,
-          sender: 'sari',
-          content: data.response,
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast.error(t("toast.conversations.sendFailed"));
-      console.error("Error sending message:", error);
-      setIsTyping(false);
-    },
-  });
-
-  const resetMutation = trpc.testSari.resetConversation.useMutation({
-    onSuccess: () => {
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          content: t('testSariPage.welcomeMsg'),
-          timestamp: new Date(),
-        },
-      ]);
-      setHasDeal(false);
-      setDealValue("");
-      setRatings({ positive: 0, negative: 0 });
-      setRatingHistory([]);
-      toast.success(t('testSariPage.resetSuccess'));
-
-      // Create new conversation
-      createConversationMutation.mutate();
-    },
-  });
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsTyping(true);
+    void session.start();
+  }, [session]);
+  const handleSendMessage = async () => {
+    if (disabled || !inputMessage.trim()) return;
+    const pending = session.send(inputMessage);
     setInputMessage("");
-
-    // Save user message to database
-    if (conversationId) {
-      saveMessageMutation.mutate({
-        conversationId,
-        sender: 'user',
-        content: inputMessage,
-      });
+    await pending;
+  };
+  const handleReset = async () => {
+    if (await session.start()) {
+      setInputMessage("");
+      setDealValue("");
+      setDealError(false);
+      setScenarioId("");
+      setShowDealDialog(false);
+      toast.success(t("testSariPage.resetSuccess"));
     }
-
-    sendMessageMutation.mutate({
-      message: inputMessage,
-      conversationHistory: messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    });
   };
-
-  const handleReset = () => {
-    resetMutation.mutate();
-  };
-
-  const handleMarkAsDeal = () => {
-    if (!dealValue || parseFloat(dealValue) <= 0) {
-      toast.error(t('testSariPage.invalidDealValue'));
+  const handleMarkAsDeal = async () => {
+    const value = Number(dealValue);
+    if (!dealValue.trim() || !testDealValue.safeParse(value).success) {
+      setDealError(true);
       return;
     }
-
-    setHasDeal(true);
-    setShowDealDialog(false);
-    toast.success(t('testSariPage.dealRecorded', { value: dealValue }));
-
-    // Save to database
-    const timeToConversion = Math.floor((new Date().getTime() - conversationStartTime.getTime()) / 1000);
-    markAsDealMutation.mutate({
-      conversationId: conversationId || undefined,
-      dealValue: parseFloat(dealValue),
-      messageCount: messages.length,
-      timeToConversion,
-    });
-  };
-
-  const handleApplyScenario = (scenarioId: string) => {
-    const scenario = EXAMPLE_SCENARIOS.find((s) => s.id === scenarioId);
-    if (!scenario) return;
-
-    // Reset conversation first
-    const welcomeMessage: Message = {
-      id: "welcome",
-      role: "assistant",
-      content: t('testSariPage.welcomeMsg'),
-      timestamp: new Date(),
-    };
-
-    const scenarioMessages: Message[] = scenario.messages.map((msg, index) => ({
-      id: `scenario-${index}-${Date.now()}`,
-      role: msg.role,
-      content: msg.content,
-      timestamp: new Date(Date.now() + index * 1000),
-    }));
-
-    setMessages([welcomeMessage, ...scenarioMessages]);
-
-    // If last message is from user, send it to get AI response
-    const lastMessage = scenario.messages[scenario.messages.length - 1];
-    if (lastMessage.role === "user") {
-      setIsTyping(true);
-      sendMessageMutation.mutate({
-        message: lastMessage.content,
-        conversationHistory: scenario.messages.slice(0, -1),
-      });
+    setDealError(false);
+    if (await session.markDeal(value)) {
+      setShowDealDialog(false);
+      toast.success(
+        t("testSariPage.dealRecorded", {
+          value: session.snapshot().deal?.value.toFixed(2),
+        })
+      );
     }
-
-    toast.success(t('testSariPage.scenarioApplied', { title: scenario.title }));
   };
-
-  const handleRating = (messageId: string, rating: "positive" | "negative") => {
-    setMessages((prev) =>
-      prev.map((msg) => {
-        if (msg.id === messageId) {
-          let newPositive = ratings.positive;
-          let newNegative = ratings.negative;
-
-          // If same rating, remove it (toggle off)
-          if (msg.rating === rating) {
-            // Decrement count
-            if (rating === "positive") newPositive = Math.max(0, newPositive - 1);
-            else newNegative = Math.max(0, newNegative - 1);
-
-            setRatings({ positive: newPositive, negative: newNegative });
-
-            // Update history
-            const total = newPositive + newNegative;
-            if (total > 0) {
-              setRatingHistory((prev) => [
-                ...prev,
-                {
-                  timestamp: new Date(),
-                  satisfactionRate: Math.round((newPositive / total) * 100),
-                  positive: newPositive,
-                  negative: newNegative,
-                },
-              ]);
-            }
-
-            return { ...msg, rating: undefined };
-          }
-
-          // If different rating, update it
-          if (msg.rating) {
-            // Decrement old rating
-            if (msg.rating === "positive") newPositive = Math.max(0, newPositive - 1);
-            else newNegative = Math.max(0, newNegative - 1);
-          }
-
-          // Increment new rating
-          if (rating === "positive") newPositive += 1;
-          else newNegative += 1;
-
-          setRatings({ positive: newPositive, negative: newNegative });
-
-          // Update history
-          const total = newPositive + newNegative;
-          setRatingHistory((prev) => [
-            ...prev,
-            {
-              timestamp: new Date(),
-              satisfactionRate: Math.round((newPositive / total) * 100),
-              positive: newPositive,
-              negative: newNegative,
-            },
-          ]);
-
-          return { ...msg, rating };
-        }
-        return msg;
-      })
-    );
+  const handleRetry = async () => {
+    const failed = state.error;
+    if (await session.retry()) {
+      if (failed === "session") {
+        setInputMessage("");
+        setScenarioId("");
+        setDealValue("");
+        setDealError(false);
+      }
+      if (failed === "deal") setShowDealDialog(false);
+    }
   };
-
+  const handleApplyScenario = async (id: string) => {
+    const scenario = EXAMPLE_SCENARIOS.find(item => item.id === id);
+    if (!scenario || busy) return;
+    if (await session.start()) {
+      setScenarioId(id);
+      setDealValue("");
+      setDealError(false);
+      setShowDealDialog(false);
+      setInputMessage(scenario.messages[scenario.messages.length - 1].content);
+    }
+  };
+  const handleRating = (id: string, rating: "positive" | "negative") =>
+    session.rate(id, rating);
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const viewport = scrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [messages, isTyping]);
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-6 p-3 sm:p-6">
       <div className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold">{t('testSariPage.title')}</h1>
+            <h1 className="text-3xl font-bold">{t("testSariPage.title")}</h1>
             <p className="text-muted-foreground mt-2">
-              {t('testSariPage.subtitle')}
+              {t("testSariPage.subtitle")}
             </p>
             {hasDeal && (
               <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
                 <CheckCircle2 className="h-4 w-4" />
-                {t('testSariPage.dealAgreed', { value: dealValue })}
+                {t("testSariPage.dealAgreed", {
+                  value: savedDeal?.value.toFixed(2),
+                })}
               </div>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Dialog open={showDealDialog} onOpenChange={setShowDealDialog}>
+            <Dialog
+              open={showDealDialog}
+              onOpenChange={open => {
+                if (!busy) setShowDealDialog(open);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button
                   variant={hasDeal ? "default" : "outline"}
-                  disabled={hasDeal}
+                  disabled={
+                    hasDeal ||
+                    disabled ||
+                    !messages.some(m => m.role === "assistant")
+                  }
                   className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
                 >
                   <CheckCircle2 className="h-4 w-4 ml-2" />
-                  {hasDeal ? t('testSariPage.dealDone') : t('testSariPage.dealButton')}
+                  {hasDeal
+                    ? t("testSariPage.dealDone")
+                    : t("testSariPage.dealButton")}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent
+                closeLabel={t("testSariPage.closeDialog")}
+                showCloseButton={!busy}
+                className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+              >
                 <DialogHeader>
-                  <DialogTitle>{t('testSariPage.dealDialogTitle')}</DialogTitle>
+                  <DialogTitle>{t("testSariPage.dealDialogTitle")}</DialogTitle>
                   <DialogDescription>
-                    {t('testSariPage.dealDialogDesc')}
+                    {t("testSariPage.dealDialogDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="dealValue">{t('testSariPage.dealValueLabel')}</Label>
+                    <Label htmlFor="dealValue">
+                      {t("testSariPage.dealValueLabel")}
+                    </Label>
                     <Input
                       id="dealValue"
                       type="number"
-                      placeholder={t('testSariPage.dealValuePlaceholder')}
+                      placeholder={t("testSariPage.dealValuePlaceholder")}
                       value={dealValue}
-                      onChange={(e) => setDealValue(e.target.value)}
-                      min="0"
+                      onChange={e => {
+                        setDealValue(e.target.value);
+                        setDealError(false);
+                      }}
+                      disabled={busy || !!error}
+                      aria-invalid={dealError}
+                      aria-describedby={
+                        dealError ? "deal-value-error" : undefined
+                      }
+                      inputMode="decimal"
+                      min="0.01"
+                      max="9999999999.99"
                       step="0.01"
                     />
+                    {dealError && (
+                      <p
+                        id="deal-value-error"
+                        role="alert"
+                        className="text-sm text-destructive"
+                      >
+                        {t("testSariPage.invalidDealValue")}
+                      </p>
+                    )}
+                    {error === "deal" && (
+                      <div role="alert" className="space-y-2 text-sm">
+                        <p>{t("testSariPage.saveDealFailed")}</p>
+                        <Button
+                          variant="outline"
+                          disabled={busy || state.forbidden}
+                          onClick={handleRetry}
+                        >
+                          {t("testSariPage.retry")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowDealDialog(false)}>
-                    {t('testSariPage.cancel')}
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => setShowDealDialog(false)}
+                  >
+                    {t("testSariPage.cancel")}
                   </Button>
-                  <Button onClick={handleMarkAsDeal}>{t('testSariPage.confirm')}</Button>
+                  <Button disabled={disabled} onClick={handleMarkAsDeal}>
+                    {t("testSariPage.confirm")}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            <Button onClick={handleReset} variant="outline" disabled={resetMutation.isPending}>
+            <Button onClick={handleReset} variant="outline" disabled={busy}>
               <RotateCcw className="h-4 w-4 ml-2" />
-              {t('testSariPage.reset')}
+              {t("testSariPage.reset")}
             </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-4 rounded-2xl border">
           <Sparkles className="h-5 w-5 text-primary" />
           <div className="flex-1">
-            <p className="text-sm font-medium">{t('testSariPage.tryExamples')}</p>
+            <p className="text-sm font-medium">
+              {t("testSariPage.tryExamples")}
+            </p>
             <p className="text-xs text-muted-foreground">
-              {t('testSariPage.chooseScenario')}
+              {t("testSariPage.chooseScenario")}
             </p>
           </div>
-          <Select onValueChange={handleApplyScenario}>
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder={t('testSariPage.selectScenario')} />
+          <Select
+            value={scenarioId}
+            disabled={busy}
+            onValueChange={handleApplyScenario}
+          >
+            <SelectTrigger
+              aria-label={t("testSariPage.scenarioLabel")}
+              className="w-full sm:w-[250px]"
+            >
+              <SelectValue placeholder={t("testSariPage.selectScenario")} />
             </SelectTrigger>
             <SelectContent>
-              {EXAMPLE_SCENARIOS.map((scenario) => (
+              {EXAMPLE_SCENARIOS.map(scenario => (
                 <SelectItem key={scenario.id} value={scenario.id}>
                   <div className="flex flex-col">
                     <span className="font-medium">{scenario.title}</span>
@@ -422,7 +389,71 @@ export default function TestSari() {
         </div>
       </div>
 
-      <Card className="flex flex-col">
+      {selectedScenario && selectedScenario.messages.length > 1 && (
+        <details className="rounded-2xl border p-4 text-sm">
+          <summary className="cursor-pointer font-medium">
+            {t("testSariPage.scenarioPreview")}
+          </summary>
+          <p className="my-3 text-muted-foreground">
+            {t("testSariPage.scenarioPreviewHint")}
+          </p>
+          <ol className="space-y-2">
+            {selectedScenario.messages.map((message, index) => (
+              <li key={index} className="rounded-lg bg-muted p-3">
+                {message.content}
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+      <div
+        className="space-y-2 rounded-2xl border bg-primary/5 p-4 text-sm"
+        role="note"
+      >
+        <p>{t("testSariPage.testingScope")}</p>
+        <p className="text-muted-foreground">
+          {t("testSariPage.contextLimit")}
+        </p>
+      </div>
+      <div
+        role="status"
+        aria-live="polite"
+        className="text-sm text-muted-foreground"
+      >
+        {busy
+          ? t("testSariPage.savingStatus")
+          : error
+            ? t("testSariPage.attentionStatus")
+            : state.conversationId
+              ? t("testSariPage.readyStatus")
+              : t("testSariPage.startingStatus")}
+      </div>
+      {error && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4"
+        >
+          <p className="min-w-0 text-sm">
+            {state.forbidden
+              ? t("testSariPage.accessDenied")
+              : error === "session"
+                ? t("testSariPage.sessionFailed")
+                : error === "deal"
+                  ? t("testSariPage.saveDealFailed")
+                  : error === "reply"
+                    ? t("testSariPage.replyFailed")
+                    : t("testSariPage.messageSaveFailed")}
+          </p>
+          <Button
+            variant="outline"
+            disabled={busy || state.forbidden}
+            onClick={handleRetry}
+          >
+            {t("testSariPage.retry")}
+          </Button>
+        </div>
+      )}
+      <Card className="flex min-w-0 flex-col overflow-hidden rounded-2xl">
         <CardHeader className="border-b bg-muted/50">
           <div className="flex items-center gap-3">
             <Avatar>
@@ -431,19 +462,30 @@ export default function TestSari() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">{t('testSariPage.sariAI')}</h3>
-              <p className="text-xs text-muted-foreground">{t('testSariPage.sariDesc')}</p>
+              <h3 className="font-semibold">{t("testSariPage.sariAI")}</h3>
+              <p className="text-xs text-muted-foreground">
+                {t("testSariPage.sariDesc")}
+              </p>
             </div>
           </div>
         </CardHeader>
 
-        <ScrollArea className="h-[500px] p-4" ref={scrollRef}>
+        <ScrollArea
+          className="h-[min(55dvh,500px)] min-h-[240px] p-3 sm:p-4"
+          ref={scrollRef}
+        >
           <div className="space-y-4">
-            {messages.map((message) => (
+            {messages.length === 0 && (
+              <p className="rounded-2xl bg-muted p-4 text-sm leading-7">
+                {t("testSariPage.welcomeMsg")}
+              </p>
+            )}
+            {messages.map(message => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                className={`flex gap-3 ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
               >
                 {message.role === "assistant" && (
                   <Avatar className="h-8 w-8">
@@ -452,14 +494,17 @@ export default function TestSari() {
                     </AvatarFallback>
                   </Avatar>
                 )}
-                <div className="flex flex-col gap-1 max-w-[80%]">
+                <div className="flex min-w-0 flex-col gap-1 max-w-[85%]">
                   <div
-                    className={`rounded-lg px-4 py-2 ${message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                      }`}
+                    className={`rounded-lg px-4 py-2 ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {message.content}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
@@ -468,55 +513,68 @@ export default function TestSari() {
                         minute: "2-digit",
                       })}
                     </span>
-                    {message.role === "assistant" && message.id !== "welcome" && (
-                      <TooltipProvider>
-                        <div className="flex gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 ${message.rating === "positive"
-                                  ? "text-green-600 bg-green-100 dark:bg-green-900/30"
-                                  : "text-muted-foreground hover:text-green-600"
+                    {message.role === "assistant" &&
+                      message.id !== "welcome" && (
+                        <TooltipProvider>
+                          <div className="flex gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={disabled}
+                                  className={`h-11 w-11 p-0 ${
+                                    message.rating === "positive"
+                                      ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                                      : "text-muted-foreground hover:text-green-600"
                                   }`}
-                                onClick={() => handleRating(message.id, "positive")}
-                                aria-label={t('merchantUx.actions.positiveFeedback')}
-                                aria-pressed={message.rating === "positive"}
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t('testSariPage.helpfulResponse')}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                                  onClick={() =>
+                                    handleRating(message.id, "positive")
+                                  }
+                                  aria-label={t(
+                                    "merchantUx.actions.positiveFeedback"
+                                  )}
+                                  aria-pressed={message.rating === "positive"}
+                                >
+                                  <ThumbsUp className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t("testSariPage.helpfulResponse")}</p>
+                              </TooltipContent>
+                            </Tooltip>
 
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 ${message.rating === "negative"
-                                  ? "text-red-600 bg-red-100 dark:bg-red-900/30"
-                                  : "text-muted-foreground hover:text-red-600"
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={disabled}
+                                  className={`h-11 w-11 p-0 ${
+                                    message.rating === "negative"
+                                      ? "text-red-600 bg-red-100 dark:bg-red-900/30"
+                                      : "text-muted-foreground hover:text-red-600"
                                   }`}
-                                onClick={() => handleRating(message.id, "negative")}
-                                aria-label={t('merchantUx.actions.negativeFeedback')}
-                                aria-pressed={message.rating === "negative"}
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t('testSariPage.unhelpfulResponse')}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TooltipProvider>
-                    )}
+                                  onClick={() =>
+                                    handleRating(message.id, "negative")
+                                  }
+                                  aria-label={t(
+                                    "merchantUx.actions.negativeFeedback"
+                                  )}
+                                  aria-pressed={message.rating === "negative"}
+                                >
+                                  <ThumbsDown className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t("testSariPage.unhelpfulResponse")}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
+                      )}
                   </div>
                 </div>
                 {message.role === "user" && (
@@ -552,19 +610,27 @@ export default function TestSari() {
           <div className="flex gap-2">
             <Input
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder={t('testSariPage.typePlaceholder')}
-              disabled={sendMessageMutation.isPending}
-              className="flex-1"
+              onChange={e => setInputMessage(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  void handleSendMessage();
+                }
+              }}
+              maxLength={2000}
+              aria-label={t("testSariPage.typePlaceholder")}
+              placeholder={t("testSariPage.typePlaceholder")}
+              disabled={disabled}
+              className="min-w-0 flex-1 text-base"
             />
             <Button
               type="button"
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || sendMessageMutation.isPending}
-              aria-label={t('merchantUx.actions.sendMessage')}
+              disabled={!inputMessage.trim() || disabled}
+              aria-label={t("merchantUx.actions.sendMessage")}
+              className="h-11 min-w-11 shrink-0"
             >
-              {sendMessageMutation.isPending ? (
+              {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
@@ -579,10 +645,11 @@ export default function TestSari() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
-              <span>{t('testSariPage.ratingStatsTitle')}</span>
+              <span>{t("testSariPage.ratingStatsTitle")}</span>
             </CardTitle>
             <CardDescription>
-              {t('testSariPage.ratingStatsDesc')}
+              {t("testSariPage.ratingStatsDesc")}{" "}
+              {t("testSariPage.ratingScope")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -591,9 +658,11 @@ export default function TestSari() {
                 <div className="rounded-full bg-muted p-4 mb-4">
                   <BarChart3 className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{t('testSariPage.noRatingsYet')}</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  {t("testSariPage.noRatingsYet")}
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  {t('testSariPage.startRating')}
+                  {t("testSariPage.startRating")}
                 </p>
               </div>
             ) : (
@@ -606,7 +675,9 @@ export default function TestSari() {
                         <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">{t('testSariPage.positiveRatings')}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t("testSariPage.positiveRatings")}
+                        </p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                           {ratings.positive}
                         </p>
@@ -620,7 +691,9 @@ export default function TestSari() {
                         <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">{t('testSariPage.negativeRatings')}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t("testSariPage.negativeRatings")}
+                        </p>
                         <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                           {ratings.negative}
                         </p>
@@ -634,10 +707,14 @@ export default function TestSari() {
                         <TrendingUp className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">{t('testSariPage.satisfactionRate')}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t("testSariPage.satisfactionRate")}
+                        </p>
                         <p className="text-2xl font-bold text-primary">
                           {Math.round(
-                            (ratings.positive / (ratings.positive + ratings.negative)) * 100
+                            (ratings.positive /
+                              (ratings.positive + ratings.negative)) *
+                              100
                           )}
                           %
                         </p>
@@ -654,8 +731,16 @@ export default function TestSari() {
                       <PieChart>
                         <Pie
                           data={[
-                            { name: t('testSariPage.positive'), value: ratings.positive, color: "#22c55e" },
-                            { name: t('testSariPage.negative'), value: ratings.negative, color: "#ef4444" },
+                            {
+                              name: t("testSariPage.positive"),
+                              value: ratings.positive,
+                              color: "#22c55e",
+                            },
+                            {
+                              name: t("testSariPage.negative"),
+                              value: ratings.negative,
+                              color: "#ef4444",
+                            },
                           ]}
                           cx="50%"
                           cy="50%"
@@ -668,8 +753,16 @@ export default function TestSari() {
                           dataKey="value"
                         >
                           {[
-                            { name: t('testSariPage.positive'), value: ratings.positive, color: "#22c55e" },
-                            { name: t('testSariPage.negative'), value: ratings.negative, color: "#ef4444" },
+                            {
+                              name: t("testSariPage.positive"),
+                              value: ratings.positive,
+                              color: "#22c55e",
+                            },
+                            {
+                              name: t("testSariPage.negative"),
+                              value: ratings.negative,
+                              color: "#ef4444",
+                            },
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -683,13 +776,19 @@ export default function TestSari() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={[
-                          { name: t('testSariPage.positive'), value: ratings.positive },
-                          { name: t('testSariPage.negative'), value: ratings.negative },
+                          {
+                            name: t("testSariPage.positive"),
+                            value: ratings.positive,
+                          },
+                          {
+                            name: t("testSariPage.negative"),
+                            value: ratings.negative,
+                          },
                         ]}
                       >
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" />
-                        <YAxis />
+                        <YAxis allowDecimals={false} />
                         <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                           <Cell fill="#22c55e" />
                           <Cell fill="#ef4444" />
@@ -708,10 +807,10 @@ export default function TestSari() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                <span>{t('testSariPage.satisfactionTrend')}</span>
+                <span>{t("testSariPage.satisfactionTrend")}</span>
               </CardTitle>
               <CardDescription>
-                {t('testSariPage.satisfactionTrendDesc')}
+                {t("testSariPage.satisfactionTrendDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -724,14 +823,16 @@ export default function TestSari() {
                         hour: "2-digit",
                         minute: "2-digit",
                       }),
-                      // @ts-ignore
-                      نسبة_الرضا: item.rating,
+                      نسبة_الرضا: item.satisfactionRate,
                     }))}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis dataKey="time" />
-                    <YAxis domain={[0, 100]} label={{ value: "%", position: "insideLeft" }} />
+                    <YAxis
+                      domain={[0, 100]}
+                      label={{ value: "%", position: "insideLeft" }}
+                    />
                     <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--background))",
@@ -753,10 +854,12 @@ export default function TestSari() {
               <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span>{t('testSariPage.satisfactionPercent')}</span>
+                  <span>{t("testSariPage.satisfactionPercent")}</span>
                 </div>
                 <span>•</span>
-                <span>{t('testSariPage.totalRatings')} {ratingHistory.length}</span>
+                <span>
+                  {t("testSariPage.ratingChanges")} {ratingHistory.length}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -764,22 +867,26 @@ export default function TestSari() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t('testSariPage.tipTitle')}</CardTitle>
+            <CardTitle className="text-sm">
+              {t("testSariPage.tipTitle")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('testSariPage.tipDesc')}
+              {t("testSariPage.tipDesc")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t('testSariPage.nextStepTitle')}</CardTitle>
+            <CardTitle className="text-sm">
+              {t("testSariPage.nextStepTitle")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('testSariPage.nextStepDesc')}
+              {t("testSariPage.nextStepDesc")}
             </p>
           </CardContent>
         </Card>

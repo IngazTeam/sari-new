@@ -119,7 +119,7 @@ async function calculateAvgDealValue(merchantId: number, startDate: string, endD
       )
     );
     
-  return Math.round(Number(result[0]?.avg) || 0);
+  return Math.round((Number(result[0]?.avg) || 0) * 100) / 100;
 }
 
 /**
@@ -141,7 +141,7 @@ async function calculateTotalRevenue(merchantId: number, startDate: string, endD
       )
     );
     
-  return Math.round(Number(result[0]?.sum) || 0);
+  return Math.round((Number(result[0]?.sum) || 0) * 100) / 100;
 }
 
 // ==================== مقاييس الوقت والكفاءة ====================

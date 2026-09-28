@@ -1703,12 +1703,12 @@
     "subtitle": "Try chatting with Sari before connecting real WhatsApp",
     "welcomeMsg": "Hello! I'm Sari, your smart assistant. Try asking me about your products or anything you need! 👋",
     "resetSuccess": "Conversation reset successfully",
-    "invalidDealValue": "Please enter a valid deal value",
+    "invalidDealValue": "Enter an amount above zero with at most two decimal places (up to 9,999,999,999.99).",
     "dealRecorded": "✅ Deal recorded at {{value}} SAR",
     "scenarioApplied": "Scenario applied: {{title}}",
     "dealAgreed": "Deal agreed - {{value}} SAR",
-    "dealDone": "Deal Done ✅",
-    "dealButton": "Deal Done",
+    "dealDone": "Test deal recorded",
+    "dealButton": "Record a test deal",
     "reset": "Reset",
     "tryExamples": "Try ready examples",
     "chooseScenario": "Choose a conversation scenario to quickly test Sari",
@@ -1735,8 +1735,8 @@
     "tipDesc": "Try asking Sari about your products: \"Do you have perfumes?\" or \"What's the watch price?\"",
     "nextStepTitle": "🚀 Next Step",
     "nextStepDesc": "After verifying response quality, connect your real WhatsApp number",
-    "dealDialogTitle": "Record Successful Deal",
-    "dealDialogDesc": "Enter deal value to track conversion rate and revenue",
+    "dealDialogTitle": "Record a test deal",
+    "dealDialogDesc": "Record a simulated value to evaluate the sales test. No order or payment will be created.",
     "dealValueLabel": "Deal Value (SAR)",
     "dealValuePlaceholder": "Example: 250",
     "cancel": "Cancel",
@@ -1755,7 +1755,25 @@
     "scenarioComplaintDesc": "Customer with a problem or question",
     "scenarioMultiTitle": "Multi-turn Chat",
     "scenarioMultiDesc": "Long conversation with multiple questions",
-    "text0": "نسبة_الرضا: item.satisfactionRate,"
+    "text0": "نسبة_الرضا: item.satisfactionRate,",
+    "testingScope": "This is a test session. Recorded deals are simulations and do not create orders or payments.",
+    "contextLimit": "Replies currently use the latest message and store knowledge. Previous messages in this lab are not connected yet. Choose an example, review it, then send.",
+    "ratingScope": "Ratings are local to this session and device. They do not measure sales proficiency or actual customer results.",
+    "retry": "Retry",
+    "saveDealFailed": "The deal could not be confirmed. Retry the same amount to verify without recording it twice.",
+    "sessionFailed": "Could not start a new session. Your previous session is unchanged. Retry when the connection returns.",
+    "messageSaveFailed": "The message was not fully saved. Retry saving before continuing; a received reply will not be generated again.",
+    "replyFailed": "No reply was received. Retrying requests a new response and may incur additional usage.",
+    "accessDenied": "You need permission to manage assistant settings to run a test.",
+    "savingStatus": "Completing the operation…",
+    "attentionStatus": "This operation needs your attention",
+    "readyStatus": "Session ready",
+    "startingStatus": "Preparing your test session…",
+    "scenarioPreview": "Example context · read only",
+    "scenarioPreviewHint": "Only the final question fills the composer. This context is not a live assistant reply.",
+    "scenarioLabel": "Test scenario",
+    "closeDialog": "Close dialog",
+    "ratingChanges": "Rating changes:"
   },
   "greenApiGuidePage": {
     "title": "Complete Green API Setup Guide",
@@ -8357,7 +8375,8 @@
     "auto_9": "تخطي وإنهاء الإعداد"
   },
   "previewChat": {
-    "auto_0": "متصل الآن"
+    "auto_0": "متصل الآن",
+    "localPreview": "Visual preview: the reply is a fixed greeting, not a knowledge or sales evaluation."
   },
   "quickActions": {
     "auto_0": "جاري التنفيذ...",
