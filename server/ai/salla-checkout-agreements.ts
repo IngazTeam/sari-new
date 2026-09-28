@@ -7,11 +7,11 @@ import { getSallaConnectionByMerchantId } from '../db';
 import { assertCheckoutAgreementSchema,assertCheckoutIdentity,type CheckoutIdentity } from './checkout-agreements';
 import { hasCheckoutOfferEvidence,recordedCheckoutOfferEvidence } from './checkout-offer-evidence';
 import { policyArtifactDigest as digest } from './learning-policy-evaluation-bundle';
-import { isSalesRefusal,isShortAffirmation,normalizeCustomerText } from './customer-decision';
+import { isExplicitPurchaseInstruction,isSalesRefusal,isShortAffirmation,normalizeCustomerText } from './customer-decision';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { sallaCheckoutCartInput } from '../../shared/salla-checkout-cart';
 import { requireMinor } from '../../shared/product-money';
-import { cartContext } from '../integrations/salla-checkout-transport';
+import { cartContext,readCheckoutCart } from '../integrations/salla-checkout-transport';
 import { sallaCatalogAuthority,selectSallaOrderProduct,assertSallaOrderSelection,sallaProductSelectionSchema } from '../integrations/salla-catalog';
 import { assertSallaOrderAuthority } from '../integrations/salla-order-projection';
 import { assertSallaCheckoutCartSchema,runSallaCheckoutCart,readSallaCheckoutCart,readSallaCartSnapshot } from '../integrations/salla-checkout-carts';
@@ -32,6 +32,7 @@ export const SALLA_CART_DECLINED='توقفت عن تجهيز هذا الاختي
 export const SALLA_CART_CLARIFY='اذكر المنتجات والكميات المطلوبة بوضوح، لأعرض ملخصًا توافق عليه قبل تجهيز رابط مراجعتها داخل المتجر.';
 export const isSallaCartResumeRequest=(message:string)=>/^(?:ارسل رابط السله|اعد ارسال رابط السله|ارسل رابط السله مره اخر[ىي]|send the cart link|resend the cart link)[.!\s]*$/.test(normalizeCustomerText(message));
 export const isSallaCartConsent=(message:string)=>isShortAffirmation(message)||isSallaCartResumeRequest(message)||/^(?:جهز السلة|جهز السله|prepare the cart)[.!\s]*$/.test(normalizeCustomerText(message));
+export const isSallaCartEdit=(message:string)=>!isSalesRefusal(message)&&/^(?:عدل|غير|بدل|خلي|change|replace|make it)(?:\s|$)/.test(normalizeCustomerText(message));
 const label=(v:string)=>v.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff\[\]<>]/g,' ').replace(/\s+/g,' ').trim().slice(0,100);
 export function sallaCartOfferText(quoteId:number,snapshot:Snapshot){
   return `اختيارك للمراجعة [SC-${quoteId}]\n\n${snapshot.items.map(p=>`• ${label(p.name)} × ${p.quantity}`).join('\n')}\n\n`
@@ -105,8 +106,12 @@ export async function prepareSallaConversationOffer(input:CheckoutIdentity,raw:u
       if(saved.sourceDigest!==digest(current.content)||digest(saved.items)!==digest(snapshot.items)||saved.ownershipVersion!==current.version||saved.ownerUserId!==current.userId)throw Error('Selection conflict');
       await currentSelection(c,input,saved,p);await sourceUnchanged(c,input,current.content);return sallaCartOfferText(previous.id,saved);
     }
-    if(previous?.external_provider===SALLA_CART_PROVIDER&&['processing','unknown'].includes(previous.execution_state))return SALLA_CART_UNCERTAIN;
+    if(previous?.external_provider===SALLA_CART_PROVIDER&&previous.execution_state==='processing')return SALLA_CART_UNCERTAIN;
     await currentSelection(c,input,snapshot,p);await sourceUnchanged(c,input,current.content);
+    let superseded:Awaited<ReturnType<typeof supersessionProof>>|null=null;
+    if(previous?.external_provider===SALLA_CART_PROVIDER&&previous.execution_state==='unknown'){
+      try{superseded=await supersessionProof(c,input,previous,current,p);}catch{return SALLA_CART_UNCERTAIN;}
+    }
     await c.execute(`UPDATE sales_quotations SET status='expired' WHERE merchant_id=? AND conversation_id=? AND status IN ('sent','viewed') AND order_id IS NULL
       AND (checkout_snapshot IS NOT NULL OR external_snapshot IS NOT NULL)`,[input.merchantId,input.conversationId]);
     const subtotal=requireMinor(snapshot.items.reduce((n,p)=>n+p.price*p.quantity,0));
@@ -115,6 +120,13 @@ export async function prepareSallaConversationOffer(input:CheckoutIdentity,raw:u
       VALUES (?,?,?,?,?,0,?,'SAR',?,?,?,?,'ready',TIMESTAMPADD(MINUTE,30,UTC_TIMESTAMP(3)))`,
     [input.merchantId,input.customerPhone,`SCART-${input.merchantId}-${input.incomingMessageId}`,JSON.stringify(snapshot.items),subtotal/100,subtotal/100,
       input.conversationId,input.incomingMessageId,SALLA_CART_PROVIDER,JSON.stringify({value:snapshot,digest:digest(snapshot)})]);
+    if(superseded){
+      const value=supersessionSchema.parse({...superseded,replacementQuoteId:Number(r.insertId),replacementSnapshotDigest:digest(snapshot),supersededAt:new Date().toISOString()});
+      const [changed]=await c.execute<any>(`UPDATE sales_quotations SET status='expired',external_reconciliation=?
+        WHERE id=? AND merchant_id=? AND execution_state='unknown' AND external_reconciliation IS NULL`,
+      [JSON.stringify({value,digest:digest(value)}),previous.id,input.merchantId]);
+      if(changed.affectedRows!==1)throw Error('Superseded agreement changed');
+    }
     return sallaCartOfferText(Number(r.insertId),snapshot);
   });
 }
@@ -138,6 +150,56 @@ async function verifiedClaim(c:PoolConnection,input:CheckoutIdentity,quoteId:num
 function cartInput(snapshot:Snapshot){return {requestId:snapshot.requestId,items:snapshot.items.map(p=>({productId:p.productId,quantity:p.quantity}))};}
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/);
+const supersessionSchema=z.object({version:z.literal('salla-cart-supersede.v1'),merchantId:id,conversationId:id,quoteId:id,
+  sourceMessageId:id,consentMessageId:id,incomingMessageId:id,requestId:z.string().uuid(),ownerUserId:id,ownershipVersion:z.number().int().nonnegative(),
+  snapshotDigest:hash,consentDigest:hash,requestDigest:hash,recipientDigest:hash,offerEvidenceDigest:hash,
+  operationId:id,operationState:z.enum(['ready','rejected']),operationDigest:hash,replacementQuoteId:id,replacementSnapshotDigest:hash,
+  remoteCancellation:z.literal('not_performed'),supersededAt:z.string().datetime({precision:3})}).strict();
+
+/** Retire only the local agreement. A completed guest cart may still exist at
+ * Salla; this neither cancels it nor reuses its consent for the new selection.
+ * Missing/active/ambiguous ledger entries must remain under review. */
+async function supersessionProof(c:PoolConnection,input:CheckoutIdentity,q:any,current:Awaited<ReturnType<typeof owner>>,p:Awaited<ReturnType<typeof provider>>){
+  if(!['viewed','rejected','expired'].includes(q.status)||q.currency!=='SAR'||q.order_id!==null||q.external_order_key!==null
+    ||q.projection_pending!==0||q.external_result!==null||q.external_reconciliation!==null||!q.execution_started_at
+    ||!id.safeParse(q.consent_message_id).success||q.source_message_id>=q.consent_message_id||q.consent_message_id>=input.incomingMessageId
+    ||!(isExplicitPurchaseInstruction(current.content)||isSallaCartEdit(current.content)))throw Error('Replacement unavailable');
+  const snapshot=readSnapshot(q),selection=cartInput(snapshot);
+  if(snapshot.ownerUserId!==current.userId||snapshot.ownershipVersion!==current.version||q.execution_attempt_id!==snapshot.requestId
+    ||snapshot.connectionId!==p.authority.connectionId||digest(snapshot.context)!==digest(p.context))throw Error('Old agreement authority changed');
+  const [sources]=await c.execute<any[]>(`SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming'
+    AND id IN (?,?) ORDER BY id FOR SHARE`,[input.conversationId,q.source_message_id,q.consent_message_id]);
+  if(sources.length!==2||sources[0].id!==q.source_message_id||digest(sources[0].content)!==snapshot.sourceDigest
+    ||sources[1].id!==q.consent_message_id||!isSallaCartConsent(sources[1].content)||isSalesRefusal(sources[1].content))throw Error('Old consent changed');
+  const evidence=await recordedCheckoutOfferEvidence(c,{...input,incomingMessageId:q.consent_message_id},q.source_message_id,sallaCartOfferText(q.id,snapshot));
+  if(!evidence)throw Error('Old delivery unavailable');
+  const [rows]=await c.execute<any[]>('SELECT * FROM salla_checkout_carts WHERE merchant_id=? AND request_id=? FOR SHARE',[input.merchantId,snapshot.requestId]);
+  const operation=rows[0];
+  if(rows.length!==1||!['ready','rejected'].includes(operation.state)||operation.actor_user_id!==snapshot.ownerUserId
+    ||operation.request_hash!==digest(selection.items)||!z.string().uuid().safeParse(operation.attempt_token).success)throw Error('Cart is not terminal');
+  if(operation.state==='rejected'){
+    // Rejection is recorded only before dispatch. A snapshot/result would
+    // contradict that boundary, so it cannot authorize another selection.
+    if(operation.snapshot!==null||operation.result_json!==null)throw Error('Rejected cart has external evidence');
+  }else{
+    const saved=readSallaCartSnapshot(operation,selection),result=decode(operation.result_json),v=result?.value;
+    if(digest(saved)!==digest({version:1,context:snapshot.context,connectionId:snapshot.connectionId,items:snapshot.items})
+      ||!v||result.digest!==digest(v))throw Error('Completed cart changed');
+    // Validate historical evidence without requiring old catalog availability
+    // or contacting Salla. The new selection has its own current catalog check.
+    const normalized=readCheckoutCart({success:true,status:200,data:{id:v.cartId,store_id:saved.context.storeId,
+      checkout_url:v.checkoutUrl,currency:{code:v.currency},amounts:{total:{amount:{value:v.observedTotalMinor/100,currency:v.currency}}},
+      items:v.items.map((item:any)=>({id:item.cartItemId,product_id:item.productId,sku:item.sku,quantity:item.quantity,options:[]}))}},
+    saved.context,saved.items.map(item=>({externalId:item.externalId,sku:item.sku,quantity:item.quantity})),v.cartId);
+    if(digest(normalized)!==result.digest)throw Error('Invalid completed cart');
+  }
+  await sourceUnchanged(c,input,current.content);
+  return {version:'salla-cart-supersede.v1',merchantId:input.merchantId,conversationId:input.conversationId,quoteId:q.id,
+    sourceMessageId:q.source_message_id,consentMessageId:q.consent_message_id,incomingMessageId:input.incomingMessageId,requestId:snapshot.requestId,
+    ownerUserId:current.userId,ownershipVersion:current.version,snapshotDigest:digest(snapshot),consentDigest:digest(sources[1].content),
+    requestDigest:digest(current.content),recipientDigest:digest(input.customerPhone),offerEvidenceDigest:evidence,
+    operationId:operation.id,operationState:operation.state,operationDigest:digest(operation),remoteCancellation:'not_performed'};
+}
 const resumeSchema=z.object({version:z.literal('salla-cart-resume.v1'),merchantId:id,conversationId:id,quoteId:id,
   sourceMessageId:id,consentMessageId:id,incomingMessageId:id,requestId:z.string().uuid(),
   snapshotDigest:hash,consentDigest:hash,requestDigest:hash,recipientDigest:hash,offerEvidenceDigest:hash,

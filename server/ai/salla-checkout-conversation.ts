@@ -5,14 +5,14 @@ import { currentInboundExecution } from '../messaging/inbound-context';
 import { isExplicitPurchaseInstruction,isSalesRefusal,normalizeCustomerText } from './customer-decision';
 import { sallaCatalogAuthority,readSallaOrderExtractionCatalog } from '../integrations/salla-catalog';
 import { assertCheckoutIdentity,type CheckoutIdentity,checkoutTransaction } from './checkout-agreements';
-import { SALLA_CART_PROVIDER,SALLA_CART_CLARIFY,SALLA_CART_UNCERTAIN,isSallaCartConsent,sallaConversationSelection,prepareSallaConversationOffer,acceptSallaConversationOffer } from './salla-checkout-agreements';
+import { SALLA_CART_PROVIDER,SALLA_CART_CLARIFY,SALLA_CART_UNCERTAIN,isSallaCartConsent,isSallaCartEdit,sallaConversationSelection,prepareSallaConversationOffer,acceptSallaConversationOffer } from './salla-checkout-agreements';
 
 /** Returns a complete deterministic checkout response. Do not rewrite it with an
  * LLM or identity formatter: customer consent binds the exact delivered text. */
 export async function handleSallaCheckout(input:CheckoutIdentity & {message:string;memoryHistoryCutoff?:number}):Promise<string|null>{
   let relevant=false;
   try{
-    const text=normalizeCustomerText(input.message),editing=/^(?:عدل|غير|بدل|خلي|change|replace|make it)(?:\s|$)/.test(text);
+    const text=normalizeCustomerText(input.message),editing=isSallaCartEdit(input.message);
     if(!isExplicitPurchaseInstruction(input.message)&&!isSallaCartConsent(input.message)&&!isSalesRefusal(input.message)&&!editing)return null;
     const pool=await getPool();if(!pool)throw Error('Checkout storage unavailable');
     const [prior]=await pool.execute<any[]>(`SELECT id,source_message_id,external_provider FROM sales_quotations
