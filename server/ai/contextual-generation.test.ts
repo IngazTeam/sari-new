@@ -11,7 +11,10 @@ const m = vi.hoisted(() => ({
   understanding: vi.fn(),
   agent: vi.fn(),
   automatic: vi.fn(),
+  loss: vi.fn(),
+  byaan: vi.fn(),
 }));
+vi.mock("./contextual-sales-loss", () => ({ recordContextualSalesLoss: m.loss }));
 vi.mock("./openai", () => ({ callGPT4: m.call }));
 vi.mock("./contextual-agent-routing", async original => ({
   ...(await original<typeof import("./contextual-agent-routing")>()),
@@ -77,7 +80,7 @@ vi.mock("./requested-followup", () => ({
   handleRequestedFollowup: async () => null,
 }));
 vi.mock("./byaan-checkout-conversation", () => ({
-  handleByaanCheckout: async () => null,
+  handleByaanCheckout: m.byaan,
 }));
 vi.mock("./salla-checkout-conversation", () => ({
   handleSallaCheckout: async () => null,
@@ -169,6 +172,7 @@ const state = {
 beforeEach(() => {
   vi.resetAllMocks();
   m.agent.mockResolvedValue(null);
+  m.byaan.mockResolvedValue(null);
   m.history.mockResolvedValue([
     ...savedHistory,
     { id: 13, direction: "incoming", content: input.message },
@@ -216,6 +220,37 @@ describe.each(["fast", "full"])(
   path => {
     beforeEach(() => {
       if (path === "fast") m.session.mockResolvedValue({ ...state });
+    });
+    it.each([false, true])("projects contextual decline before the reply without breaking it on storage failure=%s", async fail => {
+      const previous = m.understanding.getMockImplementation()!;
+      m.understanding.mockImplementation(async source => {
+        const value = await previous(source);
+        value.analysis = { ...value.analysis, intent: 'declined', goal: 'respect_decline', nextStep: 'respect_decline',
+          salesLoss: { status: 'declined', reason: 'timing', evidence: [{messageId:13,excerpt:input.message}] } };
+        return value;
+      });
+      m.loss.mockImplementation(async source => {
+        expect(source).toEqual({ merchantId:71,conversationId:31,incomingMessageId:13,customerPhone:input.customerPhone });
+        expect(conversationUnderstandingIdentity()?.analysis.salesLoss?.reason).toBe('timing');
+        if(fail) throw Error('Synthetic storage failure');
+        return null;
+      });
+      expect(await chatWithSari(input)).toBe('الفرق في موعد الاستخدام، ويمكنك اختيار الأنسب لوقتك.');
+      expect(m.loss).toHaveBeenCalledOnce(); expect(m.call).toHaveBeenCalledOnce();
+    });
+    it("projects a whole-opportunity decline before a checkout handler returns its own response", async () => {
+      const previous = m.understanding.getMockImplementation()!;
+      m.understanding.mockImplementation(async source => {
+        const value = await previous(source);
+        value.analysis = {...value.analysis,intent:'declined',goal:'respect_decline',nextStep:'respect_decline',action:'decline_offer',
+          salesLoss:{status:'declined',reason:'other',evidence:[{messageId:13,excerpt:input.message}]}};
+        return value;
+      });
+      m.byaan.mockImplementation(async () => {
+        expect(m.loss).toHaveBeenCalledOnce(); return 'تم إيقاف العرض حسب طلبك.';
+      });
+      expect(await chatWithSari(input)).toBe('تم إيقاف العرض حسب طلبك.');
+      expect(m.loss).toHaveBeenCalledOnce(); expect(m.call).not.toHaveBeenCalled();
     });
     it("keeps late facts, interpreted needs and both speakers in the governed reply, then runs the common review", async () => {
       m.call.mockImplementation(async (messages, options) => {

@@ -1,6 +1,6 @@
 import type { ConversationUnderstanding } from '../../server/ai/conversation-understanding-context';
 import type { UnderstandingInput } from '../../server/ai/conversation-understanding';
-export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>>; automaticFollowup?: Partial<NonNullable<ConversationUnderstanding['automaticFollowup']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
+export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>>; automaticFollowup?: Partial<NonNullable<ConversationUnderstanding['automaticFollowup']>>; salesLoss?: Partial<NonNullable<ConversationUnderstanding['salesLoss']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
 type Case = UnderstandingCase;
 const scenario = (id: string, messages: string[], expected: Case['expected'], target = false, mustNotExecute = false): Case => ({ id, expected, mustNotExecute,
   input: { currentMessageId: messages.length, messages: messages.map((content, i) => ({ id: i + 1, role: i % 2 === 0 ? 'user' : 'assistant', content })),
@@ -37,10 +37,18 @@ const automaticScenario = (id: string, messages: string[], automaticFollowup: No
   return item;
 };
 export const conversationUnderstandingCases: Case[] = [
+  scenario('loss-explicit-timing', ['الدورة مناسبة لاحتياجي', 'هل تناسبك المواعيد المتاحة؟', 'تغير جدول عملي، لن أستطيع الالتحاق بهذه الدورة'], {action:'respond',intent:'declined',salesLoss:{status:'declined',reason:'timing'}}),
+  scenario('loss-price-withdrawal', ['أقارن تكلفة الاشتراك بميزانيتي', 'هذه الرسوم النهائية.', 'أعلى مما أستطيع دفعه، لذلك قررت عدم الاشتراك وانتهى الموضوع'], {action:'respond',salesLoss:{status:'declined',reason:'price'}}),
+  scenario('loss-no-stated-reason', ['كنت مهتمًا بالدورة', 'هل تحتاج توضيحًا؟', 'قررت عدم الالتحاق بهذه الدورة، شكرًا لكم'], {action:'respond',salesLoss:{status:'declined',reason:'other'}}),
+  scenario('loss-negated-price', ['أفكر في الدورة', 'هل السبب أن الرسوم غالية؟', 'لا، السعر مناسب لكن مواعيدها تتعارض مع عملي، قررت ترك هذه الدورة'], {action:'respond',salesLoss:{status:'declined',reason:'timing'}}),
+  scenario('loss-price-question', ['أقارن الخيارات', 'وش تحب تعرف؟', 'هل توجد باقة بسعر أقل؟ ما زلت أفكر في الاشتراك'], {action:'respond',salesLoss:{status:'none',reason:null}},false,true),
+  scenario('loss-quoted-rejection', ['عندي ملاحظة على الإعلان', 'تفضل', 'مكتوب في المثال «لن أشتري، السعر مرتفع»، أنا أنقل المثال فقط وأريد توضيح محتوى الدورة'], {action:'respond',salesLoss:{status:'none',reason:null}},false,true),
+  scenario('loss-reject-option-not-opportunity', ['أريد دورة تناسب خبرتي', 'تريد المستوى التمهيدي؟', 'هذا المستوى لا يناسبني، لكن أريد المتقدم، اشرح محتواه'], {action:'respond',salesLoss:{status:'none',reason:null}},false,true),
+  scenario('loss-defer-not-decline', ['أفكر في الدورة', 'هل تحتاج وقتًا؟', 'سأراجع جدولي ثم أرجع لكم بنفسي، لم أحسم القرار بعد'], {action:'respond',salesLoss:{status:'none',reason:null}},false,true),
   automaticScenario('automatic-consideration', ['الخيارات مناسبة لاحتياجي', 'هذه الفروق بينها.', 'أحتاج وقتًا أوازن المزايا قبل أقرر'], { status: 'recommend', purpose: 'consideration' }),
   automaticScenario('automatic-price-context', ['الرسوم أعلى من ميزانيتي الحالية', 'نراجع ما يشمله كل خيار؟', 'نعم، ما زلت أقارن القيمة بالميزانية المتاحة'], { status: 'recommend', purpose: 'price' }),
   automaticScenario('automatic-negated-price', ['أقارن الدورات', 'هل المشكلة في السعر؟', 'مو غالي، محتاج أفهم الفرق بين المستويين'], { status: 'recommend', purpose: 'options' }),
-  automaticScenario('automatic-withdrawal', ['كنت أفكر بالدورة', 'هل بقي شيء أوضحه؟', 'غيّرت خطتي بالكامل وانتهى الموضوع بالنسبة لي'], { status: 'none' }),
+  {...automaticScenario('automatic-withdrawal', ['كنت أفكر بالدورة', 'هل بقي شيء أوضحه؟', 'غيّرت خطتي بالكامل وانتهى الموضوع بالنسبة لي'], { status: 'none' }),mustNotExecute:false,allowedActions:['respond'],expected:{automaticFollowup:{status:'none'},salesLoss:{status:'declined',reason:'other'}}},
   automaticScenario('automatic-no-consent', ['الدورة مناسبة', 'هل تحتاج وقت للمقارنة؟', 'أراجعها مع شريكي'], { status: 'none' }, false),
   automaticScenario('automatic-quoted-objection', ['أرسل لك ملاحظة عن الإعلان', 'تفضل.', 'العميل السابق كتب «غالي وبفكر»، أنا أبلغك عن خطأ إملائي فقط'], { status: 'none' }),
   automaticScenario('automatic-post-purchase', ['اشتريت الدورة بالفعل', 'كيف أساعدك؟', 'عندي مشكلة في الدخول، مو موضوع السعر'], { status: 'none' }),

@@ -13,6 +13,7 @@ import { assertRuntimeSchema } from '../db/schema-readiness';
 import { getFollowupPolicy } from './followup-policy';
 import { hasActiveCampaignConsent } from '../automation/campaign-guard';
 import { resolveAutomaticFollowup } from './automatic-followup-context';
+import { contextualSalesLossReason } from './contextual-sales-loss-contract';
 import { readAppointmentReminderTargets, type AppointmentReminderTarget } from '../appointment-reminder-context';
 import { agentCandidates, readAvailableAgents, type AgentCandidate } from './contextual-agent-routing';
 import { conversationUnderstandingSchema, withConversationUnderstanding, withoutConversationUnderstanding, type ConversationUnderstanding, type UnderstandingContext } from './conversation-understanding-context';
@@ -86,6 +87,13 @@ export function validateUnderstanding(raw: string, input: UnderstandingInput): C
     if (!automatic.evidence.some(e => e.messageId === input.currentMessageId && input.messages.some(m => m.id === e.messageId && m.role === 'user'))
       || automatic.evidence.some(e => !input.messages.some(m => m.id === e.messageId && m.content.includes(e.excerpt)))) throw Error('Ungrounded automatic follow-up evidence');
   }
+  if (result.salesLoss?.status === 'declined') {
+    if (!contextualSalesLossReason(result)) throw Error('Invalid sales decline');
+    if (!result.salesLoss.evidence.some(e => e.messageId === input.currentMessageId && input.messages.some(m => m.id === e.messageId && m.role === 'user'))
+      || result.salesLoss.evidence.some(e => !input.messages.some(m => m.id === e.messageId && m.content.includes(e.excerpt)))) throw Error('Ungrounded sales decline');
+  } else if (result.salesLoss && (result.salesLoss.reason !== null || result.salesLoss.evidence.length)) {
+    throw Error('Unconfirmed loss must not carry a reason');
+  }
   return result;
 }
 
@@ -103,6 +111,7 @@ ${input.mode === 'preview' ? 'هذه معاينة للقراءة فقط، بهو
 appointmentReminder خاص بتذكير موعد محجوز من appointmentReminderTargets، ويختلف عن متابعة المبيعات followup. افهم الموافقة والإلغاء من الحوار كاملًا؛ «نعم» بعد اقتراح تذكير محدد قد تعني schedule، والنفي أو الاقتباس أو السؤال عن الميزة تعني none. اربط appointmentId بالموعد الذي يقصده العميل من القائمة فقط. schedule يتطلب canSchedule=true وموافقة صريحة غير مشروطة على تذكير قبل ساعة أو 24 ساعة، hoursBefore=1 أو 24. الإلغاء cancel يوقف التذكير فقط، ولا يلغي الموعد؛ hoursBefore=null. لا تختر مهلة أو موعدًا من عندك، ومع الغموض أو غياب الموعد من القائمة استخدم clarify. استخدم action=respond مع schedule/cancel ولا تجمعه بمتابعة مبيعات أو شراء أو حجز أو تصعيد. أرفق الدليل الحالي وما يشير إلى الموعد والمهلة في evidence. اترك targetDigest غائبًا؛ يربطه الخادم بالموعد الحقيقي. في المعاينة لا توجد مواعيد تنفيذية: استخدم clarify لطلب تذكير. عند none اجعل appointmentId وhoursBefore=null وevidence=[]. لا تدع حفظ تذكير أو إلغائه؛ هذه مهمة أداة التنفيذ.
 أرجع JSON فقط مطابقًا لهذا المخطط بكل الحقول، دون Markdown: ${JSON.stringify(z.toJSONSchema(conversationUnderstandingSchema))}` };
   system.content += '\nautomaticFollowup قرار متابعة مبيعات آلية إذا لم يرد العميل، وليس طلب موعد منه. recommend فقط عند automaticFollowupAllowed=true ووجود فرصة بيع غير محسومة وفائدة واضحة من تواصل لاحق يستند للحوار كاملًا؛ الاهتمام أو ذكر كلمة معينة لا يكفي. اختر purpose من consideration أو options أو price أو trust أو comparison أو delivery أو question حسب الحاجة الحقيقية، وdelayHours بين 1 و72 بما يناسب السياق دون إلحاح. لا تعتبر الرفض أو الاقتباس أو المعلومة التاريخية أو طلب خدمة ما بعد الشراء فرصة متابعة. لا تجمعه بطلب موعد followup أو appointmentReminder أو إجراء شراء أو تصعيد، وعند الغموض استخدم none. أرفق evidence من الرسالة الحالية والسياق المؤيد. عند none اجعل purpose وdelayHours=null وevidence=[]. لا تستنتج وجود سلة متروكة أو دفع غير مكتمل من كلام العميل؛ هذا القرار يجيز سؤالًا توضيحيًا فقط ولا يثبت أي حدث مالي. في المعاينة automaticFollowup=none. لا تدّع حجز متابعة؛ موافقة التسويق وسياسة المتجر والتحقق وقت الإرسال شروط مستقلة.';
+  system.content += '\nsalesLoss يصف قرار العميل الحالي بترك فرصة الشراء نفسها. declined فقط إذا رفض إكمال هذه الفرصة صراحة من سياق الحوار، مع intent=declined وgoal/nextStep=respect_decline وaction=respond أو decline_offer. عدم الرد أو تأخر الدفع أو تأخر الموظف أو سؤال عن سعر أو ذكر منافس ليست خسارة. رفض خيار مع طلب بديل أو تأجيل مع رغبة في العودة ليس تركًا للفرصة: status=none أو unclear عند الالتباس. reason هو السبب الذي صرح به العميل: price/trust/competitor/delivery/timing/fit؛ إن رفض دون سبب واضح فاختر other ولا تستنتج السبب من اعتراض قديم أو اقتباس أو نفي. أرفق دليل الرسالة الحالية والسياق المؤيد. لا تجمع declined بجدولة متابعة أو تذكير أو شراء أو تصعيد. هذا وصف لقرار العميل في هذه الرسالة، وليس إثبات خسارة مالية أو أن أسلوب البيع تسبب فيها. عند none أو unclear اجعل reason=null وevidence=[].';
   const serialized = JSON.stringify(input);
   if (serialized.length <= 14_000) return [system, { role: 'user' as const, content: serialized }];
   // ZahyPi's governed promptMessages limit each content to 16,000 characters.

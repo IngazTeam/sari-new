@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
-import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
+import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested, conversationUnderstandingIdentity } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { buildSalesReplyMessages, CONTEXTUAL_REPLY_UNAVAILABLE } from './sales-reply-prompt';
@@ -1517,13 +1517,15 @@ export const STAGE_ORDER: Record<string, number> = {
   payment_failed: -1, lost: -2,
 };
 
-async function updateDealStage(convId: number, intent: string, merchantId?: number): Promise<void> {
+async function updateDealStage(convId: number, intent: string, merchantId?: number, customerPhone?: string): Promise<void> {
   if (!merchantId) return;
   if (intent === 'declined') {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (pool) await pool.execute(`UPDATE conversations SET deal_stage = 'lost'
-      WHERE id = ? AND merchantId = ? AND deal_stage NOT IN ('paid', 'purchased')`, [convId, merchantId]);
+    const identity = conversationUnderstandingIdentity();
+    if (!customerPhone || identity?.mode === 'preview' || identity?.merchantId !== merchantId || identity.conversationId !== convId) return;
+    try {
+      const { recordContextualSalesLoss } = await import('./contextual-sales-loss');
+      await recordContextualSalesLoss({ merchantId, conversationId: convId, incomingMessageId: identity.incomingMessageId, customerPhone });
+    } catch { console.warn('[DealStage] Decline projection deferred'); }
     return;
   }
   const newStage = DEAL_STAGE_MAP[intent];
@@ -1543,8 +1545,8 @@ async function updateDealStage(convId: number, intent: string, merchantId?: numb
     if (['paid', 'purchased'].includes(current)) return;
     if ((STAGE_ORDER[newStage] ?? 0) > (STAGE_ORDER[current] ?? 0) || newStage === 'returning') {
       await pool.execute(
-        `UPDATE conversations SET deal_stage = ? ${whereClause}`,
-        [newStage, ...params]
+        `UPDATE conversations SET deal_stage = ?,loss_reason=NULL,stalled_since=NULL ${whereClause} AND deal_stage <=> ?`,
+        [newStage, ...params, (rows as any[])[0]?.deal_stage ?? null]
       );
     }
   } catch (err) { console.warn('[DealStage] Update failed (non-blocking):', err); }
@@ -1645,6 +1647,12 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
 }
 
 async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryCutoff: number): Promise<string> {
+  // Record explicit opportunity withdrawal before checkout/reminder early returns.
+  // This is an interpreted pipeline fact, independent of whether cancelling an external offer succeeds.
+  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId
+    && currentConversationUnderstanding()?.intent === 'declined') {
+    await updateDealStage(params.conversationId, 'declined', params.merchantId, params.customerPhone);
+  }
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId && contextualHandoffRequested(params.message)) {
     const escalation = await handleSmartEscalation({ merchantId: params.merchantId, conversationId: params.conversationId,
       customerPhone: params.customerPhone, customerName: params.customerName, customerQuestion: params.message,
@@ -1934,7 +1942,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
     // ENH-FIX: Update dealStage BEFORE any early return (cache, fast path, etc.)
     if (convId) {
-      await updateDealStage(convId, earlyIntent, params.merchantId);
+      if (earlyIntent !== 'declined') await updateDealStage(convId, earlyIntent, params.merchantId, params.customerPhone);
       // Sync dealStage to in-memory session for V2 escalation
       if (existingSession) {
         const stageMap: Record<string, string> = {

@@ -21,6 +21,7 @@ export type SignalType =
   | 'purchase_refunded'
   | 'question_repeated'     // العميل كرر سؤاله
   | 'customer_left'         // العميل غادر بدون رد
+  | 'sales_declined'        // رفض فرصة شراء صراحة حسب تحليل محادثة موثق، وليس خسارة مالية
   | 'escalation_requested'  // العميل طلب بشري
   | 'price_objection'       // اعتراض على السعر
   | 'knowledge_gap'         // البوت ما عنده معلومات

@@ -1,6 +1,7 @@
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import type { SignalType } from '../db/learning';
+import type { PoolConnection } from 'mysql2/promise';
 
 export type LearningSignalInput = {
   merchantId: number; conversationId: number; signalType: SignalType; signalWeight?: number;
@@ -13,7 +14,7 @@ export class LearningSignalCaptureError extends Error {
   }
 }
 const types: readonly SignalType[] = ['positive_feedback','purchase_completed','purchase_refunded','question_repeated',
-  'customer_left','escalation_requested','price_objection','knowledge_gap','merchant_correction','long_conversation','quick_resolution'];
+  'customer_left','sales_declined','escalation_requested','price_objection','knowledge_gap','merchant_correction','long_conversation','quick_resolution'];
 const invalid = () => { throw new LearningSignalCaptureError('invalid_input'); };
 function text(value: unknown, maximum: number): string | null {
   if (value === undefined) return null;
@@ -46,35 +47,7 @@ export async function captureLearningSignals(inputs: readonly LearningSignalInpu
     const connection=await pool.getConnection();
     try {
       await connection.beginTransaction();
-      // Lock parent before sources, matching analysis. Never hold it across an AI call.
-      const [owners]=await connection.execute<any[]>('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchantId]);
-      if(!owners.length)throw new LearningSignalCaptureError('ownership');
-      const conversations=Array.from(new Set(values.map(value=>value.conversationId))).sort((a,b)=>a-b);
-      const [owned]=await connection.execute<any[]>(`SELECT id FROM conversations WHERE merchantId=?
-        AND id IN (${conversations.map(()=>'?').join(',')}) ORDER BY id FOR SHARE`,[merchantId,...conversations]);
-      if(owned.length!==conversations.length)throw new LearningSignalCaptureError('ownership');
-      // A locking count observes the latest committed admissions, even under REPEATABLE READ.
-      const [today]=await connection.execute<any[]>(`SELECT id FROM sari_learning_signals WHERE merchant_id=?
-        AND created_at>=UTC_DATE() AND created_at<TIMESTAMPADD(DAY,1,UTC_DATE()) LIMIT 500 FOR UPDATE`,[merchantId]);
-      let admitted=today.length;
-      for(const value of values){
-        if(value.source){
-          const [existing]=await connection.execute<any[]>(`SELECT * FROM sari_learning_signals
-            WHERE merchant_id=? AND source_key=? AND signal_type=? FOR UPDATE`,[merchantId,value.source,value.signalType]);
-          if(existing[0]){
-            const row=existing[0];
-            if(row.source_key!==value.source||row.signal_type!==value.signalType||row.conversation_id!==value.conversationId
-              || Number(row.signal_weight)!==value.weight||row.bot_message!==value.bot||row.customer_message!==value.customer
-              || row.merchant_correction!==value.correction||row.context_summary!==value.context) throw new LearningSignalCaptureError('source_conflict');
-            continue;
-          }
-        }
-        if(admitted>=500)throw new LearningSignalCaptureError('daily_limit');
-        await connection.execute(`INSERT INTO sari_learning_signals
-          (merchant_id,conversation_id,signal_type,signal_weight,bot_message,customer_message,merchant_correction,context_summary,source_key)
-          VALUES (?,?,?,?,?,?,?,?,?)`,[merchantId,value.conversationId,value.signalType,value.weight,value.bot,value.customer,value.correction,value.context,value.source]);
-        admitted++;
-      }
+      await captureLearningSignalsInTransaction(connection, inputs);
       await connection.commit();
     } catch(error){try{await connection.rollback();}catch{/* A lost acknowledgement is resolved by the same source identity. */}throw error;}
     finally{connection.release();}
@@ -84,4 +57,42 @@ export async function captureLearningSignals(inputs: readonly LearningSignalInpu
     if(safe.code!=='daily_limit')console.error('[Learning] Signal batch not confirmed',{reason:safe.code});
     if(strict)throw safe;
   }
+}
+
+/** Same admission checks inside a caller-owned transaction; never commits or swallows errors. */
+export async function captureLearningSignalsInTransaction(connection: PoolConnection, inputs: readonly LearningSignalInput[]): Promise<void> {
+  if (!Array.isArray(inputs)||inputs.length>20) return invalid();
+  if (!inputs.length) return;
+  const values=inputs.map(normalize),merchantId=values[0].merchantId;
+  if (values.some(value=>value.merchantId!==merchantId)) return invalid();
+  // Lock parent before sources, matching analysis. Never hold it across an AI call.
+  const [owners]=await connection.execute<any[]>('SELECT id FROM merchants WHERE id=? FOR UPDATE',[merchantId]);
+  if(!owners.length)throw new LearningSignalCaptureError('ownership');
+  const conversations=Array.from(new Set(values.map(value=>value.conversationId))).sort((a,b)=>a-b);
+  const [owned]=await connection.execute<any[]>(`SELECT id FROM conversations WHERE merchantId=?
+    AND id IN (${conversations.map(()=>'?').join(',')}) ORDER BY id FOR SHARE`,[merchantId,...conversations]);
+  if(owned.length!==conversations.length)throw new LearningSignalCaptureError('ownership');
+  // A locking count observes the latest committed admissions, even under REPEATABLE READ.
+  const [today]=await connection.execute<any[]>(`SELECT id FROM sari_learning_signals WHERE merchant_id=?
+    AND created_at>=UTC_DATE() AND created_at<TIMESTAMPADD(DAY,1,UTC_DATE()) LIMIT 500 FOR UPDATE`,[merchantId]);
+  let admitted=today.length;
+  for(const value of values){
+    if(value.source){
+      const [existing]=await connection.execute<any[]>(`SELECT * FROM sari_learning_signals
+        WHERE merchant_id=? AND source_key=? AND signal_type=? FOR UPDATE`,[merchantId,value.source,value.signalType]);
+      if(existing[0]){
+        const row=existing[0];
+        if(row.source_key!==value.source||row.signal_type!==value.signalType||row.conversation_id!==value.conversationId
+          || Number(row.signal_weight)!==value.weight||row.bot_message!==value.bot||row.customer_message!==value.customer
+          || row.merchant_correction!==value.correction||row.context_summary!==value.context) throw new LearningSignalCaptureError('source_conflict');
+        continue;
+      }
+    }
+    if(admitted>=500)throw new LearningSignalCaptureError('daily_limit');
+    await connection.execute(`INSERT INTO sari_learning_signals
+      (merchant_id,conversation_id,signal_type,signal_weight,bot_message,customer_message,merchant_correction,context_summary,source_key)
+      VALUES (?,?,?,?,?,?,?,?,?)`,[merchantId,value.conversationId,value.signalType,value.weight,value.bot,value.customer,value.correction,value.context,value.source]);
+    admitted++;
+  }
+
 }

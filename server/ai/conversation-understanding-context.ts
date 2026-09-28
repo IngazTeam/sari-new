@@ -30,6 +30,11 @@ export const conversationUnderstandingSchema = z.object({
     delayHours: z.number().int().min(1).max(72).nullable(),
     evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
   }).strict().optional(),
+  salesLoss: z.object({
+    status: z.enum(['none', 'declined', 'unclear']),
+    reason: z.enum(['price', 'trust', 'competitor', 'delivery', 'timing', 'fit', 'other']).nullable(),
+    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+  }).strict().optional(),
   appointmentReminder: z.object({
     status: z.enum(['none', 'schedule', 'cancel', 'clarify']),
     appointmentId: z.number().int().positive().max(2147483647).nullable(),

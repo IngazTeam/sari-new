@@ -1,235 +1,57 @@
-/**
- * Loss Detector — Why didn't the customer buy?
- * 
- * Periodic background job that analyzes stalled conversations and
- * classifies the reason for loss. This data feeds:
- * - Sales Pipeline Board (loss reasons breakdown)
- * - Learning Engine (pattern analysis of failures)
- * - Contextual Follow-ups (recovery messages based on reason)
- * 
- * Runs every hour via cronJobs.ts
- * 
- * 8 Loss Reasons:
- *   price           — last objection was about price + ghost
- *   trust           — last objection was about trust + ghost
- *   competitor      — mentioned another store/competitor
- *   delivery        — asked about delivery + ghost
- *   payment_failed  — Tap status = FAILED/DECLINED (set by tap-webhook.ts)
- *   payment_abandoned — payment link sent but never completed
- *   no_response     — ghost 72h with no clear objection
- *   human_needed    — escalation expired without merchant response
- */
-
+/** Explicit customer declines are interpreted centrally; elapsed time only marks inactivity. */
 import { getPool } from '../db';
-import { captureSignal } from '../db/learning';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { recordContextualSalesLoss, type ContextualSalesLoss } from './contextual-sales-loss';
+export type LossDetectionResult = ContextualSalesLoss;
+export type LossReason = ContextualSalesLoss['reason'];
+// Fairness only, never execution authority. Restarting begins again; stored source keys deduplicate successful work.
+let recoveryAfterMessageId = 0;
 
-// ═══════════════════════════════════════════════════════════════
-// Types
-// ═══════════════════════════════════════════════════════════════
-
-export type LossReason =
-  | 'price'
-  | 'trust'
-  | 'competitor'
-  | 'delivery'
-  | 'payment_failed'
-  | 'payment_abandoned'
-  | 'no_response'
-  | 'human_needed';
-
-export interface LossDetectionResult {
-  merchantId: number;
-  conversationId: number;
-  reason: LossReason;
-  lastCustomerMessage: string;
-  stalledHours: number;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Objection Detection Patterns
-// ═══════════════════════════════════════════════════════════════
-
-const OBJECTION_PATTERNS: { reason: LossReason; patterns: RegExp[] }[] = [
-  {
-    reason: 'price',
-    patterns: [
-      /غالي/i, /غالية/i, /كثير/i, /مبالغ/i, /السعر عالي/i,
-      /أرخص/i, /أقل/i, /ما عندكم عروض/i, /خصم/i, /تخفيض/i,
-      /expensive/i, /too much/i, /cheaper/i,
-    ],
-  },
-  {
-    reason: 'trust',
-    patterns: [
-      /ما أعرفكم/i, /مضمون/i, /موثوق/i, /أول مرة/i,
-      /مو نصب/i, /ضمان/i, /ما أثق/i, /مجرب/i,
-    ],
-  },
-  {
-    reason: 'competitor',
-    patterns: [
-      /مكان ثاني/i, /محل ثاني/i, /أقارن/i, /بشوف عند/i,
-      /لقيت أفضل/i, /عند غيركم/i, /منافس/i, /بديل/i,
-      /another store/i, /competitor/i,
-    ],
-  },
-  {
-    reason: 'delivery',
-    patterns: [
-      /توصيل/i, /شحن/i, /يوصل/i, /كم يوم/i,
-      /ما يوصل/i, /بعيد/i, /مدينت/i, /عنوان/i,
-    ],
-  },
-];
-
-// ═══════════════════════════════════════════════════════════════
-// Core: Detect Lost Deals
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Scan all merchants' conversations for stalled deals and classify loss reasons.
- * Called by cron job every hour.
- */
+/** Bounded background recovery for a turn not projected in the live reply path.
+ * No provider calls, keyword classification, outbound contact or financial inference. */
 export async function detectLostDeals(): Promise<LossDetectionResult[]> {
   const results: LossDetectionResult[] = [];
-
   try {
-    const pool = await getPool();
-    if (!pool) return results;
-
-    await assertRuntimeSchema('loss detector', [{
-      table: 'conversations',
-      columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at'],
-    }]);
-
-    // ── 1. Payment link sent but no payment (24h+) ──
-    const [paymentAbandoned] = await pool.execute(
-      `SELECT c.id, c.merchantId, c.customerPhone, c.lastMessage,
-              TIMESTAMPDIFF(HOUR, c.payment_link_sent_at, NOW()) as hours_since
-       FROM conversations c
-       WHERE c.deal_stage = 'payment_link_sent'
-         AND c.payment_link_sent_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
-         AND c.loss_reason IS NULL
-       LIMIT 100`
-    );
-
-    for (const row of paymentAbandoned as any[]) {
-      await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'payment_abandoned', stalled_since = payment_link_sent_at WHERE id = ? AND merchantId = ?`,
-        [row.id, row.merchantId]
-      );
-      results.push({
-        merchantId: row.merchantId,
-        conversationId: row.id,
-        reason: 'payment_abandoned',
-        lastCustomerMessage: row.lastMessage || '',
-        stalledHours: row.hours_since,
-      });
+    const pool = await getPool(); if (!pool) return results;
+    await assertRuntimeSchema('contextual loss detector', [
+      { table: 'conversations', columns: ['deal_stage','loss_reason','stalled_since'] },
+      { table: 'ai_conversation_understanding', columns: ['incoming_message_id','result_json','state'] },
+      { table: 'sari_learning_signals', columns: ['merchant_id','source_key','signal_type'] },
+    ]);
+    // Actual message activity is evidence of waiting only, never proof of rejection or payment failure.
+    // Cap mutations per scan; a resumed conversation loses its inactivity marker, even at the same stage.
+    await pool.execute(`UPDATE conversations c SET c.stalled_since=NULL
+      WHERE c.deal_stage IN ('interested','qualified','ready','payment_link_sent','payment_failed')
+        AND c.loss_reason IS NULL AND c.stalled_since IS NOT NULL
+        AND EXISTS(SELECT 1 FROM messages m WHERE m.conversationId=c.id AND m.createdAt>=TIMESTAMPADD(HOUR,-72,UTC_TIMESTAMP()))
+      LIMIT 200`);
+    await pool.execute(`UPDATE conversations c SET c.stalled_since=(SELECT MAX(m.createdAt) FROM messages m WHERE m.conversationId=c.id)
+      WHERE c.deal_stage IN ('interested','qualified','ready','payment_link_sent','payment_failed')
+        AND c.loss_reason IS NULL AND c.stalled_since IS NULL
+        AND EXISTS(SELECT 1 FROM messages m WHERE m.conversationId=c.id)
+        AND NOT EXISTS(SELECT 1 FROM messages m WHERE m.conversationId=c.id AND m.createdAt>=TIMESTAMPADD(HOUR,-72,UTC_TIMESTAMP()))
+      LIMIT 200`);
+    const [rows] = await pool.execute<any[]>(`SELECT c.id,c.merchantId,c.customerPhone,u.incoming_message_id FROM conversations c
+      JOIN ai_conversation_understanding u ON u.conversation_id=c.id AND u.merchant_id=c.merchantId
+      JOIN messages m ON m.id=u.incoming_message_id AND m.conversationId=c.id AND m.direction='incoming'
+      WHERE c.deal_stage NOT IN ('paid','purchased') AND c.human_takeover=0 AND u.state='ready'
+        AND u.incoming_message_id>?
+        AND JSON_UNQUOTE(JSON_EXTRACT(u.result_json,'$.salesLoss.status'))='declined'
+        AND NOT EXISTS(SELECT 1 FROM messages newer WHERE newer.conversationId=c.id AND newer.direction='incoming' AND newer.id>m.id)
+        AND NOT EXISTS(SELECT 1 FROM sari_learning_signals s WHERE s.merchant_id=c.merchantId
+          AND s.source_key=CONCAT('contextual_loss:',c.id,':',u.incoming_message_id) AND s.signal_type='sales_declined')
+      ORDER BY u.incoming_message_id LIMIT 200`, [recoveryAfterMessageId]);
+    // Bad evidence or a merchant at quota must not permanently starve a later merchant.
+    recoveryAfterMessageId = rows.length === 200 ? Number(rows[rows.length - 1].incoming_message_id) : 0;
+    for (const row of rows) {
+      try {
+        const result = await recordContextualSalesLoss({ merchantId: row.merchantId, conversationId: row.id,
+          customerPhone: row.customerPhone, incomingMessageId: row.incoming_message_id });
+        if (result) results.push(result);
+      } catch { console.warn('[LossDetector] Source not projected', { reason: 'evidence_or_storage_unavailable' }); }
     }
-
-    // ── 2. Escalation expired (pending > 24h, no merchant reply) ──
-    const [escalationExpired] = await pool.execute(
-      `SELECT c.id, c.merchantId, c.customerPhone, c.lastMessage
-       FROM conversations c
-       INNER JOIN sari_escalation_queue eq ON eq.conversation_id = c.id
-       WHERE eq.status IN ('pending', 'notified')
-         AND eq.created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
-         AND c.deal_stage NOT IN ('paid', 'lost')
-         AND c.loss_reason IS NULL
-       LIMIT 100`
-    );
-
-    for (const row of escalationExpired as any[]) {
-      await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'human_needed', stalled_since = NOW() WHERE id = ? AND merchantId = ?`,
-        [row.id, row.merchantId]
-      );
-      results.push({
-        merchantId: row.merchantId,
-        conversationId: row.id,
-        reason: 'human_needed',
-        lastCustomerMessage: row.lastMessage || '',
-        stalledHours: 24,
-      });
-    }
-
-    // ── 3. Ghost conversations (72h+ no activity, not paid/lost) ──
-    const [ghostConvs] = await pool.execute(
-      `SELECT c.id, c.merchantId, c.customerPhone, c.lastMessage, c.deal_stage,
-              TIMESTAMPDIFF(HOUR, c.lastMessageAt, NOW()) as hours_since
-       FROM conversations c
-       WHERE c.lastMessageAt < DATE_SUB(NOW(), INTERVAL 72 HOUR)
-         AND c.deal_stage IN ('interested', 'qualified', 'ready')
-         AND c.loss_reason IS NULL
-       LIMIT 200`
-    );
-
-    for (const row of ghostConvs as any[]) {
-      const reason = classifyLossReason(row.lastMessage || '');
-      await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = ?, stalled_since = lastMessageAt WHERE id = ? AND merchantId = ?`,
-        [reason, row.id, row.merchantId]
-      );
-      results.push({
-        merchantId: row.merchantId,
-        conversationId: row.id,
-        reason,
-        lastCustomerMessage: row.lastMessage || '',
-        stalledHours: row.hours_since,
-      });
-    }
-
-    // ── 4. Capture loss signals for Learning Engine ──
-    for (const loss of results) {
-      captureSignal({
-        merchantId: loss.merchantId,
-        conversationId: loss.conversationId,
-        signalType: 'customer_left',
-        signalWeight: 1.0,
-        customerMessage: loss.lastCustomerMessage.substring(0, 500),
-        contextSummary: `صفقة خاسرة: ${loss.reason} (بعد ${loss.stalledHours} ساعة)`,
-      }).catch(() => {});
-    }
-
-    // A loss classification is analytics, not authority to recontact a customer.
-    // Outbound follow-ups require a current sealed recommendation and consent.
-
-    if (results.length > 0) {
-      console.log(`[LossDetector] 📊 Detected ${results.length} lost deals:`,
-        results.reduce((acc, r) => {
-          acc[r.reason] = (acc[r.reason] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-      );
-    }
-
-    return results;
-  } catch (err: any) {
-    console.error('[LossDetector] Failed:', err.message);
-    return results;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Loss Reason Classification (Rule-Based)
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Classify loss reason from the last customer message.
- * Falls back to 'no_response' if no pattern matches.
- */
-function classifyLossReason(lastMessage: string): LossReason {
-  if (!lastMessage) return 'no_response';
-  const msg = lastMessage.toLowerCase();
-
-  for (const { reason, patterns } of OBJECTION_PATTERNS) {
-    if (patterns.some(p => p.test(msg))) {
-      return reason;
-    }
-  }
-
-  return 'no_response';
+  } catch { console.warn('[LossDetector] Scan unavailable'); }
+  return results;
 }
 
 // ═══════════════════════════════════════════════════════════════

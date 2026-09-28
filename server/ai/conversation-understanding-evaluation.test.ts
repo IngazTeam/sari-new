@@ -6,6 +6,15 @@ import type { ConversationUnderstanding } from './conversation-understanding-con
 const result = (change:Partial<ConversationUnderstanding> = {}):ConversationUnderstanding=>({version:1,intent:'inquiring',goal:'explain_requested_information',action:'respond',confidence:0.96,conditional:false,ambiguous:false,targetQuoteId:null,targetProvider:'none',productIds:[],sessionIndex:null,requestKind:'ordinary',sentiment:'neutral',topicChanged:false,objection:'none',needs:[],unresolvedQuestions:[],summary:'فهم اصطناعي لاختبار المقياس.',nextStep:'answer',evidence:[{messageId:3,excerpt:'نعم'}],...change});
 const find = (id:string)=>cases.find(c=>c.id===id)!;
 describe('model evaluation scoring guards (not live quality evidence)',()=>{
+  it('scores explicit decline reasons and flags unintended loss even when the action only responds',()=>{
+    const value=result({intent:'declined',goal:'respect_decline',nextStep:'respect_decline',salesLoss:{status:'declined',reason:'timing',evidence:[{messageId:3,excerpt:'جدول عملي'}]}});
+    expect(scoreUnderstanding(find('loss-explicit-timing'),value).passed).toBe(true);
+    expect(scoreUnderstanding(find('loss-explicit-timing'),{...value,salesLoss:{...value.salesLoss!,reason:'price'}}).passed).toBe(false);
+    expect(scoreUnderstanding(find('loss-explicit-timing'),{...value,confidence:.5}).mismatches).toContain('salesLossBlocked');
+    for(const id of ['loss-price-question','loss-quoted-rejection','loss-reject-option-not-opportunity','loss-defer-not-decline'])
+      expect(scoreUnderstanding(find(id),value).criticalFailure).toBe(true);
+    expect(scoreUnderstanding(find('loss-no-stated-reason'),{...value,salesLoss:{...value.salesLoss!,reason:'other'}}).passed).toBe(true);
+  });
   it('scores automatic purpose and flags outreach after withdrawal or without recorded consent',()=>{
     const automaticFollowup:NonNullable<ConversationUnderstanding['automaticFollowup']>={status:'recommend',purpose:'options',delayHours:4,evidence:[{messageId:3,excerpt:'الفرق'}]};
     expect(scoreUnderstanding(find('automatic-negated-price'),result({automaticFollowup})).passed).toBe(true);
