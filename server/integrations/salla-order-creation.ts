@@ -7,6 +7,7 @@ import { sallaOrderCreateSchema, sallaOrderIntentSchema, type SallaOrderIntent, 
 import { assertSallaOrderAuthority, sallaAuthoritySchema, type SallaOrderAuthority } from './salla-order-projection';
 import { assertSallaOrderSelection, sallaProductSelectionSchema, type SallaProductSelection } from './salla-catalog';
 import { assertSallaCreationEffectsSchema, enqueueSallaCreationEffects } from './salla-creation-effects';
+import { sallaConfirmationSeal, assertSallaConfirmationSeal, formatSallaCreationConfirmation } from './salla-creation-confirmation';
 
 const internalId = z.number().int().positive().max(2147483647);
 export const sallaCreationAttemptSchema = z.object({ id:internalId, merchantId:internalId, token:z.string().uuid() }).strict();
@@ -40,9 +41,9 @@ async function readOperation(merchantId:number,actorUserId:number,requestId:stri
   const row=rows[0];if(!row||row.actor_user_id!==actorUserId||row.request_hash!==hash)throw new SallaCreationError('request_conflict');
   return row;
 }
-async function completedResult(row:any):Promise<SallaCreationResult> {
+async function completedOrder(row:any) {
   const pool=await getPool();if(!pool)throw Error('Database unavailable');
-  const [orders]=await pool.execute<any[]>(`SELECT o.id,o.orderNumber,o.paymentUrl FROM orders o
+  const [orders]=await pool.execute<any[]>(`SELECT o.* FROM orders o
     JOIN merchants m ON m.id=o.merchantId AND m.status='active'
     JOIN salla_order_projections p ON p.local_order_id=o.id AND p.merchant_id=o.merchantId
     JOIN salla_connections c ON c.id=p.connection_id AND c.merchantId=p.merchant_id AND c.salla_store_id=p.store_id AND c.syncStatus='active'
@@ -50,7 +51,26 @@ async function completedResult(row:any):Promise<SallaCreationResult> {
       AND o.sallaOrderId=CONCAT('salla:',p.store_id,':',p.external_order_id)`,[row.local_order_id,row.merchant_id,row.store_id,row.connection_id]);
   const saved=typeof row.result_json==='string'?JSON.parse(row.result_json):row.result_json,o=orders[0];
   if(orders.length!==1||!saved||saved.orderId!==o.id||saved.orderNumber!==o.orderNumber||saved.paymentUrl!==o.paymentUrl)throw new SallaCreationError('result_unavailable');
+  try { assertSallaConfirmationSeal(o,saved.confirmation); }
+  catch { throw new SallaCreationError('result_unavailable'); }
+  return o;
+}
+async function completedResult(row:any):Promise<SallaCreationResult> {
+  const o=await completedOrder(row);
   return {orderId:o.id,orderNumber:o.orderNumber,paymentUrl:o.paymentUrl};
+}
+/** Build from the same verified row, never from a second unrestricted order
+ * lookup after replay. This reads evidence only; it cannot send or create. */
+export async function readSallaCreationConfirmation(input:{merchantId:number;actorUserId:number;requestId:string;intent:SallaOrderIntent}) {
+  const merchantId=internalId.parse(input.merchantId),actorUserId=internalId.parse(input.actorUserId);
+  const {requestId,...intent}=sallaOrderCreateSchema.parse({...input.intent,requestId:input.requestId});
+  await assertSallaCreationSchema();
+  const row=await readOperation(merchantId,actorUserId,requestId,sallaIntentHash(intent));
+  if(row.state!=='completed')pendingError(row.state);
+  const order=await completedOrder(row);
+  if(!['pending','processing'].includes(order.status)||order.payment_status!=='unpaid')throw new SallaCreationError('result_unavailable');
+  try{return formatSallaCreationConfirmation(order.orderNumber,JSON.parse(order.items),order.totalAmount,order.paymentUrl||'',order.isGift?order.giftRecipientName:undefined);}
+  catch{throw new SallaCreationError('result_unavailable');}
 }
 function pendingError(state:string):never {
   throw new SallaCreationError(state==='rejected'?'operation_rejected':state==='review'?'operation_review':'operation_pending');
@@ -125,8 +145,13 @@ export async function lockSallaCreation(c:PoolConnection,raw:SallaCreationAttemp
   if(rows.length!==1)throw Error('Creation attempt unavailable');
 }
 export async function completeSallaCreation(c:PoolConnection,a:SallaCreationAttempt,result:SallaCreationResult) {
+  // Read the exact inserted row inside its transaction. No caller can supply a
+  // different confirmation total, recipient or catalogue snapshot.
+  const [orders]=await c.execute<any[]>('SELECT * FROM orders WHERE id=? AND merchantId=? FOR SHARE',[result.orderId,a.merchantId]);
+  if(orders.length!==1)throw Error('Salla confirmation order unavailable');
+  const confirmation=sallaConfirmationSeal(orders[0]);
   const [r]=await c.execute<any>(`UPDATE salla_order_creations SET state='completed',local_order_id=?,result_json=?,updated_at=UTC_TIMESTAMP(3)
-    WHERE id=? AND merchant_id=? AND attempt_token=? AND state='dispatching'`,[result.orderId,JSON.stringify(result),a.id,a.merchantId,a.token]);
+    WHERE id=? AND merchant_id=? AND attempt_token=? AND state='dispatching'`,[result.orderId,JSON.stringify({...result,confirmation}),a.id,a.merchantId,a.token]);
   if(r.affectedRows!==1)throw Error('Creation completion unavailable');
   await enqueueSallaCreationEffects(c,a.merchantId,a.id,result.orderId);
 }

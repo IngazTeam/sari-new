@@ -16,7 +16,7 @@ import { bookingPaymentLinkRenewalSchema } from '../shared/booking-payment-link-
 import { checkoutDiscountReleaseSchema } from '../shared/checkout-discount-release';
 import { sallaOrderCreateSchema } from '../shared/salla-order-create';
 import { sallaEffectReviewProcedures } from './routers-salla-effect-review';
-import { runSallaOrderCreation, SallaCreationError } from './integrations/salla-order-creation';
+import { runSallaOrderCreation, readSallaCreationConfirmation, SallaCreationError } from './integrations/salla-order-creation';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
 import { salesOfferReviewProcedures } from './routers-sales-offer-review';
@@ -2170,10 +2170,10 @@ export const appRouter = router({
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const { parseOrderMessage, createOrderFromChat, generateOrderConfirmationMessage, generateGiftOrderConfirmationMessage } = await import('./automation/order-from-chat');
+        const { parseOrderMessage, createOrderFromChat } = await import('./automation/order-from-chat');
 
         const { requestId, ...intent } = input;
-        let result;
+        let result, confirmationMessage;
         try {
           result = await runSallaOrderCreation({ merchantId:merchant.id, actorUserId:ctx.user.id, requestId, intent }, async creation => {
             const parsedOrder = await parseOrderMessage(intent.message,merchant.id);
@@ -2181,6 +2181,7 @@ export const appRouter = router({
             return createOrderFromChat(merchant.id,intent.customerPhone,intent.customerName,
               { ...parsedOrder,shipTo:intent.shipTo },intent.message,creation);
           });
+          confirmationMessage = await readSallaCreationConfirmation({merchantId:merchant.id,actorUserId:ctx.user.id,requestId,intent});
         } catch (error) {
           if (error instanceof SallaCreationError) {
             const messages = {
@@ -2195,30 +2196,6 @@ export const appRouter = router({
           // An unavailable local acknowledgement is not permission to use a new request ID.
           throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر تأكيد حالة العملية. احتفظ بمعرّفها وأعد الاستعلام بالبيانات نفسها؛ لا تنشئ طلبًا بديلًا.'});
         }
-
-        // Get order details for confirmation message
-        const order = await getMerchantOrder(merchant.id, result.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND' });
-        }
-
-        const items = JSON.parse(order.items);
-
-        // Generate confirmation message
-        const confirmationMessage = order.isGift
-          ? generateGiftOrderConfirmationMessage(
-            order.orderNumber || '',
-            order.giftRecipientName || '',
-            items,
-            order.totalAmount,
-            result.paymentUrl || ''
-          )
-          : generateOrderConfirmationMessage(
-            order.orderNumber || '',
-            items,
-            order.totalAmount,
-            result.paymentUrl || ''
-          );
 
         // The durable creation transaction owns notification and Sheets tasks.
 

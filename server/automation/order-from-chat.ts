@@ -17,6 +17,7 @@ import { sallaCatalogAuthority, readSallaOrderExtractionCatalog, selectSallaOrde
 import { SallaIntegration } from '../integrations/salla';
 import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
 import { dispatchSallaCreation, sallaCreationAttemptSchema, type SallaCreationAttempt } from '../integrations/salla-order-creation';
+import { formatSallaCreationConfirmation } from '../integrations/salla-creation-confirmation';
 import {
   getSallaConnectionByMerchantId,
 } from '../db';
@@ -274,35 +275,10 @@ export function generateOrderConfirmationMessage(
   items: Array<{ name: string; quantity: number; price: number }>,
   totalAmount: number,
   paymentUrl: string,
-  discountInfo?: DiscountInfo
+  _discountInfo?: DiscountInfo
 ): string {
-  const itemsList = items.map(item => 
-    `• ${item.name} × ${item.quantity} = ${formatMinorMoney(item.price * item.quantity)}`
-  ).join('\n');
-
-  let discountSection = '';
-  if (discountInfo) {
-    const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
-    discountSection = `
-💳 *${discountTypeText}:* ${discountInfo.code}
-💵 *السعر الأصلي:* ${formatMinorMoney(discountInfo.originalAmount)}
-🎉 *الخصم:* -${formatMinorMoney(discountInfo.discountAmount)}
-`;
-  }
-
-  return `✅ *تم إنشاء طلبك بنجاح!*
-
-📦 *رقم الطلب:* ${orderNumber}
-
-*المنتجات:*
-${itemsList}${discountSection}
-💰 *الإجمالي:* ${formatMinorMoney(totalAmount)}
-
-${paymentUrl ? `🔗 *لإتمام الطلب، افتح رابط المتجر:*\n${paymentUrl}` : 'لم يتوفر رابط دفع؛ راجع وسيلة الدفع المسجلة لدى المتجر.'}
-
-📱 سنرسل لك تحديثات عن حالة طلبك عبر الواتساب
-
-شكراً لثقتك بنا! 🌟`;
+  // Keep the legacy argument compatible; local coupon arithmetic is not invoice proof.
+  return formatSallaCreationConfirmation(orderNumber,items,totalAmount,paymentUrl);
 }
 
 /**
@@ -337,36 +313,9 @@ export function generateGiftOrderConfirmationMessage(
   items: Array<{ name: string; quantity: number; price: number }>,
   totalAmount: number,
   paymentUrl: string,
-  discountInfo?: DiscountInfo
+  _discountInfo?: DiscountInfo
 ): string {
-  const itemsList = items.map(item => 
-    `• ${item.name} × ${item.quantity}`
-  ).join('\n');
-
-  let discountSection = '';
-  if (discountInfo) {
-    const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
-    discountSection = `
-💳 *${discountTypeText}:* ${discountInfo.code}
-💵 *السعر الأصلي:* ${formatMinorMoney(discountInfo.originalAmount)}
-🎉 *الخصم:* -${formatMinorMoney(discountInfo.discountAmount)}
-`;
-  }
-
-  return `🎁 *تم إنشاء طلب الهدية بنجاح!*
-
-📦 *رقم الطلب:* ${orderNumber}
-👤 *المستلم:* ${recipientName}
-
-*المنتجات:*
-${itemsList}${discountSection}
-💰 *الإجمالي:* ${formatMinorMoney(totalAmount)}
-
-${paymentUrl ? `🔗 *لإتمام الطلب، افتح رابط المتجر:*\n${paymentUrl}` : 'لم يتوفر رابط دفع؛ راجع وسيلة الدفع المسجلة لدى المتجر.'}
-
-🎉 سنقوم بتوصيل الهدية مع بطاقة تهنئة خاصة
-
-شكراً لاختيارك هديتك معنا! 💝`;
+  return formatSallaCreationConfirmation(orderNumber,items,totalAmount,paymentUrl,recipientName);
 }
 
 /**

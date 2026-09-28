@@ -6,7 +6,7 @@ vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:external.notify}));
 import { getPool,closeDb } from '../db/connection';
 import { assertDisposableDatabase,createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { encryptSecret } from '../security/secrets';
-import { runSallaOrderCreation,dispatchSallaCreation, type SallaCreationAttempt } from './salla-order-creation';
+import { runSallaOrderCreation,dispatchSallaCreation,readSallaCreationConfirmation, type SallaCreationAttempt } from './salla-order-creation';
 import { persistSallaOrderProjection } from './salla-order-projection';
 import { createOrderFromChat } from '../automation/order-from-chat';
 import { persistSallaCatalogRead,selectSallaOrderProduct } from './salla-catalog';
@@ -324,6 +324,54 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
     await expect(run()).rejects.toMatchObject({code:'operation_review'});
     expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(0);
     expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(0);
+    expect(external.post).toHaveBeenCalledTimes(1);
+  });
+  it('reads confirmation from the verified completion without exposing copied customer data in the ledger or new HTTP',async()=>{
+    await run();const text=await readSallaCreationConfirmation(input()),row=await ledger();
+    expect(text).toContain('في سلة #456');expect(text).toContain('Synthetic × 1');expect(text).toContain('الدفع عند الاستلام');
+    const saved=typeof row.result_json==='string'?JSON.parse(row.result_json):row.result_json;
+    expect(saved.confirmation).toEqual({version:1,sha256:expect.stringMatching(/^[a-f0-9]{64}$/)});
+    expect(JSON.stringify(saved)).not.toContain(intent().customerPhone);expect(JSON.stringify(saved)).not.toContain('synthetic-token');
+    expect(await readSallaCreationConfirmation(input())).toBe(text);expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(2);
+  });
+  it.each(['phone','name','amount','currency','items','address','city','gift','gift-name','gift-message','coupon'])('blocks confirmation/replay after a local %s edit without creating a replacement',async mode=>{
+    await run();
+    const assignments:Record<string,string>={phone:"customerPhone='966511111111'",name:"customerName='Changed'",amount:'totalAmount=200',currency:"currency='USD'",items:"items='[]'",address:"address='Changed'",city:"city='Changed'",gift:'isGift=1','gift-name':"giftRecipientName='Other'",'gift-message':"giftMessage='Other'",coupon:"discountCode='OTHER'"};
+    await q('UPDATE orders SET '+assignments[mode]+' WHERE merchantId=?',[merchant]);
+    await expect(readSallaCreationConfirmation(input())).rejects.toMatchObject({code:'result_unavailable'});
+    await expect(run()).rejects.toMatchObject({code:'result_unavailable'});expect((await ledger()).state).toBe('completed');
+    expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(2);
+  });
+  it.each(['missing','version','hash'])('does not fabricate %s confirmation evidence for an existing completed operation',async mode=>{
+    await run();
+    if(mode==='missing')await q("UPDATE salla_order_creations SET result_json=JSON_REMOVE(result_json,'$.confirmation') WHERE merchant_id=?",[merchant]);
+    else await q(`UPDATE salla_order_creations SET result_json=JSON_SET(result_json,'$.confirmation.${mode==='version'?'version':'sha256'}',?) WHERE merchant_id=?`,[mode==='version'?2:'a'.repeat(64),merchant]);
+    await expect(readSallaCreationConfirmation(input())).rejects.toMatchObject({code:'result_unavailable'});
+    await expect(run()).rejects.toMatchObject({code:'result_unavailable'});expect(external.post).toHaveBeenCalledTimes(1);
+  });
+  it.each(['actor','merchant','request','intent'])('does not expose confirmation under a changed %s identity',async mode=>{
+    await run();const next=input();
+    if(mode==='actor')next.actorUserId=otherUser;if(mode==='merchant')next.merchantId++;
+    if(mode==='request')next.requestId=randomUUID();if(mode==='intent')next.intent.customerPhone='966511111111';
+    await expect(readSallaCreationConfirmation(next)).rejects.toMatchObject({code:'request_conflict'});expect(external.post).toHaveBeenCalledTimes(1);
+  });
+  it.each(['cancelled','paid','delivered'])('does not repeat initial unpaid confirmation after %s status',async status=>{
+    await run();await q('UPDATE orders SET status=? WHERE merchantId=?',[status,merchant]);
+    await expect(readSallaCreationConfirmation(input())).rejects.toMatchObject({code:'result_unavailable'});expect(external.post).toHaveBeenCalledTimes(1);
+  });
+  it('does not repeat unpaid confirmation if payment was subsequently recorded while processing',async()=>{
+    await run();await q("UPDATE orders SET status='processing',payment_status='paid' WHERE merchantId=?",[merchant]);
+    await expect(readSallaCreationConfirmation(input())).rejects.toMatchObject({code:'result_unavailable'});
+  });
+  it('retains confirmation for a normal processing update without changing accepted terms',async()=>{
+    await run();const before=await readSallaCreationConfirmation(input());
+    await q("UPDATE orders SET status='processing' WHERE merchantId=?",[merchant]);
+    expect(await readSallaCreationConfirmation(input())).toBe(before);expect((await run()).replayed).toBe(true);
+  });
+  it('never treats a failed operation as completed confirmation',async()=>{
+    external.post.mockRejectedValueOnce(Error('timeout'));
+    await expect(run()).rejects.toMatchObject({code:'operation_review'});
+    await expect(readSallaCreationConfirmation(input())).rejects.toMatchObject({code:'operation_review'});
     expect(external.post).toHaveBeenCalledTimes(1);
   });
 });

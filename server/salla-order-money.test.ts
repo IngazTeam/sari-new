@@ -118,7 +118,7 @@ describe('Salla order transport and monetary authority', () => {
   });
   it('formats a confirmation from minor units and does not invent a missing checkout link', () => {
     const text=generateOrderConfirmationMessage('456',[{name:'Sample',price:9999,quantity:2}],22998,'');
-    expect(text).toContain(formatMinorMoney(19998)); expect(text).toContain(formatMinorMoney(22998));
-    expect(text).toContain('لم يتوفر رابط دفع'); expect(text).not.toContain('22998 ريال');
+    expect(text).not.toContain(formatMinorMoney(19998)); expect(text).toContain(formatMinorMoney(22998));
+    expect(text).toContain('لم يتوفر رابط للمتجر'); expect(text).not.toContain('22998 ريال');
   });
 });
