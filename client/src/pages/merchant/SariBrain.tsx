@@ -1,3 +1,5 @@
+import { KnowledgeIntake } from '@/components/KnowledgeIntake';
+import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { LearningAnalysisStatusCard } from '@/components/LearningAnalysisStatusCard';
@@ -26,7 +28,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
-import { readKnowledgePreview } from '@shared/knowledge-preview';
 
 const ACTION_ICONS: Record<string, string> = {
   document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
@@ -45,18 +46,6 @@ const SOURCE_ICONS: Record<string, React.ReactNode> = {
   website: <Globe className="h-5 w-5 text-purple-500" />,
   settings: <Settings className="h-5 w-5 text-gray-500" />,
   faqs: <HelpCircle className="h-5 w-5 text-orange-500" />,
-};
-
-const RISK_COLORS: Record<string, string> = {
-  low: 'bg-green-100 text-green-800 border-green-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  high: 'bg-red-100 text-red-800 border-red-200',
-};
-
-const RISK_LABELS: Record<string, string> = {
-  low: '🟢 منخفض',
-  medium: '🟡 متوسط',
-  high: '🔴 مرتفع',
 };
 
 export default function SariBrain() {
@@ -80,10 +69,12 @@ export default function SariBrain() {
     window.history.replaceState(window.history.state,'',url);
   };
   const utils = trpc.useUtils();
-  const { data: sources, isLoading } = trpc.sariBrain.getSources.useQuery();
+  const sourcesQuery = trpc.sariBrain.getSources.useQuery();
+  const { data: sources, isLoading } = sourcesQuery;
   const [logPage, setLogPage] = useState(1);
   const [logFilter, setLogFilter] = useState<string>('all');
-  const { data: activityLogData } = trpc.sariBrain.getActivityLog.useQuery({ page: logPage, pageSize: 10, actionType: logFilter === 'all' ? undefined : logFilter });
+  const activityQuery = trpc.sariBrain.getActivityLog.useQuery({ page: logPage, pageSize: 10, actionType: logFilter === 'all' ? undefined : logFilter });
+  const { data: activityLogData } = activityQuery;
   const { data: faqs } = trpc.sariBrain.getFaqs.useQuery();
 
   // Knowledge Engine v4 hooks
@@ -95,13 +86,8 @@ export default function SariBrain() {
   const [newFaqQ, setNewFaqQ] = useState('');
   const [newFaqA, setNewFaqA] = useState('');
 
-  // Smart Intake state
-  const [previewText, setPreviewText] = useState('');
-  const [previewFileName, setPreviewFileName] = useState('');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [testQuestion, setTestQuestion] = useState('');
   const [testResult, setTestResult] = useState<{ question: string; answer: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Knowledge v4 state
   const [addSectionOpen, setAddSectionOpen] = useState(false);
@@ -184,16 +170,18 @@ export default function SariBrain() {
 
   // Polling for async analysis status
   const [polling, setPolling] = useState(false);
+  const requestedStatusAfter = useRef(0);
   const statusQuery = trpc.sariBrain.getAnalysisStatus.useQuery(undefined, {
     enabled: polling,
-    refetchInterval: polling ? 3000 : false, // Poll every 3s
+    retry: false,
+    refetchInterval: query => polling && !query.state.error ? 3000 : false,
   });
 
   // React to status changes — use REAL progress from server
   const STEP_MAP: Record<string, number> = { scraping: 0, processing: 2, knowledge: 3, embedding: 5, completed: 6 };
 
   useEffect(() => {
-    if (!polling || !statusQuery.data) return;
+    if (!polling || statusQuery.dataUpdatedAt < requestedStatusAfter.current || !statusQuery.isFetchedAfterMount || statusQuery.isFetching || statusQuery.isError || !statusQuery.data) return;
     const data = statusQuery.data as any;
 
     if (data.status === 'completed') {
@@ -209,6 +197,8 @@ export default function SariBrain() {
     } else if (data.status === 'error') {
       setPolling(false);
       setAnalysisError(data.error || 'فشل التحليل');
+    } else if (data.status === 'idle') {
+      setPolling(false); setAnalysisError(t('merchantUx.knowledgeIntake.statusMissing'));
     } else if (data.status === 'running') {
       // Real progress from server
       if (data.currentStep && STEP_MAP[data.currentStep] !== undefined) {
@@ -218,7 +208,7 @@ export default function SariBrain() {
         setReportedProgress(Math.max(0, Math.min(100, Number(data.progress) || 0)));
       }
     }
-  }, [statusQuery.data, polling]);
+  }, [statusQuery.data, statusQuery.dataUpdatedAt, statusQuery.isFetchedAfterMount, statusQuery.isFetching, statusQuery.isError, polling]);
 
   useEffect(() => {
     if (!polling) return;
@@ -227,6 +217,7 @@ export default function SariBrain() {
   },[polling]);
 
   const startAnalysis = () => {
+    requestedStatusAfter.current = Date.now();
     setAnalysisResults(null);
     setAnalysisError(null);
     setAnalysisStep(0);
@@ -268,39 +259,6 @@ export default function SariBrain() {
       utils.sariBrain.getHealthScore.invalidate();
     },
     onError: (e) => toast.error('فشل: ' + e.message),
-  });
-
-  // Smart Intake: ingestion result state
-  const [ingestionResult, setIngestionResult] = useState<any>(null);
-
-  const analyzeMutation = trpc.sariBrain.analyzeContent.useMutation({
-    onSuccess: (data: any) => {
-      setAnalysisResult(data.analysis);
-      setIngestionResult(null); // Reset previous ingestion
-      toast.success('تم تحليل المحتوى بنجاح');
-      utils.sariBrain.getActivityLog.invalidate();
-    },
-    onError: (error: any) => toast.error('فشل التحليل: ' + error.message),
-  });
-
-  // Smart Intake: save analyzed content directly to knowledge base
-  const ingestMutation = trpc.sariBrain.ingestAnalyzedContent.useMutation({
-    onSuccess: (data: any) => {
-      setIngestionResult(data);
-      if (data.success) {
-        toast.success(`✅ تم حفظ المعرفة — +${data.evolveResult.added} جديد، ↗${data.evolveResult.evolved} تطوير`);
-      } else {
-        toast.warning(data.warning || 'لم يتم استخراج أقسام معرفية من هذا المحتوى');
-      }
-      // Full cache invalidation (even on partial success)
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getKnowledgeSections.invalidate();
-      utils.sariBrain.getHealthScore.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-      utils.sariBrain.getPendingReviews.invalidate();
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-    },
-    onError: (error: any) => toast.error('فشل حفظ المعرفة: ' + error.message),
   });
 
   const testSariMutation = trpc.sariBrain.testSari.useMutation({
@@ -347,34 +305,7 @@ export default function SariBrain() {
     createFaqMutation.mutate({ question: newFaqQ, answer: newFaqA });
   };
 
-  const handleAnalyze = () => {
-    if (!previewText.trim()) {
-      toast.error('الصق محتوى الملف أولاً');
-      return;
-    }
-    analyzeMutation.mutate({
-      content: previewText,
-      contentType: 'document',
-      fileName: previewFileName || 'محتوى للفحص',
-    });
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    const result = await readKnowledgePreview(file);
-    if ('error' in result) {
-      toast.error(t(result.error === 'tooLong' ? 'knowledgePreviewUx.tooLong' : result.error === 'unsupported' ? 'knowledgePreviewUx.unsupported' : result.error === 'empty' ? 'knowledgePreviewUx.empty' : 'knowledgePreviewUx.unreadable'));
-      return;
-    }
-    setPreviewText(result.content);
-    setPreviewFileName(result.name);
-    setAnalysisResult(null);
-    toast.success(t('knowledgePreviewUx.loaded', { name: result.name }));
-  };
-
-  const totalSources = sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
+  const totalSources = sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
 
   // Integration awareness
   const { term } = useIntegration();
@@ -456,7 +387,7 @@ export default function SariBrain() {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={totalSources === 0}>
+              <Button variant="destructive" disabled={sourcesQuery.isError || isLoading || totalSources === 0}>
                 <RotateCcw className="h-4 w-4 ml-2" />
                 إعادة ضبط كاملة
               </Button>
@@ -472,7 +403,7 @@ export default function SariBrain() {
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                <AlertDialogAction onClick={() => resetBrainMutation.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction disabled={sourcesQuery.isError || isLoading || resetBrainMutation.isPending} onClick={() => resetBrainMutation.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {resetBrainMutation.isPending ? 'جاري الحذف...' : 'نعم، أعد الضبط'}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -523,7 +454,7 @@ export default function SariBrain() {
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{sources?.filter((s: any) => s.type === 'document').length || 0}</div>
+            <div className="text-2xl font-bold text-blue-600">{sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.type === 'document').length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">ملف تعريفي</p>
           </CardContent>
         </Card>
@@ -533,7 +464,7 @@ export default function SariBrain() {
             <Package className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{sources?.find((s: any) => s.type === 'products')?.contentLength || 0}</div>
+            <div className="text-2xl font-bold text-green-600">{sourcesQuery.isError || isLoading ? '—' : sources?.find((s: any) => s.type === 'products')?.contentLength || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">{term('item')} في ذاكرة ساري</p>
           </CardContent>
         </Card>
@@ -611,7 +542,7 @@ export default function SariBrain() {
             <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
           )}
           {polling && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(false)}>{t('brainWorkspaceUx.background')}</Button>}
-          {statusQuery.isError && <p role="alert">{t('brainWorkspaceUx.statusError')} <Button variant="outline" onClick={()=>void statusQuery.refetch()}>{t('brainWorkspaceUx.retry')}</Button></p>}
+          {statusQuery.isError && <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.statusError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void statusQuery.refetch(); }} />}
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-3 justify-end">
               {analysisResults ? (
@@ -1189,7 +1120,7 @@ export default function SariBrain() {
           <CardDescription>كل مصدر يؤثر على ردود ساري — يمكنك حذف أي مصدر بشكل مستقل</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {sourcesQuery.isError ? <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.sourcesError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void sourcesQuery.refetch(); }} /> : isLoading ? (
             <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
           ) : sources && sources.length > 0 ? (
             <div className="space-y-3">
@@ -1707,221 +1638,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'sources'} className="space-y-6" data-brain-section="sources">
-{/* ═══ Phase 2: Smart Intake — Content Preview & Analysis ═══ */}
-      <Card className="border-2 border-dashed border-primary/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            🔬 الفحص الذكي — Smart Intake
-          </CardTitle>
-          <CardDescription>
-            الصق محتوى ملف أو ارفع ملف نصي لفحصه بالذكاء الاصطناعي قبل إضافته لذاكرة ساري
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Input area — collapse after analysis */}
-          {!analysisResult ? (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".txt,.csv" className="hidden" />
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4 ml-2" />
-                اختر ملف TXT/CSV
-              </Button>
-              <span className="text-xs text-muted-foreground self-center">أو الصق المحتوى مباشرة ↓</span>
-            </div>
-            <Textarea
-              value={previewText}
-              onChange={(e) => { setPreviewText(e.target.value); setAnalysisResult(null); }}
-              placeholder="الصق هنا محتوى الملف الذي تريد فحصه... (أسعار، منتجات، سياسات، معلومات عامة)"
-              className="min-h-[120px] text-sm"
-              dir="auto"
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">{previewText.length.toLocaleString()} حرف</span>
-              <Button onClick={handleAnalyze} disabled={!previewText.trim() || analyzeMutation.isPending}>
-                <Search className="h-4 w-4 ml-2" />
-                {analyzeMutation.isPending ? 'جاري الفحص...' : 'فحص المحتوى بالذكاء الاصطناعي'}
-              </Button>
-            </div>
-          </div>
-          ) : (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                <span>تم تحميل {previewText.length.toLocaleString()} حرف</span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); }}>
-                <Upload className="h-3.5 w-3.5 ml-1" /> تغيير المحتوى
-              </Button>
-            </div>
-          )}
-
-          {/* Analysis Result */}
-          {analysisResult && (
-            <div className="mt-4 space-y-4 border rounded-lg p-4 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  📊 تقرير الفحص الذكي
-                </h3>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${RISK_COLORS[analysisResult.riskLevel] || RISK_COLORS.medium}`}>
-                  الخطورة: {RISK_LABELS[analysisResult.riskLevel] || analysisResult.riskLevel}
-                </span>
-              </div>
-
-              {/* Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-xs text-muted-foreground">النوع</p>
-                  <p className="font-medium">{analysisResult.contentType}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-xs text-muted-foreground">الملخص</p>
-                  <p className="font-medium">{analysisResult.summary}</p>
-                </div>
-              </div>
-
-              {/* Impact */}
-              <div className="p-3 rounded-lg bg-background border">
-                <p className="text-xs text-muted-foreground mb-1">📈 التأثير على ردود ساري</p>
-                <p className="text-sm">{analysisResult.impact}</p>
-              </div>
-
-              {/* Conflicts */}
-              {analysisResult.conflicts && analysisResult.conflicts.length > 0 && (
-                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2 flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    ⚠️ تعارضات مكتشفة ({analysisResult.conflicts.length})
-                  </p>
-                  <ul className="space-y-1">
-                    {analysisResult.conflicts.map((conflict: string, i: number) => (
-                      <li key={i} className="text-sm text-yellow-700 dark:text-yellow-300 flex items-start gap-2">
-                        <span className="mt-0.5">•</span> {conflict}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Sample Q&A */}
-              {analysisResult.sampleQA && analysisResult.sampleQA.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    💬 نماذج أسئلة وأجوبة بعد الإضافة
-                  </p>
-                  <div className="space-y-2">
-                    {analysisResult.sampleQA.map((qa: any, i: number) => (
-                      <div key={i} className="p-3 rounded-lg bg-background border">
-                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          <span className="text-muted-foreground">العميل:</span> {qa.question}
-                        </p>
-                        <p className="text-sm mt-1 text-green-700 dark:text-green-400">
-                          <span className="text-muted-foreground">ساري:</span> {qa.answer}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recommendation + Actions */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                <div>
-                  <p className="text-xs text-muted-foreground">التوصية</p>
-                  <p className="font-medium flex items-center gap-1">
-                    {analysisResult.recommendation === 'approve' && <><CheckCircle2 className="h-4 w-4 text-green-500" /> موافقة</>}
-                    {analysisResult.recommendation === 'review' && <><AlertTriangle className="h-4 w-4 text-yellow-500" /> مراجعة</>}
-                    {analysisResult.recommendation === 'reject' && <><XCircle className="h-4 w-4 text-red-500" /> رفض</>}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{analysisResult.recommendationReason}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); setPreviewText(''); setPreviewFileName(''); }}>
-                    <XCircle className="h-4 w-4 ml-1" /> تجاهل
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={ingestMutation.isPending}
-                    onClick={() => {
-                      ingestMutation.mutate({
-                        content: previewText,
-                        contentType: 'document',
-                        fileName: previewFileName || 'محتوى مفحوص',
-                      });
-                    }}
-                  >
-                    {ingestMutation.isPending ? (
-                      <><Loader2 className="h-4 w-4 ml-1 animate-spin" /> جاري الحفظ...</>
-                    ) : (
-                      <><CheckCircle2 className="h-4 w-4 ml-1" /> اعتماد وإضافة لذاكرة ساري</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Ingestion Result */}
-              {ingestionResult && (
-                <div className={`p-4 rounded-lg border space-y-3 ${ingestionResult.success ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800'}`}>
-                  <div className="flex items-center gap-2">
-                    {ingestionResult.success ? (
-                      <>
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        <h4 className="font-bold text-green-800 dark:text-green-200">✅ تم حفظ المعرفة بنجاح</h4>
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                        <h4 className="font-bold text-yellow-800 dark:text-yellow-200">⚠️ {ingestionResult.warning || 'لم يتم استخراج أقسام معرفية'}</h4>
-                      </>
-                    )}
-                  </div>
-                  {ingestionResult.success && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {ingestionResult.evolveResult.added > 0 && (
-                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-green-200">
-                        <p className="text-lg font-bold text-green-600">+{ingestionResult.evolveResult.added}</p>
-                        <p className="text-[10px] text-muted-foreground">قسم جديد</p>
-                      </div>
-                    )}
-                    {ingestionResult.evolveResult.evolved > 0 && (
-                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-blue-200">
-                        <p className="text-lg font-bold text-blue-600">↗{ingestionResult.evolveResult.evolved}</p>
-                        <p className="text-[10px] text-muted-foreground">قسم مُطوَّر</p>
-                      </div>
-                    )}
-                    {ingestionResult.evolveResult.conflicts > 0 && (
-                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-yellow-200">
-                        <p className="text-lg font-bold text-yellow-600">⚠{ingestionResult.evolveResult.conflicts}</p>
-                        <p className="text-[10px] text-muted-foreground">تعارض يحتاج مراجعة</p>
-                      </div>
-                    )}
-                    {ingestionResult.evolveResult.unchanged > 0 && (
-                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-gray-200">
-                        <p className="text-lg font-bold text-gray-500">{ingestionResult.evolveResult.unchanged}</p>
-                        <p className="text-[10px] text-muted-foreground">بدون تغيير</p>
-                      </div>
-                    )}
-                  </div>
-                  )}
-                  {ingestionResult.salesIntel?.hasIntel && (
-                    <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1">
-                      <Sparkles className="h-3.5 w-3.5" /> تم استخراج ذكاء مبيعات ({ingestionResult.salesIntel.uspsCount} نقاط قوة، {ingestionResult.salesIntel.tipsCount} إرشادات)
-                    </p>
-                  )}
-                  {ingestionResult.success && !ingestionResult.embeddingsReady && (
-                    <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
-                      <AlertTriangle className="h-3.5 w-3.5" /> تم الحفظ لكن فشل بناء الـ embeddings — البوت سيعمل بالبيانات النصية
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+<KnowledgeIntake />
       </section>
 
       <section hidden={brainView !== 'testing'} className="space-y-6" data-brain-section="testing">
@@ -2017,6 +1734,8 @@ export default function SariBrain() {
       <section hidden={brainView !== 'history'} className="space-y-6" data-brain-section="history">
       {/* Activity Log — with filter + pagination */}
       {(() => {
+        if (activityQuery.isError) return <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.activityError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void activityQuery.refetch(); }} />;
+        if (activityQuery.isLoading) return <p role="status">{t('common.loading')}</p>;
         const logItems = activityLogData?.items || [];
         const logTotal = activityLogData?.total || 0;
         const logTotalPages = activityLogData?.totalPages || 0;

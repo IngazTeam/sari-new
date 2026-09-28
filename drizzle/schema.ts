@@ -376,7 +376,7 @@ export const merchantKnowledgeDocs = mysqlTable("merchant_knowledge_docs", {
 	fileType: mysqlEnum("file_type", ['pdf', 'docx', 'xlsx', 'text']).notNull(),
 	fileUrl: text("file_url"),
 	fileSize: int("file_size").notNull(),
-	extractedText: text("extracted_text"),
+	extractedText: mediumtext("extracted_text"),
 	extractionStatus: mysqlEnum("extraction_status", ['pending', 'processing', 'completed', 'failed']).default('pending').notNull(),
 	uploadedAt: timestamp("uploaded_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),

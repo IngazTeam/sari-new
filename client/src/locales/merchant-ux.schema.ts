@@ -73,6 +73,7 @@ import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
   subscriptionWorkspace: import('./subscription-workspace').SubscriptionWorkspaceCopy;
   whatsappWorkspace: import('./whatsapp-workspace').WhatsAppWorkspaceCopy;
+  knowledgeIntake: import('./knowledge-intake').KnowledgeIntakeCopy;
   campaignPerformance: import('./campaign-performance').CampaignPerformanceCopy;
   byaanSales: Record<keyof typeof import('./byaan-sales-review').byaanSalesReviewAr, string>;
   sallaCheckout: Record<keyof typeof import('./salla-checkout-review').sallaCheckoutReviewAr,string>;

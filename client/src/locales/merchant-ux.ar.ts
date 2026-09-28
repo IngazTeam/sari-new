@@ -1,3 +1,4 @@
+import { knowledgeIntakeAr } from './knowledge-intake';
 import {byaanSalesReviewAr} from './byaan-sales-review';
 import {staffTeamReviewAr} from './staff-team-review';
 import {sallaEffectReviewAr} from './salla-effect-review';
@@ -21,6 +22,7 @@ import { whatsappWorkspaceAr } from './whatsapp-workspace';
 const merchantUxAr: MerchantUxCopy = {
   subscriptionWorkspace: subscriptionWorkspaceAr,
   whatsappWorkspace: whatsappWorkspaceAr,
+  knowledgeIntake: knowledgeIntakeAr,
   campaignPerformance: campaignPerformanceAr,
   byaanSales: byaanSalesReviewAr,
   sallaEffects: sallaEffectReviewAr,

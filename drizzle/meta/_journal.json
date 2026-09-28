@@ -1058,6 +1058,13 @@
       "when": 1795392000012,
       "tag": "0150_conversation_understanding",
       "breakpoints": true
+    },
+    {
+      "idx": 151,
+      "version": "5",
+      "when": 1795392000013,
+      "tag": "0151_knowledge_intake_text_capacity",
+      "breakpoints": true
     }
   ]
 }

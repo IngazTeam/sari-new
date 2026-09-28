@@ -1,0 +1,55 @@
+{
+  "date": "2026-09-28",
+  "browser": "Chrome; resized viewport, not Safari/iOS",
+  "application": "http://127.0.0.1:3018/merchant/sari-brain?view=sources",
+  "database": "sari_pages_test",
+  "externalNetwork": "blocked",
+  "checks": {
+    "form390": {
+      "contentFont": "16px",
+      "focused": "knowledge-content",
+      "height": 844,
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "fileChooser": {
+      "status": "passed",
+      "name": "knowledge-intake-example.txt",
+      "destination": "local preview only"
+    },
+    "intake320": {
+      "content": "سياسة متجر تجريبي: الشحن خلال ثلاثة أيام عمل. الاستبدال خلال سبعة أيام للمنتجات غير المستخدمة. هذه بيانات وهمية للفحص فقط.\n",
+      "font": "16px",
+      "height": 740,
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "desktop": {
+      "card": {
+        "bottom": 984.1875,
+        "height": 637.59375,
+        "left": 34,
+        "right": 1153,
+        "top": 346.59375,
+        "width": 1119,
+        "x": 34,
+        "y": 346.59375
+      },
+      "height": 1000,
+      "retainedText": 123,
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "analysisFailure": {
+      "retainedInput": true,
+      "beforeProvider": true,
+      "serverReason": "price_required"
+    },
+    "mockupCopyVerified": true
+  },
+  "notVerified": [
+    "Real model quality",
+    "Safari or iPhone",
+    "Persistent review binding and cross-session save reconciliation"
+  ]
+}

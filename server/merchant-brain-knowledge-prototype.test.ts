@@ -19,6 +19,7 @@ function boot(saved: Record<string, string> = {}) {
     virtualConsole: c,
   });
   w = dom.window;
+  w.structuredClone = structuredClone;
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
     throw Error("No provider requests in mockup");
