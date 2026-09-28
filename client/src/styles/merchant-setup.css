@@ -201,8 +201,10 @@
 }
 .ms-step-content {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
+.ms-step-content > * { min-width: 0; }
 .ms-step-content > :not(:first-child) {
   border-top: 1px solid var(--border);
   padding-top: 24px;

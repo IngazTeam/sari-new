@@ -127,7 +127,7 @@ export default function UsageDashboard() {
   return (
     <div className="container py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">{t('usageDashboardPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
@@ -232,7 +232,7 @@ export default function UsageDashboard() {
           <CardDescription>{t('usageDashboardPage.text3')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-semibold">{usage.plan.name}</h3>
               <p className="text-sm text-muted-foreground">
@@ -240,7 +240,7 @@ export default function UsageDashboard() {
                  usage.plan.billingCycle === 'yearly' ? t('usageDashboardPage.text9') : t('usageDashboardPage.text10')}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline"
                 onClick={() => setLocation('/merchant/subscription')}

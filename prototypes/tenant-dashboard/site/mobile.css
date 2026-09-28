@@ -1,0 +1,33 @@
+/* The preview follows the tenant's mobile spacing and touch-target rules. */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+    font-size: 16px !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .button, .icon-button, .as-tabs button, .as-settings-nav button, .as-pills button { min-height: 44px; }
+  .icon-button { min-width: 44px; }
+  .topbar {
+    height: auto;
+    min-height: calc(66px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+  main, .page-footer {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+  .page-footer { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  dialog {
+    width: min(600px, calc(100% - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px))));
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)));
+    overscroll-behavior: contain;
+  }
+  .nav-dialog {
+    max-height: 100dvh;
+    padding-top: max(28px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+  .as-tabs { flex-wrap: wrap; }
+}

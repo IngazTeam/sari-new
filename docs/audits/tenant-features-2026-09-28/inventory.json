@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T09:11:12.062Z",
+  "generatedAt": "2026-09-28T09:52:44.765Z",
   "scope": "Static JSX, local feature-component imports, query/mutation hooks, static choice arrays, conditional controls and literal merchant links. Dynamic controls, permissions, provider states and runtime behavior require separate testing.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8,7 +8,7 @@
   "files": [
     {
       "file": "client/src/pages/SetupWizard.tsx",
-      "hash": "190de601e554",
+      "hash": "436458782044",
       "queries": [
         "setupWizard.getProgress"
       ],
@@ -19,31 +19,31 @@
       "sections": [
         {
           "label": "setupWorkspace.loadFailed setupWorkspace.loading",
-          "line": 313,
+          "line": 316,
           "tag": "h1"
         },
         {
           "label": "أربع خطوات، وبدايتك جاهزة",
-          "line": 472,
+          "line": 475,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 584,
+          "line": 587,
           "tag": "h1"
         }
       ],
       "choices": [
         {
           "name": "OPTIONAL_STAGES",
-          "line": 77,
+          "line": 79,
           "values": [
             "1"
           ]
         },
         {
           "name": "titles",
-          "line": 422,
+          "line": 425,
           "values": [
             "عرّفنا بنشاطك",
             "ماذا تقدّم لعملائك؟",
@@ -53,7 +53,7 @@
         },
         {
           "name": "descriptions",
-          "line": 428,
+          "line": 431,
           "values": [
             "اختر نوع نشاطك وأضف الاسم ورقم التواصل. هذا كل ما نحتاجه للبدء.",
             "أضف منتجًا أو خدمة، أو استورد من موقعك. يمكنك إكمال ذلك لاحقًا.",
@@ -65,7 +65,7 @@
       "handlers": [
         {
           "name": "updateWizardData",
-          "line": 186,
+          "line": 189,
           "calls": []
         }
       ],
@@ -73,7 +73,7 @@
         {
           "query": "setupWizard.getProgress",
           "binding": "{\n    data: progress,\n    isLoading: loadingProgress,\n    isFetching: fetchingProgress,\n    isError: progressError,\n    refetch,\n  }",
-          "line": 111,
+          "line": 114,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -5114,7 +5114,7 @@
     },
     {
       "file": "client/src/pages/merchant/Analytics.tsx",
-      "hash": "d1f5d438df98",
+      "hash": "8eadde9939f2",
       "queries": [
         "messageAnalytics.getMessageStats",
         "messageAnalytics.getPeakHours",
@@ -5969,7 +5969,7 @@
     },
     {
       "file": "client/src/pages/merchant/TestSari.tsx",
-      "hash": "0ee640fbc86d",
+      "hash": "c53c5177e353",
       "queries": [],
       "mutations": [
         "testSari.createConversation",
@@ -6680,7 +6680,7 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "56eff249b451",
+      "hash": "6468b0d9a808",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
@@ -8160,7 +8160,7 @@
     },
     {
       "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
-      "hash": "a2f41a4bd356",
+      "hash": "55e36636e41d",
       "queries": [
         "performance.getPerformanceMetrics"
       ],
@@ -8173,17 +8173,17 @@
         },
         {
           "label": "",
-          "line": 146,
+          "line": 148,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 170,
+          "line": 172,
           "tag": "CardTitle"
         },
         {
           "label": "العائد على الاستثمار (ROI)",
-          "line": 193,
+          "line": 195,
           "tag": "CardTitle"
         }
       ],
@@ -9430,7 +9430,7 @@
     },
     {
       "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "hash": "f0a9243c609d",
+      "hash": "da566adad79a",
       "queries": [
         "services.list",
         "serviceCategories.list"
@@ -10525,7 +10525,7 @@
     },
     {
       "file": "client/src/pages/merchant/Payments.tsx",
-      "hash": "793489324926",
+      "hash": "c14bf5092ec8",
       "queries": [
         "payments.list",
         "payments.getStats"
@@ -11802,7 +11802,7 @@
     },
     {
       "file": "client/src/pages/merchant/MySubscription.tsx",
-      "hash": "ad05b3dbfc16",
+      "hash": "900489605af5",
       "queries": [
         "merchantSubscription.getCurrentSubscription",
         "merchantSubscription.getDaysRemaining",
@@ -11935,7 +11935,7 @@
     },
     {
       "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "hash": "eb25c5db59dd",
+      "hash": "54f1ab1de254",
       "queries": [
         "usage.getCurrentUsage"
       ],
@@ -12806,7 +12806,7 @@
     },
     {
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "hash": "2c811b5edbf3",
+      "hash": "6a58b6e8e624",
       "queries": [
         "merchants.getCurrent"
       ],
@@ -12814,17 +12814,17 @@
       "sections": [
         {
           "label": "قائمة التاجر",
-          "line": 214,
+          "line": 213,
           "tag": "SheetTitle"
         },
         {
           "label": "إلى أين تريد الذهاب؟",
-          "line": 365,
+          "line": 364,
           "tag": "DialogTitle"
         },
         {
           "label": "تسجيل الخروج",
-          "line": 416,
+          "line": 415,
           "tag": "AlertDialogTitle"
         }
       ],
@@ -12832,7 +12832,7 @@
       "handlers": [
         {
           "name": "handler",
-          "line": 97,
+          "line": 96,
           "calls": []
         }
       ],
@@ -12840,7 +12840,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "{ data: merchant }",
-          "line": 72,
+          "line": 75,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -13117,16 +13117,16 @@
         "client/src/pages/setup-wizard/CompleteStep.tsx"
       ],
       "controls": [
-        "cf9f981a53d1",
-        "135558378f50",
-        "4a982ac59812",
-        "5c0b5d3487e8",
-        "affea432d7d2",
-        "465a8c9a040b",
-        "0aec0e1b8356",
-        "d2033ad57456",
-        "fd835b78931a",
-        "dfb22d114e34",
+        "db60a62f2519",
+        "03d12c8ed892",
+        "f807ac1aa352",
+        "5899d4bc82a1",
+        "7f6165751863",
+        "3b4fceee9350",
+        "bb07f44eaafe",
+        "9294fed7b838",
+        "d1fcba4607e6",
+        "2dd23dee58aa",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -15687,7 +15687,7 @@
       ],
       "controls": [
         "2a64c5c5d270",
-        "2b5805a18845"
+        "d842609b04e0"
       ],
       "queries": [
         "performance.getPerformanceMetrics"
@@ -17372,9 +17372,9 @@
   ],
   "controls": [
     {
-      "id": "cf9f981a53d1",
+      "id": "db60a62f2519",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 321,
+      "line": 324,
       "tag": "Button",
       "kind": "action",
       "label": "إعادة المحاولة",
@@ -17394,9 +17394,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "135558378f50",
+      "id": "03d12c8ed892",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 362,
+      "line": 365,
       "tag": "Button",
       "kind": "action",
       "label": "إضافة يدويًا",
@@ -17414,9 +17414,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4a982ac59812",
+      "id": "f807ac1aa352",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 369,
+      "line": 372,
       "tag": "Button",
       "kind": "action",
       "label": "استيراد من موقع",
@@ -17434,9 +17434,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5c0b5d3487e8",
+      "id": "5899d4bc82a1",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 376,
+      "line": 379,
       "tag": "Button",
       "kind": "action",
       "label": "استخدام قالب",
@@ -17454,9 +17454,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "affea432d7d2",
+      "id": "7f6165751863",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 442,
+      "line": 445,
       "tag": "a",
       "kind": "action",
       "label": "انتقل إلى الخطوة الحالية",
@@ -17474,9 +17474,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "465a8c9a040b",
+      "id": "3b4fceee9350",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 457,
+      "line": 460,
       "tag": "Button",
       "kind": "action",
       "label": "حفظ واستكشاف اللوحة",
@@ -17494,9 +17494,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0aec0e1b8356",
+      "id": "bb07f44eaafe",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 493,
+      "line": 496,
       "tag": "button",
       "kind": "action",
       "label": "كل الخطوات",
@@ -17514,9 +17514,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d2033ad57456",
+      "id": "9294fed7b838",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 519,
+      "line": 522,
       "tag": "button",
       "kind": "action",
       "label": "اختياري مكتملة",
@@ -17534,9 +17534,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fd835b78931a",
+      "id": "d1fcba4607e6",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 569,
+      "line": 572,
       "tag": "button",
       "kind": "action",
       "label": "إعادة المحاولة",
@@ -17557,9 +17557,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dfb22d114e34",
+      "id": "2dd23dee58aa",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 600,
+      "line": 603,
       "tag": "Button",
       "kind": "action",
       "label": "السابق",
@@ -39812,7 +39812,7 @@
       "line": 124,
       "tag": "input",
       "kind": "field",
-      "label": "",
+      "label": "من تاريخ",
       "section": "مقاييس الأداء",
       "binding": "dateRange.startDate",
       "type": "date",
@@ -39827,12 +39827,12 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2b5805a18845",
+      "id": "d842609b04e0",
       "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
-      "line": 130,
+      "line": 131,
       "tag": "input",
       "kind": "field",
-      "label": "",
+      "label": "إلى تاريخ",
       "section": "مقاييس الأداء",
       "binding": "dateRange.endDate",
       "type": "date",
@@ -50921,9 +50921,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ae9eb32a201f",
+      "id": "23e0dc380ea0",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 109,
+      "line": 108,
       "tag": "Link",
       "kind": "action",
       "label": "ساري شريك يومك",
@@ -50941,9 +50941,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "104e15949379",
+      "id": "df7760e92368",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 126,
+      "line": 125,
       "tag": "Link",
       "kind": "action",
       "label": "",
@@ -50961,9 +50961,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e9d07e226dd7",
+      "id": "69db8728e3a5",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 138,
+      "line": 137,
       "tag": "Link",
       "kind": "action",
       "label": "الإعدادات",
@@ -50981,9 +50981,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cc1c894c1327",
+      "id": "d60aff3a38a1",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 147,
+      "line": 146,
       "tag": "Link",
       "kind": "action",
       "label": "جميع الأدوات",
@@ -51001,9 +51001,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ca0ee453d8ea",
+      "id": "87b08b6aa156",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 163,
+      "line": 162,
       "tag": "Link",
       "kind": "action",
       "label": "الباقة والاستخدام",
@@ -51021,9 +51021,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "437d82bceebe",
+      "id": "9cc9eb1c69ed",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 181,
+      "line": 180,
       "tag": "a",
       "kind": "action",
       "label": "انتقل إلى المحتوى",
@@ -51041,9 +51041,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2df3b808a78e",
+      "id": "bd3139fe3eaf",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 199,
+      "line": 198,
       "tag": "Button",
       "kind": "action",
       "label": "فتح قائمة التاجر",
@@ -51061,9 +51061,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9d3fef7401c6",
+      "id": "918121216f2f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 209,
+      "line": 208,
       "tag": "SheetContent",
       "kind": "dialog",
       "label": "قائمة التاجر الأقسام والإعدادات والمتجر المحدد",
@@ -51081,9 +51081,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9f6ff8b38360",
+      "id": "0c91db80bff7",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 222,
+      "line": 221,
       "tag": "Link",
       "kind": "action",
       "label": "متجرك /merchant/tools جميع الأدوات مساحة التاجر",
@@ -51101,9 +51101,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4f11e4dda42b",
+      "id": "ab6830adb16f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 238,
+      "line": 237,
       "tag": "Button",
       "kind": "action",
       "label": "البحث في أدوات المتجر",
@@ -51121,9 +51121,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b680cd63fb01",
+      "id": "184e7b9fdaf2",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 253,
+      "line": 252,
       "tag": "Button",
       "kind": "action",
       "label": "الحساب والتفضيلات",
@@ -51141,9 +51141,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e8762d28580d",
+      "id": "c0538c0aaf2f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 274,
+      "line": 273,
       "tag": "DropdownMenuItem",
       "kind": "action",
       "label": "إعدادات الحساب",
@@ -51161,9 +51161,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5db2af291137",
+      "id": "45bab1850c0f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 280,
+      "line": 279,
       "tag": "DropdownMenuItem",
       "kind": "action",
       "label": "لوحة الإدارة",
@@ -51183,9 +51183,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1c2d95e26974",
+      "id": "88803d668e00",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 286,
+      "line": 285,
       "tag": "DropdownMenuItem",
       "kind": "action",
       "label": "تسجيل الخروج",
@@ -51203,9 +51203,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "10c11f2b026d",
+      "id": "2b5ba99db9c1",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 303,
+      "line": 302,
       "tag": "Link",
       "kind": "action",
       "label": "",
@@ -51225,9 +51225,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a74b342076d8",
+      "id": "bd978d3ce506",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 315,
+      "line": 314,
       "tag": "Link",
       "kind": "action",
       "label": "المزيد",
@@ -51247,9 +51247,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ecb4b02f6878",
+      "id": "493b94506ee0",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 333,
+      "line": 332,
       "tag": "Link",
       "kind": "action",
       "label": "الخصوصية وإدارة البيانات",
@@ -51267,9 +51267,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5bb74833e114",
+      "id": "ff5b217892d1",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 338,
+      "line": 337,
       "tag": "Link",
       "kind": "action",
       "label": "",
@@ -51287,9 +51287,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "67a4e1db0568",
+      "id": "d35e03044bea",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 347,
+      "line": 346,
       "tag": "button",
       "kind": "action",
       "label": "المزيد من أقسام المتجر",
@@ -51307,9 +51307,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7f3f5dd334de",
+      "id": "b9e453b1ef97",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 357,
+      "line": 356,
       "tag": "DialogContent",
       "kind": "dialog",
       "label": "إلى أين تريد الذهاب؟ ابحث في أقسام متجرك وأدواته. Esc للإغلاق. اسم الأداة لا توجد أداة مطابقة. جرّب كلمة أخرى.",
@@ -51327,9 +51327,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b8345d4341fc",
+      "id": "a2c8bc2b34ae",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 375,
+      "line": 374,
       "tag": "input",
       "kind": "field",
       "label": "اسم الأداة",
@@ -51347,9 +51347,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "18710dd99fe4",
+      "id": "745cf2c3cb9d",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 387,
+      "line": 386,
       "tag": "Link",
       "kind": "action",
       "label": "",
@@ -51369,9 +51369,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7282d5967b6f",
+      "id": "ba4eb8d76deb",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 414,
+      "line": 413,
       "tag": "AlertDialogContent",
       "kind": "dialog",
       "label": "تسجيل الخروج هل تريد إنهاء جلسة العمل الحالية؟ إلغاء تسجيل الخروج",
@@ -51389,9 +51389,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ad123c872be4",
+      "id": "d9307698d09f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 422,
+      "line": 421,
       "tag": "AlertDialogCancel",
       "kind": "action",
       "label": "إلغاء",
@@ -51409,9 +51409,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6a5d62a58526",
+      "id": "5421273acf2d",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 423,
+      "line": 422,
       "tag": "AlertDialogAction",
       "kind": "action",
       "label": "تسجيل الخروج",

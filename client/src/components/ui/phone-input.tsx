@@ -127,10 +127,10 @@ export function PhoneInput({
     const defaultPlaceholder = '5' + '0'.repeat(selectedCountry.digits - 1);
 
     return (
-        <div className={cn('relative', className)}>
+        <div className={cn('relative min-w-0 w-full', className)}>
             <div
                 className={cn(
-                    'flex items-center border rounded-md bg-background transition-colors',
+                    'flex min-w-0 w-full items-center border rounded-md bg-background transition-colors',
                     'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0',
                     error ? 'border-red-500' : 'border-input',
                     disabled && 'opacity-50 cursor-not-allowed'
@@ -145,7 +145,7 @@ export function PhoneInput({
                         if (country) handleCountrySelect(country);
                     }}
                     className={cn(
-                        'max-w-36 bg-transparent px-2 py-2 border-0 border-e border-input text-sm',
+                        'min-w-0 max-w-[42%] sm:max-w-36 bg-transparent px-2 py-2 border-0 border-e border-input text-base',
                         'hover:bg-accent transition-colors shrink-0',
                         'focus:outline-none focus:bg-accent disabled:cursor-not-allowed'
                     )}
@@ -174,9 +174,9 @@ export function PhoneInput({
                     minLength={selectedCountry.digits}
                     maxLength={selectedCountry.digits}
                     className={cn(
-                        'flex-1 px-3 py-2 text-sm bg-transparent border-0',
+                        'flex-1 min-w-0 px-2 py-2 text-base bg-transparent border-0',
                         'focus:outline-none placeholder:text-muted-foreground',
-                        'disabled:cursor-not-allowed font-mono tracking-wider'
+                        'disabled:cursor-not-allowed font-mono tracking-normal sm:tracking-wider'
                     )}
                     aria-label={id ? undefined : t('authUx.signup.phoneInputLabel')}
                     aria-describedby={ariaDescribedBy}

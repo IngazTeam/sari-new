@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useMerchantViewport } from '@/lib/merchant-viewport';
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
 import { toast } from "sonner";
 import "@/styles/merchant-workspace.css";
 import "@/styles/merchant-setup.css";
+import '@/styles/merchant-mobile.css';
 
 // Import step components
 import BusinessTypeStep from "./setup-wizard/BusinessTypeStep";
@@ -77,6 +79,7 @@ function toMinorUnits(value: unknown): number {
 const OPTIONAL_STAGES = [1];
 
 export default function SetupWizard() {
+  useMerchantViewport();
   const { t } = useTranslation();
   const direction = useLanguageDirection();
   const [, setLocation] = useLocation();

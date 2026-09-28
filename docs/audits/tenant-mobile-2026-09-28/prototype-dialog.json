@@ -1,0 +1,33 @@
+{
+  "bounds": {
+    "bottom": 796,
+    "left": 16,
+    "right": 344,
+    "top": 16
+  },
+  "clipped": [],
+  "fields": [
+    {
+      "font": "16px",
+      "name": "as-name",
+      "width": 277
+    },
+    {
+      "font": "16px",
+      "name": "as-role",
+      "width": 277
+    },
+    {
+      "font": "16px",
+      "name": "as-department",
+      "width": 277
+    },
+    {
+      "font": "16px",
+      "name": "as-personalityPrompt",
+      "width": 277
+    }
+  ],
+  "height": 812,
+  "width": 375
+}

@@ -57,10 +57,13 @@ import {
   navigableMerchantTools,
 } from './navigation';
 import '@/styles/merchant-workspace.css';
+import '@/styles/merchant-mobile.css';
+import { useMerchantViewport } from '@/lib/merchant-viewport';
 import ErrorBoundary from '../ErrorBoundary';
 import { WorkspaceState, workspaceFailureKind } from './WorkspaceState';
 
 export default function MerchantShell({ children }: { children: ReactNode }) {
+  useMerchantViewport();
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -84,10 +87,6 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
           ? term('orders')
           : merchantToolForPath(path)?.title || 'الأداة';
 
-  useEffect(() => {
-    document.body.classList.add('merchant-surface');
-    return () => document.body.classList.remove('merchant-surface');
-  }, []);
   useEffect(() => {
     setMobileOpen(false);
     setSearchOpen(false);

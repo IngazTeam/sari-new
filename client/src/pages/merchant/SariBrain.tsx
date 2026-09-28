@@ -449,7 +449,7 @@ export default function SariBrain() {
             إدارة مصادر المعرفة التي يستخدمها ساري للرد على عملائك
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setLocation('/merchant/settings')}>
             <Upload className="h-4 w-4 ml-2" />
             رفع ملف جديد

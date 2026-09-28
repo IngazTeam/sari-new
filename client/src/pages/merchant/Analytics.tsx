@@ -248,12 +248,12 @@ export default function Analytics() {
 
       {/* Sentiment Analysis Section */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Heart className="h-6 w-6 text-primary" />
             {t('analyticsPage.text29')}
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={sentimentDays === 7 ? "default" : "outline"}
               size="sm"

@@ -9339,5 +9339,9 @@
     "confirmDelete": "Delete this configuration?",
     "deleteHelp": "This configuration will no longer be used after deletion. You can cancel and review it first.",
     "cancel": "Cancel"
+  },
+  "mobileWorkspace": {
+    "dateFrom": "From date",
+    "dateTo": "To date"
   }
 }

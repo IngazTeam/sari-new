@@ -1,0 +1,745 @@
+[
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/setup-wizard",
+    "width": 320
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 320
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/virtual-team",
+    "width": 320
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/bot-settings",
+    "width": 320
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [
+      {
+        "left": -14.1328125,
+        "name": "إعادة ضبط كاملة",
+        "right": 142.4921875
+      }
+    ],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 320
+  },
+  {
+    "route": "/merchant/conversations",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "المحادثات"
+    ],
+    "height": 568,
+    "scrollWidth": 320,
+    "smallFields": [],
+    "url": "/merchant/conversations",
+    "width": 320
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 320
+  },
+  {
+    "route": "/merchant/payments",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "معاملات الدفع"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/payments",
+    "width": 320
+  },
+  {
+    "route": "/merchant/subscription",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الاشتراك"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/subscription",
+    "width": 320
+  },
+  {
+    "route": "/merchant/usage-dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "لوحة تحكم الاستخدام"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/usage-dashboard",
+    "width": 320
+  },
+  {
+    "route": "/merchant/performance-metrics",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مقاييس الأداء"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/performance-metrics",
+    "width": 320
+  },
+  {
+    "route": "/merchant/test-sari",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "اختبار ساري AI"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/test-sari",
+    "width": 320
+  },
+  {
+    "route": "/merchant/message-analytics",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "التحليلات"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/message-analytics",
+    "width": 320
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/setup-wizard",
+    "width": 812
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 812
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/virtual-team",
+    "width": 812
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/bot-settings",
+    "width": 812
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 812
+  },
+  {
+    "route": "/merchant/conversations",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "المحادثات"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/conversations",
+    "width": 812
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 812
+  },
+  {
+    "route": "/merchant/payments",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "معاملات الدفع"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/payments",
+    "width": 812
+  },
+  {
+    "route": "/merchant/subscription",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الاشتراك"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/subscription",
+    "width": 812
+  },
+  {
+    "route": "/merchant/usage-dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "لوحة تحكم الاستخدام"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/usage-dashboard",
+    "width": 812
+  },
+  {
+    "route": "/merchant/performance-metrics",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مقاييس الأداء"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/performance-metrics",
+    "width": 812
+  },
+  {
+    "route": "/merchant/test-sari",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "اختبار ساري AI"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/test-sari",
+    "width": 812
+  },
+  {
+    "route": "/merchant/message-analytics",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "التحليلات"
+    ],
+    "height": 375,
+    "scrollWidth": 797,
+    "smallFields": [],
+    "url": "/merchant/message-analytics",
+    "width": 812
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 844,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/setup-wizard",
+    "width": 390
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 844,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 390
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 844,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/virtual-team",
+    "width": 390
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 844,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/bot-settings",
+    "width": 390
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 844,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 390
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 932,
+    "scrollWidth": 415,
+    "smallFields": [],
+    "url": "/merchant/setup-wizard",
+    "width": 430
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 932,
+    "scrollWidth": 415,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 430
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 932,
+    "scrollWidth": 415,
+    "smallFields": [],
+    "url": "/merchant/virtual-team",
+    "width": 430
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 932,
+    "scrollWidth": 415,
+    "smallFields": [],
+    "url": "/merchant/bot-settings",
+    "width": 430
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 932,
+    "scrollWidth": 415,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 430
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 1024,
+    "scrollWidth": 768,
+    "smallFields": [],
+    "url": "/merchant/setup-wizard",
+    "width": 768
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 1024,
+    "scrollWidth": 753,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 768
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 1024,
+    "scrollWidth": 753,
+    "smallFields": [],
+    "url": "/merchant/virtual-team",
+    "width": 768
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 1024,
+    "scrollWidth": 753,
+    "smallFields": [],
+    "url": "/merchant/bot-settings",
+    "width": 768
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 1024,
+    "scrollWidth": 753,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 768
+  },
+  {
+    "route": "/merchant/conversations",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "المحادثات"
+    ],
+    "height": 1024,
+    "scrollWidth": 753,
+    "smallFields": [],
+    "url": "/merchant/conversations",
+    "width": 768
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 1024,
+    "scrollWidth": 768,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 768
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 768,
+    "scrollWidth": 1009,
+    "smallFields": [
+      "businessName"
+    ],
+    "url": "/merchant/setup-wizard",
+    "width": 1024
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 768,
+    "scrollWidth": 1009,
+    "smallFields": [
+      "dashboard-period"
+    ],
+    "url": "/merchant/dashboard",
+    "width": 1024
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 768,
+    "scrollWidth": 1009,
+    "smallFields": [
+      "agent-search",
+      "routing-message",
+      "routing-time"
+    ],
+    "url": "/merchant/virtual-team",
+    "width": 1024
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 768,
+    "scrollWidth": 1009,
+    "smallFields": [
+      "responseDelay",
+      "maxLength"
+    ],
+    "url": "/merchant/bot-settings",
+    "width": 1024
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 768,
+    "scrollWidth": 1009,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 1024
+  },
+  {
+    "route": "/merchant/setup-wizard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عرّفنا بنشاطك"
+    ],
+    "height": 900,
+    "scrollWidth": 1425,
+    "smallFields": [
+      "businessName"
+    ],
+    "url": "/merchant/setup-wizard",
+    "width": 1440
+  },
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 900,
+    "scrollWidth": 1425,
+    "smallFields": [
+      "dashboard-period"
+    ],
+    "url": "/merchant/dashboard",
+    "width": 1440
+  },
+  {
+    "route": "/merchant/virtual-team",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "شخصيات فريقك الافتراضي"
+    ],
+    "height": 900,
+    "scrollWidth": 1425,
+    "smallFields": [
+      "agent-search",
+      "routing-message",
+      "routing-time"
+    ],
+    "url": "/merchant/virtual-team",
+    "width": 1440
+  },
+  {
+    "route": "/merchant/bot-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات الروبوت"
+    ],
+    "height": 900,
+    "scrollWidth": 1425,
+    "smallFields": [
+      "responseDelay",
+      "maxLength"
+    ],
+    "url": "/merchant/bot-settings",
+    "width": 1440
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 900,
+    "scrollWidth": 1425,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 1440
+  },
+  {
+    "route": "/merchant/sari-brain",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "عقل ساري"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/sari-brain",
+    "width": 320
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 568,
+    "scrollWidth": 305,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 320
+  }
+]

@@ -1,0 +1,194 @@
+[
+  {
+    "route": "/merchant/dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "مرحبًا، متجر نواة · تيننت الفحص"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/dashboard",
+    "width": 375
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [
+      {
+        "left": -70.7265625,
+        "name": "إضافة خدمة جديدة",
+        "right": 97.375
+      }
+    ],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 375
+  },
+  {
+    "route": "/merchant/payments",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "معاملات الدفع"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/payments",
+    "width": 375
+  },
+  {
+    "route": "/merchant/subscription",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الاشتراك"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/subscription",
+    "width": 375
+  },
+  {
+    "route": "/merchant/usage-dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "لوحة تحكم الاستخدام"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/usage-dashboard",
+    "width": 375
+  },
+  {
+    "route": "/merchant/byaan-dashboard",
+    "clipped": [],
+    "error": false,
+    "headings": [],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/byaan-dashboard",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص الإعدادات\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: الإعدادات\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات الإعدادات\":\n  - link \"الحساب والمتجر\":\n    - /url: /merchant/settings\n  - link \"التكاملات\":\n    - /url: /merchant/platform-integrations\n  - link \"أرقام واتساب\":\n    - /url: /merchant/whatsapp-instances\n  - link \"الفريق والصلاحيات\":\n    - /url: /merchant/team\n  - link \"الباقة والفواتير\":\n    - /url: /merchant/my-subscription\n  - link \"حدود الاستخدام\":\n    - /url: /merchant/usage-dashboard\n  - link \"الخصوصية\":\n    - /url: /merchant/privacy-center\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=settings\n    - text: المزيد\n- main:\n  - heading \"لم يتم ربط بيان\" [level=2]\n  - paragraph: اربط حسابك في بيان لتظهر بيانات المتدربين والدورات هنا\n  - button \"اذهب للربط\"\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/acquisition-report",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "📊 مصادر العملاء"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/acquisition-report",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص التحليلات\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: التحليلات\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات التحليلات\":\n  - link \"مركز التحليلات\":\n    - /url: /merchant/analytics-hub\n  - link \"تحليلات المبيعات\":\n    - /url: /merchant/analytics\n  - link \"تحليلات الرسائل\":\n    - /url: /merchant/message-analytics\n  - link \"التقارير\":\n    - /url: /merchant/reports\n  - link \"الرؤى والاقتراحات وA/B\":\n    - /url: /merchant/insights\n  - link \"التقارير المجدولة\":\n    - /url: /merchant/scheduled-reports\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=analytics\n    - text: المزيد\n- main:\n  - heading \"📊 مصادر العملاء\" [level=1]\n  - paragraph: من أين يأتي عملاؤك؟ تتبع مصادر الاستقطاب لقياس ROI الإعلانات\n  - generic: \"إجمالي العملاء: 0\"\n  - generic: تفاصيل المصادر\n  - paragraph: 📭\n  - paragraph: لا توجد بيانات بعد. عندما يبدأ العملاء بالتواصل عبر الحملات الإعلانية، ستظهر البيانات هنا.\n  - heading \"💡 كيف تتبع مصادر العملاء؟\" [level=3]\n  - paragraph: \"أضف كود الحملة في رابط واتساب:\"\n  - code: https://wa.me/966XXXXXXX?text=أبغى_أعرف_عن_العرض_IG2024\n  - paragraph: \"أمثلة أكواد:\"\n  - list:\n    - code: IG2024\n    - text: — إنستجرام\n    - code: SNAP_OFFER\n    - text: — سناب شات\n    - code: TW_PROMO\n    - text: — تويتر\n    - code: CAMP_RAMADAN\n    - text: — حملة رمضان\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/services/:id/edit",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "هذه الصفحة ليست هنا"
+    ],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/services/1/edit",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص الكتالوج\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: الكتالوج\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات الكتالوج\":\n  - link \"المنتجات\":\n    - /url: /merchant/products\n  - link \"الخدمات\":\n    - /url: /merchant/services\n  - link \"الحجوزات\":\n    - /url: /merchant/bookings\n  - link \"التقويم\":\n    - /url: /merchant/calendar\n  - link \"مقدمو الخدمات\":\n    - /url: /merchant/staff\n  - link \"حزم الخدمات\":\n    - /url: /merchant/service-packages\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=catalog\n    - text: المزيد\n- main:\n  - generic: \"404\"\n  - paragraph: مساحة التاجر · ساري\n  - heading \"هذه الصفحة ليست هنا\" [level=1]\n  - paragraph: قد يكون الرابط قد تغير. ارجع إلى مساحة عملك، أو ابحث عن الأداة التي تحتاجها.\n  - link \"العودة لمساحة العمل\":\n    - /url: /merchant/dashboard\n    - text: العودة لمساحة العمل\n  - link \"ابحث عن أداة\":\n    - /url: /merchant/tools\n    - text: ابحث عن أداة\n  - paragraph:\n    - text: تحتاج مساعدة؟\n    - link \"تواصل مع الدعم\":\n      - /url: /support\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/integrations-dashboard",
+    "clipped": [],
+    "error": true,
+    "headings": [
+      "تعذّر عرض الصفحة"
+    ],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/integrations-dashboard",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص الإعدادات\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: الإعدادات\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات الإعدادات\":\n  - link \"الحساب والمتجر\":\n    - /url: /merchant/settings\n  - link \"التكاملات\":\n    - /url: /merchant/platform-integrations\n  - link \"أرقام واتساب\":\n    - /url: /merchant/whatsapp-instances\n  - link \"الفريق والصلاحيات\":\n    - /url: /merchant/team\n  - link \"الباقة والفواتير\":\n    - /url: /merchant/my-subscription\n  - link \"حدود الاستخدام\":\n    - /url: /merchant/usage-dashboard\n  - link \"الخصوصية\":\n    - /url: /merchant/privacy-center\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=settings\n    - text: المزيد\n- main:\n  - generic: \"500\"\n  - paragraph: مساحة التاجر · ساري\n  - heading \"تعذّر عرض الصفحة\" [level=1]\n  - paragraph: حدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n  - button \"إعادة المحاولة\":\n    - text: إعادة المحاولة\n  - link \"ابحث عن أداة\":\n    - /url: /merchant/tools\n    - text: ابحث عن أداة\n  - paragraph:\n    - text: تحتاج مساعدة؟\n    - link \"تواصل مع الدعم\":\n      - /url: /support\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/currency-settings",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إعدادات العملة"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/currency-settings",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص الإعدادات\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: الإعدادات\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات الإعدادات\":\n  - link \"الحساب والمتجر\":\n    - /url: /merchant/settings\n  - link \"التكاملات\":\n    - /url: /merchant/platform-integrations\n  - link \"أرقام واتساب\":\n    - /url: /merchant/whatsapp-instances\n  - link \"الفريق والصلاحيات\":\n    - /url: /merchant/team\n  - link \"الباقة والفواتير\":\n    - /url: /merchant/my-subscription\n  - link \"حدود الاستخدام\":\n    - /url: /merchant/usage-dashboard\n  - link \"الخصوصية\":\n    - /url: /merchant/privacy-center\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=settings\n    - text: المزيد\n- main:\n  - heading \"إعدادات العملة\" [level=1]\n  - paragraph: اختر العملة الافتراضية لمتجرك. تظل السجلات السابقة بعملتها الأصلية.\n  - text: العملة الأساسية\n  - generic: اختر العملة التي تريد استخدامها في متجرك\n  - alert:\n    - text: \"العملة الحالية:\"\n    - strong: ريال سعودي\n  - generic: اختر العملة\n  - combobox \"اختر العملة\":\n    - generic: ﷼\n    - generic: ريال سعودي\n    - generic: (SAR)\n  - heading \"معلومات العملة المختارة:\" [level=4]\n  - generic: الرمز:﷼\n  - generic: الكود:SAR\n  - generic: الاسم:ريال سعودي\n  - button \"حفظ التغييرات\" [disabled]:\n    - text: حفظ التغييرات\n  - generic: ملاحظات هامة\n  - generic: •\n  - paragraph: سيتم عرض جميع المنتجات والطلبات الجديدة بالعملة المختارة\n  - generic: •\n  - paragraph: المنتجات والطلبات الموجودة ستحتفظ بعملتها الأصلية\n  - generic: •\n  - paragraph: يمكنك تغيير العملة في أي وقت\n  - generic: •\n  - paragraph: يمكنك تحديد عملة مختلفة لكل منتج عند إضافته\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/scheduled-reports",
+    "clipped": [],
+    "error": true,
+    "headings": [
+      "تعذّر عرض الصفحة"
+    ],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/scheduled-reports",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص التحليلات\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: التحليلات\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات التحليلات\":\n  - link \"مركز التحليلات\":\n    - /url: /merchant/analytics-hub\n  - link \"تحليلات المبيعات\":\n    - /url: /merchant/analytics\n  - link \"تحليلات الرسائل\":\n    - /url: /merchant/message-analytics\n  - link \"التقارير\":\n    - /url: /merchant/reports\n  - link \"الرؤى والاقتراحات وA/B\":\n    - /url: /merchant/insights\n  - link \"التقارير المجدولة\":\n    - /url: /merchant/scheduled-reports\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=analytics\n    - text: المزيد\n- main:\n  - generic: \"500\"\n  - paragraph: مساحة التاجر · ساري\n  - heading \"تعذّر عرض الصفحة\" [level=1]\n  - paragraph: حدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n  - button \"إعادة المحاولة\":\n    - text: إعادة المحاولة\n  - link \"ابحث عن أداة\":\n    - /url: /merchant/tools\n    - text: ابحث عن أداة\n  - paragraph:\n    - text: تحتاج مساعدة؟\n    - link \"تواصل مع الدعم\":\n      - /url: /support\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/whatsapp-auto-notifications",
+    "clipped": [],
+    "error": false,
+    "headings": [],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/whatsapp-auto-notifications",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص التسويق\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: التسويق\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات التسويق\":\n  - link \"الحملات\":\n    - /url: /merchant/campaigns\n  - link \"كوبونات الخصم\":\n    - /url: /merchant/discounts\n  - link \"السلات المتروكة\":\n    - /url: /merchant/abandoned-carts\n  - link \"العروض الترويجية\":\n    - /url: /merchant/promotions\n  - link \"حملات المناسبات\":\n    - /url: /merchant/occasion-campaigns\n  - link \"إعدادات الولاء\":\n    - /url: /merchant/loyalty/settings\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=marketing\n    - text: المزيد\n- main\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  },
+  {
+    "route": "/merchant/services",
+    "clipped": [],
+    "error": false,
+    "headings": [
+      "إدارة الخدمات"
+    ],
+    "height": 812,
+    "scrollWidth": 360,
+    "smallFields": [],
+    "url": "/merchant/services",
+    "width": 375
+  },
+  {
+    "route": "/merchant/whatsapp-auto-notifications",
+    "clipped": [],
+    "error": true,
+    "headings": [
+      "تعذّر عرض الصفحة"
+    ],
+    "height": 812,
+    "scrollWidth": 375,
+    "smallFields": [],
+    "url": "/merchant/whatsapp-auto-notifications",
+    "width": 375,
+    "visibleText": "- region \"Notifications alt+T\"\n- link \"انتقل إلى المحتوى\":\n  - /url: \"#merchant-main\"\n- banner:\n  - button \"فتح قائمة التاجر\":\n  - link \"متجر نواة · تيننت الفحص التسويق\":\n    - /url: /merchant/settings\n    - strong: متجر نواة · تيننت الفحص\n    - generic: التسويق\n  - button \"البحث في أدوات المتجر\":\n  - button \"الإشعارات\":\n    - generic: \"1\"\n  - button \"الحساب والتفضيلات\":\n    - generic: ت\n- navigation \"أدوات التسويق\":\n  - link \"الحملات\":\n    - /url: /merchant/campaigns\n  - link \"كوبونات الخصم\":\n    - /url: /merchant/discounts\n  - link \"السلات المتروكة\":\n    - /url: /merchant/abandoned-carts\n  - link \"العروض الترويجية\":\n    - /url: /merchant/promotions\n  - link \"حملات المناسبات\":\n    - /url: /merchant/occasion-campaigns\n  - link \"إعدادات الولاء\":\n    - /url: /merchant/loyalty/settings\n  - link \"المزيد\":\n    - /url: /merchant/tools?section=marketing\n    - text: المزيد\n- main:\n  - generic: \"500\"\n  - paragraph: مساحة التاجر · ساري\n  - heading \"تعذّر عرض الصفحة\" [level=1]\n  - paragraph: حدث خلل أثناء التحميل. أعد المحاولة، أو انتقل إلى قسم آخر من القائمة.\n  - button \"إعادة المحاولة\":\n    - text: إعادة المحاولة\n  - link \"ابحث عن أداة\":\n    - /url: /merchant/tools\n    - text: ابحث عن أداة\n  - paragraph:\n    - text: تحتاج مساعدة؟\n    - link \"تواصل مع الدعم\":\n      - /url: /support\n- contentinfo:\n  - generic: مساحة أوضح. يوم أخف.\n  - link \"الخصوصية وإدارة البيانات\":\n    - /url: /merchant/privacy-center\n- navigation \"التنقل السريع\":\n  - link \"نظرة عامة\":\n    - /url: /merchant/dashboard\n    - generic: نظرة عامة\n  - link \"المحادثات\":\n    - /url: /merchant/conversations\n    - generic: المحادثات\n  - link \"المبيعات\":\n    - /url: /merchant/orders\n    - generic: المبيعات\n  - button \"المزيد من أقسام المتجر\":\n    - generic: المزيد"
+  }
+]

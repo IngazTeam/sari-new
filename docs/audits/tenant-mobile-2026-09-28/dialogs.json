@@ -1,0 +1,97 @@
+{
+  "note": "Initial orientation sample may precede resize events; last sample per size is authoritative.",
+  "checks": [
+    {
+      "buttons": [
+        {
+          "bottom": 535,
+          "text": "إلغاء",
+          "top": 491
+        },
+        {
+          "bottom": 535,
+          "text": "حفظ الشخصية",
+          "top": 491
+        }
+      ],
+      "dialog": {
+        "bottom": 552,
+        "left": 16,
+        "right": 289,
+        "top": 16
+      },
+      "height": 568,
+      "inputFont": "16px",
+      "width": 320
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 535,
+          "text": "إلغاء",
+          "top": 491
+        },
+        {
+          "bottom": 535,
+          "text": "حفظ الشخصية",
+          "top": 491
+        }
+      ],
+      "dialog": {
+        "bottom": 552,
+        "left": 16,
+        "right": 781,
+        "top": 16
+      },
+      "height": 375,
+      "inputFont": "16px",
+      "width": 812
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 769,
+          "text": "إلغاء",
+          "top": 725
+        },
+        {
+          "bottom": 769,
+          "text": "حفظ الشخصية",
+          "top": 725
+        }
+      ],
+      "dialog": {
+        "bottom": 786,
+        "left": 16,
+        "right": 344,
+        "top": 26
+      },
+      "height": 812,
+      "inputFont": "16px",
+      "width": 375
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 342,
+          "text": "إلغاء",
+          "top": 298
+        },
+        {
+          "bottom": 342,
+          "text": "حفظ الشخصية",
+          "top": 298
+        }
+      ],
+      "dialog": {
+        "bottom": 359,
+        "left": 62.5,
+        "right": 734.5,
+        "top": 16
+      },
+      "height": 375,
+      "inputFont": "16px",
+      "width": 812
+    }
+  ]
+}

@@ -181,7 +181,7 @@ export default function MySubscription() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-3 pt-4">
             <Button onClick={handleUpgrade} className="flex-1">
               <TrendingUp className="ml-2 h-4 w-4" />
               {t('mySubscriptionPage.text28')}

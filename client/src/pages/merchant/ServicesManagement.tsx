@@ -81,14 +81,14 @@ export default function ServicesManagement() {
   return (
     <div className="container py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t('servicesManagementPage.text2')}</h1>
           <p className="text-muted-foreground mt-2">
             {t('servicesManagementPage.text15')}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             onClick={() => setLocation('/merchant/service-categories')}

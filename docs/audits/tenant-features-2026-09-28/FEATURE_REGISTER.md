@@ -149,16 +149,16 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 321 | Button | إعادة المحاولة | setupWorkspace.loadFailed setupWorkspace.loading |
-| 362 | Button | إضافة يدويًا | setupWorkspace.loadFailed setupWorkspace.loading |
-| 369 | Button | استيراد من موقع | setupWorkspace.loadFailed setupWorkspace.loading |
-| 376 | Button | استخدام قالب | setupWorkspace.loadFailed setupWorkspace.loading |
-| 442 | a | انتقل إلى الخطوة الحالية | setupWorkspace.loadFailed setupWorkspace.loading |
-| 457 | Button | حفظ واستكشاف اللوحة | setupWorkspace.loadFailed setupWorkspace.loading |
-| 493 | button | كل الخطوات | أربع خطوات، وبدايتك جاهزة |
-| 519 | button | اختياري مكتملة | أربع خطوات، وبدايتك جاهزة |
-| 569 | button | إعادة المحاولة | أربع خطوات، وبدايتك جاهزة |
-| 600 | Button | السابق | SetupWizard |
+| 324 | Button | إعادة المحاولة | setupWorkspace.loadFailed setupWorkspace.loading |
+| 365 | Button | إضافة يدويًا | setupWorkspace.loadFailed setupWorkspace.loading |
+| 372 | Button | استيراد من موقع | setupWorkspace.loadFailed setupWorkspace.loading |
+| 379 | Button | استخدام قالب | setupWorkspace.loadFailed setupWorkspace.loading |
+| 445 | a | انتقل إلى الخطوة الحالية | setupWorkspace.loadFailed setupWorkspace.loading |
+| 460 | Button | حفظ واستكشاف اللوحة | setupWorkspace.loadFailed setupWorkspace.loading |
+| 496 | button | كل الخطوات | أربع خطوات، وبدايتك جاهزة |
+| 522 | button | اختياري مكتملة | أربع خطوات، وبدايتك جاهزة |
+| 572 | button | إعادة المحاولة | أربع خطوات، وبدايتك جاهزة |
+| 603 | Button | السابق | SetupWizard |
 
 ## client/src/components/LanguageSwitcher.tsx
 
@@ -1652,8 +1652,8 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 124 | input | تسمية ديناميكية / تحتاج مراجعة | مقاييس الأداء |
-| 130 | input | تسمية ديناميكية / تحتاج مراجعة | مقاييس الأداء |
+| 124 | input | من تاريخ | مقاييس الأداء |
+| 131 | input | إلى تاريخ | مقاييس الأداء |
 
 ## client/src/pages/merchant/DataSync.tsx
 
@@ -2487,31 +2487,31 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 109 | Link | ساري شريك يومك | MerchantShell |
-| 126 | Link | تسمية ديناميكية / تحتاج مراجعة | MerchantShell |
-| 138 | Link | الإعدادات | MerchantShell |
-| 147 | Link | جميع الأدوات | MerchantShell |
-| 163 | Link | الباقة والاستخدام | MerchantShell |
-| 181 | a | انتقل إلى المحتوى | MerchantShell |
-| 199 | Button | فتح قائمة التاجر | MerchantShell |
-| 209 | SheetContent | قائمة التاجر الأقسام والإعدادات والمتجر المحدد | MerchantShell |
-| 222 | Link | متجرك /merchant/tools جميع الأدوات مساحة التاجر | قائمة التاجر |
-| 238 | Button | البحث في أدوات المتجر | قائمة التاجر |
-| 253 | Button | الحساب والتفضيلات | قائمة التاجر |
-| 274 | DropdownMenuItem | إعدادات الحساب | قائمة التاجر |
-| 280 | DropdownMenuItem | لوحة الإدارة | قائمة التاجر |
-| 286 | DropdownMenuItem | تسجيل الخروج | قائمة التاجر |
-| 303 | Link | تسمية ديناميكية / تحتاج مراجعة | قائمة التاجر |
-| 315 | Link | المزيد | قائمة التاجر |
-| 333 | Link | الخصوصية وإدارة البيانات | قائمة التاجر |
-| 338 | Link | تسمية ديناميكية / تحتاج مراجعة | قائمة التاجر |
-| 347 | button | المزيد من أقسام المتجر | قائمة التاجر |
-| 357 | DialogContent | إلى أين تريد الذهاب؟ ابحث في أقسام متجرك وأدواته. Esc للإغلاق. اسم الأداة لا توجد أداة مطابقة. جرّب كلمة أخرى. | قائمة التاجر |
-| 375 | input | اسم الأداة | إلى أين تريد الذهاب؟ |
-| 387 | Link | تسمية ديناميكية / تحتاج مراجعة | إلى أين تريد الذهاب؟ |
-| 414 | AlertDialogContent | تسجيل الخروج هل تريد إنهاء جلسة العمل الحالية؟ إلغاء تسجيل الخروج | إلى أين تريد الذهاب؟ |
-| 422 | AlertDialogCancel | إلغاء | تسجيل الخروج |
-| 423 | AlertDialogAction | تسجيل الخروج | تسجيل الخروج |
+| 108 | Link | ساري شريك يومك | MerchantShell |
+| 125 | Link | تسمية ديناميكية / تحتاج مراجعة | MerchantShell |
+| 137 | Link | الإعدادات | MerchantShell |
+| 146 | Link | جميع الأدوات | MerchantShell |
+| 162 | Link | الباقة والاستخدام | MerchantShell |
+| 180 | a | انتقل إلى المحتوى | MerchantShell |
+| 198 | Button | فتح قائمة التاجر | MerchantShell |
+| 208 | SheetContent | قائمة التاجر الأقسام والإعدادات والمتجر المحدد | MerchantShell |
+| 221 | Link | متجرك /merchant/tools جميع الأدوات مساحة التاجر | قائمة التاجر |
+| 237 | Button | البحث في أدوات المتجر | قائمة التاجر |
+| 252 | Button | الحساب والتفضيلات | قائمة التاجر |
+| 273 | DropdownMenuItem | إعدادات الحساب | قائمة التاجر |
+| 279 | DropdownMenuItem | لوحة الإدارة | قائمة التاجر |
+| 285 | DropdownMenuItem | تسجيل الخروج | قائمة التاجر |
+| 302 | Link | تسمية ديناميكية / تحتاج مراجعة | قائمة التاجر |
+| 314 | Link | المزيد | قائمة التاجر |
+| 332 | Link | الخصوصية وإدارة البيانات | قائمة التاجر |
+| 337 | Link | تسمية ديناميكية / تحتاج مراجعة | قائمة التاجر |
+| 346 | button | المزيد من أقسام المتجر | قائمة التاجر |
+| 356 | DialogContent | إلى أين تريد الذهاب؟ ابحث في أقسام متجرك وأدواته. Esc للإغلاق. اسم الأداة لا توجد أداة مطابقة. جرّب كلمة أخرى. | قائمة التاجر |
+| 374 | input | اسم الأداة | إلى أين تريد الذهاب؟ |
+| 386 | Link | تسمية ديناميكية / تحتاج مراجعة | إلى أين تريد الذهاب؟ |
+| 413 | AlertDialogContent | تسجيل الخروج هل تريد إنهاء جلسة العمل الحالية؟ إلغاء تسجيل الخروج | إلى أين تريد الذهاب؟ |
+| 421 | AlertDialogCancel | إلغاء | تسجيل الخروج |
+| 422 | AlertDialogAction | تسجيل الخروج | تسجيل الخروج |
 
 ## client/src/components/MerchantSelector.tsx
 

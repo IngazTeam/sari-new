@@ -1,0 +1,22 @@
+{
+  "menu": {
+    "bottom": 812,
+    "clientHeight": 812,
+    "height": 812,
+    "overflow": "visible",
+    "scrollHeight": 812,
+    "top": 0,
+    "width": 375
+  },
+  "shortSearch": {
+    "bottom": 344,
+    "clientHeight": 326,
+    "font": "16px",
+    "height": 360,
+    "overflow": "auto",
+    "scrollHeight": 372,
+    "top": 16,
+    "width": 375
+  },
+  "note": "Short viewport is a layout test, not an actual iOS keyboard."
+}

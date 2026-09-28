@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-28",
+  "environment": "Windows, isolated local test tenant, Chromium controlled browser",
+  "actualSafariTested": false,
+  "actualIPhoneTested": false,
+  "deployed": false,
+  "tests": {
+    "status": "passed",
+    "files": 12,
+    "tests": 217,
+    "command": ".tmp/tenant-ux/node22.exe scripts/testing/run-isolated.mjs server/merchant-mobile-viewport.test.ts server/merchant-core-accessibility-pentest.test.ts server/signup-ux-accessibility-pentest.test.ts server/merchant-setup-ui.test.ts server/merchant-feature-inventory.test.ts server/merchant-feature-preservation.test.ts server/merchant-semantic-i18n-pentest.test.ts server/merchant-assistant-prototype.test.ts server/merchant-brain-prototype.test.ts server/merchant-page-prototype.test.ts server/merchant-setup-navigation.test.ts server/merchant-recovery-ui.test.ts"
+  },
+  "typecheck": {
+    "status": "passed",
+    "command": ".tmp/tenant-ux/node22.exe node_modules/typescript/bin/tsc --noEmit"
+  },
+  "translations": {
+    "status": "passed",
+    "callsChecked": 7886,
+    "dynamicKeysChecked": 311,
+    "missing": [],
+    "interpolationErrors": [],
+    "command": ".tmp/tenant-ux/node22.exe --import tsx scripts/check-translation-keys.ts"
+  },
+  "build": {
+    "status": "passed",
+    "command": ".tmp/tenant-ux/node22.exe node_modules/vite/bin/vite.js build",
+    "bundleBudgetCommand": ".tmp/tenant-ux/node22.exe scripts/check-client-bundle.mjs",
+    "bundleBudget": "passed"
+  },
+  "browserScope": {
+    "applicationRoutesVisitedAt375": 126,
+    "prototypeRoutesVisitedAt375": 126,
+    "additionalViewportMeasurements": 55,
+    "interpretation": "Layout checks on rendered local fixture states. Does not assert full feature functionality, provider integration, iOS keyboard behaviour or actual Safari rendering. Read REPORT.md and subsequent rechecks before interpreting initial measurements."
+  }
+}

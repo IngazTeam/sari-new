@@ -332,7 +332,7 @@ export default function TestSari() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
             <h1 className="text-3xl font-bold">{t('testSariPage.title')}</h1>
             <p className="text-muted-foreground mt-2">
@@ -345,7 +345,7 @@ export default function TestSari() {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Dialog open={showDealDialog} onOpenChange={setShowDealDialog}>
               <DialogTrigger asChild>
                 <Button

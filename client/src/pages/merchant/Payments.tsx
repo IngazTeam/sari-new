@@ -228,7 +228,7 @@ export default function Payments() {
       {/* جدول المعاملات */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <CardTitle>{t("paymentsPage.paymentTransactions")}</CardTitle>
               <CardDescription>

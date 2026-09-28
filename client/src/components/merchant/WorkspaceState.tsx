@@ -2,8 +2,10 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowLeft, Clock3, Compass, LockKeyhole, RefreshCw, Search, ShieldCheck, Sparkles, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useMerchantViewport } from '@/lib/merchant-viewport';
 import { Button } from '@/components/ui/button';
 import '@/styles/merchant-workspace.css';
+import '@/styles/merchant-mobile.css';
 
 export const workspaceStates = {
   payment: { code: 'PAYMENT', icon: Clock3, ar: ['راجع حالة الدفع', 'راجع اشتراكك قبل إعادة محاولة الدفع.'], en: ['Review your payment status', 'Check your subscription before trying the payment again.'] },
@@ -58,6 +60,7 @@ export function WorkspaceState({ kind = 'error', onRetry, title, description, ac
 }
 
 export function WorkspaceStandalone({ children }: { children: ReactNode }) {
+  useMerchantViewport();
   const { i18n } = useTranslation();
   const english = i18n.language?.startsWith('en');
   return <div className="merchant-workspace mw-standalone" dir={english ? 'ltr' : 'rtl'}>

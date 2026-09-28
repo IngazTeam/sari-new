@@ -120,18 +120,20 @@ export default function PerformanceMetrics() {
       </div>
 
       {/* Date Range Selector */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
         <input
           type="date"
+          aria-label={t('mobileWorkspace.dateFrom')}
           value={dateRange.startDate}
           onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-          className="px-3 py-2 border rounded-lg"
+          className="w-full min-w-0 px-3 py-2 border rounded-lg"
         />
         <input
           type="date"
+          aria-label={t('mobileWorkspace.dateTo')}
           value={dateRange.endDate}
           onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-          className="px-3 py-2 border rounded-lg"
+          className="w-full min-w-0 px-3 py-2 border rounded-lg"
         />
       </div>
 

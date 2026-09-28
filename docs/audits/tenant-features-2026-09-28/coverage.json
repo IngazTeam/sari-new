@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T09:11:12.062Z",
+  "generatedAt": "2026-09-28T09:52:44.765Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -20,16 +20,16 @@
         "client/src/pages/setup-wizard/CompleteStep.tsx"
       ],
       "controls": [
-        "cf9f981a53d1",
-        "135558378f50",
-        "4a982ac59812",
-        "5c0b5d3487e8",
-        "affea432d7d2",
-        "465a8c9a040b",
-        "0aec0e1b8356",
-        "d2033ad57456",
-        "fd835b78931a",
-        "dfb22d114e34",
+        "db60a62f2519",
+        "03d12c8ed892",
+        "f807ac1aa352",
+        "5899d4bc82a1",
+        "7f6165751863",
+        "3b4fceee9350",
+        "bb07f44eaafe",
+        "9294fed7b838",
+        "d1fcba4607e6",
+        "2dd23dee58aa",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -100,9 +100,9 @@
       ],
       "controlDetails": [
         {
-          "id": "cf9f981a53d1",
+          "id": "db60a62f2519",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 321,
+          "line": 324,
           "tag": "Button",
           "kind": "action",
           "label": "إعادة المحاولة",
@@ -122,9 +122,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "135558378f50",
+          "id": "03d12c8ed892",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 362,
+          "line": 365,
           "tag": "Button",
           "kind": "action",
           "label": "إضافة يدويًا",
@@ -142,9 +142,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4a982ac59812",
+          "id": "f807ac1aa352",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 369,
+          "line": 372,
           "tag": "Button",
           "kind": "action",
           "label": "استيراد من موقع",
@@ -162,9 +162,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5c0b5d3487e8",
+          "id": "5899d4bc82a1",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 376,
+          "line": 379,
           "tag": "Button",
           "kind": "action",
           "label": "استخدام قالب",
@@ -182,9 +182,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "affea432d7d2",
+          "id": "7f6165751863",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 442,
+          "line": 445,
           "tag": "a",
           "kind": "action",
           "label": "انتقل إلى الخطوة الحالية",
@@ -202,9 +202,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "465a8c9a040b",
+          "id": "3b4fceee9350",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 457,
+          "line": 460,
           "tag": "Button",
           "kind": "action",
           "label": "حفظ واستكشاف اللوحة",
@@ -222,9 +222,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0aec0e1b8356",
+          "id": "bb07f44eaafe",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 493,
+          "line": 496,
           "tag": "button",
           "kind": "action",
           "label": "كل الخطوات",
@@ -242,9 +242,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d2033ad57456",
+          "id": "9294fed7b838",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 519,
+          "line": 522,
           "tag": "button",
           "kind": "action",
           "label": "اختياري مكتملة",
@@ -262,9 +262,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fd835b78931a",
+          "id": "d1fcba4607e6",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 569,
+          "line": 572,
           "tag": "button",
           "kind": "action",
           "label": "إعادة المحاولة",
@@ -285,9 +285,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "dfb22d114e34",
+          "id": "2dd23dee58aa",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 600,
+          "line": 603,
           "tag": "Button",
           "kind": "action",
           "label": "السابق",
@@ -30825,7 +30825,7 @@
       ],
       "controls": [
         "2a64c5c5d270",
-        "2b5805a18845"
+        "d842609b04e0"
       ],
       "queries": [
         "performance.getPerformanceMetrics"
@@ -30845,7 +30845,7 @@
           "line": 124,
           "tag": "input",
           "kind": "field",
-          "label": "",
+          "label": "من تاريخ",
           "section": "مقاييس الأداء",
           "binding": "dateRange.startDate",
           "type": "date",
@@ -30860,12 +30860,12 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2b5805a18845",
+          "id": "d842609b04e0",
           "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
-          "line": 130,
+          "line": 131,
           "tag": "input",
           "kind": "field",
-          "label": "",
+          "label": "إلى تاريخ",
           "section": "مقاييس الأداء",
           "binding": "dateRange.endDate",
           "type": "date",
