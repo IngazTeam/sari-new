@@ -42,29 +42,13 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const reportTypeLabels: Record<string, string> = {
-  daily: "يومي",
-  weekly: "أسبوعي",
-  monthly: "شهري",
-  custom: "مخصص",
-};
-const deliveryMethodLabels: Record<string, string> = {
-  email: "بريد إلكتروني",
-  whatsapp: "واتساب",
-  both: "كلاهما",
-};
-const dayLabels = [
-  "الأحد",
-  "الإثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-  "السبت",
-];
-
 export default function ScheduledReports() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const reportTypeLabels: Record<string, string> = {daily:t("scheduledReports.auto_2"),weekly:t("scheduledReports.auto_3"),monthly:t("scheduledReports.auto_4"),custom:t("notificationWorkspace.custom")};
+  const deliveryMethodLabels: Record<string, string> = {email:t("scheduledReports.auto_7"),whatsapp:t("scheduledReports.auto_8"),both:t("scheduledReports.auto_9")};
+  const dayLabels = [t("notificationWorkspace.days.0"),t("notificationWorkspace.days.1"),t("notificationWorkspace.days.2"),t("notificationWorkspace.days.3"),t("notificationWorkspace.days.4"),t("notificationWorkspace.days.5"),t("notificationWorkspace.days.6")];
+  const capabilities = trpc.advancedNotifications.workspaceCapabilities.useQuery();
+  const canManage = capabilities.data?.reportsManage === true;
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<any>(null);
@@ -159,12 +143,12 @@ export default function ScheduledReports() {
       deliveryMethod: report.delivery_method || "email",
       recipientEmail: report.recipient_email || "",
       recipientPhone: report.recipient_phone || "",
-      includeConversations: report.include_conversations ?? true,
-      includeOrders: report.include_orders ?? true,
-      includeRevenue: report.include_revenue ?? true,
-      includeProducts: report.include_products ?? true,
-      includeCustomers: report.include_customers ?? true,
-      includeAppointments: report.include_appointments ?? true,
+      includeConversations: Boolean(report.include_conversations ?? true),
+      includeOrders: Boolean(report.include_orders ?? true),
+      includeRevenue: Boolean(report.include_revenue ?? true),
+      includeProducts: Boolean(report.include_products ?? true),
+      includeCustomers: Boolean(report.include_customers ?? true),
+      includeAppointments: Boolean(report.include_appointments ?? true),
     });
     setIsDialogOpen(true);
   };
@@ -179,8 +163,9 @@ export default function ScheduledReports() {
     );
 
   return (
-    <div className="container mx-auto py-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-6 space-y-6" dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}>
+      <p className="rounded-xl border bg-muted/40 p-4 text-sm leading-relaxed">{t("notificationWorkspace.configurationOnly")}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">
             {t("workspacePages.scheduledReports")}
@@ -197,15 +182,15 @@ export default function ScheduledReports() {
           }}
         >
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!canManage}>
               <Plus className="h-4 w-4 ml-2" />
               {t("tenantFormsUx.ScheduledReports.new")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
+          <DialogContent className="mw-form-dialog max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingReport ? "تعديل التقرير" : "إنشاء تقرير جديد"}
+                {editingReport ? t("notificationWorkspace.editReport") : t("notificationWorkspace.newReport")}
               </DialogTitle>
               <DialogDescription>
                 {t("tenantFormsUx.ScheduledReports.description")}
@@ -217,7 +202,7 @@ export default function ScheduledReports() {
                 e.preventDefault();
                 handleSubmit();
               }}
-              className="grid gap-4 py-4"
+              className="grid min-h-0 overflow-y-auto gap-4 py-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -400,7 +385,7 @@ export default function ScheduledReports() {
               </div>
               <div className="space-y-3">
                 <Label>{t("tenantFormsUx.ScheduledReports.contents")}</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center justify-between">
                     <Label className="font-normal">
                       {t("scheduledReports.auto_12")}
@@ -483,9 +468,9 @@ export default function ScheduledReports() {
               <Button
                 type="submit"
                 form="scheduled-report-form"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={!canManage || createMutation.isPending || updateMutation.isPending}
               >
-                {editingReport ? "تحديث" : "إنشاء"}
+                {editingReport ? t("notificationWorkspace.update") : t("notificationWorkspace.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -504,6 +489,7 @@ export default function ScheduledReports() {
                 variant="outline"
                 className="mt-4"
                 onClick={() => setIsDialogOpen(true)}
+                disabled={!canManage}
               >
                 <Plus className="h-4 w-4 ml-2" />
                 {t("scheduledReports.auto_18")}
@@ -514,16 +500,16 @@ export default function ScheduledReports() {
           reports.map((report: any) => (
             <Card key={report.id}>
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{report.name}</CardTitle>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 break-words">
+                    <CardTitle className="text-lg break-words">{report.name}</CardTitle>
                     <CardDescription>
                       {reportTypeLabels[report.report_type] ||
                         report.report_type}
                     </CardDescription>
                   </div>
                   <Badge variant={report.is_active ? "default" : "secondary"}>
-                    {report.is_active ? "نشط" : "متوقف"}
+                    {report.is_active ? t("notificationWorkspace.savedEnabled") : t("notificationWorkspace.savedDisabled")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -551,8 +537,8 @@ export default function ScheduledReports() {
                 </div>
                 {report.last_sent_at && (
                   <p className="text-xs text-muted-foreground">
-                    آخر إرسال:{" "}
-                    {new Date(report.last_sent_at).toLocaleString("ar-SA")}
+                    {t("notificationWorkspace.lastSent")}{" "}
+                    {new Date(report.last_sent_at).toLocaleString(i18n.language)}
                   </p>
                 )}
                 <div className="flex gap-2 pt-2">
@@ -560,6 +546,7 @@ export default function ScheduledReports() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(report)}
+                    disabled={!canManage}
                   >
                     <Edit className="h-4 w-4 ml-1" />
                     {t("tenantFormsUx.ScheduledReports.edit")}
@@ -569,6 +556,7 @@ export default function ScheduledReports() {
                     size="sm"
                     className="text-red-600 hover:text-red-700"
                     onClick={() => setDeleteId(report.id)}
+                    disabled={!canManage}
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">{t("tenantFormsUx.delete")}</span>
@@ -598,7 +586,7 @@ export default function ScheduledReports() {
             </Button>
             <Button
               variant="destructive"
-              disabled={deleteMutation.isPending}
+              disabled={!canManage || deleteMutation.isPending}
               onClick={() => {
                 if (deleteId !== null) deleteMutation.mutate({ id: deleteId });
               }}

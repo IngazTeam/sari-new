@@ -1,5 +1,6 @@
 import { mysqlTable, mysqlEnum, int, bigint, varchar, char, text, mediumtext, timestamp, datetime, tinyint, decimal, date, index, uniqueIndex, primaryKey, foreignKey, check, json } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
+export * from './tenant-notification-schema';
 
 export const aiBudgetPolicies = mysqlTable('ai_budget_policies', {
   scopeKey: varchar('scope_key', { length: 160 }).primaryKey(),

@@ -1,5 +1,9 @@
 /* Shared by tenant pages and portaled forms, including the setup wizard. */
 body.merchant-surface { --mw-visible-height: 100vh; --mw-viewport-top: 0px; }
+/* The shared switch moves its thumb with positive translateX; keep its track LTR in Arabic too. */
+body.merchant-surface [data-slot="switch"] { direction: ltr; }
+body.merchant-surface [data-slot="dialog-content"].mw-form-dialog { display: flex; flex-direction: column; overflow: hidden; }
+body.merchant-surface .mw-form-dialog > :is([data-slot="dialog-header"], [data-slot="dialog-footer"]) { flex-shrink: 0; }
 @supports (height: 100dvh) { body.merchant-surface { --mw-visible-height: 100dvh; } }
 
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {

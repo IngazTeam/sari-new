@@ -1023,6 +1023,13 @@
       "when": 1795392000007,
       "tag": "0145_salla_checkout_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 146,
+      "version": "5",
+      "when": 1795392000008,
+      "tag": "0146_tenant_notification_workspaces",
+      "breakpoints": true
     }
   ]
 }

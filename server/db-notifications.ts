@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getDb } from "./db/connection";
 import { sql } from "drizzle-orm";
 
 // Push Notification Settings
@@ -132,8 +132,8 @@ export async function createScheduledReport(data: {
      recipient_email, recipient_phone, include_conversations, include_orders,
      include_revenue, include_products, include_customers, include_appointments)
     VALUES (${data.merchantId}, ${data.name}, ${data.reportType}, ${data.scheduleDay ?? 0}, 
-      ${data.scheduleTime ?? '09:00'}, ${data.deliveryMethod ?? 'email'}, ${data.recipientEmail},
-      ${data.recipientPhone}, ${data.includeConversations ?? true}, ${data.includeOrders ?? true},
+      ${data.scheduleTime ?? '09:00'}, ${data.deliveryMethod ?? 'email'}, ${data.recipientEmail ?? null},
+      ${data.recipientPhone ?? null}, ${data.includeConversations ?? true}, ${data.includeOrders ?? true},
       ${data.includeRevenue ?? true}, ${data.includeProducts ?? true}, ${data.includeCustomers ?? true},
       ${data.includeAppointments ?? true})`);
   return (result as any)[0]?.insertId || 0;
@@ -156,28 +156,34 @@ export async function updateScheduledReport(id: number, data: Partial<{
   isActive: boolean;
   lastSentAt: Date;
   nextSendAt: Date;
-}>) {
+}>, merchantId?: number) {
   const db = await getDb();
   if (!db) return;
-  // Simple update - just update all fields
+  // Explicit nulls mean "leave unchanged"; false, zero and empty strings remain values.
   await db.execute(sql`UPDATE scheduled_reports SET
-    name = COALESCE(${data.name}, name),
-    report_type = COALESCE(${data.reportType}, report_type),
-    schedule_day = COALESCE(${data.scheduleDay}, schedule_day),
-    schedule_time = COALESCE(${data.scheduleTime}, schedule_time),
-    delivery_method = COALESCE(${data.deliveryMethod}, delivery_method),
-    recipient_email = COALESCE(${data.recipientEmail}, recipient_email),
-    recipient_phone = COALESCE(${data.recipientPhone}, recipient_phone),
-    is_active = COALESCE(${data.isActive}, is_active),
-    last_sent_at = COALESCE(${data.lastSentAt}, last_sent_at),
-    next_send_at = COALESCE(${data.nextSendAt}, next_send_at)
-  WHERE id = ${id}`);
+    name = COALESCE(${data.name ?? null}, name),
+    report_type = COALESCE(${data.reportType ?? null}, report_type),
+    schedule_day = COALESCE(${data.scheduleDay ?? null}, schedule_day),
+    schedule_time = COALESCE(${data.scheduleTime ?? null}, schedule_time),
+    delivery_method = COALESCE(${data.deliveryMethod ?? null}, delivery_method),
+    recipient_email = COALESCE(${data.recipientEmail ?? null}, recipient_email),
+    recipient_phone = COALESCE(${data.recipientPhone ?? null}, recipient_phone),
+    include_conversations = COALESCE(${data.includeConversations ?? null}, include_conversations),
+    include_orders = COALESCE(${data.includeOrders ?? null}, include_orders),
+    include_revenue = COALESCE(${data.includeRevenue ?? null}, include_revenue),
+    include_products = COALESCE(${data.includeProducts ?? null}, include_products),
+    include_customers = COALESCE(${data.includeCustomers ?? null}, include_customers),
+    include_appointments = COALESCE(${data.includeAppointments ?? null}, include_appointments),
+    is_active = COALESCE(${data.isActive ?? null}, is_active),
+    last_sent_at = COALESCE(${data.lastSentAt ?? null}, last_sent_at),
+    next_send_at = COALESCE(${data.nextSendAt ?? null}, next_send_at)
+  WHERE id = ${id} ${merchantId === undefined ? sql`` : sql`AND merchant_id = ${merchantId}`}`);
 }
 
-export async function deleteScheduledReport(id: number) {
+export async function deleteScheduledReport(id: number, merchantId: number) {
   const db = await getDb();
   if (!db) return;
-  await db.execute(sql`DELETE FROM scheduled_reports WHERE id = ${id}`);
+  await db.execute(sql`DELETE FROM scheduled_reports WHERE id = ${id} AND merchant_id = ${merchantId}`);
 }
 
 export async function getDueScheduledReports() {
@@ -229,21 +235,21 @@ export async function updateWhatsappAutoNotification(id: number, data: Partial<{
   messageTemplate: string;
   isActive: boolean;
   delayMinutes: number;
-}>) {
+}>, merchantId: number) {
   const db = await getDb();
   if (!db) return;
   await db.execute(sql`UPDATE whatsapp_auto_notifications SET
-    trigger_type = COALESCE(${data.triggerType}, trigger_type),
-    message_template = COALESCE(${data.messageTemplate}, message_template),
-    is_active = COALESCE(${data.isActive}, is_active),
-    delay_minutes = COALESCE(${data.delayMinutes}, delay_minutes)
-  WHERE id = ${id}`);
+    trigger_type = COALESCE(${data.triggerType ?? null}, trigger_type),
+    message_template = COALESCE(${data.messageTemplate ?? null}, message_template),
+    is_active = COALESCE(${data.isActive ?? null}, is_active),
+    delay_minutes = COALESCE(${data.delayMinutes ?? null}, delay_minutes)
+  WHERE id = ${id} AND merchant_id = ${merchantId}`);
 }
 
-export async function deleteWhatsappAutoNotification(id: number) {
+export async function deleteWhatsappAutoNotification(id: number, merchantId: number) {
   const db = await getDb();
   if (!db) return;
-  await db.execute(sql`DELETE FROM whatsapp_auto_notifications WHERE id = ${id}`);
+  await db.execute(sql`DELETE FROM whatsapp_auto_notifications WHERE id = ${id} AND merchant_id = ${merchantId}`);
 }
 
 // Integration Stats
@@ -299,7 +305,7 @@ export async function createIntegrationError(data: {
   try {
     const result = await db.execute(sql`INSERT INTO integration_errors 
       (merchant_id, platform, error_type, error_message, error_details)
-      VALUES (${data.merchantId}, ${data.platform}, ${data.errorType}, ${data.errorMessage}, ${data.errorDetails})`);
+      VALUES (${data.merchantId}, ${data.platform}, ${data.errorType}, ${data.errorMessage ?? null}, ${data.errorDetails ?? null})`);
     return (result as any)[0]?.insertId || 0;
   } catch (e: any) {
     if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return 0;
@@ -338,11 +344,11 @@ export async function getUnresolvedErrors(merchantId: number) {
 
 
 
-export async function resolveIntegrationError(id: number) {
+export async function resolveIntegrationError(id: number, merchantId: number) {
   const db = await getDb();
   if (!db) return;
   try {
-    await db.execute(sql`UPDATE integration_errors SET resolved = TRUE, resolved_at = NOW() WHERE id = ${id}`);
+    await db.execute(sql`UPDATE integration_errors SET resolved = TRUE, resolved_at = NOW() WHERE id = ${id} AND merchant_id = ${merchantId}`);
   } catch (e: any) {
     if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return;
     throw e;
@@ -387,11 +393,11 @@ export async function getWebhookSecurityLogs(merchantId?: number, limit = 100) {
   }
 }
 
-export async function getFailedWebhookAttempts(hours = 24) {
+export async function getFailedWebhookAttempts(merchantId: number, hours = 24) {
   const db = await getDb();
   if (!db) return [];
   try {
-    const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE signature_valid = FALSE AND created_at >= DATE_SUB(NOW(), INTERVAL ${hours} HOUR) ORDER BY created_at DESC`);
+    const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE merchant_id = ${merchantId} AND signature_valid = FALSE AND created_at >= DATE_SUB(NOW(), INTERVAL ${hours} HOUR) ORDER BY created_at DESC`);
     return (result as any)[0] || [];
   } catch (e: any) {
     if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];

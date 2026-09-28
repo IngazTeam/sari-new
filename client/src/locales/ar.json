@@ -7903,7 +7903,7 @@
     "auto_3": "هذه الصفحة للتجربة فقط. الردود تستخدم نفس نظام ساري AI المستخدم في الواتساب.\r\n                يمكنك اختبار أنواع مختلفة من الأسئلة لرؤية كيف يتفاعل ساري مع العملاء."
   },
   "scheduledReports": {
-    "auto_0": "إنشاء وإدارة التقارير التلقائية",
+    "auto_0": "حفظ إعدادات التقارير المجدولة ومراجعتها",
     "auto_1": "نوع التقرير",
     "auto_2": "يومي",
     "auto_3": "أسبوعي",
@@ -8259,10 +8259,10 @@
     "auto_6": "عرض المنتج"
   },
   "whatsAppAutoNotifications": {
-    "auto_0": "إرسال رسائل تلقائية للعملاء عند تغيير حالة الطلبات أو المواعيد",
+    "auto_0": "تجهيز قوالب الرسائل لأحداث الطلبات والمواعيد",
     "auto_1": "استعادة القالب الافتراضي",
-    "auto_2": "رسائل تلقائية عند تغيير حالة الطلبات",
-    "auto_3": "رسائل تلقائية عند حجز أو تغيير المواعيد",
+    "auto_2": "قوالب رسائل أحداث الطلبات",
+    "auto_3": "قوالب رسائل أحداث المواعيد",
     "auto_4": "أدخل نص الرسالة...",
     "auto_5": "{{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deliveryDate}}, {{serviceName}}, {{appointmentDate}}, {{appointmentTime}}, {{location}}"
   },
@@ -9408,5 +9408,52 @@
   "mobileWorkspace": {
     "dateFrom": "من تاريخ",
     "dateTo": "إلى تاريخ"
+  },
+  "notificationWorkspace": {
+    "configurationOnly": "يمكنك حفظ الإعدادات ومراجعتها هنا. الإرسال التلقائي لهذه الإعدادات غير متاح حاليًا؛ حفظها لا يرسل رسالة.",
+    "savedEnabled": "إعداد محفوظ",
+    "savedDisabled": "إعداد معطّل",
+    "editReport": "تعديل التقرير",
+    "newReport": "إنشاء تقرير جديد",
+    "editNotification": "تعديل الإشعار",
+    "newNotification": "إنشاء إشعار جديد",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "custom": "مخصص",
+    "lastSent": "آخر إرسال:",
+    "variables": "المتغيرات المتاحة:",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "syncs": "{{count}} مزامنة",
+    "successful": "{{count}} ناجحة",
+    "errors": "{{count}} خطأ",
+    "days": {
+      "0": "الأحد",
+      "1": "الإثنين",
+      "2": "الثلاثاء",
+      "3": "الأربعاء",
+      "4": "الخميس",
+      "5": "الجمعة",
+      "6": "السبت"
+    },
+    "events": {
+      "order_created": "طلب جديد",
+      "order_confirmed": "تأكيد الطلب",
+      "order_shipped": "شحن الطلب",
+      "order_delivered": "تسليم الطلب",
+      "order_cancelled": "إلغاء الطلب",
+      "appointment_created": "حجز موعد",
+      "appointment_reminder": "تذكير بالموعد",
+      "appointment_cancelled": "إلغاء الموعد",
+      "appointment_rescheduled": "تغيير الموعد"
+    },
+    "integrationTotal": "من {{count}} تكامل",
+    "lastSync": "آخر مزامنة: {{date}}",
+    "neverSynced": "لم تتم المزامنة بعد",
+    "platforms": {
+      "zid": "زد",
+      "salla": "سلة",
+      "byaan": "بيان"
+    }
   }
 }

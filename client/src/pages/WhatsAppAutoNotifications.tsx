@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { TriggerType } from '../../../server/notifications/whatsapp-auto-notifications';
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { trpc } from "@/lib/trpc";
 import {
@@ -41,64 +42,67 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
+export default function WhatsAppAutoNotifications() {
+  const { t, i18n } = useTranslation();
 const triggerLabels: Record<
   string,
   { label: string; icon: React.ReactNode; category: string }
 > = {
   order_created: {
-    label: "طلب جديد",
+    label: t("notificationWorkspace.events.order_created"),
     icon: <ShoppingBag className="h-4 w-4" />,
-    category: "الطلبات",
+    category: t("scheduledReports.auto_13"),
   },
   order_confirmed: {
-    label: "تأكيد الطلب",
+    label: t("notificationWorkspace.events.order_confirmed"),
     icon: <ShoppingBag className="h-4 w-4" />,
-    category: "الطلبات",
+    category: t("scheduledReports.auto_13"),
   },
   order_shipped: {
-    label: "شحن الطلب",
+    label: t("notificationWorkspace.events.order_shipped"),
     icon: <ShoppingBag className="h-4 w-4" />,
-    category: "الطلبات",
+    category: t("scheduledReports.auto_13"),
   },
   order_delivered: {
-    label: "تسليم الطلب",
+    label: t("notificationWorkspace.events.order_delivered"),
     icon: <ShoppingBag className="h-4 w-4" />,
-    category: "الطلبات",
+    category: t("scheduledReports.auto_13"),
   },
   order_cancelled: {
-    label: "إلغاء الطلب",
+    label: t("notificationWorkspace.events.order_cancelled"),
     icon: <ShoppingBag className="h-4 w-4" />,
-    category: "الطلبات",
+    category: t("scheduledReports.auto_13"),
   },
   appointment_created: {
-    label: "حجز موعد",
+    label: t("notificationWorkspace.events.appointment_created"),
     icon: <Calendar className="h-4 w-4" />,
-    category: "المواعيد",
+    category: t("scheduledReports.auto_17"),
   },
   appointment_reminder: {
-    label: "تذكير بالموعد",
+    label: t("notificationWorkspace.events.appointment_reminder"),
     icon: <Calendar className="h-4 w-4" />,
-    category: "المواعيد",
+    category: t("scheduledReports.auto_17"),
   },
   appointment_cancelled: {
-    label: "إلغاء الموعد",
+    label: t("notificationWorkspace.events.appointment_cancelled"),
     icon: <Calendar className="h-4 w-4" />,
-    category: "المواعيد",
+    category: t("scheduledReports.auto_17"),
   },
   appointment_rescheduled: {
-    label: "تغيير الموعد",
+    label: t("notificationWorkspace.events.appointment_rescheduled"),
     icon: <Calendar className="h-4 w-4" />,
-    category: "المواعيد",
+    category: t("scheduledReports.auto_17"),
   },
 };
 
-export default function WhatsAppAutoNotifications() {
-  const { t } = useTranslation();
+
+  const capabilities = trpc.advancedNotifications.workspaceCapabilities.useQuery();
+  const canManage = capabilities.data?.notificationsManage === true;
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotification, setEditingNotification] = useState<any>(null);
   const [formData, setFormData] = useState({
-    triggerType: "order_created",
+    triggerType: "order_created" as TriggerType,
     messageTemplate: "",
     isActive: true,
     delayMinutes: 0,
@@ -167,7 +171,7 @@ export default function WhatsAppAutoNotifications() {
     setFormData({
       triggerType: notification.trigger_type,
       messageTemplate: notification.message_template,
-      isActive: notification.is_active ?? true,
+      isActive: Boolean(notification.is_active ?? true),
       delayMinutes: notification.delay_minutes ?? 0,
     });
     setIsDialogOpen(true);
@@ -208,8 +212,9 @@ export default function WhatsAppAutoNotifications() {
     ) || [];
 
   return (
-    <div className="container mx-auto py-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-6 space-y-6" dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}>
+      <p className="rounded-xl border bg-muted/40 p-4 text-sm leading-relaxed">{t("notificationWorkspace.configurationOnly")}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">
             {t("workspacePages.autoNotifications")}
@@ -226,15 +231,15 @@ export default function WhatsAppAutoNotifications() {
           }}
         >
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!canManage}>
               <Plus className="h-4 w-4 ml-2" />
               {t("tenantFormsUx.WhatsAppAutoNotifications.new")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
+          <DialogContent className="mw-form-dialog max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingNotification ? "تعديل الإشعار" : "إنشاء إشعار جديد"}
+                {editingNotification ? t("notificationWorkspace.editNotification") : t("notificationWorkspace.newNotification")}
               </DialogTitle>
               <DialogDescription>
                 {t("tenantFormsUx.WhatsAppAutoNotifications.description")}
@@ -246,7 +251,7 @@ export default function WhatsAppAutoNotifications() {
                 e.preventDefault();
                 handleSubmit();
               }}
-              className="grid gap-4 py-4"
+              className="grid min-h-0 overflow-y-auto gap-4 py-4"
             >
               <div className="space-y-2">
                 <Label htmlFor="auto-notification-form-triggerType">
@@ -257,7 +262,7 @@ export default function WhatsAppAutoNotifications() {
                   onValueChange={v =>
                     setFormData(p => ({
                       ...p,
-                      triggerType: v,
+                      triggerType: v as TriggerType,
                       messageTemplate:
                         defaultTemplates?.[
                           v as keyof typeof defaultTemplates
@@ -280,7 +285,7 @@ export default function WhatsAppAutoNotifications() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <Label htmlFor="auto-notification-form-messageTemplate">
                     {t("tenantFormsUx.WhatsAppAutoNotifications.message")}
                   </Label>
@@ -307,10 +312,10 @@ export default function WhatsAppAutoNotifications() {
                   }
                   placeholder={t("whatsAppAutoNotifications.auto_4")}
                   className="min-h-[200px]"
-                  dir="rtl"
+                  dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
                 />
                 <p className="text-xs text-muted-foreground">
-                  المتغيرات المتاحة:{" "}
+                  {t("notificationWorkspace.variables")}{" "}
                   {t("whatsAppAutoNotifications.auto_5", {
                     skipInterpolation: true,
                   })}
@@ -336,9 +341,9 @@ export default function WhatsAppAutoNotifications() {
               <Button
                 type="submit"
                 form="auto-notification-form"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={!canManage || createMutation.isPending || updateMutation.isPending}
               >
-                {editingNotification ? "تحديث" : "إنشاء"}
+                {editingNotification ? t("notificationWorkspace.update") : t("notificationWorkspace.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -367,11 +372,11 @@ export default function WhatsAppAutoNotifications() {
               orderNotifications.map((notification: any) => (
                 <div
                   key={notification.id}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     {triggerLabels[notification.trigger_type]?.icon}
-                    <div>
+                    <div className="min-w-0 break-words">
                       <p className="font-medium">
                         {triggerLabels[notification.trigger_type]?.label ||
                           notification.trigger_type}
@@ -385,12 +390,13 @@ export default function WhatsAppAutoNotifications() {
                     <Badge
                       variant={notification.is_active ? "default" : "secondary"}
                     >
-                      {notification.is_active ? "نشط" : "متوقف"}
+                      {notification.is_active ? t("notificationWorkspace.savedEnabled") : t("notificationWorkspace.savedDisabled")}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(notification)}
+                      disabled={!canManage}
                     >
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">{t("tenantFormsUx.edit")}</span>
@@ -400,6 +406,7 @@ export default function WhatsAppAutoNotifications() {
                       size="sm"
                       className="text-red-600"
                       onClick={() => setDeleteId(notification.id)}
+                      disabled={!canManage}
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">
@@ -434,11 +441,11 @@ export default function WhatsAppAutoNotifications() {
               appointmentNotifications.map((notification: any) => (
                 <div
                   key={notification.id}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     {triggerLabels[notification.trigger_type]?.icon}
-                    <div>
+                    <div className="min-w-0 break-words">
                       <p className="font-medium">
                         {triggerLabels[notification.trigger_type]?.label ||
                           notification.trigger_type}
@@ -452,12 +459,13 @@ export default function WhatsAppAutoNotifications() {
                     <Badge
                       variant={notification.is_active ? "default" : "secondary"}
                     >
-                      {notification.is_active ? "نشط" : "متوقف"}
+                      {notification.is_active ? t("notificationWorkspace.savedEnabled") : t("notificationWorkspace.savedDisabled")}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(notification)}
+                      disabled={!canManage}
                     >
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">{t("tenantFormsUx.edit")}</span>
@@ -467,6 +475,7 @@ export default function WhatsAppAutoNotifications() {
                       size="sm"
                       className="text-red-600"
                       onClick={() => setDeleteId(notification.id)}
+                      disabled={!canManage}
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">
@@ -499,7 +508,7 @@ export default function WhatsAppAutoNotifications() {
             </Button>
             <Button
               variant="destructive"
-              disabled={deleteMutation.isPending}
+              disabled={!canManage || deleteMutation.isPending}
               onClick={() => {
                 if (deleteId !== null) deleteMutation.mutate({ id: deleteId });
               }}

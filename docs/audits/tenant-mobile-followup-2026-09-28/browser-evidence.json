@@ -1,0 +1,428 @@
+{
+  "browser": "Chrome Chromium on Windows; CSS viewport overrides, not Safari/iOS",
+  "date": "2026-09-28T11:01:51.078Z",
+  "cases": [
+    {
+      "case": "report-edit-375",
+      "dialog": {
+        "bottom": 796,
+        "left": 16,
+        "right": 344,
+        "top": 16
+      },
+      "footer": {
+        "bottom": 771,
+        "left": 41,
+        "right": 319,
+        "top": 675
+      },
+      "form": {
+        "bottom": 659,
+        "left": 41,
+        "right": 319,
+        "top": 103
+      },
+      "formScrollHeight": 696,
+      "heading": "التقارير المجدولة",
+      "height": 812,
+      "rootWidth": 360,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "true",
+          "name": "المحادثات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الطلبات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الإيرادات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "المنتجات",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "العملاء",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "المواعيد",
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/scheduled-reports",
+      "width": 375
+    },
+    {
+      "case": "report-edit-landscape",
+      "dialog": {
+        "bottom": 359,
+        "left": 142.5,
+        "right": 654.5,
+        "top": 16
+      },
+      "footer": {
+        "bottom": 334,
+        "left": 167.5,
+        "right": 629.5,
+        "top": 290
+      },
+      "form": {
+        "bottom": 274,
+        "left": 167.5,
+        "right": 629.5,
+        "top": 103
+      },
+      "formScrollHeight": 383,
+      "heading": "التقارير المجدولة",
+      "height": 375,
+      "rootWidth": 797,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "true",
+          "name": "المحادثات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الطلبات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الإيرادات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "المنتجات",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "العملاء",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "المواعيد",
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/scheduled-reports",
+      "width": 812
+    },
+    {
+      "case": "report-edit-320",
+      "dialog": {
+        "bottom": 552,
+        "left": 16,
+        "right": 289,
+        "top": 16
+      },
+      "footer": {
+        "bottom": 527,
+        "left": 41,
+        "right": 264,
+        "top": 431
+      },
+      "form": {
+        "bottom": 415,
+        "left": 41,
+        "right": 264,
+        "top": 103
+      },
+      "formScrollHeight": 696,
+      "heading": "التقارير المجدولة",
+      "height": 568,
+      "rootWidth": 305,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "true",
+          "name": "المحادثات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الطلبات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الإيرادات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "المنتجات",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "العملاء",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "المواعيد",
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/scheduled-reports",
+      "width": 320
+    },
+    {
+      "case": "notification-create-320",
+      "dialog": {
+        "bottom": 552,
+        "left": 16,
+        "right": 289,
+        "top": 16
+      },
+      "footer": {
+        "bottom": 474,
+        "left": 41,
+        "right": 264,
+        "top": 378
+      },
+      "form": {
+        "bottom": 362,
+        "left": 41,
+        "right": 264,
+        "top": 50
+      },
+      "formScrollHeight": 508,
+      "heading": "أتمتة إشعارات العملاء",
+      "height": 568,
+      "rootWidth": 305,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "false",
+          "name": null,
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/whatsapp-auto-notifications",
+      "width": 320
+    },
+    {
+      "case": "notification-list-320",
+      "dialog": null,
+      "footer": null,
+      "form": null,
+      "heading": "أتمتة إشعارات العملاء",
+      "height": 568,
+      "rootWidth": 305,
+      "smallInputs": 0,
+      "switches": [],
+      "url": "/merchant/whatsapp-auto-notifications",
+      "width": 320
+    },
+    {
+      "case": "notification-edit-375",
+      "dialog": {
+        "bottom": 762.19921875,
+        "left": 16,
+        "right": 344,
+        "top": 49.80078125
+      },
+      "footer": {
+        "bottom": 737.19921875,
+        "left": 41,
+        "right": 319,
+        "top": 641.19921875
+      },
+      "form": {
+        "bottom": 625.19921875,
+        "left": 41,
+        "right": 319,
+        "top": 136.80078125
+      },
+      "formScrollHeight": 488,
+      "heading": "أتمتة إشعارات العملاء",
+      "height": 812,
+      "rootWidth": 360,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "false",
+          "name": null,
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/whatsapp-auto-notifications",
+      "width": 375
+    },
+    {
+      "case": "notification-edit-landscape",
+      "dialog": {
+        "bottom": 359,
+        "left": 142.5,
+        "right": 654.5,
+        "top": 16
+      },
+      "footer": {
+        "bottom": 334,
+        "left": 167.5,
+        "right": 629.5,
+        "top": 290
+      },
+      "form": {
+        "bottom": 274,
+        "left": 167.5,
+        "right": 629.5,
+        "top": 103
+      },
+      "formScrollHeight": 438,
+      "heading": "أتمتة إشعارات العملاء",
+      "height": 375,
+      "rootWidth": 797,
+      "smallInputs": 0,
+      "switches": [
+        {
+          "checked": "false",
+          "name": null,
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/whatsapp-auto-notifications",
+      "width": 812
+    },
+    {
+      "case": "integration-stats-320",
+      "dialog": null,
+      "footer": null,
+      "form": null,
+      "heading": "حالة التكاملات",
+      "height": 568,
+      "rootWidth": 305,
+      "smallInputs": 0,
+      "switches": [],
+      "url": "/merchant/integrations-dashboard",
+      "width": 320
+    },
+    {
+      "case": "integration-error-320",
+      "dialog": null,
+      "footer": null,
+      "form": null,
+      "heading": "حالة التكاملات",
+      "height": 568,
+      "rootWidth": 305,
+      "smallInputs": 0,
+      "switches": [],
+      "url": "/merchant/integrations-dashboard",
+      "width": 320,
+      "errorCardGeometry": {
+        "content": [
+          {
+            "left": 79.0859375,
+            "right": 241,
+            "scroll": 162,
+            "text": "mobile_audit - responsive_audit_20260928",
+            "width": 161.9140625
+          },
+          {
+            "left": 79.0859375,
+            "right": 241,
+            "scroll": 162,
+            "text": "خطأ اصطناعي لفحص العرض فقط: test_test_test_te",
+            "width": 161.9140625
+          },
+          {
+            "left": 79.0859375,
+            "right": 241,
+            "scroll": 162,
+            "text": "28‏/9‏/2026، 1:52:39 م",
+            "width": 161.9140625
+          },
+          {
+            "left": 64,
+            "right": 135.8125,
+            "scroll": 70,
+            "text": "تم الحل",
+            "width": 71.8125
+          }
+        ],
+        "scroll": 245,
+        "width": 245
+      }
+    },
+    {
+      "case": "integration-resolved",
+      "text": "الأخطاء غير المحلولة\nأخطاء تحتاج مراجعة وحل\n\nلا توجد أخطاء غير محلولة"
+    },
+    {
+      "case": "report-edit-desktop",
+      "dialog": {
+        "bottom": 723.59765625,
+        "left": 464,
+        "right": 976,
+        "top": 176.40234375
+      },
+      "footer": {
+        "bottom": 698.59765625,
+        "left": 489,
+        "right": 951,
+        "top": 662.59765625
+      },
+      "form": {
+        "bottom": 646.59765625,
+        "left": 489,
+        "right": 951,
+        "top": 263.40234375
+      },
+      "formScrollHeight": 383,
+      "heading": "التقارير المجدولة",
+      "height": 900,
+      "rootWidth": 1440,
+      "smallInputs": 3,
+      "switches": [
+        {
+          "checked": "true",
+          "name": "المحادثات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الطلبات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "الإيرادات",
+          "thumbInside": true
+        },
+        {
+          "checked": "false",
+          "name": "المنتجات",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "العملاء",
+          "thumbInside": true
+        },
+        {
+          "checked": "true",
+          "name": "المواعيد",
+          "thumbInside": true
+        }
+      ],
+      "url": "/merchant/scheduled-reports",
+      "width": 1440
+    }
+  ]
+}

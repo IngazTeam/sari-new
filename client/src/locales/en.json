@@ -7715,13 +7715,13 @@
     "auto_11": "تذكرت كلمة المرور؟ تسجيل الدخول"
   },
   "integrationsDashboard": {
-    "auto_0": "آخر 30 يوم",
-    "auto_1": "تحتاج مراجعة",
-    "auto_2": "الإحصائيات",
-    "auto_3": "الأخطاء",
-    "auto_4": "يعمل",
-    "auto_5": "آخر 30 يوم",
-    "auto_6": "أخطاء تحتاج مراجعة وحل"
+    "auto_0": "Last 30 days",
+    "auto_1": "Needs review",
+    "auto_2": "Statistics",
+    "auto_3": "Errors",
+    "auto_4": "Enabled",
+    "auto_5": "Last 30 days",
+    "auto_6": "Errors that need review and resolution"
   },
   "languageSettings": {
     "auto_0": "إعدادات اللغة",
@@ -7902,26 +7902,26 @@
     "auto_3": "هذه الصفحة للتجربة فقط. الردود تستخدم نفس نظام ساري AI المستخدم في الواتساب.\r\n                يمكنك اختبار أنواع مختلفة من الأسئلة لرؤية كيف يتفاعل ساري مع العملاء."
   },
   "scheduledReports": {
-    "auto_0": "إنشاء وإدارة التقارير التلقائية",
-    "auto_1": "نوع التقرير",
-    "auto_2": "يومي",
-    "auto_3": "أسبوعي",
-    "auto_4": "شهري",
-    "auto_5": "يوم الشهر",
-    "auto_6": "وقت الإرسال",
-    "auto_7": "بريد إلكتروني",
-    "auto_8": "واتساب",
-    "auto_9": "كلاهما",
-    "auto_10": "البريد الإلكتروني",
-    "auto_11": "رقم الواتساب",
-    "auto_12": "المحادثات",
-    "auto_13": "الطلبات",
-    "auto_14": "الإيرادات",
-    "auto_15": "المنتجات",
-    "auto_16": "العملاء",
-    "auto_17": "المواعيد",
-    "auto_18": "إنشاء تقرير",
-    "auto_19": "تقرير المبيعات الأسبوعي"
+    "auto_0": "Save and review scheduled report settings",
+    "auto_1": "Report type",
+    "auto_2": "Daily",
+    "auto_3": "Weekly",
+    "auto_4": "Monthly",
+    "auto_5": "Day of month",
+    "auto_6": "Scheduled time",
+    "auto_7": "Email",
+    "auto_8": "WhatsApp",
+    "auto_9": "Both",
+    "auto_10": "Email address",
+    "auto_11": "WhatsApp number",
+    "auto_12": "Conversations",
+    "auto_13": "Orders",
+    "auto_14": "Revenue",
+    "auto_15": "Products",
+    "auto_16": "Customers",
+    "auto_17": "Appointments",
+    "auto_18": "Create report",
+    "auto_19": "Weekly sales report"
   },
   "serviceDetails": {},
   "basicInfoStep": {
@@ -8258,11 +8258,11 @@
     "auto_6": "عرض المنتج"
   },
   "whatsAppAutoNotifications": {
-    "auto_0": "إرسال رسائل تلقائية للعملاء عند تغيير حالة الطلبات أو المواعيد",
-    "auto_1": "استعادة القالب الافتراضي",
-    "auto_2": "رسائل تلقائية عند تغيير حالة الطلبات",
-    "auto_3": "رسائل تلقائية عند حجز أو تغيير المواعيد",
-    "auto_4": "أدخل نص الرسالة...",
+    "auto_0": "Prepare message templates for order and appointment events",
+    "auto_1": "Restore default template",
+    "auto_2": "Message templates for order events",
+    "auto_3": "Message templates for appointment events",
+    "auto_4": "Enter your message…",
     "auto_5": "{{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deliveryDate}}, {{serviceName}}, {{appointmentDate}}, {{appointmentTime}}, {{location}}"
   },
   "wooCommerceOrders": {
@@ -9343,5 +9343,52 @@
   "mobileWorkspace": {
     "dateFrom": "From date",
     "dateTo": "To date"
+  },
+  "notificationWorkspace": {
+    "configurationOnly": "Save and review settings here. Automatic delivery for these settings is currently unavailable; saving does not send a message.",
+    "savedEnabled": "Saved setting",
+    "savedDisabled": "Disabled setting",
+    "editReport": "Edit report",
+    "newReport": "Create report",
+    "editNotification": "Edit notification",
+    "newNotification": "Create notification",
+    "create": "Create",
+    "update": "Update",
+    "custom": "Custom",
+    "lastSent": "Last sent:",
+    "variables": "Available variables:",
+    "active": "Active",
+    "inactive": "Inactive",
+    "syncs": "{{count}} syncs",
+    "successful": "{{count}} successful",
+    "errors": "{{count}} errors",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "events": {
+      "order_created": "New order",
+      "order_confirmed": "Order confirmed",
+      "order_shipped": "Order shipped",
+      "order_delivered": "Order delivered",
+      "order_cancelled": "Order cancelled",
+      "appointment_created": "Appointment booked",
+      "appointment_reminder": "Appointment reminder",
+      "appointment_cancelled": "Appointment cancelled",
+      "appointment_rescheduled": "Appointment rescheduled"
+    },
+    "integrationTotal": "Of {{count}} integrations",
+    "lastSync": "Last sync: {{date}}",
+    "neverSynced": "No sync recorded yet",
+    "platforms": {
+      "zid": "Zid",
+      "salla": "Salla",
+      "byaan": "Byaan"
+    }
   }
 }

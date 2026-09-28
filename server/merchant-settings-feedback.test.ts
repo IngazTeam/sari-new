@@ -24,7 +24,7 @@ vi.mock('@/lib/trpc', () => {
   }]));
   return {trpc: {
     merchants: procedures(['getCurrent', 'update']),
-    advancedNotifications: procedures(['getScheduledReports', 'createScheduledReport', 'updateScheduledReport', 'deleteScheduledReport', 'getWhatsappAutoNotifications', 'getDefaultTemplates', 'createWhatsappAutoNotification', 'updateWhatsappAutoNotification', 'deleteWhatsappAutoNotification', 'getIntegrationsDashboard', 'resolveError']),
+    advancedNotifications: procedures(['workspaceCapabilities', 'getScheduledReports', 'createScheduledReport', 'updateScheduledReport', 'deleteScheduledReport', 'getWhatsappAutoNotifications', 'getDefaultTemplates', 'createWhatsappAutoNotification', 'updateWhatsappAutoNotification', 'deleteWhatsappAutoNotification', 'getIntegrationsDashboard', 'resolveError']),
   }};
 });
 let components: React.ComponentType[];
@@ -38,7 +38,7 @@ beforeAll(async () => {
 beforeEach(() => {
   state.error = false;
   state.callbacks = {};
-  state.data = {getCurrent: {currency: 'SAR'}, getScheduledReports: [], getWhatsappAutoNotifications: [], getIntegrationsDashboard: {integrations: [], stats: [], errors: []}};
+  state.data = {workspaceCapabilities: {reportsManage: true, notificationsManage: true, integrationsManage: true}, getCurrent: {currency: 'SAR'}, getScheduledReports: [], getWhatsappAutoNotifications: [], getIntegrationsDashboard: {integrations: [], stats: [], errors: []}};
   vi.clearAllMocks();
 });
 afterAll(() => vi.unstubAllGlobals());
@@ -61,6 +61,14 @@ describe('tenant settings show actual data and action outcomes', () => {
     state.data.getIntegrationsDashboard = {integrations: [], stats: [{sync_count: 4, success_count: 3}], errors: []};
     expect(render(1)).toContain('75%');
   });
+  it('uses the actual platform API fields for integration names, state, sync date and settings links', () => {
+    state.data.getIntegrationsDashboard = {integrations: [{id: 1, platformType: 'zid', isActive: 1, lastSyncAt: '2026-09-28 10:00:00'}], stats: [], errors: []};
+    const html = render(1);
+    expect(html).toContain('زد');
+    expect(html).toContain('href="/merchant/integrations/zid"');
+    expect(html).toContain(ar.notificationWorkspace.active);
+    expect(html).not.toContain(ar.notificationWorkspace.neverSynced);
+  });
   it.each([2, 3])('shows meaningful empty-state copy without success or failure toasts on initial render (%s)', index => {
     const html = render(index);
     const copy = index === 2 ? ar.tenantFormsUx.ScheduledReports : ar.tenantFormsUx.WhatsAppAutoNotifications;
@@ -69,6 +77,14 @@ describe('tenant settings show actual data and action outcomes', () => {
     expect(html).not.toContain(copy.created);
     expect(html).not.toContain('// @ts-ignore');
     expect(state.toast.success).not.toHaveBeenCalled();
+  });
+  it.each([2, 3])('disables configuration creation for read-only roles and explains delivery availability (%s)', index => {
+    state.data.workspaceCapabilities = {reportsManage: false, notificationsManage: false, integrationsManage: false};
+    const html = render(index);
+    expect(html).toContain(ar.notificationWorkspace.configurationOnly);
+    const buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)];
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(buttons.every(match => match[1].includes('disabled=""'))).toBe(true);
   });
   it.each([0, 1, 2, 3])('provides a retry state when a page query fails (%s)', index => {
     state.error = true;
@@ -88,7 +104,7 @@ describe('tenant settings show actual data and action outcomes', () => {
   });
   it('keeps every new semantic label and placeholder aligned in Arabic and English', () => {
     const flatten = (value: any, prefix = ''): Record<string,string> => Object.fromEntries(Object.entries(value).flatMap(([key, child]) => typeof child === 'string' ? [[prefix+key, child]] : Object.entries(flatten(child, prefix+key+'.'))));
-    for (const section of ['virtualTeamUx','brainWorkspaceUx','reportWorkspaceUx','tenantFormsUx']) {
+    for (const section of ['virtualTeamUx','brainWorkspaceUx','reportWorkspaceUx','tenantFormsUx','notificationWorkspace']) {
       const arabic = flatten((ar as any)[section]), english = flatten((en as any)[section]);
       expect(Object.keys(arabic).sort()).toEqual(Object.keys(english).sort());
       for (const key of Object.keys(arabic)) {

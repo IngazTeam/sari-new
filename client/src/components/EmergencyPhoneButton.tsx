@@ -166,7 +166,9 @@ export function EmergencyPhoneButton() {
       <DialogTrigger asChild>
         <button
           id="emergency-phone-btn"
-          className={`relative flex items-center justify-center h-9 w-9 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+          type="button"
+          aria-label={t('emergencyPhone.title', 'سلسلة تنبيهات ساري')}
+          className={`relative flex items-center justify-center h-11 w-11 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             hasPhones
               ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
               : 'bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse'

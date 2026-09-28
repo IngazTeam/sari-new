@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Activity,
   AlertCircle,
@@ -38,17 +37,11 @@ const platformIcons: Record<string, React.ReactNode> = {
   whatsapp: <MessageSquare className="h-5 w-5" />,
 };
 
-const platformNames: Record<string, string> = {
-  zid: "زد",
-  calendly: "Calendly",
-  salla: "سلة",
-  byaan: "بيان",
-  google: "Google",
-  whatsapp: "WhatsApp",
-};
-
 export default function IntegrationsDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const platformNames: Record<string, string> = {zid:t("notificationWorkspace.platforms.zid"),salla:t("notificationWorkspace.platforms.salla"),byaan:t("notificationWorkspace.platforms.byaan"),calendly:"Calendly",google:"Google",whatsapp:"WhatsApp"};
+  const capabilities = trpc.advancedNotifications.workspaceCapabilities.useQuery();
+  const canManage = capabilities.data?.integrationsManage === true;
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -98,8 +91,8 @@ export default function IntegrationsDashboard() {
     whatsapp: "/merchant/whatsapp-instances",
   };
   return (
-    <div className="container mx-auto py-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-6 space-y-6" dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">
             {t("workspacePages.integrations")}
@@ -123,10 +116,10 @@ export default function IntegrationsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {integrations.filter((i: any) => i.is_active).length}
+              {integrations.filter((i: any) => i.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground">
-              من {integrations.length} تكامل
+              {t("notificationWorkspace.integrationTotal", {count: integrations.length})}
             </p>
           </CardContent>
         </Card>
@@ -154,7 +147,7 @@ export default function IntegrationsDashboard() {
               {successRate === null ? "—" : `${successRate}%`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalSuccess} ناجحة
+              {t("notificationWorkspace.successful", {count: totalSuccess})}
             </p>
           </CardContent>
         </Card>
@@ -194,36 +187,36 @@ export default function IntegrationsDashboard() {
             {integrations.map((integration: any) => (
               <Card key={integration.id}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-muted rounded-lg">
-                        {platformIcons[integration.platform] || (
+                        {platformIcons[integration.platformType] || (
                           <LinkIcon className="h-5 w-5" />
                         )}
                       </div>
                       <div>
                         <CardTitle className="text-lg">
-                          {platformNames[integration.platform] ||
-                            integration.platform}
+                          {platformNames[integration.platformType] ||
+                            integration.platformType}
                         </CardTitle>
                         <CardDescription>
-                          {integration.last_sync_at
-                            ? `آخر مزامنة: ${new Date(integration.last_sync_at).toLocaleString("ar-SA")}`
-                            : "لم تتم المزامنة بعد"}
+                          {integration.lastSyncAt
+                            ? t("notificationWorkspace.lastSync", {date: new Date(integration.lastSyncAt).toLocaleString(i18n.language)})
+                            : t("notificationWorkspace.neverSynced")}
                         </CardDescription>
                       </div>
                     </div>
                     <Badge
-                      variant={integration.is_active ? "default" : "secondary"}
+                      variant={integration.isActive ? "default" : "secondary"}
                     >
-                      {integration.is_active ? "نشط" : "غير نشط"}
+                      {integration.isActive ? t("notificationWorkspace.active") : t("notificationWorkspace.inactive")}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {integration.is_active && (
+                      {integration.isActive && (
                         <>
                           <span className="flex items-center gap-1">
                             <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -238,7 +231,7 @@ export default function IntegrationsDashboard() {
                     </div>
                     <Link
                       href={
-                        settingsLinks[integration.platform] ||
+                        settingsLinks[integration.platformType] ||
                         "/merchant/platform-integrations"
                       }
                     >
@@ -265,7 +258,7 @@ export default function IntegrationsDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
+              <div className="max-h-[400px] overflow-y-auto [overflow-wrap:anywhere]">
                 <div className="space-y-4">
                   {stats.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
@@ -275,7 +268,7 @@ export default function IntegrationsDashboard() {
                     stats.map((stat: any, index: number) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
                           {platformIcons[stat.platform] || (
@@ -287,24 +280,24 @@ export default function IntegrationsDashboard() {
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {new Date(stat.stat_date).toLocaleDateString(
-                                "ar-SA"
+                                i18n.language
                               )}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
                           <span className="flex items-center gap-1">
                             <Activity className="h-4 w-4" />
-                            {stat.sync_count} مزامنة
+                            {t("notificationWorkspace.syncs",{count:stat.sync_count})}
                           </span>
                           <span className="flex items-center gap-1 text-green-600">
                             <CheckCircle2 className="h-4 w-4" />
-                            {stat.success_count} ناجحة
+                            {t("notificationWorkspace.successful",{count:stat.success_count})}
                           </span>
                           {stat.error_count > 0 && (
                             <span className="flex items-center gap-1 text-red-600">
                               <AlertCircle className="h-4 w-4" />
-                              {stat.error_count} خطأ
+                              {t("notificationWorkspace.errors",{count:stat.error_count})}
                             </span>
                           )}
                         </div>
@@ -312,7 +305,7 @@ export default function IntegrationsDashboard() {
                     ))
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -328,7 +321,7 @@ export default function IntegrationsDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
+              <div className="max-h-[400px] overflow-y-auto [overflow-wrap:anywhere]">
                 <div className="space-y-4">
                   {errors.length === 0 ? (
                     <div className="text-center py-8">
@@ -343,10 +336,10 @@ export default function IntegrationsDashboard() {
                         key={error.id}
                         className="p-4 border border-red-200 bg-red-50 rounded-lg"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-3 break-words">
                             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                            <div>
+                            <div className="min-w-0">
                               <p className="font-medium text-red-800">
                                 {platformNames[error.platform] ||
                                   error.platform}{" "}
@@ -358,7 +351,7 @@ export default function IntegrationsDashboard() {
                               <p className="text-xs text-red-400 mt-2 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {new Date(error.created_at).toLocaleString(
-                                  "ar-SA"
+                                  i18n.language
                                 )}
                               </p>
                             </div>
@@ -369,7 +362,7 @@ export default function IntegrationsDashboard() {
                             onClick={() =>
                               resolveErrorMutation.mutate({ id: error.id })
                             }
-                            disabled={resolveErrorMutation.isPending}
+                            disabled={!canManage || resolveErrorMutation.isPending}
                           >
                             {t("tenantFormsUx.IntegrationsDashboard.resolve")}
                           </Button>
@@ -378,7 +371,7 @@ export default function IntegrationsDashboard() {
                     ))
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

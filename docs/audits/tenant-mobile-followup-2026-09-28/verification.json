@@ -1,0 +1,94 @@
+{
+  "date": "2026-09-28T11:02:26.927Z",
+  "environment": "Owned loopback audit environment; no production deployment",
+  "tests": [
+    {
+      "file": "server/notification-workspaces-access.test.ts",
+      "passed": 21
+    },
+    {
+      "file": "server/merchant-settings-feedback.test.ts",
+      "passed": 17
+    },
+    {
+      "file": "server/merchant-mobile-viewport.test.ts",
+      "passed": 6
+    },
+    {
+      "file": "server/merchant-semantic-i18n-pentest.test.ts",
+      "passed": 8
+    },
+    {
+      "file": "server/merchant-core-accessibility-pentest.test.ts",
+      "passed": 11
+    },
+    {
+      "file": "server/runtime-schema-pentest.test.ts",
+      "passed": 8
+    },
+    {
+      "file": "server/merchant-feature-inventory.test.ts",
+      "passed": 5
+    },
+    {
+      "file": "server/merchant-feature-preservation.test.ts",
+      "passed": 126
+    },
+    {
+      "file": "server/notifications-advanced.test.ts",
+      "passed": 15
+    },
+    {
+      "file": "server/notification-workspaces.mysql.test.ts",
+      "passed": 5
+    }
+  ],
+  "commands": [
+    {
+      "command": "node scripts/testing/run-isolated.mjs <nine listed non-MySQL test files>",
+      "exitCode": 0,
+      "passed": 217
+    },
+    {
+      "command": "node scripts/testing/verify-notification-workspaces.mjs --apply-local",
+      "exitCode": 0,
+      "mysqlTests": 5
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0
+    },
+    {
+      "command": "node --import tsx scripts/check-translation-keys.ts",
+      "exitCode": 0,
+      "callsChecked": 7968,
+      "dynamicKeysChecked": 311,
+      "missing": [],
+      "interpolationErrors": []
+    },
+    {
+      "command": "node node_modules/vite/bin/vite.js build --outDir ../.tmp/notification-workspace-build/public",
+      "exitCode": 0,
+      "warnings": [
+        "Some chunk sizes exceed the Vite warning threshold"
+      ]
+    },
+    {
+      "command": "esbuild API: server/_core/index.ts and server/worker.ts; platform=node, packages=external, format=esm",
+      "exitCode": 0
+    }
+  ],
+  "bundleBudget": {
+    "entry": "index-iKBTBzkE.js",
+    "bytes": 334430,
+    "gzipBytes": 102321,
+    "maxBytes": 600000,
+    "maxGzipBytes": 185000,
+    "passed": true
+  },
+  "limits": [
+    "No real Safari/iOS test",
+    "No outbound provider or scheduled-delivery test",
+    "Not a comprehensive penetration test"
+  ]
+}

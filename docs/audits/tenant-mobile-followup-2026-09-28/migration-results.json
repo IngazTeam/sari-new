@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-28T10:40:41.193Z",
+  "results": [
+    {
+      "mode": "fresh",
+      "migrations": 147,
+      "preservesExistingRows": true,
+      "rerunSafe": true,
+      "passed": true
+    },
+    {
+      "mode": "upgrade",
+      "migrations": 147,
+      "preservesExistingRows": true,
+      "rerunSafe": true,
+      "passed": true
+    },
+    {
+      "mode": "local-audit-database",
+      "migration": "0146_tenant_notification_workspaces",
+      "passed": true
+    }
+  ]
+}
