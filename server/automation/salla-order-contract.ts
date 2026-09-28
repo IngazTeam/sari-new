@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { sallaShippingSchema } from '../../shared/salla-order';
+import { sallaExternalId } from '../../shared/salla-sales-observations';
 
 const internalId = z.number().int().positive().max(2147483647);
 const name = z.string().trim().min(1).max(255);
@@ -10,6 +11,16 @@ const details = {
   isGift: z.boolean().nullish().transform(v => v ?? false),
   giftRecipientName: optionalText(255), giftMessage: optionalText(1000),
 };
+// Server-produced evidence carried from extraction to dispatch. It is never a
+// field in the model output schema or the public createFromChat input.
+export const sallaSelectionEvidenceSchema = z.object({
+  merchantId: internalId, connectionId: internalId, storeId: sallaExternalId,
+  messageHash: z.string().regex(/^[a-f0-9]{64}$/),
+  products: z.array(z.object({
+    productId: internalId, name, quantity, revision: internalId,
+    price: z.number().int().nonnegative().max(2147483647),
+  }).strict()).min(1).max(100),
+}).strict();
 // Model output cannot supply local/external IDs, prices, authority or an address
 // directory ID. A JSON schema request never replaces runtime validation.
 export const sallaExtractionSchema = z.object({
@@ -18,7 +29,7 @@ export const sallaExtractionSchema = z.object({
 }).strict();
 export const sallaParsedOrderSchema = z.object({
   products: z.array(z.object({ name, quantity, productId: internalId }).strict()).min(1).max(100),
-  ...details, shipTo: sallaShippingSchema.optional(),
+  ...details, shipTo: sallaShippingSchema.optional(), catalogEvidence: sallaSelectionEvidenceSchema.optional(),
 }).strict().superRefine((value, ctx) => {
   if (new Set(value.products.map(p => p.productId)).size !== value.products.length)
     ctx.addIssue({ code: 'custom', message: 'Duplicate product selection' });

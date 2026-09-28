@@ -83,15 +83,16 @@ export async function listSallaCatalogPage(a:SallaOrderAuthority,cursor:number) 
 export async function finishSallaCatalogSync(a:SallaOrderAuthority) {
   await transaction(async c=>{await assertSallaOrderAuthority(c,a,true);await c.execute('UPDATE salla_connections SET lastSyncAt=UTC_TIMESTAMP(),syncErrors=NULL WHERE id=?',[a.connectionId]);});
 }
-const selectionSchema=z.object({productId:internal,externalId:sallaExternalId,revision:internal,quantity:internal,price:z.number().int().nonnegative().max(2147483647),name:z.string().min(1).max(255)}).strict();
+export const sallaProductSelectionSchema=z.object({productId:internal,externalId:sallaExternalId,revision:internal,quantity:internal,price:z.number().int().nonnegative().max(2147483647),name:z.string().min(1).max(255)}).strict();
+const selectionSchema=sallaProductSelectionSchema;
 export type SallaProductSelection=z.infer<typeof selectionSchema>;
 async function select(c:Pick<PoolConnection,'execute'>,a:SallaOrderAuthority,productId:number,quantity:number,lock=false) {
   internal.parse(productId);internal.parse(quantity);
   const [rows]=await c.execute<any[]>(`SELECT o.*,p.external_product_id,p.read_revision FROM salla_product_projections p JOIN products o
     ON o.id=p.local_product_id AND o.merchantId=p.merchant_id AND o.sallaProductId=CONCAT('salla:',p.store_id,':',p.external_product_id)
-    WHERE p.merchant_id=? AND p.store_id=? AND p.local_product_id=? AND p.archived=0
+    WHERE p.merchant_id=? AND p.store_id=? AND p.connection_id=? AND p.local_product_id=? AND p.archived=0
       AND o.isActive=1 AND o.status='active' AND o.price_unit='minor' AND o.currency='SAR' AND o.has_variants=0
-      AND (o.track_inventory=0 OR o.stock>=?) ${lock?'FOR SHARE':''}`,[a.merchantId,a.storeId,productId,quantity]);
+      AND (o.track_inventory=0 OR o.stock>=?) ${lock?'FOR SHARE':''}`,[a.merchantId,a.storeId,a.connectionId,productId,quantity]);
   if(rows.length!==1)throw Error('Salla product unavailable');const r=rows[0];
   return selectionSchema.parse({productId,quantity,externalId:r.external_product_id,revision:r.read_revision,price:r.price,name:r.name});
 }

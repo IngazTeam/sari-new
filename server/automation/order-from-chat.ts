@@ -1,24 +1,22 @@
 import { currentInboundExecution } from '../messaging/inbound-context';
-import { sallaShippingSchema } from '../../shared/salla-order';
+import { createHash } from 'node:crypto';
+import { sallaOrderIntentSchema } from '../../shared/salla-order-create';
 import { formatMinorMoney, requireMinor } from '../../shared/product-money';
 import { z } from 'zod';
 import { matchSallaExtraction, sallaParsedOrderSchema, normalizeSallaSelectionName, type ParsedSallaOrder, type SallaOrderSelectionInput } from './salla-order-contract';
 /**
- * Order From Chat System
- * 
- * This module handles complete order processing from WhatsApp chat:
- * 1. Parse customer message to extract products, quantity, and address
- * 2. Create order in Salla
- * 3. Generate payment link
- * 4. Send payment link to customer
- * 5. Track order status
+ * Salla extraction and creation for an explicit merchant operation.
+ * The model selects products from a verified catalogue; the caller supplies
+ * the confirmed national address. Creation requires that same extraction and
+ * reserved intent. Provider tax/shipping totals are available after creation;
+ * this service is not a customer-consent or final-price quotation workflow.
  */
 
 import { invokeLLM } from '../_core/llm';
 import { sallaCatalogAuthority, readSallaOrderExtractionCatalog, selectSallaOrderProduct, type SallaProductSelection } from '../integrations/salla-catalog';
 import { SallaIntegration } from '../integrations/salla';
 import { persistSallaOrderProjection, preflightSallaOrderAuthority, sallaAuthoritySchema } from '../integrations/salla-order-projection';
-import { dispatchSallaCreation, type SallaCreationAttempt } from '../integrations/salla-order-creation';
+import { dispatchSallaCreation, sallaCreationAttemptSchema, type SallaCreationAttempt } from '../integrations/salla-order-creation';
 import {
   getSallaConnectionByMerchantId,
 } from '../db';
@@ -119,7 +117,14 @@ ${productList}
       const after = current.find(p => p.productId === selected.productId);
       if (!before || !after || JSON.stringify(before) !== JSON.stringify(after)) return null;
     }
-    return parsed;
+    return sallaParsedOrderSchema.parse({...parsed,catalogEvidence:{
+      merchantId,connectionId:authority.connectionId,storeId:authority.storeId,
+      messageHash:createHash('sha256').update(message).digest('hex'),
+      products:parsed.products.map(selected=>{
+        const product=current.find(p=>p.productId===selected.productId)!;
+        return {...selected,price:product.price,revision:product.revision};
+      }),
+    }});
   } catch {
     console.error('[OrderFromChat] Order extraction unavailable');
     return null;
@@ -139,9 +144,13 @@ export async function createOrderFromChat(
 ): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null; discountInfo?: DiscountInfo } | null> {
   let providerAttempted = false;
   try {
-    if (!creation || creation.merchantId !== merchantId) throw new Error('Durable creation attempt required');
+    const attempt = sallaCreationAttemptSchema.parse(creation);
+    if (attempt.merchantId !== merchantId) throw new Error('Durable creation attempt required');
     const parsedOrder = sallaParsedOrderSchema.parse(parsedInput);
-    const shipTo = sallaShippingSchema.parse(parsedOrder.shipTo);
+    const intent = sallaOrderIntentSchema.parse({customerPhone,customerName,message,shipTo:parsedOrder.shipTo});
+    const {shipTo} = intent;
+    customerPhone = intent.customerPhone;
+    customerName = intent.customerName;
     await currentInboundExecution()?.assertOwned();
     // Get Salla connection
     const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
@@ -152,6 +161,11 @@ export async function createOrderFromChat(
     const salla = new SallaIntegration(merchantId, sallaConnection.accessToken);
     const authority = sallaAuthoritySchema.parse({ merchantId, connectionId: sallaConnection.id,
       storeId: sallaConnection.sallaStoreId, accessToken: sallaConnection.accessToken });
+    const evidence=parsedOrder.catalogEvidence;
+    if (!evidence || evidence.merchantId!==merchantId || evidence.connectionId!==authority.connectionId
+      || evidence.storeId!==authority.storeId || evidence.messageHash!==createHash('sha256').update(intent.message).digest('hex')
+      || evidence.products.length!==parsedOrder.products.length
+      || new Set(evidence.products.map(p=>p.productId)).size!==evidence.products.length) throw Error('Extraction evidence changed');
 
     if (!parsedOrder.products.length || parsedOrder.products.length > 100
       || new Set(parsedOrder.products.map(p => p.productId)).size !== parsedOrder.products.length) throw Error('Invalid product selection');
@@ -162,6 +176,9 @@ export async function createOrderFromChat(
       if (!product.productId) throw Error('Unresolved product selection');
       const verified = await selectSallaOrderProduct(authority, product.productId, product.quantity);
       if (normalizeSallaSelectionName(verified.name) !== normalizeSallaSelectionName(product.name)) throw Error('Product identity changed');
+      const extracted=evidence.products.find(p=>p.productId===product.productId);
+      if (!extracted || extracted.name!==verified.name || extracted.quantity!==verified.quantity
+        || extracted.price!==verified.price || extracted.revision!==verified.revision) throw Error('Extracted selection changed');
       selection.push(verified);
       items.push({ sallaProductId: verified.externalId, productId: verified.productId,
         name: verified.name, quantity: verified.quantity, price: verified.price });
@@ -171,10 +188,13 @@ export async function createOrderFromChat(
     requireMinor(totalAmount);
     // Provider owns tax, shipping and coupon redemption. Do not debit a local
     // coupon reservation before a provider order has even been accepted.
-    const discountCode = message ? extractDiscountCodeFromMessage(message) : undefined;
+    const discountCode = extractDiscountCodeFromMessage(intent.message);
     await currentInboundExecution()?.assertOwned();
     await preflightSallaOrderAuthority(authority);
-    await dispatchSallaCreation(creation,authority,selection);
+    await dispatchSallaCreation(attempt,authority,selection,intent);
+    // Dispatch can wait on database locks after the previous ownership check.
+    // Losing the inbound lease in that interval never authorizes a new POST.
+    await currentInboundExecution()?.assertOwned();
     providerAttempted = true;
     const sallaOrder = await salla.createOrder({
       customerName,
@@ -216,7 +236,7 @@ export async function createOrderFromChat(
       giftRecipientName: parsedOrder.giftRecipientName,
       giftMessage: parsedOrder.giftMessage,
       discountCode: discountCode || null
-    }, creation);
+    }, attempt);
 
     if (!order) {
       throw new Error('Failed to save order in database');

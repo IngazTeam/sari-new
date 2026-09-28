@@ -3,13 +3,14 @@ import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
-import { sallaOrderCreateSchema, type SallaOrderIntent, type SallaCreationResult } from '../../shared/salla-order-create';
-import { assertSallaOrderAuthority, type SallaOrderAuthority } from './salla-order-projection';
-import { assertSallaOrderSelection, type SallaProductSelection } from './salla-catalog';
+import { sallaOrderCreateSchema, sallaOrderIntentSchema, type SallaOrderIntent, type SallaCreationResult } from '../../shared/salla-order-create';
+import { assertSallaOrderAuthority, sallaAuthoritySchema, type SallaOrderAuthority } from './salla-order-projection';
+import { assertSallaOrderSelection, sallaProductSelectionSchema, type SallaProductSelection } from './salla-catalog';
 import { assertSallaCreationEffectsSchema, enqueueSallaCreationEffects } from './salla-creation-effects';
 
 const internalId = z.number().int().positive().max(2147483647);
-const attemptSchema = z.object({ id:internalId, merchantId:internalId, token:z.string().uuid() }).strict();
+export const sallaCreationAttemptSchema = z.object({ id:internalId, merchantId:internalId, token:z.string().uuid() }).strict();
+const attemptSchema = sallaCreationAttemptSchema;
 export type SallaCreationAttempt = z.infer<typeof attemptSchema>;
 export class SallaCreationError extends Error {
   constructor(readonly code: 'request_conflict'|'operation_pending'|'operation_review'|'operation_rejected'|'result_unavailable') { super(code); }
@@ -96,14 +97,23 @@ export async function runSallaOrderCreation(input:{merchantId:number;actorUserId
   }
 }
 /** Persist authority before the only permitted provider POST; no DB lock spans HTTP. */
-export async function dispatchSallaCreation(raw:SallaCreationAttempt,authority:SallaOrderAuthority,selection:SallaProductSelection[]) {
-  const a=attemptSchema.parse(raw);if(a.merchantId!==authority.merchantId)throw Error('Creation merchant mismatch');
+export async function dispatchSallaCreation(raw:SallaCreationAttempt,rawAuthority:SallaOrderAuthority,rawSelection:SallaProductSelection[],rawIntent:SallaOrderIntent) {
+  // Clone and validate before the first await. A caller retaining these objects
+  // cannot change the claimed identity or cart while schema/SQL checks wait.
+  const a=attemptSchema.parse(raw),authority=sallaAuthoritySchema.parse(rawAuthority);
+  const selection=z.array(sallaProductSelectionSchema).min(1).max(100).parse(rawSelection);
+  const hash=sallaIntentHash(sallaOrderIntentSchema.parse(rawIntent));
+  if(a.merchantId!==authority.merchantId)throw Error('Creation merchant mismatch');
   await assertSallaCreationSchema();
   await transaction(async c=>{
+    // Reservation happened before extraction/model latency. Suspension during
+    // that time must stop the provider effect, not just future reservations.
+    const [owner]=await c.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR SHARE",[a.merchantId]);
+    if(owner.length!==1)throw Error('Merchant unavailable');
     await assertSallaOrderAuthority(c,authority,true);
     await assertSallaOrderSelection(c,authority,selection);
     const [r]=await c.execute<any>(`UPDATE salla_order_creations SET state='dispatching',store_id=?,connection_id=?,updated_at=UTC_TIMESTAMP(3)
-      WHERE id=? AND merchant_id=? AND attempt_token=? AND state='preparing'`,[authority.storeId,authority.connectionId,a.id,a.merchantId,a.token]);
+      WHERE id=? AND merchant_id=? AND attempt_token=? AND request_hash=? AND state='preparing'`,[authority.storeId,authority.connectionId,a.id,a.merchantId,a.token,hash]);
     if(r.affectedRows!==1)throw Error('Creation attempt unavailable');
   });
 }

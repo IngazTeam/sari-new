@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 const m = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn(), create: vi.fn(), dispatch:vi.fn(), preflight: vi.fn(), connection: vi.fn(), product: vi.fn(), products: vi.fn(), authority:vi.fn(), catalog:vi.fn(), link: vi.fn(), notify: vi.fn(), llm: vi.fn() }));
 vi.mock('./integrations/salla-catalog',()=>({selectSallaOrderProduct:m.product,sallaCatalogAuthority:m.authority,readSallaOrderExtractionCatalog:m.catalog}));
-vi.mock('./integrations/salla-order-creation',()=>({dispatchSallaCreation:m.dispatch}));
+vi.mock('./integrations/salla-order-creation',async original=>({...await original<any>(),dispatchSallaCreation:m.dispatch}));
 vi.mock('./integrations/salla-order-projection', async importOriginal => ({...await importOriginal<any>(),persistSallaOrderProjection:m.create,preflightSallaOrderAuthority:m.preflight}));
 vi.mock('axios', () => ({ default: { create: () => ({ post: m.post, get: m.get }) } }));
 vi.mock('./db', () => ({
@@ -18,12 +19,13 @@ vi.mock('./_core/emailNotifications', () => ({ notifyNewOrder: m.notify }));
 import { SallaIntegration } from './integrations/salla';
 import { createOrderFromChat as create, parseOrderMessage, generateOrderConfirmationMessage } from './automation/order-from-chat';
 const attempt={id:1,merchantId:7,token:'12345678-1234-4234-8234-123456789abc'};
-const createOrderFromChat:typeof create=(...a)=>create(a[0],a[1],a[2],a[3],a[4],attempt);
+const createOrderFromChat:typeof create=(...a)=>create(a[0],a[1],a[2],a[3],a[4]??'Synthetic order',attempt);
 import { withInboundExecution, type InboundExecution } from './messaging/inbound-context';
 import { formatMinorMoney } from '../shared/product-money';
 const shipTo = {country: 1, city: 2, address_line:'Fixture', street_number:'12', block:'Test', short_address:'ABCD1234', building_number:'1234', additional_number:'5678', postal_code:'12345', geo_coordinates:{lat:24,lng:46}};
 const data = () => ({customerName:'Test Customer', phone:'966500000009', address:'Fixture', shipTo, items:[{sallaProductId:'123',price:9999,quantity:2}]});
-const parsed = () => ({shipTo, products:[{name:'Sample',productId:4,quantity:2}]});
+const parsed = () => ({shipTo, products:[{name:'Sample',productId:4,quantity:2}],catalogEvidence:{merchantId:7,connectionId:12,storeId:'987',
+  messageHash:createHash('sha256').update('Synthetic order').digest('hex'),products:[{name:'Sample',productId:4,quantity:2,price:9999,revision:1}]}});
 const execution = (): InboundExecution => ({id:1,merchantId:7,instanceId:1,token:'test',eventKey:'e',partitionKey:'p',sendOrdinal:0,assertOwned:vi.fn().mockResolvedValue(undefined)});
 beforeEach(() => {
   vi.clearAllMocks();
