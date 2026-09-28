@@ -33,6 +33,9 @@ beforeEach(() => {
   m.preflight.mockResolvedValue(undefined);
   m.dispatch.mockResolvedValue(undefined);
   m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,currency:'SAR',amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
+  m.get.mockReset().mockResolvedValue({data:{status:200,success:true,data:{id:123,reference_id:456,currency:'SAR',draft:false,
+    payment_method:'cod',status:{slug:'under_review'},customer:{mobile:500000009,mobile_code:'+966'},
+    amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
   m.product.mockReset().mockResolvedValue({productId:4,externalId:'123',revision:1,name:'Sample',price:9999,quantity:2});
   m.create.mockResolvedValue({id:55,orderNumber:'456'});
   m.notify.mockResolvedValue(undefined);

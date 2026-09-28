@@ -1,7 +1,7 @@
 import { createHash,randomUUID } from 'node:crypto';
 import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
-const external=vi.hoisted(()=>({post:vi.fn(),notify:vi.fn()}));
-vi.mock('axios',()=>({default:{create:()=>({post:external.post})}}));
+const external=vi.hoisted(()=>({post:vi.fn(),get:vi.fn(),notify:vi.fn()}));
+vi.mock('axios',()=>({default:{create:()=>({post:external.post,get:external.get})}}));
 vi.mock('../_core/emailNotifications',()=>({notifyNewOrder:external.notify}));
 import { getPool,closeDb } from '../db/connection';
 import { assertDisposableDatabase,createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
@@ -25,6 +25,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
   const work=(a:SallaCreationAttempt)=>createOrderFromChat(merchant,intent().customerPhone,intent().customerName,parsed(),intent().message,a);
   const run=()=>runSallaOrderCreation(input(),work);
   const ledger=async()=>(await q('SELECT * FROM salla_order_creations WHERE merchant_id=? AND request_id=?',[merchant,requestId]))[0];
+  const readback=()=>({status:200,success:true,data:{id:98765,reference_id:456,currency:'SAR',draft:false,payment_method:'cod',
+    status:{slug:'under_review'},customer:{mobile:500000000,mobile_code:'+966'},amounts:{total:{amount:1,currency:'SAR'}},urls:{checkout:'https://synthetic.example.test/pay'}}});
   beforeEach(async()=>{
     assertDisposableDatabase();vi.stubEnv('FIELD_ENCRYPTION_KEY','synthetic-salla-creation-encryption-only');users=[];
     const m=await createDisposableMerchant('salla-create'),o=await createDisposableMerchant('salla-actor');users=[m.userId,o.userId];merchant=m.merchantId;user=m.userId;otherUser=o.userId;store=String(800000000+merchant);requestId=randomUUID();
@@ -33,6 +35,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
     productId=(await persistSallaCatalogRead({merchantId:merchant,connectionId,storeId:store,accessToken:'synthetic-token'},revision,'123',normalizeSallaProduct({id:123,name:'Synthetic',price:{amount:1,currency:'SAR'},quantity:5,unlimited_quantity:false,status:'sale',is_available:true,type:'product',options:[],skus:[]}))).localProductId!;
     await updateSyncLog(revision,'success',1);
     external.post.mockReset().mockResolvedValue({data:{success:true,data:{id:98765,reference_id:456,currency:'SAR',amounts:{total:{amount:1,currency:'SAR'}},urls:{checkout:'https://synthetic.example.test/pay'}}}});external.notify.mockReset().mockResolvedValue(undefined);
+    external.get.mockReset().mockResolvedValue({data:readback()});
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
   it('commits the operation, order and store identity together and replays without another provider call or email',async()=>{
@@ -195,5 +198,78 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla durable creation through actua
     expect(ctx.assertOwned).toHaveBeenCalledTimes(3);expect(external.post).not.toHaveBeenCalled();
     expect((await ledger()).state).toBe('review');await expect(run()).rejects.toMatchObject({code:'operation_review'});
     expect(external.post).not.toHaveBeenCalled();
+  });
+  it.each(['timeout','malformed','customer','id','reference','total','url','currency','draft','payment','state'])('parks read-back %s without local orders or follow-ups and never reissues POST',async mode=>{
+    const raw:any=readback();
+    if(mode==='timeout')external.get.mockRejectedValueOnce(Error('lost read response'));
+    else {
+      if(mode==='malformed')delete raw.data;
+      if(mode==='customer')raw.data.customer.mobile=511111111;
+      if(mode==='id')raw.data.id++;
+      if(mode==='reference')raw.data.reference_id++;
+      if(mode==='total')raw.data.amounts.total.amount++;
+      if(mode==='url')raw.data.urls.checkout+='-changed';
+      if(mode==='currency')raw.data.currency='USD';
+      if(mode==='draft')raw.data.draft=true;
+      if(mode==='payment')raw.data.payment_method='mada';
+      if(mode==='state')raw.data.status.slug='paid';
+      external.get.mockResolvedValueOnce({data:raw});
+    }
+    const ctx={id:1,merchantId:merchant,instanceId:1,token:'synthetic',eventKey:'synthetic',partitionKey:'synthetic',sendOrdinal:0,assertOwned:vi.fn().mockResolvedValue(undefined),uncertainEffect:false};
+    await expect(withInboundExecution(ctx,run)).rejects.toMatchObject({code:'operation_review'});
+    expect(ctx.uncertainEffect).toBe(true);expect((await ledger()).state).toBe('review');
+    expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(0);
+    expect(await q('SELECT local_order_id FROM salla_order_projections WHERE merchant_id=?',[merchant])).toHaveLength(0);
+    expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(0);
+    await expect(run()).rejects.toMatchObject({code:'operation_review'});
+    expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(1);expect(external.notify).not.toHaveBeenCalled();
+  });
+  it('waits for authenticated read-back before local persistence and blocks concurrent duplicate creation',async()=>{
+    let release!:()=>void,entered!:()=>void;const ready=new Promise<void>(r=>entered=r),hold=new Promise<void>(r=>release=r);
+    external.get.mockImplementationOnce(async()=>{entered();await hold;return{data:readback()};});
+    const first=run();await ready;
+    try{
+      expect((await ledger()).state).toBe('dispatching');
+      expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(0);
+      expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(0);
+      await expect(run()).rejects.toMatchObject({code:'operation_pending'});
+    }finally{release();}
+    await first;expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(1);
+  });
+  it('uses the read-back total and fulfillment state after abbreviated POST without asserting payment',async()=>{
+    external.post.mockResolvedValueOnce({data:{status:201,success:true,data:{id:98765,reference_id:456}}});
+    const raw=readback();raw.data.status.slug='in_progress';raw.data.amounts.total.amount=2.5;
+    external.get.mockResolvedValueOnce({data:raw});
+    const result=await run();expect(await run()).toEqual({...result,replayed:true});
+    expect((await q('SELECT totalAmount,status,payment_status,currency FROM orders WHERE id=?',[result.orderId]))[0]).toEqual({totalAmount:250,status:'processing',payment_status:'unpaid',currency:'SAR'});
+    expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(3);
+    expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(1);
+  });
+  it.each(['store','token','paused','connection','merchant'])('rechecks %s changed while read-back is in flight before local commit',async mode=>{
+    external.get.mockImplementationOnce(async()=>{
+      if(mode==='store')await q('UPDATE salla_connections SET salla_store_id=? WHERE id=?',[store+'1',connectionId]);
+      if(mode==='token')await q('UPDATE salla_connections SET accessToken=? WHERE id=?',[encryptSecret('changed-token'),connectionId]);
+      if(mode==='paused')await q("UPDATE salla_connections SET syncStatus='paused' WHERE id=?",[connectionId]);
+      if(mode==='connection')await q('UPDATE salla_connections SET id=id+1000000 WHERE id=?',[connectionId]);
+      if(mode==='merchant')await q("UPDATE merchants SET status='suspended' WHERE id=?",[merchant]);
+      return{data:readback()};
+    });
+    await expect(run()).rejects.toMatchObject({code:'operation_review'});expect((await ledger()).state).toBe('review');
+    expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(0);
+    expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(0);
+    await expect(run()).rejects.toThrow();expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(1);
+  });
+  it.each(['return','throw'])('keeps private cleanup identity when preparation mutates its attempt then %s',async mode=>{
+    await expect(runSallaOrderCreation(input(),async attempt=>{
+      attempt.id++;attempt.merchantId++;attempt.token=randomUUID();
+      if(mode==='throw')throw Error('preparation failed');return null;
+    })).rejects.toMatchObject({code:'operation_rejected'});
+    expect((await ledger()).state).toBe('rejected');expect((await ledger()).error_code).toBe('preparation_failed');
+    await expect(run()).rejects.toMatchObject({code:'operation_rejected'});expect(external.post).not.toHaveBeenCalled();expect(external.get).not.toHaveBeenCalled();
+  });
+  it('refuses saved-result replay through a replacement connection even when store and token still match',async()=>{
+    await run();await q('UPDATE salla_connections SET id=id+1000000 WHERE id=?',[connectionId]);
+    await expect(run()).rejects.toMatchObject({code:'result_unavailable'});
+    expect((await ledger()).state).toBe('completed');expect(external.post).toHaveBeenCalledTimes(1);expect(external.get).toHaveBeenCalledTimes(1);
   });
 });

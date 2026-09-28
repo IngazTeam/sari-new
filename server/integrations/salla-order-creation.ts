@@ -45,7 +45,7 @@ async function completedResult(row:any):Promise<SallaCreationResult> {
   const [orders]=await pool.execute<any[]>(`SELECT o.id,o.orderNumber,o.paymentUrl FROM orders o
     JOIN merchants m ON m.id=o.merchantId AND m.status='active'
     JOIN salla_order_projections p ON p.local_order_id=o.id AND p.merchant_id=o.merchantId
-    JOIN salla_connections c ON c.merchantId=p.merchant_id AND c.salla_store_id=p.store_id AND c.syncStatus='active'
+    JOIN salla_connections c ON c.id=p.connection_id AND c.merchantId=p.merchant_id AND c.salla_store_id=p.store_id AND c.syncStatus='active'
     WHERE o.id=? AND o.merchantId=? AND p.store_id=? AND p.connection_id=?
       AND o.sallaOrderId=CONCAT('salla:',p.store_id,':',p.external_order_id)`,[row.local_order_id,row.merchant_id,row.store_id,row.connection_id]);
   const saved=typeof row.result_json==='string'?JSON.parse(row.result_json):row.result_json,o=orders[0];
@@ -78,7 +78,8 @@ export async function runSallaOrderCreation(input:{merchantId:number;actorUserId
     pendingError(row.state);
   }
   try {
-    const result=await work(attempt);
+    // Keep the cleanup identity private even if preparation mutates its input.
+    const result=await work({...attempt});
     const row=await readOperation(merchantId,actorUserId,requestId,hash);
     if(!result||row.state!=='completed')throw Error('Order result not committed');
     const saved=await completedResult(row);

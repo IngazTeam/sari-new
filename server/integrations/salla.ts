@@ -1,4 +1,4 @@
-import { majorToMinor, requireMinor } from '../../shared/product-money';
+import { requireMinor } from '../../shared/product-money';
 import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
@@ -6,6 +6,7 @@ import { createSyncLog, updateSyncLog } from '../db';
 import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync, type SallaCatalogReceipt } from './salla-catalog';
 import { readSallaProductPage, readSallaProductResponse } from './salla-product-normalization';
 import type { SallaOrderAuthority } from './salla-order-projection';
+import { readSallaCreationAcknowledgement, readSallaCreatedOrder, sallaOrderPhone } from './salla-order-result';
 
 const SALLA_API_BASE = 'https://api.salla.dev/admin/v2';
 const sallaHttp = axios.create({
@@ -151,9 +152,11 @@ export class SallaIntegration {
     orderId: string;
     amountMinor: number;
     currency: 'SAR';
+    initialStatus: 'pending' | 'processing';
   }> {
     if (!orderData.items.length) throw new Error('Empty Salla order');
     const shipTo = sallaShippingSchema.parse(orderData.shipTo);
+    const phone = sallaOrderPhone(orderData.phone);
     for (const item of orderData.items) {
       requireMinor(item.price);
       if (!Number.isSafeInteger(item.quantity) || item.quantity < 1 || !/^[1-9][0-9]*$/.test(item.sallaProductId)) throw new Error('Invalid Salla item');
@@ -166,8 +169,8 @@ export class SallaIntegration {
         {
           customer: {
             name: orderData.customerName,
-            mobile: orderData.phone,
-            email: orderData.email || `${orderData.phone}@temp.sary.live`
+            mobile: phone,
+            email: orderData.email || `${phone}@temp.sary.live`
           },
           products: orderData.items.map(item => ({
             identifier_type: 'id',
@@ -177,7 +180,7 @@ export class SallaIntegration {
           receiver: {
             name: orderData.customerName,
             country_code: 'SA',
-            phone: orderData.phone,
+            phone,
             notify: false,
           },
           delivery_method: 'shipping',
@@ -195,34 +198,14 @@ export class SallaIntegration {
         }
       );
 
-      const sallaOrder = response.data.data;
-
-      // Transport returns the provider result; the caller owns the single local insert.
-      const amount = sallaOrder?.amounts?.total;
-      const currency = (amount && typeof amount === 'object' ? amount.currency : undefined) || sallaOrder?.currency;
-      if (response.data.success !== true || currency !== 'SAR' || (sallaOrder.currency && sallaOrder.currency !== 'SAR') || !sallaOrder?.id || !sallaOrder?.reference_id) throw new Error('Unverified Salla order result');
-      const amountMinor = majorToMinor(typeof amount === 'object' ? amount.amount : amount);
-      const orderId = String(sallaOrder.id);
-      const orderNumber = String(sallaOrder.reference_id);
-      if ([sallaOrder.id,sallaOrder.reference_id].some(id => typeof id !== 'string' && (typeof id !== 'number' || !Number.isSafeInteger(id)))) throw new Error('Unsafe Salla order identity');
-      if (![orderId, orderNumber].every(id => /^[1-9][0-9]{0,19}$/.test(id))) throw new Error('Invalid Salla order identity');
-      let paymentUrl: string | undefined;
-      if (typeof sallaOrder.urls?.checkout === 'string' && sallaOrder.urls.checkout) {
-        const url = new URL(sallaOrder.urls.checkout);
-        if (url.protocol !== 'https:' || url.username || url.password || url.port) throw new Error('Invalid Salla checkout URL');
-        paymentUrl = url.toString();
-      }
-
-      console.log(`[Salla] Order created successfully: ${sallaOrder.reference_id}`);
-
-      return {
-        success: true,
-        orderNumber,
-        paymentUrl,
-        orderId,
-        amountMinor,
-        currency: 'SAR'
-      };
+      const accepted = readSallaCreationAcknowledgement(response.data, phone);
+      // A successful POST can be abbreviated. Authenticate a read of that exact
+      // order before binding it to this customer or queuing local follow-ups.
+      const read = await sallaHttp.get(`${SALLA_API_BASE}/orders/${accepted.orderId}`, {
+        params: { format: 'light' },
+        headers: { Authorization: `Bearer ${this.accessToken}`, Accept: 'application/json' },
+      });
+      return readSallaCreatedOrder(read.data, accepted, phone);
       
     } catch (error: any) {
       console.error('[Salla] Order creation failed:', { status: error?.response?.status });

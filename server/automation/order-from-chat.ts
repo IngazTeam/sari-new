@@ -231,6 +231,7 @@ export async function createOrderFromChat(
       city: parsedOrder.city,
       items: JSON.stringify(items),
       totalAmount: finalAmount, // Use final amount after discount
+      initialStatus: sallaOrder.initialStatus,
       paymentUrl: sallaOrder.paymentUrl || null,
       isGift: parsedOrder.isGift ? 1 : 0,
       giftRecipientName: parsedOrder.giftRecipientName,

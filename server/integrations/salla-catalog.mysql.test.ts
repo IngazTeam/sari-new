@@ -231,6 +231,8 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla catalogue actual MySQL and HTT
     const shipTo={country:1,city:2,address_line:'Synthetic',street_number:'12',block:'Fixture',short_address:'ABCD1234',building_number:'1234',additional_number:'5678',postal_code:'12345',geo_coordinates:{lat:24,lng:46}};
     const input={merchantId:merchant,actorUserId:user,requestId:randomUUID(),intent:{customerPhone:'966500000000',customerName:'Synthetic',message:'Synthetic عدد 2',shipTo}};
     http.post.mockResolvedValue({data:{success:true,data:{id:98765,reference_id:456,currency:'SAR',amounts:{total:{amount:39.98,currency:'SAR'}}}}});
+    http.get.mockResolvedValue({data:{status:200,success:true,data:{id:98765,reference_id:456,currency:'SAR',draft:false,payment_method:'cod',
+      status:{slug:'under_review'},customer:{mobile:500000000,mobile_code:'+966'},amounts:{total:{amount:39.98,currency:'SAR'}}}}});
     const work=async(attempt:any)=>{const parsed=await parseOrderMessage(input.intent.message,merchant);return parsed?createOrderFromChat(merchant,input.intent.customerPhone,input.intent.customerName,{...parsed,shipTo},input.intent.message,attempt):null;};
     const first=await runSallaOrderCreation(input,work);expect(first.replayed).toBe(false);
     expect(await runSallaOrderCreation(input,work)).toMatchObject({...first,replayed:true});expect(model.invoke).toHaveBeenCalledTimes(1);expect(http.post).toHaveBeenCalledTimes(1);

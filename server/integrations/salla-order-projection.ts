@@ -35,25 +35,29 @@ const projectionInput = z.object({ externalOrderId: sallaExternalId, orderNumber
   customerPhone: z.string().min(1).max(50), customerName: z.string().min(1).max(255),
   address: z.string().max(4000), city: z.string().max(100).optional(), items: z.string().min(2).max(64000),
   totalAmount: z.number().int().nonnegative().max(2147483647), paymentUrl: z.string().url().max(2048).nullable(),
+  initialStatus: z.enum(['pending','processing']).default('pending'),
   isGift: z.union([z.literal(0),z.literal(1)]), giftRecipientName: z.string().max(255).optional(),
   giftMessage: z.string().max(4000).optional(), discountCode: z.string().max(50).nullable(),
 }).strict();
 
-/** Only an accepted authenticated create response may establish a new store binding.
+/** Only an accepted authenticated creation and read-back may establish a new store binding.
  * Never upgrade a historical bare ID by guessing from today's connection. */
-export async function persistSallaOrderProjection(authority: SallaOrderAuthority, raw: z.infer<typeof projectionInput>, creation?: SallaCreationAttempt) {
+export async function persistSallaOrderProjection(authority: SallaOrderAuthority, raw: z.input<typeof projectionInput>, creation?: SallaCreationAttempt) {
   const a = sallaAuthoritySchema.parse(authority), input = projectionInput.parse(raw);
   const alias = sallaOrderProjectionId(a.storeId,input.externalOrderId);
   await assertSallaOrderProjectionSchema(); const pool = await getPool(); if (!pool) throw Error('Database unavailable');
   const c = await pool.getConnection(); let reusable = true, committing = false;
   try {
-    await c.beginTransaction(); await assertSallaOrderAuthority(c,a,true);
+    await c.beginTransaction();
+    const [owner] = await c.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR SHARE",[a.merchantId]);
+    if (owner.length !== 1) throw Error('Merchant unavailable');
+    await assertSallaOrderAuthority(c,a,true);
     if (creation) await (await import('./salla-order-creation')).lockSallaCreation(c,creation,a);
     // Duplicate identities are ambiguous here, not permission to overwrite the original customer or total.
     const [result] = await c.execute<any>(`INSERT INTO orders
       (merchantId,sallaOrderId,orderNumber,customerPhone,customerName,address,city,items,totalAmount,currency,status,payment_status,paymentUrl,isGift,giftRecipientName,giftMessage,discountCode)
-      VALUES (?,?,?,?,?,?,?,?,?,'SAR','pending','unpaid',?,?,?,?,?)`,
-    [a.merchantId,alias,input.orderNumber,input.customerPhone,input.customerName,input.address,input.city??null,input.items,input.totalAmount,
+      VALUES (?,?,?,?,?,?,?,?,?,'SAR',?,'unpaid',?,?,?,?,?)`,
+    [a.merchantId,alias,input.orderNumber,input.customerPhone,input.customerName,input.address,input.city??null,input.items,input.totalAmount,input.initialStatus,
       input.paymentUrl,input.isGift,input.giftRecipientName??null,input.giftMessage??null,input.discountCode]);
     const id = Number(result.insertId);
     await c.execute(`INSERT INTO salla_order_projections(merchant_id,store_id,external_order_id,local_order_id,connection_id,created_at)
