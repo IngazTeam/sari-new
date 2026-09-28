@@ -3,7 +3,7 @@ import { conversationUnderstandingIdentity } from './conversation-understanding-
  * OpenAI Integration — Hardened with 3-Layer Resilience
  * 
  * Layer 1: AbortController timeout (25s primary, 15s fallback)
- * Layer 2: Auto-retry with exponential backoff (2 attempts + mini fallback)
+ * Layer 2: Auto-retry with backoff (2 attempts; mini fallback only outside contextual turns)
  * Layer 3: Circuit Breaker (5 failures → 60s cooldown)
  */
 
@@ -140,7 +140,8 @@ export function getCircuitBreakerStatus(): string {
  * Attempt chain:
  * 1. Primary model (gpt-4o) with 25s timeout
  * 2. Retry primary with 1s backoff
- * 3. Fallback to gpt-4o-mini with 15s timeout
+ * 3. Outside a contextual turn only: fallback to gpt-4o-mini with 15s timeout.
+ * Contextual turns keep the centrally selected model and stop after attempt 2.
  * All attempts throw if circuit breaker is open.
  */
 export async function callGPT4(
@@ -160,7 +161,8 @@ export async function callGPT4(
   if (options?.lifecycle && options.noRetry !== true) throw new AiBudgetError('invalid_usage');
   if (options?.lifecycle) options = { ...options, lifecycle: { ...options.lifecycle, requestId: durableAiRequestId(options.lifecycle.requestId) } };
   const startedAt = Date.now();
-  const primaryModel = conversationUnderstandingIdentity()?.model || options?.model || 'gpt-4o';
+  const understanding = conversationUnderstandingIdentity();
+  const primaryModel = understanding?.model || options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
   const budgetIdentity = options?.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId;
@@ -257,6 +259,13 @@ export async function callGPT4(
     } catch (err2: any) {
       if (err2 instanceof AiBudgetError) throw err2;
       console.warn(`[OpenAI] Attempt 2 failed (${primaryModel}):`, err2.message);
+
+      // A contextual sales turn is bound to the model selected centrally.
+      // Exhaust its same-model retry without silently switching to a mini model.
+      if (understanding) {
+        circuitBreaker.recordFailure();
+        throw err2;
+      }
 
       // Attempt 3: Fallback to mini model (faster, cheaper)
       if (primaryModel !== 'gpt-4o-mini') {

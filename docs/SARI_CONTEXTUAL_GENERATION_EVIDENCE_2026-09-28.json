@@ -1,0 +1,323 @@
+{
+  "at": "2026-09-28T19:57:41.294Z",
+  "baselineCommit": "eb18756243ed93c75f03415a167ce519a66abdc6",
+  "workspaceHead": "eb18756243ed93c75f03415a167ce519a66abdc6",
+  "branch": "main",
+  "scope": "Preserve assembled dialogue, merchant facts and sales policy through fast/full reply transport; stop context-free recovery and hidden mini-model fallback inside contextual turns.",
+  "testEvidence": {
+    "broad": {
+      "files": 24,
+      "passed": 512,
+      "failed": 0,
+      "pending": 0
+    },
+    "finalFocused": {
+      "files": 4,
+      "passed": 42,
+      "failed": 0,
+      "pending": 0
+    },
+    "latestPerFile": {
+      "files": 24,
+      "passed": 515,
+      "failed": 0,
+      "pending": 0,
+      "note": "Latest result per file, replacing repeated suites; not a single combined run.",
+      "suites": [
+        {
+          "file": "server/ai-settings-provider-routing.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/bot-audit-pentest.test.ts",
+          "passed": 93,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-conversation-routing.test.ts",
+          "passed": 39,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/remediation-regression.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/sales-hardening-pentest.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/budget-boundaries.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/contextual-generation.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/contextual-reply-routing.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding-evaluation.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/openai-zahypi.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/preview-prompt.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/preview-provider-routing.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-brain-decisions.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-reply-prompt.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-reply-transport.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-turn-policy.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sari-preview.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/task-catalog.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/transactional-truth.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/zahypi-callsite-governance.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/zahypi-client.test.ts",
+          "passed": 103,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/zahypi-context-propagation.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/zahypi-runtime-config.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\sales-context-checks\\tests.json"
+      ]
+    },
+    {
+      "name": "transport",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/sales-reply-transport.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\sales-context-checks\\transport-tests.json"
+      ]
+    },
+    {
+      "name": "final-focused",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\sales-context-checks\\final-tests.json"
+      ]
+    },
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ]
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ]
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ]
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8087,
+    "dynamicKeysChecked": 348,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "evaluationDryRun": {
+    "mode": "dry-run",
+    "cases": 30
+  },
+  "liveEvaluation": {
+    "performed": false,
+    "providerCalls": 0,
+    "casesPrepared": 30,
+    "readOnlyApplicationDbCheck": {
+      "connected": false,
+      "code": "ER_ACCESS_DENIED_ERROR"
+    },
+    "blocker": "Application database access still denied. Need connected runtime and designated test merchant; no direct-key or budget bypass."
+  },
+  "securityScope": "Synthetic real-orchestrator tests and real OpenAI/ZahyPi adapter code with fake HTTP/budget. Adversarial oversized inputs, NUL, injected roles, lost history, tenant memory separation and budget denial. External network blocked. Not a production penetration test.",
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "newMigration": false,
+    "databaseTestsRerun": false,
+    "reason": "No storage or SQL change in this continuation."
+  },
+  "limitations": [
+    "Model outputs and merchant reads mocked; no assertion of live comprehension, persuasion, latency, cost or conversion.",
+    "Prompt splitting preserves the assembled context, not all source archives; existing retrieval/history limits remain.",
+    "Historical empty text records ignored; oversized nonempty historical messages fail closed.",
+    "OpenAI contextual calls have at most two same-model attempts unless noRetry is set; legacy unscoped fallback and ZahyPi job retry behavior unchanged.",
+    "Image envelope preservation is not proof of ZahyPi vision capability.",
+    "Shared workspace contains concurrent WhatsApp edits outside this commit; static/build describe the workspace at verification time."
+  ],
+  "sourceSha256": {
+    "server/ai/openai.ts": "a1b630f80f70436fed07eb7b40e68d2ef367d711eb97bfb6424d437f009d8b2c",
+    "server/ai/preview-prompt.ts": "6856130f2b55ce984f65136139019d3356938981d9e471aee2e1ef3bd0e93fac",
+    "server/ai/sari-personality.ts": "58690671eeff07f2eabade08b377b24a3178fc895fe0a238003a7094867fa2aa",
+    "server/ai/prompt-boundaries.ts": "afaf0fc7e80e820b3d8a799506ac840c6ed2c3623cf9d8d5b4483dd8d9ea514a",
+    "server/ai/sales-reply-prompt.ts": "1e8b05a9d080bf15905fa74d00f29f772e8e66269725d9eec2fcc706916c172c",
+    "server/ai/sales-reply-prompt.test.ts": "9fa30da63d0a0213013bf05cdbd017df87e0ce804512ba8aa0d980fc9eaafb9f",
+    "server/ai/contextual-generation.test.ts": "9dc9353bd335173596076fdee8cb26b31b1d9c4d0d099a76323b2c3cd8d385b4",
+    "server/ai/sales-reply-transport.test.ts": "2ee2b5cf771839c411af470d280d52ca3b0493e8f2f96e7f902d75a54ef0389d",
+    "docs/SARI_CONTEXTUAL_GENERATION_2026-09-28.md": "845dc4f430490e12dd094f8d6c4510a4fb13eefb64073d8ca961d8daed12c8e3",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "13963442b1eef93f4e220b9560708e77fd3c2ff6674060b7ec8902fe0cfc4dad"
+  }
+}

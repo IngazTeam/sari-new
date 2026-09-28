@@ -3,6 +3,7 @@ import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } 
 import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
+import { buildSalesReplyMessages, CONTEXTUAL_REPLY_UNAVAILABLE } from './sales-reply-prompt';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
 import { formatProductPrice } from '../../shared/product-money';
 import { checkoutCouponCommand } from '../../shared/checkout-discount';
@@ -2153,13 +2154,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         : sanitizeForPrompt(params.message.substring(0, 16000));
 
       const salesTurnPolicy = buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
-      const messages: ChatMessage[] = [
-        { role: 'system', content: systemPrompt },
-        { role: 'system', content: salesTurnPolicy },
-        ...FEW_SHOT_EXAMPLES,
-        ...previousMessages,
-        { role: 'user', content: userContent },
-      ];
+      const messages = buildSalesReplyMessages({ systemPrompt, salesTurnPolicy,
+        examples: FEW_SHOT_EXAMPLES, history: previousMessages, currentUserContent: userContent });
 
       // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
       const isCatalogQuery = currentConversationUnderstanding() ? currentConversationUnderstanding()!.requestKind === 'catalog' : /قائمة (?:المنتجات|الدورات)|كتالوج|كل (?:المنتجات|الدورات)|المنتجات المتوفرة|الدورات المتاحة|أسعار|باقات|product catalog|course catalog|price list/i.test(params.message);
@@ -2556,13 +2552,8 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     // Prepare messages with few-shot examples for better quality
     const salesTurnPolicy = buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
-    const messages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'system', content: salesTurnPolicy },
-      ...FEW_SHOT_EXAMPLES, // Add examples for better understanding
-      ...previousMessages,
-      { role: 'user', content: userContentFull },
-    ];
+    const messages = buildSalesReplyMessages({ systemPrompt, salesTurnPolicy,
+      examples: FEW_SHOT_EXAMPLES, history: previousMessages, currentUserContent: userContentFull });
 
     // Call GPT-4 with optimized parameters
     // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
@@ -2676,8 +2667,12 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       stack: error.stack?.split('\n').slice(0, 3).join('\n'),
     });
 
+    // An interpreted turn must never retry without its history, facts and policy,
+    // nor promise a follow-up or notify staff solely because generation failed.
+    if (hasConversationUnderstanding()) return CONTEXTUAL_REPLY_UNAVAILABLE;
+
     // ═══════════════════════════════════════════════════
-    // ALL RETRIES FAILED — Smart fallback based on error type
+    // ALL RETRIES FAILED — legacy non-contextual fallback based on error type
     // ═══════════════════════════════════════════════════
     // Note: callGPT4 already has 3-attempt retry + circuit breaker.
     // If we're here, ALL 3 internal attempts failed.
