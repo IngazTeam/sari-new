@@ -1,0 +1,313 @@
+{
+  "generatedAt": "2026-09-28T00:44:01.043Z",
+  "browser": "Chrome/153.0.8010.54",
+  "scope": "Actual SallaEffectReview component, simulated API, loopback Chromium; not physical iPhone/Safari or production.",
+  "externalRequestsBlocked": true,
+  "results": [
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "contradictory",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "invalid_filter_no_request",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "filters_keyboard",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "check_and_history",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "lost_ack_same_request",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_cached_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "offline_hides_cached_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "false_complete_receipt_rejected",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "recipient_snapshot_history",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "contradictory",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "invalid_filter_no_request",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "filters_keyboard",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "check_and_history",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "lost_ack_same_request",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_cached_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "offline_hides_cached_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "recipient_results_responsive",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "false_complete_receipt_rejected",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "recipient_snapshot_history",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "effects-ar-1440.png",
+    "effects-ar-375.png",
+    "effects-en-1440.png",
+    "effects-en-375.png",
+    "notices-ar-1440.png",
+    "notices-ar-375.png",
+    "notices-en-1440.png",
+    "notices-en-375.png"
+  ]
+}

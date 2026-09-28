@@ -1,4 +1,3 @@
-import { requireMinor } from '../../shared/product-money';
 import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-order';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
@@ -7,6 +6,7 @@ import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogR
 import { readSallaProductPage, readSallaProductResponse } from './salla-product-normalization';
 import type { SallaOrderAuthority } from './salla-order-projection';
 import { readSallaCreationAcknowledgement, readSallaCreatedOrder, sallaOrderPhone } from './salla-order-result';
+import { sallaOrderItems, readSallaOrderItems } from './salla-order-items';
 
 const SALLA_API_BASE = 'https://api.salla.dev/admin/v2';
 const sallaHttp = axios.create({
@@ -47,6 +47,7 @@ interface SallaOrderData {
   shipTo?: SallaShipping;
   items: Array<{
     sallaProductId: string;
+    sku: string;
     quantity: number;
     price: number;
   }>;
@@ -153,14 +154,13 @@ export class SallaIntegration {
     amountMinor: number;
     currency: 'SAR';
     initialStatus: 'pending' | 'processing';
+    verifiedItems: ReturnType<typeof readSallaOrderItems>;
   }> {
-    if (!orderData.items.length) throw new Error('Empty Salla order');
+    // Parse once before any await: the caller cannot replace quantities or SKU
+    // while POST/GET is in flight and make the returned cart appear to match.
+    const items = sallaOrderItems.parse(orderData.items);
     const shipTo = sallaShippingSchema.parse(orderData.shipTo);
     const phone = sallaOrderPhone(orderData.phone);
-    for (const item of orderData.items) {
-      requireMinor(item.price);
-      if (!Number.isSafeInteger(item.quantity) || item.quantity < 1 || !/^[1-9][0-9]*$/.test(item.sallaProductId)) throw new Error('Invalid Salla item');
-    }
     console.log(`[Salla] Creating order for merchant ${this.merchantId}`);
     
     try {
@@ -172,7 +172,7 @@ export class SallaIntegration {
             mobile: phone,
             email: orderData.email || `${phone}@temp.sary.live`
           },
-          products: orderData.items.map(item => ({
+          products: items.map(item => ({
             identifier_type: 'id',
             identifier: item.sallaProductId,
             quantity: item.quantity,
@@ -205,7 +205,12 @@ export class SallaIntegration {
         params: { format: 'light' },
         headers: { Authorization: `Bearer ${this.accessToken}`, Accept: 'application/json' },
       });
-      return readSallaCreatedOrder(read.data, accepted, phone);
+      const created = readSallaCreatedOrder(read.data, accepted, phone);
+      const lines = await sallaHttp.get(`${SALLA_API_BASE}/orders/items`, {
+        params: { order_id: accepted.orderId },
+        headers: { Authorization: `Bearer ${this.accessToken}`, Accept: 'application/json' },
+      });
+      return {...created, verifiedItems: readSallaOrderItems(lines.data, items)};
       
     } catch (error: any) {
       console.error('[Salla] Order creation failed:', { status: error?.response?.status });

@@ -20,7 +20,7 @@ import { catalogVisibleSql } from './catalog-scope';
 
 describe.skipIf(!process.env.DATABASE_URL)('Salla catalogue actual MySQL and HTTP boundary',()=>{
   const q=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
-  const product=(id='123',patch:any={})=>({id,name:'Synthetic',price:{amount:19.99,currency:'SAR'},regular_price:{amount:25,currency:'SAR'},quantity:5,unlimited_quantity:false,status:'sale',is_available:true,type:'product',options:[],skus:[],...patch});
+  const product=(id='123',patch:any={})=>({id,sku:'SKU-'+id,name:'Synthetic',price:{amount:19.99,currency:'SAR'},regular_price:{amount:25,currency:'SAR'},quantity:5,unlimited_quantity:false,status:'sale',is_available:true,type:'product',options:[],skus:[],...patch});
   const response=(id='123',patch:any={})=>({data:{status:200,success:true,data:product(id,patch)}});
   const missing=()=>({response:{status:404,data:{status:404,success:false}}});
   let merchant:number,user:number,users:number[],store:string,connectionId:number,salla:SallaIntegration;
@@ -231,21 +231,22 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla catalogue actual MySQL and HTT
     const shipTo={country:1,city:2,address_line:'Synthetic',street_number:'12',block:'Fixture',short_address:'ABCD1234',building_number:'1234',additional_number:'5678',postal_code:'12345',geo_coordinates:{lat:24,lng:46}};
     const input={merchantId:merchant,actorUserId:user,requestId:randomUUID(),intent:{customerPhone:'966500000000',customerName:'Synthetic',message:'Synthetic عدد 2',shipTo}};
     http.post.mockResolvedValue({data:{success:true,data:{id:98765,reference_id:456,currency:'SAR',amounts:{total:{amount:39.98,currency:'SAR'}}}}});
-    http.get.mockResolvedValue({data:{status:200,success:true,data:{id:98765,reference_id:456,currency:'SAR',draft:false,payment_method:'cod',
-      status:{slug:'under_review'},customer:{mobile:500000000,mobile_code:'+966'},amounts:{total:{amount:39.98,currency:'SAR'}}}}});
+    http.get.mockImplementation(async(url:string)=>({data:url.endsWith('/orders/items')?{status:200,success:true,data:[{id:777,sku:'SKU-123',quantity:2,currency:'SAR',options:[]}]}:{status:200,success:true,data:{id:98765,reference_id:456,currency:'SAR',draft:false,payment_method:'cod',
+      status:{slug:'under_review'},customer:{mobile:500000000,mobile_code:'+966'},amounts:{total:{amount:39.98,currency:'SAR'}}}}}));
     const work=async(attempt:any)=>{const parsed=await parseOrderMessage(input.intent.message,merchant);return parsed?createOrderFromChat(merchant,input.intent.customerPhone,input.intent.customerName,{...parsed,shipTo},input.intent.message,attempt):null;};
     const first=await runSallaOrderCreation(input,work);expect(first.replayed).toBe(false);
     expect(await runSallaOrderCreation(input,work)).toMatchObject({...first,replayed:true});expect(model.invoke).toHaveBeenCalledTimes(1);expect(http.post).toHaveBeenCalledTimes(1);
     expect(await q('SELECT id FROM orders WHERE merchantId=?',[merchant])).toHaveLength(1);
     expect(await q('SELECT id FROM salla_creation_effects WHERE merchant_id=?',[merchant])).toHaveLength(3);
   });
-  it.each(['price','revision','quantity','source-message','connection','merchant'])('rejects %s drift between successful extraction and creation using the actual service chain',async mode=>{
+  it.each(['price','sku','revision','quantity','source-message','connection','merchant'])('rejects %s drift between successful extraction and creation using the actual service chain',async mode=>{
     await salla.syncSingleProduct('123');
     const shipTo={country:1,city:2,address_line:'Synthetic',street_number:'12',block:'Fixture',short_address:'ABCD1234',building_number:'1234',additional_number:'5678',postal_code:'12345',geo_coordinates:{lat:24,lng:46}};
     const intent={customerPhone:'966500000000',customerName:'Synthetic',message:'Synthetic عدد 2',shipTo};
     await expect(runSallaOrderCreation({merchantId:merchant,actorUserId:user,requestId:randomUUID(),intent},async attempt=>{
       const parsed=await parseOrderMessage(intent.message,merchant);expect(parsed?.catalogEvidence).toBeDefined();
       if(mode==='price')await q('UPDATE products SET price=price+1 WHERE merchantId=?',[merchant]);
+      if(mode==='sku')await q("UPDATE products SET sku='Changed' WHERE merchantId=?",[merchant]);
       if(mode==='revision')await salla.syncSingleProduct('123');
       if(mode==='quantity')parsed!.products[0].quantity++;
       if(mode==='connection')await q('UPDATE salla_product_projections SET connection_id=connection_id+1 WHERE merchant_id=?',[merchant]);

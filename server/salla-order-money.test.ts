@@ -23,9 +23,9 @@ const createOrderFromChat:typeof create=(...a)=>create(a[0],a[1],a[2],a[3],a[4]?
 import { withInboundExecution, type InboundExecution } from './messaging/inbound-context';
 import { formatMinorMoney } from '../shared/product-money';
 const shipTo = {country: 1, city: 2, address_line:'Fixture', street_number:'12', block:'Test', short_address:'ABCD1234', building_number:'1234', additional_number:'5678', postal_code:'12345', geo_coordinates:{lat:24,lng:46}};
-const data = () => ({customerName:'Test Customer', phone:'966500000009', address:'Fixture', shipTo, items:[{sallaProductId:'123',price:9999,quantity:2}]});
+const data = () => ({customerName:'Test Customer', phone:'966500000009', address:'Fixture', shipTo, items:[{sallaProductId:'123',sku:'SKU-123',price:9999,quantity:2}]});
 const parsed = () => ({shipTo, products:[{name:'Sample',productId:4,quantity:2}],catalogEvidence:{merchantId:7,connectionId:12,storeId:'987',
-  messageHash:createHash('sha256').update('Synthetic order').digest('hex'),products:[{name:'Sample',productId:4,quantity:2,price:9999,revision:1}]}});
+  messageHash:createHash('sha256').update('Synthetic order').digest('hex'),products:[{name:'Sample',productId:4,quantity:2,price:9999,revision:1,sku:'SKU-123'}]}});
 const execution = (): InboundExecution => ({id:1,merchantId:7,instanceId:1,token:'test',eventKey:'e',partitionKey:'p',sendOrdinal:0,assertOwned:vi.fn().mockResolvedValue(undefined)});
 beforeEach(() => {
   vi.clearAllMocks();
@@ -33,10 +33,10 @@ beforeEach(() => {
   m.preflight.mockResolvedValue(undefined);
   m.dispatch.mockResolvedValue(undefined);
   m.post.mockResolvedValue({data:{success:true,data:{id:123,reference_id:456,currency:'SAR',amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
-  m.get.mockReset().mockResolvedValue({data:{status:200,success:true,data:{id:123,reference_id:456,currency:'SAR',draft:false,
+  m.get.mockReset().mockImplementation(async(url:string)=>({data:url.endsWith('/orders/items')?{status:200,success:true,data:[{id:777,sku:'SKU-123',quantity:2,currency:'SAR',options:[]}]}:{status:200,success:true,data:{id:123,reference_id:456,currency:'SAR',draft:false,
     payment_method:'cod',status:{slug:'under_review'},customer:{mobile:500000009,mobile_code:'+966'},
-    amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}});
-  m.product.mockReset().mockResolvedValue({productId:4,externalId:'123',revision:1,name:'Sample',price:9999,quantity:2});
+    amounts:{total:{amount:229.98,currency:'SAR'}},urls:{checkout:'https://fixture.salla.sa/checkout/test'}}}}));
+  m.product.mockReset().mockResolvedValue({productId:4,externalId:'123',sku:'SKU-123',revision:1,name:'Sample',price:9999,quantity:2});
   m.create.mockResolvedValue({id:55,orderNumber:'456'});
   m.notify.mockResolvedValue(undefined);
 });

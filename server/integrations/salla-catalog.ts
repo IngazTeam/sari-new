@@ -7,6 +7,7 @@ import { assertSallaOrderAuthority,sallaAuthoritySchema,type SallaOrderAuthority
 import { sallaProductProjectionId,type NormalizedSallaProduct } from './salla-product-normalization';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import { sallaExtractionProductSchema } from '../automation/salla-order-contract';
+import { sallaOrderSku } from './salla-order-items';
 
 const internal=z.number().int().positive().max(2147483647);
 export type SallaCatalogReceipt={id:number;storeId:string;productId:string;token:string};
@@ -83,7 +84,7 @@ export async function listSallaCatalogPage(a:SallaOrderAuthority,cursor:number) 
 export async function finishSallaCatalogSync(a:SallaOrderAuthority) {
   await transaction(async c=>{await assertSallaOrderAuthority(c,a,true);await c.execute('UPDATE salla_connections SET lastSyncAt=UTC_TIMESTAMP(),syncErrors=NULL WHERE id=?',[a.connectionId]);});
 }
-export const sallaProductSelectionSchema=z.object({productId:internal,externalId:sallaExternalId,revision:internal,quantity:internal,price:z.number().int().nonnegative().max(2147483647),name:z.string().min(1).max(255)}).strict();
+export const sallaProductSelectionSchema=z.object({productId:internal,externalId:sallaExternalId,revision:internal,quantity:internal,price:z.number().int().nonnegative().max(2147483647),name:z.string().min(1).max(255),sku:sallaOrderSku}).strict();
 const selectionSchema=sallaProductSelectionSchema;
 export type SallaProductSelection=z.infer<typeof selectionSchema>;
 async function select(c:Pick<PoolConnection,'execute'>,a:SallaOrderAuthority,productId:number,quantity:number,lock=false) {
@@ -94,7 +95,16 @@ async function select(c:Pick<PoolConnection,'execute'>,a:SallaOrderAuthority,pro
       AND o.isActive=1 AND o.status='active' AND o.price_unit='minor' AND o.currency='SAR' AND o.has_variants=0
       AND (o.track_inventory=0 OR o.stock>=?) ${lock?'FOR SHARE':''}`,[a.merchantId,a.storeId,a.connectionId,productId,quantity]);
   if(rows.length!==1)throw Error('Salla product unavailable');const r=rows[0];
-  return selectionSchema.parse({productId,quantity,externalId:r.external_product_id,revision:r.read_revision,price:r.price,name:r.name});
+  const sku=sallaOrderSku.parse(r.sku);
+  // Use the database's conservative comparison to reject case/accent aliases as
+  // well as exact duplicate SKUs. Other stores and unrelated catalogue sources
+  // cannot supply or disambiguate a Salla identity.
+  const [aliases]=await c.execute<any[]>(`SELECT p.local_product_id FROM salla_product_projections p JOIN products o
+    ON o.id=p.local_product_id AND o.merchantId=p.merchant_id AND o.sallaProductId=CONCAT('salla:',p.store_id,':',p.external_product_id)
+    WHERE p.merchant_id=? AND p.store_id=? AND p.connection_id=? AND p.archived=0 AND o.sku=? ${lock?'FOR SHARE':''}`,
+    [a.merchantId,a.storeId,a.connectionId,sku]);
+  if(aliases.length!==1||aliases[0].local_product_id!==productId)throw Error('Ambiguous Salla SKU');
+  return selectionSchema.parse({productId,quantity,externalId:r.external_product_id,revision:r.read_revision,price:r.price,name:r.name,sku});
 }
 export async function selectSallaOrderProduct(a:SallaOrderAuthority,productId:number,quantity:number) {
   await assertSallaCatalogSchema();const pool=await getPool();if(!pool)throw Error('Database unavailable');await assertSallaOrderAuthority(pool,a);return select(pool,a,productId,quantity);
@@ -107,7 +117,7 @@ export async function readSallaOrderExtractionCatalog(a:SallaOrderAuthority) {
     const [merchants]=await c.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR SHARE",[a.merchantId]);
     if(merchants.length!==1)throw Error('Merchant unavailable');
     await assertSallaOrderAuthority(c,a,true);
-    const [rows]=await c.execute<any[]>(`SELECT o.id AS productId,o.name,o.price,o.stock,o.track_inventory AS trackInventory,p.read_revision AS revision
+    const [rows]=await c.execute<any[]>(`SELECT o.id AS productId,o.name,o.price,o.sku,o.stock,o.track_inventory AS trackInventory,p.read_revision AS revision
       FROM salla_product_projections p JOIN products o ON o.id=p.local_product_id AND o.merchantId=p.merchant_id
         AND o.sallaProductId=CONCAT('salla:',p.store_id,':',p.external_product_id)
       WHERE p.merchant_id=? AND p.store_id=? AND p.connection_id=? AND p.archived=0

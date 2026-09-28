@@ -122,7 +122,7 @@ ${productList}
       messageHash:createHash('sha256').update(message).digest('hex'),
       products:parsed.products.map(selected=>{
         const product=current.find(p=>p.productId===selected.productId)!;
-        return {...selected,price:product.price,revision:product.revision};
+        return {...selected,price:product.price,revision:product.revision,sku:product.sku};
       }),
     }});
   } catch {
@@ -178,10 +178,10 @@ export async function createOrderFromChat(
       if (normalizeSallaSelectionName(verified.name) !== normalizeSallaSelectionName(product.name)) throw Error('Product identity changed');
       const extracted=evidence.products.find(p=>p.productId===product.productId);
       if (!extracted || extracted.name!==verified.name || extracted.quantity!==verified.quantity
-        || extracted.price!==verified.price || extracted.revision!==verified.revision) throw Error('Extracted selection changed');
+        || extracted.price!==verified.price || extracted.revision!==verified.revision || extracted.sku!==verified.sku) throw Error('Extracted selection changed');
       selection.push(verified);
       items.push({ sallaProductId: verified.externalId, productId: verified.productId,
-        name: verified.name, quantity: verified.quantity, price: verified.price });
+        name: verified.name, quantity: verified.quantity, price: verified.price, sku: verified.sku });
       totalAmount += verified.price * verified.quantity;
     }
 
@@ -205,6 +205,7 @@ export async function createOrderFromChat(
       address: shipTo.address_line,
       items: items.map(item => ({
         sallaProductId: item.sallaProductId,
+        sku: item.sku,
         quantity: item.quantity,
         price: item.price
       })),
@@ -229,7 +230,9 @@ export async function createOrderFromChat(
       customerName,
       address: shipTo.address_line,
       city: parsedOrder.city,
-      items: JSON.stringify(items),
+      items: JSON.stringify(items.map(item => ({...item,
+        sallaOrderItemId: sallaOrder.verifiedItems.find(line => line.sallaProductId === item.sallaProductId)!.orderItemId,
+      }))),
       totalAmount: finalAmount, // Use final amount after discount
       initialStatus: sallaOrder.initialStatus,
       paymentUrl: sallaOrder.paymentUrl || null,

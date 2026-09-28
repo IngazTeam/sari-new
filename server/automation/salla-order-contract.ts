@@ -18,6 +18,7 @@ export const sallaSelectionEvidenceSchema = z.object({
   messageHash: z.string().regex(/^[a-f0-9]{64}$/),
   products: z.array(z.object({
     productId: internalId, name, quantity, revision: internalId,
+    sku: z.string().max(100).nullable().default(null),
     price: z.number().int().nonnegative().max(2147483647),
   }).strict()).min(1).max(100),
 }).strict();
@@ -42,6 +43,7 @@ export const sallaExtractionProductSchema = z.object({
   productId: internalId, name, price: z.number().int().nonnegative().max(2147483647),
   stock: z.number().int().nonnegative().max(2147483647),
   trackInventory: z.union([z.literal(0), z.literal(1)]), revision: internalId,
+  sku: z.string().max(100).nullable().default(null),
 }).strict();
 export type SallaExtractionProduct = z.infer<typeof sallaExtractionProductSchema>;
 export const normalizeSallaSelectionName = (value: string) => value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');

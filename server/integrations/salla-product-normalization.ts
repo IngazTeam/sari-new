@@ -16,7 +16,7 @@ const product=z.object({id,name:text(255).refine(v=>v.length>0),description:text
   quantity:quantity.nullable(),unlimited_quantity:z.boolean(),type:z.string().min(1).max(40),
   options:z.array(z.unknown()).max(500).optional(),skus:z.array(z.unknown()).max(5000).optional(),
   main_image:url.nullish(),url:url.nullish(),urls:z.object({customer:url.nullish()}).optional(),
-  categories:z.array(z.object({name:text(100)})).max(100).optional(),sku:text(100).nullish(),
+  categories:z.array(z.object({name:text(100)})).max(100).optional(),sku:z.string().max(100).nullish(),
 });
 export function sallaProductProjectionId(storeId:string,productId:string) {
   return `salla:${sallaExternalId.parse(storeId)}:${sallaExternalId.parse(productId)}`;
