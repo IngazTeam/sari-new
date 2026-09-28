@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
+import { hasAssistantDrafts } from '@/lib/assistant-draft-cache';
 import {
   ArrowLeft,
   Grid2X2,
@@ -63,6 +65,7 @@ import ErrorBoundary from '../ErrorBoundary';
 import { WorkspaceState, workspaceFailureKind } from './WorkspaceState';
 
 export default function MerchantShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   useMerchantViewport();
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -415,6 +418,7 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
             <AlertDialogTitle>تسجيل الخروج</AlertDialogTitle>
             <AlertDialogDescription>
               هل تريد إنهاء جلسة العمل الحالية؟
+              {hasAssistantDrafts() && <span className="mt-2 block">{t('assistantDraftUx.logoutWarning')}</span>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

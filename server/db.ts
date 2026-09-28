@@ -4177,7 +4177,8 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
  */
 export async function updateBotSettings(
   merchantId: number,
-  updates: Partial<InsertBotSettings>
+  updates: Partial<InsertBotSettings>,
+  options?: { expectedRevision: string }
 ): Promise<BotSettings> {
   const { hasDiscountSettings } = await import('../shared/discount-policy');
   if (hasDiscountSettings(updates)) throw new Error('Discount authority requires a reviewed, versioned policy update');
@@ -4208,6 +4209,10 @@ export async function updateBotSettings(
     const rows = await tx.select().from(botSettings)
       .where(eq(botSettings.merchantId, merchantId)).for('update');
     if (rows.length !== 1) throw new Error('Bot settings unavailable');
+    if (options) {
+      const { botSettingsFormRevision, AssistantSettingsConflictError } = await import('./bot-settings-version');
+      if (botSettingsFormRevision(rows[0]) !== options.expectedRevision) throw new AssistantSettingsConflictError();
+    }
     const errors = getWorkingScheduleErrors(dbUpdates, rows[0]);
     if (Object.keys(errors).length) throw new InvalidWorkingScheduleError(errors);
     if (Object.keys(dbUpdates).length) {

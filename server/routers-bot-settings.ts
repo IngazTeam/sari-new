@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { workingTimeSchema, workingDaysSchema, InvalidWorkingScheduleError } from '../shared/bot-working-schedule';
+import { botSettingsFormRevision, AssistantSettingsConflictError } from './bot-settings-version';
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { hasPermission } from './_core/permissions';
 import { discountPolicyUpdateSchema, hasDiscountSettings } from '../shared/discount-policy';
@@ -48,12 +49,14 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await getBotSettings(merchant.id);
+        const settings = await getBotSettings(merchant.id);
+        return { ...settings, formRevision: botSettingsFormRevision(settings) };
     }),
 
     // Update bot settings
     update: permissionProcedure('bot_settings.manage')
         .input(z.object({
+            expectedRevision: z.string().regex(/^[a-f0-9]{64}$/).optional(),
             autoReplyEnabled: z.boolean().optional(),
             workingHoursEnabled: z.boolean().optional(),
             workingHoursStart: workingTimeSchema.optional(),
@@ -93,7 +96,7 @@ export const botSettingsRouter = router({
             }
 
             // Normalize tone: bot_settings MySQL enum only accepts 3 values
-            const normalizedInput = { ...input };
+            const { expectedRevision, ...normalizedInput } = input;
             if (normalizedInput.tone && !['friendly', 'professional', 'casual'].includes(normalizedInput.tone)) {
                 normalizedInput.tone = 'friendly';
             }
@@ -101,11 +104,13 @@ export const botSettingsRouter = router({
             let result;
             try {
                 // Boolean API flags are converted to tinyint by updateBotSettings.
-                result = await updateBotSettings(merchant.id, normalizedInput as any);
+                result = expectedRevision === undefined
+                    ? await updateBotSettings(merchant.id, normalizedInput as any)
+                    : await updateBotSettings(merchant.id, normalizedInput as any, { expectedRevision });
             } catch (error) {
                 throw new TRPCError({
-                    code: error instanceof InvalidWorkingScheduleError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',
-                    message: error instanceof InvalidWorkingScheduleError ? 'Review the working schedule' : 'Unable to save bot settings',
+                    code: error instanceof AssistantSettingsConflictError ? 'CONFLICT' : error instanceof InvalidWorkingScheduleError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',
+                    message: error instanceof AssistantSettingsConflictError ? error.message : error instanceof InvalidWorkingScheduleError ? 'Review the working schedule' : 'Unable to save bot settings',
                 });
             }
 
@@ -119,7 +124,7 @@ export const botSettingsRouter = router({
                 }
             }
 
-            return result;
+            return { ...result, formRevision: botSettingsFormRevision(result) };
         }),
 
     // Check if bot should respond

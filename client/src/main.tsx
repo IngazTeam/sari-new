@@ -9,6 +9,7 @@ import { isCentralRoute } from "@shared/central/routes";
 import { initializeI18n } from "./lib/i18n";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { selectedMerchantId } from './lib/merchant-selection';
+import { clearAssistantDrafts } from './lib/assistant-draft-cache';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (window.location.pathname === '/login') return;
 
   isRedirecting = true;
+  clearAssistantDrafts();
 
   // SECURITY: Clear all auth data before redirecting
   localStorage.removeItem('auth_token');

@@ -4,15 +4,21 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import ar from "../client/src/locales/ar.json";
 import { parseWorkingDays, toggleWorkingDay } from "../shared/bot-working-days";
+import {
+  clearAssistantDrafts,
+  readAssistantDraft,
+} from "../client/src/lib/assistant-draft-cache";
 const m = vi.hoisted(() => ({
   settings: {} as any,
   update: vi.fn(),
   send: vi.fn(),
   callbacks: {} as any,
   query: vi.fn(),
+  refetch: vi.fn(),
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
+    auth: { me: { useQuery: () => ({ data: { id: 7 } }) } },
     useUtils: () => ({
       botSettings: {
         get: { invalidate: vi.fn() },
@@ -20,7 +26,13 @@ vi.mock("../client/src/lib/trpc", () => ({
       },
     }),
     botSettings: {
-      get: { useQuery: () => ({ data: m.settings, isLoading: false }) },
+      get: {
+        useQuery: () => ({
+          data: m.settings,
+          isLoading: false,
+          refetch: m.refetch,
+        }),
+      },
       shouldRespond: { useQuery: () => ({ data: { shouldRespond: true } }) },
       update: {
         useMutation: (callbacks: any) => {
@@ -90,6 +102,7 @@ async function fill(id: string, value: string) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  clearAssistantDrafts();
   vi.stubGlobal("React", React);
   vi.stubGlobal(
     "ResizeObserver",
@@ -101,6 +114,8 @@ beforeEach(() => {
   );
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   m.settings = {
+    merchantId: 20,
+    formRevision: "a".repeat(64),
     autoReplyEnabled: 1,
     workingHoursEnabled: 1,
     workingHoursStart: "09:00",
@@ -117,6 +132,7 @@ beforeEach(() => {
     groupKeywords: "[]",
     groupRedirectMessage: "",
   };
+  m.refetch.mockImplementation(async () => ({ data: m.settings }));
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -124,9 +140,141 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  clearAssistantDrafts();
   vi.unstubAllGlobals();
 });
 describe("assistant settings review", () => {
+  it("clears the recoverable draft only when the displayed values were saved", async () => {
+    await render();
+    await fill("welcomeMessage", "saved from draft");
+    await click(ar.botSettingsPage.saveSettings);
+    const submitted = m.update.mock.calls[0][0];
+    await act(async () => {
+      m.settings = {
+        ...m.settings,
+        ...submitted,
+        formRevision: "b".repeat(64),
+      };
+      m.callbacks.onSuccess(m.settings, submitted);
+      m.callbacks.onSettled();
+    });
+    expect(readAssistantDraft("7:20")).toBeNull();
+    await act(async () => root.render(null));
+    await render();
+    expect(container.textContent).not.toContain(
+      ar.assistantDraftUx.restoreHelp
+    );
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("saved from draft");
+  });
+  it("keeps edits made while a save is pending against the newly saved revision", async () => {
+    await render();
+    await fill("welcomeMessage", "first edit");
+    await click(ar.botSettingsPage.saveSettings);
+    const submitted = m.update.mock.calls[0][0];
+    await fill("welcomeMessage", "later edit");
+    await act(async () => {
+      m.settings = {
+        ...m.settings,
+        ...submitted,
+        formRevision: "b".repeat(64),
+      };
+      m.callbacks.onSuccess(m.settings, submitted);
+      m.callbacks.onSettled();
+    });
+    const recovered = readAssistantDraft("7:20")!;
+    expect(recovered.base.welcomeMessage).toBe("first edit");
+    expect(recovered.draft.welcomeMessage).toBe("later edit");
+    expect(recovered.revision).toBe("b".repeat(64));
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        welcomeMessage: "later edit",
+        expectedRevision: "b".repeat(64),
+      })
+    );
+  });
+  it("restores a draft after navigating away without saving or sharing it with another tenant", async () => {
+    await render();
+    await fill("welcomeMessage", "my private draft");
+    await act(async () => root.render(null));
+    await render();
+    expect(container.textContent).toContain(ar.assistantDraftUx.restoreHelp);
+    await click(ar.assistantDraftUx.restore);
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("my private draft");
+    expect(m.update).not.toHaveBeenCalled();
+    await act(async () => root.render(null));
+    m.settings = { ...m.settings, merchantId: 21 };
+    await render();
+    expect(container.textContent).not.toContain(
+      ar.assistantDraftUx.restoreHelp
+    );
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("saved welcome");
+  });
+  it("requires review of same-field conflicts and merges independent changes without saving automatically", async () => {
+    await render();
+    await fill("welcomeMessage", "my edit");
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedRevision: "a".repeat(64) })
+    );
+    await act(async () => {
+      m.callbacks.onError({ data: { code: "CONFLICT" } });
+      m.callbacks.onSettled();
+    });
+    expect(button(ar.botSettingsPage.saveSettings).disabled).toBe(true);
+    m.refetch.mockResolvedValue({
+      data: {
+        ...m.settings,
+        welcomeMessage: "someone else's edit",
+        language: "en",
+        formRevision: "b".repeat(64),
+      },
+    });
+    await click(ar.assistantDraftUx.reviewLatest);
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("my edit");
+    expect(dialog.textContent).toContain("someone else's edit");
+    const apply = [...dialog.querySelectorAll("button")].find(
+      b => b.textContent === ar.assistantDraftUx.applyReview
+    )!;
+    expect(apply.disabled).toBe(true);
+    await act(async () =>
+      dialog.querySelector<HTMLInputElement>('input[type="radio"]')!.click()
+    );
+    await act(async () => apply.click());
+    expect(m.update).toHaveBeenCalledTimes(1);
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        welcomeMessage: "my edit",
+        language: "en",
+        expectedRevision: "b".repeat(64),
+      })
+    );
+  });
+  it("keeps the draft after review loading fails and permits a later retry", async () => {
+    await render();
+    await fill("welcomeMessage", "keep this");
+    await click(ar.botSettingsPage.saveSettings);
+    await act(async () => {
+      m.callbacks.onError({ data: { code: "CONFLICT" } });
+      m.callbacks.onSettled();
+    });
+    m.refetch.mockRejectedValueOnce(Error("offline"));
+    await click(ar.assistantDraftUx.reviewLatest);
+    expect(container.textContent).toContain(ar.assistantDraftUx.reviewFailed);
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("keep this");
+    await click(ar.assistantDraftUx.reviewLatest);
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+  });
   it("shows a local field error, selects the schedule section, and preserves the draft without sending invalid endpoints", async () => {
     await render();
     await fill("endTime", "09:00");

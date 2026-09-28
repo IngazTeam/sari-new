@@ -9126,6 +9126,28 @@
     "keepEditing": "Keep editing",
     "discard": "Discard changes"
   },
+  "assistantDraftUx": {
+    "unsaved": "You have unsaved changes. Your draft can be restored after navigating within this tab; refreshing or closing it removes the draft.",
+    "restoreHelp": "An assistant settings draft remains from your previous visit in this tab. Restore it to continue, or discard it to use the saved settings.",
+    "restore": "Restore draft",
+    "discard": "Discard draft",
+    "conflict": "Saved settings have changed since you opened this draft. Your changes have not overwritten them; review the latest version before saving.",
+    "reviewLatest": "Review latest version",
+    "loading": "Loading latest version…",
+    "reviewFailed": "Could not load the latest version. Your draft is unchanged; try again.",
+    "reviewTitle": "Review settings changes",
+    "reviewHelp": "Choose the value for each conflicting field. Applying this review only updates your draft; save settings after reviewing it.",
+    "chooseEach": "You and another version changed the following fields. Other changes will be merged without removing them.",
+    "autoMerge": "Your edits do not conflict with the fields that changed. We will combine them with the latest saved settings in your draft.",
+    "mine": "My edit",
+    "latest": "Currently saved",
+    "applyReview": "Apply review to draft",
+    "keepEditing": "Return to draft",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "empty": "Empty",
+    "logoutWarning": "Unsaved assistant settings drafts in this tab will also be removed."
+  },
   "assistantSaveUx": {
     "time": "Enter a valid time between 00:00 and 23:59.",
     "differentTimes": "Choose an end time different from the start. For all-day availability, turn off working hours.",

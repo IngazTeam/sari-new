@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
+import { clearAssistantDrafts } from "@/lib/assistant-draft-cache";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -37,6 +38,7 @@ export function useAuth(options?: UseAuthOptions) {
       }
     } finally {
       // SECURITY: Clear all auth data on logout
+      clearAssistantDrafts();
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user-info");
       utils.auth.me.setData(undefined, null);
@@ -90,6 +92,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (window.location.pathname === redirectPath) return;
 
     // Session expired or user not authenticated — clean up and redirect
+    clearAssistantDrafts();
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user-info");
     window.location.href = redirectPath;

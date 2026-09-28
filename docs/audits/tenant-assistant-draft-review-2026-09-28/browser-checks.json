@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-28",
+  "browser": "Chrome",
+  "url": "http://127.0.0.1:3018/merchant/bot-settings",
+  "tenant": "متجر نواة · تيننت الفحص",
+  "externalNetworkBlocked": true,
+  "checks": {
+    "restoreAfterInternalNavigation": "passed",
+    "twoTabsStaleSaveRejected": "passed",
+    "conflictChoiceRequired": "passed",
+    "independentResponseDelayMerged": "passed: 5",
+    "reviewDoesNotSaveAutomatically": "passed",
+    "reviewedSave": "passed",
+    "originalWelcomeAndDelayRestoredThenReloaded": "passed: original welcome, delay 4",
+    "viewportReset": true,
+    "safariAndPhysicalIphone": "not tested",
+    "beforeUnloadNativeDialog": "unit tested only"
+  },
+  "responsive": [
+    {"viewport": {"width": 390, "height": 844}, "clientWidth": 375, "scrollWidth": 375, "dialog": {"x": 16, "y": 125.5, "width": 343, "height": 593, "clientWidth": 341, "scrollWidth": 341}, "screenshot": "conflict-mobile-390.png"},
+    {"viewport": {"width": 320, "height": 568}, "clientWidth": 305, "scrollWidth": 305, "dialog": {"x": 16, "y": 16, "width": 273, "height": 536, "clientWidth": 271, "scrollWidth": 271}, "screenshot": "conflict-mobile-320.png"}
+  ]
+}

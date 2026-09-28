@@ -1,10 +1,22 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import { AssistantDraftReview } from "@/components/merchant/AssistantDraftReview";
+import {
+  assistantSettingsDraft,
+  type AssistantSettingsDraft,
+} from "@shared/assistant-settings-draft";
+import {
+  assistantDraftKey,
+  cacheAssistantDraft,
+  readAssistantDraft,
+  discardAssistantDraft,
+  type CachedAssistantDraft,
+} from "@/lib/assistant-draft-cache";
 import { AssistantReplyPreview } from "@/components/merchant/AssistantReplyPreview";
 import { parseWorkingDays, toggleWorkingDay } from "@shared/bot-working-days";
 import { getWorkingScheduleErrors } from "@shared/bot-working-schedule";
 import { CheckoutMarginPolicySettings } from "@/components/CheckoutMarginPolicySettings";
 import { DiscountPolicySettings } from "@/components/DiscountPolicySettings";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -65,24 +77,53 @@ export default function BotSettings() {
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [reviewSchedule, setReviewSchedule] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [baseline, setBaseline] = useState<AssistantSettingsDraft | null>(null);
+  const [revision, setRevision] = useState<string>();
+  const [restorable, setRestorable] = useState<CachedAssistantDraft | null>(
+    null
+  );
+  const [conflict, setConflict] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewFailed, setReviewFailed] = useState(false);
+  const [latestReview, setLatestReview] = useState<{
+    draft: AssistantSettingsDraft;
+    revision: string;
+  } | null>(null);
+  const reviewLock = useRef(false);
+  const authQuery = trpc.auth.me.useQuery();
 
   // Get current settings
   const settingsQuery = trpc.botSettings.get.useQuery(undefined, {
     refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
   const { data: settings, isLoading } = settingsQuery;
   const { data: shouldRespond } = trpc.botSettings.shouldRespond.useQuery();
+  const draftKey =
+    settings && authQuery.data?.id
+      ? assistantDraftKey(authQuery.data.id, settings.merchantId)
+      : undefined;
 
   // Update mutation
   const updateMutation = trpc.botSettings.update.useMutation({
-    onSuccess: (_result, submitted) => {
+    onSuccess: (result, submitted) => {
       setSaveFailed(false);
-      setSavedSnapshot(JSON.stringify(submitted));
+      const saved = assistantSettingsDraft(submitted);
+      setBaseline(saved);
+      setRevision(result.formRevision);
+      setConflict(false);
+      setSavedSnapshot(JSON.stringify(saved));
       toast.success(t("botSettingsPage.saveSuccess"));
       utils.botSettings.get.invalidate();
       utils.botSettings.shouldRespond.invalidate();
     },
-    onError: () => {
+    onError: error => {
+      if (error.data?.code === "CONFLICT") {
+        setConflict(true);
+        toast.error(t("assistantDraftUx.conflict"));
+        return;
+      }
       setSaveFailed(true);
       toast.error(t("assistantSaveUx.failed"));
     },
@@ -126,49 +167,40 @@ export default function BotSettings() {
   const [groupRedirectMessage, setGroupRedirectMessage] = useState("");
   const [keywordInput, setKeywordInput] = useState("");
 
-  // Update form when settings load
-  useEffect(() => {
-    if (settings && !initialized.current) {
-      initialized.current = true;
-      const loadedForm = {
-        // @ts-ignore
-        autoReplyEnabled: Boolean(settings.autoReplyEnabled),
-        // @ts-ignore
-        workingHoursEnabled: Boolean(settings.workingHoursEnabled),
-        workingHoursStart: settings.workingHoursStart || "09:00",
-        workingHoursEnd: settings.workingHoursEnd || "18:00",
-        workingDays: settings.workingDays ?? "1,2,3,4,5",
-        welcomeMessage: settings.welcomeMessage || "",
-        outOfHoursMessage: settings.outOfHoursMessage || "",
-        responseDelay: settings.responseDelay ?? 2,
-        maxResponseLength: settings.maxResponseLength ?? 200,
-        tone: (["friendly", "professional", "casual"].includes(settings.tone)
-          ? settings.tone
-          : "friendly") as "friendly" | "professional" | "casual",
-        // @ts-ignore
-        language: settings.language,
-        // Custom Instructions
-        customInstructions: (settings as any).customInstructions || "",
-      };
-      setFormData(loadedForm);
-      setSavedSnapshot(
-        JSON.stringify({
-          ...loadedForm,
-          groupMode: settings.groupMode || "disabled",
-          groupKeywords: JSON.stringify(
-            parseAgentKeywords(settings.groupKeywords)
-          ),
-          groupRedirectMessage: settings.groupRedirectMessage || "",
-          customInstructions: loadedForm.customInstructions || null,
-        })
-      );
-      setGroupMode((settings as any).groupMode || "disabled");
-      setGroupKeywords(parseAgentKeywords(settings.groupKeywords));
-      setGroupRedirectMessage((settings as any).groupRedirectMessage || "");
-    }
-  }, [settings]);
+  const applyDraft = (draft: AssistantSettingsDraft) => {
+    const {
+      groupMode: mode,
+      groupKeywords: words,
+      groupRedirectMessage: redirect,
+      customInstructions,
+      ...fields
+    } = draft;
+    setFormData({ ...fields, customInstructions: customInstructions || "" });
+    setGroupMode(mode);
+    setGroupKeywords(parseAgentKeywords(words));
+    setGroupRedirectMessage(redirect);
+    setKeywordInput("");
+  };
 
-  const currentSnapshot = JSON.stringify({
+  // Do not initialize from an old query-cache snapshot on return navigation.
+  useEffect(() => {
+    if (
+      settings &&
+      draftKey &&
+      !settingsQuery.isFetching &&
+      !initialized.current
+    ) {
+      initialized.current = true;
+      const loaded = assistantSettingsDraft(settings);
+      applyDraft(loaded);
+      setBaseline(loaded);
+      setRevision(settings.formRevision);
+      setSavedSnapshot(JSON.stringify(loaded));
+      setRestorable(readAssistantDraft(draftKey));
+    }
+  }, [settings, draftKey, settingsQuery.isFetching]);
+
+  const currentDraft = assistantSettingsDraft({
     ...formData,
     groupMode,
     groupKeywords: JSON.stringify(
@@ -177,10 +209,67 @@ export default function BotSettings() {
     groupRedirectMessage,
     customInstructions: formData.customInstructions || null,
   });
+  const currentSnapshot = JSON.stringify(currentDraft);
+
+  useLayoutEffect(() => {
+    if (
+      !initialized.current ||
+      !draftKey ||
+      !baseline ||
+      !revision ||
+      restorable
+    )
+      return;
+    if (currentSnapshot === savedSnapshot) discardAssistantDraft(draftKey);
+    else
+      cacheAssistantDraft(draftKey, {
+        base: baseline,
+        draft: currentDraft,
+        revision,
+        section: activeSection,
+      });
+  }, [
+    currentSnapshot,
+    savedSnapshot,
+    draftKey,
+    baseline,
+    revision,
+    restorable,
+    activeSection,
+  ]);
+
+  const reviewLatest = async () => {
+    if (reviewLock.current || saveLock.current) return;
+    reviewLock.current = true;
+    setReviewLoading(true);
+    setReviewFailed(false);
+    try {
+      const result = await settingsQuery.refetch();
+      if (result.error || !result.data?.formRevision)
+        throw Error("Unavailable");
+      setLatestReview({
+        draft: assistantSettingsDraft(result.data),
+        revision: result.data.formRevision,
+      });
+    } catch {
+      setReviewFailed(true);
+    } finally {
+      reviewLock.current = false;
+      setReviewLoading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (saveLock.current) return;
+    if (
+      saveLock.current ||
+      restorable ||
+      conflict ||
+      !revision ||
+      reviewLoading ||
+      latestReview
+    )
+      return;
     setSaveFailed(false);
     setReviewSchedule(true);
     const errors = getWorkingScheduleErrors(formData);
@@ -199,11 +288,8 @@ export default function BotSettings() {
     setGroupKeywords(words);
     setKeywordInput("");
     updateMutation.mutate({
-      ...formData,
-      groupMode,
-      groupKeywords: JSON.stringify(words),
-      groupRedirectMessage,
-      customInstructions: formData.customInstructions || null,
+      ...currentDraft,
+      expectedRevision: revision,
     } as any);
   };
 
@@ -232,14 +318,17 @@ export default function BotSettings() {
     { value: 6, label: t("botSettingsPage.saturday") },
   ];
 
-  if (settingsQuery.isError)
+  if ((settingsQuery.isError || authQuery.isError) && !initialized.current)
     return (
       <WorkspaceState
         kind="error"
-        onRetry={() => void settingsQuery.refetch()}
+        onRetry={() => {
+          void settingsQuery.refetch();
+          void authQuery.refetch();
+        }}
       />
     );
-  if (isLoading) {
+  if (isLoading || !initialized.current) {
     return (
       <div className="container max-w-4xl py-8">
         <div className="text-center">{t("botSettingsPage.loading")}</div>
@@ -259,6 +348,7 @@ export default function BotSettings() {
   );
 
   const applyTemplate = (template: (typeof allTemplates)[0]) => {
+    if (restorable || latestReview || reviewLoading) return;
     setFormData({
       ...formData,
       ...template.settings,
@@ -276,6 +366,80 @@ export default function BotSettings() {
         </h1>
         <p className="text-muted-foreground">{t("botSettingsPage.subtitle")}</p>
       </div>
+
+      {restorable && (
+        <Alert className="my-4">
+          <AlertDescription className="space-y-3">
+            <p>{t("assistantDraftUx.restoreHelp")}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => {
+                  applyDraft(restorable.draft);
+                  setBaseline(restorable.base);
+                  setSavedSnapshot(JSON.stringify(restorable.base));
+                  setRevision(restorable.revision);
+                  setConflict(restorable.revision !== settings?.formRevision);
+                  setActiveSection(restorable.section);
+                  setRestorable(null);
+                }}
+              >
+                {t("assistantDraftUx.restore")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (draftKey) discardAssistantDraft(draftKey);
+                  setRestorable(null);
+                }}
+              >
+                {t("assistantDraftUx.discard")}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {conflict && (
+        <Alert className="my-4" role="alert">
+          <AlertDescription className="space-y-3">
+            <p>{t("assistantDraftUx.conflict")}</p>
+            <Button
+              type="button"
+              onClick={() => void reviewLatest()}
+              disabled={reviewLoading}
+            >
+              {t(
+                reviewLoading
+                  ? "assistantDraftUx.loading"
+                  : "assistantDraftUx.reviewLatest"
+              )}
+            </Button>
+            {reviewFailed && (
+              <p role="alert">{t("assistantDraftUx.reviewFailed")}</p>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+      {latestReview && baseline && (
+        <AssistantDraftReview
+          key={latestReview.revision}
+          base={baseline}
+          draft={currentDraft}
+          latest={latestReview.draft}
+          onClose={() => setLatestReview(null)}
+          onApply={merged => {
+            applyDraft(merged);
+            setBaseline(latestReview.draft);
+            setSavedSnapshot(JSON.stringify(latestReview.draft));
+            setRevision(latestReview.revision);
+            setConflict(false);
+            setSaveFailed(false);
+            setLatestReview(null);
+          }}
+        />
+      )}
 
       <nav
         className="flex flex-wrap gap-2 rounded-xl border bg-card p-2"
@@ -371,6 +535,7 @@ export default function BotSettings() {
                         }
                         className="w-full"
                         onClick={() => applyTemplate(template)}
+                        disabled={Boolean(restorable) || reviewLoading}
                       >
                         {t("assistantSettingsReviewUx.applyToDraft")}
                       </Button>
@@ -406,6 +571,7 @@ export default function BotSettings() {
                         variant="outline"
                         className="w-full"
                         onClick={() => applyTemplate(template)}
+                        disabled={Boolean(restorable) || reviewLoading}
                       >
                         {t("botSettingsPage.text0")}
                       </Button>
@@ -448,7 +614,7 @@ export default function BotSettings() {
 
       <p className="text-sm text-muted-foreground" role="status">
         {savedSnapshot && currentSnapshot !== savedSnapshot
-          ? t("assistantSectionsUx.unsaved")
+          ? t("assistantDraftUx.unsaved")
           : t("assistantSectionsUx.saved")}
       </p>
       <form
@@ -464,764 +630,783 @@ export default function BotSettings() {
           }
         }}
       >
-        {/* Auto-Reply Toggle */}
-        <section
-          hidden={activeSection !== "basics"}
-          data-assistant-section="basics"
+        <fieldset
+          disabled={Boolean(restorable) || reviewLoading}
+          className="contents"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                {t("botSettingsPage.autoReplyTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("botSettingsPage.autoReplyDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="autoReply">
-                    {t("botSettingsPage.enableAutoReply")}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("botSettingsPage.enableAutoReplyDesc")}
-                  </p>
+          {/* Auto-Reply Toggle */}
+          <section
+            hidden={activeSection !== "basics"}
+            data-assistant-section="basics"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  {t("botSettingsPage.autoReplyTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("botSettingsPage.autoReplyDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="autoReply">
+                      {t("botSettingsPage.enableAutoReply")}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t("botSettingsPage.enableAutoReplyDesc")}
+                    </p>
+                  </div>
+                  <Switch
+                    id="autoReply"
+                    checked={formData.autoReplyEnabled}
+                    onCheckedChange={checked =>
+                      setFormData({ ...formData, autoReplyEnabled: checked })
+                    }
+                  />
                 </div>
-                <Switch
-                  id="autoReply"
-                  checked={formData.autoReplyEnabled}
-                  onCheckedChange={checked =>
-                    setFormData({ ...formData, autoReplyEnabled: checked })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+              </CardContent>
+            </Card>
+          </section>
 
-        {/* Working Hours */}
-        <section
-          hidden={activeSection !== "schedule"}
-          data-assistant-section="schedule"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                {t("botSettingsPage.workingHoursTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("botSettingsPage.workingHoursDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="workingHours">
-                    {t("botSettingsPage.enableWorkingHours")}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("botSettingsPage.enableWorkingHoursDesc")}
-                  </p>
+          {/* Working Hours */}
+          <section
+            hidden={activeSection !== "schedule"}
+            data-assistant-section="schedule"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  {t("botSettingsPage.workingHoursTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("botSettingsPage.workingHoursDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="workingHours">
+                      {t("botSettingsPage.enableWorkingHours")}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t("botSettingsPage.enableWorkingHoursDesc")}
+                    </p>
+                  </div>
+                  <Switch
+                    id="workingHours"
+                    checked={formData.workingHoursEnabled}
+                    onCheckedChange={checked =>
+                      setFormData({ ...formData, workingHoursEnabled: checked })
+                    }
+                  />
                 </div>
-                <Switch
-                  id="workingHours"
-                  checked={formData.workingHoursEnabled}
-                  onCheckedChange={checked =>
-                    setFormData({ ...formData, workingHoursEnabled: checked })
-                  }
-                />
-              </div>
 
-              {(formData.workingHoursEnabled ||
-                Object.keys(scheduleErrors).length > 0) && (
-                <>
-                  <Separator />
+                {(formData.workingHoursEnabled ||
+                  Object.keys(scheduleErrors).length > 0) && (
+                  <>
+                    <Separator />
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="startTime">
-                        {t("botSettingsPage.startTime")}
-                      </Label>
-                      <Input
-                        id="startTime"
-                        type="time"
-                        className="min-h-11 text-base"
-                        aria-invalid={Boolean(scheduleErrors.workingHoursStart)}
-                        aria-describedby={
-                          scheduleErrors.workingHoursStart
-                            ? "startTime-error"
-                            : undefined
-                        }
-                        value={formData.workingHoursStart}
-                        onChange={e =>
-                          setFormData({
-                            ...formData,
-                            workingHoursStart: e.target.value,
-                          })
-                        }
-                      />
-                      {scheduleErrors.workingHoursStart && (
-                        <p
-                          id="startTime-error"
-                          className="text-sm text-destructive"
-                          role="alert"
-                        >
-                          {t("assistantSaveUx.time")}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endTime">
-                        {t("botSettingsPage.endTime")}
-                      </Label>
-                      <Input
-                        id="endTime"
-                        type="time"
-                        className="min-h-11 text-base"
-                        aria-invalid={Boolean(scheduleErrors.workingHoursEnd)}
-                        aria-describedby={
-                          scheduleErrors.workingHoursEnd
-                            ? "endTime-error"
-                            : undefined
-                        }
-                        value={formData.workingHoursEnd}
-                        onChange={e =>
-                          setFormData({
-                            ...formData,
-                            workingHoursEnd: e.target.value,
-                          })
-                        }
-                      />
-                      {scheduleErrors.workingHoursEnd && (
-                        <p
-                          id="endTime-error"
-                          className="text-sm text-destructive"
-                          role="alert"
-                        >
-                          {t(
-                            scheduleErrors.workingHoursEnd === "differentTimes"
-                              ? "assistantSaveUx.differentTimes"
-                              : "assistantSaveUx.time"
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="startTime">
+                          {t("botSettingsPage.startTime")}
+                        </Label>
+                        <Input
+                          id="startTime"
+                          type="time"
+                          className="min-h-11 text-base"
+                          aria-invalid={Boolean(
+                            scheduleErrors.workingHoursStart
                           )}
+                          aria-describedby={
+                            scheduleErrors.workingHoursStart
+                              ? "startTime-error"
+                              : undefined
+                          }
+                          value={formData.workingHoursStart}
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              workingHoursStart: e.target.value,
+                            })
+                          }
+                        />
+                        {scheduleErrors.workingHoursStart && (
+                          <p
+                            id="startTime-error"
+                            className="text-sm text-destructive"
+                            role="alert"
+                          >
+                            {t("assistantSaveUx.time")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endTime">
+                          {t("botSettingsPage.endTime")}
+                        </Label>
+                        <Input
+                          id="endTime"
+                          type="time"
+                          className="min-h-11 text-base"
+                          aria-invalid={Boolean(scheduleErrors.workingHoursEnd)}
+                          aria-describedby={
+                            scheduleErrors.workingHoursEnd
+                              ? "endTime-error"
+                              : undefined
+                          }
+                          value={formData.workingHoursEnd}
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              workingHoursEnd: e.target.value,
+                            })
+                          }
+                        />
+                        {scheduleErrors.workingHoursEnd && (
+                          <p
+                            id="endTime-error"
+                            className="text-sm text-destructive"
+                            role="alert"
+                          >
+                            {t(
+                              scheduleErrors.workingHoursEnd ===
+                                "differentTimes"
+                                ? "assistantSaveUx.differentTimes"
+                                : "assistantSaveUx.time"
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label id="workingDays-label">
+                        {t("botSettingsPage.workingDays")}
+                      </Label>
+                      <div
+                        id="workingDays"
+                        role="group"
+                        tabIndex={-1}
+                        aria-labelledby="workingDays-label"
+                        aria-invalid={Boolean(scheduleErrors.workingDays)}
+                        aria-describedby={
+                          scheduleErrors.workingDays
+                            ? "workingDays-error"
+                            : "workingDays-hint"
+                        }
+                        className="flex flex-wrap gap-2"
+                      >
+                        {weekDays.map(day => (
+                          <Button
+                            key={day.value}
+                            type="button"
+                            aria-pressed={isWorkingDay(day.value)}
+                            variant={
+                              isWorkingDay(day.value) ? "default" : "outline"
+                            }
+                            className="min-h-11"
+                            onClick={() => handleWorkingDayToggle(day.value)}
+                          >
+                            {day.label}
+                          </Button>
+                        ))}
+                      </div>
+                      {scheduleErrors.workingDays && (
+                        <p
+                          id="workingDays-error"
+                          className="text-sm text-destructive"
+                          role="alert"
+                        >
+                          {t("assistantSaveUx.days")}
                         </p>
                       )}
+                      <p
+                        id="workingDays-hint"
+                        className="text-sm text-muted-foreground"
+                      >
+                        {t(
+                          formData.workingDays === ""
+                            ? "assistantSaveUx.emptyWeek"
+                            : "botSettingsPage.clickDayToggle"
+                        )}
+                      </p>
                     </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Messages */}
+          <section
+            hidden={activeSection !== "schedule"}
+            data-assistant-section="schedule"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  {t("botSettingsPage.messagesTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("botSettingsPage.messagesDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="welcomeMessage">
+                    {t("botSettingsPage.welcomeMessage")}
+                  </Label>
+                  <Textarea
+                    id="welcomeMessage"
+                    placeholder={t("botSettingsPage.welcomeMessagePlaceholder")}
+                    value={formData.welcomeMessage}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        welcomeMessage: e.target.value,
+                      })
+                    }
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {t("botSettingsPage.welcomeMessageDesc")}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="outOfHoursMessage">
+                    {t("botSettingsPage.outOfHoursMessage")}
+                  </Label>
+                  <Textarea
+                    id="outOfHoursMessage"
+                    placeholder={t(
+                      "botSettingsPage.outOfHoursMessagePlaceholder"
+                    )}
+                    value={formData.outOfHoursMessage}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        outOfHoursMessage: e.target.value,
+                      })
+                    }
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {t("botSettingsPage.outOfHoursMessageDesc")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* AI Behavior */}
+          <section
+            hidden={activeSection !== "basics"}
+            data-assistant-section="basics"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" />
+                  {t("botSettingsPage.aiBehaviorTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("botSettingsPage.aiBehaviorDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tone">{t("botSettingsPage.tone")}</Label>
+                    <Select
+                      value={formData.tone}
+                      onValueChange={(
+                        value: "friendly" | "professional" | "casual"
+                      ) => setFormData({ ...formData, tone: value })}
+                    >
+                      <SelectTrigger id="tone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="friendly">
+                          {t("botSettingsPage.toneFriendly")}
+                        </SelectItem>
+                        <SelectItem value="professional">
+                          {t("botSettingsPage.toneProfessional")}
+                        </SelectItem>
+                        <SelectItem value="casual">
+                          {t("botSettingsPage.toneCasual")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label id="workingDays-label">
-                      {t("botSettingsPage.workingDays")}
+                    <Label htmlFor="language">
+                      {t("botSettingsPage.language")}
                     </Label>
-                    <div
-                      id="workingDays"
-                      role="group"
-                      tabIndex={-1}
-                      aria-labelledby="workingDays-label"
-                      aria-invalid={Boolean(scheduleErrors.workingDays)}
-                      aria-describedby={
-                        scheduleErrors.workingDays
-                          ? "workingDays-error"
-                          : "workingDays-hint"
+                    <Select
+                      value={formData.language}
+                      onValueChange={(value: "ar" | "en" | "both") =>
+                        setFormData({ ...formData, language: value })
                       }
-                      className="flex flex-wrap gap-2"
                     >
-                      {weekDays.map(day => (
-                        <Button
-                          key={day.value}
-                          type="button"
-                          aria-pressed={isWorkingDay(day.value)}
-                          variant={
-                            isWorkingDay(day.value) ? "default" : "outline"
-                          }
-                          className="min-h-11"
-                          onClick={() => handleWorkingDayToggle(day.value)}
-                        >
-                          {day.label}
-                        </Button>
-                      ))}
-                    </div>
-                    {scheduleErrors.workingDays && (
-                      <p
-                        id="workingDays-error"
-                        className="text-sm text-destructive"
-                        role="alert"
-                      >
-                        {t("assistantSaveUx.days")}
-                      </p>
-                    )}
-                    <p
-                      id="workingDays-hint"
-                      className="text-sm text-muted-foreground"
-                    >
-                      {t(
-                        formData.workingDays === ""
-                          ? "assistantSaveUx.emptyWeek"
-                          : "botSettingsPage.clickDayToggle"
-                      )}
+                      <SelectTrigger id="language">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ar">
+                          {t("botSettingsPage.langArabic")}
+                        </SelectItem>
+                        <SelectItem value="en">
+                          {t("botSettingsPage.langEnglish")}
+                        </SelectItem>
+                        <SelectItem value="fr">Français</SelectItem>
+                        <SelectItem value="tr">Türkçe</SelectItem>
+                        <SelectItem value="es">Español</SelectItem>
+                        <SelectItem value="it">Italiano</SelectItem>
+                        <SelectItem value="both">
+                          {t("botSettingsPage.langBoth")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="responseDelay">
+                      {t("botSettingsPage.responseDelay")}
+                    </Label>
+                    <Input
+                      id="responseDelay"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={formData.responseDelay}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          responseDelay: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      {t("botSettingsPage.responseDelayDesc")}
                     </p>
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </section>
 
-        {/* Messages */}
-        <section
-          hidden={activeSection !== "schedule"}
-          data-assistant-section="schedule"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                {t("botSettingsPage.messagesTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("botSettingsPage.messagesDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="welcomeMessage">
-                  {t("botSettingsPage.welcomeMessage")}
-                </Label>
-                <Textarea
-                  id="welcomeMessage"
-                  placeholder={t("botSettingsPage.welcomeMessagePlaceholder")}
-                  value={formData.welcomeMessage}
-                  onChange={e =>
-                    setFormData({ ...formData, welcomeMessage: e.target.value })
-                  }
-                  rows={3}
-                />
-                <p className="text-sm text-muted-foreground">
-                  {t("botSettingsPage.welcomeMessageDesc")}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="outOfHoursMessage">
-                  {t("botSettingsPage.outOfHoursMessage")}
-                </Label>
-                <Textarea
-                  id="outOfHoursMessage"
-                  placeholder={t(
-                    "botSettingsPage.outOfHoursMessagePlaceholder"
-                  )}
-                  value={formData.outOfHoursMessage}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      outOfHoursMessage: e.target.value,
-                    })
-                  }
-                  rows={3}
-                />
-                <p className="text-sm text-muted-foreground">
-                  {t("botSettingsPage.outOfHoursMessageDesc")}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* AI Behavior */}
-        <section
-          hidden={activeSection !== "basics"}
-          data-assistant-section="basics"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                {t("botSettingsPage.aiBehaviorTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("botSettingsPage.aiBehaviorDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tone">{t("botSettingsPage.tone")}</Label>
-                  <Select
-                    value={formData.tone}
-                    onValueChange={(
-                      value: "friendly" | "professional" | "casual"
-                    ) => setFormData({ ...formData, tone: value })}
-                  >
-                    <SelectTrigger id="tone">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="friendly">
-                        {t("botSettingsPage.toneFriendly")}
-                      </SelectItem>
-                      <SelectItem value="professional">
-                        {t("botSettingsPage.toneProfessional")}
-                      </SelectItem>
-                      <SelectItem value="casual">
-                        {t("botSettingsPage.toneCasual")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="language">
-                    {t("botSettingsPage.language")}
-                  </Label>
-                  <Select
-                    value={formData.language}
-                    onValueChange={(value: "ar" | "en" | "both") =>
-                      setFormData({ ...formData, language: value })
-                    }
-                  >
-                    <SelectTrigger id="language">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ar">
-                        {t("botSettingsPage.langArabic")}
-                      </SelectItem>
-                      <SelectItem value="en">
-                        {t("botSettingsPage.langEnglish")}
-                      </SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="tr">Türkçe</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="it">Italiano</SelectItem>
-                      <SelectItem value="both">
-                        {t("botSettingsPage.langBoth")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="responseDelay">
-                    {t("botSettingsPage.responseDelay")}
-                  </Label>
-                  <Input
-                    id="responseDelay"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={formData.responseDelay}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        responseDelay: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {t("botSettingsPage.responseDelayDesc")}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxLength">
-                    {t("botSettingsPage.maxResponseLength")}
-                  </Label>
-                  <Input
-                    id="maxLength"
-                    type="number"
-                    min={50}
-                    max={500}
-                    value={formData.maxResponseLength}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        maxResponseLength: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {t("botSettingsPage.maxResponseLengthDesc")}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Draft copy and saved-model testing are explicitly separate. */}
-        <section
-          hidden={activeSection !== "preview"}
-          data-assistant-section="preview"
-          className="space-y-4"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" aria-hidden="true" />
-                {t("assistantSettingsReviewUx.draftTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("assistantSettingsReviewUx.draftHelp")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!formData.autoReplyEnabled ? (
-                <p role="status" className="rounded-xl bg-muted p-4 text-sm">
-                  {t("assistantSettingsReviewUx.replyOff")}
-                </p>
-              ) : (
-                <>
-                  <div className="rounded-xl border p-4">
-                    <h3 className="mb-2 text-sm font-medium">
-                      {t("botSettingsPage.welcomeMessage")}
-                    </h3>
-                    <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
-                      {formData.welcomeMessage ||
-                        t("botSettingsPage.previewDefaultWelcome")}
+                  <div className="space-y-2">
+                    <Label htmlFor="maxLength">
+                      {t("botSettingsPage.maxResponseLength")}
+                    </Label>
+                    <Input
+                      id="maxLength"
+                      type="number"
+                      min={50}
+                      max={500}
+                      value={formData.maxResponseLength}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          maxResponseLength: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      {t("botSettingsPage.maxResponseLengthDesc")}
                     </p>
                   </div>
-                  {formData.workingHoursEnabled ? (
-                    <div className="rounded-xl border bg-muted/30 p-4">
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Draft copy and saved-model testing are explicitly separate. */}
+          <section
+            hidden={activeSection !== "preview"}
+            data-assistant-section="preview"
+            className="space-y-4"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" aria-hidden="true" />
+                  {t("assistantSettingsReviewUx.draftTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("assistantSettingsReviewUx.draftHelp")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!formData.autoReplyEnabled ? (
+                  <p role="status" className="rounded-xl bg-muted p-4 text-sm">
+                    {t("assistantSettingsReviewUx.replyOff")}
+                  </p>
+                ) : (
+                  <>
+                    <div className="rounded-xl border p-4">
                       <h3 className="mb-2 text-sm font-medium">
-                        {t("botSettingsPage.previewOutsideHours")}
+                        {t("botSettingsPage.welcomeMessage")}
                       </h3>
                       <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
-                        {formData.outOfHoursMessage ||
-                          t("botSettingsPage.previewDefaultOutOfHours")}
+                        {formData.welcomeMessage ||
+                          t("botSettingsPage.previewDefaultWelcome")}
                       </p>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {t("assistantSettingsReviewUx.scheduleOff")}
-                    </p>
-                  )}
-                </>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {t("assistantSettingsReviewUx.noQualityScore")}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("assistantSettingsReviewUx.savedTitle")}</CardTitle>
-              <CardDescription>
-                {t("personaPreviewUx.savedOnly")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {savedSnapshot !== currentSnapshot && (
-                <p
-                  role="note"
-                  className="rounded-xl border bg-muted p-3 text-sm"
-                >
-                  {t("assistantSettingsReviewUx.unsavedPreview")}
-                </p>
-              )}
-              <AssistantReplyPreview selection={{ mode: "store" }} />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Info Alert */}
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <strong>{t("botSettingsPage.note")}</strong>{" "}
-            {t("botSettingsPage.infoNote")}
-          </AlertDescription>
-        </Alert>
-
-        {/* Smart Groups Card */}
-        <section
-          hidden={activeSection !== "groups"}
-          data-assistant-section="groups"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary text-white">
-                  <Users className="h-4 w-4" />
-                </div>
-                {t("assistantSettingsReviewUx.groupsTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("assistantSettingsReviewUx.groupsHelp")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                {
-                  value: "disabled",
-                  icon: "🔴",
-                  label: t("assistantSettingsReviewUx.groupOff"),
-                  desc: t("assistantSettingsReviewUx.groupOffHelp"),
-                },
-                {
-                  value: "mention_only",
-                  icon: "🟡",
-                  label: t("assistantSettingsReviewUx.groupMention"),
-                  desc: t("assistantSettingsReviewUx.groupMentionHelp"),
-                },
-                {
-                  value: "keyword_only",
-                  icon: "🟢",
-                  label: t("assistantSettingsReviewUx.groupKeywords"),
-                  desc: t("assistantSettingsReviewUx.groupKeywordsHelp"),
-                },
-                {
-                  value: "private_redirect",
-                  icon: "🔵",
-                  label: t("assistantSettingsReviewUx.groupPrivate"),
-                  desc: t("assistantSettingsReviewUx.groupPrivateHelp"),
-                },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  aria-pressed={groupMode === opt.value}
-                  onClick={() => setGroupMode(opt.value as any)}
-                  className={`w-full text-right p-4 rounded-xl border-2 transition-all ${
-                    groupMode === opt.value
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-muted hover:border-primary/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{opt.icon}</span>
-                    <div>
-                      <p className="font-semibold">{opt.label}</p>
+                    {formData.workingHoursEnabled ? (
+                      <div className="rounded-xl border bg-muted/30 p-4">
+                        <h3 className="mb-2 text-sm font-medium">
+                          {t("botSettingsPage.previewOutsideHours")}
+                        </h3>
+                        <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
+                          {formData.outOfHoursMessage ||
+                            t("botSettingsPage.previewDefaultOutOfHours")}
+                        </p>
+                      </div>
+                    ) : (
                       <p className="text-sm text-muted-foreground">
-                        {opt.desc}
+                        {t("assistantSettingsReviewUx.scheduleOff")}
                       </p>
+                    )}
+                  </>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {t("assistantSettingsReviewUx.noQualityScore")}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {t("assistantSettingsReviewUx.savedTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("personaPreviewUx.savedOnly")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {savedSnapshot !== currentSnapshot && (
+                  <p
+                    role="note"
+                    className="rounded-xl border bg-muted p-3 text-sm"
+                  >
+                    {t("assistantSettingsReviewUx.unsavedPreview")}
+                  </p>
+                )}
+                <AssistantReplyPreview selection={{ mode: "store" }} />
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Info Alert */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{t("botSettingsPage.note")}</strong>{" "}
+              {t("botSettingsPage.infoNote")}
+            </AlertDescription>
+          </Alert>
+
+          {/* Smart Groups Card */}
+          <section
+            hidden={activeSection !== "groups"}
+            data-assistant-section="groups"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary text-white">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  {t("assistantSettingsReviewUx.groupsTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("assistantSettingsReviewUx.groupsHelp")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  {
+                    value: "disabled",
+                    icon: "🔴",
+                    label: t("assistantSettingsReviewUx.groupOff"),
+                    desc: t("assistantSettingsReviewUx.groupOffHelp"),
+                  },
+                  {
+                    value: "mention_only",
+                    icon: "🟡",
+                    label: t("assistantSettingsReviewUx.groupMention"),
+                    desc: t("assistantSettingsReviewUx.groupMentionHelp"),
+                  },
+                  {
+                    value: "keyword_only",
+                    icon: "🟢",
+                    label: t("assistantSettingsReviewUx.groupKeywords"),
+                    desc: t("assistantSettingsReviewUx.groupKeywordsHelp"),
+                  },
+                  {
+                    value: "private_redirect",
+                    icon: "🔵",
+                    label: t("assistantSettingsReviewUx.groupPrivate"),
+                    desc: t("assistantSettingsReviewUx.groupPrivateHelp"),
+                  },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={groupMode === opt.value}
+                    onClick={() => setGroupMode(opt.value as any)}
+                    className={`w-full text-right p-4 rounded-xl border-2 transition-all ${
+                      groupMode === opt.value
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-muted hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{opt.icon}</span>
+                      <div>
+                        <p className="font-semibold">{opt.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+
+                {/* Keywords Input — shown when keyword_only */}
+                {groupMode === "keyword_only" && (
+                  <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
+                    <Label
+                      htmlFor="bot-group-keyword"
+                      className="font-semibold flex items-center gap-2"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      {t("assistantSettingsReviewUx.keywords")}
+                    </Label>
+                    <div className="flex flex-wrap gap-2 min-h-[40px]">
+                      {groupKeywords.map((kw, i) => (
+                        <Badge
+                          key={i}
+                          variant="secondary"
+                          className="text-sm flex items-center gap-1 px-3 py-1"
+                        >
+                          {kw}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGroupKeywords(prev =>
+                                prev.filter((_, idx) => idx !== i)
+                              )
+                            }
+                            aria-label={t("merchantUx.actions.removeNamed", {
+                              name: kw,
+                            })}
+                            className="hover:text-destructive ml-1"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        id="bot-group-keyword"
+                        value={keywordInput}
+                        onChange={e => setKeywordInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && keywordInput.trim()) {
+                            e.preventDefault();
+                            setGroupKeywords(prev => [
+                              ...prev,
+                              keywordInput.trim(),
+                            ]);
+                            setKeywordInput("");
+                          }
+                        }}
+                        placeholder={t(
+                          "assistantSettingsReviewUx.keywordPlaceholder"
+                        )}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (keywordInput.trim()) {
+                            setGroupKeywords(prev => [
+                              ...prev,
+                              keywordInput.trim(),
+                            ]);
+                            setKeywordInput("");
+                          }
+                        }}
+                      >
+                        {t("assistantSettingsReviewUx.addKeyword")}
+                      </Button>
                     </div>
                   </div>
-                </button>
-              ))}
+                )}
 
-              {/* Keywords Input — shown when keyword_only */}
-              {groupMode === "keyword_only" && (
-                <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
-                  <Label
-                    htmlFor="bot-group-keyword"
-                    className="font-semibold flex items-center gap-2"
-                  >
-                    <KeyRound className="h-4 w-4" />
-                    {t("assistantSettingsReviewUx.keywords")}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 min-h-[40px]">
-                    {groupKeywords.map((kw, i) => (
-                      <Badge
-                        key={i}
-                        variant="secondary"
-                        className="text-sm flex items-center gap-1 px-3 py-1"
-                      >
-                        {kw}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setGroupKeywords(prev =>
-                              prev.filter((_, idx) => idx !== i)
-                            )
-                          }
-                          aria-label={t("merchantUx.actions.removeNamed", {
-                            name: kw,
-                          })}
-                          className="hover:text-destructive ml-1"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      id="bot-group-keyword"
-                      value={keywordInput}
-                      onChange={e => setKeywordInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter" && keywordInput.trim()) {
-                          e.preventDefault();
-                          setGroupKeywords(prev => [
-                            ...prev,
-                            keywordInput.trim(),
-                          ]);
-                          setKeywordInput("");
-                        }
-                      }}
-                      placeholder={t(
-                        "assistantSettingsReviewUx.keywordPlaceholder"
-                      )}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (keywordInput.trim()) {
-                          setGroupKeywords(prev => [
-                            ...prev,
-                            keywordInput.trim(),
-                          ]);
-                          setKeywordInput("");
-                        }
-                      }}
+                {/* Redirect Message — shown when private_redirect */}
+                {groupMode === "private_redirect" && (
+                  <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
+                    <Label
+                      htmlFor="bot-group-redirect"
+                      className="font-semibold flex items-center gap-2"
                     >
-                      {t("assistantSettingsReviewUx.addKeyword")}
-                    </Button>
+                      <ArrowUpRight className="h-4 w-4" />
+                      {t("assistantSettingsReviewUx.privateMessage")}
+                    </Label>
+                    <Textarea
+                      id="bot-group-redirect"
+                      value={groupRedirectMessage}
+                      onChange={e => setGroupRedirectMessage(e.target.value)}
+                      placeholder={t(
+                        "assistantSettingsReviewUx.privatePlaceholder"
+                      )}
+                      rows={2}
+                      maxLength={500}
+                    />
                   </div>
-                </div>
-              )}
+                )}
+              </CardContent>
+            </Card>
+          </section>
 
-              {/* Redirect Message — shown when private_redirect */}
-              {groupMode === "private_redirect" && (
-                <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
-                  <Label
-                    htmlFor="bot-group-redirect"
-                    className="font-semibold flex items-center gap-2"
-                  >
-                    <ArrowUpRight className="h-4 w-4" />
-                    {t("assistantSettingsReviewUx.privateMessage")}
+          <section
+            hidden={activeSection !== "sales"}
+            data-assistant-section="sales"
+          >
+            <DiscountPolicySettings />
+          </section>
+          <section
+            hidden={activeSection !== "sales"}
+            data-assistant-section="sales"
+          >
+            <CheckoutMarginPolicySettings />
+          </section>
+
+          {/* Custom Instructions — Campaign & Sales Rules */}
+          <section
+            hidden={activeSection !== "groups"}
+            data-assistant-section="groups"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  {t("assistantSettingsReviewUx.instructionsTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("assistantSettingsReviewUx.instructionsHelp")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customInstructions">
+                    {t("assistantSectionsUx.instructionsLabel")}
                   </Label>
                   <Textarea
-                    id="bot-group-redirect"
-                    value={groupRedirectMessage}
-                    onChange={e => setGroupRedirectMessage(e.target.value)}
+                    id="customInstructions"
+                    value={formData.customInstructions}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        customInstructions: e.target.value.substring(0, 2000),
+                      })
+                    }
                     placeholder={t(
-                      "assistantSettingsReviewUx.privatePlaceholder"
+                      "assistantSectionsUx.instructionsPlaceholder"
                     )}
-                    rows={2}
-                    maxLength={500}
+                    maxLength={2000}
+                    className="min-h-[180px] text-right"
+                    dir="rtl"
                   />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section
-          hidden={activeSection !== "sales"}
-          data-assistant-section="sales"
-        >
-          <DiscountPolicySettings />
-        </section>
-        <section
-          hidden={activeSection !== "sales"}
-          data-assistant-section="sales"
-        >
-          <CheckoutMarginPolicySettings />
-        </section>
-
-        {/* Custom Instructions — Campaign & Sales Rules */}
-        <section
-          hidden={activeSection !== "groups"}
-          data-assistant-section="groups"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                {t("assistantSettingsReviewUx.instructionsTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("assistantSettingsReviewUx.instructionsHelp")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customInstructions">
-                  {t("assistantSectionsUx.instructionsLabel")}
-                </Label>
-                <Textarea
-                  id="customInstructions"
-                  value={formData.customInstructions}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      customInstructions: e.target.value.substring(0, 2000),
-                    })
-                  }
-                  placeholder={t("assistantSectionsUx.instructionsPlaceholder")}
-                  maxLength={2000}
-                  className="min-h-[180px] text-right"
-                  dir="rtl"
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {t("assistantSectionsUx.instructionsHelp")}
-                  </p>
-                  <span
-                    className={`text-xs ${formData.customInstructions.length > 1800 ? "text-red-500" : "text-muted-foreground"}`}
-                  >
-                    {formData.customInstructions.length} / 2000
-                  </span>
-                </div>
-              </div>
-
-              {formData.customInstructions.trim().length > 0 && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
-                  <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>{t("assistantSectionsUx.instructionsDraft")}</p>
-                    <p>{t("assistantSettingsReviewUx.clearInstructions")}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {t("assistantSectionsUx.instructionsHelp")}
+                    </p>
+                    <span
+                      className={`text-xs ${formData.customInstructions.length > 1800 ? "text-red-500" : "text-muted-foreground"}`}
+                    >
+                      {formData.customInstructions.length} / 2000
+                    </span>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
 
-        <p className="text-sm text-muted-foreground">
-          {t("assistantSectionsUx.saveScope")}
-        </p>
-        {/* Action Buttons */}
-        <p
-          className="text-xs text-muted-foreground"
-          hidden={activeSection === "sales"}
-        >
-          {t("assistantSettingsReviewUx.testSavedHint")}
-        </p>
-        {saveFailed && (
-          <p
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-          >
-            {t("assistantSaveUx.failed")}
+                {formData.customInstructions.trim().length > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>{t("assistantSectionsUx.instructionsDraft")}</p>
+                      <p>{t("assistantSettingsReviewUx.clearInstructions")}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+
+          <p className="text-sm text-muted-foreground">
+            {t("assistantSectionsUx.saveScope")}
           </p>
-        )}
-        <div
-          className="mw-assistant-savebar sticky bottom-3 z-10 flex flex-wrap justify-between items-center gap-3 rounded-xl border bg-card p-4 shadow-sm"
-          hidden={activeSection === "sales"}
-        >
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={() => sendTestMutation.mutate()}
-            disabled={
-              sendTestMutation.isPending ||
-              savedSnapshot !== currentSnapshot ||
-              updateMutation.isPending
-            }
+          {/* Action Buttons */}
+          <p
+            className="text-xs text-muted-foreground"
+            hidden={activeSection === "sales"}
           >
-            <Send className="h-4 w-4 ml-2" />
-            {sendTestMutation.isPending
-              ? t("botSettingsPage.sendingTest")
-              : t("assistantSettingsReviewUx.sendWhatsApp")}
-          </Button>
+            {t("assistantSettingsReviewUx.testSavedHint")}
+          </p>
+          {saveFailed && (
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+            >
+              {t("assistantSaveUx.failed")}
+            </p>
+          )}
+          <div
+            className="mw-assistant-savebar sticky bottom-3 z-10 flex flex-wrap justify-between items-center gap-3 rounded-xl border bg-card p-4 shadow-sm"
+            hidden={activeSection === "sales"}
+          >
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => sendTestMutation.mutate()}
+              disabled={
+                sendTestMutation.isPending ||
+                savedSnapshot !== currentSnapshot ||
+                updateMutation.isPending
+              }
+            >
+              <Send className="h-4 w-4 ml-2" />
+              {sendTestMutation.isPending
+                ? t("botSettingsPage.sendingTest")
+                : t("assistantSettingsReviewUx.sendWhatsApp")}
+            </Button>
 
-          <Button type="submit" size="lg" disabled={updateMutation.isPending}>
-            <Save className="h-4 w-4 ml-2" />
-            {updateMutation.isPending
-              ? t("botSettingsPage.saving")
-              : t("botSettingsPage.saveSettings")}
-          </Button>
-        </div>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={updateMutation.isPending || conflict || !revision}
+            >
+              <Save className="h-4 w-4 ml-2" />
+              {updateMutation.isPending
+                ? t("botSettingsPage.saving")
+                : t("botSettingsPage.saveSettings")}
+            </Button>
+          </div>
+        </fieldset>
       </form>
     </div>
   );

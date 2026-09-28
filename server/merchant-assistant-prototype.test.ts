@@ -66,6 +66,15 @@ describe('assistant feature workflows',()=>{
     click('section','[data-value="schedule"]');input('welcomeMessage','أهلًا من المسودة');submit('settings');
     expect(data().settings).toMatchObject({autoReplyEnabled:false,language:'fr',responseDelay:4,groupMode:'keyword_only',groupKeywords:'دورة، تسجيل',customInstructions:'تعليمات اختبار',welcomeMessage:'أهلًا من المسودة'});
   });
+  it('restores a draft after another settings page changes the saved language and reviews conflicting values',()=>{
+    route('bot-settings');input('language','fr');click('section','[data-value="schedule"]');input('welcomeMessage','مسودتي');
+    route('language-settings');input('language','en');submit('language');
+    route('bot-settings');expect(w.document.body.textContent).toContain('لديك مسودة إعدادات');click('restore-reply');
+    expect(w.document.getElementById('as-welcomeMessage').value).toBe('مسودتي');
+    click('review-reply');const latest=w.document.querySelector('input[name="language"][value="latest"]');latest.checked=true;submit('reply-review');
+    expect(data().settings.welcomeMessage).not.toBe('مسودتي');submit('settings');
+    expect(data().settings).toMatchObject({welcomeMessage:'مسودتي',language:'en'});
+  });
   it('matches the real schedule rules with inline errors, overnight shifts and an empty week',()=>{
     route('bot-settings');click('section','[data-value="schedule"]');input('workingHoursEnabled',true);
     input('workingHoursEnd','09:00');submit('settings');

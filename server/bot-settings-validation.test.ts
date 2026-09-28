@@ -14,6 +14,7 @@ vi.mock("./db", async original => ({
 }));
 import { botSettingsRouter } from "./routers-bot-settings";
 import { InvalidWorkingScheduleError } from "../shared/bot-working-schedule";
+import { AssistantSettingsConflictError } from "./bot-settings-version";
 const caller = () =>
   botSettingsRouter.createCaller({
     user: { id: 7, role: "user" },
@@ -31,6 +32,20 @@ beforeEach(() => {
   mocks.update.mockResolvedValue({ workingDays: "" });
 });
 describe("bot settings validation at the API boundary", () => {
+  it("binds the revision to a scoped atomic write and reports stale drafts safely", async () => {
+    mocks.update.mockRejectedValueOnce(new AssistantSettingsConflictError());
+    await expect(
+      caller().update({
+        welcomeMessage: "draft",
+        expectedRevision: "a".repeat(64),
+      })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(mocks.update).toHaveBeenCalledWith(
+      20,
+      { welcomeMessage: "draft" },
+      { expectedRevision: "a".repeat(64) }
+    );
+  });
   it.each([
     { workingHoursStart: "99:99" },
     { workingHoursEnd: "24:00" },
@@ -43,7 +58,7 @@ describe("bot settings validation at the API boundary", () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
   it("accepts empty days and returns merged schedule rejection as a safe client error", async () => {
-    await expect(caller().update({ workingDays: "" })).resolves.toEqual({
+    await expect(caller().update({ workingDays: "" })).resolves.toMatchObject({
       workingDays: "",
     });
     expect(mocks.update).toHaveBeenCalledWith(20, { workingDays: "" });

@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import ts from 'typescript';
 import vm from 'node:vm';
 
-const output = 'docs/audits/tenant-features-2026-09-28';
+const output = process.argv[2] || 'docs/audits/tenant-features-2026-09-28';
 const sourceRoot = 'client/src';
 const locale = JSON.parse(fs.readFileSync(`${sourceRoot}/locales/ar.json`, 'utf8'));
 const translate = key => key.split('.').reduce((o, k) => o?.[k], locale);

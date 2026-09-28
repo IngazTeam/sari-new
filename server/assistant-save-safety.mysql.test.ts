@@ -17,6 +17,10 @@ import {
   createDisposableMerchant,
 } from "./tests/helpers/disposable-merchant";
 import { InvalidWorkingScheduleError } from "../shared/bot-working-schedule";
+import {
+  botSettingsFormRevision,
+  AssistantSettingsConflictError,
+} from "./bot-settings-version";
 
 describe.skipIf(!process.env.DATABASE_URL)(
   "assistant save invariants in MySQL",
@@ -50,6 +54,64 @@ describe.skipIf(!process.env.DATABASE_URL)(
       );
     });
     afterAll(closeDb);
+
+    it("rejects one of two saves from the same revision without losing the winning fields", async () => {
+      const expectedRevision = botSettingsFormRevision(
+        await getBotSettings(owner.merchantId)
+      );
+      const results = await Promise.allSettled([
+        updateBotSettings(
+          owner.merchantId,
+          { welcomeMessage: "first", language: "en" },
+          { expectedRevision }
+        ),
+        updateBotSettings(
+          owner.merchantId,
+          { welcomeMessage: "second", language: "fr" },
+          { expectedRevision }
+        ),
+      ]);
+      expect(
+        results.filter(result => result.status === "fulfilled")
+      ).toHaveLength(1);
+      expect(
+        results.find(result => result.status === "rejected")
+      ).toMatchObject({ reason: { name: "AssistantSettingsConflictError" } });
+      const saved = await getBotSettings(owner.merchantId);
+      expect([
+        { welcomeMessage: "first", language: "en" },
+        { welcomeMessage: "second", language: "fr" },
+      ]).toContainEqual({
+        welcomeMessage: saved.welcomeMessage,
+        language: saved.language,
+      });
+    });
+    it("detects writes from other settings pages and rejects another tenant's revision", async () => {
+      const original = await getBotSettings(owner.merchantId);
+      const expectedRevision = botSettingsFormRevision(original);
+      await updateBotSettings(owner.merchantId, { language: "en" });
+      await expect(
+        updateBotSettings(
+          owner.merchantId,
+          { welcomeMessage: "stale" },
+          { expectedRevision }
+        )
+      ).rejects.toBeInstanceOf(AssistantSettingsConflictError);
+      const foreign = botSettingsFormRevision(
+        await getBotSettings(other.merchantId)
+      );
+      await expect(
+        updateBotSettings(
+          owner.merchantId,
+          { welcomeMessage: "foreign" },
+          { expectedRevision: foreign }
+        )
+      ).rejects.toBeInstanceOf(AssistantSettingsConflictError);
+      expect(await getBotSettings(owner.merchantId)).toMatchObject({
+        language: "en",
+        welcomeMessage: original.welcomeMessage,
+      });
+    });
 
     it("serializes competing creates at the ten-persona boundary and keeps unique priority", async () => {
       for (let i = 0; i < 9; i++)
