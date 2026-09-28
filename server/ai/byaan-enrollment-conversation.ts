@@ -1,3 +1,4 @@
+import { semanticAction } from './conversation-understanding-context';
 import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { callGPT4 } from './openai';
@@ -10,12 +11,13 @@ import { prepareByaanEnrollmentOffer, acceptByaanEnrollmentOffer, readByaanEnrol
 
 export const byaanCourseSelection = z.object({productId:z.number().int().positive().max(2147483647)}).strict();
 export function isByaanEnrollmentRequest(message:string) {
+  const decision = semanticAction(message, ['request_purchase'], 'byaan_checkout'); if (decision !== undefined) return decision;
   const text=normalizeCustomerText(message);
   if (isSalesRefusal(message) || /[?؟]|(?:^|\s)(?:هل|كيف|ازاي|شلون|قال|اذا|لو|how|can|could|if)(?:\s|$)|["«»]/.test(text)) return false;
   return /^(?:سجلني|سجل لي|اريد التسجيل|ابغى اسجل|ابي اسجل|عايز اسجل|enroll me|register me)(?:\s|$)/.test(text);
 }
-export const isByaanEnrollmentEdit = (message:string) => !isSalesRefusal(message)
-  && /^(?:غير|عدل|بدل|change|replace)\s+(?:الدوره|التسجيل|دوره|the course|my course)(?:\s|$)/.test(normalizeCustomerText(message));
+export const isByaanEnrollmentEdit = (message:string) => semanticAction(message, ['modify_offer'], 'byaan_checkout') ?? (!isSalesRefusal(message)
+  && /^(?:غير|عدل|بدل|change|replace)\s+(?:الدوره|التسجيل|دوره|the course|my course)(?:\s|$)/.test(normalizeCustomerText(message)));
 
 /** Deterministic offers/receipts must reach the ordinary reply plan unchanged. */
 export async function handleByaanEnrollment(input:CheckoutIdentity & {message:string;memoryHistoryCutoff?:number}):Promise<string|null> {

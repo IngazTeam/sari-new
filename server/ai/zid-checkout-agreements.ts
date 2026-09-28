@@ -1,3 +1,4 @@
+import { semanticQuoteMatches, semanticIdentityMatches } from './conversation-understanding-context';
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
@@ -170,6 +171,7 @@ export async function prepareZidCheckout(input: CheckoutIdentity, raw: ParsedZid
 export async function acceptZidCheckout(input: CheckoutIdentity, quoteId: number): Promise<string> {
   await assertSalesOrderFactSchema();
   // Read and validate authority BEFORE any provider call; retries use persisted results.
+  if (!semanticIdentityMatches(input) || !semanticQuoteMatches(quoteId, 'zid')) throw Error('Interpretation agreement mismatch');
   const initial = await checkoutTransaction(async connection => {
     const source = await assertCheckoutIdentity(connection, input);
     const [rows] = await connection.execute<any[]>(`SELECT *, offer_expires_at > UTC_TIMESTAMP(3) AS valid FROM sales_quotations

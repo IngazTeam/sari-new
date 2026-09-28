@@ -1,3 +1,5 @@
+import { semanticAction, semanticQuoteMatches, semanticIdentityMatches } from './conversation-understanding-context';
+import { withStoredUnderstanding } from './conversation-understanding';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
@@ -30,9 +32,9 @@ export const SALLA_CART_CHANGED='تغيّرت تفاصيل الاختيار أو
 export const SALLA_CART_UNCERTAIN='تجهيز السلة يحتاج مراجعة من المتجر. لا أستطيع تأكيد الرابط الآن، ولن أنشئ محاولة بديلة تلقائيًا.';
 export const SALLA_CART_DECLINED='توقفت عن تجهيز هذا الاختيار أو مشاركة رابطه. هذا لا يلغي طلبًا أو دفعة أتممتها داخل المتجر.';
 export const SALLA_CART_CLARIFY='اذكر المنتجات والكميات المطلوبة بوضوح، لأعرض ملخصًا توافق عليه قبل تجهيز رابط مراجعتها داخل المتجر.';
-export const isSallaCartResumeRequest=(message:string)=>/^(?:ارسل رابط السله|اعد ارسال رابط السله|ارسل رابط السله مره اخر[ىي]|send the cart link|resend the cart link)[.!\s]*$/.test(normalizeCustomerText(message));
-export const isSallaCartConsent=(message:string)=>isShortAffirmation(message)||isSallaCartResumeRequest(message)||/^(?:جهز السلة|جهز السله|prepare the cart)[.!\s]*$/.test(normalizeCustomerText(message));
-export const isSallaCartEdit=(message:string)=>!isSalesRefusal(message)&&/^(?:عدل|غير|بدل|خلي|change|replace|make it)(?:\s|$)/.test(normalizeCustomerText(message));
+export const isSallaCartResumeRequest=(message:string)=>semanticAction(message, ['confirm_offer'], 'salla_cart') ?? (/^(?:ارسل رابط السله|اعد ارسال رابط السله|ارسل رابط السله مره اخر[ىي]|send the cart link|resend the cart link)[.!\s]*$/.test(normalizeCustomerText(message)));
+export const isSallaCartConsent=(message:string)=>semanticAction(message, ['confirm_offer'], 'salla_cart') ?? (isShortAffirmation(message)||isSallaCartResumeRequest(message)||/^(?:جهز السلة|جهز السله|prepare the cart)[.!\s]*$/.test(normalizeCustomerText(message)));
+export const isSallaCartEdit=(message:string)=>semanticAction(message, ['modify_offer'], 'salla_cart') ?? (!isSalesRefusal(message)&&/^(?:عدل|غير|بدل|خلي|change|replace|make it)(?:\s|$)/.test(normalizeCustomerText(message)));
 const label=(v:string)=>v.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff\[\]<>]/g,' ').replace(/\s+/g,' ').trim().slice(0,100);
 export function sallaCartOfferText(quoteId:number,snapshot:Snapshot){
   return `اختيارك للمراجعة [SC-${quoteId}]\n\n${snapshot.items.map(p=>`• ${label(p.name)} × ${p.quantity}`).join('\n')}\n\n`
@@ -170,7 +172,7 @@ async function supersessionProof(c:PoolConnection,input:CheckoutIdentity,q:any,c
   const [sources]=await c.execute<any[]>(`SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming'
     AND id IN (?,?) ORDER BY id FOR SHARE`,[input.conversationId,q.source_message_id,q.consent_message_id]);
   if(sources.length!==2||sources[0].id!==q.source_message_id||digest(sources[0].content)!==snapshot.sourceDigest
-    ||sources[1].id!==q.consent_message_id||!isSallaCartConsent(sources[1].content)||isSalesRefusal(sources[1].content))throw Error('Old consent changed');
+    ||sources[1].id!==q.consent_message_id||!await withStoredUnderstanding(c,{...input,incomingMessageId:q.consent_message_id},async()=>isSallaCartConsent(sources[1].content)&&!isSalesRefusal(sources[1].content),true))throw Error('Old consent changed');
   const evidence=await recordedCheckoutOfferEvidence(c,{...input,incomingMessageId:q.consent_message_id},q.source_message_id,sallaCartOfferText(q.id,snapshot));
   if(!evidence)throw Error('Old delivery unavailable');
   const [rows]=await c.execute<any[]>('SELECT * FROM salla_checkout_carts WHERE merchant_id=? AND request_id=? FOR SHARE',[input.merchantId,snapshot.requestId]);
@@ -222,12 +224,13 @@ async function checkedResume(input:CheckoutIdentity,quoteId:number,save:boolean,
     const [sources]=await c.execute<any[]>(`SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming'
       AND id IN (?,?) ORDER BY id FOR SHARE`,[input.conversationId,q.source_message_id,q.consent_message_id]);
     if(sources.length!==2||sources[0].id!==q.source_message_id||digest(sources[0].content)!==snapshot.sourceDigest
-      ||sources[1].id!==q.consent_message_id||!isSallaCartConsent(sources[1].content)||isSalesRefusal(sources[1].content))throw Error('Consent unavailable');
+      ||sources[1].id!==q.consent_message_id||!await withStoredUnderstanding(c,{...input,incomingMessageId:q.consent_message_id},async()=>isSallaCartConsent(sources[1].content)&&!isSalesRefusal(sources[1].content),true))throw Error('Consent unavailable');
     // Any intervening edit, refusal or unrelated response requires a new offer.
     // Limit work even when the customer repeatedly requests the same link.
     const [between]=await c.execute<any[]>(`SELECT id,content FROM messages WHERE conversationId=? AND direction='incoming'
       AND id>? AND id<? ORDER BY id LIMIT 21 FOR SHARE`,[input.conversationId,q.consent_message_id,input.incomingMessageId]);
-    if(between.length>20||between.some(r=>!isSallaCartResumeRequest(r.content)))throw Error('Intervening message');
+    if(between.length>20)throw Error('Intervening message');
+    for(const message of between)if(!await withStoredUnderstanding(c,{...input,incomingMessageId:message.id},async()=>isSallaCartResumeRequest(message.content),true))throw Error('Intervening message');
     const evidence=await recordedCheckoutOfferEvidence(c,{...input,incomingMessageId:q.consent_message_id},q.source_message_id,sallaCartOfferText(q.id,snapshot));
     if(!evidence)throw Error('Original delivery unavailable');
     const base={merchantId:input.merchantId,conversationId:input.conversationId,quoteId:q.id,sourceMessageId:q.source_message_id,
@@ -289,6 +292,7 @@ async function checkedResume(input:CheckoutIdentity,quoteId:number,save:boolean,
 }
 
 export async function acceptSallaConversationOffer(input:CheckoutIdentity,quoteId:number){
+  if(!semanticIdentityMatches(input)||!semanticQuoteMatches(quoteId,'salla_cart'))return SALLA_CART_CLARIFY;
   await schema();
   const intent=await tx(async c=>{
     const current=await owner(c,input),q=await latest(c,input);

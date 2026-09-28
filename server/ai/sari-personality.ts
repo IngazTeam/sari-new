@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
+import { withConversationUnderstanding, currentConversationUnderstanding } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
@@ -1609,6 +1611,23 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
   } catch {
     return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
   }
+  if (!params.isGroupMessage) {
+    if (!params.conversationId || !params.incomingMessageId) {
+      try {
+        const context = await understandPreview(params.merchantId, params.message);
+        return await withConversationUnderstanding(context, () => chatWithSariUnderstood({ ...params, conversationId: undefined, incomingMessageId: undefined }, 0));
+      } catch { return UNDERSTANDING_UNAVAILABLE; }
+    }
+    try {
+      const context = await understandConversation({ ...params, conversationId: params.conversationId, incomingMessageId: params.incomingMessageId });
+      if (!context) return UNDERSTANDING_UNAVAILABLE;
+      return await withConversationUnderstanding(context, () => chatWithSariUnderstood(params, memoryHistoryCutoff));
+    } catch { return UNDERSTANDING_UNAVAILABLE; }
+  }
+  return chatWithSariUnderstood(params, memoryHistoryCutoff);
+}
+
+async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryCutoff: number): Promise<string> {
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
     const { handleByaanCheckout } = await import('./byaan-checkout-conversation');
     const enrollmentReply = await handleByaanCheckout({ merchantId:params.merchantId, conversationId:params.conversationId,
@@ -1672,7 +1691,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
     }
 
     // Get conversation history (last 20 messages for deep context understanding)
-    let previousMessages: ChatMessage[] = [];
+    let previousMessages: { role: 'user' | 'assistant'; content: string }[] = [];
     let isFirstMessage = true;
 
     if (params.conversationId) {
@@ -1791,7 +1810,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
     let pendingQuestion = params.customerPhone === 'test-playground' ? null : getEscalationHold(params.merchantId, params.customerPhone);
     if (pendingQuestion) {
       const { hasOpenEscalation } = await import('./escalation-relay');
-      if (!await hasOpenEscalation(params.merchantId, params.conversationId, params.customerPhone)) {
+      if (!params.conversationId || !await hasOpenEscalation(params.merchantId, params.conversationId, params.customerPhone)) {
         clearEscalationHold(params.merchantId, params.customerPhone);
         pendingQuestion = null;
       }
@@ -1814,15 +1833,16 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
     // Check for loyalty commands first
     const messageLower = params.message.toLowerCase().trim();
+    const interpretation = currentConversationUnderstanding(params.message);
     const explicitCouponCommand = checkoutCouponCommand(params.message).kind !== 'none';
 
     // أوامر نظام الولاء
-    if (!explicitCouponCommand && (messageLower.includes('نقاط') || messageLower.includes('رصيد') || messageLower.includes('points') || messageLower.includes('loyalty'))) {
+    if (!explicitCouponCommand && (interpretation ? interpretation.requestKind === 'loyalty_balance' : (messageLower.includes('نقاط') || messageLower.includes('رصيد') || messageLower.includes('points') || messageLower.includes('loyalty')))) {
       const loyaltyInfo = await getCustomerLoyaltyInfo(params.merchantId, params.customerPhone);
       return loyaltyInfo;
     }
 
-    if (!explicitCouponCommand && (messageLower.includes('مكافآت') || messageLower.includes('جوائز') || messageLower.includes('rewards') || messageLower.includes('استبدال'))) {
+    if (!explicitCouponCommand && (interpretation ? interpretation.requestKind === 'loyalty_rewards' : (messageLower.includes('مكافآت') || messageLower.includes('جوائز') || messageLower.includes('rewards') || messageLower.includes('استبدال')))) {
       const rewardsInfo = await getAvailableRewardsInfo(params.merchantId, params.customerPhone);
       return rewardsInfo;
     }
@@ -2100,21 +2120,22 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       // Build user message — multimodal if image is present
       const userContent: string | (TextContent | ImageContent)[] = params.imageUrl
         ? [
-          { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 500)) },
+          { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 16000)) },
           { type: 'image_url' as const, image_url: { url: params.imageUrl, detail: 'low' as const } },
         ]
-        : sanitizeForPrompt(params.message.substring(0, 500));
+        : sanitizeForPrompt(params.message.substring(0, 16000));
 
-      systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
+      const salesTurnPolicy = buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
+        { role: 'system', content: salesTurnPolicy },
         ...FEW_SHOT_EXAMPLES,
         ...previousMessages,
         { role: 'user', content: userContent },
       ];
 
       // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
-      const isCatalogQuery = /قائمة (?:المنتجات|الدورات)|كتالوج|كل (?:المنتجات|الدورات)|المنتجات المتوفرة|الدورات المتاحة|أسعار|باقات|product catalog|course catalog|price list/i.test(params.message);
+      const isCatalogQuery = currentConversationUnderstanding() ? currentConversationUnderstanding()!.requestKind === 'catalog' : /قائمة (?:المنتجات|الدورات)|كتالوج|كل (?:المنتجات|الدورات)|المنتجات المتوفرة|الدورات المتاحة|أسعار|باقات|product catalog|course catalog|price list/i.test(params.message);
       const maxTokens = isCatalogQuery
         ? Math.min(personalitySettings.maxResponseLength * 4, 1500)
         : Math.min(personalitySettings.maxResponseLength * 2, 600);
@@ -2501,15 +2522,16 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     // Build user message — multimodal if image is present
     const userContentFull: string | (TextContent | ImageContent)[] = params.imageUrl
       ? [
-        { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 500)) },
+        { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 16000)) },
         { type: 'image_url' as const, image_url: { url: params.imageUrl, detail: 'low' as const } },
       ]
-      : sanitizeForPrompt(params.message.substring(0, 500));
+      : sanitizeForPrompt(params.message.substring(0, 16000));
 
     // Prepare messages with few-shot examples for better quality
-    systemPrompt += buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
+    const salesTurnPolicy = buildSalesTurnPolicy({ intent: earlyIntent, customerMessage: params.message, lastAssistantMessage: lastAssistantContent, sectorPlaybook });
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
+      { role: 'system', content: salesTurnPolicy },
       ...FEW_SHOT_EXAMPLES, // Add examples for better understanding
       ...previousMessages,
       { role: 'user', content: userContentFull },
@@ -2517,7 +2539,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     // Call GPT-4 with optimized parameters
     // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
-    const isCatalogQueryFull = /قائمة (?:المنتجات|الدورات)|كتالوج|كل (?:المنتجات|الدورات)|المنتجات المتوفرة|الدورات المتاحة|أسعار|باقات|product catalog|course catalog|price list/i.test(params.message);
+    const isCatalogQueryFull = currentConversationUnderstanding() ? currentConversationUnderstanding()!.requestKind === 'catalog' : /قائمة (?:المنتجات|الدورات)|كتالوج|كل (?:المنتجات|الدورات)|المنتجات المتوفرة|الدورات المتاحة|أسعار|باقات|product catalog|course catalog|price list/i.test(params.message);
     const maxTokens = isCatalogQueryFull
       ? Math.min(personalitySettings.maxResponseLength * 4, 1500)
       : Math.min(personalitySettings.maxResponseLength * 2, 600);
@@ -2741,7 +2763,7 @@ export async function generateWelcomeMessage(params: {
 
     // Get top 3 products to mention
     const products = filterProductsAvailableForSale(
-      await (getProductsByMerchantId as any)(params.merchantId),
+      await getProductsByMerchantId(params.merchantId),
     );
     const topProducts = products.slice(0, 3);
 
@@ -2858,7 +2880,7 @@ export async function recommendProducts(params: {
   limit?: number;
 }): Promise<Array<{ product: any; reason: string; score: number }>> {
   try {
-    const allProducts = await (getProductsByMerchantId as any)(params.merchantId);
+    const allProducts = await getProductsByMerchantId(params.merchantId);
 
     if (allProducts.length === 0) return [];
 

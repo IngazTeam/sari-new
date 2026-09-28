@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding } from './conversation-understanding-context';
 import { z } from "zod";
 import { getPool } from "../db/connection";
 import { callGPT4 } from "./openai";
@@ -22,9 +23,9 @@ import {
 } from "./booking-amendment-context";
 
 export const isBookingTopic = (text: string) =>
-  /حجز|موعد|\b(?:appointment|booking|book a|reserve a)\b/i.test(
+  (currentConversationUnderstanding(text) ? currentConversationUnderstanding(text)!.targetProvider === 'booking' : /حجز|موعد|\b(?:appointment|booking|book a|reserve a)\b/i.test(
     normalizeCustomerText(text)
-  );
+  ));
 const extraction = z
   .object({
     serviceId: z.number().int().positive().nullable(),
@@ -39,6 +40,8 @@ const clarification =
 export async function handleBookingConversation(
   input: CheckoutIdentity & { message: string }
 ): Promise<string | null> {
+  const interpretation = currentConversationUnderstanding(input.message);
+  if (interpretation && (interpretation.targetProvider !== 'booking' || !['request_booking', 'confirm_booking', 'modify_offer', 'decline_offer'].includes(interpretation.action))) return null;
   let bookingContext = isBookingTopic(input.message),
     attempted = false;
   try {

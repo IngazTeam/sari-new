@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, semanticAction } from './conversation-understanding-context';
 import { getPool } from '../db/connection';
 import { callGPT4 } from './openai';
 import { currentInboundExecution } from '../messaging/inbound-context';
@@ -7,6 +8,8 @@ import { checkoutCouponCommand } from '../../shared/checkout-discount';
 
 /** Local catalogue checkout. External commerce and appointment adapters retain their own contracts. */
 export async function handleLocalCheckout(input: CheckoutIdentity & { message: string }): Promise<string | null> {
+  const interpretation = currentConversationUnderstanding(input.message);
+  if (interpretation && !['local', 'none'].includes(interpretation.targetProvider)) return null;
   const pool = await getPool(); if (!pool) throw new Error('Checkout storage unavailable');
   const [quotes] = await pool.execute<any[]>(`SELECT id, source_message_id, consent_message_id FROM sales_quotations
     WHERE merchant_id = ? AND conversation_id = ? AND customer_phone = ? AND checkout_snapshot IS NOT NULL
@@ -17,7 +20,7 @@ export async function handleLocalCheckout(input: CheckoutIdentity & { message: s
     catch { return 'تعذر تجهيز ملخص الخصم. تحقق من الكود وشروطه واطلب ملخصًا جديدًا للمراجعة؛ لا تعتمد سعرًا مخفّضًا دون ظهوره في الملخص وموافقتك عليه.'; }
   }
   if (quote && (isShortAffirmation(input.message) || isSalesRefusal(input.message)
-    || /^(?:أكمل الطلب|اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/i.test(input.message))) {
+    || (!interpretation && /^(?:أكمل الطلب|اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/i.test(input.message)))) {
     try {
       await currentInboundExecution()?.assertOwned();
       return (await acceptCheckoutQuote(input, quote.id)).text;
@@ -26,7 +29,7 @@ export async function handleLocalCheckout(input: CheckoutIdentity & { message: s
       return 'تعذر التحقق من نتيجة تسجيل الطلب الآن. يلزم مراجعة حالته قبل تأكيد التنفيذ أو إعادة المحاولة.';
     }
   }
-  const editsPendingOffer = quote && /(?:بدل|عدّل|عدل|غيّر|غير|خلي|خلها|خليها|change|make it).{0,60}(?:[0-9٠-٩]|عدد|كمي)/i.test(input.message);
+  const editsPendingOffer = quote && (semanticAction(input.message, ['modify_offer'], 'local') ?? /(?:بدل|عدّل|عدل|غيّر|غير|خلي|خلها|خليها|change|make it).{0,60}(?:[0-9٠-٩]|عدد|كمي)/i.test(input.message));
   if (!isExplicitPurchaseInstruction(input.message) && !editsPendingOffer) return null;
   if(/كود|كوبون|coupon|promo code/i.test(input.message))return 'حدد المنتجات والخيارات والكميات أولًا. بعد ملخصها أرسل «طبق الكود» ثم الكود نفسه لأعرض الإجمالي الجديد قبل موافقتك.';
   // Enough context to resolve a mentioned option; no API keys, prices, or customer profiles are sent for extraction.

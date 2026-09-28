@@ -1,3 +1,5 @@
+import { semanticQuoteMatches, semanticIdentityMatches } from './conversation-understanding-context';
+import { withStoredUnderstanding } from './conversation-understanding';
 import { createHash } from "node:crypto";
 import type { PoolConnection } from "mysql2/promise";
 import { z } from "zod";
@@ -350,7 +352,7 @@ async function readAmendmentTarget(
   if (
     messages.length !== 2 ||
     a.source_message_id >= a.consent_message_id ||
-    !isShortAffirmation(String(messages[1].content)) ||
+    !await withStoredUnderstanding(c, { ...input, incomingMessageId: a.consent_message_id }, async () => isShortAffirmation(String(messages[1].content)), true) ||
     !(await recordedBookingOfferEvidence(
       c,
       { ...input, incomingMessageId: a.consent_message_id },
@@ -630,6 +632,7 @@ export async function acceptBookingAgreement(
   input: CheckoutIdentity,
   agreementId: number
 ) {
+  if (!semanticIdentityMatches(input) || !semanticQuoteMatches(agreementId, 'booking')) throw unavailable();
   identity(input);
   positive(agreementId);
   await assertBookingAgreementSchema();
@@ -664,7 +667,7 @@ export async function acceptBookingAgreement(
           : "لن أسجل طلبًا بناءً على هذا الملخص. يمكنك طلب موعد جديد متى رغبت.",
       };
     }
-    if (!isShortAffirmation(source.content))
+    if (!semanticQuoteMatches(agreementId, 'booking') || !isShortAffirmation(source.content))
       return {
         kind: "clarify",
         text: "لن أسجل الحجز بعد تعديل أو سؤال. اذكر التفاصيل المطلوبة لأعرض ملخصًا جديدًا، ثم وافق عليه صراحة.",

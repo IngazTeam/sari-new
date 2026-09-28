@@ -65,7 +65,13 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
 }> {
   const execution = currentInboundExecution();
   try {
-    const result = await dispatchMerchantWhatsApp(input);
+    const guard = input.replyGuard;
+    const pool = guard?.incomingMessageId ? await getPool() : null;
+    const { withStoredUnderstanding } = await import('../../ai/conversation-understanding');
+    const result = pool && guard?.incomingMessageId
+      ? await withStoredUnderstanding(pool, { merchantId: input.merchantId, conversationId: guard.conversationId,
+        incomingMessageId: guard.incomingMessageId, customerPhone: input.to }, () => dispatchMerchantWhatsApp(input))
+      : await dispatchMerchantWhatsApp(input);
     if (input.replyGuard?.incomingMessageId) {
       const { reconcileOrdinaryReplyUsage } = await import('../../ai/ordinary-reply-usage');
       await reconcileOrdinaryReplyUsage(input.merchantId, input.replyGuard.incomingMessageId);

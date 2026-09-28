@@ -1,6 +1,7 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {isByaanEnrollmentRequest,isByaanEnrollmentEdit,byaanCourseSelection} from './ai/byaan-enrollment-conversation';
-const calls=vi.hoisted(()=>({memory:vi.fn(),budget:vi.fn(),byaan:vi.fn(),salla:vi.fn(),reminder:vi.fn()}));
+const calls=vi.hoisted(()=>({memory:vi.fn(),budget:vi.fn(),byaan:vi.fn(),salla:vi.fn(),reminder:vi.fn(),understand:vi.fn()}));
+vi.mock('./ai/conversation-understanding',async original=>({...await original<typeof import('./ai/conversation-understanding')>(),understandConversation:calls.understand}));
 vi.mock('./ai/customer-memory',async original=>({...await original<typeof import('./ai/customer-memory')>(),captureDirectCustomerMemory:calls.memory}));
 vi.mock('./ai/budget-ledger',()=>({getAiBudgetStatus:calls.budget}));
 vi.mock('./appointment-reminders',()=>({handleAppointmentReminder:calls.reminder}));
@@ -10,8 +11,13 @@ vi.mock('./ai/zahypi-client',async original=>({...await original<typeof import('
 import {chatWithSari} from './ai/sari-personality';
 
 describe('Byaan intent and private conversation routing',()=>{
-  beforeEach(()=>{vi.clearAllMocks();calls.memory.mockResolvedValue({reply:null,forgetBeforeMessageId:7});calls.budget.mockResolvedValue({exceeded:false});calls.reminder.mockResolvedValue(null);calls.byaan.mockResolvedValue('دورة ساري [BE-12]');calls.salla.mockResolvedValue('salla fallback');});
+  beforeEach(()=>{vi.clearAllMocks();calls.memory.mockResolvedValue({reply:null,forgetBeforeMessageId:7});calls.budget.mockResolvedValue({exceeded:false});calls.reminder.mockResolvedValue(null);calls.byaan.mockResolvedValue('دورة ساري [BE-12]');calls.salla.mockResolvedValue('salla fallback');calls.understand.mockImplementation(async input=>({...input,analysis:{intent:'ready_to_buy',confidence:1}}));});
   const input={merchantId:17,conversationId:23,incomingMessageId:40,customerPhone:'966500000087',message:'سجلني في دورة ساري'};
+  it('requires contextual understanding before every business route, with no keyword fallback',async()=>{
+    calls.understand.mockResolvedValue(null); expect(await chatWithSari(input)).toContain('تعذر فهم سياق');
+    expect(calls.understand).toHaveBeenCalledWith(input); expect(calls.byaan).not.toHaveBeenCalled(); expect(calls.salla).not.toHaveBeenCalled();
+    expect(calls.budget.mock.invocationCallOrder[0]).toBeLessThan(calls.understand.mock.invocationCallOrder[0]);
+  });
   it('keeps an exact Byaan response before commerce routing and identity rewriting',async()=>{expect(await chatWithSari(input)).toBe('دورة ساري [BE-12]');expect(calls.byaan).toHaveBeenCalledWith({...input,memoryHistoryCutoff:7});expect(calls.salla).not.toHaveBeenCalled();});
   it('retains the Salla route for unrelated intent',async()=>{calls.byaan.mockResolvedValue(null);expect(await chatWithSari(input)).toBe('salla fallback');expect(calls.salla).toHaveBeenCalledOnce();});
   it.each([{isGroupMessage:true},{incomingMessageId:undefined},{conversationId:undefined}])('does not run private enrollment without its source: %j',async overrides=>{calls.budget.mockResolvedValue({exceeded:true});await chatWithSari({...input,...overrides});expect(calls.byaan).not.toHaveBeenCalled();});

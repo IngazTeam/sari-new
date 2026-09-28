@@ -1,7 +1,9 @@
+import { currentConversationUnderstanding } from './conversation-understanding-context';
 /**
- * Fast Sentiment — Zero-cost keyword-based sentiment detection
+ * Reuse the current contextual interpretation without another provider call.
+ * Legacy keyword parsing below is retained only for callers outside that scope.
  * 
- * Used in FAST PATH (messages 2-20) instead of GPT sentiment call.
+ * Used in FAST PATH (messages 2-20) instead of a second sentiment call.
  * Detects: angry, frustrated, happy, positive, negative, sad, neutral.
  * 
  * v2: Mixed Signal Detection — detects conflicting signals like
@@ -34,6 +36,8 @@ export interface SentimentWithSignals {
  * - "ماشي... يلا بعدين" → primary: neutral, secondary: negative, salesHint: 'losing_interest'
  */
 export function detectSentimentWithSignals(message: string): SentimentWithSignals {
+  const interpretation = currentConversationUnderstanding(message);
+  if (interpretation) return { primary: interpretation.sentiment, secondary: null, mixedSignal: false, salesHint: null };
   const msg = message.toLowerCase();
   const primary = detectSentimentFast(msg);
 
@@ -115,6 +119,7 @@ const NEGATIVE_ALL_SIGNALS = [
  * Priority order: angry > frustrated > sad > happy > positive > negative > neutral
  */
 export function detectSentimentFast(message: string): SentimentType {
+  const interpretation = currentConversationUnderstanding(message); if (interpretation) return interpretation.sentiment;
   const msg = message.toLowerCase();
 
   // ── Angry (highest priority — needs immediate empathy) ──

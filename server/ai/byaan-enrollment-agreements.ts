@@ -1,3 +1,4 @@
+import { semanticAction } from './conversation-understanding-context';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
@@ -41,8 +42,8 @@ const recoverySchema = byaanEnrollmentRecoveryStamp.extend({ version: z.literal(
 type Snapshot = z.infer<typeof snapshotSchema>;
 type Consent = z.infer<typeof consentSchema>;
 const decode = (v: any) => typeof v === 'string' ? JSON.parse(v) : v;
-export const isByaanEnrollmentConsent = (text: string) => !isSalesRefusal(text)
-  && (isShortAffirmation(text) || /^(?:اكد التسجيل|confirm enrollment)[.!\s]*$/.test(normalizeCustomerText(text)));
+export const isByaanEnrollmentConsent = (text: string) => semanticAction(text, ['confirm_offer']) ?? (!isSalesRefusal(text)
+  && (isShortAffirmation(text) || /^(?:اكد التسجيل|confirm enrollment)[.!\s]*$/.test(normalizeCustomerText(text))));
 
 export function byaanEnrollmentOfferText(quotationId: number, snapshot: Snapshot) {
   return `ملخص التسجيل [BE-${quotationId}]\n\nالدورة: ${snapshot.course.name}\nالاسم: ${snapshot.traineeName}\nالجوال: ${snapshot.traineePhone}\n`

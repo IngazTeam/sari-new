@@ -1,3 +1,4 @@
+import { conversationUnderstandingIdentity } from './conversation-understanding-context';
 /**
  * OpenAI Integration — Hardened with 3-Layer Resilience
  * 
@@ -159,7 +160,7 @@ export async function callGPT4(
   if (options?.lifecycle && options.noRetry !== true) throw new AiBudgetError('invalid_usage');
   if (options?.lifecycle) options = { ...options, lifecycle: { ...options.lifecycle, requestId: durableAiRequestId(options.lifecycle.requestId) } };
   const startedAt = Date.now();
-  const primaryModel = options?.model || 'gpt-4o';
+  const primaryModel = conversationUnderstandingIdentity()?.model || options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
   const budgetIdentity = options?.merchantId ?? getOptionalZahyPiRequestContext()?.merchantId;

@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, understandingPrompt } from './conversation-understanding-context';
 import { isSalesRefusal, isShortAffirmation, isPurchaseProcessQuestion, pendingDecisionFromQuestion } from './customer-decision';
 import type { CustomerIntent } from './session-context';
 import { buildSalesSectorGuidance, getSalesSectorPlaybook, type SalesSectorPlaybook } from '../../shared/sales-sector-playbooks';
@@ -8,6 +9,7 @@ export type SalesTurnGoal = 'respect_decline' | 'resolve_existing_order' | 'expl
 /** One authority order and turn objective, shared by both generation paths.
  * This chooses a conversational objective, never permission to execute a tool. */
 export function decideSalesTurnGoal(input: { intent: CustomerIntent; customerMessage: string; lastAssistantMessage?: string }): SalesTurnGoal {
+  const interpretation = currentConversationUnderstanding(input.customerMessage); if (interpretation) return interpretation.goal;
   if (input.intent === 'declined' || isSalesRefusal(input.customerMessage)) return 'respect_decline';
   if (input.intent === 'post_purchase') return 'resolve_existing_order';
   if (isPurchaseProcessQuestion(input.customerMessage)) return 'explain_requested_information';
@@ -32,7 +34,8 @@ const objectives: Record<SalesTurnGoal, string> = {
 
 export function buildSalesTurnPolicy(input: Parameters<typeof decideSalesTurnGoal>[0] & { sectorPlaybook?: SalesSectorPlaybook }): string {
   const goal = decideSalesTurnGoal(input);
-  return `\n\n## سياسة البيع المشتركة v1 — هدف التفاعل وحدود الصلاحية
+  const interpretation = currentConversationUnderstanding(input.customerMessage);
+  return (interpretation ? understandingPrompt(interpretation) : '') + `\n\n## سياسة البيع المشتركة v1 — هدف التفاعل وحدود الصلاحية
 ترتيب المرجعية عند تعارض تعليمات الأسلوب: حقائق النشاط وصلاحياته ونتائج أدواته، ثم قرار العميل والاتفاق الحالي، ثم هدف هذه الرسالة، ثم الشخصية، ثم اقتراحات الأسلوب المعتمدة.
 هدف هذا التفاعل [${goal}]: ${objectives[goal]}
 - معرفة العميل ليست نصاً تسويقياً: اربط كل فائدة مقترحة بحاجته وبخاصية موثقة. لا تفترض قدرة مالية أو ملاءمة لم يذكرها.

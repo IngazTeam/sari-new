@@ -896,7 +896,7 @@ const TASK_DEFINITIONS: readonly TaskDefinition[] = [
     taskType: "sari.customer.intent",
     businessNameAr: "تحليل نية العميل",
     owner: "sari-conversation-team",
-    sourceFiles: ["server/ai/sari-personality.ts"],
+    sourceFiles: ["server/ai/sari-personality.ts", "server/ai/conversation-understanding.ts"],
     inputKind: "message",
     outputKind: "classification",
     fallback: "mark_customer_intent_unknown",

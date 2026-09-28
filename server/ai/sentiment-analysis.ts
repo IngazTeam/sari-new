@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding } from './conversation-understanding-context';
 /**
  * Sentiment Analysis System
  * Analyzes customer emotions and adjusts responses accordingly
@@ -22,6 +23,8 @@ export async function analyzeSentiment(
   message: string,
   context?: { merchantId: number; taskType: 'sari.sentiment.weekly' },
 ): Promise<SentimentResult> {
+  const interpretation = currentConversationUnderstanding(message);
+  if (interpretation) return { sentiment: interpretation.sentiment, confidence: Math.round(interpretation.confidence * 100), keywords: [], reasoning: interpretation.summary, suggestedTone: 'friendly' };
   try {
     const prompt = `حلل المشاعر في هذه الرسالة من العميل:
 

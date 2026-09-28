@@ -63,6 +63,16 @@ export async function getAiSettings(): Promise<AiSettingsWithoutCredentials | un
   return result[0];
 }
 
+/** Runtime generation needs only this global projection, not analytics/health UI columns or credentials. */
+export async function getTextGenerationSettings() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({ model: aiSettings.model, textGenerationProvider: aiSettings.textGenerationProvider,
+    zahyPiModel: aiSettings.zahyPiModel, isActive: aiSettings.isActive })
+    .from(aiSettings).where(eq(aiSettings.id, AI_SETTINGS_SINGLETON_ID)).limit(1);
+  return result[0];
+}
+
 export async function upsertAiSettings(data: Partial<NewAiSettings>): Promise<void> {
   const db = await getDb();
   if (!db) return;

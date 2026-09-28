@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, semanticAction } from '../ai/conversation-understanding-context';
 /**
  * Zid Order From Chat System
  * 
@@ -166,6 +167,7 @@ export async function isZidOrderRequest(message: string): Promise<boolean> {
  * التحقق من تأكيد العميل للطلب
  */
 export function isOrderConfirmation(message: string): boolean {
+  const decision = semanticAction(message, ['confirm_offer'], 'zid'); if (decision !== undefined) return decision;
   if (/[?؟]/.test(message)) return false;
   const text = normalizeOrderDecision(message);
   // A substring such as "غير موافق" or "not okay" must never authorize a purchase.
@@ -183,6 +185,7 @@ function normalizeOrderDecision(message: string): string {
  * التحقق من رفض العميل للطلب
  */
 export function isOrderRejection(message: string): boolean {
+  const interpretation = currentConversationUnderstanding(message); if (interpretation) return interpretation.intent === 'declined' || interpretation.action === 'decline_offer';
   const text = normalizeOrderDecision(message);
   return /^(?:لا|لا شكرا|نو|no|no thanks|cancel|الغي(?: الطلب)?|الغاء(?: الطلب)?|مش عايز|مابي|ما ابي|ماابي|بعدين|لاحقا|مو الحين)(?:\s|$)/.test(text)
     || /(?:^|\s)(?:غير موافق|مو موافق|مش موافق|لا اوافق|لا اريد|ما ابي|not okay|not ok|do not confirm|don't confirm)(?:\s|$)/.test(text);

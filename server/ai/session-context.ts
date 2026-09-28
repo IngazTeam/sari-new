@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding } from './conversation-understanding-context';
 /**
  * Session Context Cache — Phase 1 of Adaptive Sales Engine
  * 
@@ -66,6 +67,8 @@ export interface HesitationAnalysis {
  * Analyze hesitation depth — not all "بفكر" signals are equal.
  */
 export function analyzeHesitation(message: string): HesitationAnalysis {
+  const interpretation = currentConversationUnderstanding(message);
+  if (interpretation) return { type: interpretation.objection === 'price' ? 'price' : interpretation.objection === 'trust' ? 'trust' : interpretation.objection === 'timing' ? 'timing' : 'need', intensity: interpretation.intent === 'objecting' ? 'high' : 'medium', recommendedAction: 'wait_and_followup' };
   const msg = message.toLowerCase();
 
   // High intensity — real objection disguised as hesitation
@@ -279,6 +282,7 @@ export function detectTopicChange(
   session: ConversationSession,
   newMessage: string
 ): boolean {
+  const interpretation = currentConversationUnderstanding(newMessage); if (interpretation) return interpretation.topicChanged;
   // If less than 3 messages, don't rebuild — too early to judge
   if (session.messageCount < 3) return false;
   
@@ -301,8 +305,8 @@ export function detectTopicChange(
 
 /**
  * Detect customer intent from message text.
- * Primary: keyword-based (zero cost, zero latency).
- * Secondary: profile buyingStage fallback when keywords are ambiguous.
+ * Live conversations reuse the shared provider interpretation. The legacy
+ * parser/profile fallback below is for old callers without an interpretation.
  */
 export function detectIntent(
   message: string,
@@ -310,6 +314,7 @@ export function detectIntent(
   profileBuyingStage?: string | null,
   lastAssistantMessage?: string,
 ): CustomerIntent {
+  const interpretation = currentConversationUnderstanding(message); if (interpretation) return interpretation.intent;
   // FIX-6 (P1): Normalize Arabic hamzas before matching.
   // Without this, 'أبغى أطلب' (hamza-alef) wouldn't match 'ابغى اطلب' (plain alef).
   const msg = normalizeCustomerText(message);

@@ -1,3 +1,4 @@
+import { semanticAction, semanticQuoteMatches, semanticIdentityMatches } from './conversation-understanding-context';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
@@ -68,6 +69,7 @@ export async function checkoutTransaction<T>(run: (connection: PoolConnection) =
   finally { connection.release(); }
 }
 export async function assertCheckoutIdentity(connection: PoolConnection, input: CheckoutIdentity) {
+  if (!semanticIdentityMatches(input)) throw Error('Interpretation identity mismatch');
   if (![input.merchantId, input.conversationId, input.incomingMessageId].every(n => Number.isSafeInteger(n) && n > 0)) throw new Error('Checkout identity invalid');
   const [conversations] = await connection.execute<any[]>(`SELECT id, customerName, automation_after_message_id,
     (human_takeover = 1) AS human_owned
@@ -181,6 +183,7 @@ export async function prepareCheckoutCouponQuote(input:CheckoutIdentity):Promise
 }
 
 export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: number): Promise<CheckoutResult> {
+  if (!semanticQuoteMatches(quotationId, 'local')) return { kind: 'clarify', text: 'حدد العرض الذي تريد مراجعته قبل تسجيل الطلب.' };
   await assertSalesOrderFactSchema();
   return checkoutTransaction(async connection => {
     const source = await assertCheckoutIdentity(connection, input);
@@ -196,7 +199,7 @@ export async function acceptCheckoutQuote(input: CheckoutIdentity, quotationId: 
       await connection.execute("UPDATE sales_quotations SET status = 'rejected' WHERE id = ?", [quotationId]);
       return { kind: 'declined', text: 'لن أسجل طلباً بناءً على هذا العرض. يمكنك العودة إليه متى رغبت.' };
     }
-    if (!isShortAffirmation(source.content) && !/^(?:اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/.test(normalizeCustomerText(source.content))) return { kind: 'clarify', text: 'اذكر المنتجات والكميات أو التعديل المطلوب لأعرض لك ملخصاً جديداً قبل التسجيل.' };
+    if (!(semanticAction(source.content, ['confirm_offer'], 'local') ?? (isShortAffirmation(source.content) || /^(?:اكمل الطلب|كمل الطلب|complete my order)[.!\s]*$/.test(normalizeCustomerText(source.content))))) return { kind: 'clarify', text: 'اذكر المنتجات والكميات أو التعديل المطلوب لأعرض لك ملخصاً جديداً قبل التسجيل.' };
     if (!quote.valid || !['sent', 'viewed'].includes(quote.status) || quote.source_message_id >= input.incomingMessageId) return { kind: 'changed', text: 'هذا العرض لم يعد متاحاً للتأكيد. أرسل المنتجات والكميات لأجهز ملخصاً محدثاً.' };
     if (!await wasCheckoutOfferDelivered(connection, input, quote.source_message_id, quotationText(quotationId,parseSnapshot(quote.checkout_snapshot)))) return {
       kind: 'clarify', text: 'أحتاج موافقتك على آخر ملخص منتجات وكميات أُرسل لك قبل تسجيل الطلب.',

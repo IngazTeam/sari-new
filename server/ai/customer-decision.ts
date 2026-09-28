@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, semanticAction } from './conversation-understanding-context';
 /** Decisions about consent are shared by reply generation and tool execution. */
 export function normalizeCustomerText(value: string): string {
   return value.normalize('NFKC').toLowerCase()
@@ -7,6 +8,7 @@ export function normalizeCustomerText(value: string): string {
 }
 
 export function isSalesRefusal(message: string): boolean {
+  const interpretation = currentConversationUnderstanding(message); if (interpretation) return interpretation.intent === 'declined' || interpretation.action === 'decline_offer';
   const text = normalizeCustomerText(message);
   return /(?:^|[\s،,.!؟])(?:لا|ما|مو|مش)\s*(?:اريد|ابغى|ابي|عايز|عاوز|بدي|احتاج|احتاج|حاب|مهتم|بشتري|اشتري|ارغب)/.test(text)
     || /(?:لا|لات)\s*(?:تحجز|تطلب|تسجل|تكمل|ترسل|تتواصل)/.test(text)
@@ -21,17 +23,20 @@ export function isSalesRefusal(message: string): boolean {
 }
 
 export function isShortAffirmation(message: string): boolean {
+  const interpreted = semanticAction(message, ['confirm_offer', 'confirm_booking']); if (interpreted !== undefined) return interpreted;
   return /^(?:نعم|ايوه|ايوا|اي|تمام|موافق|اوكي|yes|ok|okay)(?:[\s،,.!]+(?:كمل(?: الطلب)?|اكمل(?: الطلب)?|توكل|please|go ahead))?[\s،,.!]*$/
     .test(normalizeCustomerText(message));
 }
 
 /** Asking how an order or payment works is a request for information, not consent. */
 export function isPurchaseProcessQuestion(message: string): boolean {
+  const interpretation = currentConversationUnderstanding(message); if (interpretation) return interpretation.requestKind === 'purchase_process';
   return /(?:كيف|ازا[يى]|شلون|طريقه|خطوات|هل (?:اقدر|يمكن)|how (?:do|can|to)|can i|could i).{0,65}(?:اطلب|الطلب|اشتري|شراء|ادفع|الدفع|احجز|الحجز|order|buy|pay|book)/.test(normalizeCustomerText(message));
 }
 
 /** A question about how to buy is interest, not permission to create an order. */
 export function isExplicitPurchaseInstruction(message: string): boolean {
+  const interpreted = semanticAction(message, ['request_purchase']); if (interpreted !== undefined) return interpreted;
   if (isSalesRefusal(message) || isPurchaseProcessQuestion(message)) return false;
   const text = normalizeCustomerText(message);
   if (/(?:كيف|هل|ممكن اعرف|how|can i|could i)/.test(text)) return false;

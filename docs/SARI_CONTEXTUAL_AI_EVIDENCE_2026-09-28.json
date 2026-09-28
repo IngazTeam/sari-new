@@ -1,0 +1,192 @@
+{
+  "generatedAt": "2026-09-28T18:46:35.074Z",
+  "baseCommit": "048894aca8999d11d6bba65ae69f3d4f05fc0ac6",
+  "branch": "main",
+  "scope": "Contextual sales-conversation understanding through the centrally selected OpenAI/ZahyPi provider",
+  "checks": [
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ]
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ]
+    },
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "conversation-understanding",
+        "byaan",
+        "salla-checkout",
+        "checkout-agreements",
+        "booking-agreements",
+        "customer-memory-chat",
+        "appointment-reminder-pentest",
+        "openai-zahypi",
+        "ai-settings-provider-routing",
+        "sales-decision-benchmark",
+        "sales-brain-decisions",
+        "sales-turn-policy",
+        "task-catalog",
+        "budget-ledger",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\understanding-final\\tests.json"
+      ]
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ]
+    },
+    {
+      "name": "types-final",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    {
+      "name": "policy-final",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "sales-turn-policy",
+        "conversation-understanding",
+        "byaan-conversation-routing",
+        "--no-file-parallelism"
+      ]
+    },
+    {
+      "name": "build-final",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ]
+    }
+  ],
+  "regression": {
+    "files": 43,
+    "total": 1649,
+    "passed": 1649,
+    "failed": 0,
+    "pending": 0
+  },
+  "postChangeFocusedVerification": {
+    "files": 4,
+    "passed": 86,
+    "failed": 0,
+    "note": "Overlaps the regression suite; not an additional 86 unique tests. Includes the additional central-disable replay test and final reply prompt wiring."
+  },
+  "database": {
+    "environment": "loopback disposable MySQL",
+    "name": "sari_salla_catalog_20260927_test",
+    "port": 33089,
+    "migration": "0150_conversation_understanding",
+    "globalSettingsMetadataRead": "passed using the real minimal projection; no credentials returned"
+  },
+  "exercised": [
+    "both-speaker context",
+    "same yes with different conversational meaning",
+    "conditional and ambiguous consent blocked",
+    "semantic Byaan course/session/consent through final WhatsApp delivery",
+    "cross-tenant and forged-source rejection",
+    "handoff/memory/source/history changes during provider I/O",
+    "sealed-result tampering",
+    "one paid attempt per message",
+    "historical interpretation resolved by message ID",
+    "verified memory and rolling summary",
+    "central provider scope across tenants",
+    "central disable blocks replay",
+    "lossless long-context framing within ZahyPi governed input limits"
+  ],
+  "limits": {
+    "liveModelEvaluationRun": false,
+    "liveEvaluationCases": 14,
+    "providerAndWhatsAppTransports": "synthetic in tests",
+    "productionPenetrationTest": false,
+    "pushed": false,
+    "deployed": false,
+    "conversionImprovementMeasured": false,
+    "groupsAndFullPreviewHistoryIncluded": false
+  },
+  "artifactSha256": {
+    ".tmp/understanding-final/types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/understanding-final/translations.log": "d43fb644578c1773cfba8448f3c6284652cfe82b79037735e63e0f0b420ceeb0",
+    ".tmp/understanding-final/eval-dry-run.log": "d9005d4f87b495502fa4f552ee98324e24fbf953ca1e40a0ce15da505f1110d3",
+    ".tmp/understanding-final/regression.log": "52d9dc9fe5a53de8022742e57ea2148cfec6d555f5fbc37856bd68486e6da4bb",
+    ".tmp/understanding-final/tests.json": "10369f7f67aba29b13d0d3ed67c46bf2eefcf46ec4c114583fb3f4f07fd46776",
+    ".tmp/understanding-final/types-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/understanding-final/policy-final.log": "9cdd14c3fed260579c5b89ccd7ddcc7ca9176c17b094ac87de822d600a96b0f3",
+    ".tmp/understanding-final/build-final.log": "07748ce7c9550ea853bd06dcf32f6c5bd5b064348ef84394251c86b47251daa9"
+  },
+  "hashAlgorithm": "SHA-256 of working-tree bytes",
+  "sourceSha256": {
+    "drizzle/meta/_journal.json": "6a7e11086c315660f7e9dbaf9a13e950b5d211c732a418a9ba48e58ab75783da",
+    "drizzle/0150_conversation_understanding.sql": "1ca1d7f0782af8d4101718af0da987c65925b3146ee0149ba59af04c325568e7",
+    "server/ai/conversation-understanding-context.ts": "3ca26738ae21876ef7f15e44bc252b0cc87e4777863f317f662a89ba4972c468",
+    "server/ai/conversation-understanding.ts": "6d2349e36f8dda99d356384a4b0c68228a3317ebb3ad89d2928498805c359281",
+    "server/ai/conversation-understanding.test.ts": "93647959459f64b6e8aabe447c3e31a02a9324639c377f3b52bf9d2920346ada",
+    "server/ai/conversation-understanding.mysql.test.ts": "f58d6c4fbd6c2bcfb249709f863a67e66645d37e860db08bfd7ae943a1785158",
+    "server/ai/booking-agreements.ts": "d4cb7993837da710c7609bf987e7195243cb13186b0276e3ca3150faa05b16f6",
+    "server/ai/booking-conversation.ts": "04855b85b4b3a2721a620c2d5c96f72df0677be55e5d221cd5c8b82fa6c8181a",
+    "server/ai/byaan-checkout-agreements.ts": "8ac030bc39273bfd7aa8d5303039d27215e3fd905d3de3d22b6126da1e306739",
+    "server/ai/byaan-checkout-conversation.mysql.test.ts": "ee307c6b9972bda75b1729dc4d1c1e60044e9522b06591e2fc433e2b8174f428",
+    "server/ai/byaan-checkout-conversation.ts": "6720d3a3114abdc3001d96b77dab78c8d5d688cb6b729fcfbbeee469c738e41e",
+    "server/ai/byaan-enrollment-agreements.ts": "0067265df17c43ecb652b0e2784111f68a358e1c10753b5878b87a4883fa9f7e",
+    "server/ai/byaan-enrollment-conversation.ts": "257b45999d990b696e914173869f4e859a96423d615ea307177801283284ba36",
+    "server/ai/checkout-agreements.ts": "08e47c8f9dfac90701c8e2517aa117b5dee261331734f8a527bb308363a60aac",
+    "server/ai/checkout-conversation.ts": "75f836b35ddc2e582fb7b9cac608247f53217f090d474d5aa4980ffa6c467ea8",
+    "server/ai/customer-decision.ts": "4f4ee46dc2006546249d21829bbc2359e5bd0fb6bc00ad1f7c26a8accd86a475",
+    "server/ai/fast-sentiment.ts": "09d1662a548ad0b81e9984648a569b7ab5b104d8e5dcff9479614ea8f52b0ff0",
+    "server/ai/next-best-action.ts": "8dbb4abcfed2b1dc8504058d5edb8732ccc7c76516d9c089a053266ff20e9d46",
+    "server/ai/openai-zahypi.test.ts": "958d271253e287c1964da6a1e2a15277ad1281d757540e645992d12e00d492f4",
+    "server/ai/openai.ts": "5c1c5d33196f389c73bd6619061a422966b5a0f019535a7a1a10141b1a74a27a",
+    "server/ai/sales-turn-policy.ts": "a1ff81fcfe498c53d6e24eab63733431af6f4fee35ca1594ccc93d81b02b3697",
+    "server/ai/salla-checkout-agreements.ts": "ede55e469a42a99dcaf94473c5fbaf9bde83b963906244185f395ea21ec2ed72",
+    "server/ai/salla-checkout-conversation.ts": "1980eaf379f1ef3d3ed4a0550502c1ad3f7a89da1816aadf202662b389f4c9b8",
+    "server/ai/sari-personality.ts": "842a07e37ea261af910948bff31db91371b6ca55e96bbf765bc014e11e035b4d",
+    "server/ai/sentiment-analysis.ts": "603dc589e6aff2ec1bdd0a6303763a9c06dad39fba9f42a5f6b8d813f693c64f",
+    "server/ai/session-context.ts": "f72a4feb24a59cafc3ca23144ab1b33dee1d3c9915914407b9a6234c5eec652e",
+    "server/ai/task-catalog.ts": "ecd0455a40af3f6277a4fde89afb4bbb82f1ff3623f9bf79e078dff4f5968b10",
+    "server/ai/zid-checkout-agreements.ts": "20e14f5a86ce62d50da828e21e5ee21d31a8700b2a4a9da37156dd8d01846e3e",
+    "server/automation/zid-order-from-chat.ts": "ba6bb3019b5e78652b5c83f873482a71f1a12d25c8cd2d56e4e07316c440f785",
+    "server/byaan-conversation-routing.test.ts": "fae4283e4eaa48c31ebd48f9705fccd308e86486be67e61c4604c317a1fe0d7c",
+    "server/channels/whatsapp/service.ts": "e58da33f2c22573bab8ef9cc68d50aa36111551caddc5fa9adc40a031467e0c1",
+    "server/db_ai_settings.ts": "b0ef60fbbf6948058f3d6db6cb255be9fd4cf862eb095c749c6422e37ecc394c",
+    "scripts/testing/conversation-understanding-cases.ts": "5f1b8e3691e331661c15b188ff3991dad2dad7793bec992c1150bd6c0514c426",
+    "scripts/testing/evaluate-conversation-understanding.ts": "70c7cc687ab19ba04da03fcef0d572e51b367334a3521decc1acadc332406802",
+    "docs/SARI_CONTEXTUAL_AI_2026-09-28.md": "06e1b0829f32655ae243f6652898c7b46ade05a923bfedf2fa6577bb382b4ca4",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "130cb09df34edf088596628488e6b47b6be51b35042fd51e373836b89eaae7d1"
+  }
+}

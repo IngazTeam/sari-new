@@ -16,6 +16,8 @@ import { prepareByaanCheckoutOffer as prepare, acceptByaanCheckoutOffer as accep
   BYAAN_CHECKOUT_CLARIFY as CLARIFY, BYAAN_CHECKOUT_SESSION as SESSION } from './byaan-checkout-agreements';
 import { BYAAN_ENROLLMENT_UNCERTAIN } from './byaan-enrollment-agreements';
 import type { CheckoutIdentity } from './checkout-agreements';
+import { understandConversation } from './conversation-understanding';
+import { withConversationUnderstanding, type ConversationUnderstanding } from './conversation-understanding-context';
 
 describe.skipIf(!process.env.DATABASE_URL)('Byaan checkout invitations through real SQL and WhatsApp with synthetic transports', () => {
   const q = async (sql: string, args: any[] = []): Promise<any> => (await (await getPool())!.execute(sql, args))[0];
@@ -49,6 +51,32 @@ describe.skipIf(!process.env.DATABASE_URL)('Byaan checkout invitations through r
     mocks.llm.mockResolvedValue(JSON.stringify({ productId: product })); vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(async () => { vi.restoreAllMocks(); await cleanupDisposableMerchants(users); }); afterAll(closeDb);
+  it('takes semantic paraphrases through session selection, consent and final WhatsApp delivery with durable interpretation', async () => {
+    const semanticRoute = async (source: CheckoutIdentity, message: string, action: ConversationUnderstanding['action']) => {
+      mocks.llm.mockImplementation(async messages => {
+        const context = JSON.parse(messages[1].content), target = context.targets[0];
+        if (action === 'select_session') expect(target.details.sessions).toEqual([{ index: 1, date: '2026-10-03', time: '10:00' }]);
+        return JSON.stringify({ version: 1, intent: 'ready_to_buy', goal: 'confirm_agreement', action, confidence: 0.98, conditional: false, ambiguous: false,
+          targetQuoteId: target?.id ?? null, targetProvider: 'byaan_checkout', productIds: [product], sessionIndex: action === 'select_session' ? 1 : null,
+          requestKind: 'ordinary', sentiment: 'positive', topicChanged: false, objection: 'none', needs: ['موعد صباحي'], unresolvedQuestions: [],
+          summary: 'اختيار الدورة والموعد من السياق ثم الموافقة على العرض المحدد.', nextStep: 'review_offer', evidence: [{ messageId: source.incomingMessageId, excerpt: message }] });
+      });
+      const context = await understandConversation({ ...source, message }); expect(context, JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toBeNull();
+      return withConversationUnderstanding(context!, () => route(source, message));
+    };
+    quote.requires_session = true; quote.available = false; quote.checkout_url = null; quote.schedule.date = null; quote.schedule.time = null;
+    quote.sessions = [{ id: 8, date: '2026-10-03', time: '10:00', available: true }];
+    const requestText = 'حسمت اختياري، دورة ساري هي المناسبة لشغلي', request = await incoming(requestText);
+    const menu = await semanticRoute(request, requestText, 'request_purchase'); expect(menu).toContain('[BC-'); await deliver(request, menu!);
+    quote.requires_session = false; quote.available = true; quote.session_id = '8'; quote.checkout_url = 'https://synthetic.example.com/courses/sales/checkout?session_id=8'; quote.schedule.date = '2026-10-03'; quote.schedule.time = '10:00';
+    const choiceText = 'الصباح يناسبني', choice = await incoming(choiceText);
+    const offer = await semanticRoute(choice, choiceText, 'select_session'); expect(offer).toContain('2026-10-03'); await deliver(choice, offer!);
+    const consentText = 'متفقين على العرض هذا، خلنا نتمه', consent = await incoming(consentText);
+    const link = await semanticRoute(consent, consentText, 'confirm_offer'); expect(link).toContain('session_id=8'); await deliver(consent, link!);
+    expect(mocks.llm).toHaveBeenCalledTimes(3); expect(mocks.send).toHaveBeenCalledTimes(3);
+    expect((await row()).consent_message_id).toBe(consent.incomingMessageId);
+    expect(await q('SELECT id FROM byaan_sales_operations WHERE merchant_id=?', [identity.merchantId])).toEqual([]);
+  });
   it('uses live tax-inclusive price, asks consent, sends checkout once and creates no financial/enrollment records', async () => {
     const text = await route(identity, 'سجلني في دورة ساري'); expect(text).toContain('١١٥ ريال'); expect(text).toContain('١٥ ريال'); expect(text).toContain('2026-10-01'); expect(text).not.toContain('https://');
     expect(await route(identity, 'سجلني في دورة ساري')).toBe(text); expect(mocks.post).toHaveBeenCalledOnce();

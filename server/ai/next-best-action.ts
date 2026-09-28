@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding } from './conversation-understanding-context';
 /** Current-turn sales guidance. Suggestions never establish payment, reserve stock or schedule contact.
  * The customer decision and current evidence dominate old objections, inactivity and message counts. */
 
@@ -57,6 +58,10 @@ export interface NBAResult {
 // ═══════════════════════════════════════════════════════════════
 
 export async function determineNextBestAction(ctx: NBAContext): Promise<NBAResult> {
+  const interpretation = currentConversationUnderstanding(ctx.customerMessage);
+  if (interpretation) return { action: interpretation.nextStep === 'qualify' ? 'ask_qualifying_question' : interpretation.nextStep === 'handoff' ? 'escalate_to_human' : interpretation.nextStep === 'compare' ? 'offer_alternative' : 'continue_conversation', confidence: interpretation.confidence,
+    reason: interpretation.summary, priority: interpretation.intent === 'declined' ? 'critical' : 'high',
+    promptInjection: 'اتبع هدف تحليل المحادثة والأسئلة غير المحسومة. لا تعتبر التصنيف إذنًا لإرسال رابط أو خصم أو جدولة تواصل أو الادعاء بتصعيد لم يسجل.' };
   if (ctx.intent === 'declined' || isSalesRefusal(ctx.customerMessage)) {
     return { action: 'continue_conversation', confidence: 1, priority: 'critical',
       reason: 'رفض العميل الحالي يلغي الاستعداد السابق',

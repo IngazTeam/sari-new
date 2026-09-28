@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, semanticQuoteMatches } from './conversation-understanding-context';
 import { getPool } from '../db/connection';
 import { callGPT4 } from './openai';
 import { currentInboundExecution } from '../messaging/inbound-context';
@@ -27,6 +28,7 @@ export async function handleByaanCheckout(input: CheckoutIdentity & { message: s
     const [bindings] = await pool.execute<any[]>('SELECT is_active,verified_at FROM byaan_connections WHERE merchant_id=?', [input.merchantId]);
     if (!bindings[0]?.is_active || !bindings[0].verified_at) return relevant ? BYAAN_CHECKOUT_UNAVAILABLE : null;
     relevant = true;
+    if (currentConversationUnderstanding()?.targetQuoteId && !semanticQuoteMatches(prior?.id, BYAAN_CHECKOUT_PROVIDER)) return null;
     const context = await readByaanCheckoutContext(input), cutoff = Math.max(context.cutoff, input.memoryHistoryCutoff || 0);
     if (context.content !== input.message || input.incomingMessageId <= cutoff) return BYAAN_CHECKOUT_UNAVAILABLE;
     await currentInboundExecution()?.assertOwned();
@@ -45,6 +47,13 @@ export async function handleByaanCheckout(input: CheckoutIdentity & { message: s
       return BYAAN_CHECKOUT_SESSION;
     }
     if ((!requested && !edit) || !context.catalog.length) return BYAAN_CHECKOUT_CLARIFY;
+    const interpretation = currentConversationUnderstanding(input.message);
+    if (interpretation) {
+      if (interpretation.productIds.length !== 1) return BYAAN_CHECKOUT_CLARIFY;
+      const product = context.catalog.find(p => p.productId === interpretation.productIds[0]);
+      if (!product) return BYAAN_CHECKOUT_CLARIFY;
+      return (await prepareByaanCheckoutOffer(input, product.productId, { sourceText: context.content, memoryCutoff: context.cutoff, product })).text;
+    }
     const [history] = await pool.execute<any[]>(`SELECT content FROM messages WHERE conversationId=? AND direction='incoming' AND id>? AND id<? ORDER BY id DESC LIMIT 8`,
       [input.conversationId, cutoff, input.incomingMessageId]);
     const output = await callGPT4([

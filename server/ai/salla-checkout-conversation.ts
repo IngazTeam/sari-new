@@ -1,3 +1,4 @@
+import { currentConversationUnderstanding, semanticQuoteMatches } from './conversation-understanding-context';
 import { getPool } from '../db/connection';
 import { getSallaConnectionByMerchantId } from '../db';
 import { callGPT4 } from './openai';
@@ -10,6 +11,8 @@ import { SALLA_CART_PROVIDER,SALLA_CART_CLARIFY,SALLA_CART_UNCERTAIN,isSallaCart
 /** Returns a complete deterministic checkout response. Do not rewrite it with an
  * LLM or identity formatter: customer consent binds the exact delivered text. */
 export async function handleSallaCheckout(input:CheckoutIdentity & {message:string;memoryHistoryCutoff?:number}):Promise<string|null>{
+  const interpretation=currentConversationUnderstanding(input.message);
+  if(interpretation && !['salla_cart','none'].includes(interpretation.targetProvider))return null;
   let relevant=false;
   try{
     const text=normalizeCustomerText(input.message),editing=isSallaCartEdit(input.message);
@@ -20,7 +23,8 @@ export async function handleSallaCheckout(input:CheckoutIdentity & {message:stri
     const quote=prior[0]?.external_provider===SALLA_CART_PROVIDER?prior[0]:null;
     const edit=!!quote&&editing;
     relevant=isExplicitPurchaseInstruction(input.message)||edit||!!quote&&(isSallaCartConsent(input.message)||isSalesRefusal(input.message));
-    if(!relevant||/حجز|موعد|\b(?:appointment|booking)\b/.test(text))return null;
+    if(!relevant||(!interpretation && /حجز|موعد|\b(?:appointment|booking)\b/.test(text)))return null;
+    if(interpretation?.targetQuoteId && !semanticQuoteMatches(quote?.id,SALLA_CART_PROVIDER))return null;
     // Keep the established Zid route when both commerce providers are connected.
     const { isZidConnected }=await import('../db_zid');if(await isZidConnected(input.merchantId))return quote?SALLA_CART_UNCERTAIN:null;
     const connection=await getSallaConnectionByMerchantId(input.merchantId);

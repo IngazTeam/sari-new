@@ -1,3 +1,5 @@
+import { currentConversationUnderstanding, semanticAction, semanticQuoteMatches, semanticIdentityMatches } from './conversation-understanding-context';
+import { withStoredUnderstanding } from './conversation-understanding';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
@@ -41,6 +43,8 @@ const decode = (v: any) => typeof v === 'string' ? JSON.parse(v) : v;
 const quoteInput = (q: ByaanCheckoutQuote) => ({ courseId: q.course_id, ...(q.session_id ? { sessionId: q.session_id } : {}) });
 const sessions = (q: ByaanCheckoutQuote) => q.sessions.filter(s => s.available).slice(0, 20);
 export function byaanSessionChoice(text: string): number | null {
+  const decision = semanticAction(text, ['select_session'], 'byaan_checkout');
+  if (decision !== undefined) return decision ? currentConversationUnderstanding()!.sessionIndex : null;
   const normalized = normalizeCustomerText(text).replace(/[٠-٩]/g, c => String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[۰-۹]/g, c => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));
   const match = /^(?:(?:الموعد|موعد|session)\s+)?([1-9][0-9]?)$/.exec(normalized.trim());
   return match ? Number(match[1]) : null;
@@ -131,7 +135,7 @@ async function verify(c: PoolConnection, input: CheckoutIdentity, quotationId: n
     const [parents] = await c.execute<any[]>('SELECT * FROM sales_quotations WHERE id=? AND merchant_id=? AND conversation_id=? AND customer_phone=? FOR SHARE',
       [s.selectedFrom.quotationId, input.merchantId, input.conversationId, input.customerPhone]);
     if (parents.length !== 1) throw Error('Session source missing');
-    const parent = readAgreement(parents[0]).snapshot, chosen = byaanSessionChoice(messages[0].content);
+    const parent = readAgreement(parents[0]).snapshot, chosen = await withStoredUnderstanding(c, { ...input, incomingMessageId: s.sourceMessageId }, async () => byaanSessionChoice(messages[0].content), true);
     if (digest(parent) !== s.selectedFrom.snapshotDigest || !parent.quote.requires_session || parent.selectedFrom || !chosen
       || parent.authorityHash !== s.authorityHash || parent.ownershipVersion !== s.ownershipVersion || parent.sourceMessageId <= source.cutoff
       || parent.sourceMessageId >= s.sourceMessageId || parent.course.productId !== s.course.productId
@@ -215,6 +219,7 @@ export async function readByaanCheckoutPending(input: CheckoutIdentity) {
   });
 }
 export async function acceptByaanCheckoutOffer(input: CheckoutIdentity, quotationId: number) {
+  if (!semanticIdentityMatches(input) || !semanticQuoteMatches(quotationId, 'byaan_checkout')) return BYAAN_CHECKOUT_CHANGED;
   await assertCheckoutAgreementSchema();
   const claim = async (c: PoolConnection) => {
     const a = await verify(c, input, quotationId);
@@ -245,6 +250,7 @@ export async function acceptByaanCheckoutOffer(input: CheckoutIdentity, quotatio
   });
 }
 export async function declineByaanCheckoutOffer(input: CheckoutIdentity, quotationId: number) {
+  if (!semanticIdentityMatches(input) || !semanticQuoteMatches(quotationId, 'byaan_checkout')) return BYAAN_CHECKOUT_CLARIFY;
   return tx(async c => {
     await lockByaanSalesAuthority(c, input.merchantId); const source = await customer(c, input), q = await latest(c, input);
     if (!isSalesRefusal(source.content) || q?.id !== quotationId || q.external_provider !== BYAAN_CHECKOUT_PROVIDER) throw Error('Refusal unavailable');

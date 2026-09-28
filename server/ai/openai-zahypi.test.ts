@@ -47,6 +47,13 @@ afterEach(() => {
 });
 
 describe("callGPT4 ZahyPi routing", () => {
+  it('routes the shared conversation interpreter for different tenants through the centrally selected provider', async () => {
+    resolveZahyPiRuntimeConfig.mockResolvedValue({ enabled: true, provider: 'zahypi' });
+    requestZahyPiChat.mockResolvedValue({ content: '{"action":"respond"}', model: 'central-zahypi-model' });
+    for (const merchantId of [71, 72]) await callGPT4([{ role: 'user', content: 'synthetic conversation context' }], { merchantId, conversationId: merchantId + 100, taskType: 'sari.customer.intent', noRetry: true });
+    expect(requestZahyPiChat.mock.calls.map(c => c[2])).toEqual([71, 72].map(merchantId => ({ merchantId, conversationId: merchantId + 100, taskType: 'sari.customer.intent' })));
+    expect(getOpenAiApiKey).not.toHaveBeenCalled();
+  });
   it('preserves conversation scope only for the same merchant', async () => {
     resolveZahyPiRuntimeConfig.mockResolvedValue({ enabled: true, provider: 'zahypi' });
     getOptionalZahyPiRequestContext.mockReturnValue({ merchantId: 77, conversationId: 901, taskType: 'sari.reply' });
