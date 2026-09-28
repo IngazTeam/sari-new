@@ -16,9 +16,11 @@ import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
 import { campaignPerformanceEn } from './campaign-performance';
 import { subscriptionWorkspaceEn } from './subscription-workspace';
+import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
   subscriptionWorkspace: subscriptionWorkspaceEn,
+  whatsappWorkspace: whatsappWorkspaceEn,
   campaignPerformance: campaignPerformanceEn,
   byaanSales: byaanSalesReviewEn,
   sallaEffects: sallaEffectReviewEn,

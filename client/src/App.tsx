@@ -91,7 +91,6 @@ const CampaignReport = lazyLoad(() => import("./pages/merchant/CampaignReport"))
 const Products = lazyLoad(() => import("./pages/merchant/Products"));
 const UploadProducts = lazyLoad(() => import("./pages/merchant/UploadProducts"));
 const Conversations = lazyLoad(() => import("./pages/merchant/Conversations"));
-const WhatsApp = lazyLoad(() => import("./pages/merchant/WhatsApp"));
 const SallaIntegration = lazyLoad(() => import("./pages/SallaIntegration"));
 const ByaanIntegration = lazyLoad(() => import("./pages/merchant/ByaanIntegration"));
 const DiscountCodes = lazyLoad(() => import("./pages/DiscountCodes"));

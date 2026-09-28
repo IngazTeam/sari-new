@@ -1,0 +1,136 @@
+{
+  "date": "2026-09-28",
+  "browser": "Chrome; viewport resizing only, not Safari or an iPhone device",
+  "runtime": "127.0.0.1:3018; local sari_pages_test; external network blocked",
+  "prototype": "127.0.0.1:4329/#/page/merchant/whatsapp-instances",
+  "application": {
+    "form390": {
+      "dialog": {
+        "height": 421.8000183105469,
+        "width": 325.8499755859375,
+        "x": 24.57500267028809,
+        "y": 211.1000061035156
+      },
+      "invalid": "true",
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "form320": {
+      "dialog": {
+        "bottom": 623,
+        "height": 506,
+        "left": 16,
+        "right": 289,
+        "top": 117,
+        "width": 273,
+        "x": 16,
+        "y": 117
+      },
+      "height": 740,
+      "invalid": "true",
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "change390": {
+      "dialog": {
+        "bottom": 545,
+        "height": 350,
+        "left": 16,
+        "right": 289,
+        "top": 195,
+        "width": 273,
+        "x": 16,
+        "y": 195
+      },
+      "focused": "رجوع دون تغيير",
+      "height": 740,
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "change320": {
+      "dialog": {
+        "bottom": 545,
+        "height": 350,
+        "left": 16,
+        "right": 289,
+        "top": 195,
+        "width": 273,
+        "x": 16,
+        "y": 195
+      },
+      "focused": "رجوع دون تغيير",
+      "height": 740,
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "qrCloseReturnsFocusTo": "فتح رمز الربط",
+    "statusesVisible": [
+      "active",
+      "inactive",
+      "pending",
+      "expired"
+    ],
+    "legacyPendingShown": true,
+    "currentRejectionShown": true,
+    "cleanup": {
+      "instancesRemoved": 4,
+      "legacyRequestsRemoved": 1,
+      "currentRequestsRemoved": 1,
+      "visibleUsage": "0 / 1",
+      "emptyInstances": true,
+      "emptyRequests": true,
+      "fixturePasses": 2
+    }
+  },
+  "prototypeChecks": {
+    "changeFailure320": {
+      "dialog": {
+        "bottom": 534.25,
+        "height": 328.5078125,
+        "left": 16,
+        "right": 289,
+        "top": 205.7421875,
+        "width": 273,
+        "x": 16,
+        "y": 205.7421875
+      },
+      "error": "لم يكتمل الإجراء. بقيت الحالة كما هي؛ أعد المحاولة.",
+      "scrollWidth": 305,
+      "width": 320
+    },
+    "form390": {
+      "dialog": {
+        "bottom": 655.0390625,
+        "height": 466.078125,
+        "left": 16,
+        "right": 359,
+        "top": 188.9609375,
+        "width": 343,
+        "x": 16,
+        "y": 188.9609375
+      },
+      "invalid": "true",
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "desktop": {
+      "cards": 4,
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "approvedRequestQR": [
+      "error",
+      "retry waiting",
+      "completed"
+    ],
+    "loading": "source/unit coverage only in final browser pass",
+    "errorRetry": true,
+    "emptyState": true,
+    "actualProviderCalls": 0
+  },
+  "limitations": [
+    "No real Safari/iOS test",
+    "No real QR scan or Meta authorization",
+    "No production changes"
+  ]
+}

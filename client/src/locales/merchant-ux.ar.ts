@@ -16,9 +16,11 @@ import { salesExperimentProtocolAr } from './sales-experiment-protocol';
 
 import { campaignPerformanceAr } from './campaign-performance';
 import { subscriptionWorkspaceAr } from './subscription-workspace';
+import { whatsappWorkspaceAr } from './whatsapp-workspace';
 
 const merchantUxAr: MerchantUxCopy = {
   subscriptionWorkspace: subscriptionWorkspaceAr,
+  whatsappWorkspace: whatsappWorkspaceAr,
   campaignPerformance: campaignPerformanceAr,
   byaanSales: byaanSalesReviewAr,
   sallaEffects: sallaEffectReviewAr,

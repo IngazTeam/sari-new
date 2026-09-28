@@ -111,7 +111,7 @@ window.TenantPages = (() => {
     if(p.kind==='state')return state(p,p.state);
     if(p.redirect)return renderPage(find(p.redirect));
     const renderers={list,form,detail,analytics,integration,hub,directory,calendar,pipeline,knowledge,media,import:importer,assistant,compose,setup,plans,billing,checkout,result,privacy,guide,analysis,overview:()=>overview(),inbox:()=>inbox()};
-      const content=window.SubscriptionPreview?.handles(p)?window.SubscriptionPreview.render(p):window.TestingPreview?.handles(p)?window.TestingPreview.render(p):window.NotificationPreview?.handles(p)?window.NotificationPreview.render(p):window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
+      const content=window.WhatsAppPreview?.handles(p)?window.WhatsAppPreview.render(p):window.SubscriptionPreview?.handles(p)?window.SubscriptionPreview.render(p):window.TestingPreview?.handles(p)?window.TestingPreview.render(p):window.NotificationPreview?.handles(p)?window.NotificationPreview.render(p):window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
     return (['overview','inbox'].includes(p.kind)?`<div class="page-breadcrumb">${link('جميع الصفحات','/merchant/tools')}${action('حالات الصفحة','states')}</div>`:head(p))+(window.CampaignPreview?.handles(p)?window.CampaignPreview.render(p,content):content);
   }
   function rerender(keep = false) { render(keep); }
@@ -120,6 +120,7 @@ window.TenantPages = (() => {
     openDialog(current.action,`<form class="form-stack" data-page-form="create">${labels.map((v,i)=>field(v,i,'')).join('')}<p class="hint">إضافة محلية لتجربة سير العمل.</p><div class="dialog-foot"><button type="submit" class="button primary">حفظ المعاينة</button>${action('إلغاء','cancel')}</div></form>`);
   }
   function primary() {
+    if(window.WhatsAppPreview?.handles(current))return window.WhatsAppPreview.primary(current);
     if(window.SubscriptionPreview?.handles(current))return window.SubscriptionPreview.primary(current);
     if(window.TestingPreview?.handles(current))return window.TestingPreview.primary(current);
     if(window.NotificationPreview?.handles(current))return window.NotificationPreview.primary(current);

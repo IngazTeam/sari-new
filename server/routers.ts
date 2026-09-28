@@ -325,6 +325,8 @@ import { createSessionToken } from './_core/auth';
 import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
 import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
+import { whatsappWorkspaceRouter } from './routers/whatsapp-workspace';
+import { reconnectWorkspaceInstance, workspaceUsage, listWorkspaceRequests, workspaceQR, confirmWorkspaceRequest, workspaceInstanceQR, confirmWorkspaceInstance } from './whatsapp/tenant-workspace';
 import {
   getMerchantOrder,
   InvalidMerchantOrderTransitionError,
@@ -968,49 +970,9 @@ export const appRouter = router({
       return toPublicWhatsAppConnectionRequest(await getWhatsAppConnectionRequestByMerchantId(merchant.id));
     }),
 
-    // Disconnect WhatsApp (Reset) - allows merchant to remove current connection and request a new one
-    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      // Get current connection request
-      const existingRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
-      if (!existingRequest) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No WhatsApp connection found' });
-      }
-
-      // Delete the connection request
-      await deleteWhatsAppConnectionRequest(existingRequest.id);
-
-      // Also delete any WhatsApp instances associated with this merchant
-      const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
-      for (const instance of instances) {
-        await deleteWhatsAppInstance(instance.id);
-      }
-
-      // Notify admin about the disconnection (non-blocking)
-      try {
-        const notifyOwner = await import('./_core/notification');
-        await notifyOwner.notifyOwner({
-          title: 'فك ربط واتساب',
-          content: `التاجر ${merchant.businessName} قام بفك ربط رقم الواتساب: ${existingRequest.fullNumber}`,
-        });
-      } catch (notifErr) {
-        console.warn('[WhatsApp] Admin notification failed (non-blocking):', (notifErr as Error).message);
-      }
-
-      // إرسال إشعار للتاجر بفك الربط
-      try {
-        const { notifyWhatsAppDisconnect } = await import('./_core/notificationService');
-        await notifyWhatsAppDisconnect(merchant.id);
-        console.log(`[Notification] WhatsApp disconnect notification sent to merchant ${merchant.id}`);
-      } catch (error) {
-        console.error('[Notification] Failed to send WhatsApp disconnect notification:', error);
-      }
-
-      return { success: true };
+    // The retired global reset deleted every connection. Require a specific connection instead.
+    disconnect: protectedProcedure.mutation(async () => {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Open WhatsApp numbers and select the connection to pause or reconnect.' });
     }),
 
     // Get all connection requests (Admin only)
@@ -3034,6 +2996,8 @@ export const appRouter = router({
       }),
   }),
 
+  whatsappWorkspace: whatsappWorkspaceRouter,
+
   // WhatsApp Instances Management
   whatsappInstances: router({
     // List all instances for merchant (ADMIN ONLY — credentials never leave the server)
@@ -3100,16 +3064,9 @@ export const appRouter = router({
         // Activation is fail-closed: enforce the plan, provider health, and
         // tenant ownership before changing any local state.
         if (input.newStatus === 'active') {
-          if (instance.status !== 'active') {
-            const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
-            try {
-              await checkWhatsAppNumberLimit(input.merchantId);
-            } catch (err) {
-              throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'لقد وصلت للحد الأقصى من الأرقام النشطة في باقتك. أوقف رقماً آخر أو قم بالترقية.',
-              });
-            }
+          const quota = await workspaceUsage(input.merchantId);
+          if (!quota.known || quota.max === null || quota.max === 0 || quota.total > quota.max) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Subscription limit prevents activation' });
           }
 
           const { getWhatsAppProvider } = await import('./channels/whatsapp/providers');
@@ -3148,37 +3105,12 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Get WhatsApp number usage vs plan limit
-    getUsage: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-        const subscription = await getMerchantCurrentSubscription(input.merchantId);
-        if (!subscription || !subscription.planId) {
-          return { current: 0, total: 0, max: 1, remaining: 1, percentage: 0, planName: '' };
-        }
-
-        const plan = await getSubscriptionPlanById(subscription.planId);
-        if (!plan) {
-          return { current: 0, total: 0, max: 1, remaining: 1, percentage: 0, planName: '' };
-        }
-
-        const instances = await getWhatsAppInstancesByMerchantId(input.merchantId);
-        const activeCount = instances.filter((i: any) => i.status === 'active').length;
-        const totalCount = instances.length;
-
-        return {
-          current: activeCount,
-          total: totalCount,
-          max: plan.maxWhatsAppNumbers,
-          remaining: Math.max(0, plan.maxWhatsAppNumbers - activeCount),
-          percentage: Math.min(100, (activeCount / plan.maxWhatsAppNumbers) * 100),
-          planName: plan.name,
-        };
-      }),
+    // Count all registered slots, matching subscription enforcement; never fabricate a free slot.
+    getUsage: protectedProcedure.input(z.object({ merchantId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+      const merchant = await getMerchantById(input.merchantId);
+      if (!merchant || merchant.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      return workspaceUsage(merchant.id);
+    }),
 
     // Get primary instance
     getPrimary: protectedProcedure
@@ -3194,283 +3126,32 @@ export const appRouter = router({
 
     // ==================== Reconnect Flow (Change Number) ====================
     
-    // Step 1: Logout from Green API to allow new QR scan
-    reconnect: protectedProcedure
-      .input(z.object({ instanceId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const instance = await getWhatsAppInstanceById(input.instanceId);
-        if (!instance) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
-        }
+    // Verify provider logout before changing the selected connection locally.
+    reconnect: protectedProcedure.input(z.object({ instanceId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      return reconnectWorkspaceInstance(merchant.id, input.instanceId);
+    }),
 
-        const merchant = await getMerchantById(instance.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-        if ((instance.provider || 'green_api') !== 'green_api') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعادة الربط عبر QR متاحة لاتصال Green API القديم فقط' });
-        }
-
-        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
-
-        // SSRF guard
-        try {
-          const parsed = new URL(baseUrl);
-          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-          if (!isAllowed || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('blocked');
-        } catch {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
-        }
-
-        // Logout from Green API to invalidate current session
-        try {
-          const logoutUrl = `${baseUrl}/waInstance${instance.instanceId}/logout/${instance.token}`;
-          await fetch(logoutUrl);
-          console.log(`[reconnect] Logged out instance ${instance.instanceId}`);
-        } catch (e) {
-          console.error('[reconnect] Logout error:', e);
-        }
-
-        // Mark instance as reconnecting
-        await updateWhatsAppInstance(instance.id, {
-          status: 'inactive',
-          phoneNumber: null,
-        });
-
-        return { success: true, message: 'تم تسجيل الخروج. امسح QR Code بالرقم الجديد.' };
-      }),
-
-    // Step 2: Get QR code for reconnection
-    getReconnectQR: protectedProcedure
-      .input(z.object({ instanceId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const instance = await getWhatsAppInstanceById(input.instanceId);
-        if (!instance) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
-        }
-
-        const merchant = await getMerchantById(instance.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-        if ((instance.provider || 'green_api') !== 'green_api') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'QR متاح لاتصال Green API القديم فقط' });
-        }
-
-        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
-
-        // SSRF guard
-        try {
-          const parsed = new URL(baseUrl);
-          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)) || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error();
-        } catch {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
-        }
-
-        try {
-          const qrUrl = `${baseUrl}/waInstance${instance.instanceId}/qr/${instance.token}`;
-          const response = await fetch(qrUrl);
-          const data = await response.json();
-
-          if (response.ok && data.type === 'qrCode') {
-            return { qrCode: data.message, status: 'waiting' };
-          } else if (data.type === 'alreadyLogged') {
-            return { qrCode: null, status: 'already_connected' };
-          } else {
-            return { qrCode: null, status: 'error', error: 'QR code not available' };
-          }
-        } catch (e) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get QR code' });
-        }
-      }),
-
-    // Step 3: Confirm reconnection — check if authorized, update phone + webhook
-    confirmReconnect: protectedProcedure
-      .input(z.object({ instanceId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const instance = await getWhatsAppInstanceById(input.instanceId);
-        if (!instance) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
-        }
-
-        const merchant = await getMerchantById(instance.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-        if ((instance.provider || 'green_api') !== 'green_api') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تأكيد QR متاح لاتصال Green API القديم فقط' });
-        }
-
-        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
-
-        // SSRF guard
-        try {
-          const parsed = new URL(baseUrl);
-          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)) || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error();
-        } catch {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
-        }
-
-        try {
-          // Check state
-          const stateUrl = `${baseUrl}/waInstance${instance.instanceId}/getStateInstance/${instance.token}`;
-          const stateResponse = await fetch(stateUrl);
-          const stateData = await stateResponse.json();
-
-          if (stateData.stateInstance !== 'authorized') {
-            return { connected: false, status: stateData.stateInstance || 'not_authorized' };
-          }
-
-          // Get new phone number
-          let phoneNumber = '';
-          try {
-            const settingsUrl = `${baseUrl}/waInstance${instance.instanceId}/getSettings/${instance.token}`;
-            const settingsResponse = await fetch(settingsUrl);
-            const settingsData = await settingsResponse.json();
-            if (settingsData.wid) {
-              phoneNumber = settingsData.wid.replace('@c.us', '');
-            }
-          } catch (e) {
-            console.error('[confirmReconnect] Failed to get phone:', e);
-          }
-
-          if (!phoneNumber) {
-            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر التحقق من رقم واتساب المتصل' });
-          }
-
-          const conflicting = await getActiveInstanceByPhoneNumber(phoneNumber);
-          if (conflicting && conflicting.id !== instance.id) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
-          }
-
-          if (instance.status !== 'active') {
-            const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
-            await checkWhatsAppNumberLimit(instance.merchantId);
-          }
-
-          // Register the authenticated webhook before exposing the connection as active.
-          const { setWebhookUrl } = await import('./whatsapp');
-          const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
-          const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
-          const webhookResult = await setWebhookUrl(instance.instanceId, instance.token, webhookUrl, baseUrl);
-          if (!webhookResult.success) {
-            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر تسجيل webhook موثّق للرقم' });
-          }
-
-          await updateWhatsAppInstance(instance.id, {
-            status: 'active',
-            phoneNumber,
-            webhookUrl,
-            connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-          });
-
-          return {
-            connected: true,
-            status: 'authorized',
-            phoneNumber,
-          };
-        } catch (e) {
-          return { connected: false, status: 'error' };
-        }
-      }),
-
-    // Refresh instance - fetch phone number from Green API and re-register webhook
-    refreshInstance: protectedProcedure
-      .input(z.object({ instanceId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const instance = await getWhatsAppInstanceById(input.instanceId);
-        if (!instance) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
-        }
-
-        const merchant = await getMerchantById(instance.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-        if ((instance.provider || 'green_api') !== 'green_api') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تحديث الاتصال اليدوي متاح لاتصال Green API القديم فقط' });
-        }
-
-        // Rate limit: max 5 refreshes per 10 minutes per merchant
-        const { checkRateLimit } = await import('./_core/rateLimiter');
-        const rateLimitCheck = checkRateLimit(`wa_refresh:${merchant.id}`, 5, 10 * 60 * 1000);
-        if (!rateLimitCheck.allowed) {
-          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'يرجى الانتظار قبل المحاولة مرة أخرى' });
-        }
-
-        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
-
-        // SSRF guard — only allow Green API domains
-        try {
-          const parsed = new URL(baseUrl);
-          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-          if (!isAllowed || parsed.protocol !== 'https:' || parsed.username || parsed.password) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only Green API URLs are allowed' });
-          }
-        } catch (e) {
-          if (e instanceof TRPCError) throw e;
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
-        }
-
-        const updates: any = {};
-
-        // 1. Fetch phone number from Green API settings
-        try {
-          const settingsUrl = `${baseUrl}/waInstance${instance.instanceId}/getSettings/${instance.token}`;
-          const settingsResponse = await fetch(settingsUrl);
-          const settingsData = await settingsResponse.json();
-          if (settingsData.wid) {
-            updates.phoneNumber = settingsData.wid.replace('@c.us', '');
-          }
-        } catch (e) {
-          console.error('[refreshInstance] Failed to get settings:', e);
-        }
-
-        // 2. Re-register webhook
-        try {
-          const { setWebhookUrl } = await import('./whatsapp');
-          const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
-          const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
-
-          const result = await setWebhookUrl(
-            instance.instanceId,
-            instance.token,
-            webhookUrl,
-            baseUrl
-          );
-
-          if (result.success) {
-            updates.webhookUrl = webhookUrl;
-            console.log(`[refreshInstance] Webhook registered for ${instance.instanceId}`);
-          } else {
-            console.error(`[refreshInstance] Webhook failed: ${result.error}`);
-          }
-        } catch (e) {
-          console.error('[refreshInstance] Webhook error:', e);
-        }
-
-        // 3. Update instance in DB
-        if (Object.keys(updates).length > 0) {
-          if (updates.phoneNumber && instance.status === 'active') {
-            const phoneOwner = await getActiveInstanceByPhoneNumber(updates.phoneNumber);
-            if (phoneOwner && phoneOwner.id !== instance.id) {
-              throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
-            }
-          }
-          await updateWhatsAppInstance(instance.id, updates);
-        }
-
-        const updated = await getWhatsAppInstanceById(instance.id);
-        return {
-          success: true,
-          phoneNumber: updated?.phoneNumber || updates.phoneNumber || instance.phoneNumber,
-          webhookRegistered: !!updates.webhookUrl,
-        };
-      }),
+    getReconnectQR: protectedProcedure.input(z.object({ instanceId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      return workspaceInstanceQR(merchant.id, input.instanceId);
+    }),
+    confirmReconnect: protectedProcedure.input(z.object({ instanceId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      return confirmWorkspaceInstance(merchant.id, input.instanceId, true, true);
+    }),
+    refreshInstance: protectedProcedure.input(z.object({ instanceId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      const { checkRateLimit } = await import('./_core/rateLimiter');
+      if (!checkRateLimit('wa_refresh:' + merchant.id, 5, 10 * 60 * 1000).allowed) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Retry later' });
+      const result = await confirmWorkspaceInstance(merchant.id, input.instanceId, true, true);
+      if (!result.connected) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Provider session is not connected' });
+      return { success: true, phoneNumber: result.phoneNumber, webhookRegistered: true };
+    }),
 
     // Create new instance (ADMIN ONLY — merchants use whatsappRequests.create)
     create: protectedProcedure
@@ -3752,9 +3433,9 @@ export const appRouter = router({
     create: protectedProcedure
       .input(
         z.object({
-          merchantId: z.number(),
-          phoneNumber: z.string().optional(),
-          businessName: z.string().optional(),
+          merchantId: z.number().int().positive(),
+          phoneNumber: z.string().trim().regex(/^\+?[1-9]\d{6,14}$/).optional(),
+          businessName: z.string().trim().max(255).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -3771,8 +3452,8 @@ export const appRouter = router({
         }
 
         // Check if there's already a pending request
-        const existingRequests = await getWhatsAppRequestsByMerchantId(input.merchantId);
-        const pendingRequest = existingRequests.find((r: WhatsAppRequest) => r.status === 'pending');
+        const existingRequests = await listWorkspaceRequests(input.merchantId);
+        const pendingRequest = existingRequests.find(r => r.status === 'pending' || r.status === 'approved');
         if (pendingRequest) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have a pending request' });
         }
@@ -3898,202 +3579,16 @@ export const appRouter = router({
         );
       }),
 
-    // Get QR code for approved request (merchant)
-    getQRCode: protectedProcedure
-      .input(z.object({ requestId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const request = await getWhatsAppRequestById(input.requestId);
-        if (!request) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
-        }
-
-        const merchant = await getMerchantById(request.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        if (request.status !== 'approved') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request not approved yet' });
-        }
-
-        if (!request.instanceId || !request.token) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance details not set' });
-        }
-
-        // Get QR code from Green API
-        try {
-          const baseUrl = request.apiUrl || 'https://api.green-api.com';
-
-          // PEN-WA-11 FIX: SSRF guard — only allow Green API domains
-          try {
-            const parsed = new URL(baseUrl);
-            const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-            if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
-              throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only Green API URLs are allowed' });
-            }
-          } catch (e) {
-            if (e instanceof TRPCError) throw e;
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL format' });
-          }
-
-          const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.token}`;
-
-          const response = await fetch(url);
-          const data = await response.json();
-
-          if (response.ok && data.type === 'qrCode') {
-            // Update request with QR code
-            await updateWhatsAppRequest(request.id, {
-              qrCodeUrl: data.message,
-              qrCodeExpiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "), // 2 minutes
-            });
-
-            return {
-              qrCodeUrl: data.message,
-              expiresAt: new Date(Date.now() + 2 * 60 * 1000),
-            };
-          } else {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get QR code' });
-          }
-        } catch (error) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
-      }),
-
-    // Check connection status (merchant)
-    checkConnection: protectedProcedure
-      .input(z.object({ requestId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const request = await getWhatsAppRequestById(input.requestId);
-        if (!request) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
-        }
-
-        const merchant = await getMerchantById(request.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        if (!request.instanceId || !request.token) {
-          return { connected: false, status: 'pending' };
-        }
-
-        try {
-          const baseUrl = request.apiUrl || 'https://api.green-api.com';
-
-          // PEN-WA-11 FIX: SSRF guard — only allow Green API domains
-          try {
-            const parsed = new URL(baseUrl);
-            const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-            if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
-              return { connected: false, status: 'error', error: 'Only Green API URLs are allowed' };
-            }
-          } catch {
-            return { connected: false, status: 'error', error: 'Invalid API URL' };
-          }
-
-          const url = `${baseUrl}/waInstance${request.instanceId}/getStateInstance/${request.token}`;
-
-          const response = await fetch(url);
-          const data = await response.json();
-
-          if (response.ok && data.stateInstance === 'authorized') {
-            // Connection successful - create WhatsApp instance
-            if (request.status === 'approved') {
-              // Race condition guard: check if instance already created by concurrent request
-              const existingInstances = await getWhatsAppInstancesByMerchantId(request.merchantId);
-              const alreadyExists = existingInstances.some((i: any) => i.instanceId === request.instanceId);
-              if (alreadyExists) {
-                return { connected: true, status: 'authorized', phoneNumber: data.phoneNumber };
-              }
-
-              // Check WhatsApp number limit before creating instance
-              const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
-              await checkWhatsAppNumberLimit(request.merchantId);
-
-              // Get phone number from Green API settings
-              let phoneNumber = request.phoneNumber || '';
-              try {
-                const settingsUrl = `${baseUrl}/waInstance${request.instanceId}/getSettings/${request.token}`;
-                const settingsResponse = await fetch(settingsUrl);
-                const settingsData = await settingsResponse.json();
-                if (settingsData.wid) {
-                  // wid format: "966XXXXXXXXX@c.us"
-                  phoneNumber = settingsData.wid.replace('@c.us', '');
-                }
-              } catch (e) {
-                console.error('[checkConnection] Failed to get phone number from settings:', e);
-              }
-
-              if (phoneNumber) {
-                const phoneOwner = await getActiveInstanceByPhoneNumber(phoneNumber);
-                if (phoneOwner) {
-                  throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
-                }
-              }
-
-              // Create instance WITH phone number
-              await createWhatsAppInstance({
-                merchantId: request.merchantId,
-                instanceId: request.instanceId,
-                token: request.token,
-                apiUrl: request.apiUrl || 'https://api.green-api.com',
-                phoneNumber: phoneNumber || null,
-                status: 'active',
-                isPrimary: 1,
-                connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-              });
-
-              // Mark request as completed
-              await completeWhatsAppRequest(request.id, phoneNumber);
-
-              // Register Webhook URL in Green API so bot can receive messages
-              try {
-                const { setWebhookUrl } = await import('./whatsapp');
-                const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
-                const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
-
-                const webhookResult = await setWebhookUrl(
-                  request.instanceId,
-                  request.token,
-                  webhookUrl,
-                  request.apiUrl || 'https://api.green-api.com'
-                );
-
-                if (webhookResult.success) {
-                  console.log(`[checkConnection] Webhook registered for instance ${request.instanceId}: ${webhookUrl}`);
-                } else {
-                  console.error(`[checkConnection] Webhook registration failed: ${webhookResult.error}`);
-                }
-              } catch (webhookError) {
-                console.error('[checkConnection] Error registering webhook:', webhookError);
-              }
-            }
-
-            return {
-              connected: true,
-              status: 'authorized',
-              phoneNumber: data.phoneNumber,
-            };
-          } else {
-            return {
-              connected: false,
-              status: data.stateInstance || 'unknown',
-            };
-          }
-        } catch (error) {
-          return {
-            connected: false,
-            status: 'error',
-            error: error instanceof Error ? error.message : 'Unknown error',
-          };
-        }
-      }),
+    getQRCode: protectedProcedure.input(z.object({ requestId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      return workspaceQR(merchant.id, { ...input, source: 'current' });
+    }),
+    checkConnection: protectedProcedure.input(z.object({ requestId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner access required' });
+      return confirmWorkspaceRequest(merchant.id, { ...input, source: 'current' });
+    }),
   }),
 
   orderNotifications: orderNotificationsRouter,
