@@ -14,11 +14,13 @@ import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-
 import { WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS } from '../channels/whatsapp/schema-readiness';
 import { SALLA_CREATION_EFFECT_REQUIREMENTS } from '../integrations/salla-creation-effects';
 import { CONVERSION_HISTORY_REQUIREMENTS } from '../integrations/api-conversion-history';
+import { BYAAN_SALES_OPERATION_REQUIREMENTS } from '../integrations/byaan-sales-operations';
 
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   ...SALLA_CREATION_EFFECT_REQUIREMENTS,
   ...CONVERSION_HISTORY_REQUIREMENTS,
+  ...BYAAN_SALES_OPERATION_REQUIREMENTS,
   {table:'zid_products',columns:['zid_store_id','track_inventory','has_variants'],uniqueIndexes:[{name:'zid_products_merchant_store_product_unique',columns:['merchant_id','zid_store_id','zid_product_id']}]},
   { table:'ai_sales_order_links',columns:['merchant_id','order_fact_id','order_fact_digest','order_key','source_row_id','local_order_id','link_digest','snapshot'],
     uniqueIndexes:[{name:'uq_sales_link_fact',columns:['merchant_id','order_fact_id']},{name:'uq_sales_link_order',columns:['merchant_id','order_key']},{name:'uq_sales_link_local',columns:['merchant_id','local_order_id']}] },

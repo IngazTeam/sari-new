@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
 import { assertDisposableDatabase, createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
-import { createPaymentLink, enrollTrainee } from './byaan';
+import { createPaymentLink as paymentLink, enrollTrainee as enroll } from './byaan';
+
+const enrollTrainee = (merchant: number, data: Parameters<typeof enroll>[1]) => enroll(merchant, data, {requestId: '3bc2a3e4-8589-4d5f-a0f7-68be3fe727ea'});
+const createPaymentLink = (merchant: number, data: Parameters<typeof paymentLink>[1]) => paymentLink(merchant, data, {requestId: '934f23e6-c731-43c6-879d-6f315ee28421'});
 
 const transport = vi.hoisted(() => ({ request: vi.fn(), pin: vi.fn() }));
 vi.mock('axios', () => ({ default: transport.request }));

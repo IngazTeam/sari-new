@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 (async()=>{
   const root=process.cwd(),url=new URL(process.env.SARI_TEST_DATABASE_URL||'');
   if(url.protocol!=='mysql:'||url.hostname!=='127.0.0.1'||url.port!=='33089'||url.username!=='sari_brain_test'||url.password!=='disposable-brain-only'||!/^\/sari_[a-z0-9_]*_test$/.test(url.pathname)||url.search||url.hash)throw Error('Use owned synthetic MySQL');
-  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0145_salla_checkout_reviews','0146_tenant_notification_workspaces','0147_api_conversion_history'].includes(journal.entries.at(-1).tag));assert.equal(journal.entries[145].tag,'0145_salla_checkout_reviews');
+  const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json'));assert.ok(['0145_salla_checkout_reviews','0146_tenant_notification_workspaces','0147_api_conversion_history','0148_byaan_sales_operations'].includes(journal.entries.at(-1).tag));assert.equal(journal.entries[145].tag,'0145_salla_checkout_reviews');
   const dir=path.resolve('.tmp/salla-checkout-audit-migration-'+Date.now()),output=path.resolve(process.env.SARI_SALLA_CHECKOUT_AUDIT_MIGRATION_OUTPUT||'.tmp/salla-checkout-audit-migration/results.json');
   fs.mkdirSync(path.join(dir,'drizzle/meta'),{recursive:true});fs.mkdirSync(path.dirname(output),{recursive:true});fs.mkdirSync('.tmp/isolated-tests',{recursive:true});fs.writeFileSync('.tmp/isolated-tests/empty.env','# Synthetic migration only\n');
   const prior=journal.entries.filter(e=>e.idx<145);for(const e of prior)fs.copyFileSync(`drizzle/${e.tag}.sql`,path.join(dir,`drizzle/${e.tag}.sql`));

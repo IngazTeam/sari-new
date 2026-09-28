@@ -3735,6 +3735,21 @@ export const byaanConnections = mysqlTable("byaan_connections", {
 	uniqueIndex("uq_byaan_domain").on(table.tenantDomain),
 ]);
 
+export const byaanSalesOperations = mysqlTable("byaan_sales_operations", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  requestHash: varchar("request_hash", { length: 64 }).notNull(),
+  operationKind: varchar("operation_kind", { length: 16 }).notNull(),
+  authorityHash: varchar("authority_hash", { length: 64 }).notNull(),
+  attemptToken: varchar("attempt_token", { length: 36 }).notNull(),
+  state: varchar({ length: 16 }).notNull(),
+  resultJson: json("result_json"),
+  resultHash: varchar("result_hash", { length: 64 }),
+  createdAt: datetime("created_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  updatedAt: datetime("updated_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex("byaan_sales_request").on(table.merchantId, table.requestId)]);
+
 export const byaanWebhookReceipts = mysqlTable("byaan_webhook_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

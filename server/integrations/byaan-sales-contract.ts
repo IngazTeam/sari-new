@@ -14,6 +14,9 @@ const phone = z.string().transform((value, ctx) => {
   catch { ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid phone' }); return z.NEVER; }
 });
 export const byaanMerchantId = z.number().int().positive().max(2147483647);
+export const byaanSalesRequest = z.object({ requestId: z.string().uuid()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+  .transform(value => value.toLowerCase()) }).strict();
 export const byaanEnrollmentInput = z.object({
   traineePhone: phone, traineeName: text(255), courseId: course, courseTitle: text(255).optional(),
 }).strict();
