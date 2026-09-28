@@ -24,7 +24,7 @@ describe('tenant feature inventory completeness boundaries',()=>{
     for(const r of inventory.routes)for(const id of r.controls)expect(inventory.controls.some((c:any)=>c.id===id)).toBe(true);
   });
   it('detects source drift rather than silently calling an old inventory complete',()=>{
-    for(const item of inventory.files){expect(existsSync(item.file)).toBe(true);expect(createHash('sha256').update(read(item.file)).digest('hex').slice(0,12),`Regenerate audit for ${item.file}`).toBe(item.hash);}
+    for(const item of inventory.files){expect(existsSync(item.file)).toBe(true);expect(createHash('sha256').update(read(item.file).replace(/\r\n/g,'\n')).digest('hex').slice(0,12),`Regenerate audit for ${item.file}`).toBe(item.hash);}
     expect(inventory.invalidLinks).toEqual([]);
     expect(inventory.orphanDetails).toHaveLength(inventory.orphanFiles.length);
   });

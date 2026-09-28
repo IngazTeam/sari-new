@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T07:57:28.386Z",
+  "generatedAt": "2026-09-28T08:05:08.499Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -5620,7 +5620,7 @@
         "ddaf252d235f",
         "512106362aa1",
         "027e9ecac8be",
-        "b5c2904582a0"
+        "527a12544ddf"
       ],
       "queries": [
         "campaigns.list",
@@ -5853,7 +5853,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b5c2904582a0",
+          "id": "527a12544ddf",
           "file": "client/src/pages/merchant/Campaigns.tsx",
           "line": 351,
           "tag": "AlertDialogAction",
@@ -6850,7 +6850,7 @@
         "f355177a9f51",
         "73f8426ad16c",
         "3851286230e1",
-        "2d5c225f8a5b",
+        "ccf3d7218bf4",
         "8b41c9efd5fa"
       ],
       "queries": [
@@ -8092,7 +8092,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2d5c225f8a5b",
+          "id": "ccf3d7218bf4",
           "file": "client/src/pages/merchant/Products.tsx",
           "line": 824,
           "tag": "Button",
@@ -10570,13 +10570,13 @@
         "119c321cfca1",
         "7e3a94c91a3c",
         "e0e0c1d62f02",
-        "6f6809b679e4",
+        "da25094a1dc6",
         "4154f8a10529",
         "deab3361ab3a",
         "a70c8cf3fe79",
         "ed9f2c1d85ce",
         "05729bf486da",
-        "48b55e51f8d1",
+        "8f15047f5d96",
         "eb367795030c",
         "2832fe22d647",
         "5b05beab9776",
@@ -10703,7 +10703,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6f6809b679e4",
+          "id": "da25094a1dc6",
           "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
           "line": 424,
           "tag": "Button",
@@ -10833,7 +10833,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "48b55e51f8d1",
+          "id": "8f15047f5d96",
           "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
           "line": 559,
           "tag": "Button",
@@ -12275,10 +12275,10 @@
         "b4f78040f4c1",
         "676ba29a1594",
         "88e73e60af24",
-        "cec052dd85d3",
+        "6179c60e0fb4",
         "e7fb59ecf9b0",
         "21bbee4f6cc5",
-        "a592e4b170e2"
+        "c2e0b3382790"
       ],
       "queries": [
         "zid.getConnection",
@@ -12759,7 +12759,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cec052dd85d3",
+          "id": "6179c60e0fb4",
           "file": "client/src/pages/merchant/ZidIntegration.tsx",
           "line": 614,
           "tag": "AlertDialogAction",
@@ -12819,7 +12819,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a592e4b170e2",
+          "id": "c2e0b3382790",
           "file": "client/src/pages/merchant/ZidIntegration.tsx",
           "line": 641,
           "tag": "AlertDialogAction",
@@ -12869,10 +12869,10 @@
         "b4f78040f4c1",
         "676ba29a1594",
         "88e73e60af24",
-        "cec052dd85d3",
+        "6179c60e0fb4",
         "e7fb59ecf9b0",
         "21bbee4f6cc5",
-        "a592e4b170e2"
+        "c2e0b3382790"
       ],
       "queries": [
         "zid.getConnection",
@@ -13353,7 +13353,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cec052dd85d3",
+          "id": "6179c60e0fb4",
           "file": "client/src/pages/merchant/ZidIntegration.tsx",
           "line": 614,
           "tag": "AlertDialogAction",
@@ -13413,7 +13413,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a592e4b170e2",
+          "id": "c2e0b3382790",
           "file": "client/src/pages/merchant/ZidIntegration.tsx",
           "line": 641,
           "tag": "AlertDialogAction",
@@ -15636,7 +15636,7 @@
       "controls": [
         "fd0aabcbf78c",
         "a46b90829179",
-        "6030effd190f",
+        "b382e4e130a5",
         "8db783040f70"
       ],
       "queries": [
@@ -15699,7 +15699,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6030effd190f",
+          "id": "b382e4e130a5",
           "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
           "line": 202,
           "tag": "Button",
@@ -16666,12 +16666,12 @@
       "controls": [
         "c61271e0b4f3",
         "d73a8faa5ddd",
-        "7ffbf6edbcd7",
+        "cebbff4f7efd",
         "17283260c277",
         "22e283fd006a",
         "ba0e6c707382",
-        "f8ffd451b853",
-        "e769b826e1f2",
+        "a95fb358f8d8",
+        "4847261350a3",
         "64f0f6a5ae3b",
         "fe47b7a21bf2",
         "d43cd6e4b33b",
@@ -16802,7 +16802,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7ffbf6edbcd7",
+          "id": "cebbff4f7efd",
           "file": "client/src/pages/merchant/Orders.tsx",
           "line": 287,
           "tag": "Button",
@@ -16888,7 +16888,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f8ffd451b853",
+          "id": "a95fb358f8d8",
           "file": "client/src/pages/merchant/Orders.tsx",
           "line": 441,
           "tag": "Button",
@@ -16910,7 +16910,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e769b826e1f2",
+          "id": "4847261350a3",
           "file": "client/src/pages/merchant/Orders.tsx",
           "line": 453,
           "tag": "Button",
@@ -17656,13 +17656,13 @@
         "119c321cfca1",
         "7e3a94c91a3c",
         "e0e0c1d62f02",
-        "6f6809b679e4",
+        "da25094a1dc6",
         "4154f8a10529",
         "deab3361ab3a",
         "a70c8cf3fe79",
         "ed9f2c1d85ce",
         "05729bf486da",
-        "48b55e51f8d1",
+        "8f15047f5d96",
         "eb367795030c",
         "2832fe22d647",
         "5b05beab9776",
@@ -17789,7 +17789,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6f6809b679e4",
+          "id": "da25094a1dc6",
           "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
           "line": 424,
           "tag": "Button",
@@ -17919,7 +17919,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "48b55e51f8d1",
+          "id": "8f15047f5d96",
           "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
           "line": 559,
           "tag": "Button",
@@ -21012,7 +21012,7 @@
         "6d73aed0e935",
         "89e01c813829",
         "7d033e552c76",
-        "1af3205f9992",
+        "815abf0be22d",
         "062676aebfe2",
         "1d073e72b8e8",
         "acc5a16d03e9",
@@ -21026,7 +21026,7 @@
         "00462891bd0a",
         "aa7e2c3013d8",
         "8355d9367ea0",
-        "ba83d1bc3b7d",
+        "2800bb0bced2",
         "134feb74c3df",
         "f5c92933f1c8",
         "639a3311d7cc",
@@ -22404,7 +22404,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1af3205f9992",
+          "id": "815abf0be22d",
           "file": "client/src/pages/merchant/SariBrain.tsx",
           "line": 1507,
           "tag": "Button",
@@ -22707,7 +22707,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ba83d1bc3b7d",
+          "id": "2800bb0bced2",
           "file": "client/src/pages/merchant/SariBrain.tsx",
           "line": 1799,
           "tag": "Button",
@@ -28642,7 +28642,7 @@
         "59b9def61dba",
         "5cb3a775defa",
         "e97838dc84bd",
-        "57dc768a6d64",
+        "6bffc9b06332",
         "0fb49abca018"
       ],
       "queries": [
@@ -29111,7 +29111,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "57dc768a6d64",
+          "id": "6bffc9b06332",
           "file": "client/src/pages/merchant/MediaLibrary.tsx",
           "line": 572,
           "tag": "Button",
@@ -30702,7 +30702,7 @@
         "e2994f16f767",
         "36acf029b89b",
         "9d6ce8f1e351",
-        "8334c7d88e5c",
+        "e28348fb6300",
         "cd62004fa6c9",
         "50dea7a210b3",
         "4ec8e4b761a8",
@@ -30830,7 +30830,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8334c7d88e5c",
+          "id": "e28348fb6300",
           "file": "client/src/pages/merchant/BookingReviews.tsx",
           "line": 302,
           "tag": "Button",
@@ -30956,7 +30956,7 @@
         "27b6dca94940",
         "645db03d6815",
         "c6f927a16f29",
-        "1fb9a919dc3c"
+        "cdcd3be516d9"
       ],
       "queries": [
         "orderNotifications.getTemplates",
@@ -31145,7 +31145,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1fb9a919dc3c",
+          "id": "cdcd3be516d9",
           "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
           "line": 288,
           "tag": "AlertDialogAction",
@@ -31189,7 +31189,7 @@
         "9b0a067f4878",
         "058142f6dc9f",
         "cc54bd6d8882",
-        "9776e92719a0",
+        "ae942e037e61",
         "b3bfa500706e",
         "a868b83bab8c",
         "6fda776e43db",
@@ -31644,7 +31644,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9776e92719a0",
+          "id": "ae942e037e61",
           "file": "client/src/pages/merchant/Settings.tsx",
           "line": 529,
           "tag": "input",
@@ -31844,7 +31844,7 @@
         "0b4b4cc64f10",
         "d4709506774e",
         "fa88030ea040",
-        "a3ceec29a705"
+        "188b3812d1d0"
       ],
       "queries": [
         "accountData.getState"
@@ -32097,7 +32097,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a3ceec29a705",
+          "id": "188b3812d1d0",
           "file": "client/src/pages/merchant/PrivacyCenter.tsx",
           "line": 239,
           "tag": "AlertDialogAction",
@@ -36099,7 +36099,7 @@
         "8ca6722075c3",
         "b8ed8106e9eb",
         "d2eb793983dd",
-        "210f52ecae54",
+        "bfa5cd9ca77a",
         "a0a2093381f7",
         "292c0ef5763e",
         "4a423e3ec2a3",
@@ -36344,7 +36344,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "210f52ecae54",
+          "id": "bfa5cd9ca77a",
           "file": "client/src/pages/merchant/ServiceCategories.tsx",
           "line": 318,
           "tag": "Button",
@@ -36464,7 +36464,7 @@
         "1e98243047de",
         "ef7f5a30937b",
         "d0aff1d1e602",
-        "332d21621d9f",
+        "86f2f44f44ed",
         "9bdd41b7a75f",
         "3c4da8913fc1",
         "d3075276c3a8",
@@ -36712,7 +36712,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "332d21621d9f",
+          "id": "86f2f44f44ed",
           "file": "client/src/pages/merchant/ServicePackages.tsx",
           "line": 401,
           "tag": "Button",
@@ -39147,8 +39147,8 @@
         "client/src/pages/LoyaltyCustomers.tsx"
       ],
       "controls": [
-        "b5a218347970",
-        "ce039a48cdec",
+        "3f63e1a617ce",
+        "ef13690ff5f5",
         "4b1c3dbd2df7",
         "6f6102acc879",
         "4bf7aaf8cb2a",
@@ -39179,7 +39179,7 @@
       ],
       "controlDetails": [
         {
-          "id": "b5a218347970",
+          "id": "3f63e1a617ce",
           "file": "client/src/pages/LoyaltyCustomers.tsx",
           "line": 205,
           "tag": "Button",
@@ -39199,7 +39199,7 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ce039a48cdec",
+          "id": "ef13690ff5f5",
           "file": "client/src/pages/LoyaltyCustomers.tsx",
           "line": 215,
           "tag": "Button",

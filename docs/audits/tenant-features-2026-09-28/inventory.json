@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T07:57:28.386Z",
+  "generatedAt": "2026-09-28T08:05:08.499Z",
   "scope": "Static JSX, local feature-component imports, query/mutation hooks, static choice arrays, conditional controls and literal merchant links. Dynamic controls, permissions, provider states and runtime behavior require separate testing.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -95,7 +95,7 @@
     },
     {
       "file": "client/src/components/LanguageSwitcher.tsx",
-      "hash": "45292735bedf",
+      "hash": "c9439f0fd33a",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -393,7 +393,7 @@
     },
     {
       "file": "client/src/components/PreviewChat.tsx",
-      "hash": "822e3fe97956",
+      "hash": "32ed4100ba94",
       "queries": [],
       "mutations": [
         "testSari.sendMessage"
@@ -746,7 +746,7 @@
     },
     {
       "file": "client/src/components/DashboardSkeleton.tsx",
-      "hash": "e9b3d5efd972",
+      "hash": "98afce1217d1",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -759,7 +759,7 @@
     },
     {
       "file": "client/src/components/TrialBanner.tsx",
-      "hash": "cc4012d4bd90",
+      "hash": "79f97ccad655",
       "queries": [
         "merchantSubscription.getCurrentSubscription"
       ],
@@ -1665,7 +1665,7 @@
     },
     {
       "file": "client/src/pages/merchant/Campaigns.tsx",
-      "hash": "0ca020168b7d",
+      "hash": "1e2b76c9b131",
       "queries": [
         "campaigns.list",
         "campaigns.getSendProgress",
@@ -1843,7 +1843,7 @@
     },
     {
       "file": "client/src/pages/merchant/CampaignDetails.tsx",
-      "hash": "a7968207a36a",
+      "hash": "e904bcc03e35",
       "queries": [
         "campaigns.getById"
       ],
@@ -1918,7 +1918,7 @@
     },
     {
       "file": "client/src/pages/merchant/CampaignReport.tsx",
-      "hash": "fc6bb3224a5e",
+      "hash": "9521594a3286",
       "queries": [
         "campaigns.getReport"
       ],
@@ -1995,7 +1995,7 @@
     },
     {
       "file": "client/src/pages/merchant/Products.tsx",
-      "hash": "c80fedc30e21",
+      "hash": "2e1fcf8bc5b7",
       "queries": [
         "merchants.getCurrent",
         "products.list"
@@ -2151,7 +2151,7 @@
     },
     {
       "file": "client/src/components/ProductsSkeleton.tsx",
-      "hash": "0ca983c9ad88",
+      "hash": "be4a46f6cabb",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -2177,7 +2177,7 @@
     },
     {
       "file": "client/src/pages/merchant/UploadProducts.tsx",
-      "hash": "c51c05fc9422",
+      "hash": "473ec04329e7",
       "queries": [
         "products.getSheetSyncStatus"
       ],
@@ -2650,7 +2650,7 @@
     },
     {
       "file": "client/src/components/ConversationPreviewMode.tsx",
-      "hash": "76621027c9b2",
+      "hash": "965e094715eb",
       "queries": [],
       "mutations": [],
       "sections": [
@@ -2671,7 +2671,7 @@
     },
     {
       "file": "client/src/components/WhatsAppPreview.tsx",
-      "hash": "b4cc79135465",
+      "hash": "6dbe9f410d6d",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -2692,7 +2692,7 @@
     },
     {
       "file": "client/src/components/AudioWaveAnimation.tsx",
-      "hash": "4a4c2f53ad94",
+      "hash": "7e3f8d45daa5",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -2829,7 +2829,7 @@
     },
     {
       "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
-      "hash": "25e25825a5a2",
+      "hash": "85d979bc244f",
       "queries": [
         "merchants.getCurrent",
         "whatsappInstances.listSafe",
@@ -3029,7 +3029,7 @@
     },
     {
       "file": "client/src/pages/SallaIntegration.tsx",
-      "hash": "2b33a0f4a490",
+      "hash": "cc2ce3db4c7e",
       "queries": [
         "salla.getConnection",
         "salla.getSyncLogs"
@@ -3181,7 +3181,7 @@
     },
     {
       "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "hash": "53ac72e72dd6",
+      "hash": "10087ad9ddb2",
       "queries": [
         "integrations.getByaanStatus"
       ],
@@ -3279,7 +3279,7 @@
     },
     {
       "file": "client/src/pages/ByaanDashboard.tsx",
-      "hash": "1abb8a9a6029",
+      "hash": "0739e149fcb9",
       "queries": [
         "byaan.getStatus",
         "byaan.getTrainees",
@@ -3385,7 +3385,7 @@
     },
     {
       "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "hash": "2c55c2916e28",
+      "hash": "85ddc7144279",
       "queries": [
         "zid.getConnection",
         "zid.getSyncLogs",
@@ -3604,7 +3604,7 @@
     },
     {
       "file": "client/src/pages/ZidSyncLogs.tsx",
-      "hash": "930ec8631999",
+      "hash": "ab7afb129f5f",
       "queries": [
         "zid.getSyncLogs",
         "zid.getSyncStats"
@@ -3668,7 +3668,7 @@
     },
     {
       "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "hash": "14fd217d2c5e",
+      "hash": "cbd11cdaabcc",
       "queries": [
         "woocommerce.getSettings"
       ],
@@ -3737,7 +3737,7 @@
     },
     {
       "file": "client/src/pages/WooCommerceProducts.tsx",
-      "hash": "ff658dc5e82e",
+      "hash": "7429ef130558",
       "queries": [
         "woocommerce.getProducts",
         "woocommerce.searchProducts"
@@ -3816,7 +3816,7 @@
     },
     {
       "file": "client/src/pages/WooCommerceOrders.tsx",
-      "hash": "3f909d8f8049",
+      "hash": "395b785b5a27",
       "queries": [
         "woocommerce.getOrders"
       ],
@@ -3915,7 +3915,7 @@
     },
     {
       "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "hash": "4a183386c11d",
+      "hash": "bfe381156741",
       "queries": [
         "woocommerce.getSalesStats",
         "woocommerce.getTopProducts",
@@ -4088,7 +4088,7 @@
     },
     {
       "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "hash": "dd672849f823",
+      "hash": "31ff6846cf76",
       "queries": [
         "calendly.getConnection",
         "calendly.getUpcomingEvents",
@@ -4229,7 +4229,7 @@
     },
     {
       "file": "client/src/pages/DiscountCodes.tsx",
-      "hash": "f9de4c66d8ef",
+      "hash": "b04621a51be5",
       "queries": [
         "discounts.list",
         "discounts.getStats"
@@ -4432,7 +4432,7 @@
     },
     {
       "file": "client/src/pages/merchant/Referrals.tsx",
-      "hash": "7612eebf0453",
+      "hash": "5b1208e44a71",
       "queries": [
         "referrals.getMyCode",
         "referrals.getMyReferrals",
@@ -4627,7 +4627,7 @@
     },
     {
       "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "hash": "fd0573eca0c7",
+      "hash": "91dfda3bb062",
       "queries": [
         "occasionCampaigns.list",
         "occasionCampaigns.getStats",
@@ -4726,7 +4726,7 @@
     },
     {
       "file": "client/src/pages/merchant/Promotions.tsx",
-      "hash": "98d0e2832ef2",
+      "hash": "d55d21e92d03",
       "queries": [
         "promotions.list",
         "promotions.getStats"
@@ -4884,7 +4884,7 @@
     },
     {
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "hash": "9fe71e97305e",
+      "hash": "fc401019efd8",
       "queries": [
         "merchants.getCurrent",
         "analytics.getDashboardKPIs",
@@ -5101,7 +5101,7 @@
     },
     {
       "file": "client/src/contexts/CurrencyContext.tsx",
-      "hash": "d6faa85f62ab",
+      "hash": "fdc5c432d011",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -5114,7 +5114,7 @@
     },
     {
       "file": "client/src/pages/merchant/Analytics.tsx",
-      "hash": "2a45e778b189",
+      "hash": "d1f5d438df98",
       "queries": [
         "messageAnalytics.getMessageStats",
         "messageAnalytics.getPeakHours",
@@ -5298,7 +5298,7 @@
     },
     {
       "file": "client/src/pages/merchant/OverviewAnalytics.tsx",
-      "hash": "d3646b205413",
+      "hash": "3d1b130b07e5",
       "queries": [
         "merchants.getCurrent",
         "abandonedCarts.getStats",
@@ -5409,7 +5409,7 @@
     },
     {
       "file": "client/src/pages/merchant/Orders.tsx",
-      "hash": "5d28a4a00ffa",
+      "hash": "afa68bf44785",
       "queries": [
         "merchants.getCurrent",
         "orders.getWithFilters",
@@ -5735,7 +5735,7 @@
     },
     {
       "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "hash": "cb124eaed95c",
+      "hash": "949f1848f9c7",
       "queries": [
         "whatsapp.getPrimaryInstance"
       ],
@@ -5847,7 +5847,7 @@
     },
     {
       "file": "client/src/pages/merchant/GreenAPISetupGuide.tsx",
-      "hash": "76ba998c819d",
+      "hash": "1b26f7867173",
       "queries": [],
       "mutations": [],
       "sections": [
@@ -5896,7 +5896,7 @@
     },
     {
       "file": "client/src/pages/merchant/TestSari.tsx",
-      "hash": "34c6a90aabca",
+      "hash": "0ee640fbc86d",
       "queries": [],
       "mutations": [
         "testSari.createConversation",
@@ -6083,7 +6083,7 @@
     },
     {
       "file": "client/src/pages/merchant/MetricsDashboard.tsx",
-      "hash": "b8b065904311",
+      "hash": "96c003ff580c",
       "queries": [
         "testSari.getMetrics"
       ],
@@ -6148,7 +6148,7 @@
     },
     {
       "file": "client/src/pages/merchant/WhatsAppWebhookSetup.tsx",
-      "hash": "a4e734adcfb1",
+      "hash": "dff38c0f5cd9",
       "queries": [
         "auth.me"
       ],
@@ -6601,7 +6601,7 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "fa9a8c546a85",
+      "hash": "a4eff05cea9a",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
@@ -7227,7 +7227,7 @@
     },
     {
       "file": "client/src/pages/SariPlayground.tsx",
-      "hash": "60eeeb5e3abd",
+      "hash": "00abb2b35b5d",
       "queries": [],
       "mutations": [
         "ai.chat"
@@ -7283,7 +7283,7 @@
     },
     {
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "hash": "36850d5ccc04",
+      "hash": "4214806e9cdd",
       "queries": [
         "sariBrain.getQuotations",
         "sariBrain.getQuotationStats",
@@ -7389,7 +7389,7 @@
     },
     {
       "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "hash": "9a15d9f0e64a",
+      "hash": "5175e75e65cb",
       "queries": [
         "salesPipeline.getActionCounts",
         "salesPipeline.getKPIs",
@@ -7525,7 +7525,7 @@
     },
     {
       "file": "client/src/pages/merchant/QuotationTemplates.tsx",
-      "hash": "05fdb6b37823",
+      "hash": "5c20946ed540",
       "queries": [
         "sariBrain.getQuotationTemplates"
       ],
@@ -7598,7 +7598,7 @@
     },
     {
       "file": "client/src/pages/merchant/MediaLibrary.tsx",
-      "hash": "2ef6726405a4",
+      "hash": "5207b2539a6d",
       "queries": [
         "media.list",
         "media.getStats"
@@ -7662,7 +7662,7 @@
     },
     {
       "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "hash": "7d200daa9439",
+      "hash": "1428d453179a",
       "queries": [
         "scheduledMessages.list"
       ],
@@ -7770,7 +7770,7 @@
     },
     {
       "file": "client/src/pages/merchant/QuickResponses.tsx",
-      "hash": "842a54924d4d",
+      "hash": "cdd798445ed9",
       "queries": [
         "quickResponses.list",
         "quickResponses.getStats"
@@ -8033,7 +8033,7 @@
     },
     {
       "file": "client/src/pages/merchant/PerformanceMetrics.tsx",
-      "hash": "f2dd78836865",
+      "hash": "a2f41a4bd356",
       "queries": [
         "performance.getPerformanceMetrics"
       ],
@@ -8231,7 +8231,7 @@
     },
     {
       "file": "client/src/pages/merchant/Reviews.tsx",
-      "hash": "54728640a1d2",
+      "hash": "07ae96109e71",
       "queries": [
         "merchants.getCurrent",
         "reviews.list",
@@ -8334,7 +8334,7 @@
     },
     {
       "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "hash": "2e402265e108",
+      "hash": "5518dab008da",
       "queries": [
         "bookingReviews.list"
       ],
@@ -8404,7 +8404,7 @@
     },
     {
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "hash": "a4067e028c64",
+      "hash": "23b11d5b9c98",
       "queries": [
         "orderNotifications.getTemplates",
         "orderNotifications.getHealth"
@@ -8501,7 +8501,7 @@
     },
     {
       "file": "client/src/pages/merchant/Settings.tsx",
-      "hash": "5aaa00383f06",
+      "hash": "dd4c021c10f0",
       "queries": [
         "auth.me",
         "merchants.getCurrent",
@@ -8612,7 +8612,7 @@
     },
     {
       "file": "client/src/components/SetupWizardReset.tsx",
-      "hash": "30ea5d2db112",
+      "hash": "a01b664aa654",
       "queries": [],
       "mutations": [
         "setupWizard.resetWizard"
@@ -8646,7 +8646,7 @@
     },
     {
       "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "hash": "de4b419ef08c",
+      "hash": "c1a3d9e561fc",
       "queries": [
         "accountData.getState"
       ],
@@ -8711,7 +8711,7 @@
     },
     {
       "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "hash": "6db8f9d87871",
+      "hash": "a6cadb744e3b",
       "queries": [
         "notifications.list",
         "notifications.unreadCount"
@@ -8786,7 +8786,7 @@
     },
     {
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "hash": "ec0c0a5e07f1",
+      "hash": "e3871ca59e6a",
       "queries": [
         "botSettings.get"
       ],
@@ -9114,7 +9114,7 @@
     },
     {
       "file": "client/src/pages/StaffManagement.tsx",
-      "hash": "78f412846db2",
+      "hash": "3372737d187e",
       "queries": [
         "staff.list"
       ],
@@ -9199,7 +9199,7 @@
     },
     {
       "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "hash": "ac0010c5dbfb",
+      "hash": "3786f101f694",
       "queries": [
         "team.list"
       ],
@@ -9303,7 +9303,7 @@
     },
     {
       "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "hash": "c4956d59246b",
+      "hash": "f0a9243c609d",
       "queries": [
         "services.list",
         "serviceCategories.list"
@@ -9387,7 +9387,7 @@
     },
     {
       "file": "client/src/pages/merchant/ServiceForm.tsx",
-      "hash": "e55a28047d38",
+      "hash": "91b3a9434879",
       "queries": [
         "serviceCategories.list",
         "services.getById"
@@ -9463,7 +9463,7 @@
     },
     {
       "file": "client/src/pages/ServiceDetails.tsx",
-      "hash": "d2a8f79696a1",
+      "hash": "ba25dd4380ac",
       "queries": [
         "services.getById"
       ],
@@ -9893,7 +9893,7 @@
     },
     {
       "file": "client/src/pages/merchant/ServiceCategories.tsx",
-      "hash": "b4f3a696f73b",
+      "hash": "26c06ef69383",
       "queries": [
         "serviceCategories.list"
       ],
@@ -9973,7 +9973,7 @@
     },
     {
       "file": "client/src/pages/merchant/ServicePackages.tsx",
-      "hash": "7b986724ace6",
+      "hash": "42e7fdc63133",
       "queries": [
         "servicePackages.list",
         "services.list"
@@ -10161,7 +10161,7 @@
     },
     {
       "file": "client/src/pages/SheetsExport.tsx",
-      "hash": "7c54763ad500",
+      "hash": "7fb5e24dc6b5",
       "queries": [
         "conversations.list"
       ],
@@ -10462,7 +10462,7 @@
     },
     {
       "file": "client/src/pages/PaymentDetails.tsx",
-      "hash": "e9c8a9a2122a",
+      "hash": "4469404f470a",
       "queries": [
         "payments.getById"
       ],
@@ -10584,7 +10584,7 @@
     },
     {
       "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "hash": "09c251a9a5de",
+      "hash": "fb740fa027c2",
       "queries": [
         "merchantPayments.getSettings"
       ],
@@ -10657,7 +10657,7 @@
     },
     {
       "file": "client/src/pages/LoyaltySettings.tsx",
-      "hash": "e29f5215feb7",
+      "hash": "7eefa02af188",
       "queries": [
         "loyalty.getSettings"
       ],
@@ -10712,7 +10712,7 @@
     },
     {
       "file": "client/src/pages/LoyaltyTiers.tsx",
-      "hash": "a8dc979abfda",
+      "hash": "61e825e433f9",
       "queries": [
         "loyalty.getTiers"
       ],
@@ -10772,7 +10772,7 @@
     },
     {
       "file": "client/src/pages/LoyaltyRewards.tsx",
-      "hash": "992d3df8e764",
+      "hash": "55d47b05420f",
       "queries": [
         "loyalty.getRewards"
       ],
@@ -10848,7 +10848,7 @@
     },
     {
       "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "hash": "3d7f2dc5c2eb",
+      "hash": "37ab4aed3d80",
       "queries": [
         "loyalty.getAllCustomersPoints",
         "loyalty.getStats"
@@ -10940,7 +10940,7 @@
     },
     {
       "file": "client/src/pages/IntegrationsDashboard.tsx",
-      "hash": "e984b577fac4",
+      "hash": "9feece9e6fd6",
       "queries": [
         "advancedNotifications.getIntegrationsDashboard"
       ],
@@ -11208,7 +11208,7 @@
     },
     {
       "file": "client/src/pages/NotificationSettings.tsx",
-      "hash": "02dd35b0f066",
+      "hash": "93a67accee45",
       "queries": [
         "notificationPreferences.get"
       ],
@@ -11268,7 +11268,7 @@
     },
     {
       "file": "client/src/pages/CurrencySettings.tsx",
-      "hash": "b6f6562b289b",
+      "hash": "d1a22b679954",
       "queries": [],
       "mutations": [],
       "sections": [
@@ -11305,7 +11305,7 @@
     },
     {
       "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
-      "hash": "07a0852f4ce8",
+      "hash": "963e7926ac14",
       "queries": [
         "push.getVapidPublicKey",
         "push.getStats",
@@ -11481,7 +11481,7 @@
     },
     {
       "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
-      "hash": "0f889530c6b9",
+      "hash": "d95ec5838acb",
       "queries": [
         "advancedNotifications.getWhatsappAutoNotifications",
         "advancedNotifications.getDefaultTemplates"
@@ -11553,7 +11553,7 @@
     },
     {
       "file": "client/src/pages/Reports.tsx",
-      "hash": "a61493c58e46",
+      "hash": "42db6f866310",
       "queries": [
         "reports.getSalesReport",
         "reports.getCustomersReport",
@@ -11798,7 +11798,7 @@
     },
     {
       "file": "client/src/pages/merchant/Usage.tsx",
-      "hash": "6c765ff8dd02",
+      "hash": "363656bdadc1",
       "queries": [
         "subscriptions.getUsage"
       ],
@@ -11853,7 +11853,7 @@
     },
     {
       "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "hash": "0bf84e22b092",
+      "hash": "eb25c5db59dd",
       "queries": [
         "usage.getCurrentUsage"
       ],
@@ -11950,7 +11950,7 @@
     },
     {
       "file": "client/src/pages/merchant/SubscriptionPlans.tsx",
-      "hash": "fb0f10d2b661",
+      "hash": "c245e6fe2cf9",
       "queries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -12014,7 +12014,7 @@
     },
     {
       "file": "client/src/pages/ComparePlans.tsx",
-      "hash": "364e2f92716b",
+      "hash": "16a8eddb577a",
       "queries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -12104,7 +12104,7 @@
     },
     {
       "file": "client/src/pages/merchant/Checkout.tsx",
-      "hash": "4a05b7e8f62d",
+      "hash": "65c41a64d288",
       "queries": [
         "subscriptionPlans.listPlans"
       ],
@@ -12154,7 +12154,7 @@
     },
     {
       "file": "client/src/pages/merchant/PaymentSuccess.tsx",
-      "hash": "300107ed7b7a",
+      "hash": "868d6ba83d37",
       "queries": [
         "subscriptionPayments.verifyPayment"
       ],
@@ -12189,7 +12189,7 @@
     },
     {
       "file": "client/src/pages/merchant/PaymentCancel.tsx",
-      "hash": "9419810222a0",
+      "hash": "0b99ac9cdaca",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -12221,7 +12221,7 @@
     },
     {
       "file": "client/src/pages/Customers.tsx",
-      "hash": "c9cc5735758e",
+      "hash": "30ec197e8ab9",
       "queries": [
         "customers.list",
         "customers.getStats",
@@ -12370,7 +12370,7 @@
     },
     {
       "file": "client/src/pages/SmartAnalysis.tsx",
-      "hash": "1c6355456177",
+      "hash": "f28d1a97a85c",
       "queries": [
         "analysis.getStatus",
         "analysis.getExistingData",
@@ -12586,7 +12586,7 @@
     },
     {
       "file": "client/src/pages/CompetitorAnalysis.tsx",
-      "hash": "5bea982a3f59",
+      "hash": "a48d34159b5a",
       "queries": [
         "websiteAnalysis.listCompetitors"
       ],
@@ -12649,7 +12649,7 @@
     },
     {
       "file": "client/src/pages/CustomerDetails.tsx",
-      "hash": "7ea8b33b6b5f",
+      "hash": "ac5fc72f82dd",
       "queries": [
         "customers.getByPhone"
       ],
@@ -12803,7 +12803,7 @@
     },
     {
       "file": "client/src/components/NotificationBell.tsx",
-      "hash": "51e7ceaa1c9d",
+      "hash": "af9e74b8381f",
       "queries": [
         "notifications.list",
         "notifications.unreadCount"
@@ -12854,7 +12854,7 @@
     },
     {
       "file": "client/src/components/ThemeSwitcher.tsx",
-      "hash": "83326925ce11",
+      "hash": "534db40de7c5",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -12869,7 +12869,7 @@
     },
     {
       "file": "client/src/contexts/ThemeContext.tsx",
-      "hash": "4880f274c840",
+      "hash": "e025cdb51ad7",
       "queries": [],
       "mutations": [],
       "sections": [],
@@ -12965,7 +12965,7 @@
     },
     {
       "file": "client/src/components/SubscriptionBadge.tsx",
-      "hash": "e6d1eecd3a58",
+      "hash": "42595eb8aec8",
       "queries": [
         "merchantSubscription.getCurrentSubscription",
         "merchantSubscription.getDaysRemaining"
@@ -12998,7 +12998,7 @@
     },
     {
       "file": "client/src/components/ErrorBoundary.tsx",
-      "hash": "d9357099814f",
+      "hash": "b2ca0244a523",
       "queries": [],
       "mutations": [],
       "sections": [
@@ -13413,7 +13413,7 @@
         "ddaf252d235f",
         "512106362aa1",
         "027e9ecac8be",
-        "b5c2904582a0"
+        "527a12544ddf"
       ],
       "queries": [
         "campaigns.list",
@@ -13590,7 +13590,7 @@
         "f355177a9f51",
         "73f8426ad16c",
         "3851286230e1",
-        "2d5c225f8a5b",
+        "ccf3d7218bf4",
         "8b41c9efd5fa"
       ],
       "queries": [
@@ -13786,13 +13786,13 @@
         "119c321cfca1",
         "7e3a94c91a3c",
         "e0e0c1d62f02",
-        "6f6809b679e4",
+        "da25094a1dc6",
         "4154f8a10529",
         "deab3361ab3a",
         "a70c8cf3fe79",
         "ed9f2c1d85ce",
         "05729bf486da",
-        "48b55e51f8d1",
+        "8f15047f5d96",
         "eb367795030c",
         "2832fe22d647",
         "5b05beab9776",
@@ -13959,10 +13959,10 @@
         "b4f78040f4c1",
         "676ba29a1594",
         "88e73e60af24",
-        "cec052dd85d3",
+        "6179c60e0fb4",
         "e7fb59ecf9b0",
         "21bbee4f6cc5",
-        "a592e4b170e2"
+        "c2e0b3382790"
       ],
       "queries": [
         "zid.getConnection",
@@ -14008,10 +14008,10 @@
         "b4f78040f4c1",
         "676ba29a1594",
         "88e73e60af24",
-        "cec052dd85d3",
+        "6179c60e0fb4",
         "e7fb59ecf9b0",
         "21bbee4f6cc5",
-        "a592e4b170e2"
+        "c2e0b3382790"
       ],
       "queries": [
         "zid.getConnection",
@@ -14325,7 +14325,7 @@
       "controls": [
         "fd0aabcbf78c",
         "a46b90829179",
-        "6030effd190f",
+        "b382e4e130a5",
         "8db783040f70"
       ],
       "queries": [
@@ -14474,12 +14474,12 @@
       "controls": [
         "c61271e0b4f3",
         "d73a8faa5ddd",
-        "7ffbf6edbcd7",
+        "cebbff4f7efd",
         "17283260c277",
         "22e283fd006a",
         "ba0e6c707382",
-        "f8ffd451b853",
-        "e769b826e1f2",
+        "a95fb358f8d8",
+        "4847261350a3",
         "64f0f6a5ae3b",
         "fe47b7a21bf2",
         "d43cd6e4b33b",
@@ -14545,13 +14545,13 @@
         "119c321cfca1",
         "7e3a94c91a3c",
         "e0e0c1d62f02",
-        "6f6809b679e4",
+        "da25094a1dc6",
         "4154f8a10529",
         "deab3361ab3a",
         "a70c8cf3fe79",
         "ed9f2c1d85ce",
         "05729bf486da",
-        "48b55e51f8d1",
+        "8f15047f5d96",
         "eb367795030c",
         "2832fe22d647",
         "5b05beab9776",
@@ -14920,7 +14920,7 @@
         "6d73aed0e935",
         "89e01c813829",
         "7d033e552c76",
-        "1af3205f9992",
+        "815abf0be22d",
         "062676aebfe2",
         "1d073e72b8e8",
         "acc5a16d03e9",
@@ -14934,7 +14934,7 @@
         "00462891bd0a",
         "aa7e2c3013d8",
         "8355d9367ea0",
-        "ba83d1bc3b7d",
+        "2800bb0bced2",
         "134feb74c3df",
         "f5c92933f1c8",
         "639a3311d7cc",
@@ -15398,7 +15398,7 @@
         "59b9def61dba",
         "5cb3a775defa",
         "e97838dc84bd",
-        "57dc768a6d64",
+        "6bffc9b06332",
         "0fb49abca018"
       ],
       "queries": [
@@ -15642,7 +15642,7 @@
         "e2994f16f767",
         "36acf029b89b",
         "9d6ce8f1e351",
-        "8334c7d88e5c",
+        "e28348fb6300",
         "cd62004fa6c9",
         "50dea7a210b3",
         "4ec8e4b761a8",
@@ -15671,7 +15671,7 @@
         "27b6dca94940",
         "645db03d6815",
         "c6f927a16f29",
-        "1fb9a919dc3c"
+        "cdcd3be516d9"
       ],
       "queries": [
         "orderNotifications.getTemplates",
@@ -15705,7 +15705,7 @@
         "9b0a067f4878",
         "058142f6dc9f",
         "cc54bd6d8882",
-        "9776e92719a0",
+        "ae942e037e61",
         "b3bfa500706e",
         "a868b83bab8c",
         "6fda776e43db",
@@ -15748,7 +15748,7 @@
         "0b4b4cc64f10",
         "d4709506774e",
         "fa88030ea040",
-        "a3ceec29a705"
+        "188b3812d1d0"
       ],
       "queries": [
         "accountData.getState"
@@ -16156,7 +16156,7 @@
         "8ca6722075c3",
         "b8ed8106e9eb",
         "d2eb793983dd",
-        "210f52ecae54",
+        "bfa5cd9ca77a",
         "a0a2093381f7",
         "292c0ef5763e",
         "4a423e3ec2a3",
@@ -16190,7 +16190,7 @@
         "1e98243047de",
         "ef7f5a30937b",
         "d0aff1d1e602",
-        "332d21621d9f",
+        "86f2f44f44ed",
         "9bdd41b7a75f",
         "3c4da8913fc1",
         "d3075276c3a8",
@@ -16487,8 +16487,8 @@
         "client/src/pages/LoyaltyCustomers.tsx"
       ],
       "controls": [
-        "b5a218347970",
-        "ce039a48cdec",
+        "3f63e1a617ce",
+        "ef13690ff5f5",
         "4b1c3dbd2df7",
         "6f6102acc879",
         "4bf7aaf8cb2a",
@@ -22649,7 +22649,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b5c2904582a0",
+      "id": "527a12544ddf",
       "file": "client/src/pages/merchant/Campaigns.tsx",
       "line": 351,
       "tag": "AlertDialogAction",
@@ -24348,7 +24348,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2d5c225f8a5b",
+      "id": "ccf3d7218bf4",
       "file": "client/src/pages/merchant/Products.tsx",
       "line": 824,
       "tag": "Button",
@@ -26710,7 +26710,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6f6809b679e4",
+      "id": "da25094a1dc6",
       "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
       "line": 424,
       "tag": "Button",
@@ -26840,7 +26840,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "48b55e51f8d1",
+      "id": "8f15047f5d96",
       "file": "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
       "line": 559,
       "tag": "Button",
@@ -28577,7 +28577,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cec052dd85d3",
+      "id": "6179c60e0fb4",
       "file": "client/src/pages/merchant/ZidIntegration.tsx",
       "line": 614,
       "tag": "AlertDialogAction",
@@ -28637,7 +28637,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a592e4b170e2",
+      "id": "c2e0b3382790",
       "file": "client/src/pages/merchant/ZidIntegration.tsx",
       "line": 641,
       "tag": "AlertDialogAction",
@@ -30500,7 +30500,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6030effd190f",
+      "id": "b382e4e130a5",
       "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
       "line": 202,
       "tag": "Button",
@@ -31364,7 +31364,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7ffbf6edbcd7",
+      "id": "cebbff4f7efd",
       "file": "client/src/pages/merchant/Orders.tsx",
       "line": 287,
       "tag": "Button",
@@ -31450,7 +31450,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f8ffd451b853",
+      "id": "a95fb358f8d8",
       "file": "client/src/pages/merchant/Orders.tsx",
       "line": 441,
       "tag": "Button",
@@ -31472,7 +31472,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e769b826e1f2",
+      "id": "4847261350a3",
       "file": "client/src/pages/merchant/Orders.tsx",
       "line": 453,
       "tag": "Button",
@@ -35658,7 +35658,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1af3205f9992",
+      "id": "815abf0be22d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
       "line": 1507,
       "tag": "Button",
@@ -35961,7 +35961,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba83d1bc3b7d",
+      "id": "2800bb0bced2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
       "line": 1799,
       "tag": "Button",
@@ -38437,7 +38437,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57dc768a6d64",
+      "id": "6bffc9b06332",
       "file": "client/src/pages/merchant/MediaLibrary.tsx",
       "line": 572,
       "tag": "Button",
@@ -39624,7 +39624,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8334c7d88e5c",
+      "id": "e28348fb6300",
       "file": "client/src/pages/merchant/BookingReviews.tsx",
       "line": 302,
       "tag": "Button",
@@ -39903,7 +39903,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1fb9a919dc3c",
+      "id": "cdcd3be516d9",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
       "line": 288,
       "tag": "AlertDialogAction",
@@ -40346,7 +40346,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9776e92719a0",
+      "id": "ae942e037e61",
       "file": "client/src/pages/merchant/Settings.tsx",
       "line": 529,
       "tag": "input",
@@ -40759,7 +40759,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a3ceec29a705",
+      "id": "188b3812d1d0",
       "file": "client/src/pages/merchant/PrivacyCenter.tsx",
       "line": 239,
       "tag": "AlertDialogAction",
@@ -44110,7 +44110,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "210f52ecae54",
+      "id": "bfa5cd9ca77a",
       "file": "client/src/pages/merchant/ServiceCategories.tsx",
       "line": 318,
       "tag": "Button",
@@ -44434,7 +44434,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "332d21621d9f",
+      "id": "86f2f44f44ed",
       "file": "client/src/pages/merchant/ServicePackages.tsx",
       "line": 401,
       "tag": "Button",
@@ -46488,7 +46488,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b5a218347970",
+      "id": "3f63e1a617ce",
       "file": "client/src/pages/LoyaltyCustomers.tsx",
       "line": 205,
       "tag": "Button",
@@ -46508,7 +46508,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ce039a48cdec",
+      "id": "ef13690ff5f5",
       "file": "client/src/pages/LoyaltyCustomers.tsx",
       "line": 215,
       "tag": "Button",
@@ -50940,7 +50940,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9d6c5206bec9",
+      "id": "1f8191cb53c3",
       "file": "client/src/components/NotificationBell.tsx",
       "line": 162,
       "tag": "Button",

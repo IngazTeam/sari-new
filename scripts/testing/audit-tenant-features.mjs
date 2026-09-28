@@ -14,7 +14,7 @@ vm.runInNewContext(fs.readFileSync('prototypes/tenant-dashboard/site/page-catalo
 const catalog = context.window.TENANT_PAGES;
 const cache = new Map();
 const normalize = file => file.replaceAll('\\', '/');
-const hash = text => crypto.createHash('sha256').update(text).digest('hex').slice(0, 12);
+const hash = text => crypto.createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex').slice(0, 12);
 function resolve(file, specifier) {
   const base = specifier.startsWith('@/') ? `${sourceRoot}/${specifier.slice(2)}` : specifier.startsWith('.') ? path.join(path.dirname(file), specifier) : null;
   return base && [base, `${base}.tsx`, `${base}.ts`, `${base}/index.tsx`].map(normalize).find(p => fs.existsSync(p) && fs.statSync(p).isFile());
