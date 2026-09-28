@@ -1,5 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mock = vi.hoisted(() => ({ send: vi.fn(), instance: vi.fn() }));
+vi.mock('./openai',()=>({callGPT4:async(messages:any[])=>JSON.stringify(memoryUnderstandingFixture(JSON.parse(messages[1].content),[{field:'budget',value:{amountMinor:50000,currency:'SAR'}}]))}));
+vi.mock('../db_ai_settings',()=>({getTextGenerationSettings:async()=>({model:'central-handoff-test',isActive:true,textGenerationProvider:'openai'})}));
 vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => ({ send: mock.send }) }));
 vi.mock('../db', async original => ({ ...await original<typeof import('../db')>(), getPrimaryWhatsAppInstance: mock.instance, getWhatsAppInstanceById: mock.instance }));
 import { getPool, closeDb } from '../db/connection';
@@ -9,7 +11,9 @@ import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import { buildReplyPlan, dispatchReplyPlan } from '../messaging/reply-plan';
 import { assertCheckoutIdentity, checkoutTransaction } from './checkout-agreements';
 import { updateConversation, createMessage } from '../db';
-import { captureDirectCustomerMemory } from './customer-memory';
+import { captureDirectCustomerMemory, captureContextualCustomerMemory } from './customer-memory';
+import {understandConversation} from './conversation-understanding';
+import {memoryUnderstandingFixture} from '../tests/helpers/memory-understanding-fixture';
 
 describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership lifecycle', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, conversationId: number, sourceId: number, instanceId: number;
@@ -155,7 +159,7 @@ describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership l
   it('honors a persisted forgetting request without callers supplying a cutoff', async () => {
     const source = await incoming('ميزانيتي 500 ريال');
     const identity = { merchantId: fixture.merchantId, conversationId, customerPhone: phone, incomingMessageId: source };
-    await captureDirectCustomerMemory(identity);
+    await understandConversation({...identity,message:'ميزانيتي 500 ريال'}); await captureContextualCustomerMemory(identity);
     expect((await conversationHandoffSummary(fixture.merchantId, conversationId)).facts).toHaveLength(1);
     const forget = await incoming('احذف ذاكرة المبيعات الخاصة بي');
     expect(await captureDirectCustomerMemory({ ...identity, incomingMessageId: forget })).toMatchObject({ forgetBeforeMessageId: forget });

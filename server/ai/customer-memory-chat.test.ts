@@ -16,7 +16,7 @@ describe('memory entrypoint before provider admission', () => {
     expect(calls.memory).toHaveBeenCalledWith({ merchantId: 17, conversationId: 23, incomingMessageId: 40, customerPhone: input.customerPhone });
     expect(calls.budget).not.toHaveBeenCalled();
   });
-  it('persists a correction before budget exhaustion stops paid generation', async () => {
+  it('checks privacy controls then stops paid understanding when the shared budget is exhausted', async () => {
     expect(await chatWithSari({ ...input, message: 'ميزانيتي 500 ريال' })).toContain('تعذر الرد الآلي');
     expect(calls.memory).toHaveBeenCalledTimes(1);
     expect(calls.memory.mock.invocationCallOrder[0]).toBeLessThan(calls.budget.mock.invocationCallOrder[0]);

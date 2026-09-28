@@ -5,6 +5,9 @@ import { destroySession } from './session-context';
 import { memoryFields, memoryValueSchemas, parseDirectMemory, inferredMemorySchema,
   type MemoryField, type CustomerMemoryFact } from '../../shared/customer-memory';
 import type { CustomerProfile } from '../db/customer-intelligence';
+import { semanticIdentityMatches } from './conversation-understanding-context';
+import { resolvedMemoryFacts, validateMemoryFacts } from './contextual-memory-contract';
+import { currentInboundExecution } from '../messaging/inbound-context';
 
 const positiveId = (n: number) => Number.isSafeInteger(n) && n > 0;
 function assertIdentity(input: CheckoutIdentity) {
@@ -81,9 +84,10 @@ async function writeFact(connection: PoolConnection, profileId: number, merchant
   return true;
 }
 
-/** Every clear incoming declaration is persisted before all reply exits. Never accept caller-supplied text as evidence. */
+/** Offline privacy controls only. Facts are captured after the central interpretation. */
 export async function captureDirectCustomerMemory(input: CheckoutIdentity): Promise<{ reply: string | null; forgetBeforeMessageId: number }> {
   assertIdentity(input);
+  if (!semanticIdentityMatches(input)) throw Error('Memory interpretation identity mismatch');
   const pool = await getPool(); if (!pool) throw new Error('Memory storage unavailable');
   const [source] = await pool.execute<any[]>(`SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversationId
     WHERE m.id=? AND c.id=? AND c.merchantId=? AND c.customerPhone=? AND m.direction='incoming'`,
@@ -107,11 +111,6 @@ export async function captureDirectCustomerMemory(input: CheckoutIdentity): Prom
       reply: command.kind === 'forget' ? 'سبق تطبيق طلب حذف الذاكرة أو طلب حذف أحدث منه؛ لم أعد استخدام المعلومات السابقة.' : null,
       forgetBeforeMessageId: profile.memory_forget_before_message_id, conversations: [],
     };
-    if (command.kind === 'set') {
-      const applied = await writeFact(connection, profile.id, input.merchantId, { field: command.field, value: command.value, kind: 'explicit', message });
-      if (applied) await connection.execute('UPDATE customer_profiles SET memory_version=memory_version+1 WHERE id=? AND merchant_id=?', [profile.id, input.merchantId]);
-      return { reply: null, forgetBeforeMessageId: profile.memory_forget_before_message_id, conversations: [] };
-    }
     // Watermark covers all messages already received for this exact tenant/customer, including other conversations.
     const [latest] = await connection.execute<any[]>(`SELECT COALESCE(MAX(m.id),0) AS id FROM messages m JOIN conversations c ON c.id=m.conversationId
       WHERE c.merchantId=? AND c.customerPhone=?`, [input.merchantId, input.customerPhone]);
@@ -137,6 +136,53 @@ export async function captureDirectCustomerMemory(input: CheckoutIdentity): Prom
   });
   for (const id of result.conversations) destroySession(input.merchantId, id);
   return { reply: result.reply, forgetBeforeMessageId: result.forgetBeforeMessageId };
+}
+
+/** Store the whole interpreted turn once, before reply early exits. No caller/model text is a storage authority. */
+export async function captureContextualCustomerMemory(input: CheckoutIdentity): Promise<number> {
+  assertIdentity(input);
+  if (!semanticIdentityMatches(input)) throw Error('Memory interpretation identity mismatch');
+  const { readStoredUnderstanding } = await import('./conversation-understanding');
+  const pool = await getPool(); if (!pool) throw Error('Memory storage unavailable');
+  const prepared = await readStoredUnderstanding(pool, input);
+  if (!resolvedMemoryFacts(prepared?.analysis).length) return 0;
+  if (currentInboundExecution() && currentInboundExecution()!.merchantId !== input.merchantId) throw Error('Memory inbound tenant mismatch');
+  await currentInboundExecution()?.assertOwned();
+  return checkoutTransaction(async connection => {
+    // Same profile -> conversation ordering as privacy deletion and the enrichment worker.
+    const profile = await lockProfile(connection, input);
+    const [owned] = await connection.execute<any[]>('SELECT id FROM conversations WHERE id=? AND merchantId=? AND customerPhone=? FOR UPDATE',
+      [input.conversationId,input.merchantId,input.customerPhone]);
+    if (owned.length !== 1) throw Error('Memory conversation unavailable');
+    const stored = await readStoredUnderstanding(connection,input);
+    const facts = resolvedMemoryFacts(stored?.analysis);
+    if (!facts.length || JSON.stringify(stored!.analysis)!==JSON.stringify(prepared!.analysis)) throw Error('Memory interpretation changed');
+    const ids=Array.from(new Set(facts.flatMap(f=>f.evidence.map(e=>e.messageId))));
+    const [messages]=await connection.execute<any[]>(`SELECT id,conversationId,direction,content,createdAt FROM messages WHERE conversationId=? AND id IN (${ids.map(()=>'?').join(',')}) FOR SHARE`,[input.conversationId,...ids]);
+    validateMemoryFacts(stored!.analysis,{currentMessageId:input.incomingMessageId,catalog:[],targets:[],
+      messages:messages.map(m=>({id:m.id,role:m.direction==='incoming'?'user':'assistant',content:String(m.content||'')}))});
+    const message=messages.find(m=>m.id===input.incomingMessageId);
+    if (!message || input.incomingMessageId<=Number(profile.memory_forget_before_message_id||0)) throw Error('Memory source forgotten');
+    const [old]=await connection.execute<any[]>('SELECT * FROM customer_memory_facts WHERE profile_id=? AND merchant_id=? FOR UPDATE',[profile.id,input.merchantId]);
+    const pending=facts.filter(fact=>{
+      const prior=old.find(r=>r.field_key===fact.field);
+      if (!prior) return true;
+      if (Number(prior.source_message_id)>message.id) throw Error('Memory fact superseded');
+      if (Number(prior.source_message_id)===message.id) {
+        if (prior.deleted || prior.source_kind!==fact.kind || JSON.stringify(memoryValueSchemas[fact.field].parse(prior.value_json))!==JSON.stringify(memoryValueSchemas[fact.field].parse(fact.value))) throw Error('Memory source conflict');
+        return false;
+      }
+      return !(fact.kind==='inferred' && prior.source_kind==='explicit' && !prior.deleted);
+    });
+    if (!pending.length) return 0;
+    if (stored!.analysis.memoryRevision===undefined || stored!.analysis.memoryRevision!==Number(profile.memory_version)) throw Error('Memory version changed');
+    let applied=0;
+    for (const fact of pending) if (await writeFact(connection,profile.id,input.merchantId,{field:fact.field,value:fact.value,kind:fact.kind,message})) applied++;
+    if (JSON.stringify((await readStoredUnderstanding(connection,input))?.analysis)!==JSON.stringify(stored!.analysis)) throw Error('Memory source changed');
+    await currentInboundExecution()?.assertOwned();
+    if (applied) await connection.execute('UPDATE customer_profiles SET memory_version=memory_version+1 WHERE id=? AND merchant_id=?',[profile.id,input.merchantId]);
+    return applied;
+  });
 }
 
 /** Lease, profile CAS, source ownership and per-field precedence are committed together. */

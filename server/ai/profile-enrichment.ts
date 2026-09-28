@@ -4,6 +4,7 @@ import type { CustomerProfile } from '../db/customer-intelligence';
 import { getPool } from '../db/connection';
 import { persistInferredCustomerMemory } from './customer-memory';
 import { inferredMemorySchema } from '../../shared/customer-memory';
+import { getTextGenerationSettings } from '../db_ai_settings';
 
 export async function enrichCustomerProfile(params: {
   merchantId: number; customerPhone: string; conversationId: number; currentProfile: CustomerProfile | null;
@@ -36,8 +37,10 @@ lastObjection: price أو delivery أو quality أو trust أو null.
     const gptMessages: ChatMessage[] = [{ role: 'system', content: systemPrompt }, { role: 'user', content: JSON.stringify(messages.map(m => ({
       sourceMessageId: m.id, role: m.direction === 'incoming' ? 'customer' : 'assistant', content: String(m.content || '').slice(0, 800),
     }))) }];
-    const response = await callGPT4(gptMessages, { merchantId: params.merchantId, taskType: 'sari.customer.profile-enrichment',
-      model: 'gpt-4o-mini', temperature: 0.2, maxTokens: 1000, noRetry: true });
+    const settings=await getTextGenerationSettings();
+    if (!settings || settings.isActive===false) throw Error('Profile AI disabled');
+    const response = await callGPT4(gptMessages, { merchantId: params.merchantId, conversationId:params.conversationId, taskType: 'sari.customer.profile-enrichment',
+      model: settings.model || undefined, temperature: 0.2, maxTokens: 1000, noRetry: true });
     // Accept an optional surrounding JSON fence, never an arbitrary substring containing a second response.
     const raw = response.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, '$1');
     const extraction = inferredMemorySchema.parse(JSON.parse(raw));

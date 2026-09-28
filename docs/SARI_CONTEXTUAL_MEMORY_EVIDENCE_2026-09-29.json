@@ -1,0 +1,846 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-28T23:26:43.370Z",
+  "scope": "Conversation-grounded customer memory updates, privacy compatibility and shared-provider interpretation",
+  "branch": "main",
+  "startingHead": "7524d6fc7d0a65d21649cb543d34505e0bbad19d",
+  "validationBaseHead": "d6f57b2d9cc9ec63ed87e11601c65d53bcef745b",
+  "codeVersion": "The commit containing this file; sourceSha256 pins the reviewed workspace files without hashing this file itself.",
+  "environment": {
+    "node": "v22.23.2",
+    "database": "Disposable synthetic MySQL 8.0.44 on loopback port 33089",
+    "databaseUrlPublished": false,
+    "externalNetwork": "blocked by scripts/testing/block-external-network.cjs",
+    "providerResponses": "Synthetic; shared provider routing and budget regressions included",
+    "productionCalls": false,
+    "paidModelEvaluation": false,
+    "whatsappMessagesSent": 0,
+    "serverCleanup": "Owned synthetic server stopped after verifying port, datadir and absence of other sessions"
+  },
+  "summary": {
+    "files": 66,
+    "passed": 1626,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 568,
+    "calculation": "Newest result per unique file across final reports; overlapping retries are not counted twice"
+  },
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\memory-context-checks\\tests.json"
+      ],
+      "profile": "tests"
+    },
+    {
+      "name": "mysql",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/ai/customer-memory.mysql.test.ts",
+        "server/ai/contextual-memory.mysql.test.ts",
+        "server/ai/conversation-handoff.mysql.test.ts",
+        "server/ai/contextual-learning.mysql.test.ts",
+        "server/ai/interaction-jobs.mysql.test.ts",
+        "server/ai/contextual-sales-loss.mysql.test.ts",
+        "server/ai/learning-signal-capture.mysql.test.ts",
+        "server/ai/verified-purchase-memory.mysql.test.ts",
+        "server/ai/learning-analysis.mysql.test.ts",
+        "server/ai/learning-evidence.mysql.test.ts",
+        "server/ai/automatic-followup.mysql.test.ts",
+        "server/appointment-reminders.mysql.test.ts",
+        "server/ai/contextual-followup.mysql.test.ts",
+        "server/ai/proactive-followup.mysql.test.ts",
+        "server/ai/followup-policy.mysql.test.ts",
+        "server/ai/conversation-understanding.mysql.test.ts",
+        "server/ai/sari-preview.mysql.test.ts",
+        "server/ai/persona-context.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\memory-context-checks\\mysql-tests.json"
+      ],
+      "profile": "mysql"
+    },
+    {
+      "name": "learning-mysql",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/ai/customer-memory.mysql.test.ts",
+        "server/ai/contextual-memory.mysql.test.ts",
+        "server/ai/conversation-handoff.mysql.test.ts",
+        "server/ai/contextual-learning.mysql.test.ts",
+        "server/ai/learning-signal-capture.mysql.test.ts",
+        "server/ai/interaction-jobs.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\memory-context-checks\\learning-mysql-tests.json"
+      ],
+      "profile": "learning-mysql"
+    },
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "profile": "static"
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "profile": "static"
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "profile": "static"
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "profile": "build"
+    }
+  ],
+  "reports": [
+    {
+      "file": ".tmp/memory-context-checks/tests.json",
+      "sha256": "9aefe400dc7da0f290438e0f85ec8f5e96a98af0c1cc3856bba1aea7470db513",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/memory-context-checks/mysql-tests.json",
+      "sha256": "a7b61dd71c4d1841cea3ce334194259c8b42f77beb51c8a051c99d98791e91b1",
+      "passed": 563,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "sha256": "cb7baad3af1d50cfd7613275926f817225a13a1faeeea4085f0163e0141de5c9",
+      "passed": 195,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "suites": [
+    {
+      "file": "server/ai-settings-provider-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/action-execution.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/automatic-followup-context.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/automatic-followup.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 51,
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/budget-boundaries.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-agent-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-followup.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 35,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-followup.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-generation.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-learning-contract.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-learning.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 59,
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-memory-contract.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-memory.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-reply-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-sales-loss-contract.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-sales-loss.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 44,
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-handoff.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding-evaluation.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 38,
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory-chat.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/followup-policy.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/followup-policy.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/interaction-jobs.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-analysis-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 37,
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-analysis.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-evidence.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-signal-capture-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-signal-capture.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/learning-mysql-tests.json",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/loss-detector.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/openai-zahypi.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/persona-context.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-prompt.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-provider-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/proactive-followup.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/requested-followup-time.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-decisions.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-learning.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-prompt.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-transport.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-turn-policy.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sari-preview.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sari-preview.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 42,
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/task-catalog.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/transactional-truth.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/verified-purchase-memory.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-callsite-governance.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-client.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 103,
+      "passed": 103,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-context-propagation.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-runtime-config.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-access-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 30,
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-context.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminders.mysql.test.ts",
+      "report": ".tmp/memory-context-checks/mysql-tests.json",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/assistant-reply-preview.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/bot-audit-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/byaan-conversation-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/merchant-persona-routing.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview-history.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/remediation-regression.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sales-hardening-pentest.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 34,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sari-quick-preview.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/virtual-team-page.test.ts",
+      "report": ".tmp/memory-context-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "translationCheck": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8313,
+    "dynamicKeysChecked": 346,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "languageEvaluation": {
+    "mode": "dry-run",
+    "cases": 82,
+    "liveQualityMeasured": false,
+    "caseSource": "scripts/testing/conversation-understanding-cases.ts"
+  },
+  "resolvedCheckFailures": [
+    {
+      "file": ".tmp/memory-context-checks/prompt-bound-failure.json",
+      "sha256": "0496271cd7c9d202d3eb3e7137e9659c0e98c4f069dce36d560b4161d64e6645",
+      "passed": 140,
+      "failed": 2,
+      "reason": "Preview system instructions exceeded the provider content limit after memory fields were added; reused schema references and concise equivalent instructions now fit, with an explicit runtime bounds check."
+    },
+    {
+      "file": ".tmp/memory-context-checks/memory-seal-failure.json",
+      "sha256": "96257c932aad9b51a106c139ee2bad98ed9500a8394d1518f32d36c1078191a0",
+      "passed": 162,
+      "failed": 28,
+      "reason": "New server-attached memoryRevision was appended outside canonical schema order and nested budget JSON needed a canonical object schema; both are now normalized before sealing and on reading."
+    },
+    {
+      "file": ".tmp/memory-context-checks/memory-source-binding-failure.json",
+      "sha256": "c016c0cacf9bf00283de12b579e22dc657c6ee993f4d8af04c8c226371fe1a78",
+      "passed": 164,
+      "failed": 26,
+      "reason": "The memory writer required conversationId, which the new source SELECT omitted. The source query now includes the persisted conversation identity."
+    },
+    {
+      "file": ".tmp/memory-context-checks/memory-fixture-currency-failure.json",
+      "sha256": "e653eb8b266e1716a5afdcf657b1f681e6c406d22bf674cc97e9314c53820e16",
+      "passed": 188,
+      "failed": 2,
+      "reason": "Two new assertions compared budget values without the required currency; expectations now compare the complete value."
+    }
+  ],
+  "build": {
+    "passed": true,
+    "logSha256": "77b3a2e28a38268a12ba4d793414d50012e75b18d8d84ed0eb4ebc236015c250",
+    "entryBundleBudgetPassed": true,
+    "existingLargeChunkWarning": true
+  },
+  "securityScope": [
+    "tenant/conversation/phone isolation",
+    "current customer evidence and explicit identity/budget attribution",
+    "foreign/future/fabricated source references",
+    "invalid financial/privileged fields",
+    "source/timestamp/seal mutation",
+    "human handoff and newer customer turns",
+    "memory version change during model I/O",
+    "cross-conversation correction races",
+    "preview/group rejection",
+    "memory erasure and stale replay",
+    "inbound worker ownership fences",
+    "atomic batch rollback",
+    "lost commit acknowledgement",
+    "source conflict",
+    "source-time expiration",
+    "no paid secondary interpretation for persisted primary analyses"
+  ],
+  "compatibility": {
+    "migrationAdded": false,
+    "optionalSealFields": true,
+    "historicMemoryReclassified": false,
+    "extraAiCallsPerNewMemoryCapture": 0,
+    "offlinePrivacyCommandsPreserved": true,
+    "interpretationOutputTokenLimit": 3000,
+    "previousInterpretationOutputTokenLimit": 1800,
+    "legacyUninterpretedJobs": "Existing bounded inference retained, using the centrally selected model"
+  },
+  "limitations": [
+    "Not a production penetration-test certification",
+    "No live language, sales-persuasion, latency, spend or conversion measurement",
+    "Free-form privacy requests guide to explicit offline controls rather than executing guessed deletions",
+    "Group and merchant coaching unification remain open",
+    "Historical fact reads check source existence/ownership/TTL but do not yet revalidate every fact seal after source edits",
+    "Multiple opportunities and retrospective evidence retraction remain open",
+    "Concurrent knowledge-library work excluded; static/build results describe the check-time workspace"
+  ],
+  "pushed": false,
+  "deployed": false,
+  "sourceSha256": {
+    "scripts/testing/conversation-understanding-cases.ts": "14a4a2136058a85f843785b595f31e71cabaf218f5e55795208c71775413d0ed",
+    "scripts/testing/conversation-understanding-scoring.ts": "77159b4dc469f0ec52452dcd0746e71a093953a14adbc0a68505031484815584",
+    "server/ai/contextual-generation.test.ts": "488422768d44a6ded271a5cbe2864da796c18f764c1a482d6c0019ae4e0bd1d9",
+    "server/ai/conversation-handoff.mysql.test.ts": "61f43deddc6707e47a089e7ef9a5e11a942cd4e02e54c3965d175b53ecd0ed41",
+    "server/ai/conversation-understanding-context.ts": "e28f159d8a55331ae4625c9bc424f6cf04c3fc6bf54853f448849520db310ed8",
+    "server/ai/conversation-understanding-evaluation.test.ts": "1be5a5413fa3fb2c306fc9a2752f005f58cf5c8feb93330ddd88225f7f98bdcd",
+    "server/ai/conversation-understanding.mysql.test.ts": "941dbdefcaea5fb5fd19e875b01c90324755683b4706eb6c8715dc86ad75a64d",
+    "server/ai/conversation-understanding.ts": "63384a1eb5d81f941627fa5d964961570a225854e330a3b58fab935fe28119b8",
+    "server/ai/customer-memory-chat.test.ts": "5307346049d572841e6f81e3d1381b390af7429fe903e2e931f4f94389b1ebfc",
+    "server/ai/customer-memory.mysql.test.ts": "15c934188c05ac33572014f99fdd993e48d18008f80b613b408d0f0263674e44",
+    "server/ai/customer-memory.test.ts": "29f4038362e6ae1e8377a2dea8580e21479e0027dd27c1bf1d1cbc35c0e8ab01",
+    "server/ai/customer-memory.ts": "dbce05f01648011ef20d38bd321f5f440524e49a076828d30db12d80e0a4c86a",
+    "server/ai/interaction-jobs.mysql.test.ts": "4f0eb7d8ab3f90e3daa00042e3fa624d8e0d39324f862c4d65014ed597c6827d",
+    "server/ai/interaction-jobs.ts": "9c7513ece2b6d35aee09e1a61155af900ad511bfc4d030c34f88bbfe9d4774dd",
+    "server/ai/profile-enrichment.ts": "03fd94730cad5ae5f2af58466bf1a5f65ca883e4f512de53d5ec6a57db6bf3e6",
+    "server/ai/sari-personality.ts": "c3c6ddbf7076681e431492206633cab8f90ccd71fdebe880da315fdf4ea72f2b",
+    "shared/customer-memory.ts": "839cf217297ef9ff992e80e01259219e0a3909e8aa13a734752fb445d5e40c02",
+    "server/ai/contextual-memory-contract.ts": "ba7ad3afb35a959a7d06f5e1401fadbd870e194dfb1b9965e98e9655597d3775",
+    "server/ai/contextual-memory-contract.test.ts": "0e27f32cb15768aa70e64dc381c54ae27eaeab9d2042fbd4e373793001a299ca",
+    "server/ai/contextual-memory.mysql.test.ts": "607a15dd1f7ad12681d2c3d496d718f881514847aa49e9b2b841ebfd0ca761f8",
+    "server/tests/helpers/memory-understanding-fixture.ts": "843e0528ed34df6ee1e560027159756bf844a93b5c17759cdef078a543a3601a",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "4d40267de22e486b54ab14f215b099bbf8e437d4318b01b4a40a49b037c313f4",
+    "docs/SARI_CONTEXTUAL_MEMORY_2026-09-29.md": "858e2638e5227b019a7a3ff318089912bbd43b2e5e5b31eb18db68d2737952c8"
+  }
+}

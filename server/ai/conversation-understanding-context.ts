@@ -1,5 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
+import { contextualMemoryFactSchema, memoryFields } from '../../shared/customer-memory';
+const conversationEvidence = z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict();
 
 /** A model interpretation, never a price, payment receipt or permission to bypass an adapter. */
 export const conversationUnderstandingSchema = z.object({
@@ -22,29 +24,32 @@ export const conversationUnderstandingSchema = z.object({
     localTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullable(),
     timeZone: z.string().max(64).nullable(),
     sourceCreatedAt: z.string().datetime().nullable(),
-    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+    evidence: z.array(conversationEvidence).max(5),
   }).strict().optional(),
   automaticFollowup: z.object({
     status: z.enum(['none', 'recommend']),
     purpose: z.enum(['consideration', 'options', 'price', 'trust', 'comparison', 'delivery', 'question']).nullable(),
     delayHours: z.number().int().min(1).max(72).nullable(),
-    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+    evidence: z.array(conversationEvidence).max(5),
   }).strict().optional(),
   salesLoss: z.object({
     status: z.enum(['none', 'declined', 'unclear']),
     reason: z.enum(['price', 'trust', 'competitor', 'delivery', 'timing', 'fit', 'other']).nullable(),
-    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+    evidence: z.array(conversationEvidence).max(5),
   }).strict().optional(),
   learningSignals: z.array(z.object({
     type: z.enum(['positive_feedback', 'question_repeated', 'price_objection', 'sales_objection', 'escalation_requested', 'knowledge_gap']),
     aboutAssistantMessageId: z.number().int().positive().nullable(),
     evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(300) }).strict()).min(1).max(3),
   }).strict()).max(5).optional(),
+  memoryFacts: z.array(contextualMemoryFactSchema).max(memoryFields.length).optional(),
+  // Server-attached version of the customer memory read by this interpretation. Never trust a model-supplied version.
+  memoryRevision: z.number().int().nonnegative().optional(),
   appointmentReminder: z.object({
     status: z.enum(['none', 'schedule', 'cancel', 'clarify']),
     appointmentId: z.number().int().positive().max(2147483647).nullable(),
     hoursBefore: z.union([z.literal(1), z.literal(24)]).nullable(),
-    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
+    evidence: z.array(conversationEvidence).max(5),
     // Server-attached terms digest, optional without a default for historic seals.
     targetDigest: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   }).strict().optional(),
@@ -56,7 +61,7 @@ export const conversationUnderstandingSchema = z.object({
   unresolvedQuestions: z.array(z.string().min(1).max(240)).max(3),
   summary: z.string().min(1).max(700),
   nextStep: z.enum(['answer', 'qualify', 'compare', 'address_objection', 'review_offer', 'respect_decline', 'resolve_issue', 'handoff']),
-  evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).min(1).max(5),
+  evidence: z.array(conversationEvidence).min(1).max(5),
 }).strict();
 export type ConversationUnderstanding = z.infer<typeof conversationUnderstandingSchema>;
 export type UnderstandingContext = { merchantId: number; conversationId: number; incomingMessageId: number; message: string; mode?: 'preview';

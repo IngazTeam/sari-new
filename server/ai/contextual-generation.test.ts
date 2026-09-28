@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   automatic: vi.fn(),
   loss: vi.fn(),
   byaan: vi.fn(),
+  memory: vi.fn(),
 }));
 vi.mock("./contextual-sales-loss", () => ({ recordContextualSalesLoss: m.loss }));
 vi.mock("./openai", () => ({ callGPT4: m.call }));
@@ -54,6 +55,7 @@ vi.mock("./conversation-understanding", async original => ({
 }));
 vi.mock("./customer-memory", async original => ({
   ...(await original<typeof import("./customer-memory")>()),
+  captureContextualCustomerMemory: m.memory,
   captureDirectCustomerMemory: async () => ({
     reply: null,
     forgetBeforeMessageId: 0,
@@ -173,6 +175,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   m.agent.mockResolvedValue(null);
   m.byaan.mockResolvedValue(null);
+  m.memory.mockResolvedValue(1);
   m.history.mockResolvedValue([
     ...savedHistory,
     { id: 13, direction: "incoming", content: input.message },
@@ -220,6 +223,20 @@ describe.each(["fast", "full"])(
   path => {
     beforeEach(() => {
       if (path === "fast") m.session.mockResolvedValue({ ...state });
+    });
+    it.each([false,true])('persists interpreted memory before early checkout replies, storage failure=%s',async fail=>{
+      const previous=m.understanding.getMockImplementation()!;
+      m.understanding.mockImplementation(async source=>{const value=await previous(source);value.analysis.memoryFacts=[{field:'fastDelivery',value:false,kind:'explicit',evidence:[{messageId:13,excerpt:input.message}]}];return value;});
+      m.memory.mockImplementation(async identity=>{
+        expect(identity).toEqual({merchantId:71,conversationId:31,incomingMessageId:13,customerPhone:input.customerPhone});
+        expect(conversationUnderstandingIdentity()?.analysis.memoryFacts).toHaveLength(1);
+        if(fail)throw Error('private storage details');return 1;
+      });
+      m.byaan.mockImplementation(async()=>{expect(m.memory).toHaveBeenCalledOnce();return 'هذه تفاصيل الخيار المناسب.';});
+      const response=await chatWithSari(input);
+      expect(response).toBe(fail?'تعذر فهم سياق المحادثة الآن. أعد إرسال سؤالك أو اطلب المساعدة من فريق النشاط لمراجعة طلبك.':'هذه تفاصيل الخيار المناسب.');
+      if(fail)expect(m.byaan).not.toHaveBeenCalled();
+      expect(m.call).not.toHaveBeenCalled();expect(response).not.toContain('private');
     });
     it.each([false, true])("projects contextual decline before the reply without breaking it on storage failure=%s", async fail => {
       const previous = m.understanding.getMockImplementation()!;

@@ -89,7 +89,12 @@ export async function runInteractionJob(): Promise<boolean> {
       await captureConversationSignals({ merchantId: job!.merchant_id, conversationId: job!.conversation_id,
         incomingMessageId:job!.incoming_message_id,jobId:job!.id,leaseToken:token, strict: true });
       const profile = await getOrCreateProfile(job!.merchant_id, interaction.customerPhone, interaction.customerName);
-      if (Number(interaction.message_count) % 5 === 0) {
+      const { readStoredUnderstanding } = await import('./conversation-understanding');
+      const understood = await readStoredUnderstanding(pool, {merchantId:job!.merchant_id,conversationId:job!.conversation_id,
+        incomingMessageId:job!.incoming_message_id,customerPhone:interaction.customerPhone},true);
+      // Never reinterpret a sealed or failed primary analysis with a separate memory model.
+      // Only genuinely pre-interpreter jobs retain the legacy bounded enrichment path.
+      if (Number(interaction.message_count) % 5 === 0 && !understood) {
         const { enrichCustomerProfile } = await import('./profile-enrichment');
         await enrichCustomerProfile({ merchantId: job!.merchant_id, conversationId: job!.conversation_id,
           customerPhone: interaction.customerPhone, currentProfile: profile, strict: true,

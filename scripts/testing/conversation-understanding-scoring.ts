@@ -2,6 +2,7 @@ import type { ConversationUnderstanding } from '../../server/ai/conversation-und
 import type { UnderstandingCase } from './conversation-understanding-cases';
 import { contextualSalesLossReason } from '../../server/ai/contextual-sales-loss-contract';
 import { resolvedLearningSignals } from '../../server/ai/contextual-learning-contract';
+import { resolvedMemoryFacts } from '../../server/ai/contextual-memory-contract';
 
 const mutatingActions: ConversationUnderstanding['action'][] = ['request_purchase','modify_offer','confirm_offer','decline_offer','select_session','request_booking','confirm_booking','request_human'];
 export function scoreUnderstanding(item: UnderstandingCase, result: ConversationUnderstanding) {
@@ -11,7 +12,10 @@ export function scoreUnderstanding(item: UnderstandingCase, result: Conversation
   const expectedLearning=item.expected.learningSignals;
   const unexpectedLearning=expectedLearning!==undefined&&(result.learningSignals||[]).some(signal=>!expectedLearning.some(wanted=>wanted.type===signal.type
     &&(wanted.aboutAssistantMessageId===undefined||wanted.aboutAssistantMessageId===signal.aboutAssistantMessageId)));
-  const criticalFailure = unexpectedLearning || executable && (!!item.mustNotExecute || !!item.allowedActions && !item.allowedActions.includes(result.action));
+  const expectedMemory=item.expected.memoryFacts;
+  const unexpectedMemory=expectedMemory!==undefined&&(result.memoryFacts||[]).some(fact=>!expectedMemory.some(wanted=>
+    Object.entries(wanted).every(([field,value])=>JSON.stringify(fact[field as keyof typeof fact])===JSON.stringify(value))));
+  const criticalFailure = unexpectedMemory || unexpectedLearning || executable && (!!item.mustNotExecute || !!item.allowedActions && !item.allowedActions.includes(result.action));
   const mismatches = Object.entries(item.expected)
     .filter(([key,value])=>key === 'followup'
       ? Object.entries(value).some(([field, expected]) => JSON.stringify(result.followup?.[field as keyof NonNullable<ConversationUnderstanding['followup']>]) !== JSON.stringify(expected))
@@ -19,6 +23,7 @@ export function scoreUnderstanding(item: UnderstandingCase, result: Conversation
       : key === 'automaticFollowup' ? Object.entries(value).some(([field, expected]) => JSON.stringify(result.automaticFollowup?.[field as keyof NonNullable<ConversationUnderstanding['automaticFollowup']>]) !== JSON.stringify(expected))
       : key === 'salesLoss' ? Object.entries(value).some(([field, expected]) => JSON.stringify(result.salesLoss?.[field as keyof NonNullable<ConversationUnderstanding['salesLoss']>]) !== JSON.stringify(expected))
       : key === 'learningSignals' ? !result.learningSignals || result.learningSignals.length!==expectedLearning!.length || expectedLearning!.some(wanted=>!result.learningSignals!.some(signal=>Object.entries(wanted).every(([field,expected])=>JSON.stringify(signal[field as keyof typeof signal])===JSON.stringify(expected))))
+      : key === 'memoryFacts' ? !result.memoryFacts || result.memoryFacts.length!==expectedMemory!.length || expectedMemory!.some(wanted=>!result.memoryFacts!.some(fact=>Object.entries(wanted).every(([field,expected])=>JSON.stringify(fact[field as keyof typeof fact])===JSON.stringify(expected))))
       : JSON.stringify(result[key as keyof ConversationUnderstanding])!==JSON.stringify(value))
     .map(([key])=>key);
   if (item.allowedActions && !item.allowedActions.includes(result.action)) mismatches.push('allowedActions');
@@ -30,6 +35,7 @@ export function scoreUnderstanding(item: UnderstandingCase, result: Conversation
   if (item.expected.automaticFollowup?.status === 'recommend' && (!executable || result.action !== 'respond')) mismatches.push('automaticFollowupBlocked');
   if (item.expected.salesLoss?.status === 'declined' && !contextualSalesLossReason(result)) mismatches.push('salesLossBlocked');
   if (expectedLearning?.length && !resolvedLearningSignals(result).length) mismatches.push('learningBlocked');
+  if (expectedMemory?.length && !resolvedMemoryFacts(result).length) mismatches.push('memoryBlocked');
   // A withdrawal may update the pipeline, but never authorize outreach in the same decision.
   if (item.expected.salesLoss?.status === 'declined' && (result.automaticFollowup?.status === 'recommend' || result.followup?.status === 'request'
     || ['schedule','cancel'].includes(result.appointmentReminder?.status || '') || result.nextStep === 'handoff'

@@ -1,7 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const model=vi.hoisted(()=>vi.fn());
+vi.mock('./openai',()=>({callGPT4:model}));
+vi.mock('../db_ai_settings',()=>({getTextGenerationSettings:async()=>({model:'central-memory-test',isActive:true,textGenerationProvider:'openai'})}));
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
-import { captureDirectCustomerMemory, readCustomerMemory, persistInferredCustomerMemory, groundCustomerProfile } from './customer-memory';
+import { captureDirectCustomerMemory, captureContextualCustomerMemory, readCustomerMemory, persistInferredCustomerMemory, groundCustomerProfile } from './customer-memory';
+import { understandConversation } from './conversation-understanding';
+import { memoryUnderstandingFixture } from '../tests/helpers/memory-understanding-fixture';
 import { getOrCreateProfile, buildProfileContext } from '../db/customer-intelligence';
 import { createSessionWithPersist, getSessionWithFallback } from './session-store';
 
@@ -18,7 +23,31 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
   afterAll(closeDb);
   const message = async (content: string, conv = conversationId, direction = 'incoming') =>
     (await sql('INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?, ?, \'text\', ?)', [conv, direction, content])).insertId as number;
-  const capture = (id: number, overrides = {}) => captureDirectCustomerMemory({ merchantId: fixture.merchantId, customerPhone: phone, conversationId, incomingMessageId: id, ...overrides });
+  // Fixed expected model outputs for these storage scenarios, not a substitute for language evaluation.
+  const syntheticFacts:Record<string,Parameters<typeof memoryUnderstandingFixture>[1]>={
+    'ميزانيتي 500 ريال':[{field:'budget',value:{amountMinor:50000,currency:'SAR'}}],
+    'عدّل ميزانيتي إلى 800 ريال':[{field:'budget',value:{amountMinor:80000,currency:'SAR'}}],
+    'ميزانيتي 800 ريال':[{field:'budget',value:{amountMinor:80000,currency:'SAR'}}],
+    'ميزانيتي 900 ريال':[{field:'budget',value:{amountMinor:90000,currency:'SAR'}}],
+    'ميزانيتي 600 ريال':[{field:'budget',value:{amountMinor:60000,currency:'SAR'}}],
+    'نادني أمل':[{field:'preferredName',value:'أمل'}], 'نادني أم محمد':[{field:'preferredName',value:'أم محمد'}],
+    'الجودة أهم شيء عندي':[{field:'qualityFocused',value:true}],
+    'السعر ليس أولويتي':[{field:'priceConscious',value:false}], 'السعر أهم شيء عندي':[{field:'priceConscious',value:true}],
+  };
+  const capture = async (id: number, overrides = {}) => {
+    const identity={merchantId:fixture.merchantId,customerPhone:phone,conversationId,incomingMessageId:id,...overrides};
+    const privacy=await captureDirectCustomerMemory(identity);
+    if(privacy.reply||id<=privacy.forgetBeforeMessageId)return privacy;
+    const [source]=await sql('SELECT content FROM messages WHERE id=?',[id]);
+    if(!syntheticFacts[source.content])return privacy;
+    model.mockImplementation(async messages=>{
+      const context=JSON.parse(messages[1].content),current=context.messages.find((m:any)=>m.id===context.currentMessageId);
+      return JSON.stringify(memoryUnderstandingFixture(context,syntheticFacts[current.content]||[]));
+    });
+    try { if(await understandConversation({...identity,message:source.content}))await captureContextualCustomerMemory(identity); }
+    catch(error){if(!(error instanceof Error)||!error.message.includes('superseded'))throw error;}
+    return privacy;
+  };
   const read = () => readCustomerMemory(fixture.merchantId, phone);
   const infer = async (id: number, facts: any[], overrides = {}) => {
     const profile = await getOrCreateProfile(fixture.merchantId, phone);

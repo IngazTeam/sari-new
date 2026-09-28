@@ -10,7 +10,8 @@ import { buildReplyPlan } from '../messaging/reply-plan';
 import { assertInteractionSchema, stageInteraction, finishInteractionDelivery, runInteractionJob } from './interaction-jobs';
 import { upsertDNA, getLearningEvidence, getDNAGeneration } from '../db/learning';
 import { getOrCreateProfile, updateProfile } from '../db/customer-intelligence';
-import { captureDirectCustomerMemory, readCustomerMemory } from './customer-memory';
+import { captureDirectCustomerMemory, captureContextualCustomerMemory, readCustomerMemory } from './customer-memory';
+import {memoryUnderstandingFixture} from '../tests/helpers/memory-understanding-fixture';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
@@ -135,7 +136,9 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     const old = messageId;
     llm.mockImplementationOnce(async () => {
       const [correction] = await (await getPool())!.execute<any>("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','السعر ليس أولويتي')", [conversationId]);
-      await captureDirectCustomerMemory({ merchantId: fixture.merchantId, customerPhone: '966500000087', conversationId, incomingMessageId: correction.insertId });
+      const identity={merchantId:fixture.merchantId,customerPhone:'966500000087',conversationId,incomingMessageId:correction.insertId};
+      llm.mockImplementationOnce(async messages=>JSON.stringify(memoryUnderstandingFixture(JSON.parse(messages[1].content),[{field:'priceConscious',value:false}])));
+      await understandConversation({...identity,message:'السعر ليس أولويتي'}); await captureContextualCustomerMemory(identity);
       return JSON.stringify({ facts: [{ field: 'priceConscious', value: true, sourceMessageId: old }] });
     });
     await runInteractionJob();

@@ -1609,7 +1609,7 @@ export function chatWithSari(params: ChatWithSariParams): Promise<string> {
 }
 
 async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
-  // Customer corrections/deletion are local operations and must work even when the AI budget is exhausted.
+  // Explicit privacy deletion stays local even when the AI budget is exhausted. Free-text facts require interpretation.
   let memoryHistoryCutoff = 0;
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
     try {
@@ -1640,7 +1640,13 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
     try {
       const context = await understandConversation({ ...params, conversationId: params.conversationId, incomingMessageId: params.incomingMessageId });
       if (!context) return UNDERSTANDING_UNAVAILABLE;
-      return await withConversationUnderstanding(context, () => chatWithSariUnderstood(params, memoryHistoryCutoff));
+      return await withConversationUnderstanding(context, async () => {
+        if (context.analysis.memoryFacts?.length) {
+          const { captureContextualCustomerMemory } = await import('./customer-memory');
+          await captureContextualCustomerMemory({merchantId:params.merchantId,conversationId:params.conversationId!,incomingMessageId:params.incomingMessageId!,customerPhone:params.customerPhone});
+        }
+        return chatWithSariUnderstood(params, memoryHistoryCutoff);
+      });
     } catch { return UNDERSTANDING_UNAVAILABLE; }
   }
   return chatWithSariUnderstood(params, memoryHistoryCutoff);

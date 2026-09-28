@@ -7,7 +7,8 @@ import { assertDisposableDatabase, createDisposableMerchant, cleanupDisposableMe
 import { understandConversation, readStoredUnderstanding, withStoredUnderstanding } from './conversation-understanding';
 import { withConversationUnderstanding, currentConversationUnderstanding, semanticAction } from './conversation-understanding-context';
 import type { CheckoutIdentity } from './checkout-agreements';
-import { captureDirectCustomerMemory } from './customer-memory';
+import { captureContextualCustomerMemory } from './customer-memory';
+import {memoryUnderstandingFixture} from '../tests/helpers/memory-understanding-fixture';
 import { resolveContextualAgent } from './contextual-agent-routing';
 import { createHash } from 'node:crypto';
 
@@ -103,7 +104,8 @@ describe.skipIf(!process.env.DATABASE_URL)('durable semantic interpretation and 
   });
   it('carries verified customer memory and a rolling interpretation into the next conversation turn', async () => {
     const budget = await incoming('ميزانيتي 500 ريال');
-    await captureDirectCustomerMemory(budget);
+    mocks.model.mockImplementationOnce(async messages=>JSON.stringify(memoryUnderstandingFixture(JSON.parse(messages[1].content),[{field:'budget',value:{amountMinor:50000,currency:'SAR'}}])));
+    await understandConversation(budget); await captureContextualCustomerMemory(budget);
     const previous = await understandConversation(budget); expect(previous).not.toBeNull();
     const next = await incoming('وش تقترح يناسبني؟');
     expect(await understandConversation(next)).not.toBeNull();

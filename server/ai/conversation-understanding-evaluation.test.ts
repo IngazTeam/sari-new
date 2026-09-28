@@ -6,6 +6,14 @@ import type { ConversationUnderstanding } from './conversation-understanding-con
 const result = (change:Partial<ConversationUnderstanding> = {}):ConversationUnderstanding=>({version:1,intent:'inquiring',goal:'explain_requested_information',action:'respond',confidence:0.96,conditional:false,ambiguous:false,targetQuoteId:null,targetProvider:'none',productIds:[],sessionIndex:null,requestKind:'ordinary',sentiment:'neutral',topicChanged:false,objection:'none',needs:[],unresolvedQuestions:[],summary:'فهم اصطناعي لاختبار المقياس.',nextStep:'answer',evidence:[{messageId:3,excerpt:'نعم'}],...change});
 const find = (id:string)=>cases.find(c=>c.id===id)!;
 describe('model evaluation scoring guards (not live quality evidence)',()=>{
+  it('rejects invented memories and missing positive extraction without confusing memory with purchase authority',()=>{
+    const fact={field:'budget' as const,kind:'explicit' as const,value:{amountMinor:55000,currency:'SAR' as const},evidence:[{messageId:3,excerpt:'خمسمائة وخمسون'}]};
+    expect(scoreUnderstanding(find('memory-compound-budget'),result({memoryFacts:[fact]})).passed).toBe(true);
+    expect(scoreUnderstanding(find('memory-compound-budget'),result({memoryFacts:[]})).passed).toBe(false);
+    expect(scoreUnderstanding(find('memory-compound-budget'),result({memoryFacts:[fact],confidence:.5})).mismatches).toContain('memoryBlocked');
+    expect(scoreUnderstanding(find('memory-compound-budget'),result({memoryFacts:[{...fact,value:{amountMinor:50000,currency:'SAR'}}]})).criticalFailure).toBe(true);
+    for(const id of ['memory-quoted-budget','memory-unknown-currency','memory-child-not-address','memory-conditional-budget'])expect(scoreUnderstanding(find(id),result({memoryFacts:[fact]})).criticalFailure).toBe(true);
+  });
   it('scores learning attribution separately from operational actions, including sarcastic or human feedback',()=>{
     const signal={type:'positive_feedback' as const,aboutAssistantMessageId:2,evidence:[{messageId:3,excerpt:'أفادني'}]};
     expect(scoreUnderstanding(find('learning-explicit-helpful'),result({learningSignals:[signal]})).passed).toBe(true);
