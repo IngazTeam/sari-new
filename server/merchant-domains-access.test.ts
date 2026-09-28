@@ -24,6 +24,7 @@ vi.mock("./db", async original => ({
   createCampaign: mocks.create,
   updateBotSettings: mocks.updateBot,
   getBotSettings: mocks.settings,
+  getAssistantSettings: mocks.settings,
   getCampaignLogsWithStats: mocks.logs,
 }));
 import { appRouter } from "./routers";

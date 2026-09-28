@@ -4177,9 +4177,9 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
  */
 export async function updateBotSettings(
   merchantId: number,
-  updates: Partial<InsertBotSettings>,
+  updates: Omit<Partial<InsertBotSettings>, 'tone'> & Partial<Pick<import('../shared/assistant-settings-draft').AssistantSettingsDraft, 'tone' | 'style' | 'emojiUsage' | 'personalityInstructions' | 'brandVoice'>>,
   options?: { expectedRevision: string }
-): Promise<BotSettings> {
+) {
   const { hasDiscountSettings } = await import('../shared/discount-policy');
   if (hasDiscountSettings(updates)) throw new Error('Discount authority requires a reviewed, versioned policy update');
   const db = await getDb();
@@ -4189,7 +4189,15 @@ export async function updateBotSettings(
   await getBotSettings(merchantId);
 
   // Convert booleans to tinyint for MySQL
-  const dbUpdates: any = { ...updates };
+  const { style, emojiUsage, personalityInstructions, brandVoice, ...botUpdates } = updates;
+  const dbUpdates: any = { ...botUpdates };
+  if (dbUpdates.tone === 'enthusiastic') dbUpdates.tone = 'friendly';
+  const personalityUpdates: Partial<InsertSariPersonalitySetting> = {};
+  if (updates.tone !== undefined) personalityUpdates.tone = updates.tone;
+  if (style !== undefined) personalityUpdates.style = style;
+  if (emojiUsage !== undefined) personalityUpdates.emojiUsage = emojiUsage;
+  if (personalityInstructions !== undefined) personalityUpdates.customInstructions = personalityInstructions;
+  if (brandVoice !== undefined) personalityUpdates.brandVoice = brandVoice;
   if (typeof dbUpdates.autoReplyEnabled === 'boolean') {
     dbUpdates.autoReplyEnabled = dbUpdates.autoReplyEnabled ? 1 : 0;
   }
@@ -4209,9 +4217,18 @@ export async function updateBotSettings(
     const rows = await tx.select().from(botSettings)
       .where(eq(botSettings.merchantId, merchantId)).for('update');
     if (rows.length !== 1) throw new Error('Bot settings unavailable');
+    let personalityRows = await tx.select().from(sariPersonalitySettings)
+      .where(eq(sariPersonalitySettings.merchantId, merchantId)).for('update');
+    if (personalityRows.length > 1) throw new Error('Personality settings unavailable');
+    if (!personalityRows.length) {
+      await tx.insert(sariPersonalitySettings).values({ merchantId, tone: rows[0].tone });
+      personalityRows = await tx.select().from(sariPersonalitySettings)
+        .where(eq(sariPersonalitySettings.merchantId, merchantId));
+    }
+    const { assistantSettingsView } = await import('../shared/assistant-personality');
     if (options) {
       const { botSettingsFormRevision, AssistantSettingsConflictError } = await import('./bot-settings-version');
-      if (botSettingsFormRevision(rows[0]) !== options.expectedRevision) throw new AssistantSettingsConflictError();
+      if (botSettingsFormRevision(assistantSettingsView(rows[0], personalityRows[0])) !== options.expectedRevision) throw new AssistantSettingsConflictError();
     }
     const errors = getWorkingScheduleErrors(dbUpdates, rows[0]);
     if (Object.keys(errors).length) throw new InvalidWorkingScheduleError(errors);
@@ -4219,10 +4236,21 @@ export async function updateBotSettings(
       await tx.update(botSettings).set(dbUpdates)
         .where(and(eq(botSettings.id, rows[0].id), eq(botSettings.merchantId, merchantId)));
     }
+    if (Object.keys(personalityUpdates).length) {
+      await tx.update(sariPersonalitySettings).set(personalityUpdates)
+        .where(and(eq(sariPersonalitySettings.id, personalityRows[0].id), eq(sariPersonalitySettings.merchantId, merchantId)));
+    }
     const [saved] = await tx.select().from(botSettings)
       .where(and(eq(botSettings.id, rows[0].id), eq(botSettings.merchantId, merchantId)));
-    return { ...saved, autoReplyEnabled: Boolean(saved.autoReplyEnabled), workingHoursEnabled: Boolean(saved.workingHoursEnabled) } as any;
+    const [personality] = await tx.select().from(sariPersonalitySettings)
+      .where(eq(sariPersonalitySettings.id, personalityRows[0].id));
+    return { ...assistantSettingsView(saved, personality), autoReplyEnabled: Boolean(saved.autoReplyEnabled), workingHoursEnabled: Boolean(saved.workingHoursEnabled) };
   });
+}
+
+/** A coherent snapshot of both stores using the same lock order as saves. */
+export async function getAssistantSettings(merchantId: number) {
+  return updateBotSettings(merchantId, {});
 }
 
 /**
@@ -4665,15 +4693,14 @@ export async function createSariPersonalitySettings(data: InsertSariPersonalityS
  */
 export async function updateSariPersonalitySettings(
   merchantId: number,
-  data: Partial<InsertSariPersonalitySetting>
+  data: Partial<Pick<InsertSariPersonalitySetting, 'tone' | 'style' | 'emojiUsage' | 'customInstructions' | 'brandVoice'>>
 ): Promise<SariPersonalitySetting | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  await db.update(sariPersonalitySettings)
-    .set({ ...data, updatedAt: formatDateForDB(new Date()) })
-    .where(eq(sariPersonalitySettings.merchantId, merchantId));
-
+  const { customInstructions, brandVoice, ...fields } = data;
+  await updateBotSettings(merchantId, {
+    ...fields,
+    ...(customInstructions !== undefined ? { personalityInstructions: customInstructions ?? '' } : {}),
+    ...(brandVoice !== undefined ? { brandVoice: brandVoice ?? '' } : {}),
+  });
   return getSariPersonalitySettings(merchantId);
 }
 
@@ -4681,21 +4708,8 @@ export async function updateSariPersonalitySettings(
  * Get or create personality settings (with defaults)
  */
 export async function getOrCreatePersonalitySettings(merchantId: number): Promise<SariPersonalitySetting> {
-  let settings = await getSariPersonalitySettings(merchantId);
-
-  if (!settings) {
-    settings = await createSariPersonalitySettings({
-      merchantId,
-      tone: 'friendly',
-      style: 'saudi_dialect',
-      emojiUsage: 'moderate',
-      maxResponseLength: 200,
-      responseDelay: 2,
-      recommendationStyle: 'consultative',
-    });
-  }
-
-  return settings!;
+  await getAssistantSettings(merchantId);
+  return (await getSariPersonalitySettings(merchantId))!;
 }
 
 // ============================================================================

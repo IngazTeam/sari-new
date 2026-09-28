@@ -93,6 +93,7 @@ import { inboundOperationsRouter } from './routers-inbound-operations';
 import { merchantSelectionRouter } from './routers-merchant-selection';
 import { customersRouter } from "./routers-customers";
 import { botSettingsRouter } from "./routers-bot-settings";
+import { personalityRouter } from "./routers-personality";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
 import { teamRouter } from "./routers-team";
@@ -205,7 +206,6 @@ import {
   getMessageStats,
   getMessagesByConversationId,
   getNewKeywords,
-  getOrCreatePersonalitySettings,
   getOrderById,
   getOrderStats,
   getOrdersByMerchantId,
@@ -282,7 +282,6 @@ import {
   updatePlan,
   updateQuickResponse,
   updateSallaConnection,
-  updateSariPersonalitySettings,
   updateScheduledMessage,
   updateService,
   updateServiceCategory,
@@ -4772,36 +4771,8 @@ export const appRouter = router({
       }),
   }),
 
-  // Sari Personality Settings
-  personality: router({
-    // Get personality settings
-    get: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      return await getOrCreatePersonalitySettings(merchant.id);
-    }),
-
-    // Update personality settings
-    update: protectedProcedure
-      .input(z.object({
-        tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
-        style: z.enum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).optional(),
-        emojiUsage: z.enum(['none', 'minimal', 'moderate', 'frequent']).optional(),
-        customInstructions: z.string().optional(),
-        brandVoice: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await updateSariPersonalitySettings(merchant.id, input);
-      }),
-  }),
+  // Legacy API retained; shared permissions and atomic settings store.
+  personality: personalityRouter,
 
   // Quick Responses
   quickResponses: router({

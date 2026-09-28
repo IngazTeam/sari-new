@@ -41,6 +41,10 @@ export function AssistantDraftReview({
     responseDelay: t("botSettingsPage.responseDelay"),
     maxResponseLength: t("botSettingsPage.maxResponseLength"),
     tone: t("botSettingsPage.tone"),
+    style: t("assistantPersonalityUx.style"),
+    emojiUsage: t("assistantPersonalityUx.emoji"),
+    personalityInstructions: t("assistantPersonalityUx.instructions"),
+    brandVoice: t("assistantPersonalityUx.brand"),
     language: t("botSettingsPage.language"),
     customInstructions: t("assistantSettingsReviewUx.instructionsTitle"),
     groupMode: t("assistantSettingsReviewUx.groupsTitle"),
@@ -99,6 +103,29 @@ export function AssistantDraftReview({
             friendly: t("botSettingsPage.toneFriendly"),
             professional: t("botSettingsPage.toneProfessional"),
             casual: t("botSettingsPage.toneCasual"),
+            enthusiastic: t("assistantPersonalityUx.enthusiastic"),
+          } as Record<string, string>
+        )[String(value)] || String(value)
+      );
+    if (field === "style")
+      return (
+        (
+          {
+            saudi_dialect: t("assistantPersonalityUx.saudi"),
+            formal_arabic: t("assistantPersonalityUx.formal"),
+            english: t("assistantPersonalityUx.english"),
+            bilingual: t("assistantPersonalityUx.bilingual"),
+          } as Record<string, string>
+        )[String(value)] || String(value)
+      );
+    if (field === "emojiUsage")
+      return (
+        (
+          {
+            none: t("assistantPersonalityUx.none"),
+            minimal: t("assistantPersonalityUx.minimal"),
+            moderate: t("assistantPersonalityUx.moderate"),
+            frequent: t("assistantPersonalityUx.frequent"),
           } as Record<string, string>
         )[String(value)] || String(value)
       );

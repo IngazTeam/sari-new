@@ -1,5 +1,6 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { AssistantDraftReview } from "@/components/merchant/AssistantDraftReview";
+import { AssistantPersonalityFields } from "@/components/merchant/AssistantPersonalityFields";
 import {
   assistantSettingsDraft,
   type AssistantSettingsDraft,
@@ -153,7 +154,11 @@ export default function BotSettings() {
     outOfHoursMessage: "",
     responseDelay: 2,
     maxResponseLength: 200,
-    tone: "friendly" as "friendly" | "professional" | "casual",
+    tone: "friendly" as AssistantSettingsDraft["tone"],
+    style: "saudi_dialect" as AssistantSettingsDraft["style"],
+    emojiUsage: "moderate" as AssistantSettingsDraft["emojiUsage"],
+    personalityInstructions: "",
+    brandVoice: "",
     language: "ar" as "ar" | "en" | "fr" | "tr" | "es" | "it" | "both",
     // Custom Instructions
     customInstructions: "",
@@ -926,9 +931,9 @@ export default function BotSettings() {
                     <Label htmlFor="tone">{t("botSettingsPage.tone")}</Label>
                     <Select
                       value={formData.tone}
-                      onValueChange={(
-                        value: "friendly" | "professional" | "casual"
-                      ) => setFormData({ ...formData, tone: value })}
+                      onValueChange={(value: AssistantSettingsDraft["tone"]) =>
+                        setFormData({ ...formData, tone: value })
+                      }
                     >
                       <SelectTrigger id="tone">
                         <SelectValue />
@@ -942,6 +947,9 @@ export default function BotSettings() {
                         </SelectItem>
                         <SelectItem value="casual">
                           {t("botSettingsPage.toneCasual")}
+                        </SelectItem>
+                        <SelectItem value="enthusiastic">
+                          {t("assistantPersonalityUx.enthusiastic")}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1026,6 +1034,17 @@ export default function BotSettings() {
                 </div>
               </CardContent>
             </Card>
+          </section>
+
+          <section
+            hidden={activeSection !== "basics"}
+            data-assistant-section="personality"
+            className="mt-4"
+          >
+            <AssistantPersonalityFields
+              value={formData}
+              onChange={fields => setFormData(old => ({ ...old, ...fields }))}
+            />
           </section>
 
           {/* Draft copy and saved-model testing are explicitly separate. */}

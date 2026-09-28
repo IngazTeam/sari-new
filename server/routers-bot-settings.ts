@@ -19,10 +19,9 @@ import {
   getBotSettings,
   getConversationsByMerchantId,
   getMerchantById,
-  getOrCreatePersonalitySettings,
+  getAssistantSettings,
   shouldBotRespond,
   updateBotSettings,
-  updateSariPersonalitySettings,
 } from './db';
 
 export const botSettingsRouter = router({
@@ -49,7 +48,7 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const settings = await getBotSettings(merchant.id);
+        const settings = await getAssistantSettings(merchant.id);
         return { ...settings, formRevision: botSettingsFormRevision(settings) };
     }),
 
@@ -66,12 +65,15 @@ export const botSettingsRouter = router({
             outOfHoursMessage: z.string().optional(),
             responseDelay: z.number().min(1).max(10).optional(),
             maxResponseLength: z.number().min(50).max(500).optional(),
-            // TONE-FIX: Accept ANY string, normalize to valid DB enum before save
-            // Legacy data may contain 'enthusiastic', empty strings, or other invalid values
+            // Preserve all four supported tones; normalize unknown legacy values.
             tone: z.string().transform(v => {
-                const valid = ['friendly', 'professional', 'casual'] as const;
+                const valid = ['friendly', 'professional', 'casual', 'enthusiastic'] as const;
                 return valid.includes(v as any) ? v as typeof valid[number] : 'friendly';
             }).optional(),
+            style: z.enum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).optional(),
+            emojiUsage: z.enum(['none', 'minimal', 'moderate', 'frequent']).optional(),
+            personalityInstructions: z.string().max(2000).optional(),
+            brandVoice: z.string().max(2000).optional(),
             language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
             // Human Takeover settings
             takeoverTimeoutMinutes: z.number().min(5).max(120).optional(),
@@ -95,11 +97,8 @@ export const botSettingsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            // Normalize tone: bot_settings MySQL enum only accepts 3 values
+            // The store writes bot and personality settings in one transaction.
             const { expectedRevision, ...normalizedInput } = input;
-            if (normalizedInput.tone && !['friendly', 'professional', 'casual'].includes(normalizedInput.tone)) {
-                normalizedInput.tone = 'friendly';
-            }
 
             let result;
             try {
@@ -112,16 +111,6 @@ export const botSettingsRouter = router({
                     code: error instanceof AssistantSettingsConflictError ? 'CONFLICT' : error instanceof InvalidWorkingScheduleError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',
                     message: error instanceof AssistantSettingsConflictError ? error.message : error instanceof InvalidWorkingScheduleError ? 'Review the working schedule' : 'Unable to save bot settings',
                 });
-            }
-
-            // Sync tone to personality settings so AI engine uses it
-            if (input.tone) {
-                try {
-                    await getOrCreatePersonalitySettings(merchant.id);
-                    await updateSariPersonalitySettings(merchant.id, { tone: input.tone as any });
-                } catch (e) {
-                    console.error('[BotSettings] Failed to sync tone to personality:', e);
-                }
             }
 
             return { ...result, formRevision: botSettingsFormRevision(result) };

@@ -1,4 +1,24 @@
 {
+  "assistantPersonalityUx": {
+    "title": "Sari personality and brand voice",
+    "help": "Writing style, emojis and brand voice share the reply settings save.",
+    "enthusiastic": "Enthusiastic and positive",
+    "style": "Writing style",
+    "saudi": "Saudi dialect",
+    "formal": "Formal Arabic",
+    "english": "English",
+    "bilingual": "Arabic and English",
+    "languageHelp": "Check this style against the reply language above. A non-Arabic reply language takes precedence over writing style.",
+    "emoji": "Emoji usage",
+    "none": "No emojis",
+    "minimal": "Minimal · one emoji",
+    "moderate": "Moderate · one or two",
+    "frequent": "Frequent · three to five",
+    "brand": "Brand voice",
+    "brandHelp": "Describe how your business speaks to customers. Keep changing prices and policies in approved knowledge sources.",
+    "instructions": "Additional personality instructions",
+    "instructionsHelp": "These instructions are retained from personality settings. They apply alongside operating instructions in Groups and instructions; review any conflicts before saving. Your text is never removed automatically."
+  },
   "staffDashboardReply": {
     "accepted": "WhatsApp accepted the message for sending.",
     "pending": "Acceptance is not confirmed yet. Keep the text; trying again checks the same attempt without sending it twice.",

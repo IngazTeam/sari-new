@@ -1,0 +1,86 @@
+{
+  "date": "2026-09-28",
+  "browser": "Chrome",
+  "scope": "local test tenant; external networking blocked",
+  "savedAndReloaded": {
+    "tone": "enthusiastic",
+    "style": "formal_arabic",
+    "emojiUsage": "none",
+    "brandVoice": "retained",
+    "personalityInstructions": "retained"
+  },
+  "restoredOriginalSettings": true,
+  "legacyAliasInFreshTab": "resolved to /merchant/bot-settings and remained there",
+  "responsive": [
+    {
+      "bottomNav": 782,
+      "clientWidth": 375,
+      "fields": [
+        {
+          "fontSize": "16px",
+          "id": "personalityStyle",
+          "width": 281,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "personalityEmoji",
+          "width": 281,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "brandVoice",
+          "width": 281,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "personalityInstructions",
+          "width": 255,
+          "x": 60
+        }
+      ],
+      "height": 844,
+      "saveBottom": 770,
+      "scrollWidth": 375,
+      "width": 390
+    },
+    {
+      "bottomNav": 506,
+      "clientWidth": 305,
+      "fields": [
+        {
+          "fontSize": "16px",
+          "id": "personalityStyle",
+          "width": 211,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "personalityEmoji",
+          "width": 211,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "brandVoice",
+          "width": 211,
+          "x": 47
+        },
+        {
+          "fontSize": "16px",
+          "id": "personalityInstructions",
+          "width": 185,
+          "x": 60
+        }
+      ],
+      "height": 568,
+      "saveBottom": 494,
+      "scrollWidth": 305,
+      "width": 320
+    }
+  ],
+  "viewportReset": true,
+  "realSafariAndIphone": false
+}

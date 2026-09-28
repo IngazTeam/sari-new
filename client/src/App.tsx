@@ -127,7 +127,6 @@ const HumanTakeoverSettings = lazyLoad(() => import("./pages/merchant/HumanTakeo
 const VirtualTeamPage = lazyLoad(() => import("./pages/merchant/VirtualTeamPage"));
 const SariBrain = lazyLoad(() => import("./pages/merchant/SariBrain"));
 const ScheduledMessages = lazyLoad(() => import("./pages/merchant/ScheduledMessages"));
-const SariPersonality = lazyLoad(() => import("./pages/merchant/SariPersonality"));
 const QuickResponses = lazyLoad(() => import("./pages/merchant/QuickResponses"));
 const InsightsDashboard = lazyLoad(() => import("./pages/merchant/InsightsDashboard"));
 const DataSync = lazyLoad(() => import("./pages/merchant/DataSync"));

@@ -7,22 +7,17 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId, getOrCreatePersonalitySettings, updateSariPersonalitySettings } from './db';
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
+import { getOrCreatePersonalitySettings, updateSariPersonalitySettings } from './db';
 
 export const personalityRouter = router({
     // Get personality settings
-    get: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getOrCreatePersonalitySettings(merchant.id);
+    get: merchantProcedure.query(async ({ ctx }) => {
+        return await getOrCreatePersonalitySettings(ctx.merchantId);
     }),
 
     // Update personality settings
-    update: protectedProcedure
+    update: permissionProcedure('bot_settings.manage')
         .input(z.object({
             tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
             style: z.enum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).optional(),
@@ -30,14 +25,10 @@ export const personalityRouter = router({
             // SEC-PENTEST-LOW06: Max length prevents storage abuse
             customInstructions: z.string().max(2000).optional(),
             brandVoice: z.string().max(2000).optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            return await updateSariPersonalitySettings(merchant.id, input);
+            try { return await updateSariPersonalitySettings(ctx.merchantId, input); }
+            catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to save personality settings' }); }
         }),
 });
 

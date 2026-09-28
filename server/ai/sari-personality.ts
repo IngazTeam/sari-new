@@ -56,6 +56,7 @@ import { recordMetric } from '../db/quality-metrics';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
+import { effectiveAssistantTone } from '../../shared/assistant-personality';
 import { createSessionWithPersist, updateSessionWithPersist, getSessionWithFallback } from './session-store';
 import { getSession, detectIntent, detectTopicChange, type CustomerIntent } from './session-context';
 import { buildMissionBlock, missionToPrompt, hasCriticalSignal, type SalesPersona, type MissionBlock } from './strategist';
@@ -178,7 +179,7 @@ ${sanitizeForPrompt(settings.customInstructions.substring(0, 2000))}
   if (settings?.brandVoice) {
     prompt += `
 ## صوت العلامة التجارية:
-${sanitizeForPrompt(settings.brandVoice.substring(0, 1000))}
+${sanitizeForPrompt(settings.brandVoice.substring(0, 2000))}
 `;
   }
 
@@ -1716,10 +1717,8 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
         botSettingsOverridePrompt += `\n## تعليمات اللغة:\n${langMap[botSettings.language] || ''}\n`;
       }
 
-      // Tone override: if bot_settings has a different tone, override personality
-      if (botSettings.tone && botSettings.tone !== personalitySettings.tone) {
-        (personalitySettings as any).tone = botSettings.tone;
-      }
+      // Preserve the fourth personality tone while supporting the legacy three-tone store.
+      personalitySettings.tone = effectiveAssistantTone(botSettings.tone, personalitySettings.tone) as SariPersonalitySetting['tone'];
 
       // maxResponseLength override: use the smaller of the two
       if (botSettings.maxResponseLength && botSettings.maxResponseLength !== 200) {

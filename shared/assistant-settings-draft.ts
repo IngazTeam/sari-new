@@ -9,7 +9,11 @@ export type AssistantSettingsDraft = {
   outOfHoursMessage: string;
   responseDelay: number;
   maxResponseLength: number;
-  tone: "friendly" | "professional" | "casual";
+  tone: "friendly" | "professional" | "casual" | "enthusiastic";
+  style: "saudi_dialect" | "formal_arabic" | "english" | "bilingual";
+  emojiUsage: "none" | "minimal" | "moderate" | "frequent";
+  personalityInstructions: string;
+  brandVoice: string;
   language: "ar" | "en" | "fr" | "tr" | "es" | "it" | "both";
   customInstructions: string | null;
   groupMode: "disabled" | "mention_only" | "keyword_only" | "private_redirect";
@@ -30,9 +34,15 @@ export function assistantSettingsDraft(
     outOfHoursMessage: settings.outOfHoursMessage ?? "",
     responseDelay: settings.responseDelay ?? 2,
     maxResponseLength: settings.maxResponseLength ?? 200,
-    tone: (["friendly", "professional", "casual"].includes(settings.tone)
+    tone: (["friendly", "professional", "casual", "enthusiastic"].includes(
+      settings.tone
+    )
       ? settings.tone
-      : "friendly") as "friendly" | "professional" | "casual",
+      : "friendly") as AssistantSettingsDraft["tone"],
+    style: settings.style ?? "saudi_dialect",
+    emojiUsage: settings.emojiUsage ?? "moderate",
+    personalityInstructions: settings.personalityInstructions ?? "",
+    brandVoice: settings.brandVoice ?? "",
     language: (settings.language ?? "ar") as
       | "ar"
       | "en"

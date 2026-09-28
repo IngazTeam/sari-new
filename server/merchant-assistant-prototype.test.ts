@@ -21,6 +21,15 @@ const input=(name:string,value:string|boolean)=>{const el=w.document.getElementB
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
+  it('preserves every legacy personality option in the settings draft and save',()=>{
+    route('bot-settings');
+    expect(w.document.getElementById('as-tone').options).toHaveLength(4);
+    expect(w.document.getElementById('as-style').options).toHaveLength(4);
+    expect(w.document.getElementById('as-emojiUsage').options).toHaveLength(4);
+    input('tone','enthusiastic');input('style','formal_arabic');input('emojiUsage','none');input('brandVoice','brand');input('personalityInstructions','personality');
+    click('section','[data-value="groups"]');input('customInstructions','operating');submit('settings');
+    expect(data().settings).toMatchObject({tone:'enthusiastic',style:'formal_arabic',emojiUsage:'none',brandVoice:'brand',personalityInstructions:'personality',customInstructions:'operating'});
+  });
   it('previews a specific persona, preserves a failed question, and labels the result as a static design example',()=>{
     route('virtual-team');click('preview-persona','[data-id="2"]');
     expect(w.document.getElementById('dialog').textContent).toContain('فهد · مسؤول مبيعات');

@@ -144,6 +144,42 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("assistant settings review", () => {
+  it("retains legacy personality fields through navigation and saves them alongside operating instructions", async () => {
+    Object.assign(m.settings, {
+      tone: "enthusiastic",
+      style: "formal_arabic",
+      emojiUsage: "none",
+      brandVoice: "old brand",
+      personalityInstructions: "old personality",
+      customInstructions: "operating rules",
+    });
+    await render();
+    expect(
+      container.querySelector<HTMLSelectElement>("#personalityStyle")!.value
+    ).toBe("formal_arabic");
+    expect(
+      container.querySelector<HTMLSelectElement>("#personalityEmoji")!.options
+    ).toHaveLength(4);
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#personalityInstructions")!
+        .value
+    ).toBe("old personality");
+    await fill("brandVoice", "new brand");
+    await act(async () => root.render(null));
+    await render();
+    await click(ar.assistantDraftUx.restore);
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tone: "enthusiastic",
+        style: "formal_arabic",
+        emojiUsage: "none",
+        brandVoice: "new brand",
+        personalityInstructions: "old personality",
+        customInstructions: "operating rules",
+      })
+    );
+  });
   it("clears the recoverable draft only when the displayed values were saved", async () => {
     await render();
     await fill("welcomeMessage", "saved from draft");

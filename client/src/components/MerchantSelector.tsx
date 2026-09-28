@@ -12,7 +12,7 @@ export function MerchantSelector() {
   const selected = selectedMerchantId();
   const validSelection = stores.data?.some(store => String(store.merchantId) === selected);
   useEffect(() => {
-    if (stores.data?.length === 1 && !validSelection && !mutations) selectMerchant(stores.data[0].merchantId);
+    if (stores.data?.length === 1 && !validSelection && !mutations) selectMerchant(stores.data[0].merchantId, { preservePath: true });
   }, [stores.data, validSelection, mutations]);
   if (stores.error) return <p role="alert" className="px-3 text-sm">{t('merchantSelector.loadError')}</p>;
   if (!stores.data?.length) return null;
