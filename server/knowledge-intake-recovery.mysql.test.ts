@@ -10,15 +10,17 @@ import { runIntakeExecution, assertIntakeCheckpoint, renewIntakeLease, runKnowle
 import { createSection, updateSection, logChange, storeSectionEmbedding, invalidateCache, getSectionById } from './db/knowledge';
 import { classifyContent, ingestContent } from './ai/knowledge-engine';
 import { removeKnowledgeSource } from './knowledge/source-lifecycle';
+import { reviewedKnowledgeInput } from './tests/helpers/knowledge-reviewed-input';
 
 describe.skipIf(!process.env.DATABASE_URL)('interrupted knowledge intake recovery (local MySQL)', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner, execution: IntakeExecution, requestId: string;
   const source = () => ({ requestId: randomUUID(), content: 'Local source for safe recovery testing.', contentType: 'document' as const });
+  const reserve = async () => reserveIntake(owner.merchantId, await reviewedKnowledgeInput(owner.merchantId, source()));
   const expire = () => (getPool().then(pool => pool!.execute('UPDATE knowledge_intake_receipts SET lease_expires_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 SECOND) WHERE merchant_id = ? AND request_id = ?', [owner.merchantId, requestId])));
   beforeAll(ensureKnowledgeIntakeTestSchema);
   beforeEach(async () => {
     vi.clearAllMocks(); owner = await createDisposableMerchant('intake-recovery'); other = await createDisposableMerchant('recovery-other');
-    const reserved = await reserveIntake(owner.merchantId, source()); execution = reserved.execution!; requestId = execution.requestId;
+    const reserved = await reserve(); execution = reserved.execution!; requestId = execution.requestId;
   });
   afterEach(async () => { await cleanupDisposableMerchants([owner.userId, other.userId]); });
   afterAll(closeDb);
@@ -36,7 +38,7 @@ describe.skipIf(!process.env.DATABASE_URL)('interrupted knowledge intake recover
     expect(results.every(r => r.state === 'uncertain' && r.recoveredAt && r.recovery === null && r.documentId)).toBe(true);
     expect((await getSectionById(sectionId, owner.merchantId))?.content).toBe('Partial saved knowledge');
     const [audit] = await (await getPool())!.execute<any[]>('SELECT COUNT(*) AS n FROM sari_activity_log WHERE merchant_id = ? AND action_type = ?', [owner.merchantId, 'knowledge_intake_recovered']);
-    expect(Number(audit[0].n)).toBe(1); expect((await reserveIntake(owner.merchantId, source())).created).toBe(true);
+    expect(Number(audit[0].n)).toBe(1); expect((await reserve()).created).toBe(true);
   });
   it('fences all old pipeline writes, embeddings, cache mutation and further provider calls after recovery', async () => {
     const id = await runIntakeExecution(execution, create); const section = (await getSectionById(id, owner.merchantId))!;

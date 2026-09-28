@@ -19,7 +19,11 @@ export const knowledgeAnalysisSchema = z.object({
   recommendationReason: explanation,
 });
 export type KnowledgeAnalysis = z.infer<typeof knowledgeAnalysisSchema>;
-export const knowledgeIngestInput = knowledgeIntakeInput.extend({ requestId: z.uuid() });
+export const knowledgeReviewSchema = z.object({ id: z.uuid(), createdAt: z.string().min(1), expiresAt: z.string().min(1) });
+export const knowledgeSavedReviewSchema = z.object({ id: z.uuid(), analyzedAt: z.string().min(1), acceptedAt: z.string().min(1), analysis: knowledgeAnalysisSchema });
+export type KnowledgeReview = z.infer<typeof knowledgeReviewSchema>;
+export type KnowledgeSavedReview = z.infer<typeof knowledgeSavedReviewSchema>;
+export const knowledgeIngestInput = knowledgeIntakeInput.extend({ requestId: z.uuid(), reviewId: z.uuid(), acknowledged: z.literal(true) });
 export const knowledgeReceiptInput = z.object({ requestId: z.uuid() });
 export const knowledgeRecoveryInput = knowledgeReceiptInput.extend({ acknowledged: z.literal(true) });
 const count = z.number().int().nonnegative();
@@ -35,6 +39,7 @@ export type KnowledgeReceipt = {
   outcome: KnowledgeOutcome | null; updatedAt: string;
   recovery: 'available' | 'waiting' | 'legacy' | null;
   recoveredAt: string | null;
+  review: KnowledgeSavedReview | null;
 };
 
 // Keep the complete accepted text; filtering is not a substitute for prompt boundaries.

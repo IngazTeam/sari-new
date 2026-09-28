@@ -202,21 +202,22 @@ export function createBrainKnowledge(host) {
           ? '<p role="alert" class="bw-warning">تعذر فحص المثال؛ لا توجد نتيجة يعتمد عليها. النص محفوظ للمراجعة اليدوية.</p>'
           : analysis === "ready" && isSample
             ? `<section class="bw-summary" data-bk-analysis><h3>نتيجة فحص توضيحية · سياسة</h3><p>الملخص: شروط الاسترجاع والتجهيز في المثال.</p><p>عنصران · خطورة مرتفعة · التوصية: مراجعة</p><p>تعارض: سياسة المثال السابقة تذكر 14 يومًا، والجديدة 7 أيام.</p><p>الأثر: قد يتلقى العميل وعدًا مخالفًا. احسم المصدر الساري قبل التفعيل.</p><details><summary>أسئلة وإجابات للمراجعة</summary><p>هل يمكن الإرجاع بعد 10 أيام؟ المدة في النص الجديد 7 أيام؛ يلزم حسم التعارض.</p><p>هل يشمل المفتوح؟ النص يشترط عدم فتح المنتج.</p><p>متى يجهز الطلب؟ يذكر المثال يوم عمل واحد، دون تحديد مدة النقل.</p></details></section>`
-            : '<p class="bw-warning">لم يُحلّل النص بالذكاء الاصطناعي. يمكنك مراجعته وحفظه يدويًا كمعرفة معلّقة.</p>';
+            : analysis === 'expired' ? '<p role="alert">انتهت صلاحية فحص المثال. النص محفوظ؛ افحصه مجددًا قبل الإضافة.</p>'
+            : '<p class="bw-warning">لم يُحلّل النص بالذكاء الاصطناعي. الحفظ اليدوي هنا محاكاة محلية منفصلة؛ الإضافة في التطبيق تتطلب تقرير فحص محفوظًا من الخادم.</p>';
     modal(
       "مراجعة محتوى المعرفة",
-      `<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
+      `<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${analysis === "ready" && isSample && !saved ? btn("محاكاة انتهاء صلاحية الفحص", "expire-review") + "<p>الفحص في التطبيق صالح لإضافة واحدة خلال 30 دقيقة، ويتغير بعد تعديل النص أو الاسم أو النوع.</p>" : ""}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
       btn(
         "حفظ للمراجعة",
         "ingest",
-        off(locked() || busy || !attested || saved),
+        off(locked() || busy || !attested || saved || (isSample && analysis !== 'ready')),
         true
       )
     );
   }
   function receipt() {
     const r = data.receipt;
-    return `<section role="status" class="bw-summary" data-bk-receipt><h3>${r.mode === "empty" ? "لم تُضف معرفة" : r.mode === "unchanged" ? "لا تغيير في المثال" : "حُفظ للمراجعة محليًا"}</h3><p>${r.mode === "empty" ? "لم يُستخرج قسم. راجع المحتوى قبل محاولة أخرى؛ لا نعرض نجاحًا وهميًا." : r.mode === "unchanged" ? "المحتوى لا يضيف تغييرًا في هذا السيناريو؛ لم نكرر القسم." : r.mode === "partial" ? "القسم محفوظ، لكن الفهرسة غير مكتملة. لا تعني هذه النتيجة جاهزية الرد." : r.mode === "conflict" ? "تعارض يحتاج قرارًا بشريًا؛ لم يُفعّل النص." : "قسم محلي معلّق؛ راجعه من أقسام المعرفة."}</p><p>جديد: ${r.added} · تطوير: 0 · تعارض: ${r.conflicts} · دون تغيير: ${r.mode === "unchanged" ? 1 : 0}</p><p>نتيجة مثال فقط؛ لا فهرسة فعلية ولا تغيير في نسبة احتراف المبيعات.</p></section>`;
+    return `<section role="status" class="bw-summary" data-bk-receipt><h3>${r.mode === "empty" ? "لم تُضف معرفة" : r.mode === "unchanged" ? "لا تغيير في المثال" : "حُفظ للمراجعة محليًا"}</h3><p>${r.mode === "empty" ? "لم يُستخرج قسم. راجع المحتوى قبل محاولة أخرى؛ لا نعرض نجاحًا وهميًا." : r.mode === "unchanged" ? "المحتوى لا يضيف تغييرًا في هذا السيناريو؛ لم نكرر القسم." : r.mode === "partial" ? "القسم محفوظ، لكن الفهرسة غير مكتملة. لا تعني هذه النتيجة جاهزية الرد." : r.mode === "conflict" ? "تعارض يحتاج قرارًا بشريًا؛ لم يُفعّل النص." : "قسم محلي معلّق؛ راجعه من أقسام المعرفة."}</p><p>جديد: ${r.added} · تطوير: 0 · تعارض: ${r.conflicts} · دون تغيير: ${r.mode === "unchanged" ? 1 : 0}</p><p>نتيجة مثال فقط؛ لا فهرسة فعلية ولا تغيير في نسبة احتراف المبيعات.</p>${r.review ? `<details data-bk-saved-review><summary>تقرير الفحص الذي راجعته</summary><p>نسخة المثال عند الموافقة؛ ليست خطة تغييرات ثابتة أو إثباتًا لجودة الردود.</p><p>${esc(r.review.name)}</p><p>${esc(r.review.content)}</p><p>التعارض في المثال: 14 يومًا في السياسة السابقة، و7 أيام في النص الجديد.</p></details>` : ""}</section>`;
   }
   function statusCard() {
     const [title, hint] = learningStates[data.state];
@@ -300,7 +301,7 @@ export function createBrainKnowledge(host) {
     const b = document.querySelector('[data-bk-action="ingest"]');
     if (b)
       b.disabled =
-        locked() || busy || !attested || data.receipt?.input === fingerprint();
+        locked() || busy || !attested || data.receipt?.input === fingerprint() || (data.draft.content === sample && analysis !== 'ready');
     const d = document.querySelector('[data-bk-action="confirm-remove"]');
     if (d)
       d.disabled =
@@ -486,7 +487,9 @@ export function createBrainKnowledge(host) {
       analysis = "ready";
       clearConsent();
     }
+    if (a === 'expire-review' && analysis === 'ready') { analysis = 'expired'; clearConsent(); }
     if (a === "ingest" && attested && data.receipt?.input !== fingerprint()) {
+      if (data.draft.content === sample && analysis !== 'ready') return;
       if (!validate()) {
         paint();
         document.querySelector('.bk-workspace [aria-invalid="true"]')?.focus();
@@ -494,7 +497,8 @@ export function createBrainKnowledge(host) {
       }
       const input = fingerprint(),
         d = clone(data.draft),
-        mode = resultMode;
+        mode = resultMode,
+        review = d.content === sample && analysis === 'ready' ? { name: d.name, content: d.content } : null;
       clearConsent();
       return write(() => {
         const add = !["empty", "unchanged"].includes(mode);
@@ -504,6 +508,7 @@ export function createBrainKnowledge(host) {
           mode,
           added: add && mode !== "conflict" ? 1 : 0,
           conflicts: mode === "conflict" ? 1 : 0,
+          review,
         };
       }, "مراجعة وإضافة محتوى محلي");
     }

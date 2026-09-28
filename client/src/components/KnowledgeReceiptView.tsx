@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import type { KnowledgeReceipt } from '@shared/knowledge-intake';
 import { Button } from './ui/button';
+import { KnowledgeAnalysisReport } from './KnowledgeAnalysisReport';
 
 function KnowledgeRecoveryControl({ receipt, onRecovered }: { receipt: KnowledgeReceipt; onRecovered: (receipt: KnowledgeReceipt) => void }) {
   const { t } = useTranslation();
@@ -21,7 +22,7 @@ function KnowledgeRecoveryControl({ receipt, onRecovered }: { receipt: Knowledge
 }
 
 export function KnowledgeReceiptView({ receipt: savedReceipt, onRefresh, busy }: { receipt: KnowledgeReceipt; onRefresh?: () => void; busy?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [recovered, setRecovered] = useState<KnowledgeReceipt | null>(null);
   const receipt = savedReceipt.state === 'processing' && recovered?.requestId === savedReceipt.requestId ? recovered : savedReceipt;
   const labels = {
@@ -39,6 +40,11 @@ export function KnowledgeReceiptView({ receipt: savedReceipt, onRefresh, busy }:
     {receipt.state === 'uncertain' && !receipt.recoveredAt && <p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.receiptSupport')}</p>}
     {receipt.state === 'processing' && <KnowledgeRecoveryControl key={receipt.requestId} receipt={receipt} onRecovered={result => { setRecovered(result); onRefresh?.(); }} />}
     {receipt.recoveredAt && <p className="rounded-lg bg-muted p-3 text-sm leading-7">{t('merchantUx.knowledgeIntake.recoveryDone')}</p>}
+    {receipt.review ? <details className="space-y-3 border-t pt-3 text-sm leading-7" data-knowledge-saved-review><summary className="cursor-pointer py-2 font-medium">{t('merchantUx.knowledgeIntake.savedReview')}</summary>
+      <p>{t('merchantUx.knowledgeIntake.reviewScope')}</p>
+      <p>{t('merchantUx.knowledgeIntake.reviewAcceptedAt')}: <bdi>{new Date(receipt.review.acceptedAt.replace(' ', 'T') + 'Z').toLocaleString(i18n?.language || 'ar')}</bdi></p>
+      <KnowledgeAnalysisReport analysis={receipt.review.analysis} />
+    </details> : receipt.state !== 'removed' && <p className="text-sm text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewUnavailable')}</p>}
     <details className="text-sm leading-7"><summary className="cursor-pointer py-2">{t('merchantUx.knowledgeIntake.receiptDetails')}</summary>
       <p>{t('merchantUx.knowledgeIntake.receiptArchive')}</p>
       <p className="text-xs text-muted-foreground">{t('merchantUx.knowledgeIntake.receiptId')}: <bdi>{receipt.requestId}</bdi></p>

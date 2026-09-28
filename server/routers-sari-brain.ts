@@ -1,5 +1,6 @@
 import { getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
 import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
+import { saveKnowledgeReview } from './knowledge/intake-reviews';
 import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
 import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
@@ -924,6 +925,7 @@ ${sanitizedContent}`
 
         // Malformed or incomplete provider output is a failed analysis, never a fabricated review.
         const analysis = knowledgeAnalysisSchema.parse(JSON.parse(responseText));
+        const review = await saveKnowledgeReview(merchant.id, input, analysis);
 
         // Log the analysis
         await logBrainActivity(merchant.id, 'content_analyzed', `تم فحص "${input.fileName || 'محتوى جديد'}" — التوصية: ${analysis.recommendation}`, {
@@ -937,6 +939,7 @@ ${sanitizedContent}`
         return {
           success: true,
           analysis,
+          review,
           tokensUsed: aiResult.usage?.total_tokens || 0,
         };
       } catch (error: any) {

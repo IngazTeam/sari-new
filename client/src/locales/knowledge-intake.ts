@@ -1,4 +1,10 @@
 export const knowledgeIntakeAr = {
+  reviewServices: 'خدمات', reviewPolicies: 'سياسات', reviewGeneral: 'معلومات عامة', reviewCount: 'عناصر متوقعة: {{count}}',
+  savedReview: 'تقرير الفحص الذي راجعته', reviewAcceptedAt: 'تاريخ الموافقة على الإضافة',
+  reviewValidity: 'هذا الفحص صالح لإضافة واحدة خلال 30 دقيقة. تعديل النص أو اسمه أو نوعه يحتاج فحصًا جديدًا.',
+  reviewExpired: 'لم تبدأ الإضافة لأن تقرير الفحص انتهت صلاحيته أو لم يعد مطابقًا للمحتوى. نصك محفوظ هنا؛ افحصه مجددًا.',
+  reviewScope: 'التقرير يصف النص وقت مراجعته. راجع نتيجة الإضافة والأقسام بعد الحفظ؛ هذا الفحص لا يقيس جودة الردود.',
+  reviewUnavailable: 'لا توجد نسخة تقرير محفوظة لهذه الإضافة القديمة.',
   receiptRecovered: 'أُغلقت المحاولة — راجع المعرفة المحفوظة',
   recoveryWaiting: 'المعالجة مستمرة أو لم تنتهِ مهلة التحقق بعد. يمكنك التحقق من النتيجة دون إعادة الإضافة.',
   recoveryLegacy: 'هذا سجل قديم لا يدعم الإغلاق الآمن من اللوحة. اطلب مراجعة الدعم باستخدام رقم الإضافة.',
@@ -33,6 +39,12 @@ export const knowledgeIntakeAr = {
 };
 export type KnowledgeIntakeCopy = { [K in keyof typeof knowledgeIntakeAr]: string };
 export const knowledgeIntakeEn: KnowledgeIntakeCopy = {
+  reviewServices: 'Services', reviewPolicies: 'Policies', reviewGeneral: 'General information', reviewCount: 'Expected items: {{count}}',
+  savedReview: 'The analysis report you reviewed', reviewAcceptedAt: 'Intake consent recorded at',
+  reviewValidity: 'This report is valid for one intake within 30 minutes. Changing the text, name, or type requires a new review.',
+  reviewExpired: 'Intake did not start because the review expired or no longer matches the content. Your text is still here; review it again.',
+  reviewScope: 'This report describes the text at review time. Check the intake result and sections after saving; this analysis does not measure response quality.',
+  reviewUnavailable: 'No saved analysis report is available for this older intake.',
   receiptRecovered: 'Attempt closed — review saved knowledge',
   recoveryWaiting: 'Processing is active or its verification window has not expired. Check the saved result without adding it again.',
   recoveryLegacy: 'This older record cannot be safely closed from the dashboard. Ask support to review the intake reference.',

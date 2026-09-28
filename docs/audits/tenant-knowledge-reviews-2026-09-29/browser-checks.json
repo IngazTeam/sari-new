@@ -1,0 +1,39 @@
+{
+  "browser": "Chrome on Windows, viewport emulation only",
+  "checks": [
+    {
+      "page": "live-saved-review",
+      "viewport": 390,
+      "client": 375,
+      "scroll": 375
+    },
+    {
+      "page": "live-saved-review",
+      "viewport": 320,
+      "client": 305,
+      "scroll": 305
+    },
+    {
+      "page": "live-saved-review",
+      "viewport": 1440,
+      "client": 1425,
+      "scroll": 1425
+    },
+    {
+      "page": "mock-expired-review",
+      "viewport": 390,
+      "client": 375,
+      "dialogClient": 341,
+      "dialogScroll": 341,
+      "scroll": 375
+    },
+    {
+      "page": "mock-saved-review",
+      "viewport": 320,
+      "client": 305,
+      "dialogClient": 271,
+      "dialogScroll": 271,
+      "scroll": 305
+    }
+  ]
+}

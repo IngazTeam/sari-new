@@ -39,3 +39,10 @@ it('shows confirmed closure without claiming successful processing or offering a
   receipt = { ...receipt, requestId: '00000000-0000-4000-8000-000000000002' }; await render();
   expect(container.textContent).not.toContain(copy.recoveryDone); expect(button(copy.recoveryAction).disabled).toBe(true);
 });
+it('shows the stored report separately from the execution result and escapes its untrusted text', async () => {
+  receipt = { ...receipt, state: 'uncertain', recovery: null, review: { id: '00000000-0000-4000-8000-000000000003', analyzedAt: '2026-09-29 01:00:00', acceptedAt: '2026-09-29 01:01:00', analysis: { contentType: 'general', summary: '<img src=x onerror=alert(1)>', itemCount: 1, conflicts: ['A saved conflict'], impact: 'A saved impact', riskLevel: 'high', sampleQA: [{ question: 'Saved question?', answer: 'Saved answer' }], recommendation: 'review', recommendationReason: 'Review the exact source' } } };
+  await render(); const report = container.querySelector('[data-knowledge-saved-review]')!;
+  expect(report.textContent).toContain(copy.savedReview); expect(report.textContent).toContain(copy.reviewScope);
+  expect(report.textContent).toContain('A saved conflict'); expect(report.textContent).toContain('Saved answer'); expect(report.querySelector('img')).toBeNull();
+  receipt = { ...receipt, review: null }; await render(); expect(container.textContent).toContain(copy.reviewUnavailable); expect(container.querySelector('[data-knowledge-saved-review]')).toBeNull();
+});

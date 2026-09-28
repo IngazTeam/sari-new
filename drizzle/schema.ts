@@ -394,6 +394,8 @@ export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
   requestId: varchar('request_id', { length: 36 }).notNull(),
   inputHash: char('input_hash', { length: 64 }).notNull(),
+  reviewId: varchar('review_id', { length: 36 }),
+  reviewSnapshot: json('review_snapshot').$type<import('../shared/knowledge-intake').KnowledgeSavedReview>(),
   executionToken: char('execution_token', { length: 36 }),
   leaseExpiresAt: timestamp('lease_expires_at', { mode: 'string' }),
   recoveredAt: timestamp('recovered_at', { mode: 'string' }),
@@ -404,6 +406,15 @@ export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, table => [uniqueIndex('uq_knowledge_intake_request').on(table.merchantId, table.requestId), index('idx_knowledge_intake_state').on(table.merchantId, table.state)]);
+
+export const knowledgeIntakeReviews = mysqlTable('knowledge_intake_reviews', {
+  reviewId: varchar('review_id', { length: 36 }).primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  inputHash: char('input_hash', { length: 64 }).notNull(),
+  analysis: json('analysis').$type<import('../shared/knowledge-intake').KnowledgeAnalysis>().notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'string' }).notNull(),
+}, table => [index('idx_knowledge_review_merchant').on(table.merchantId, table.expiresAt)]);
 
 export const merchants = mysqlTable("merchants", {
 	id: int().autoincrement().primaryKey(),

@@ -251,6 +251,16 @@ it("restricts the analysis report to its sample and invalidates it after editing
   expect(node("[data-bk-check]").checked).toBe(false);
   expect(node('[data-bk-action="analyze"]').disabled).toBe(true);
 });
+it('requires a current sample review, preserves the draft after expiry, and stores what was reviewed', () => {
+  openIntake(); click('sample'); check(); expect(node('[data-bk-action="ingest"]').disabled).toBe(true);
+  click('analyze'); check(); click('expire-review'); expect(body()).toContain('انتهت صلاحية فحص المثال');
+  expect(node('[data-bk-action="ingest"]').disabled).toBe(true); expect(node('#bk-content').value).toContain('7 أيام');
+  click('analyze'); expect(node('[data-bk-check]').checked).toBe(false); check(); click('ingest');
+  expect(node('[data-bk-saved-review]').textContent).toContain('14 يومًا'); expect(state().receipt.review.content).toContain('7 أيام');
+  click('close'); sources(); node('[data-kl-action="read"]').click();
+  expect(node('[data-kl-saved-review]').textContent).toContain('ليست إجابات مختبرة');
+  set('[data-kl-receipt-state]', 'legacy', 'change'); expect(w.document.querySelector('[data-kl-saved-review]')).toBeNull();
+});
 it.each(["success", "partial", "conflict", "empty", "unchanged"])(
   "distinguishes %s intake receipt from activation and permits no duplicate save",
   kind => {

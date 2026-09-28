@@ -9,11 +9,12 @@ import { getActiveKnowledgeDoc, getKnowledgeDocByMerchantId } from './db';
 import { buildDocumentContext } from './ai/rag-engine';
 import { ensureKnowledgeIntakeTestSchema } from './tests/helpers/knowledge-intake-schema';
 import type { IntakeExecution } from './knowledge/intake-execution';
+import { reviewedKnowledgeInput } from './tests/helpers/knowledge-reviewed-input';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable knowledge receipts (local MySQL)', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner;
   const executions = new Map<string, IntakeExecution>();
-  const reserve = async (...args: Parameters<typeof reserveIntake>) => { const value = await reserveIntake(...args); if (value.execution) executions.set((args[1] as { requestId: string }).requestId, value.execution); return value; };
+  const reserve = async (...args: Parameters<typeof reserveIntake>) => { const value = await reserveIntake(args[0], await reviewedKnowledgeInput(args[0], args[1]), args[2]); if (value.execution) executions.set((args[1] as { requestId: string }).requestId, value.execution); return value; };
   const finish = (merchantId: number, requestId: string, state: 'completed' | 'empty' | 'uncertain', result: typeof outcome | null) => finishIntake(merchantId, requestId, state, result, executions.get(requestId)!);
   const outcome = { success: true, evolveResult: { added: 1, evolved: 0, conflicts: 2, unchanged: 0 }, embeddingsReady: false };
   const input = (type: 'document' | 'products' | 'custom' = 'document') => ({ requestId: randomUUID(), content: 'ع'.repeat(29_990) + 'END_MARKER', contentType: type, fileName: 'Receipt test.txt' });

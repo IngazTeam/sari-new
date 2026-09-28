@@ -2,7 +2,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import { discoveredPages, extractedFaqs, knowledgeChangelog, knowledgeSections, merchantKnowledgeDocs, merchants, products, sariActivityLog, websiteAnalyses } from '../../drizzle/schema';
 import { withKnowledgeTransaction, type KnowledgeTransaction } from './transaction';
 import type { SectionSource } from '../db/knowledge';
-import { knowledgeIntakeReceipts } from '../../drizzle/schema';
+import { knowledgeIntakeReceipts, knowledgeIntakeReviews } from '../../drizzle/schema';
 import { TRPCError } from '@trpc/server';
 
 // Called while holding the merchant lock, shared with intake reservation.
@@ -69,6 +69,8 @@ async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source
     const rows = await tx.select({ id: merchantKnowledgeDocs.id }).from(merchantKnowledgeDocs)
       .where(eq(merchantKnowledgeDocs.merchantId, merchantId)).orderBy(desc(merchantKnowledgeDocs.uploadedAt), desc(merchantKnowledgeDocs.id)).for('update');
     if (sourceId !== undefined && sourceId !== `doc-${rows[0]?.id}`) throw new KnowledgeSourceNotFoundError();
+    await tx.delete(knowledgeIntakeReviews).where(eq(knowledgeIntakeReviews.merchantId, merchantId));
+    await tx.update(knowledgeIntakeReceipts).set({ reviewSnapshot: null }).where(eq(knowledgeIntakeReceipts.merchantId, merchantId));
     // There is one active document source; do not expose an older upload after removing the latest.
     const [result] = await tx.delete(merchantKnowledgeDocs).where(eq(merchantKnowledgeDocs.merchantId, merchantId));
     deleted = result.affectedRows;
