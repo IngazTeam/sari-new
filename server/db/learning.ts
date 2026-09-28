@@ -16,7 +16,7 @@ import { captureLearningSignals, type LearningSignalInput } from '../ai/learning
 // ═══════════════════════════════════════════════════════════════
 
 export type SignalType =
-  | 'positive_feedback'     // العميل شكر أو أثنى
+  | 'positive_feedback'     // تقييم إيجابي مع مصدره؛ المجاملة وحدها ليست نجاحًا
   | 'purchase_completed'    // العميل اشترى
   | 'purchase_refunded'
   | 'question_repeated'     // العميل كرر سؤاله
@@ -24,10 +24,11 @@ export type SignalType =
   | 'sales_declined'        // رفض فرصة شراء صراحة حسب تحليل محادثة موثق، وليس خسارة مالية
   | 'escalation_requested'  // العميل طلب بشري
   | 'price_objection'       // اعتراض على السعر
-  | 'knowledge_gap'         // البوت ما عنده معلومات
+  | 'sales_objection'       // اعتراض غير سعري موثق بفهم الحوار
+  | 'knowledge_gap'         // نقص معلن في الحوار، لا إثبات غياب المعرفة من المصدر
   | 'merchant_correction'   // التاجر صحح الرد
-  | 'long_conversation'     // محادثة ناجحة 5+ رسائل
-  | 'quick_resolution';     // حل سريع 1-2 رسائل
+  | 'long_conversation'     // طول الحوار؛ لا يثبت نجاح البيع
+  | 'quick_resolution';     // قصر الحوار؛ لا يثبت حله
 
 export type DNADimension =
   | 'greeting_style'        // كيف يرحب

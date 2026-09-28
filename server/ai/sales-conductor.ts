@@ -215,7 +215,7 @@ export async function runWeeklyAnalysis(merchantId: number): Promise<void> {
       `SELECT signal_type, COUNT(*) as frequency, COUNT(DISTINCT conversation_id) as independent_conversations
        FROM sari_learning_signals
        WHERE merchant_id = ?
-          AND signal_type IN ('price_objection', 'customer_left')
+          AND signal_type IN ('price_objection', 'sales_objection')
          AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         GROUP BY signal_type
        ORDER BY frequency DESC

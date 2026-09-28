@@ -74,14 +74,11 @@ export async function runInteractionJob(): Promise<boolean> {
 
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT c.customerPhone, c.customerName, m.content,
-        (SELECT CASE WHEN previous.isProcessed = 1 AND previous.aiResponse IS NOT NULL THEN previous.content ELSE NULL END
-          FROM messages previous WHERE previous.conversationId = c.id
-          AND previous.id < m.id AND previous.direction = 'outgoing' ORDER BY previous.id DESC LIMIT 1) AS previous_bot_response,
+      `SELECT c.customerPhone, c.customerName,
         (SELECT COUNT(*) FROM messages history WHERE history.conversationId = c.id
           AND history.direction = 'incoming' AND history.id <= m.id) AS message_count
        FROM conversations c JOIN messages m ON m.conversationId = c.id
-       WHERE c.id = ? AND c.merchantId = ? AND m.id = ?`,
+       WHERE c.id = ? AND c.merchantId = ? AND m.id = ? AND m.direction='incoming'`,
       [job.conversation_id, job.merchant_id, job.incoming_message_id]);
     const interaction = rows[0];
     if (!interaction) throw new Error('Interaction source unavailable');
@@ -90,9 +87,7 @@ export async function runInteractionJob(): Promise<boolean> {
       const { captureConversationSignals } = await import('./learning-engine');
       const { getOrCreateProfile } = await import('../db/customer-intelligence');
       await captureConversationSignals({ merchantId: job!.merchant_id, conversationId: job!.conversation_id,
-        customerMessage: interaction.content || '', botResponse: job!.reply_text,
-        previousBotResponse: interaction.previous_bot_response || undefined,
-        sourceKey: `message:${job!.incoming_message_id}`, strict: true });
+        incomingMessageId:job!.incoming_message_id,jobId:job!.id,leaseToken:token, strict: true });
       const profile = await getOrCreateProfile(job!.merchant_id, interaction.customerPhone, interaction.customerName);
       if (Number(interaction.message_count) % 5 === 0) {
         const { enrichCustomerProfile } = await import('./profile-enrichment');
@@ -102,7 +97,7 @@ export async function runInteractionJob(): Promise<boolean> {
       }
     });
     await pool.execute(`UPDATE ai_interaction_jobs SET state = 'completed', completed_at = UTC_TIMESTAMP(3),
-      lease_token = NULL, lease_until = NULL, last_error = NULL WHERE id = ? AND lease_token = ?`, [job.id, token]);
+      lease_token = NULL, lease_until = NULL, last_error = NULL WHERE id = ? AND lease_token = ? AND lease_until>UTC_TIMESTAMP(3)`, [job.id, token]);
   } catch (error) {
     if (error instanceof LearningSignalCaptureError && error.code === 'daily_limit') {
       // Admission is deferred, not a failed processing attempt. Preserve the durable source for tomorrow.
@@ -114,7 +109,7 @@ export async function runInteractionJob(): Promise<boolean> {
     await pool.execute(`UPDATE ai_interaction_jobs SET state = IF(attempts >= 8, 'failed', 'pending'),
       available_at = TIMESTAMPADD(SECOND, LEAST(3600, POW(2, attempts) * 15), UTC_TIMESTAMP(3)),
       lease_token = NULL, lease_until = NULL, last_error = 'interaction_processing_failed'
-      WHERE id = ? AND lease_token = ?`, [job.id, token]);
+      WHERE id = ? AND lease_token = ? AND lease_until>UTC_TIMESTAMP(3)`, [job.id, token]);
   }
   return true;
 }

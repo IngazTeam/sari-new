@@ -155,7 +155,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         const decode = (v: any) => typeof v === 'string' ? JSON.parse(v) : v;
         const analysis = conversationUnderstandingSchema.parse(decode(stored.result_json));
         analysis.appointmentReminder!.targetDigest = s.targetDigest;
-        const evidence = decode(stored.message_evidence).map((e: any) => ({ id: e.id, role: e.role, digest: e.digest, ...(e.createdAt ? { createdAt: e.createdAt } : {}) }));
+        const evidence = decode(stored.message_evidence).map((e: any) => ({ id: e.id, role: e.role, digest: e.digest, ...(e.createdAt ? { createdAt: e.createdAt } : {}), ...(e.isAiReply !== undefined ? { isAiReply: e.isAiReply } : {}) }));
         const resultDigest = createHash('sha256').update(JSON.stringify({ source: stored.source_digest, context: stored.context_digest, evidence, analysis })).digest('hex');
         await q('UPDATE ai_conversation_understanding SET result_json=?,result_digest=? WHERE merchant_id=? AND incoming_message_id=?', [JSON.stringify(analysis), resultDigest, owner.merchantId, s.sourceId]);
       }

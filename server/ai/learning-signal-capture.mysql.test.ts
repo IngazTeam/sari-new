@@ -6,7 +6,10 @@ import {captureSignal,captureSignals} from '../db/learning';
 import {captureConversationSignals} from './learning-engine';
 import {stageInteraction,finishInteractionDelivery,runInteractionJob} from './interaction-jobs';
 import {buildReplyPlan} from '../messaging/reply-plan';
+import {understandConversation} from './conversation-understanding';
+import {learningUnderstandingFixture} from '../tests/helpers/learning-understanding-fixture';
 const model=vi.hoisted(()=>vi.fn());vi.mock('./openai',()=>({callGPT4:model}));
+vi.mock('../db_ai_settings',()=>({getTextGenerationSettings:async()=>({model:'central-learning-test',isActive:true,textGenerationProvider:'openai'})}));
 describe.skipIf(!process.env.DATABASE_URL)('transactional learning source admission on MySQL',()=>{
   let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,conversation:number,users:number[];
   const query=async(sql:string,args:any[]=[]):Promise<any>=>(await(await getPool())!.execute(sql,args))[0];
@@ -16,10 +19,9 @@ describe.skipIf(!process.env.DATABASE_URL)('transactional learning source admiss
   const signals=()=>query('SELECT * FROM sari_learning_signals WHERE merchant_id=? ORDER BY id',[owner.merchantId]);
   async function fill(count:number){if(!count)return;await query(`INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,analyzed,source_key) VALUES ${Array.from({length:count},()=>"(?,?,'price_objection',1,?)").join(',')}`,Array.from({length:count},(_,i)=>[owner.merchantId,conversation,`seed:${i}`]).flat());}
   async function foreign(){const other=await createDisposableMerchant('signal-other');users.push(other.userId);return{...other,conversationId:(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000198')",[other.merchantId])).insertId};}
-  it('commits every detected signal from one accepted message with the correct preceding reply',async()=>{
-    await captureConversationSignals({merchantId:owner.merchantId,conversationId:conversation,customerMessage:'شكرا ولكن السعر غالي',botResponse:'ما عندي معلومات',previousBotResponse:'السعر الحالي',sourceKey:'message:batch',strict:true});
-    const rows=await signals();expect(rows.map((r:any)=>r.signal_type).sort()).toEqual(['knowledge_gap','positive_feedback','price_objection']);
-    expect(rows.find((r:any)=>r.signal_type==='price_objection').bot_message).toBe('السعر الحالي');expect(rows.find((r:any)=>r.signal_type==='knowledge_gap').bot_message).toBe('ما عندي معلومات');expect(model).not.toHaveBeenCalled();
+  it('does not turn supplied words or a future reply into unanchored learning',async()=>{
+    await expect(captureConversationSignals({merchantId:owner.merchantId,conversationId:conversation,customerMessage:'شكرا ولكن السعر غالي',botResponse:'ما عندي معلومات',previousBotResponse:'السعر الحالي',sourceKey:'message:batch',strict:true})).rejects.toMatchObject({code:'invalid_input'});
+    expect(await signals()).toHaveLength(0);expect(model).not.toHaveBeenCalled();
   });
   it('replays identical keyed evidence without changing analyzed or timestamps',async()=>{
     await captureSignal(input());await query('UPDATE sari_learning_signals SET analyzed=1 WHERE merchant_id=?',[owner.merchantId]);const before=await signals();await captureSignal(input());expect(await signals()).toEqual(before);
@@ -91,7 +93,10 @@ describe.skipIf(!process.env.DATABASE_URL)('transactional learning source admiss
     await fault('count');await expect(captureSignal({...input(),strict:false})).resolves.toBeUndefined();expect(await signals()).toHaveLength(0);
   });
   async function interaction(){
+    await query("INSERT INTO messages(conversationId,direction,messageType,content,aiResponse,isProcessed,sender_type) VALUES (?,'outgoing','text','هذه المزايا','هذه المزايا',1,'assistant')",[conversation]);
     const id=(await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','شكرا ولكن السعر غالي')",[conversation])).insertId;
+    model.mockImplementation(async messages=>JSON.stringify(learningUnderstandingFixture(JSON.parse(messages[1].content),['positive_feedback','price_objection'])));
+    expect(await understandConversation({merchantId:owner.merchantId,conversationId:conversation,incomingMessageId:id,customerPhone:'966500000199',message:'شكرا ولكن السعر غالي'})).not.toBeNull();model.mockClear();
     const plan=buildReplyPlan({merchantId:owner.merchantId,instanceId:1,providerAccount:'fixture',eventId:`admission:${id}`,conversationId:conversation,incomingMessageId:id,to:'966500000199',text:'أوضح لك المزايا'});
     await stageInteraction(plan);await finishInteractionDelivery(plan,true);return id;
   }
@@ -106,7 +111,7 @@ describe.skipIf(!process.env.DATABASE_URL)('transactional learning source admiss
   it.each(['expired','replaced'])('does not let an %s worker postpone the current interaction owner',async mode=>{
     await fill(500);await interaction();const pool=(await getPool())!,get=pool.getConnection.bind(pool);
     vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await get();return new Proxy(c,{get(t,k){
-      if(k==='execute')return async(...args:any[])=>{if(String(args[0]).includes('created_at>=UTC_DATE()'))await query(mode==='expired'
+      if(k==='execute')return async(...args:any[])=>{if(String(args[0]).startsWith('SELECT id FROM merchants'))await query(mode==='expired'
         ?'UPDATE ai_interaction_jobs SET lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE merchant_id=?'
         :"UPDATE ai_interaction_jobs SET lease_token='new-owner' WHERE merchant_id=?",[owner.merchantId]);return(t.execute as any)(...args);};
       const v=(t as any)[k];return typeof v==='function'?v.bind(t):v;}}) as any;});

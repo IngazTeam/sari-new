@@ -288,7 +288,7 @@ describe("isolated preview engine", () => {
     });
     expect(context.messages).toEqual(
       [...input.history, { role: "user", content: input.message }].map(
-        (message, index) => ({ ...message, id: index + 1 })
+        (message, index) => ({ ...message, id: index + 1, isAiReply: message.role === 'assistant' })
       )
     );
     expect(m.interpretation.mock.calls[0][1]).toMatchObject({

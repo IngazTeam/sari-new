@@ -1,6 +1,9 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const llm = vi.hoisted(() => vi.fn());
 vi.mock('./openai', () => ({ callGPT4: llm }));
+vi.mock('../db_ai_settings',()=>({getTextGenerationSettings:async()=>({model:'central-learning-test',isActive:true,textGenerationProvider:'openai'})}));
+import {understandConversation} from './conversation-understanding';
+import {learningUnderstandingFixture} from '../tests/helpers/learning-understanding-fixture';
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { buildReplyPlan } from '../messaging/reply-plan';
@@ -27,12 +30,23 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     const [message] = await pool.execute<any>(
       "INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', 'غالي وما يستاهل')", [conversationId]);
     messageId = message.insertId;
+    await sealCurrent();
   });
   afterEach(async () => cleanupDisposableMerchants([fixture.userId]));
   afterAll(closeDb);
   const plan = () => buildReplyPlan({ merchantId: fixture.merchantId, instanceId: 1, providerAccount: 'fixture',
     eventId: `message-${messageId}`, conversationId, incomingMessageId: messageId, to: '966500000087', text: 'ما الاحتياج الذي لم يلبه العرض؟' });
   const rows = async (sql: string, params: any[] = []) => ((await (await getPool())!.execute<any[]>(sql, params))[0]);
+  async function sealCurrent(unattributed=false) {
+    const [message]=await rows('SELECT content FROM messages WHERE id=?',[messageId]);
+    llm.mockImplementationOnce(async messages=>{
+      const context=JSON.parse(messages[1].content),result=learningUnderstandingFixture(context);
+      if(unattributed) {result.learningSignals![0].aboutAssistantMessageId=null;result.learningSignals![0].evidence=result.learningSignals![0].evidence.filter(e=>e.messageId===messageId);}
+      return JSON.stringify(result);
+    });
+    expect(await understandConversation({merchantId:fixture.merchantId,conversationId,incomingMessageId:messageId,customerPhone:'966500000087',message:message.content})).not.toBeNull();
+    llm.mockClear();
+  }
   const fifthMessage = async () => {
     for (let i = 2; i <= 5; i++) {
       const [message] = await (await getPool())!.execute<any>(
@@ -69,7 +83,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     });
     await runInteractionJob();
     expect((await getOrCreateProfile(fixture.merchantId, '966500000087')).preferences).toEqual({});
-    expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id = ?', [fixture.merchantId]))[0].state).toBe('pending');
+    expect((await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id = ?', [fixture.merchantId]))[0].state).toBe('processing');
   });
   it('retries instead of overwriting a newer profile update made while the model was running', async () => {
     await fifthMessage();
@@ -99,7 +113,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
     expect(await rows('SELECT state FROM ai_interaction_jobs WHERE merchant_id = ?', [fixture.merchantId]))
       .toEqual([expect.objectContaining({ state: 'completed' })]);
     expect(await rows('SELECT source_key, signal_type FROM sari_learning_signals WHERE merchant_id = ?', [fixture.merchantId]))
-      .toEqual([expect.objectContaining({ source_key: `message:${messageId}`, signal_type: 'price_objection' })]);
+      .toEqual([expect.objectContaining({ source_key: `contextual_learning:${conversationId}:${messageId}`, signal_type: 'price_objection' })]);
   });
   it('does not resurrect deleted facts when deletion races with an in-flight model extraction', async () => {
     await fifthMessage();
@@ -203,9 +217,10 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
   it('attributes the customer objection to the previous delivered reply, never the new reply', async () => {
     const pool = (await getPool())!;
     await pool.execute('DELETE FROM messages WHERE id = ?', [messageId]);
-    await pool.execute("INSERT INTO messages (conversationId, direction, messageType, content, aiResponse, isProcessed) VALUES (?, 'outgoing', 'text', 'previous actual offer', 'previous actual offer', 1)", [conversationId]);
+    await pool.execute("INSERT INTO messages (conversationId, direction, messageType, content, aiResponse, isProcessed, sender_type) VALUES (?, 'outgoing', 'text', 'previous actual offer', 'previous actual offer', 1, 'assistant')", [conversationId]);
     const [m] = await pool.execute<any>("INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', 'غالي وما يستاهل')", [conversationId]);
     messageId = m.insertId;
+    await sealCurrent();
     const reply = plan(); await stageInteraction(reply); await finishInteractionDelivery(reply, true); await runInteractionJob();
     const signals = await rows('SELECT bot_message FROM sari_learning_signals WHERE merchant_id = ?', [fixture.merchantId]);
     expect(signals).toEqual([expect.objectContaining({ bot_message: 'previous actual offer' })]);
@@ -213,10 +228,11 @@ describe.skipIf(!process.env.DATABASE_URL)('durable sales interaction effects', 
   it('does not credit an older bot response for feedback to a newer human reply', async () => {
     const pool = (await getPool())!;
     await pool.execute('DELETE FROM messages WHERE id = ?', [messageId]);
-    await pool.execute("INSERT INTO messages (conversationId, direction, messageType, content, aiResponse, isProcessed) VALUES (?, 'outgoing', 'text', 'old bot', 'old bot', 1)", [conversationId]);
+    await pool.execute("INSERT INTO messages (conversationId, direction, messageType, content, aiResponse, isProcessed,sender_type) VALUES (?, 'outgoing', 'text', 'old bot', 'old bot', 1,'assistant')", [conversationId]);
     await pool.execute("INSERT INTO messages (conversationId, direction, messageType, content, isProcessed) VALUES (?, 'outgoing', 'text', 'new human offer', 1)", [conversationId]);
     const [m] = await pool.execute<any>("INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', 'غالي')", [conversationId]);
     messageId = m.insertId;
+    await sealCurrent(true);
     const reply = plan(); await stageInteraction(reply); await finishInteractionDelivery(reply, true); await runInteractionJob();
     expect(await rows('SELECT bot_message FROM sari_learning_signals WHERE merchant_id = ?', [fixture.merchantId]))
       .toEqual([expect.objectContaining({ bot_message: null })]);

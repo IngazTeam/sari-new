@@ -1,6 +1,6 @@
 import type { ConversationUnderstanding } from '../../server/ai/conversation-understanding-context';
 import type { UnderstandingInput } from '../../server/ai/conversation-understanding';
-export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>>; automaticFollowup?: Partial<NonNullable<ConversationUnderstanding['automaticFollowup']>>; salesLoss?: Partial<NonNullable<ConversationUnderstanding['salesLoss']>> }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
+export type UnderstandingCase = { id: string; input: UnderstandingInput; expected: Partial<Pick<ConversationUnderstanding, 'action' | 'intent' | 'objection' | 'targetQuoteId' | 'sessionIndex' | 'conditional' | 'ambiguous' | 'productIds' | 'requestKind' | 'nextStep' | 'virtualAgentId'>> & { followup?: Partial<NonNullable<ConversationUnderstanding['followup']>>; appointmentReminder?: Partial<NonNullable<ConversationUnderstanding['appointmentReminder']>>; automaticFollowup?: Partial<NonNullable<ConversationUnderstanding['automaticFollowup']>>; salesLoss?: Partial<NonNullable<ConversationUnderstanding['salesLoss']>>; learningSignals?: Partial<NonNullable<ConversationUnderstanding['learningSignals']>[number]>[] }; mustNotExecute?: boolean; allowedActions?: ConversationUnderstanding['action'][] };
 type Case = UnderstandingCase;
 const scenario = (id: string, messages: string[], expected: Case['expected'], target = false, mustNotExecute = false): Case => ({ id, expected, mustNotExecute,
   input: { currentMessageId: messages.length, messages: messages.map((content, i) => ({ id: i + 1, role: i % 2 === 0 ? 'user' : 'assistant', content })),
@@ -36,7 +36,20 @@ const automaticScenario = (id: string, messages: string[], automaticFollowup: No
   item.input.messages = item.input.messages.map(m => ({ ...m, createdAt: '2026-09-29T09:00:00.000Z' }));
   return item;
 };
+const learningScenario = (id:string,messages:string[],learningSignals:NonNullable<Case['expected']['learningSignals']>,aiReply=true):Case => {
+  const item=scenario(id,messages,{action:'respond',learningSignals},false,true);
+  item.input.messages=item.input.messages.map(m=>({...m,isAiReply:m.role==='assistant'&&aiReply}));
+  return item;
+};
 export const conversationUnderstandingCases: Case[] = [
+  learningScenario('learning-explicit-helpful', ['أحتاج أفهم الفروق بين المستويين', 'المستوى الأول تأسيسي والثاني يتناول التطبيق العملي.', 'شرحك للفروق واضح وأفادني في تحديد المستوى المناسب'], [{type:'positive_feedback',aboutAssistantMessageId:2}]),
+  learningScenario('learning-politeness-not-rating', ['أحتاج تفاصيل الدورة', 'هذه تفاصيلها للمراجعة.', 'شكرًا، سأراجع التفاصيل وأعود لاحقًا إذا احتجت'], []),
+  learningScenario('learning-sarcastic-repeat', ['كم مدة كل حصة؟', 'الحصص صباحية أيام الأحد.', 'ممتاز! سألت عن مدة الحصة وليس وقتها، ما زلت أحتاج إجابة سؤالي'], [{type:'question_repeated',aboutAssistantMessageId:2}]),
+  learningScenario('learning-negated-price', ['أقارن المواعيد', 'هل الرسوم هي المشكلة؟', 'السعر مناسب جدًا، الاعتراض أن الموعد يتعارض مع دوامي'], [{type:'sales_objection'}]),
+  learningScenario('learning-negated-staff', ['أبحث عن دورة مناسبة', 'هل تريد أن أحوّلك إلى موظف؟', 'لا أريد موظفًا، اشرح لي أنت الفرق بين المستويين'], []),
+  learningScenario('learning-declared-gap', ['أحتاج بيانات الاعتماد لأقرر', 'لا تتوفر عندي حاليًا معلومات الجهة المانحة للاعتماد.', 'إذن لا توجد لدي إجابة عن الجهة المانحة من توضيحك الحالي، وهي معلومة ضرورية لقراري'], [{type:'knowledge_gap',aboutAssistantMessageId:2}]),
+  learningScenario('learning-human-feedback', ['أحتاج أفهم شروط التسجيل', 'أنا موظف النشاط، راجعت طلبك وهذه الشروط.', 'شرحك مفيد وواضح، الآن فهمت المطلوب'], [],false),
+  learningScenario('learning-feedback-and-price', ['أقارن محتوى الباقات وتكلفتها', 'الباقة الأولى تأسيسية والثانية تشمل التطبيق العملي، وهذه تكلفتهما.', 'شرحك أفادني في فهم الفرق، لكن تكلفة الثانية أعلى من ميزانيتي'], [{type:'positive_feedback',aboutAssistantMessageId:2},{type:'price_objection'}]),
   scenario('loss-explicit-timing', ['الدورة مناسبة لاحتياجي', 'هل تناسبك المواعيد المتاحة؟', 'تغير جدول عملي، لن أستطيع الالتحاق بهذه الدورة'], {action:'respond',intent:'declined',salesLoss:{status:'declined',reason:'timing'}}),
   scenario('loss-price-withdrawal', ['أقارن تكلفة الاشتراك بميزانيتي', 'هذه الرسوم النهائية.', 'أعلى مما أستطيع دفعه، لذلك قررت عدم الاشتراك وانتهى الموضوع'], {action:'respond',salesLoss:{status:'declined',reason:'price'}}),
   scenario('loss-no-stated-reason', ['كنت مهتمًا بالدورة', 'هل تحتاج توضيحًا؟', 'قررت عدم الالتحاق بهذه الدورة، شكرًا لكم'], {action:'respond',salesLoss:{status:'declined',reason:'other'}}),

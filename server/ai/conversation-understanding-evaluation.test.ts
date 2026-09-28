@@ -6,6 +6,15 @@ import type { ConversationUnderstanding } from './conversation-understanding-con
 const result = (change:Partial<ConversationUnderstanding> = {}):ConversationUnderstanding=>({version:1,intent:'inquiring',goal:'explain_requested_information',action:'respond',confidence:0.96,conditional:false,ambiguous:false,targetQuoteId:null,targetProvider:'none',productIds:[],sessionIndex:null,requestKind:'ordinary',sentiment:'neutral',topicChanged:false,objection:'none',needs:[],unresolvedQuestions:[],summary:'فهم اصطناعي لاختبار المقياس.',nextStep:'answer',evidence:[{messageId:3,excerpt:'نعم'}],...change});
 const find = (id:string)=>cases.find(c=>c.id===id)!;
 describe('model evaluation scoring guards (not live quality evidence)',()=>{
+  it('scores learning attribution separately from operational actions, including sarcastic or human feedback',()=>{
+    const signal={type:'positive_feedback' as const,aboutAssistantMessageId:2,evidence:[{messageId:3,excerpt:'أفادني'}]};
+    expect(scoreUnderstanding(find('learning-explicit-helpful'),result({learningSignals:[signal]})).passed).toBe(true);
+    expect(scoreUnderstanding(find('learning-explicit-helpful'),result({learningSignals:[]})).passed).toBe(false);
+    expect(scoreUnderstanding(find('learning-explicit-helpful'),result({learningSignals:[signal],confidence:.5})).mismatches).toContain('learningBlocked');
+    expect(scoreUnderstanding(find('learning-explicit-helpful'),result({learningSignals:[{...signal,aboutAssistantMessageId:1}]})).criticalFailure).toBe(true);
+    for(const id of ['learning-politeness-not-rating','learning-sarcastic-repeat','learning-human-feedback'])expect(scoreUnderstanding(find(id),result({learningSignals:[signal]})).criticalFailure).toBe(true);
+    expect(scoreUnderstanding(find('learning-feedback-and-price'),result({learningSignals:[signal,{...signal,type:'price_objection'}]})).passed).toBe(true);
+  });
   it('scores explicit decline reasons and flags unintended loss even when the action only responds',()=>{
     const value=result({intent:'declined',goal:'respect_decline',nextStep:'respect_decline',salesLoss:{status:'declined',reason:'timing',evidence:[{messageId:3,excerpt:'جدول عملي'}]}});
     expect(scoreUnderstanding(find('loss-explicit-timing'),value).passed).toBe(true);

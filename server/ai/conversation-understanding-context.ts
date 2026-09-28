@@ -35,6 +35,11 @@ export const conversationUnderstandingSchema = z.object({
     reason: z.enum(['price', 'trust', 'competitor', 'delivery', 'timing', 'fit', 'other']).nullable(),
     evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(500) }).strict()).max(5),
   }).strict().optional(),
+  learningSignals: z.array(z.object({
+    type: z.enum(['positive_feedback', 'question_repeated', 'price_objection', 'sales_objection', 'escalation_requested', 'knowledge_gap']),
+    aboutAssistantMessageId: z.number().int().positive().nullable(),
+    evidence: z.array(z.object({ messageId: z.number().int().positive(), excerpt: z.string().min(1).max(300) }).strict()).min(1).max(3),
+  }).strict()).max(5).optional(),
   appointmentReminder: z.object({
     status: z.enum(['none', 'schedule', 'cancel', 'clarify']),
     appointmentId: z.number().int().positive().max(2147483647).nullable(),

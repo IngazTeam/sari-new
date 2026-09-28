@@ -14,7 +14,7 @@ export class LearningSignalCaptureError extends Error {
   }
 }
 const types: readonly SignalType[] = ['positive_feedback','purchase_completed','purchase_refunded','question_repeated',
-  'customer_left','sales_declined','escalation_requested','price_objection','knowledge_gap','merchant_correction','long_conversation','quick_resolution'];
+  'customer_left','sales_declined','escalation_requested','price_objection','sales_objection','knowledge_gap','merchant_correction','long_conversation','quick_resolution'];
 const invalid = () => { throw new LearningSignalCaptureError('invalid_input'); };
 function text(value: unknown, maximum: number): string | null {
   if (value === undefined) return null;

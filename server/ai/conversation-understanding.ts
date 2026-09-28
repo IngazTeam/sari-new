@@ -14,6 +14,7 @@ import { getFollowupPolicy } from './followup-policy';
 import { hasActiveCampaignConsent } from '../automation/campaign-guard';
 import { resolveAutomaticFollowup } from './automatic-followup-context';
 import { contextualSalesLossReason } from './contextual-sales-loss-contract';
+import { validateLearningSignals } from './contextual-learning-contract';
 import { readAppointmentReminderTargets, type AppointmentReminderTarget } from '../appointment-reminder-context';
 import { agentCandidates, readAvailableAgents, type AgentCandidate } from './contextual-agent-routing';
 import { conversationUnderstandingSchema, withConversationUnderstanding, withoutConversationUnderstanding, type ConversationUnderstanding, type UnderstandingContext } from './conversation-understanding-context';
@@ -21,7 +22,7 @@ import { conversationUnderstandingSchema, withConversationUnderstanding, without
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
 export const UNDERSTANDING_UNAVAILABLE = 'تعذر فهم سياق المحادثة الآن. أعد إرسال سؤالك أو اطلب المساعدة من فريق النشاط لمراجعة طلبك.';
-type Message = { id: number; role: 'user' | 'assistant'; content: string; createdAt?: string };
+type Message = { id: number; role: 'user' | 'assistant'; content: string; createdAt?: string; isAiReply?: boolean };
 type Target = { id: number; provider: ConversationUnderstanding['targetProvider']; sourceMessageId: number; details: unknown };
 export type UnderstandingInput = { messages: Message[]; catalog: { id: number; name: string; provider: string }[]; targets: Target[]; currentMessageId: number; mode?: 'preview'; services?: { id: number; name: string }[];
   memory?: { field: string; value: unknown; sourceMessageId: number }[];
@@ -94,6 +95,7 @@ export function validateUnderstanding(raw: string, input: UnderstandingInput): C
   } else if (result.salesLoss && (result.salesLoss.reason !== null || result.salesLoss.evidence.length)) {
     throw Error('Unconfirmed loss must not carry a reason');
   }
+  validateLearningSignals(result, input);
   return result;
 }
 
@@ -112,6 +114,7 @@ appointmentReminder خاص بتذكير موعد محجوز من appointmentRemi
 أرجع JSON فقط مطابقًا لهذا المخطط بكل الحقول، دون Markdown: ${JSON.stringify(z.toJSONSchema(conversationUnderstandingSchema))}` };
   system.content += '\nautomaticFollowup قرار متابعة مبيعات آلية إذا لم يرد العميل، وليس طلب موعد منه. recommend فقط عند automaticFollowupAllowed=true ووجود فرصة بيع غير محسومة وفائدة واضحة من تواصل لاحق يستند للحوار كاملًا؛ الاهتمام أو ذكر كلمة معينة لا يكفي. اختر purpose من consideration أو options أو price أو trust أو comparison أو delivery أو question حسب الحاجة الحقيقية، وdelayHours بين 1 و72 بما يناسب السياق دون إلحاح. لا تعتبر الرفض أو الاقتباس أو المعلومة التاريخية أو طلب خدمة ما بعد الشراء فرصة متابعة. لا تجمعه بطلب موعد followup أو appointmentReminder أو إجراء شراء أو تصعيد، وعند الغموض استخدم none. أرفق evidence من الرسالة الحالية والسياق المؤيد. عند none اجعل purpose وdelayHours=null وevidence=[]. لا تستنتج وجود سلة متروكة أو دفع غير مكتمل من كلام العميل؛ هذا القرار يجيز سؤالًا توضيحيًا فقط ولا يثبت أي حدث مالي. في المعاينة automaticFollowup=none. لا تدّع حجز متابعة؛ موافقة التسويق وسياسة المتجر والتحقق وقت الإرسال شروط مستقلة.';
   system.content += '\nsalesLoss يصف قرار العميل الحالي بترك فرصة الشراء نفسها. declined فقط إذا رفض إكمال هذه الفرصة صراحة من سياق الحوار، مع intent=declined وgoal/nextStep=respect_decline وaction=respond أو decline_offer. عدم الرد أو تأخر الدفع أو تأخر الموظف أو سؤال عن سعر أو ذكر منافس ليست خسارة. رفض خيار مع طلب بديل أو تأجيل مع رغبة في العودة ليس تركًا للفرصة: status=none أو unclear عند الالتباس. reason هو السبب الذي صرح به العميل: price/trust/competitor/delivery/timing/fit؛ إن رفض دون سبب واضح فاختر other ولا تستنتج السبب من اعتراض قديم أو اقتباس أو نفي. أرفق دليل الرسالة الحالية والسياق المؤيد. لا تجمع declined بجدولة متابعة أو تذكير أو شراء أو تصعيد. هذا وصف لقرار العميل في هذه الرسالة، وليس إثبات خسارة مالية أو أن أسلوب البيع تسبب فيها. عند none أو unclear اجعل reason=null وevidence=[].';
+  system.content += '\nlearningSignals إشارات من فهم الحوار الحالي للتعلّم الوصفي فقط؛ أرسل [] عند غياب دليل أو انخفاض الثقة أو الشرط أو الغموض. لا تعتمد كلمات منفردة أو مجاملة أو غضب أو اقتباس أو نفي. positive_feedback ثناء واضح على فائدة رد مساعد سابق، question_repeated حاجة بقيت دون إجابة مناسبة، knowledge_gap نقص معلومات ظهر في رد مساعد سابق وأكده سياق العميل الحالي؛ لا تتنبأ بفشل الرد الذي لم يُكتب بعد ولا تدّع غياب المعلومة من قاعدة المعرفة. هذه الأنواع الثلاثة تتطلب aboutAssistantMessageId لرسالة أقدم role=assistant وisAiReply=true، مع دليل منها ومن رسالة العميل الحالية. لا تنسب رد موظف بشري إلى AI ولا تخمّن مرجع ثناء ملتبس. price_objection لاعتراض سعر فعلي مع objection=price، وsales_objection لبقية الاعتراضات المفسّرة عدا none/price. escalation_requested فقط عند قرار request_human أو handoff الحالي، ولا يثبت تنفيذ التحويل. يمكن لهذين النوعين والاعتراض السعري أن يكون aboutAssistantMessageId=null إن لم يكن الاعتراض أو الطلب عن رد AI بعينه؛ إن حددته فأرفق دليله. كل نوع مرة واحدة وبحد أقصى خمس إشارات، ولا تجمع نوعي الاعتراض. لا تُصدر نجاح شراء أو أثر مبيعات أو تعليمات سياسة من هذه الإشارات.';
   const serialized = JSON.stringify(input);
   if (serialized.length <= 14_000) return [system, { role: 'user' as const, content: serialized }];
   // ZahyPi's governed promptMessages limit each content to 16,000 characters.
@@ -137,9 +140,9 @@ async function readTurn(c: PoolConnection, input: CheckoutIdentity & { message: 
   const [profiles] = await c.execute<any[]>('SELECT memory_forget_before_message_id FROM customer_profiles WHERE merchant_id=? AND customer_phone=?', [input.merchantId, input.customerPhone]);
   const cutoff = Number(profiles[0]?.memory_forget_before_message_id || 0);
   if (input.incomingMessageId <= cutoff) throw Error('Forgotten source');
-  const [history] = await c.execute<any[]>(`SELECT id,direction,content,createdAt FROM messages WHERE conversationId=? AND id>? AND id<=? ORDER BY id DESC LIMIT 21`,
+  const [history] = await c.execute<any[]>(`SELECT id,direction,content,createdAt,sender_type,isProcessed,aiResponse FROM messages WHERE conversationId=? AND id>? AND id<=? ORDER BY id DESC LIMIT 21`,
     [input.conversationId, cutoff, input.incomingMessageId]);
-  const messages: Message[] = history.reverse().map(m => ({ id: m.id, role: m.direction === 'incoming' ? 'user' : 'assistant', content: String(m.content || '').slice(0, 16000), createdAt: new Date(m.createdAt).toISOString() }));
+  const messages: Message[] = history.reverse().map(m => ({ id: m.id, role: m.direction === 'incoming' ? 'user' : 'assistant', content: String(m.content || '').slice(0, 16000), createdAt: new Date(m.createdAt).toISOString(), isAiReply: recordedAiReply(m) }));
   // No price or customer identity is delegated to the interpreter.
   const [products] = await c.execute<any[]>(`SELECT id,COALESCE(NULLIF(nameAr,''),name) AS name,sallaProductId FROM products WHERE merchantId=? AND isActive=1 AND status='active' AND ${catalogVisibleSql()} ORDER BY id LIMIT 200`, [input.merchantId]);
   const [zid] = await c.execute<any[]>("SELECT id FROM platform_integrations WHERE merchant_id=? AND platform_type='zid' AND is_active=1 LIMIT 1", [input.merchantId]);
@@ -174,10 +177,13 @@ async function readTurn(c: PoolConnection, input: CheckoutIdentity & { message: 
     const previousContext = await readStoredUnderstanding(c, { ...input, incomingMessageId: previous[0].incoming_message_id }, true).catch(() => null);
     if (previousContext) { const { summary, needs, unresolvedQuestions, objection } = previousContext.analysis; context.previousUnderstanding = { summary, needs, unresolvedQuestions, objection }; }
   }
-  return { context, cutoff, version: Number(conversations[0].handoff_version), evidence: messages.map(m => ({ id: m.id, role: m.role, digest: hash(m.content), createdAt: m.createdAt })) };
+  return { context, cutoff, version: Number(conversations[0].handoff_version), evidence: messages.map(m => ({ id: m.id, role: m.role, digest: hash(m.content), createdAt: m.createdAt, isAiReply: m.isAiReply })) };
 }
 
 type Reader = Pool | PoolConnection;
+function recordedAiReply(m: any): boolean {
+  return m.direction === 'outgoing' && m.sender_type === 'assistant' && Number(m.isProcessed) === 1 && m.aiResponse != null && m.aiResponse === m.content;
+}
 /** Re-check persisted evidence by IDs. Historical consent is never looked up by its wording. */
 export async function readStoredUnderstanding(db: Reader, input: CheckoutIdentity, historical = false): Promise<UnderstandingContext | null> {
   const [rows] = await db.execute<any[]>('SELECT * FROM ai_conversation_understanding WHERE merchant_id=? AND conversation_id=? AND incoming_message_id=?', [input.merchantId, input.conversationId, input.incomingMessageId]);
@@ -195,9 +201,9 @@ export async function readStoredUnderstanding(db: Reader, input: CheckoutIdentit
   }
   const context = { merchantId: input.merchantId, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, message: String(source.content) };
   if (r.state !== 'ready') return { ...context, analysis: blocked(input.incomingMessageId, context.message) };
-  const evidence = z.array(z.object({ id: z.number().int().positive(), role: z.enum(['user', 'assistant']), digest: z.string().length(64), createdAt: z.string().datetime().optional() }).strict()).min(1).max(21).parse(decode(r.message_evidence));
-  const [messages] = await db.execute<any[]>(`SELECT id,direction,content,createdAt FROM messages WHERE conversationId=? AND id IN (${evidence.map(() => '?').join(',')})`, [input.conversationId, ...evidence.map(e => e.id)]);
-  if (evidence.some(e => { const m = messages.find(m => m.id === e.id); return !m || m.id <= r.memory_cutoff || hash(String(m.content || '').slice(0, 16000)) !== e.digest || (m.direction === 'incoming' ? 'user' : 'assistant') !== e.role || e.createdAt !== undefined && e.createdAt !== new Date(m.createdAt).toISOString(); })) throw Error('Interpretation evidence changed');
+  const evidence = z.array(z.object({ id: z.number().int().positive(), role: z.enum(['user', 'assistant']), digest: z.string().length(64), createdAt: z.string().datetime().optional(), isAiReply: z.boolean().optional() }).strict()).min(1).max(21).parse(decode(r.message_evidence));
+  const [messages] = await db.execute<any[]>(`SELECT id,direction,content,createdAt,sender_type,isProcessed,aiResponse FROM messages WHERE conversationId=? AND id IN (${evidence.map(() => '?').join(',')})`, [input.conversationId, ...evidence.map(e => e.id)]);
+  if (evidence.some(e => { const m = messages.find(m => m.id === e.id); return !m || m.id <= r.memory_cutoff || hash(String(m.content || '').slice(0, 16000)) !== e.digest || (m.direction === 'incoming' ? 'user' : 'assistant') !== e.role || e.createdAt !== undefined && e.createdAt !== new Date(m.createdAt).toISOString() || e.isAiReply !== undefined && e.isAiReply !== recordedAiReply(m); })) throw Error('Interpretation evidence changed');
   const analysis = conversationUnderstandingSchema.parse(decode(r.result_json));
   if (hash({ source: r.source_digest, context: r.context_digest, evidence, analysis }) !== r.result_digest) throw Error('Interpretation seal changed');
   return { ...context, analysis };
@@ -282,7 +288,7 @@ export async function understandPreview(merchantId: number, message: string, opt
     const settings = await getTextGenerationSettings();
     if (!settings || !settings.isActive) throw Error('Preview AI settings unavailable');
     const messages: Message[] = [...context.history, { role: 'user' as const, content: message }]
-      .map((m, index) => ({ ...m, id: index + 1 }));
+      .map((m, index) => ({ ...m, id: index + 1, isAiReply: m.role === 'assistant' }));
     const input: UnderstandingInput = {
       mode: 'preview', messages, catalog: context.catalog, targets: [], currentMessageId: messages.length,
       ...(context.agents ? { agents: context.agents, currentAgentId: context.agents.some(a => a.id === context.currentAgentId) ? context.currentAgentId : null } : {}),

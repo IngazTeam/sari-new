@@ -20,13 +20,11 @@ describe('sales memory and learning boundaries', () => {
       signalType: index < 15 ? 'price_objection' : 'purchase_completed' })) as any[];
     expect(selectSignalsForAnalysis(signals).map(signal => signal.id)).toEqual([1, 2, 3, 4, 5, 16, 17, 18, 19, 20]);
   });
-  it('retains a price objection even when the customer expresses anger', async () => {
-    await captureConversationSignals({ merchantId: 1, conversationId: 2,
-      customerMessage: 'غالي وما يستاهل', botResponse: 'ما الاحتياج الذي لم يلبه العرض؟', sourceKey: 'message:4', strict: true });
+  it('rejects unanchored keyword learning even when a caller supplies a source key', async () => {
+    await expect(captureConversationSignals({ merchantId: 1, conversationId: 2,
+      customerMessage: 'غالي وما يستاهل', botResponse: 'ما الاحتياج الذي لم يلبه العرض؟', sourceKey: 'message:4', strict: true })).rejects.toMatchObject({code:'invalid_input'});
     const insert = mocks.execute.mock.calls.find(([sql]) => sql.includes('INSERT INTO sari_learning_signals'));
-    expect(insert).toBeDefined();
-    expect(insert![1]).toContain('price_objection');
-    expect(insert![1]).toContain('message:4');
+    expect(insert).toBeUndefined();
   });
   it.each([false, true])('persists learning only as a proposal even for autoApplied=%s', async autoApplied => {
     await upsertDNA({ merchantId: 1, generation: 2, dimension: 'objection_handling', insight: 'Explain relevant value',
@@ -47,6 +45,8 @@ describe('sales memory and learning boundaries', () => {
     const query = mocks.execute.mock.calls.find(([sql]) => sql.includes('FROM sari_learning_signals'))![0];
     expect(query).toContain('COUNT(DISTINCT conversation_id)');
     expect(query).toContain("'price_objection'");
+    expect(query).toContain("'sales_objection'");
+    expect(query).not.toContain("'customer_left'");
     expect(query).not.toContain('GROUP BY signal_type, signal_value');
   });
   it('never stores or replays a legacy personalized final response', async () => {
