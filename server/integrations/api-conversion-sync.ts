@@ -8,6 +8,7 @@ import {
   normalizeApiConversion,
 } from './api-conversion-sync-core';
 import { ByaanSyncValidationError } from './byaan-sync-errors';
+import { assertConversionHistorySchema,lockConversionAuthority,recordConversionObservation,type ConversionApiAuthority } from './api-conversion-history';
 
 export { ApiConversionConflictError } from './api-conversion-sync-core';
 
@@ -45,6 +46,7 @@ interface StoredConversion {
   amount: string | number | null;
   external_ref: string;
   status: ApiConversionStatus;
+  history_digest: string | null;
 }
 
 function sameNullableText(left: unknown, right: string | null): boolean {
@@ -57,7 +59,7 @@ function sameAmount(left: unknown, right: string | null): boolean {
   return Math.round(Number(left) * 100) === Math.round(Number(right) * 100);
 }
 
-export async function recordApiConversion(merchantId: number, input: unknown): Promise<ApiConversionWriteResult> {
+export async function recordApiConversion(merchantId: number, input: unknown, authority?: ConversionApiAuthority): Promise<ApiConversionWriteResult> {
   if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
     throw new Error('Invalid merchant for API conversion');
   }
@@ -66,18 +68,18 @@ export async function recordApiConversion(merchantId: number, input: unknown): P
     { table: 'merchants' },
     { table: 'sari_conversions', columns: ['idempotency_key'] },
   ]);
+  await assertConversionHistorySchema();
   const pool = await getPool();
   if (!pool) throw new Error('Conversion ledger unavailable');
 
-  const connection = await pool.getConnection();
+  const connection = await pool.getConnection();let reusable=true,committing=false;
   try {
     await connection.beginTransaction();
-    const [merchantRows] = await connection.execute(
-      'SELECT id FROM merchants WHERE id = ? LIMIT 1',
-      [merchantId],
-    );
-    if (!(merchantRows as Array<{ id: number }>).length) throw new Error('Conversion merchant not found');
-
+    const source=await lockConversionAuthority(connection,merchantId,authority,'conversions:write');
+    // Serialize within this merchant before inspecting the identity. MySQL's
+    // FOUND_ROWS can report one affected row for a duplicate no-op upsert.
+    const [prior]=await connection.execute<any[]>(`SELECT id FROM sari_conversions
+      WHERE merchant_id = ? AND source = 'api' AND idempotency_key = ? FOR UPDATE`,[merchantId,conversion.idempotencyKey]);
     const [writeResult] = await connection.execute(
       `INSERT INTO sari_conversions (
          merchant_id, customer_phone, customer_name, action_type, product_name, amount,
@@ -100,7 +102,7 @@ export async function recordApiConversion(merchantId: number, input: unknown): P
     if (!Number.isSafeInteger(conversionId) || conversionId <= 0) throw new Error('Conversion write returned no identity');
 
     const [rows] = await connection.execute(
-      `SELECT id, customer_phone, customer_name, action_type, product_name, amount, external_ref, status
+      `SELECT id, customer_phone, customer_name, action_type, product_name, amount, external_ref, status, history_digest
        FROM sari_conversions
        WHERE id = ? AND merchant_id = ? AND source = 'api' AND idempotency_key = ?
        LIMIT 1 FOR UPDATE`,
@@ -120,25 +122,19 @@ export async function recordApiConversion(merchantId: number, input: unknown): P
       throw new ApiConversionConflictError();
     }
 
-    if (stored.status !== conversion.status) {
-      await connection.execute(
-        `UPDATE sari_conversions SET status = ?
-         WHERE id = ? AND merchant_id = ? AND source = 'api' AND idempotency_key = ?`,
-        [conversion.status, conversionId, merchantId, conversion.idempotencyKey],
-      );
-    }
-
-    await connection.commit();
+    await recordConversionObservation(connection,merchantId,stored,conversion,source);
+    committing=true;await connection.commit();committing=false;
     return {
       id: conversionId,
-      created: Number((writeResult as { affectedRows?: number }).affectedRows || 0) === 1,
+      created: prior.length===0,
       status: conversion.status,
     };
   } catch (error) {
-    await connection.rollback();
+    if(committing){reusable=false;connection.destroy();}
+    else try{await connection.rollback();}catch{reusable=false;connection.destroy();}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();
   }
 }
 

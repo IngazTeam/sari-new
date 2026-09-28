@@ -77,6 +77,7 @@ import {
 interface AuthenticatedRequest extends Request {
   merchant?: any;
   apiKeyId?: number;
+  apiKeyHash?: string;
   apiKeyScopes?: ApiKeyScope[];
 }
 
@@ -126,7 +127,7 @@ export async function generateApiKey(
 }
 
 /** Validate an API key and return the merchant */
-async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number; scopes: ApiKeyScope[] } | null> {
+async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number; keyHash: string; scopes: ApiKeyScope[] } | null> {
   await ensureApiKeysTable();
   const pool = await getPool();
   if (!pool) return null;
@@ -154,7 +155,7 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
   const scopes = parseApiKeyPermissions(apiKeyRow.permissions);
   if (!scopes) {
     console.warn(`[SariAPI] API key ${apiKeyRow.id} has invalid permissions and was denied`);
-    return { merchant, keyId: apiKeyRow.id, scopes: [] };
+    return { merchant, keyId: apiKeyRow.id, keyHash, scopes: [] };
   }
 
   // Update last_used_at (fire-and-forget)
@@ -163,7 +164,7 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
     [apiKeyRow.id]
   ).catch(() => {});
 
-  return { merchant, keyId: apiKeyRow.id, scopes };
+  return { merchant, keyId: apiKeyRow.id, keyHash, scopes };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -464,6 +465,7 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
 
   req.merchant = result.merchant;
   req.apiKeyId = result.keyId;
+  req.apiKeyHash = result.keyHash;
   req.apiKeyScopes = result.scopes;
   next();
 }
@@ -2307,6 +2309,24 @@ sariApiRouter.get('/conversions', async (req: AuthenticatedRequest, res: Respons
   }
 });
 
+// ── GET /api/v1/conversions/:id/history — Reported state history ──
+sariApiRouter.get('/conversions/:id/history', async (req: AuthenticatedRequest, res: Response) => {
+  if(!/^[1-9]\d{0,9}$/.test(String(req.params.id))||Number(req.params.id)>2147483647){
+    return res.status(400).json({error:'Invalid conversion id',errorAr:'معرّف العملية غير صالح'});
+  }
+  try{
+    const {getApiConversionHistory}=await import('../integrations/api-conversion-history');
+    const result=await getApiConversionHistory(req.merchant.id,{apiKeyId:req.apiKeyId!,keyHash:req.apiKeyHash!},{conversionId:Number(req.params.id)});
+    return res.json(result);
+  }catch(e){
+    const name=(e as Error)?.name;
+    if(name==='ConversionAccessDenied')return res.status(403).json({error:'Conversion access denied',errorAr:'صلاحية قراءة العملية غير متاحة'});
+    if(name==='ConversionNotFound')return res.status(404).json({error:'Conversion not found',errorAr:'العملية غير موجودة'});
+    if(name==='ConversionHistoryConflict')return res.status(409).json({error:'Conversion history requires review',errorAr:'سجل العملية يحتاج مراجعة'});
+    return res.status(503).json({error:'Conversion history unavailable',errorAr:'سجل العملية غير متاح مؤقتًا'});
+  }
+});
+
 // ── POST /api/v1/conversions — Record a conversion ──────────
 sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Response) => {
   const limitResponse = respondToDistributedLimit(
@@ -2334,9 +2354,15 @@ sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Respon
 
   try {
     const { recordConversion } = await import('../integrations/byaan');
-    const result = await recordConversion(req.merchant.id, payload);
+    const result = await recordConversion(req.merchant.id, payload, {apiKeyId:req.apiKeyId!,keyHash:req.apiKeyHash!});
     res.status(result.created ? 201 : 200).json({ success: true, ...result });
   } catch (e) {
+    if ((e as Error)?.name === 'ConversionAccessDenied') {
+      return res.status(403).json({error:'Conversion access denied',errorAr:'صلاحية تسجيل العملية غير متاحة'});
+    }
+    if ((e as Error)?.name === 'ConversionHistoryConflict') {
+      return res.status(409).json({error:'Conversion history requires review',errorAr:'سجل العملية يحتاج مراجعة'});
+    }
     if ((e as Error)?.name === 'ByaanSyncValidationError') {
       return res.status(422).json({
         error: 'Invalid conversion event',

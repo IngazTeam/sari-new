@@ -24,6 +24,7 @@ import {
 } from './byaan-security';
 import { enqueueByaanLifecycleEvent } from './byaan-outbox';
 import { ByaanSyncValidationError } from './byaan-sync-errors';
+import type { ConversionApiAuthority } from './api-conversion-history';
 import {
   getConversionPage,
   getConversionSummary,
@@ -868,8 +869,8 @@ export async function syncSettings(merchantId: number, settings: ByaanSettings):
 // Conversions — Track enrollments/payments via Sari
 // ═══════════════════════════════════════════════════════════════
 
-export async function recordConversion(merchantId: number, data: unknown): Promise<ApiConversionWriteResult> {
-  return recordApiConversion(merchantId, data);
+export async function recordConversion(merchantId: number, data: unknown, authority?: ConversionApiAuthority): Promise<ApiConversionWriteResult> {
+  return recordApiConversion(merchantId, data, authority);
 }
 
 export async function getConversions(merchantId: number, limit: number = 20, actionType?: string) {

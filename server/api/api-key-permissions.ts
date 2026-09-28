@@ -119,6 +119,7 @@ export function requiredApiKeyScope(method: string, path: string): ApiKeyScope |
   const normalizedMethod = method.toUpperCase();
   const exact = EXACT_ROUTE_SCOPES[`${normalizedMethod} ${path}`];
   if (exact) return exact;
+  if (normalizedMethod === 'GET' && /^\/conversions\/[1-9]\d*\/history$/.test(path)) return 'conversions:read';
   if (normalizedMethod === 'PUT' && /^\/instances\/[1-9]\d*$/.test(path)) return 'instances:write';
   return null;
 }

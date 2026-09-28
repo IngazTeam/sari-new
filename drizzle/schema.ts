@@ -4151,6 +4151,7 @@ export const sariConversions = mysqlTable("sari_conversions", {
 	amount: decimal({ precision: 10, scale: 2 }),
 	externalRef: varchar("external_ref", { length: 100 }),
 	idempotencyKey: varchar("idempotency_key", { length: 100 }),
+	historyDigest: char("history_digest", { length: 64 }),
 	source: varchar({ length: 50 }).default('whatsapp'),
 	status: mysqlEnum(['pending', 'completed', 'cancelled']).default('completed'),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
@@ -4158,6 +4159,22 @@ export const sariConversions = mysqlTable("sari_conversions", {
 	index("idx_sari_conversion_merchant_date").on(table.merchantId, table.createdAt),
 	uniqueIndex("uq_sari_conversion_source_key").on(table.merchantId, table.source, table.idempotencyKey),
 	index("idx_sari_conversion_summary").on(table.merchantId, table.status, table.actionType, table.createdAt),
+]);
+
+export const apiConversionObservations = mysqlTable('api_conversion_observations', {
+  id:int().autoincrement().primaryKey(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  conversionId:int('conversion_id').notNull().references(()=>sariConversions.id,{onDelete:'cascade'}),
+  observedState:varchar('observed_state',{length:16}).notNull(),sourceKind:varchar('source_kind',{length:32}).notNull(),
+  apiKeyId:int('api_key_id'),payloadDigest:char('payload_digest',{length:64}).notNull(),previousDigest:char('previous_digest',{length:64}),
+  observationDigest:char('observation_digest',{length:64}).notNull(),observedAt:datetime('observed_at',{mode:'string',fsp:3}).notNull(),
+},table=>[
+  uniqueIndex('api_conversion_observed_state').on(table.conversionId,table.observedState),
+  index('api_conversion_merchant_history').on(table.merchantId,table.conversionId,table.id),
+  check('chk_api_conversion_observation',sql`${table.observedState} IN ('pending','completed','cancelled') AND
+    ((${table.sourceKind}='api_key_report' AND ${table.apiKeyId} IS NOT NULL AND ${table.apiKeyId}>0) OR (${table.sourceKind}='internal_unverified' AND ${table.apiKeyId} IS NULL)) AND
+    REGEXP_LIKE(${table.payloadDigest},'^[0-9a-f]{64}$','c') AND REGEXP_LIKE(${table.observationDigest},'^[0-9a-f]{64}$','c') AND
+    (${table.previousDigest} IS NULL OR REGEXP_LIKE(${table.previousDigest},'^[0-9a-f]{64}$','c'))`),
 ]);
 
 export const supervisorInterventions = mysqlTable("supervisor_interventions", {
