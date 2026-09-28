@@ -30,7 +30,7 @@ import {
   byaanSalesFailure, readByaanSalesResult, byaanSalesRequest,
   type ByaanSalesReceipt,
 } from './byaan-sales-contract';
-import { runByaanSalesOperation } from './byaan-sales-operations';
+import { runByaanSalesOperation, type ByaanSalesAuthorization } from './byaan-sales-operations';
 import {
   getConversionPage,
   getConversionSummary,
@@ -1035,6 +1035,7 @@ export async function enrollTrainee(
   merchantId: number,
   data: { traineePhone: string; traineeName: string; courseId: string | number; courseTitle?: string },
   request: { requestId: string },
+  authorization?: ByaanSalesAuthorization,
 ) {
   const input = byaanEnrollmentInput.safeParse(data);
   const operation = byaanSalesRequest.safeParse(request);
@@ -1058,7 +1059,7 @@ export async function enrollTrainee(
   });
   return { success: true, outcome: 'reported', paymentEvidence: 'not_verified',
     enrollmentId: receipt.externalId, paymentUrl: receipt.paymentUrl, ...tracking };
-  });
+  }, authorization);
 }
 
 /** Tracking failure must not turn an acknowledged external effect into a failed

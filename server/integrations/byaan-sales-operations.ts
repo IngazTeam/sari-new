@@ -16,6 +16,11 @@ type Kind = 'enrollment' | 'payment';
 type Intent = z.infer<typeof byaanEnrollmentInput> | z.infer<typeof byaanPaymentInput>;
 export type ByaanOperationResult = ByaanSalesFailure | (ByaanSalesReceipt & { enrollmentId?: string; invoiceId?: string; paymentUrl?: string });
 export type ByaanOperationMetadata = { operationId?: number; replayed?: boolean };
+/** Internal capability supplied by the agreement adapter, never deserialized from a request. */
+export type ByaanSalesAuthorization = {
+  binding: string;
+  assert: (c: PoolConnection, phase: 'reserve' | 'replay' | 'dispatch') => Promise<void>;
+};
 const id = byaanMerchantId;
 const successSchema = z.object({ success: z.literal(true), outcome: z.literal('reported'), paymentEvidence: z.literal('not_verified'),
   tracking: z.enum(['recorded', 'unavailable']), conversionId: id.optional(), enrollmentId: z.string().optional(),
@@ -28,10 +33,10 @@ export const BYAAN_SALES_OPERATION_REQUIREMENTS = [{ table: 'byaan_sales_operati
   uniqueIndexes: [{ name: 'byaan_sales_request', columns: ['merchant_id', 'request_id'] }], checkConstraints: ['chk_byaan_sales_operation'] }];
 const assertSchema = () => assertRuntimeSchema('Byaan sales operations', BYAAN_SALES_OPERATION_REQUIREMENTS, { cacheSuccess: false });
 class AuthorityUnavailable extends Error {}
-async function transaction<T>(work: (c: PoolConnection) => Promise<T>): Promise<T> {
+export async function byaanSalesTransaction<T>(work: (c: PoolConnection) => Promise<T>): Promise<T> {
   const pool = await getPool(); if (!pool) throw Error('Database unavailable');
   const c = await pool.getConnection(); let reusable = true, committing = false;
-  try { await c.beginTransaction(); const result = await work(c); committing = true; await c.commit(); committing = false; return result; }
+  try { await c.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED'); await c.beginTransaction(); const result = await work(c); committing = true; await c.commit(); committing = false; return result; }
   catch (error) {
     if (committing) { reusable = false; c.destroy(); }
     else try { await c.rollback(); } catch { reusable = false; c.destroy(); }
@@ -47,7 +52,7 @@ function connectionHash(row: any) {
   return digest({ id: id.parse(row.id), merchantId: id.parse(row.merchant_id), domain, base,
     verifiedAt, secretHash: digest(secret) });
 }
-async function lockAuthority(c: PoolConnection, merchantId: number) {
+export async function lockByaanSalesAuthority(c: PoolConnection, merchantId: number) {
   const [merchants] = await c.execute<any[]>('SELECT userId,status FROM merchants WHERE id=? FOR UPDATE', [merchantId]);
   if (merchants.length !== 1 || merchants[0].status !== 'active') throw new AuthorityUnavailable();
   const [users] = await c.execute<any[]>("SELECT id FROM users WHERE id=? AND account_status='active' FOR SHARE", [merchants[0].userId]);
@@ -84,17 +89,21 @@ async function verifyTracking(c: PoolConnection, merchantId: number, kind: Kind,
 /** Server-only guard. A caller must persist one request ID per agreed operation;
  * a new ID is a different operation, not a safe retry of an unknown one. */
 export async function runByaanSalesOperation(merchantId: number, kind: Kind, request: unknown, rawIntent: unknown,
-  work: (beforeDispatch: (connection: unknown) => Promise<void>) => Promise<ByaanOperationResult>): Promise<ByaanOperationResult & ByaanOperationMetadata> {
+  work: (beforeDispatch: (connection: unknown) => Promise<void>) => Promise<ByaanOperationResult>,
+  authorization?: ByaanSalesAuthorization): Promise<ByaanOperationResult & ByaanOperationMetadata> {
   const requestId = byaanSalesRequest.parse(request).requestId;
   merchantId = id.parse(merchantId);
   const intent = kind === 'enrollment' ? byaanEnrollmentInput.parse(rawIntent) : byaanPaymentInput.parse(rawIntent);
-  const hash = digest({ version: 1, merchantId, kind, intent });
+  const binding = authorization ? z.string().regex(/^[a-f0-9]{64}$/).parse(authorization.binding) : undefined;
+  const authorize = authorization?.assert;
+  const hash = digest({ version: 1, merchantId, kind, intent, ...(binding ? { authorization: binding } : {}) });
   let attempt: any;
   try {
     await assertSchema();
-    const reservation = await transaction(async c => {
-      const authority = await lockAuthority(c, merchantId);
+    const reservation = await byaanSalesTransaction(async c => {
+      const authority = await lockByaanSalesAuthority(c, merchantId);
       const [rows] = await c.execute<any[]>('SELECT * FROM byaan_sales_operations WHERE merchant_id=? AND request_id=? FOR UPDATE', [merchantId, requestId]);
+      if (authorize) await authorize(c, rows.length ? 'replay' : 'reserve');
       if (rows.length) {
         const row = rows[0];
         if (row.request_hash !== hash || row.operation_kind !== kind || row.authority_hash !== authority.hash) throw Error('Request conflict');
@@ -122,17 +131,18 @@ export async function runByaanSalesOperation(merchantId: number, kind: Kind, req
   let result: ByaanOperationResult;
   try {
     result = await work(async snapshot => {
-      await transaction(async c => {
-        const authority = await lockAuthority(c, merchantId);
+      await byaanSalesTransaction(async c => {
+        const authority = await lockByaanSalesAuthority(c, merchantId);
         if (authority.hash !== attempt.authority_hash || authority.connection !== connectionHash(snapshot)) throw Error('Authority changed');
         const row = await lockAttempt(c);
         if (row.state !== 'preparing') throw Error('Dispatch already reserved');
+        if (authorize) await authorize(c, 'dispatch');
         await c.execute("UPDATE byaan_sales_operations SET state='dispatching',updated_at=UTC_TIMESTAMP(3) WHERE id=?", [attempt.id]);
       });
     });
   } catch { result = byaanSalesFailure('unknown'); }
   try {
-    return await transaction(async c => {
+    return await byaanSalesTransaction(async c => {
       const row = await lockAttempt(c);
       if (!['preparing', 'dispatching'].includes(row.state)) throw Error('Attempt settled');
       if (row.state === 'preparing') result = byaanSalesFailure('not_sent');
