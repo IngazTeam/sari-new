@@ -1608,6 +1608,14 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
   } catch {
     return 'تعذر الرد الآلي حالياً. يرجى التواصل مع فريق المتجر للمساعدة.';
   }
+  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+    const { handleSallaCheckout } = await import('./salla-checkout-conversation');
+    const checkoutReply = await handleSallaCheckout({ merchantId:params.merchantId, conversationId:params.conversationId,
+      incomingMessageId:params.incomingMessageId, customerPhone:params.customerPhone, message:params.message, memoryHistoryCutoff });
+    // Exact business labels, selection and link must survive unchanged for the
+    // recorded consent and ordinary channel proof to bind to the same offer.
+    if (checkoutReply !== null) return checkoutReply;
+  }
   const response = await _chatWithSariCore(params, memoryHistoryCutoff);
 
   // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer

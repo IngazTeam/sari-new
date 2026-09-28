@@ -59,8 +59,9 @@ function snapshotFrom(row:any,input:SallaCheckoutCartInput){
     ||digest(snapshot.items.map(p=>({productId:p.productId,quantity:p.quantity})))!==digest(input.items))throw Error('Cart snapshot changed');
   return snapshot;
 }
-async function readyResult(row:any,merchantId:number,input:SallaCheckoutCartInput){
+async function readyResult(row:any,merchantId:number,input:SallaCheckoutCartInput,authorize:()=>Promise<void>){
   try{
+    await authorize();
     const snapshot=snapshotFrom(row,input),saved=decode(row.result_json);
     if(!saved?.value||saved.digest!==digest(saved.value))throw Error('Cart result changed');
     const {authority}=await currentContext(merchantId);
@@ -68,15 +69,26 @@ async function readyResult(row:any,merchantId:number,input:SallaCheckoutCartInpu
     const result=await readCurrentCheckoutCart(snapshot.context,snapshot.items.map(p=>({externalId:p.externalId,sku:p.sku,quantity:p.quantity})),saved.value.cartId);
     if(digest(result)!==saved.digest)throw Error('Cart changed since preparation');
     await tx(c=>assertSnapshot(c,merchantId,snapshot,authority));
+    await authorize();
     return {...result,replayed:true};
   }catch{throw new SallaCheckoutCartError('cart_unavailable');}
 }
 
+/** Read only: delivery checks and successful conversational replays must never
+ * create a new reservation, even if the original operation was deleted. */
+export async function readSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:number,actor:number,authorize:()=>Promise<void>=async()=>{}){
+  const input=sallaCheckoutCartInput.parse(raw),merchantId=id.parse(merchant),actorId=id.parse(actor);
+  await assertSallaCheckoutCartSchema();await authorize();
+  const row=await operation(merchantId,actorId,input);if(row.state!=='ready')pending(row.state);
+  return readyResult(row,merchantId,input,authorize);
+}
+
 /** Prepare a guest cart for hosted checkout. Does not create an order, assign a
  * customer, submit a payment or send a message. One request owns one attempt. */
-export async function runSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:number,actor:number){
+export async function runSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:number,actor:number,authorize:()=>Promise<void>=async()=>{}){
   const input=sallaCheckoutCartInput.parse(raw),merchantId=id.parse(merchant),actorId=id.parse(actor),token=randomUUID();
   await assertSallaCheckoutCartSchema();
+  await authorize();
   let operationId:number;
   try{operationId=await tx(async c=>{
     const [m]=await c.execute<any[]>("SELECT id FROM merchants WHERE id=? AND status='active' FOR SHARE",[merchantId]);
@@ -88,7 +100,7 @@ export async function runSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:n
   });}catch(e){
     if((e as {code?:string}).code!=='ER_DUP_ENTRY')throw e;
     const row=await operation(merchantId,actorId,input);if(row.state!=='ready')pending(row.state);
-    return readyResult(row,merchantId,input);
+    return readyResult(row,merchantId,input,authorize);
   }
   try{
     const {authority,context}=await currentContext(merchantId);
@@ -106,9 +118,11 @@ export async function runSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:n
         const [rows]=await c.execute<any[]>("SELECT snapshot FROM salla_checkout_carts WHERE id=? AND merchant_id=? AND attempt_token=? AND state='dispatching' FOR UPDATE",[operationId,merchantId,token]);
         if(rows.length!==1||digest(snapshotFrom({...rows[0]},input))!==digest(snapshot))throw Error('Cart attempt changed');
       });
+      await authorize();
       await currentInboundExecution()?.assertOwned();
     };
     const result=await prepareCheckoutCart(context,items.map(p=>({externalId:p.externalId,sku:p.sku,quantity:p.quantity})),guard);
+    await authorize();
     await currentInboundExecution()?.assertOwned();
     await tx(async c=>{
       await assertSnapshot(c,merchantId,snapshot,authority);
@@ -122,7 +136,7 @@ export async function runSallaCheckoutCart(raw:SallaCheckoutCartInput,merchant:n
     return {...result,replayed:false};
   }catch{
     const row=await operation(merchantId,actorId,input);
-    if(row.state==='ready')return readyResult(row,merchantId,input);
+    if(row.state==='ready')return readyResult(row,merchantId,input,authorize);
     const pool=(await getPool())!;
     await pool.execute(`UPDATE salla_checkout_carts SET state=IF(state='preparing','rejected','review'),updated_at=UTC_TIMESTAMP(3)
       WHERE id=? AND merchant_id=? AND attempt_token=? AND state IN ('preparing','dispatching')`,[operationId,merchantId,token]);

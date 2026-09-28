@@ -225,6 +225,12 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     }
   }
   if (input.replyGuard) {
+    const { canDispatchSallaCheckoutReply } = await import('../../ai/salla-checkout-agreements');
+    if (!await canDispatchSallaCheckoutReply(input)) {
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='salla_cart_superseded',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId,input.idempotencyKey]);
+      return { accepted:false,duplicate:false,status:'failed',errorCode:'salla_cart_superseded' };
+    }
     const { canDispatchConversationReply } = await import('../../ai/reply-reservation');
     if (!await canDispatchConversationReply(input, instance.id)) {
       await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='conversation_superseded',status_updated_at=NOW()
