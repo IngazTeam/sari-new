@@ -16,7 +16,7 @@ beforeEach(() => {
   w.scrollTo = () => {};
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  for (const script of ['features.js', 'page-catalog.js', 'brain.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + script, 'utf8'), dom.getInternalVMContext());
+  for (const script of ['features.js', 'page-catalog.js', 'brain.js', 'brain-workbench.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + script, 'utf8'), dom.getInternalVMContext());
 });
 afterEach(() => { dom.window.close(); });
 function route(path: string) { w.history.replaceState(null, '', w.TenantPages.href(path)); w.dispatchEvent(new w.HashChangeEvent('hashchange')); }

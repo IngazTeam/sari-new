@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const root = 'docs/audits/tenant-notification-prototype-2026-09-28';
+const root = process.argv[2] || 'docs/audits/tenant-notification-prototype-2026-09-28';
 const source = 'docs/audits/tenant-features-2026-09-28/coverage.json';
 const { generatedAt, routes } = JSON.parse(fs.readFileSync(source, 'utf8'));
 const counts = routes.reduce((all, row) => ({...all, [row.design]:(all[row.design] || 0) + 1}), {});
@@ -10,7 +10,7 @@ const table = routes.map(row => ({...row, priority:priority(row)})).sort((a,b) =
 fs.mkdirSync(root, {recursive:true});
 fs.writeFileSync(`${root}/REMAINING.md`, `# سجل استكمال تصميم لوحة التيننت
 
-حالة التصميم بعد جولة نماذج التقارير والإشعارات. مرجع عناصر المصدر: لقطة ${generatedAt} في [سجل التغطية](../tenant-features-2026-09-28/coverage.json). لم يُعد حصر المصدر خلال هذه الجولة؛ توجد تغييرات سلة متزامنة تحتاج إعادة توليد الحصر بعد تثبيتها. هذا سجل أولويات وتصميم، وليس إثبات نجاح تشغيل كل خاصية.
+حالة التصميم حسب سجل التغطية عند توليد هذا الملف. مرجع عناصر المصدر: لقطة ${generatedAt} في [سجل التغطية](../tenant-features-2026-09-28/coverage.json). لم يُعد حصر المصدر خلال هذه الجولة؛ توجد تغييرات سلة متزامنة تحتاج إعادة توليد الحصر بعد تثبيتها. هذا سجل أولويات وتصميم، وليس إثبات نجاح تشغيل كل خاصية.
 
 ${Object.entries(counts).map(([label,count])=>`- ${label}: **${count}** مسارًا.`).join('\n')}
 

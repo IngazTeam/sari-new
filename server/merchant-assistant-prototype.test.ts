@@ -12,7 +12,7 @@ beforeEach(()=>{
   w.structuredClone=structuredClone;w.scrollTo=()=>{};
   w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
   w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
-  for(const name of ['features.js','page-catalog.js','brain.js','assistant.js','notifications.js','pages.js','app.js'])runInContext(readFileSync(base+name,'utf8'),dom.getInternalVMContext());
+  for(const name of ['features.js','page-catalog.js','brain.js','brain-workbench.js','assistant.js','notifications.js','pages.js','app.js'])runInContext(readFileSync(base+name,'utf8'),dom.getInternalVMContext());
 });
 afterEach(()=>{expect(errors).toEqual([]);dom.window.close();});
 const route=(page:string)=>{w.history.replaceState(null,'',`#/page/merchant/${page}`);w.dispatchEvent(new w.HashChangeEvent('hashchange'));};

@@ -14,7 +14,7 @@ beforeEach(() => {
   w = dom.window; w.scrollTo = () => {};
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  for (const file of ['features.js', 'page-catalog.js', 'brain.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + file, 'utf8'), dom.getInternalVMContext());
+  for (const file of ['features.js', 'page-catalog.js', 'brain.js', 'brain-workbench.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + file, 'utf8'), dom.getInternalVMContext());
 });
 afterEach(() => { expect(errors).toEqual([]); dom.window.close(); });
 const node = (selector: string) => { const element = w.document.querySelector(selector); expect(element, selector).toBeTruthy(); return element; };
@@ -31,7 +31,7 @@ function draftReturn(answer = 'يمكن استرجاع المنتج غير ال�
 
 it('separates results, source files, actionable gaps and a sourced sales rubric', () => {
   expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
-  expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(5);
+  expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(8);
   expect(text()).toContain('نتائج مرتبطة بمصادرها');
   click('file', 'catalog'); expect(dialog()).toContain('ورقة المنتجات · صف 2');
   click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
@@ -120,7 +120,7 @@ it.each([{ name: 'payload.html', size: 20 }, { name: 'large.pdf', size: 6 * 1024
 it('reviews eight learning cases without activating a policy or inflating sales proficiency',()=>{
   click('navigate','learning');click('review-open');submit('review');expect(node('#brain-review-error').textContent).toContain('الثماني');
   for(let i=0;i<8;i++){
-    set('#brain-review-baseline','الرد الحالي '+i);set('#brain-review-candidate','الرد المقترح '+i);set('#brain-review-reason','السبب '+i);
+    set('#brain-review-baseline','الرد الحالي '+i);set('#brain-review-candidate','الرد المقترح '+i);set('#brain-review-reason','راجعت الإجابة والمصدر وتأكدت من دقة رد الحالة '+i);
     set('#brain-review-baselineVerdict','pass','change');set('#brain-review-candidateVerdict',i===7?'fail':'pass','change');
     if(i<7)click('review-next');
   }
