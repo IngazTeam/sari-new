@@ -37,4 +37,13 @@ describe('model evaluation scoring guards (not live quality evidence)',()=>{
     const invalid:UnderstandingCase={...find('yes-to-explanation'),expected:{}};
     expect(scoreUnderstanding(invalid,result()).passed).toBe(false);
   });
+  it('requires the contextual specialization and confidence without accepting an unintended human handoff',()=>{
+    const item=find('agent-negated-accounting');
+    expect(scoreUnderstanding(item,result({virtualAgentId:42})).passed).toBe(true);
+    expect(scoreUnderstanding(item,result({virtualAgentId:41})).passed).toBe(false);
+    expect(scoreUnderstanding(item,result()).passed).toBe(false);
+    for(const change of [{confidence:.7},{ambiguous:true},{conditional:true}])
+      expect(scoreUnderstanding(item,result({virtualAgentId:42,...change}))).toMatchObject({passed:false,mismatches:['agentRoutingBlocked']});
+    expect(scoreUnderstanding(item,result({virtualAgentId:42,nextStep:'handoff'})).criticalFailure).toBe(true);
+  });
 });

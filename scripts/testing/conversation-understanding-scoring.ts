@@ -12,6 +12,7 @@ export function scoreUnderstanding(item: UnderstandingCase, result: Conversation
   if (item.allowedActions && !item.allowedActions.includes(result.action)) mismatches.push('allowedActions');
   // A model that always refuses to act must not pass positive consent/reference cases.
   if ((item.expected.action && mutatingActions.includes(item.expected.action)) && !executable) mismatches.push('executable');
+  if (item.expected.virtualAgentId != null && (result.confidence < 0.85 || result.ambiguous || result.conditional)) mismatches.push('agentRoutingBlocked');
   if (!Object.keys(item.expected).length && !item.allowedActions?.length) mismatches.push('missingExpectation');
   return {passed:!criticalFailure&&!mismatches.length,criticalFailure,executable,mismatches};
 }

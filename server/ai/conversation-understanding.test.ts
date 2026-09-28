@@ -42,6 +42,15 @@ describe('semantic interpretation plumbing (synthetic model results, not model-q
     expect(() => assertSariTaskPayload(contract, 'input', payload)).not.toThrow();
     expect(payload.promptMessages).toEqual(messages);
   });
+  it('accepts only an available server-supplied agent and leaves routing optional for old interpretations', () => {
+    const context = { ...input(), agents: [{ id: 3, name: 'نورة', role: 'مبيعات', department: 'التدريب', expertise: 'تقارن الدورات' }], currentAgentId: null };
+    expect(validateUnderstanding(JSON.stringify(analysisFixture({ virtualAgentId: 3 })), context).virtualAgentId).toBe(3);
+    expect(validateUnderstanding(JSON.stringify(analysisFixture()), context)).not.toHaveProperty('virtualAgentId');
+    expect(validateUnderstanding(JSON.stringify(analysisFixture({ virtualAgentId: null })), input()).virtualAgentId).toBeNull();
+    for (const bad of [input(), { ...context, agents: [] }, { ...context, agents: [{ ...context.agents[0], id: 4 }] }]) {
+      expect(() => validateUnderstanding(JSON.stringify(analysisFixture({ virtualAgentId: 3 })), bad)).toThrow('virtual agent');
+    }
+  });
   it.each([
     { evidence: [{ messageId: 99, excerpt: 'نعم' }] }, { evidence: [{ messageId: 12, excerpt: 'اشتريت' }] },
     { evidence: [{ messageId: 11, excerpt: 'تحب' }] }, { productIds: [99] },

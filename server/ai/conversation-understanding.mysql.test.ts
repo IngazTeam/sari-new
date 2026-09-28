@@ -8,11 +8,15 @@ import { understandConversation, readStoredUnderstanding, withStoredUnderstandin
 import { withConversationUnderstanding, currentConversationUnderstanding, semanticAction } from './conversation-understanding-context';
 import type { CheckoutIdentity } from './checkout-agreements';
 import { captureDirectCustomerMemory } from './customer-memory';
+import { resolveContextualAgent } from './contextual-agent-routing';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable semantic interpretation and hostile context changes', () => {
   const q = async (sql: string, args: unknown[] = []): Promise<any> => (await (await getPool())!.execute(sql, args))[0];
   let input: CheckoutIdentity & { message: string }, users: number[];
   const incoming = async (message: string) => ({ ...input, message, incomingMessageId: Number((await q("INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'incoming','text',?)", [input.conversationId, message])).insertId) });
+  const addAgent = async (name: string, role: string, merchantId = input.merchantId) => Number((await q(
+    "INSERT INTO virtual_agents(merchant_id,name,role,personality_prompt,trigger_keywords) VALUES (?,?,?,?,?)",
+    [merchantId, name, role, `خبرة في ${role}`, '["نعم"]'])).insertId);
   function output(messages: any[]) {
     const request = JSON.parse(messages[1].content), message = request.messages.at(-1);
     return JSON.stringify({ version: 1, intent: 'inquiring', goal: 'explain_requested_information', action: 'respond', confidence: 0.97, conditional: false, ambiguous: false, targetQuoteId: null, targetProvider: 'none', productIds: [], sessionIndex: null, requestKind: 'ordinary', sentiment: 'neutral', topicChanged: false, objection: 'none', needs: ['جدول مناسب'], unresolvedQuestions: [], summary: 'موافقة على الشرح المطلوب سابقًا.', nextStep: 'answer', evidence: [{ messageId: message.id, excerpt: message.content }] });
@@ -106,5 +110,88 @@ describe.skipIf(!process.env.DATABASE_URL)('durable semantic interpretation and 
     expect(context.previousUnderstanding.summary).toBe(previous!.analysis.summary);
     expect(context.memory).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'budget', sourceMessageId: budget.incomingMessageId })]));
     expect(context).not.toHaveProperty('customerPhone');
+  });
+  it('interprets only available tenant specializations and persists the contextual choice instead of a matching keyword', async () => {
+    const first = await addAgent('المحاسب', 'المحاسبة'), chosen = await addAgent('نورة', 'تدريب');
+    const inactive = await addAgent('معطل', 'مبيعات'), offShift = await addAgent('خارج الدوام', 'مبيعات');
+    await q('UPDATE virtual_agents SET is_active=0 WHERE id=?', [inactive]);
+    await q("UPDATE virtual_agents SET shift_start='00:00',shift_end='00:00' WHERE id=?", [offShift]);
+    await q('UPDATE conversations SET current_agent_id=? WHERE id=?', [first, input.conversationId]);
+    const other = await createDisposableMerchant('semantic-agents-other'); users.push(other.userId);
+    await addAgent('موظف تيننت آخر', 'تدريب', other.merchantId);
+    input = await incoming('لا أريد المحاسب، أريد مقارنة الدورتين');
+    mocks.model.mockImplementation(async messages => {
+      const request = JSON.parse(messages[1].content);
+      expect(request.agents.map((a: any) => a.id)).toEqual([first, chosen]);
+      expect(request.currentAgentId).toBe(first);
+      expect(request.agents[1]).toMatchObject({ name: 'نورة', role: 'تدريب', expertise: 'خبرة في تدريب' });
+      expect(request.agents[0]).not.toHaveProperty('triggerKeywords');
+      return JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: chosen });
+    });
+    const context = await understandConversation(input); expect(context).not.toBeNull();
+    await withConversationUnderstanding(context!, async () => expect((await resolveContextualAgent(input))?.id).toBe(chosen));
+    expect((await q('SELECT current_agent_id FROM conversations WHERE id=?', [input.conversationId]))[0].current_agent_id).toBe(chosen);
+    expect((await readStoredUnderstanding((await getPool())!, input))?.analysis.virtualAgentId).toBe(chosen);
+    expect(mocks.model).toHaveBeenCalledOnce();
+  });
+  it('rejects a foreign agent supplied by the model without changing the conversation', async () => {
+    const other = await createDisposableMerchant('semantic-agent-injection'); users.push(other.userId);
+    const foreign = await addAgent('Foreign', 'sales', other.merchantId);
+    mocks.model.mockImplementation(async messages => JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: foreign }));
+    expect(await understandConversation(input)).toBeNull();
+    expect((await q('SELECT current_agent_id FROM conversations WHERE id=?', [input.conversationId]))[0].current_agent_id).toBeNull();
+  });
+  it.each(['specialization', 'availability', 'current agent'])('rejects a stale routing interpretation after %s changes during provider I/O', async change => {
+    const id = await addAgent('نورة', 'تدريب');
+    mocks.model.mockImplementation(async messages => {
+      if (change === 'specialization') await q("UPDATE virtual_agents SET role='محاسبة' WHERE id=?", [id]);
+      if (change === 'availability') await q('UPDATE virtual_agents SET is_active=0 WHERE id=?', [id]);
+      if (change === 'current agent') await q('UPDATE conversations SET current_agent_id=? WHERE id=?', [id, input.conversationId]);
+      return JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: id });
+    });
+    expect(await understandConversation(input)).toBeNull();
+  });
+  it.each(['disabled', 'shift ended', 'deleted'])('rechecks chosen agent availability at assignment after it was %s', async change => {
+    const id = await addAgent('نورة', 'تدريب'), fallback = await addAgent('بديل', 'مبيعات');
+    await q('UPDATE conversations SET current_agent_id=? WHERE id=?', [id, input.conversationId]);
+    mocks.model.mockImplementation(async messages => JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: id }));
+    const context = await understandConversation(input); expect(context).not.toBeNull();
+    if (change === 'disabled') await q('UPDATE virtual_agents SET is_active=0 WHERE id=?', [id]);
+    if (change === 'shift ended') await q("UPDATE virtual_agents SET shift_start='00:00',shift_end='00:00' WHERE id=?", [id]);
+    if (change === 'deleted') await q('DELETE FROM virtual_agents WHERE id=?', [id]);
+    await withConversationUnderstanding(context!, async () => expect((await resolveContextualAgent(input))?.id).toBe(fallback));
+    await q('UPDATE virtual_agents SET is_active=0 WHERE merchant_id=?', [input.merchantId]);
+    await withConversationUnderstanding(context!, async () => expect(await resolveContextualAgent(input)).toBeNull());
+    expect((await q('SELECT current_agent_id FROM conversations WHERE id=?', [input.conversationId]))[0].current_agent_id).toBeNull();
+  });
+  it('ignores a foreign saved current agent and retains old sealed interpretations without routing fields', async () => {
+    const other = await createDisposableMerchant('semantic-old-agent'); users.push(other.userId);
+    const foreign = await addAgent('Foreign', 'sales', other.merchantId), own = await addAgent('نورة', 'تدريب');
+    await q('UPDATE conversations SET current_agent_id=? WHERE id=?', [foreign, input.conversationId]);
+    const context = await understandConversation(input); expect(context!.analysis).not.toHaveProperty('virtualAgentId');
+    expect((await readStoredUnderstanding((await getPool())!, input))?.analysis).toEqual(context!.analysis);
+    await withConversationUnderstanding(context!, async () => expect((await resolveContextualAgent(input))?.id).toBe(own));
+  });
+  it.each(['handoff', 'source changed', 'new incoming', 'wrong phone', 'memory forgotten', 'history changed', 'result tampered'])('does not assign an agent after conversation authority changes: %s', async change => {
+    const id = await addAgent('نورة', 'تدريب');
+    mocks.model.mockImplementation(async messages => JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: id }));
+    const context = await understandConversation(input); expect(context).not.toBeNull();
+    if (change === 'handoff') await q('UPDATE conversations SET human_takeover=1 WHERE id=?', [input.conversationId]);
+    if (change === 'source changed') await q("UPDATE messages SET content='انتظر' WHERE id=?", [input.incomingMessageId]);
+    if (change === 'new incoming') await incoming('غيرت رأيي');
+    if (change === 'memory forgotten') await q('INSERT INTO customer_profiles(merchant_id,customer_phone,memory_forget_before_message_id) VALUES (?,?,?)', [input.merchantId, input.customerPhone, input.incomingMessageId - 1]);
+    if (change === 'history changed') await q("UPDATE messages SET content='محتوى تغير' WHERE conversationId=? AND direction='outgoing'", [input.conversationId]);
+    if (change === 'result tampered') await q("UPDATE ai_conversation_understanding SET result_json=JSON_SET(result_json,'$.virtualAgentId',999) WHERE merchant_id=?", [input.merchantId]);
+    const request = change === 'wrong phone' ? { ...input, customerPhone: '966500000999' } : input;
+    await withConversationUnderstanding(context!, async () => { await expect(resolveContextualAgent(request)).rejects.toThrow(); });
+    expect((await q('SELECT current_agent_id FROM conversations WHERE id=?', [input.conversationId]))[0].current_agent_id).toBeNull();
+  });
+  it('uses the persisted sealed agent choice rather than an altered in-memory interpretation', async () => {
+    const chosen = await addAgent('نورة', 'تدريب'), altered = await addAgent('محاسب', 'مالية');
+    mocks.model.mockImplementation(async messages => JSON.stringify({ ...JSON.parse(output(messages)), virtualAgentId: chosen }));
+    const context = await understandConversation(input); expect(context).not.toBeNull();
+    await withConversationUnderstanding({ ...context!, analysis: { ...context!.analysis, virtualAgentId: altered } }, async () => {
+      expect((await resolveContextualAgent(input))?.id).toBe(chosen);
+    });
   });
 });

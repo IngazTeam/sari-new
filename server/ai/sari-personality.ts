@@ -5,6 +5,7 @@ import { conversationHandoffSummary, handoffPrompt } from './conversation-handof
 import { reviewSalesResponse } from './review-sales-response';
 import { buildSalesReplyMessages, CONTEXTUAL_REPLY_UNAVAILABLE } from './sales-reply-prompt';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
+import { resolveContextualAgent, contextualAgentPrompt, type ContextualAgent } from './contextual-agent-routing';
 import { formatProductPrice } from '../../shared/product-money';
 import { checkoutCouponCommand } from '../../shared/checkout-discount';
 /**
@@ -1669,7 +1670,9 @@ async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryC
     // recorded consent and ordinary channel proof to bind to the same offer.
     if (checkoutReply !== null) return checkoutReply;
   }
-  const response = await _chatWithSariCore(params, memoryHistoryCutoff);
+  const contextual = hasConversationUnderstanding();
+  const selectedAgent = contextual ? await resolveContextualAgent(params) : null;
+  const response = await _chatWithSariCore(params, memoryHistoryCutoff, selectedAgent);
 
   // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer
   try {
@@ -1678,9 +1681,9 @@ async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryC
     const merchantName = merchant?.businessName || '';
 
     // Check for active virtual agent name
-    let agentName: string | null = null;
+    let agentName: string | null = selectedAgent?.name ?? null;
     try {
-      if (params.conversationId) {
+      if (!contextual && params.conversationId) {
         const { eq } = await import('drizzle-orm');
         const pool = await getDb();
         if (pool) {
@@ -1704,7 +1707,7 @@ async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryC
 /**
  * Core chat implementation (internal — use chatWithSari wrapper)
  */
-async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff = 0): Promise<string> {
+async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff = 0, selectedContextualAgent: ContextualAgent | null = null): Promise<string> {
   try {
     // Get merchant info
     const merchant = await getMerchantById(params.merchantId);
@@ -2076,6 +2079,9 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
       // ── Virtual Agent override for FAST PATH ──
       // Without this, message #2+ would lose agent personality and revert to Sari
       systemPrompt += handoffContext;
+      if (hasConversationUnderstanding()) {
+        systemPrompt += contextualAgentPrompt(selectedContextualAgent, merchant.businessName || 'نشاطنا التجاري');
+      } else {
       try {
         if (params.conversationId) {
           const { eq } = await import('drizzle-orm');
@@ -2103,6 +2109,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         const bizName = merchant?.businessName || 'نشاطنا التجاري';
         systemPrompt += `\n\n## هوية الرد:\nأنت تمثل "${sanitizeForPrompt(bizName)}" مباشرة. ممنوع تذكر "ساري".\n`;
         console.warn(`[VirtualAgent] FAST PATH agent failed, using business name "${bizName}":`, fastPathAgentErr);
+      }
       }
 
       // Inject persuasion prompt
@@ -2452,6 +2459,9 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       systemPrompt += customerStateSummaryFull;
     }
 
+    if (hasConversationUnderstanding()) {
+      systemPrompt += contextualAgentPrompt(selectedContextualAgent, merchant.businessName || 'نشاطنا التجاري');
+    } else {
     let activeAgentName: string | null = null;
     try {
       const { eq } = await import('drizzle-orm');
@@ -2530,6 +2540,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       const identityOverride = `\n\n## هوية الرد:\nأنت تمثل "${sanitizeForPrompt(bizName)}" مباشرة. عرّف نفسك باسم الشركة فقط. ممنوع تذكر "ساري" أو أي اسم آخر.\n`;
       systemPrompt += identityOverride;
       console.warn(`[VirtualAgent] Agent selection failed, using business name "${bizName}":`, agentError);
+    }
     }
 
     // Append resume context after agent selection (preserved across rebuilds)

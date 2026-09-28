@@ -9,8 +9,13 @@ const m = vi.hoisted(() => ({
   review: vi.fn(),
   escalate: vi.fn(),
   understanding: vi.fn(),
+  agent: vi.fn(),
 }));
 vi.mock("./openai", () => ({ callGPT4: m.call }));
+vi.mock("./contextual-agent-routing", async original => ({
+  ...(await original<typeof import("./contextual-agent-routing")>()),
+  resolveContextualAgent: m.agent,
+}));
 vi.mock("../db", async original => ({
   ...(await original<typeof import("../db")>()),
   getDb: async () => null,
@@ -162,6 +167,7 @@ const state = {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  m.agent.mockResolvedValue(null);
   m.history.mockResolvedValue([
     ...savedHistory,
     { id: 13, direction: "incoming", content: input.message },
@@ -253,6 +259,42 @@ describe.each(["fast", "full"])(
       expect(m.escalate).not.toHaveBeenCalled();
       expect(m.create).toHaveBeenCalledTimes(path === "full" ? 1 : 0);
       expect(conversationUnderstandingIdentity()).toBeUndefined();
+    });
+    it("uses the context-selected specialist in both the prompt and identity sanitizer without a keyword override", async () => {
+      m.agent.mockImplementation(async source => {
+        expect(source).toMatchObject(input);
+        expect(conversationUnderstandingIdentity()?.merchantId).toBe(
+          input.merchantId
+        );
+        return {
+          id: 9,
+          name: "نورة",
+          role: "مستشارة مبيعات",
+          department: "التدريب",
+          personalityPrompt: "SPECIALIST_POLICY",
+          isActive: 1,
+          isDefault: 0,
+          sortOrder: 0,
+        };
+      });
+      m.call.mockResolvedValue("أنا نورة، أساعدك في مقارنة الخيارات.");
+      expect(await chatWithSari(input)).toBe(
+        "أنا نورة، أساعدك في مقارنة الخيارات."
+      );
+      expect(m.agent).toHaveBeenCalledOnce();
+      const prompt = m.call.mock.calls[0][0]
+        .filter((v: any) => v.role === "system")
+        .map((v: any) => v.content)
+        .join("");
+      expect(prompt).toContain("SPECIALIST_POLICY");
+      expect(prompt).toContain("نورة");
+      expect(prompt).toContain("لا تدّع وصول موظف");
+      expect(m.escalate).not.toHaveBeenCalled();
+    });
+    it("does not generate a response if scoped agent assignment loses conversation authority", async () => {
+      m.agent.mockRejectedValue(Error("Checkout source superseded"));
+      expect(await chatWithSari(input)).toContain("تعذر فهم سياق المحادثة");
+      expect(m.call).not.toHaveBeenCalled();
     });
     it.each([
       "provider failure",

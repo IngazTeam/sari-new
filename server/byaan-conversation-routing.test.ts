@@ -2,6 +2,7 @@ import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {isByaanEnrollmentRequest,isByaanEnrollmentEdit,byaanCourseSelection} from './ai/byaan-enrollment-conversation';
 const calls=vi.hoisted(()=>({memory:vi.fn(),budget:vi.fn(),byaan:vi.fn(),salla:vi.fn(),reminder:vi.fn(),understand:vi.fn(),escalate:vi.fn(),quick:vi.fn(),loyalty:vi.fn(),incrementQuick:vi.fn()}));
 vi.mock('./ai/smart-escalation',()=>({handleSmartEscalation:calls.escalate}));
+vi.mock('./ai/contextual-agent-routing',async original=>({...await original<typeof import('./ai/contextual-agent-routing')>(),resolveContextualAgent:vi.fn(async()=>null)}));
 vi.mock('./db',async original=>({...await original<typeof import('./db')>(),
   getMerchantById:vi.fn(async()=>({businessName:'متجر الاختبار'})),getDb:vi.fn(async()=>null),
   getMessagesByConversationId:vi.fn(async()=>[]),getOrCreatePersonalitySettings:vi.fn(async()=>({})),

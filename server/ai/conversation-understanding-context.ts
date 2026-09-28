@@ -13,6 +13,8 @@ export const conversationUnderstandingSchema = z.object({
   targetProvider: z.enum(['local', 'byaan_checkout', 'byaan_enrollment', 'salla_cart', 'zid', 'booking', 'none']),
   productIds: z.array(z.number().int().positive()).max(10),
   sessionIndex: z.number().int().min(1).max(20).nullable(),
+  // Optional without a default: older sealed interpretations must hash identically.
+  virtualAgentId: z.number().int().positive().nullable().optional(),
   requestKind: z.enum(['ordinary', 'catalog', 'purchase_process', 'loyalty_balance', 'loyalty_rewards']),
   sentiment: z.enum(['positive', 'negative', 'neutral', 'angry', 'happy', 'sad', 'frustrated']),
   topicChanged: z.boolean(),
