@@ -6,19 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Send } from "lucide-react";
 import type { PreviewReply } from "@shared/test-sari-workspace";
+import {
+  appendPersonaPreviewHistory,
+  type PreviewPersonaSelection,
+} from "@shared/persona-preview";
 
 export type PreviewSelection =
   | { mode: "store" }
   | { mode: "manual"; agentId: number }
   | { mode: "automatic"; time: string };
 type Result = PreviewReply & {
-  persona?: {
-    id: number;
-    name: string;
-    role: string;
-    isActive: boolean;
-    reason: "manual" | "keyword" | "default" | "order";
-  };
+  persona?: PreviewPersonaSelection;
   time?: string | null;
 };
 
@@ -40,6 +38,12 @@ export function AssistantReplyPreview({
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+  const [currentAgentId, setCurrentAgentId] = useState<number | null>(null);
+  const [historyTruncated, setHistoryTruncated] = useState(false);
+  const earlierHistory = result ? history.slice(0, -2) : history;
   const lock = useRef(false);
   const editor = useRef<HTMLTextAreaElement>(null);
   const send = async () => {
@@ -53,11 +57,32 @@ export function AssistantReplyPreview({
     const message = question.trim();
     setSubmitted(message);
     try {
-      setResult(
+      const reply =
         selection.mode === "store"
           ? await quick.mutateAsync({ message })
-          : await persona.mutateAsync({ ...selection, message })
-      );
+          : await persona.mutateAsync({
+              ...selection,
+              message,
+              ...(selection.mode === "automatic"
+                ? { history, currentAgentId, historyTruncated }
+                : {}),
+            });
+      setResult(reply);
+      if (selection.mode === "automatic") {
+        const nextHistory = appendPersonaPreviewHistory(
+          history,
+          message,
+          reply.response
+        );
+        setHistoryTruncated(
+          historyTruncated || nextHistory.length < history.length + 2
+        );
+        setHistory(nextHistory);
+        setCurrentAgentId(
+          "persona" in reply ? (reply.persona?.id ?? null) : null
+        );
+        setQuestion("");
+      }
     } catch (failure) {
       setError(
         (failure as { data?: { code?: string } })?.data?.code ||
@@ -127,8 +152,60 @@ export function AssistantReplyPreview({
       <p role="status" className="text-sm text-muted-foreground">
         {busy
           ? t("sariPlayground.preparing")
-          : t("personaPreviewUx.independent")}
+          : t(
+              selection.mode === "automatic"
+                ? "personaPreviewUx.contextual"
+                : "personaPreviewUx.independent"
+            )}
       </p>
+      {selection.mode === "automatic" && history.length > 0 && (
+        <div className="space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            className="min-h-11"
+            onClick={() => {
+              if (lock.current) return;
+              setHistory([]);
+              setHistoryTruncated(false);
+              setCurrentAgentId(null);
+              setResult(null);
+              setError(null);
+              setSubmitted("");
+              setQuestion("");
+              editor.current?.focus();
+            }}
+          >
+            {t("personaPreviewUx.reset")}
+          </Button>
+          {earlierHistory.length > 0 && (
+            <details className="rounded-xl border p-3 text-sm">
+              <summary className="min-h-11 cursor-pointer py-2">
+                {t("personaPreviewUx.previousTurns")}
+              </summary>
+              <ol className="space-y-3 pt-3">
+                {earlierHistory.map((item, index) => (
+                  <li
+                    key={index}
+                    className="whitespace-pre-wrap [overflow-wrap:anywhere]"
+                  >
+                    <span className="font-semibold">
+                      {t(
+                        item.role === "user"
+                          ? "personaPreviewUx.testedQuestion"
+                          : "personaPreviewUx.result"
+                      )}{" "}
+                      ·{" "}
+                    </span>
+                    {item.content}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
+      )}
       {error && (
         <div
           role="alert"
@@ -161,11 +238,13 @@ export function AssistantReplyPreview({
                 {t(
                   result.persona.reason === "manual"
                     ? "personaPreviewUx.manual"
-                    : result.persona.reason === "keyword"
-                      ? "virtualTeamUx.matchKeyword"
-                      : result.persona.reason === "default"
-                        ? "virtualTeamUx.matchDefault"
-                        : "virtualTeamUx.matchOrder"
+                    : result.persona.reason === "context"
+                      ? "personaPreviewUx.matchContext"
+                      : result.persona.reason === "current"
+                        ? "personaPreviewUx.matchCurrent"
+                        : result.persona.reason === "default"
+                          ? "virtualTeamUx.matchDefault"
+                          : "virtualTeamUx.matchOrder"
                 )}
                 {!result.persona.isActive
                   ? ` · ${t("personaPreviewUx.paused")}`

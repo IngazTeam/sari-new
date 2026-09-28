@@ -62,8 +62,8 @@ export function agentCandidates(agents: ContextualAgent[]): AgentCandidate[] {
     }));
 }
 
-export function chooseContextualAgent(
-  agents: readonly ContextualAgent[],
+export function selectContextualAgent<T extends ContextualAgent>(
+  agents: readonly T[],
   currentAgentId: number | null,
   analysis: ConversationUnderstanding,
   time = agentLocalTime()
@@ -78,12 +78,24 @@ export function chooseContextualAgent(
     analysis.confidence >= 0.85 && !analysis.ambiguous && !analysis.conditional
       ? available.find(a => a.id === analysis.virtualAgentId)
       : undefined;
+  if (interpreted) return { agent: interpreted, reason: "context" as const };
+  const current = available.find(a => a.id === currentAgentId);
+  if (current) return { agent: current, reason: "current" as const };
+  const preferred = available.find(a => a.isDefault === 1);
+  if (preferred) return { agent: preferred, reason: "default" as const };
+  return available[0]
+    ? { agent: available[0], reason: "order" as const }
+    : null;
+}
+
+export function chooseContextualAgent<T extends ContextualAgent>(
+  agents: readonly T[],
+  currentAgentId: number | null,
+  analysis: ConversationUnderstanding,
+  time = agentLocalTime()
+) {
   return (
-    interpreted ??
-    available.find(a => a.id === currentAgentId) ??
-    available.find(a => a.isDefault === 1) ??
-    available[0] ??
-    null
+    selectContextualAgent(agents, currentAgentId, analysis, time)?.agent ?? null
   );
 }
 

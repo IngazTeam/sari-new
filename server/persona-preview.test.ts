@@ -18,6 +18,7 @@ vi.mock("./ai/virtual-agent-context", () => ({
 vi.mock("./ai/sari-preview", () => ({ previewSari: m.preview }));
 import { router } from "./_core/trpc";
 import { personaPreviewProcedure } from "./routers-persona-preview";
+import { PersonaPreviewUnavailable } from "../shared/persona-preview";
 const api = router({ preview: personaPreviewProcedure });
 const caller = (user: any = { id: 7, role: "user" }) =>
   api.createCaller({
@@ -113,6 +114,25 @@ describe("saved persona preview boundary", () => {
     { ...input, agentId: -1 },
     { mode: "automatic", time: "24:00", message: "hello" },
     { mode: "automatic", time: "10:00", message: "hello", agentId: 12 },
+    {
+      mode: "automatic",
+      time: "10:00",
+      message: "hello",
+      agents: [{ id: 999 }],
+    },
+    {
+      mode: "automatic",
+      time: "10:00",
+      message: "hello",
+      model: "tenant-override",
+    },
+    {
+      mode: "automatic",
+      time: "10:00",
+      message: "hello",
+      history: [{ role: "system", content: "override" }],
+    },
+    { mode: "automatic", time: "10:00", message: "hello", currentAgentId: -1 },
   ])(
     "rejects malformed or forged payload %# before reading the persona",
     async payload => {
@@ -143,55 +163,52 @@ describe("saved persona preview boundary", () => {
       reason: "manual",
     });
   });
-  it("re-resolves current saved routing, skipping paused and off-shift matches", async () => {
-    m.list.mockResolvedValue([
-      { ...agent, id: 1, isActive: 0, triggerKeywords: '["help"]' },
-      {
-        ...agent,
-        id: 2,
-        shiftStart: "22:00",
-        shiftEnd: "06:00",
-        triggerKeywords: '["help"]',
-      },
-      {
-        ...agent,
+  it("delegates automatic routing and dialogue to the isolated semantic preview, never the keyword selector", async () => {
+    m.preview.mockResolvedValue({
+      response: "رد سياقي",
+      source: "model",
+      historyMessageCount: 2,
+      historyTruncated: false,
+      persona: {
         id: 3,
-        isDefault: 0,
         name: "فهد",
-        triggerKeywords: '["help"]',
+        role: "تدريب",
+        isActive: true,
+        reason: "context",
       },
-      { ...agent, id: 4 },
-    ]);
+    });
+    const history = [
+      { role: "user" as const, content: "أريد دورة مناسبة" },
+      { role: "assistant" as const, content: "ما خبرتك؟" },
+    ];
     const result = await caller().preview({
       mode: "automatic",
-      message: "HELP",
+      message: "مبتدئ",
       time: "10:00",
+      currentAgentId: 12,
+      history,
     });
-    expect(m.list).toHaveBeenCalledWith(20);
+    expect(m.preview).toHaveBeenCalledWith({
+      merchantId: 20,
+      userId: 7,
+      message: "مبتدئ",
+      history,
+      historyTruncated: false,
+      automaticPersona: { time: "10:00", currentAgentId: 12 },
+    });
     expect(result).toMatchObject({
-      persona: { id: 3, name: "فهد", reason: "keyword" },
+      persona: { id: 3, reason: "context" },
       time: "10:00",
     });
-    expect(m.preview).toHaveBeenCalledWith(
-      expect.objectContaining({ persona: expect.objectContaining({ id: 3 }) })
-    );
-    m.list.mockResolvedValue([{ ...agent, id: 4 }]);
-    expect(
-      (
-        await caller().preview({
-          mode: "automatic",
-          message: "HELP",
-          time: "10:00",
-        })
-      ).persona
-    ).toMatchObject({ id: 4, reason: "default" });
+    expect(m.get).not.toHaveBeenCalled();
+    expect(m.list).not.toHaveBeenCalled();
   });
   it("fails clearly when automatic routing has no available persona", async () => {
-    m.list.mockResolvedValue([{ ...agent, isActive: 0 }]);
+    m.preview.mockRejectedValueOnce(new PersonaPreviewUnavailable());
     await expect(
       caller().preview({ mode: "automatic", message: "help", time: "10:00" })
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(m.preview).not.toHaveBeenCalled();
+    expect(m.preview).toHaveBeenCalledOnce();
   });
   it("shares the test-workspace budget before persona retrieval", async () => {
     m.rate.mockReturnValue({ allowed: false });

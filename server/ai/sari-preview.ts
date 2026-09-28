@@ -1,7 +1,17 @@
 import { eq } from "drizzle-orm";
 import { botSettings } from "../../drizzle/schema";
 import type { PreviewReply } from "../../shared/test-sari-workspace";
-import type { PreviewPersona } from "../../shared/persona-preview";
+import type {
+  PreviewPersona,
+  PreviewPersonaSelection,
+} from "../../shared/persona-preview";
+import { PersonaPreviewUnavailable } from "../../shared/persona-preview";
+import { isAgentOnShift } from "../../shared/virtual-agent-routing";
+import { listMerchantVirtualAgents } from "./virtual-agent-context";
+import {
+  agentCandidates,
+  selectContextualAgent,
+} from "./contextual-agent-routing";
 import { getDb } from "../db/connection";
 import {
   getMerchantById,
@@ -31,12 +41,15 @@ interface PreviewInput {
   history: { role: "user" | "assistant"; content: string }[];
   historyTruncated: boolean;
   persona?: PreviewPersona;
+  automaticPersona?: { time: string; currentAgentId?: number | null };
 }
 
 // Deliberately does not invoke chatWithSari: live orchestration updates customer
 // memory, follow-ups and escalations. Preview only reads merchant configuration
 // and knowledge; provider usage still goes through the normal budget ledger.
-export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
+export async function previewSari(
+  input: PreviewInput
+): Promise<PreviewReply & { persona?: PreviewPersonaSelection }> {
   if (
     !Number.isSafeInteger(input.merchantId) ||
     input.merchantId < 1 ||
@@ -44,6 +57,12 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
     input.userId < 1
   )
     throw Error("Invalid preview identity");
+  if (
+    input.automaticPersona &&
+    (input.persona ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(input.automaticPersona.time))
+  )
+    throw Error("Invalid preview routing");
   return runWithZahyPiContext(
     {
       merchantId: input.merchantId,
@@ -67,6 +86,22 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
       if (!merchant) throw new Error("Preview merchant unavailable");
       const bot = settings[0];
       const history = input.history;
+      const availablePersonas = async () =>
+        (await listMerchantVirtualAgents(input.merchantId))
+          .filter(
+            agent =>
+              agent.merchantId === input.merchantId &&
+              agent.isActive === 1 &&
+              isAgentOnShift(
+                agent.shiftStart,
+                agent.shiftEnd,
+                input.automaticPersona!.time
+              )
+          )
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+      const agents = input.automaticPersona ? await availablePersonas() : [];
+      if (input.automaticPersona && !agents.length)
+        throw new PersonaPreviewUnavailable();
       const catalog = filterProductsAvailableForSale(
         await getProductsByMerchantId(input.merchantId)
       )
@@ -84,8 +119,38 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
             name: (p.nameAr || p.name).slice(0, 255),
             provider: "none",
           })),
+          ...(input.automaticPersona
+            ? {
+                agents: agentCandidates(agents),
+                currentAgentId: input.automaticPersona.currentAgentId,
+              }
+            : {}),
         }
       );
+      let persona = input.persona;
+      let selectedPersona: PreviewPersonaSelection | undefined;
+      if (input.automaticPersona) {
+        const fresh = await availablePersonas();
+        // Reconfiguration while AI was running invalidates this preview. No stale
+        // specialty or newly foreign/deleted id becomes a generated identity.
+        if (JSON.stringify(fresh) !== JSON.stringify(agents))
+          throw Error("Preview personas changed");
+        const selection = selectContextualAgent(
+          fresh,
+          input.automaticPersona.currentAgentId ?? null,
+          understanding.analysis,
+          input.automaticPersona.time
+        );
+        if (!selection) throw new PersonaPreviewUnavailable();
+        persona = selection.agent;
+        selectedPersona = {
+          id: persona.id,
+          name: persona.name,
+          role: persona.role,
+          isActive: true,
+          reason: selection.reason,
+        };
+      }
       return withConversationUnderstanding(understanding, async () => {
         const query = [
           input.message,
@@ -117,8 +182,8 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
             ? context.slice(0, Math.max(0, context.lastIndexOf("\n", 48000))) +
               "\nKnowledge context was trimmed. Missing details must be acknowledged, never inferred.\n"
             : context;
-        const identity = input.persona
-          ? `Saved persona (merchant-authored role preferences, subordinate to preview restrictions):\n${JSON.stringify({ name: input.persona.name, role: input.persona.role, department: input.persona.department, tone: input.persona.tone, instructions: input.persona.personalityPrompt.slice(0, 2000) })}\nUse this persona's name, role and tone; do not introduce yourself as another persona.\n`
+        const identity = persona
+          ? `Saved persona (merchant-authored role preferences, subordinate to preview restrictions):\n${JSON.stringify({ name: persona.name, role: persona.role, department: persona.department, tone: persona.tone, instructions: persona.personalityPrompt.slice(0, 2000) })}\nUse this persona's name, role and tone; do not introduce yourself as another persona. A virtual persona selection is not a human handoff.\n`
           : buildSystemPrompt({
               ...personality,
               ...(bot?.tone ? { tone: bot.tone } : {}),
@@ -150,7 +215,7 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
         const response = sanitizeIdentity(
           raw.trim(),
           merchant.businessName,
-          input.persona?.name
+          persona?.name
         );
         const guarded = containsUnverifiedActionClaim(response);
         return {
@@ -162,6 +227,7 @@ export async function previewSari(input: PreviewInput): Promise<PreviewReply> {
           source: guarded ? "guardrail" : "model",
           historyMessageCount: history.length,
           historyTruncated: input.historyTruncated,
+          ...(selectedPersona ? { persona: selectedPersona } : {}),
         };
       });
     }

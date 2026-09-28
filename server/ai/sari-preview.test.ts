@@ -14,6 +14,10 @@ const m = vi.hoisted(() => ({
   central: vi.fn(),
   budget: vi.fn(),
   scope: vi.fn(),
+  agents: vi.fn(),
+}));
+vi.mock("./virtual-agent-context", () => ({
+  listMerchantVirtualAgents: m.agents,
 }));
 vi.mock("../db/connection", () => ({ getDb: m.db }));
 vi.mock("../db", () => ({
@@ -91,6 +95,7 @@ const input = {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  m.agents.mockResolvedValue([]);
   m.scope.mockImplementation((_scope, work) => work());
   m.db.mockResolvedValue({
     select: () => ({ from: () => ({ where: () => ({ limit: m.settings }) }) }),
@@ -136,6 +141,142 @@ beforeEach(() => {
   );
 });
 describe("isolated preview engine", () => {
+  const agent = (id: number, extra: Record<string, unknown> = {}) => ({
+    id,
+    merchantId: 20,
+    name: id === 41 ? "هدى" : "نورة",
+    role: id === 41 ? "الفوترة" : "التدريب",
+    department: null,
+    personalityPrompt: "خبرة محفوظة",
+    tone: "professional",
+    isActive: 1,
+    isDefault: id === 41 ? 1 : 0,
+    sortOrder: id,
+    shiftStart: null,
+    shiftEnd: null,
+    triggerKeywords: '["محاسب"]',
+    ...extra,
+  });
+  const automatic = {
+    ...input,
+    automaticPersona: { time: "10:00", currentAgentId: 41 },
+    message: "لا أريد المحاسب، قارن لي المحتوى",
+  };
+  it("shares the live contextual selection using both speakers, available specialties and only two central calls", async () => {
+    m.agents.mockResolvedValue([
+      agent(41),
+      agent(42),
+      agent(43, { merchantId: 99 }),
+      agent(44, { isActive: 0 }),
+      agent(45, { shiftStart: "22:00", shiftEnd: "06:00" }),
+    ]);
+    m.interpretation.mockImplementation(async messages =>
+      JSON.stringify({ ...interpretation(messages), virtualAgentId: 42 })
+    );
+    m.reply.mockResolvedValue("أنا ساري، أقارن لك المحتوى.");
+    const result = await previewSari(automatic);
+    expect(result.persona).toMatchObject({
+      id: 42,
+      name: "نورة",
+      reason: "context",
+    });
+    expect(result.response).toBe("أنا نورة، أقارن لك المحتوى.");
+    const context = contextInput(m.interpretation.mock.calls[0][0]);
+    expect(context.agents?.map(a => a.id)).toEqual([41, 42]);
+    expect(context.currentAgentId).toBe(41);
+    expect(context.messages.map(item => item.role)).toEqual([
+      "user",
+      "assistant",
+      "user",
+    ]);
+    expect(context.agents?.[0]).not.toHaveProperty("triggerKeywords");
+    expect(m.agents.mock.calls).toEqual([[20], [20]]);
+    expect(m.call).toHaveBeenCalledTimes(2);
+    expect(m.reply.mock.calls[0][1]).toMatchObject({
+      model: "central-admin-model",
+      taskType: "sari.reply",
+      merchantId: 20,
+    });
+    expect(m.reply.mock.calls[0][1]).not.toHaveProperty("conversationId");
+    expect(promptText()).toContain(
+      "A virtual persona selection is not a human handoff"
+    );
+  });
+  it.each([
+    { ambiguous: true },
+    { conditional: true },
+    { confidence: 0.7 },
+    { virtualAgentId: null },
+  ])(
+    "keeps the eligible simulated current agent when selection is uncertain: %j",
+    change => {
+      m.agents.mockResolvedValue([agent(41), agent(42)]);
+      m.interpretation.mockImplementation(async messages =>
+        JSON.stringify({
+          ...interpretation(messages),
+          virtualAgentId: 42,
+          ...change,
+        })
+      );
+      return expect(previewSari(automatic)).resolves.toMatchObject({
+        persona: { id: 41, reason: "current" },
+      });
+    }
+  );
+  it("ignores a foreign simulated current id and falls back to the available saved default", async () => {
+    m.agents.mockResolvedValue([agent(41), agent(42)]);
+    expect(
+      await previewSari({
+        ...automatic,
+        automaticPersona: { time: "10:00", currentAgentId: 999 },
+      })
+    ).toMatchObject({ persona: { id: 41, reason: "default" } });
+    expect(
+      contextInput(m.interpretation.mock.calls[0][0]).currentAgentId
+    ).toBeNull();
+  });
+  it("blocks a model-invented or foreign persona before generating its reply", async () => {
+    m.agents.mockResolvedValue([agent(41)]);
+    m.interpretation.mockImplementation(async messages =>
+      JSON.stringify({ ...interpretation(messages), virtualAgentId: 999 })
+    );
+    await expect(previewSari(automatic)).rejects.toThrow("virtual agent");
+    expect(m.reply).not.toHaveBeenCalled();
+  });
+  it.each(["role", "pause", "delete", "shift"])(
+    "rejects changed saved configuration during the analysis: %s",
+    async change => {
+      m.agents
+        .mockResolvedValueOnce([agent(41), agent(42)])
+        .mockResolvedValueOnce(
+          change === "delete"
+            ? [agent(41)]
+            : [
+                agent(41),
+                agent(
+                  42,
+                  change === "role"
+                    ? { role: "تخصص تغير" }
+                    : change === "pause"
+                      ? { isActive: 0 }
+                      : { shiftStart: "22:00", shiftEnd: "06:00" }
+                ),
+              ]
+        );
+      m.interpretation.mockImplementation(async messages =>
+        JSON.stringify({ ...interpretation(messages), virtualAgentId: 42 })
+      );
+      await expect(previewSari(automatic)).rejects.toThrow("personas changed");
+      expect(m.reply).not.toHaveBeenCalled();
+    }
+  );
+  it("rejects empty availability or conflicting manual/automatic routing before any paid call", async () => {
+    await expect(previewSari(automatic)).rejects.toThrow();
+    await expect(
+      previewSari({ ...automatic, persona: agent(41) })
+    ).rejects.toThrow("Invalid preview routing");
+    expect(m.call).not.toHaveBeenCalled();
+  });
   it("analyzes both speakers and the same tenant catalog before retrieval or reply", async () => {
     await previewSari(input);
     const context = contextInput(m.interpretation.mock.calls[0][0]);

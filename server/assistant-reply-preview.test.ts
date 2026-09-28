@@ -125,8 +125,74 @@ describe("embedded saved-settings preview", () => {
       mode: "automatic",
       time: "22:30",
       message: "help",
+      history: [],
+      currentAgentId: null,
+      historyTruncated: false,
     });
     expect(container.textContent).toContain("22:30");
+  });
+  it("continues automatic dialogue with both speakers and resets its local identity and history", async () => {
+    m.persona.mockResolvedValue({
+      ...reply,
+      response: "ما خبرة الفريق؟",
+      persona: {
+        id: 42,
+        name: "نورة",
+        role: "تدريب",
+        isActive: true,
+        reason: "context",
+      },
+    });
+    await render({ mode: "automatic", time: "10:00" });
+    expect(container.textContent).toContain(ar.personaPreviewUx.contextual);
+    await fill("قارن لي الدورات");
+    await send();
+    expect(container.querySelector("textarea")!.value).toBe("");
+    expect(container.textContent).toContain(ar.personaPreviewUx.matchContext);
+    await fill("مبتدئون");
+    await send();
+    expect(m.persona.mock.calls[1][0]).toMatchObject({
+      message: "مبتدئون",
+      currentAgentId: 42,
+      history: [
+        { role: "user", content: "قارن لي الدورات" },
+        { role: "assistant", content: "ما خبرة الفريق؟" },
+      ],
+    });
+    expect(container.querySelector("details")!.textContent).toContain(
+      "قارن لي الدورات"
+    );
+    await act(async () =>
+      [...container.querySelectorAll("button")]
+        .find(b => b.textContent === ar.personaPreviewUx.reset)!
+        .click()
+    );
+    expect(container.querySelector("section")).toBeNull();
+    expect(container.querySelector("details")).toBeNull();
+    await fill("تجربة ثانية");
+    await send();
+    expect(m.persona.mock.calls[2][0]).toMatchObject({
+      history: [],
+      currentAgentId: null,
+      historyTruncated: false,
+    });
+  });
+  it("does not append failed automatic requests to the next context and keeps previous dialogue visible", async () => {
+    await render({ mode: "automatic", time: "10:00" });
+    await fill("سؤال أول");
+    await send();
+    m.persona.mockRejectedValueOnce(Error("provider unavailable"));
+    await fill("سؤال فشل");
+    await send();
+    expect(container.querySelector("details")!.textContent).toContain(
+      "سؤال أول"
+    );
+    expect(container.querySelector("textarea")!.value).toBe("سؤال فشل");
+    await send();
+    expect(m.persona.mock.calls[2][0].history).toEqual(
+      m.persona.mock.calls[1][0].history
+    );
+    expect(m.persona.mock.calls[2][0].history).toHaveLength(2);
   });
   it("locks synchronous duplicate clicks until completion and informs the containing dialog", async () => {
     let resolve!: (value: typeof reply) => void;
@@ -188,28 +254,24 @@ describe("embedded saved-settings preview", () => {
       { shiftKey: true },
     ])
       await act(async () => {
-        container
-          .querySelector("textarea")!
-          .dispatchEvent(
-            new KeyboardEvent("keydown", {
-              key: "Enter",
-              ...init,
-              bubbles: true,
-              cancelable: true,
-            })
-          );
-      });
-    expect(m.quick).not.toHaveBeenCalled();
-    await act(async () => {
-      container
-        .querySelector("textarea")!
-        .dispatchEvent(
+        container.querySelector("textarea")!.dispatchEvent(
           new KeyboardEvent("keydown", {
             key: "Enter",
+            ...init,
             bubbles: true,
             cancelable: true,
           })
         );
+      });
+    expect(m.quick).not.toHaveBeenCalled();
+    await act(async () => {
+      container.querySelector("textarea")!.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     });
     expect(m.quick).toHaveBeenCalledTimes(1);
   });

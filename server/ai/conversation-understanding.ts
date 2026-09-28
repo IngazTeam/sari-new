@@ -204,6 +204,12 @@ const previewContextSchema = z.object({
   catalog: z.array(z.object({
     id: z.number().int().positive(), name: z.string().min(1).max(255), provider: z.string().min(1).max(32),
   }).strict()).max(200).default([]),
+  // Server-owned persona candidates. The public preview endpoint cannot supply this list.
+  agents: z.array(z.object({
+    id: z.number().int().positive(), name: z.string().min(1).max(100), role: z.string().min(1).max(100),
+    department: z.string().max(100).nullable(), expertise: z.string().max(1000),
+  }).strict()).max(50).optional(),
+  currentAgentId: z.number().int().positive().nullable().optional(),
 }).strict();
 export type PreviewUnderstandingOptions = z.input<typeof previewContextSchema>;
 
@@ -220,6 +226,7 @@ export async function understandPreview(merchantId: number, message: string, opt
       .map((m, index) => ({ ...m, id: index + 1 }));
     const input: UnderstandingInput = {
       mode: 'preview', messages, catalog: context.catalog, targets: [], currentMessageId: messages.length,
+      ...(context.agents ? { agents: context.agents, currentAgentId: context.agents.some(a => a.id === context.currentAgentId) ? context.currentAgentId : null } : {}),
     };
     const raw = await callGPT4(understandingMessages(input), {
       merchantId, userId: context.userId, taskType: 'sari.customer.intent', model: settings.model || undefined,

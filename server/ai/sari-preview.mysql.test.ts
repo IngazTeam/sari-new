@@ -256,5 +256,88 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).rejects.toMatchObject({ code: "CONFLICT" });
       expect(mocks.call).not.toHaveBeenCalled();
     });
+    it("selects only the owned available SQL persona without changing a live conversation or business state", async () => {
+      const createAgent = async (merchantId: number, name: string) =>
+        Number(
+          (
+            await query(
+              "INSERT INTO virtual_agents(merchant_id,name,role,personality_prompt) VALUES (?,?,'مبيعات','شرح مناسب للاحتياج')",
+              [merchantId, name]
+            )
+          ).insertId
+        );
+      const ownId = await createAgent(owner.merchantId, "نورة"),
+        foreignId = await createAgent(other.merchantId, "خاصة بتيننت آخر");
+      const conv = await query(
+        "INSERT INTO conversations(merchantId,customerPhone,status,current_agent_id) VALUES (?,'966500000077','active',NULL)",
+        [owner.merchantId]
+      );
+      const before = await businessState(owner.merchantId),
+        generate = mocks.call.getMockImplementation()!;
+      mocks.call.mockImplementation(async (messages, options) => {
+        const raw = await generate(messages, options);
+        return options.taskType === "sari.customer.intent"
+          ? JSON.stringify({ ...JSON.parse(raw), virtualAgentId: ownId })
+          : raw;
+      });
+      const result = await previewSari({
+        merchantId: owner.merchantId,
+        userId: owner.userId,
+        message: "اشرح الخيارات",
+        history: [],
+        historyTruncated: false,
+        automaticPersona: { time: "10:00", currentAgentId: foreignId },
+      });
+      expect(result.persona).toMatchObject({ id: ownId, reason: "context" });
+      const context = JSON.parse(mocks.call.mock.calls[0][0][1].content);
+      expect(context.agents.map((a: any) => a.id)).toEqual([ownId]);
+      expect(context.currentAgentId).toBeNull();
+      expect(JSON.stringify(mocks.call.mock.calls)).not.toContain(
+        "خاصة بتيننت آخر"
+      );
+      expect(await businessState(owner.merchantId)).toEqual(before);
+      expect(
+        (
+          await query("SELECT current_agent_id FROM conversations WHERE id=?", [
+            conv.insertId,
+          ])
+        )[0].current_agent_id
+      ).toBeNull();
+    });
+    it("rejects a real saved specialty change during analysis before issuing a generated reply", async () => {
+      const id = Number(
+        (
+          await query(
+            "INSERT INTO virtual_agents(merchant_id,name,role,personality_prompt) VALUES (?,'نورة','تدريب','مقارنة الدورات')",
+            [owner.merchantId]
+          )
+        ).insertId
+      );
+      const generate = mocks.call.getMockImplementation()!;
+      mocks.call.mockImplementation(async (messages, options) => {
+        const raw = await generate(messages, options);
+        if (options.taskType === "sari.customer.intent") {
+          await query("UPDATE virtual_agents SET role='تخصص جديد' WHERE id=?", [
+            id,
+          ]);
+          return JSON.stringify({ ...JSON.parse(raw), virtualAgentId: id });
+        }
+        return raw;
+      });
+      await expect(
+        previewSari({
+          merchantId: owner.merchantId,
+          userId: owner.userId,
+          message: "اشرح الخيارات",
+          history: [],
+          historyTruncated: false,
+          automaticPersona: { time: "10:00" },
+        })
+      ).rejects.toThrow("personas changed");
+      expect(mocks.call).toHaveBeenCalledOnce();
+      expect(
+        (await businessState(owner.merchantId)).ai_conversation_understanding
+      ).toBe(0);
+    });
   }
 );

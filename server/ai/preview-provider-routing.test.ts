@@ -47,6 +47,9 @@ function output(messages: any[]) {
     targetProvider: "none",
     productIds: [],
     sessionIndex: null,
+    ...(input.agents
+      ? { virtualAgentId: input.agents.at(-1)?.id ?? null }
+      : {}),
     requestKind: "ordinary",
     sentiment: "neutral",
     topicChanged: false,
@@ -93,6 +96,60 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("preview central provider transport and non-executing boundaries (fake transports)", () => {
+  it.each(["openai", "zahypi"])(
+    "carries tenant specialties through the central %s adapter while preserving the non-executing scope",
+    async provider => {
+      mocks.runtime.mockResolvedValue({
+        enabled: true,
+        provider,
+        model: "central-model",
+      });
+      const context = await understandPreview(
+        71,
+        "لا أريد الفوترة، قارن الدورات",
+        {
+          userId: 7,
+          history: [
+            {
+              role: "assistant",
+              content: "انتهينا من الفاتورة، ماذا تحتاج بعدها؟",
+            },
+          ],
+          agents: [
+            {
+              id: 42,
+              name: "نورة",
+              role: "التدريب",
+              department: null,
+              expertise: "مقارنة الدورات",
+            },
+          ],
+          currentAgentId: 999,
+        }
+      );
+      expect(context.analysis.virtualAgentId).toBe(42);
+      expect(context.mode).toBe("preview");
+      const sent =
+        provider === "zahypi"
+          ? mocks.zahy.mock.calls[0][0]
+          : JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string)
+              .messages;
+      expect(JSON.parse(sent[1].content)).toMatchObject({
+        agents: [{ id: 42 }],
+        currentAgentId: null,
+      });
+      await withConversationUnderstanding(context, async () => {
+        expect(
+          semanticIdentityMatches({
+            merchantId: 71,
+            conversationId: 5,
+            incomingMessageId: 7,
+          })
+        ).toBe(false);
+        expect(contextualHandoffRequested(context.message)).toBe(false);
+      });
+    }
+  );
   it("uses the central OpenAI model and budget for each tenant, never a tenant-selected override", async () => {
     for (const merchantId of [71, 72])
       await understandPreview(merchantId, "نعم", {

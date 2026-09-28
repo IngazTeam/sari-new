@@ -48,7 +48,7 @@ import {
 import {
   agentLocalTime,
   moveAgentIds,
-  selectVirtualAgent,
+  isAgentOnShift,
 } from "@shared/virtual-agent-routing";
 
 export default function VirtualTeamPage() {
@@ -122,9 +122,13 @@ export default function VirtualTeamPage() {
   const busy = create.isPending || update.isPending;
   const agents = query.data || [];
   const validRoutingTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime);
-  const routingPreview = validRoutingTime
-    ? selectVirtualAgent(agents, routingMessage, routingTime)
-    : null;
+  const routingAvailable = validRoutingTime
+    ? agents.filter(
+        agent =>
+          agent.isActive &&
+          isAgentOnShift(agent.shiftStart, agent.shiftEnd, routingTime)
+      ).length
+    : 0;
   function edit(agent?: Agent) {
     setEditing(agent?.id ?? null);
     setKeywords("");
@@ -559,26 +563,17 @@ export default function VirtualTeamPage() {
             </div>
           </div>
           <p role="status" className="rounded-xl bg-muted p-4">
-            {routingPreview ? (
-              <>
-                <strong>{routingPreview.agent.name}</strong> ·{" "}
-                {t(
-                  routingPreview.reason === "keyword"
-                    ? "virtualTeamUx.matchKeyword"
-                    : routingPreview.reason === "default"
-                      ? "virtualTeamUx.matchDefault"
-                      : "virtualTeamUx.matchOrder"
-                )}
-              </>
-            ) : (
-              t("virtualTeamUx.noAvailablePersona")
-            )}
+            {routingAvailable
+              ? t("personaPreviewUx.availableCount", {
+                  count: routingAvailable,
+                })
+              : t("virtualTeamUx.noAvailablePersona")}
           </p>
           <Button
             type="button"
             className="min-h-11"
             disabled={
-              !routingPreview ||
+              !routingAvailable ||
               !routingMessage.trim() ||
               !/^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime)
             }

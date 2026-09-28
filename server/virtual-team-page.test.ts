@@ -133,6 +133,32 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("rendered virtual team workflow", () => {
+  it("shows availability only before AI and opens contextual routing without locally predicting an agent", async () => {
+    m.data.push({
+      ...m.data[0],
+      id: 22,
+      name: "محاسب خاص",
+      isDefault: 0,
+      triggerKeywords: '["محاسب"]',
+    });
+    await render();
+    await fill("routing-message", "لا أريد محاسب");
+    await fill("routing-time", "10:00");
+    const status = document.querySelector('[role="status"]')!;
+    expect(status.textContent).toContain("2");
+    expect(status.textContent).not.toContain("محاسب خاص");
+    expect(m.preview).not.toHaveBeenCalled();
+    await click(ar.personaPreviewUx.testRouting);
+    await click(ar.sariPlayground.ask);
+    expect(m.preview).toHaveBeenCalledWith({
+      mode: "automatic",
+      time: "10:00",
+      message: "لا أريد محاسب",
+      history: [],
+      currentAgentId: null,
+      historyTruncated: false,
+    });
+  });
   it("confirms dismissal of edited identity and keeps the draft when editing continues", async () => {
     await clickAfterRender(ar.virtualTeamUx.new);
     await fill("agent-name", "مسودة");

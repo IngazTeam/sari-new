@@ -1,0 +1,352 @@
+{
+  "recordedAt": "2026-09-28T20:40:00.052Z",
+  "baseHead": "91d4a7a59cd04dd07431a5ca7989ffdb5b112c63",
+  "branch": "main",
+  "scope": "Automatic persona preview shares contextual specialty selection and bounded both-speaker dialogue; no production business actions.",
+  "sourceSha256": {
+    "shared/persona-preview.ts": "a057531e1624d04f89f16552bc9106e36bbb4faa58611fb9d13648310b1cbc98",
+    "server/ai/contextual-agent-routing.ts": "7e649d82f445275ff13004311075d99537506cd405598dee511da4c6d3aae7eb",
+    "server/ai/conversation-understanding.ts": "947ac504f41981ece45a905f4103e7d223d0975986fc75a18fe91bc08c7febbf",
+    "server/ai/sari-preview.ts": "ef6504cbd83ec591ac3130a88f99f27e8848aecd978811f79217fed4e42ce541",
+    "server/routers-persona-preview.ts": "0d24d8bf179771326ca9245794e28303bbcac85ee36bf85080eb8568814fe4a3",
+    "client/src/components/merchant/AssistantReplyPreview.tsx": "2d0a69c58d244d5e31139ab5418a7af0f83c587d5c3ae99b4d96d972336cad15",
+    "client/src/pages/merchant/VirtualTeamPage.tsx": "3558891e2e938823f6841c7c1839e5d6c4959ffd3342ca74ab48a2b274d2e62c",
+    "client/src/locales/ar.json": "196528b6a82113a6e91a5161ed80ccf9aa3e7aeff8215df4dd5426bc7deb1ff8",
+    "client/src/locales/en.json": "6780000fbe5a673cf2b759e36adcad47de106e94aac603d0011f86af2eeae4dd",
+    "server/ai/sari-preview.test.ts": "1cd67b60e74e8f92d5a730c8cecb51903413d88aebea519340e1e1df01d4ea9a",
+    "server/ai/sari-preview.mysql.test.ts": "cd42dd7b25daaa60db8d34200a84383cc65ccce5c69e66243fdacda798b41bef",
+    "server/ai/preview-provider-routing.test.ts": "f6b80bd8bfbf0e15b7325980ba771b152c4d9c3c8c357f48e4d803c3a0324de6",
+    "server/persona-preview.test.ts": "6c52b4dc781e79ce98e1833dd82887be4ad9e72bb0c7cf70c7f9be48ad700295",
+    "server/assistant-reply-preview.test.ts": "fdc485bd39fa310ed3d921ede2e94a52d599e285767c7dea37dd37cf61489c68",
+    "server/virtual-team-page.test.ts": "8208f3fd619ee37d4ecce239cb2c5d67d43bad7733dd5fdd9b40cbeadcc763a9",
+    "server/persona-preview-history.test.ts": "de1f1f2887bd86d65e9346743b5b554655426bffd389d54df6a6dfd67b952aa1"
+  },
+  "verification": {
+    "tests": 681,
+    "testFiles": 34,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "file": "tests.json",
+        "sha256": "f99372c09322c65e103ffd92307f559ecedbce6e5947d511d71ab310b6ee4957",
+        "passed": 637,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai-settings-provider-routing.test.ts",
+            "passed": 10
+          },
+          {
+            "path": "server/assistant-reply-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/bot-audit-pentest.test.ts",
+            "passed": 93
+          },
+          {
+            "path": "server/byaan-conversation-routing.test.ts",
+            "passed": 39
+          },
+          {
+            "path": "server/merchant-persona-routing.test.ts",
+            "passed": 17
+          },
+          {
+            "path": "server/persona-preview-history.test.ts",
+            "passed": 16
+          },
+          {
+            "path": "server/persona-preview.test.ts",
+            "passed": 24
+          },
+          {
+            "path": "server/remediation-regression.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/sales-hardening-pentest.test.ts",
+            "passed": 34
+          },
+          {
+            "path": "server/sari-quick-preview.test.ts",
+            "passed": 12
+          },
+          {
+            "path": "server/virtual-team-page.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/budget-boundaries.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/contextual-agent-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/contextual-generation.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/contextual-reply-routing.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/conversation-understanding-evaluation.test.ts",
+            "passed": 18
+          },
+          {
+            "path": "server/ai/conversation-understanding.test.ts",
+            "passed": 20
+          },
+          {
+            "path": "server/ai/openai-zahypi.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/preview-prompt.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/preview-provider-routing.test.ts",
+            "passed": 8
+          },
+          {
+            "path": "server/ai/sales-brain-decisions.test.ts",
+            "passed": 22
+          },
+          {
+            "path": "server/ai/sales-reply-prompt.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/sales-reply-transport.test.ts",
+            "passed": 6
+          },
+          {
+            "path": "server/ai/sales-turn-policy.test.ts",
+            "passed": 15
+          },
+          {
+            "path": "server/ai/sari-preview.test.ts",
+            "passed": 42
+          },
+          {
+            "path": "server/ai/task-catalog.test.ts",
+            "passed": 9
+          },
+          {
+            "path": "server/ai/transactional-truth.test.ts",
+            "passed": 11
+          },
+          {
+            "path": "server/ai/zahypi-callsite-governance.test.ts",
+            "passed": 7
+          },
+          {
+            "path": "server/ai/zahypi-client.test.ts",
+            "passed": 103
+          },
+          {
+            "path": "server/ai/zahypi-context-propagation.test.ts",
+            "passed": 14
+          },
+          {
+            "path": "server/ai/zahypi-runtime-config.test.ts",
+            "passed": 11
+          }
+        ]
+      },
+      {
+        "file": "mysql-tests.json",
+        "sha256": "22bed3887ef748d57662726c63bbdd47ee6e7e037e2f9b24c536c12591343b56",
+        "passed": 44,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/ai/conversation-understanding.mysql.test.ts",
+            "passed": 37
+          },
+          {
+            "path": "server/ai/persona-context.mysql.test.ts",
+            "passed": 2
+          },
+          {
+            "path": "server/ai/sari-preview.mysql.test.ts",
+            "passed": 5
+          }
+        ]
+      },
+      {
+        "file": "copy-tests.json",
+        "sha256": "4cf09307d74b3edac5028824809ecf5256dbfff5ae08bd74d90ad59dfd58833b",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "files": [
+          {
+            "path": "server/persona-preview-history.test.ts",
+            "passed": 16
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "name": "regression",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/ai/contextual-agent-routing.test.ts",
+          "server/ai/contextual-generation.test.ts",
+          "server/ai/sales-reply-prompt.test.ts",
+          "server/ai/sales-reply-transport.test.ts",
+          "server/ai/preview-prompt.test.ts",
+          "server/ai/preview-provider-routing.test.ts",
+          "server/ai/sari-preview.test.ts",
+          "server/ai/contextual-reply-routing.test.ts",
+          "server/ai/conversation-understanding.test.ts",
+          "server/ai/conversation-understanding-evaluation.test.ts",
+          "server/ai/sales-turn-policy.test.ts",
+          "server/ai/sales-brain-decisions.test.ts",
+          "server/ai/task-catalog.test.ts",
+          "server/ai/budget-boundaries.test.ts",
+          "server/ai/openai-zahypi.test.ts",
+          "server/ai/zahypi-client.test.ts",
+          "server/ai/zahypi-context-propagation.test.ts",
+          "server/ai/zahypi-callsite-governance.test.ts",
+          "server/ai/zahypi-runtime-config.test.ts",
+          "server/ai-settings-provider-routing.test.ts",
+          "server/ai/transactional-truth.test.ts",
+          "server/byaan-conversation-routing.test.ts",
+          "server/sales-hardening-pentest.test.ts",
+          "server/bot-audit-pentest.test.ts",
+          "server/remediation-regression.test.ts",
+          "server/merchant-persona-routing.test.ts",
+          "server/virtual-team-page.test.ts",
+          "server/assistant-reply-preview.test.ts",
+          "server/persona-preview.test.ts",
+          "server/persona-preview-history.test.ts",
+          "server/sari-quick-preview.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\persona-context-checks\\tests.json"
+        ]
+      },
+      {
+        "name": "mysql",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "--with-database",
+          "server/ai/conversation-understanding.mysql.test.ts",
+          "server/ai/sari-preview.mysql.test.ts",
+          "server/ai/persona-context.mysql.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\persona-context-checks\\mysql-tests.json"
+        ]
+      },
+      {
+        "name": "types",
+        "exitCode": 0,
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit"
+        ]
+      },
+      {
+        "name": "translations",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/check-translation-keys.ts"
+        ]
+      },
+      {
+        "name": "eval-dry-run",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/testing/evaluate-conversation-understanding.ts"
+        ]
+      },
+      {
+        "name": "translations",
+        "exitCode": 0,
+        "args": [
+          "--import",
+          "tsx",
+          "scripts/check-translation-keys.ts"
+        ]
+      },
+      {
+        "name": "copy-tests",
+        "exitCode": 0,
+        "args": [
+          "scripts/testing/run-isolated.mjs",
+          "server/persona-preview-history.test.ts",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\persona-context-checks\\copy-tests.json"
+        ]
+      },
+      {
+        "name": "build",
+        "exitCode": 0,
+        "args": [
+          ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+          "run",
+          "build"
+        ]
+      }
+    ],
+    "translations": {
+      "advertisedLocale": "ar",
+      "callsChecked": 8142,
+      "dynamicKeysChecked": 346,
+      "unresolvedDynamicCalls": [],
+      "missing": [],
+      "interpolationErrors": []
+    },
+    "liveSuite": {
+      "cases": 34,
+      "mode": "dry-run"
+    },
+    "liveReadiness": {
+      "connected": false,
+      "code": "ER_ACCESS_DENIED_ERROR"
+    },
+    "build": "passed",
+    "buildWarnings": "Existing large-chunk warnings; main entry bundle budget passed",
+    "ui": "Rendered React/jsdom behavioral checks. No physical iPhone visual review.",
+    "security": "Local tenant, identity, contract, history, configuration-race and SQL state tests; synthetic providers; not a full production penetration test."
+  },
+  "completed": [
+    "Automatic preview removes local keyword predictions",
+    "Context-selected specialty and continuity share the live selector",
+    "Available candidates are read from the tenant database and rechecked after analysis",
+    "Local bounded test history, retry-safe UI and reset",
+    "SQL verifies no mutation of live agent assignment or business rows"
+  ],
+  "limitations": [
+    "Live provider evaluation blocked by application database access denial",
+    "Group routing and requested follow-up interpretation remain to be unified",
+    "Synthetic AI outputs verify plumbing and boundaries, not persuasion quality or conversion"
+  ],
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "migration": "none for this change",
+    "rollout": "Deploy client and server together; existing production runbook unchanged"
+  }
+}
