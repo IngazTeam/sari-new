@@ -1,4 +1,5 @@
 import { catalogVisibleSql } from '../integrations/catalog-scope';
+import { assertIntakeCheckpoint } from '../knowledge/intake-execution';
 import { lexicalRelevance, relevantPassages, sectionContentHash } from '../knowledge/retrieval';
 import { formatProductPrice } from '../../shared/product-money';
 /**
@@ -46,6 +47,7 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
  * Uses text-embedding-3-small ($0.02/M tokens — extremely cheap).
  */
 export async function generateEmbedding(text: string, merchantId?: number): Promise<Float32Array | null> {
+  await assertIntakeCheckpoint(merchantId);
   try {
     const route = await resolveAuxiliaryAiRoute('embedding');
 

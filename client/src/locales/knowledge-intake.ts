@@ -1,4 +1,12 @@
 export const knowledgeIntakeAr = {
+  receiptRecovered: 'أُغلقت المحاولة — راجع المعرفة المحفوظة',
+  recoveryWaiting: 'المعالجة مستمرة أو لم تنتهِ مهلة التحقق بعد. يمكنك التحقق من النتيجة دون إعادة الإضافة.',
+  recoveryLegacy: 'هذا سجل قديم لا يدعم الإغلاق الآمن من اللوحة. اطلب مراجعة الدعم باستخدام رقم الإضافة.',
+  recoveryAvailable: 'انتهت مهلة المعالجة. يمكنك إغلاق هذه المحاولة للمراجعة؛ قد تكون بعض المعرفة حُفظت بالفعل.',
+  recoveryAcknowledge: 'أفهم أن الإغلاق لا يحذف المعرفة المحفوظة ولا يعيد التحليل. سأراجع الأقسام والتعارضات قبل إضافة المحتوى مجددًا.',
+  recoveryAction: 'إغلاق المحاولة المنقطعة للمراجعة', recoverySaving: 'جارٍ التحقق والإغلاق…',
+  recoveryError: 'تعذّر تأكيد الإغلاق أو تغيرت حالة المعالجة. تحقق من النتيجة المحفوظة قبل أي خطوة أخرى.',
+  recoveryDone: 'أُغلقت المحاولة للمراجعة، ومُنع استمرارها في تعديل المعرفة. لم يُحذف المحتوى ولم يُعَد التحليل.',
   receiptDetails: 'تفاصيل الإضافة',
   receiptEmpty: 'لم تُستخرج أقسام', receiptUncertain: 'نتيجة المعالجة غير محسومة', merged: 'أقسام مدمجة',
   receiptId: 'رقم الإضافة', receiptProcessing: 'الإضافة قيد المعالجة', receiptRemoved: 'حُذف سجل الملف؛ لن نعيد إنشاءه بهذا الطلب',
@@ -25,6 +33,14 @@ export const knowledgeIntakeAr = {
 };
 export type KnowledgeIntakeCopy = { [K in keyof typeof knowledgeIntakeAr]: string };
 export const knowledgeIntakeEn: KnowledgeIntakeCopy = {
+  receiptRecovered: 'Attempt closed — review saved knowledge',
+  recoveryWaiting: 'Processing is active or its verification window has not expired. Check the saved result without adding it again.',
+  recoveryLegacy: 'This older record cannot be safely closed from the dashboard. Ask support to review the intake reference.',
+  recoveryAvailable: 'The processing lease expired. You can close this attempt for review; some knowledge may already have been saved.',
+  recoveryAcknowledge: 'I understand that closing does not delete saved knowledge or rerun analysis. I will review sections and conflicts before adding the content again.',
+  recoveryAction: 'Close interrupted attempt for review', recoverySaving: 'Checking and closing…',
+  recoveryError: 'Closure could not be confirmed or processing changed. Check the saved result before taking another step.',
+  recoveryDone: 'The attempt is closed for review and cannot continue changing knowledge. Content was not deleted and analysis was not restarted.',
   receiptDetails: 'Intake details',
   receiptEmpty: 'No sections extracted', receiptUncertain: 'Processing outcome unresolved', merged: 'Merged sections',
   receiptId: 'Intake reference', receiptProcessing: 'Intake is processing', receiptRemoved: 'The file record was deleted; this request will not recreate it',

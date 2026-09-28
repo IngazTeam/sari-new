@@ -7,10 +7,17 @@ export function createKnowledgeLibrary(host: { esc: (s: unknown) => string; refr
     text: i === 13 ? '' : 'نص تجريبي للفحص: الشحن خلال ثلاثة أيام عمل. '.repeat(110) + 'نهاية النص المحفوظ.',
   }));
   let search = '', draft = '', status = 'all', page = 1, state = 'success', selected = 0, textPage = 1;
-  let receiptState = 'partial', receiptChecked = false;
-  const receiptLabels = { partial: 'حُفظت المعرفة ولم تكتمل الفهرسة', completed: 'حُفظت نتيجة المعالجة', processing: 'الإضافة قيد المعالجة', uncertain: 'النتيجة غير محسومة', empty: 'لم تُستخرج أقسام' };
+  let receiptState = 'partial', receiptChecked = false, recoveryAcknowledged = false;
+  const receiptLabels = { partial: 'حُفظت المعرفة ولم تكتمل الفهرسة', completed: 'حُفظت نتيجة المعالجة', processing: 'الإضافة قيد المعالجة', interrupted: 'إضافة منقطعة قابلة للإغلاق', legacy: 'سجل قديم يحتاج مراجعة تشغيلية', recovered: 'أُغلقت الإضافة للمراجعة', uncertain: 'النتيجة غير محسومة', empty: 'لم تُستخرج أقسام' };
+  function recovery() {
+    if (receiptState === 'processing') return '<p>المعالجة ما زالت فعّالة. تحقق من النتيجة لاحقًا؛ لا يمكن إغلاقها الآن.</p>';
+    if (receiptState === 'legacy') return '<p>هذا سجل قديم. يلزم التحقق من توقف العملية بواسطة الدعم قبل إغلاقه بأمان.</p>';
+    if (receiptState === 'recovered') return '<p role="status">أُغلقت الإضافة للمراجعة ولن تواصل تغيير المعرفة. لم يُحذف المحتوى ولم يُعد التحليل. راجع الأقسام والتعارضات.</p>';
+    if (receiptState !== 'interrupted') return '';
+    return `<p>توقفت تحديثات المعالجة. يمكنك إغلاق الإضافة للمراجعة مع الاحتفاظ بما حُفظ.</p><label class="field"><span><input type="checkbox" data-kl-recovery-check ${recoveryAcknowledged ? 'checked' : ''}> أفهم أن الإغلاق لا يحذف المعرفة ولا يعيد التحليل، وسأراجع الأقسام والتعارضات قبل إضافة المحتوى مجددًا.</span></label>${button('إغلاق الإضافة المنقطعة للمراجعة', 'recover', !recoveryAcknowledged)}`;
+  }
   function receipt() {
-    return `<section class="bw-note" data-kl-receipt><h3>نتيجة الإضافة المحفوظة · مثال</h3><label class="field">محاكاة حالة الإضافة<select data-kl-receipt-state>${Object.entries(receiptLabels).map(([k,v]) => `<option value="${k}" ${k === receiptState ? 'selected' : ''}>${v}</option>`).join('')}</select></label><p role="status">${receiptLabels[receiptState]}</p><p style="overflow-wrap:anywhere">رقم الإضافة: 00000000-0000-4000-8000-000000000001</p><p>سجل الإضافة لا يثبت اعتماد النص كاملًا في الردود أو تحسن المبيعات.</p>${['partial', 'completed'].includes(receiptState) ? '<dl class="bw-cards"><div><dt>أقسام جديدة</dt><dd>3</dd></div><div><dt>أقسام محدثة</dt><dd>1</dd></div><div><dt>تعارضات</dt><dd>2</dd></div><div><dt>دون تغيير</dt><dd>0</dd></div></dl>' : '<p>راجع السجل والأقسام قبل إضافة المحتوى مجددًا. لا نكرر التحليل تلقائيًا.</p>'}${button('التحقق من النتيجة المحفوظة', 'receipt-refresh')}${receiptChecked ? '<p role="status">قُرئت نتيجة المثال فقط؛ لم يُشغّل تحليل جديد.</p>' : ''}</section>`;
+    return `<section class="bw-note" data-kl-receipt><h3>نتيجة الإضافة المحفوظة · مثال</h3><label class="field">محاكاة حالة الإضافة<select data-kl-receipt-state>${Object.entries(receiptLabels).map(([k,v]) => `<option value="${k}" ${k === receiptState ? 'selected' : ''}>${v}</option>`).join('')}</select></label><p role="status">${receiptLabels[receiptState]}</p><p style="overflow-wrap:anywhere">رقم الإضافة: 00000000-0000-4000-8000-000000000001</p><p>سجل الإضافة لا يثبت اعتماد النص كاملًا في الردود أو تحسن المبيعات.</p>${['partial', 'completed'].includes(receiptState) ? '<dl class="bw-cards"><div><dt>أقسام جديدة</dt><dd>3</dd></div><div><dt>أقسام محدثة</dt><dd>1</dd></div><div><dt>تعارضات</dt><dd>2</dd></div><div><dt>دون تغيير</dt><dd>0</dd></div></dl>' : '<p>راجع السجل والأقسام قبل إضافة المحتوى مجددًا. لا نكرر التحليل تلقائيًا.</p>'}${recovery()}${button('التحقق من النتيجة المحفوظة', 'receipt-refresh')}${receiptChecked ? '<p role="status">قُرئت نتيجة المثال فقط؛ لم يُشغّل تحليل جديد.</p>' : ''}</section>`;
   }
   const labels = { all: 'كل الحالات', completed: 'تم استخراج النص', failed: 'تعذر استخراج النص', pending: 'بانتظار الاستخراج', processing: 'جارٍ استخراج النص' };
   const button = (label: string, action: string, disabled = false, attrs = '') => `<button type="button" class="button" data-kl-action="${action}" ${disabled ? 'disabled' : ''} ${attrs}>${esc(label)}</button>`;
@@ -27,13 +34,15 @@ export function createKnowledgeLibrary(host: { esc: (s: unknown) => string; refr
   document.addEventListener('input', event => { const el = event.target as HTMLInputElement; if (el.hasAttribute('data-kl-search')) draft = el.value; });
   document.addEventListener('keydown', event => { if ((event.target as Element).hasAttribute('data-kl-search') && event.key === 'Enter') { event.preventDefault(); search = draft.trim(); page = 1; selected = 0; host.refresh(); } });
   document.addEventListener('change', event => { const el = event.target as HTMLSelectElement;
-    if (el.hasAttribute('data-kl-receipt-state')) { receiptState = el.value; receiptChecked = false; host.refresh(); }
+    if (el.hasAttribute('data-kl-receipt-state')) { receiptState = el.value; receiptChecked = false; recoveryAcknowledged = false; host.refresh(); }
+    if (el.hasAttribute('data-kl-recovery-check')) { recoveryAcknowledged = (event.target as HTMLInputElement).checked; host.refresh(); }
     if (el.hasAttribute('data-kl-status')) { status = el.value; page = 1; selected = 0; host.refresh(); }
     if (el.hasAttribute('data-kl-state')) { state = el.value; page = 1; selected = 0; host.refresh(); }
   });
   document.addEventListener('click', event => {
     const el = (event.target as Element).closest<HTMLButtonElement>('[data-kl-action]'); if (!el || el.disabled) return;
     const action = el.dataset.klAction;
+    if (action === 'recover') { if (receiptState === 'interrupted' && recoveryAcknowledged && host.owner()) { receiptState = 'recovered'; recoveryAcknowledged = false; host.refresh(); } return; }
     if (action === 'receipt-refresh') { receiptChecked = true; host.refresh(); return; }
     if (action === 'close') { const id = selected; selected = 0; host.refresh(); document.querySelector<HTMLButtonElement>(`[data-kl-id="${id}"]`)?.focus(); return; }
     if (action === 'read') { selected = Number(el.dataset.klId); textPage = 1; host.refresh(); document.querySelector<HTMLElement>('[data-kl-text]')?.focus(); return; }

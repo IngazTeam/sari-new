@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { merchants, sariResponseCache, sessionContexts } from '../../drizzle/schema';
 import { getDb, type SariDb } from '../db/connection';
 import { destroyMerchantSessions } from '../ai/session-context';
+import { assertIntakeTransaction } from './intake-execution';
 
 export type KnowledgeTransaction = Parameters<Parameters<SariDb['transaction']>[0]>[0];
 
@@ -21,6 +22,7 @@ export async function withKnowledgeTransaction<T>(merchantId: number, write: (tx
   const transact = () => database.transaction(async tx => {
     const merchant = await tx.select({ id: merchants.id }).from(merchants).where(eq(merchants.id, merchantId)).for('update');
     if (!merchant.length) throw new Error('Merchant not found');
+    await assertIntakeTransaction(tx, merchantId);
     const value = await write(tx);
     // Remove the cached answer text as well as its eligibility for use.
     await tx.delete(sariResponseCache).where(eq(sariResponseCache.merchantId, merchantId));

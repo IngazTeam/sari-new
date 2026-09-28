@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { merchantKnowledgeDocs as docs, knowledgeIntakeReceipts as receipts } from '../../drizzle/schema';
-import { receiptView } from './intake-receipt-store';
+import { receiptView, receiptColumns } from './intake-receipt-store';
 import { getDb } from '../db/connection';
 import { knowledgeLibraryInput, knowledgeTextInput, KNOWLEDGE_LIBRARY_PAGE_SIZE, KNOWLEDGE_TEXT_PAGE_SIZE } from '../../shared/knowledge-library';
 
@@ -45,7 +45,7 @@ export async function readKnowledgeDocument(merchantId: number, raw: unknown) {
   if (input.revision && input.revision !== row.revision) throw new TRPCError({ code: 'CONFLICT', message: 'Knowledge document changed' });
   const totalPages = Math.max(1, Math.ceil(row.characterCount / KNOWLEDGE_TEXT_PAGE_SIZE));
   if (input.page > totalPages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid document page' });
-  const [receipt] = row.intakeRequestId ? await db.select().from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
+  const [receipt] = row.intakeRequestId ? await db.select(receiptColumns).from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
   return { ...row, page: input.page, totalPages, receipt: receipt ? receiptView(receipt) : null };
 }
 

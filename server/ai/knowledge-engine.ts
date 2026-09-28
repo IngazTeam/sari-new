@@ -10,6 +10,7 @@
  */
 
 import { callGPT4 } from './openai';
+import { assertIntakeCheckpoint } from '../knowledge/intake-execution';
 import type { ChatMessage } from './openai';
 import {
   createSection,
@@ -62,6 +63,7 @@ export async function classifyContent(
   rawText: string,
   merchantContext: { businessName?: string; industry?: string }
 ): Promise<ClassifiedSection[]> {
+  await assertIntakeCheckpoint(merchantId);
   // Truncate very long content to stay within token limits (~100K chars ≈ 25K tokens)
   const content = rawText.substring(0, 100000);
 
@@ -167,6 +169,7 @@ export async function analyzeSalesIntelligence(
   sections: ClassifiedSection[],
   merchantContext: { businessName?: string; industry?: string }
 ): Promise<SalesIntelligence> {
+  await assertIntakeCheckpoint(merchantId);
   const sectionsText = sections
     .map(s => `[${s.sectionType}] ${s.title}: ${s.summary || s.content.substring(0, 300)}`)
     .join('\n');
@@ -246,6 +249,7 @@ export async function evolveKnowledge(
   const existingSections = await getSectionsByMerchantId(merchantId);
 
   for (const newSection of newSections) {
+    await assertIntakeCheckpoint(merchantId);
     // Find matching existing section by type + similarity
     const match = findBestMatch(newSection, existingSections);
 
@@ -423,6 +427,7 @@ async function decideEvolution(
   existing: KnowledgeSection,
   newSection: ClassifiedSection
 ): Promise<'unchanged' | 'evolve' | 'conflict'> {
+  await assertIntakeCheckpoint(merchantId);
   // Quick check: if content is very similar, skip AI call
   const similarity = textSimilarity(existing.content, newSection.content);
   if (similarity > 0.90) return 'unchanged';

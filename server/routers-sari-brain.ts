@@ -1,6 +1,6 @@
-import { getIntakeReceipt } from './knowledge/intake-receipt-store';
+import { getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
 import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
-import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
+import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
 import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
@@ -956,6 +956,13 @@ ${sanitizedContent}`
   getIntakeReceipt: permissionProcedure('bot_settings.manage').input(knowledgeReceiptInput).query(async ({ ctx, input }) => {
     try { return await getIntakeReceipt(ctx.merchantId, input.requestId); }
     catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge receipt is temporarily unavailable' }); }
+  }),
+  recoverIntakeReceipt: permissionProcedure('bot_settings.manage').input(knowledgeRecoveryInput).mutation(async ({ ctx, input }) => {
+    try { return await recoverIntake(ctx.merchantId, input.requestId); }
+    catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge intake recovery could not be confirmed' });
+    }
   }),
   ingestAnalyzedContent: permissionProcedure('bot_settings.manage')
     .input(knowledgeIngestInput)

@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
-const store = vi.hoisted(() => ({ reserve: vi.fn(), finish: vi.fn(), read: vi.fn() }));
-vi.mock('./knowledge/intake-receipt-store', () => ({ reserveIntake: store.reserve, finishIntake: store.finish, getIntakeReceipt: store.read }));
+import { TRPCError } from '@trpc/server';
+const store = vi.hoisted(() => ({ reserve: vi.fn(), finish: vi.fn(), read: vi.fn(), recover: vi.fn() }));
+vi.mock('./knowledge/intake-receipt-store', () => ({ reserveIntake: store.reserve, finishIntake: store.finish, getIntakeReceipt: store.read, recoverIntake: store.recover }));
 const api = vi.hoisted(() => ({ merchantId: 5000, merchant: vi.fn(), count: vi.fn(), doc: vi.fn(), faqs: vi.fn(), pool: vi.fn(), execute: vi.fn(), llm: vi.fn(), ingest: vi.fn(), embed: vi.fn(), createDoc: vi.fn(), invalidate: vi.fn() }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: vi.fn(async () => ({ merchantId: api.merchantId, role: 'owner' })) }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(), getMerchantById: api.merchant, getProductCountByMerchantId: api.count, getKnowledgeDocByMerchantId: api.doc, getExtractedFaqsByMerchantId: api.faqs, getPool: api.pool, createKnowledgeDoc: api.createDoc }));
@@ -19,7 +20,7 @@ beforeEach(() => { vi.clearAllMocks(); api.merchantId++; api.merchant.mockResolv
 const content = 'معلومة '.repeat(4284) + 'END_MARKER';
 beforeEach(() => {
   readiness.check.mockResolvedValue(true);
-  store.reserve.mockImplementation(async (_id, input, rateLimit) => { rateLimit(); return { created: true, receipt: { requestId: input.requestId, documentId: 44, state: 'processing', outcome: null } }; });
+  store.reserve.mockImplementation(async (merchantId, input, rateLimit) => { rateLimit(); return { created: true, execution: { merchantId, requestId: input.requestId, token: randomUUID() }, receipt: { requestId: input.requestId, documentId: 44, state: 'processing', outcome: null } }; });
   store.finish.mockImplementation(async (_id, requestId, state, outcome) => ({ requestId, documentId: 44, state, outcome }));
 });
 it('sends the accepted tail beyond 15k to analysis and the same full text to ingestion/source registration', async () => {
@@ -58,13 +59,18 @@ it('persists an uncertain result after a pipeline error without rerunning it', a
   api.ingest.mockRejectedValueOnce(Error('private provider failure after possible writes'));
   const requestId = randomUUID();
   expect(await caller().ingestAnalyzedContent({ requestId, content, contentType: 'document' })).toMatchObject({ state: 'uncertain', outcome: null });
-  expect(store.finish).toHaveBeenCalledWith(api.merchantId, requestId, 'uncertain', null);
+  expect(store.finish).toHaveBeenCalledWith(api.merchantId, requestId, 'uncertain', null, expect.objectContaining({ merchantId: api.merchantId, requestId }));
   expect(api.ingest).toHaveBeenCalledTimes(1);
 });
 it('persists an empty classification without claiming search readiness', async () => {
   api.ingest.mockResolvedValueOnce({ evolveResult: { added: 0, evolved: 0, conflicts: 0, unchanged: 0 } });
   expect(await caller().ingestAnalyzedContent({ requestId: randomUUID(), content, contentType: 'document' })).toMatchObject({ state: 'empty', outcome: { success: false, embeddingsReady: false } });
   expect(api.embed).not.toHaveBeenCalled();
+});
+it('does not log successful ingestion when recovery closed the attempt before completion', async () => {
+  store.finish.mockResolvedValueOnce({ state: 'uncertain', outcome: null, recoveredAt: '2026-09-29' });
+  expect(await caller().ingestAnalyzedContent({ requestId: randomUUID(), content, contentType: 'document' })).toMatchObject({ state: 'uncertain' });
+  expect(api.execute).not.toHaveBeenCalled();
 });
 it('reads the saved receipt without provider work and scopes it to the resolved tenant', async () => {
   const requestId = randomUUID(); store.read.mockResolvedValue({ requestId, state: 'processing' });
@@ -82,4 +88,23 @@ it('rejects an FAQ read failure after a successful website read', async () => {
 it('rejects missing database and activity errors instead of returning an empty history', async () => {
   api.pool.mockResolvedValue(null); await expect(caller().getSources()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
   await expect(caller().getActivityLog()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+});
+it('requires explicit recovery acknowledgement and a valid reference before touching the store', async () => {
+  for (const input of [{ requestId: randomUUID() }, { requestId: randomUUID(), acknowledged: false }, { requestId: 'invalid', acknowledged: true }]) {
+    await expect(caller().recoverIntakeReceipt(input as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  }
+  expect(store.recover).not.toHaveBeenCalled();
+});
+it('recovers only the resolved tenant and never starts analysis or ingestion', async () => {
+  const requestId = randomUUID(); store.recover.mockResolvedValue({ requestId, state: 'uncertain', recoveredAt: '2026-09-29' });
+  expect(await caller().recoverIntakeReceipt({ requestId, acknowledged: true, merchantId: 999 } as any)).toMatchObject({ state: 'uncertain', recoveredAt: '2026-09-29' });
+  expect(store.recover).toHaveBeenCalledWith(api.merchantId, requestId);
+  expect(api.ingest).not.toHaveBeenCalled(); expect(api.llm).not.toHaveBeenCalled(); expect(api.embed).not.toHaveBeenCalled();
+});
+it('preserves recovery conflicts and hides unexpected database details', async () => {
+  const input = { requestId: randomUUID(), acknowledged: true as const };
+  store.recover.mockRejectedValueOnce(new TRPCError({ code: 'CONFLICT', message: 'Still processing' }));
+  await expect(caller().recoverIntakeReceipt(input)).rejects.toMatchObject({ code: 'CONFLICT' });
+  store.recover.mockRejectedValueOnce(Error('private database details'));
+  await expect(caller().recoverIntakeReceipt(input)).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge intake recovery could not be confirmed' });
 });

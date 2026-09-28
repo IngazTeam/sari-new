@@ -86,6 +86,18 @@ it('distinguishes saved, partial, processing, unknown and empty intake outcomes 
 });
 const option = (s: string, v: string) =>
   set(`[data-bk-option="${s}"]`, v, "change");
+it('closes only an acknowledged interrupted example while retaining knowledge and avoiding provider work', () => {
+  sources(); node('[data-kl-action="read"]').click();
+  for (const state of ['processing', 'legacy']) {
+    set('[data-kl-receipt-state]', state, 'change'); expect(w.document.querySelector('[data-kl-action="recover"]')).toBeNull();
+  }
+  set('[data-kl-receipt-state]', 'interrupted', 'change');
+  expect(node('[data-kl-action="recover"]').disabled).toBe(true);
+  node('[data-kl-recovery-check]').click(); expect(node('[data-kl-action="recover"]').disabled).toBe(false);
+  const before = snapshot(); node('[data-kl-action="recover"]').click();
+  expect(node('[data-kl-receipt]').textContent).toContain('لم يُحذف المحتوى ولم يُعد التحليل');
+  expect(w.document.querySelector('[data-kl-action="recover"]')).toBeNull(); expect(snapshot()).toEqual(before);
+});
 const field = (s: string, v: string) => set(`[data-bk-field="${s}"]`, v);
 const check = () => {
   const e = node("[data-bk-check]");

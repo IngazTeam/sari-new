@@ -1,0 +1,9 @@
+{
+  "database": "sari_pages_test",
+  "syntheticFixture": true,
+  "state": "uncertain",
+  "closedForReview": true,
+  "archiveUnchanged": true,
+  "completionNotClaimed": true,
+  "recoveryAuditCount": 1
+}

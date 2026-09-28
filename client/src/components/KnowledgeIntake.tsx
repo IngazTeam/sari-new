@@ -145,6 +145,6 @@ export function KnowledgeIntake() {
       {result && <KnowledgeReceiptView receipt={result} onRefresh={() => void readReceipt()} busy={checking} />}
       {uncertain && <div role="alert" className="space-y-3 rounded-xl border p-4 text-sm leading-7"><p>{rejected ? t('merchantUx.knowledgeIntake.receiptRejected') : copy('uncertain')}</p>{!rejected && <><p>{t('merchantUx.knowledgeIntake.receiptId')}: <bdi className="break-all">{requestId.current}</bdi></p><Button variant="outline" disabled={checking} onClick={() => void readReceipt()}>{t('merchantUx.knowledgeIntake.receiptRefresh')}</Button></>}{rejected && <Button variant="outline" onClick={() => { requestId.current = null; submitting.current = false; setUncertain(false); setRejected(false); }}>{t('merchantUx.knowledgeIntake.receiptEdit')}</Button>}</div>}
       {receiptError && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.receiptError')}</p>}
-      {result && result.state !== 'processing' && result.state !== 'uncertain' && <Button variant="outline" disabled={checking} onClick={reset}>{copy('newContent')}</Button>}
+      {result && result.state !== 'processing' && (result.state !== 'uncertain' || result.recoveredAt) && <Button variant="outline" disabled={checking} onClick={reset}>{copy('newContent')}</Button>}
     </CardContent></Card>;
 }

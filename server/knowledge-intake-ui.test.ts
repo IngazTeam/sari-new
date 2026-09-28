@@ -40,6 +40,16 @@ it('keeps an unavailable receipt distinct from a successful or safe-to-retry req
   api.readReceipt.mockResolvedValue(null); await click(copy.receiptRefresh);
   expect(container.textContent).toContain(copy.receiptError); expect(button(copy.save)).toBeUndefined(); expect(button(copy.newContent)).toBeUndefined();
 });
+it('permits a fresh source only after reading confirmed closure without resubmitting the interrupted content', async () => {
+  await render(); await analyze(); await reviewed(); await click(copy.save);
+  const requestId = api.ingest.mock.calls[0][0].requestId;
+  const receipt = { requestId, documentId: 44, state: 'uncertain', outcome: null, recoveredAt: null };
+  await act(async () => api.ingestCallbacks.onSuccess(receipt)); expect(button(copy.newContent)).toBeUndefined();
+  api.readReceipt.mockResolvedValue({ ...receipt, recoveredAt: '2026-09-29' }); await click(copy.receiptRefresh);
+  expect(container.textContent).toContain(copy.recoveryDone); await click(copy.newContent);
+  expect((container.querySelector('#knowledge-content') as HTMLTextAreaElement).value).toBe('');
+  expect(button(copy.analyze).disabled).toBe(false); expect(api.ingest).toHaveBeenCalledTimes(1);
+});
 it('preserves input after a confirmed preflight rejection and allows returning to it', async () => {
   await render(); await analyze(); await reviewed(); await click(copy.save);
   await act(async () => api.ingestCallbacks.onError({ data: { code: 'TOO_MANY_REQUESTS' } }));

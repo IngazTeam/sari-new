@@ -12,6 +12,7 @@ import { removeKnowledgeSections } from '../knowledge/source-lifecycle';
 import { withKnowledgeTransaction } from '../knowledge/transaction';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
+import { runKnowledgeWrite } from '../knowledge/intake-execution';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -197,7 +198,7 @@ export async function createSection(data: InsertKnowledgeSection): Promise<numbe
   const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
-  const [result] = await pool.execute(
+  const [result] = await runKnowledgeWrite(pool, data.merchantId, connection => connection.execute(
     `INSERT INTO knowledge_sections 
      (merchant_id, parent_id, section_type, title, content, summary, source, source_url, 
       confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, valid_until, provenance)
@@ -221,7 +222,7 @@ export async function createSection(data: InsertKnowledgeSection): Promise<numbe
       data.validUntil ?? null,
       data.provenance ? JSON.stringify(data.provenance) : null,
     ]
-  );
+  ));
   return (result as any).insertId;
 }
 
@@ -277,21 +278,21 @@ export async function updateSection(
   }
 
   values.push(sectionId, merchantId);
-  await pool.execute(
+  await runKnowledgeWrite(pool, merchantId, connection => connection.execute(
     `UPDATE knowledge_sections SET ${updates.join(', ')} WHERE id = ? AND merchant_id = ?`,
     values
-  );
+  ));
 }
 
 /** Publish an embedding only for the exact text read before the network request. */
 export async function storeSectionEmbedding(section: KnowledgeSection, merchantId: number, embedding: Buffer): Promise<boolean> {
   const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
-  const [result] = await pool.execute<any>(
+  const [result] = await runKnowledgeWrite(pool, merchantId, connection => connection.execute<any>(
     `UPDATE knowledge_sections SET embedding = ?, embedding_content_hash = ?
      WHERE id = ? AND merchant_id = ? AND BINARY title = BINARY ? AND BINARY content = BINARY ?
        AND BINARY summary <=> BINARY ?`,
-    [embedding, sectionContentHash(section), section.id, merchantId, section.title, section.content, section.summary ?? null]);
+    [embedding, sectionContentHash(section), section.id, merchantId, section.title, section.content, section.summary ?? null]));
   return result.affectedRows === 1;
 }
 
@@ -444,7 +445,7 @@ export async function logChange(data: {
   const pool = await getPool();
   if (!pool) return 0;
 
-  const [result] = await pool.execute(
+  const [result] = await runKnowledgeWrite(pool, data.merchantId, connection => connection.execute(
     `INSERT INTO knowledge_changelog (merchant_id, section_id, action, reason, old_content, new_content, source)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -456,7 +457,7 @@ export async function logChange(data: {
       data.newContent ?? null,
       data.source ?? null,
     ]
-  );
+  ));
   return (result as any).insertId;
 }
 

@@ -1,0 +1,43 @@
+{
+  "browser": "Chrome",
+  "actualSafari": false,
+  "actualIPhone": false,
+  "liveBefore": [
+    {
+      "viewport": 390,
+      "client": 375,
+      "scroll": 375
+    },
+    {
+      "viewport": 320,
+      "client": 305,
+      "scroll": 305
+    }
+  ],
+  "checks": [
+    {
+      "page": "live-after-recovery",
+      "viewport": 320,
+      "client": 305,
+      "scroll": 305
+    },
+    {
+      "page": "live-after-recovery",
+      "viewport": 1440,
+      "client": 1425,
+      "scroll": 1425
+    },
+    {
+      "page": "mock-before-recovery",
+      "viewport": 390,
+      "client": 375,
+      "scroll": 375
+    },
+    {
+      "page": "mock-after-recovery",
+      "viewport": 320,
+      "client": 305,
+      "scroll": 305
+    }
+  ]
+}
