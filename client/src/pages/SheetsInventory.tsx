@@ -1,31 +1,37 @@
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Loader2, Upload, Download, RefreshCw, Package, CheckCircle2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Loader2,
+  Upload,
+  Download,
+  RefreshCw,
+  Package,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function SheetsInventory() {
   const { t } = useTranslation();
-  const [lastAction, setLastAction] = useState<'export' | 'import' | null>(null);
+  const [lastAction, setLastAction] = useState<"export" | "import" | null>(
+    null
+  );
 
   // مزامنة المخزون إلى Sheets
   const exportMutation = trpc.sheets.syncInventory.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        (toast as any)({
-          title: 'نجحت المزامنة',
-          description: data.message,
-        });
-        setLastAction('export');
+        toast.success("نجحت المزامنة", { description: data.message });
+        setLastAction("export");
       } else {
-        (toast as any)({
-          title: 'فشلت المزامنة',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error("فشلت المزامنة", { description: data.message });
       }
+    },
+    onError: error => {
+      toast.error(error.message);
     },
   });
 
@@ -33,18 +39,16 @@ export default function SheetsInventory() {
   const importMutation = trpc.sheets.updateInventoryFromSheets.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        (toast as any)({
-          title: 'نجح التحديث',
+        toast.success("نجح التحديث", {
           description: `${data.message} - تم تحديث ${data.updatedCount} منتج`,
         });
-        setLastAction('import');
+        setLastAction("import");
       } else {
-        (toast as any)({
-          title: 'فشل التحديث',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error("فشل التحديث", { description: data.message });
       }
+    },
+    onError: error => {
+      toast.error(error.message);
     },
   });
 
@@ -53,7 +57,11 @@ export default function SheetsInventory() {
   };
 
   const handleImport = () => {
-    if (confirm('هل أنت متأكد من تحديث المخزون من Google Sheets؟ سيتم استبدال الكميات الحالية.')) {
+    if (
+      confirm(
+        "هل أنت متأكد من تحديث المخزون من Google Sheets؟ سيتم استبدال الكميات الحالية."
+      )
+    ) {
       importMutation.mutate();
     }
   };
@@ -62,8 +70,10 @@ export default function SheetsInventory() {
     <>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('workspacePages.sheetInventory')}</h1>
-          <p className="text-muted-foreground">{t('sheetsInventory.auto_0')}</p>
+          <h1 className="text-3xl font-bold mb-2">
+            {t("workspacePages.sheetInventory")}
+          </h1>
+          <p className="text-muted-foreground">{t("sheetsInventory.auto_0")}</p>
         </div>
 
         {/* بطاقات المزامنة */}
@@ -74,31 +84,43 @@ export default function SheetsInventory() {
               <Upload className="w-6 h-6 text-blue-600" />
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text1')}</h3>
-            <p className="text-sm text-muted-foreground mb-6">{t('sheetsInventory.auto_1')}</p>
+            <h3 className="text-xl font-semibold mb-2">
+              {t("sheetsInventoryPage.text6")}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {t("sheetsInventory.auto_1")}
+            </p>
 
             <Button
               onClick={handleExport}
-              disabled={exportMutation.isPending}
+              disabled={exportMutation.isPending || importMutation.isPending}
               className="w-full"
               size="lg"
             >
-              {exportMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-              <Upload className="w-5 h-5 ml-2" />{t('sheetsInventory.auto_2')}</Button>
+              {(exportMutation.isPending || importMutation.isPending) && (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              )}
+              <Upload className="w-5 h-5 ml-2" />
+              {t("sheetsInventory.auto_2")}
+            </Button>
 
-            {lastAction === 'export' && (
+            {lastAction === "export" && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">{t('sheetsInventoryPage.text2')}</p>
+                <p className="text-sm text-green-800">
+                  {t("sheetsInventoryPage.text7")}
+                </p>
               </div>
             )}
 
             <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-2 text-sm">{t('sheetsInventoryPage.text3')}</h4>
+              <h4 className="font-medium mb-2 text-sm">
+                {t("sheetsInventoryPage.text8")}
+              </h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>{t('sheetsInventoryPage.text4')}</li>
-                <li>{t('sheetsInventoryPage.text5')}</li>
-                <li>{t('sheetsInventoryPage.text6')}</li>
+                <li>{t("sheetsInventoryPage.text9")}</li>
+                <li>{t("sheetsInventoryPage.text10")}</li>
+                <li>{t("sheetsInventoryPage.text11")}</li>
               </ul>
             </div>
           </Card>
@@ -109,32 +131,44 @@ export default function SheetsInventory() {
               <Download className="w-6 h-6 text-green-600" />
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text7')}</h3>
-            <p className="text-sm text-muted-foreground mb-6">{t('sheetsInventory.auto_3')}</p>
+            <h3 className="text-xl font-semibold mb-2">
+              {t("sheetsInventoryPage.text12")}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {t("sheetsInventory.auto_3")}
+            </p>
 
             <Button
               onClick={handleImport}
-              disabled={importMutation.isPending}
+              disabled={exportMutation.isPending || importMutation.isPending}
               className="w-full"
               size="lg"
               variant="outline"
             >
-              {importMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-              <Download className="w-5 h-5 ml-2" />{t('sheetsInventory.auto_4')}</Button>
+              {(exportMutation.isPending || importMutation.isPending) && (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              )}
+              <Download className="w-5 h-5 ml-2" />
+              {t("sheetsInventory.auto_4")}
+            </Button>
 
-            {lastAction === 'import' && (
+            {lastAction === "import" && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">{t('sheetsInventoryPage.text8')}</p>
+                <p className="text-sm text-green-800">
+                  {t("sheetsInventoryPage.text13")}
+                </p>
               </div>
             )}
 
             <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-2 text-sm">{t('sheetsInventoryPage.text9')}</h4>
+              <h4 className="font-medium mb-2 text-sm">
+                {t("sheetsInventoryPage.text14")}
+              </h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>{t('sheetsInventoryPage.text10')}</li>
-                <li>{t('sheetsInventoryPage.text11')}</li>
-                <li>{t('sheetsInventoryPage.text12')}</li>
+                <li>{t("sheetsInventoryPage.text15")}</li>
+                <li>{t("sheetsInventoryPage.text16")}</li>
+                <li>{t("sheetsInventoryPage.text17")}</li>
               </ul>
             </div>
           </Card>
@@ -144,7 +178,9 @@ export default function SheetsInventory() {
         <Card className="p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <RefreshCw className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold">{t('sheetsInventoryPage.text13')}</h2>
+            <h2 className="text-xl font-semibold">
+              {t("sheetsInventoryPage.text18")}
+            </h2>
           </div>
 
           <div className="space-y-4">
@@ -153,8 +189,12 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-blue-600">1</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text14')}</h3>
-                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_5')}</p>
+                <h3 className="font-medium mb-1">
+                  {t("sheetsInventoryPage.text19")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheetsInventory.auto_5")}
+                </p>
               </div>
             </div>
 
@@ -163,8 +203,12 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-green-600">2</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text15')}</h3>
-                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_6')}</p>
+                <h3 className="font-medium mb-1">
+                  {t("sheetsInventoryPage.text20")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheetsInventory.auto_6")}
+                </p>
               </div>
             </div>
 
@@ -173,8 +217,12 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-purple-600">3</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text16')}</h3>
-                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_7')}</p>
+                <h3 className="font-medium mb-1">
+                  {t("sheetsInventoryPage.text21")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheetsInventory.auto_7")}
+                </p>
               </div>
             </div>
           </div>
@@ -185,12 +233,17 @@ export default function SheetsInventory() {
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-2 text-amber-900">{t('sheetsInventoryPage.text17')}</h3>
+              <h3 className="font-semibold mb-2 text-amber-900">
+                {t("sheetsInventoryPage.text22")}
+              </h3>
               <ul className="text-sm text-amber-800 space-y-1">
-                <li>• <strong>{t('sheetsInventoryPage.text18')}</strong>{t('sheetsInventory.auto_8')}</li>
-                <li>{t('sheetsInventoryPage.text19')}</li>
-                <li>{t('sheetsInventoryPage.text20')}</li>
-                <li>{t('sheetsInventoryPage.text21')}</li>
+                <li>
+                  • <strong>{t("sheetsInventoryPage.text23")}</strong>
+                  {t("sheetsInventory.auto_8")}
+                </li>
+                <li>{t("sheetsInventoryPage.text24")}</li>
+                <li>{t("sheetsInventoryPage.text25")}</li>
+                <li>{t("sheetsInventoryPage.text26")}</li>
               </ul>
             </div>
           </div>
@@ -201,12 +254,14 @@ export default function SheetsInventory() {
           <div className="flex items-start gap-3">
             <Package className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-2 text-blue-900">{t('sheetsInventoryPage.text22')}</h3>
+              <h3 className="font-semibold mb-2 text-blue-900">
+                {t("sheetsInventoryPage.text27")}
+              </h3>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>{t('sheetsInventoryPage.text23')}</li>
-                <li>{t('sheetsInventoryPage.text24')}</li>
-                <li>{t('sheetsInventoryPage.text25')}</li>
-                <li>{t('sheetsInventoryPage.text26')}</li>
+                <li>{t("sheetsInventoryPage.text28")}</li>
+                <li>{t("sheetsInventoryPage.text29")}</li>
+                <li>{t("sheetsInventoryPage.text30")}</li>
+                <li>{t("sheetsInventoryPage.text31")}</li>
               </ul>
             </div>
           </div>

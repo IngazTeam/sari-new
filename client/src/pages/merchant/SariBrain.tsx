@@ -26,6 +26,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
+import { readKnowledgePreview } from '@shared/knowledge-preview';
 
 const ACTION_ICONS: Record<string, string> = {
   document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
@@ -79,6 +80,7 @@ export default function SariBrain() {
 
   // Smart Intake state
   const [previewText, setPreviewText] = useState('');
+  const [previewFileName, setPreviewFileName] = useState('');
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [testQuestion, setTestQuestion] = useState('');
   const [testResult, setTestResult] = useState<{ question: string; answer: string } | null>(null);
@@ -352,23 +354,23 @@ export default function SariBrain() {
     analyzeMutation.mutate({
       content: previewText,
       contentType: 'document',
-      fileName: 'محتوى للفحص',
+      fileName: previewFileName || 'محتوى للفحص',
     });
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-
-    if (file.type === 'text/plain' || file.type === 'text/csv' || file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
-      const text = await file.text();
-      setPreviewText(text.substring(0, 30000));
-      setAnalysisResult(null);
-      toast.success(`تم تحميل "${file.name}" — اضغط "فحص المحتوى" للتحليل`);
-    } else {
-      toast.error('ادعم حالياً ملفات TXT/CSV فقط للفحص المسبق. للملفات الأخرى استخدم صفحة الإعدادات.');
+    const result = await readKnowledgePreview(file);
+    if ('error' in result) {
+      toast.error(t(result.error === 'tooLong' ? 'knowledgePreviewUx.tooLong' : result.error === 'unsupported' ? 'knowledgePreviewUx.unsupported' : result.error === 'empty' ? 'knowledgePreviewUx.empty' : 'knowledgePreviewUx.unreadable'));
+      return;
     }
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setPreviewText(result.content);
+    setPreviewFileName(result.name);
+    setAnalysisResult(null);
+    toast.success(t('knowledgePreviewUx.loaded', { name: result.name }));
   };
 
   const totalSources = sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
@@ -808,6 +810,7 @@ export default function SariBrain() {
               <TrendingUp className="h-5 w-5 text-primary" />
               🏥 صحة المعرفة
             </CardTitle>
+            <CardDescription>{t('knowledgePreviewUx.healthHelp')}</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="flex items-center gap-6">
@@ -1790,7 +1793,7 @@ export default function SariBrain() {
                   <p className="text-xs text-muted-foreground mt-0.5">{analysisResult.recommendationReason}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); setPreviewText(''); }}>
+                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); setPreviewText(''); setPreviewFileName(''); }}>
                     <XCircle className="h-4 w-4 ml-1" /> تجاهل
                   </Button>
                   <Button
@@ -1800,7 +1803,7 @@ export default function SariBrain() {
                       ingestMutation.mutate({
                         content: previewText,
                         contentType: 'document',
-                        fileName: 'محتوى مفحوص',
+                        fileName: previewFileName || 'محتوى مفحوص',
                       });
                     }}
                   >

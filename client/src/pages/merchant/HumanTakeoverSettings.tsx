@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { WorkspaceState } from '@/components/merchant/WorkspaceState';
 
 const TIMEOUT_OPTIONS = [5, 15, 30, 60];
 
@@ -21,11 +22,13 @@ export default function HumanTakeoverSettings() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
 
-  const { data: settings, isLoading } = trpc.botSettings.get.useQuery();
+  const settingsQuery = trpc.botSettings.get.useQuery();
+  const { data: settings, isLoading } = settingsQuery;
   // @ts-ignore
-  const { data: takeoverConvs } = trpc.botSettings.getTakeoverConversations.useQuery(undefined, {
+  const takeoverQuery = trpc.botSettings.getTakeoverConversations.useQuery(undefined, {
     refetchInterval: 15000, // refresh every 15s
   });
+  const takeoverConvs = takeoverQuery.data;
 
   const updateMutation = trpc.botSettings.update.useMutation({
     onSuccess: () => {
@@ -61,6 +64,7 @@ export default function HumanTakeoverSettings() {
 
   const activeCount = takeoverConvs?.length || 0;
 
+  if (settingsQuery.isError) return <WorkspaceState kind="error" onRetry={() => void settingsQuery.refetch()} />;
   if (isLoading) {
     return (
       <div className="container max-w-4xl py-8">
@@ -91,7 +95,7 @@ export default function HumanTakeoverSettings() {
       </div>
 
       {/* Status Banner */}
-      <Card className={`border-2 ${activeCount > 0 ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' : 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20'}`}>
+      {takeoverQuery.isError ? <WorkspaceState kind="error" inline onRetry={() => void takeoverQuery.refetch()} /> : takeoverQuery.isLoading ? <p role="status">{t('common.loading')}</p> : <Card className={`border-2 ${activeCount > 0 ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' : 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20'}`}>
         <CardContent className="py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -114,6 +118,7 @@ export default function HumanTakeoverSettings() {
         </CardContent>
       </Card>
 
+      }
       {/* How It Works — Interactive Timeline */}
       <Card>
         <CardHeader>
@@ -178,6 +183,7 @@ export default function HumanTakeoverSettings() {
                 <button
                   key={min}
                   type="button"
+                  aria-pressed={timeoutMinutes === min}
                   onClick={() => setTimeoutMinutes(min)}
                   className={`px-5 py-2.5 rounded-full border-2 transition-all font-medium text-sm
                     ${timeoutMinutes === min

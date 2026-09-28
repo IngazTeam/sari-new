@@ -963,7 +963,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/keywords">
-        <Redirect to="/merchant/smart-analysis" />
+        <Redirect to="/merchant/quick-responses" />
       </Route>
 
       <Route path="/merchant/voice-messages">

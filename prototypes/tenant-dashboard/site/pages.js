@@ -109,7 +109,7 @@ window.TenantPages = (() => {
     if(p.kind==='state')return state(p,p.state);
     if(p.redirect)return renderPage(find(p.redirect));
     const renderers={list,form,detail,analytics,integration,hub,directory,calendar,pipeline,knowledge,media,import:importer,assistant,compose,setup,plans,billing,checkout,result,privacy,guide,analysis,overview:()=>overview(),inbox:()=>inbox()};
-    const content=selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
+      const content=window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
     return (['overview','inbox'].includes(p.kind)?`<div class="page-breadcrumb">${link('جميع الصفحات','/merchant/tools')}${action('حالات الصفحة','states')}</div>`:head(p))+content;
   }
   function rerender(keep = false) { render(keep); }
@@ -118,6 +118,7 @@ window.TenantPages = (() => {
     openDialog(current.action,`<form class="form-stack" data-page-form="create">${labels.map((v,i)=>field(v,i,'')).join('')}<p class="hint">إضافة محلية لتجربة سير العمل.</p><div class="dialog-foot"><button type="submit" class="button primary">حفظ المعاينة</button>${action('إلغاء','cancel')}</div></form>`);
   }
   function primary() {
+    if(window.AssistantPreview?.handles(current))return window.AssistantPreview.primary(current);
     if(current.kind==='list'){
       if(current.route==='/merchant/campaigns'){location.hash=href('/merchant/campaigns/new');return;}
       if(/فتح|مراجعة|متابعة|عرض التفاصيل/.test(current.action)){selection=rows(current)[0]?.id;return rerender();}

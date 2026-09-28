@@ -1,12 +1,21 @@
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, Package, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useLocation } from 'wouter';
-import { useTranslation } from 'react-i18next';
+import {
+  WorkspaceState,
+  workspaceFailureKind,
+} from "@/components/merchant/WorkspaceState";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, RefreshCw, Package, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function ZidProducts() {
   const { t } = useTranslation();
@@ -14,27 +23,32 @@ export default function ZidProducts() {
   const [, navigate] = useLocation();
 
   // Get Zid status
-  const { data: status, isLoading: statusLoading } = trpc.zid.getConnection.useQuery();
+  const {
+    data: status,
+    isLoading: statusLoading,
+    error: statusError,
+    refetch,
+  } = trpc.zid.getConnection.useQuery();
 
   // Sync products mutation
   const syncProductsMutation = trpc.zid.syncNow.useMutation({
     onSuccess: (data: any) => {
       toast({
-        title: 'نجحت المزامنة',
+        title: "نجحت المزامنة",
         description: data.message,
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'فشلت المزامنة',
+        title: "فشلت المزامنة",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const handleSync = () => {
-    syncProductsMutation.mutate({ resource: 'products' });
+    syncProductsMutation.mutate({ resource: "products" });
   };
 
   if (statusLoading) {
@@ -45,16 +59,27 @@ export default function ZidProducts() {
     );
   }
 
+  if (statusError)
+    return (
+      <WorkspaceState
+        kind={workspaceFailureKind(statusError)}
+        onRetry={() => void refetch()}
+      />
+    );
+
   if (!status?.connected) {
     return (
       <div className="container mx-auto py-16">
         <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">
+            {t("zidProductsPage.text2")}
+          </h1>
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{t('zidProducts.auto_0')}</AlertDescription>
+            <AlertDescription>{t("zidProducts.auto_0")}</AlertDescription>
           </Alert>
           <Button
-            onClick={() => navigate('/merchant/zid/settings')}
+            onClick={() => navigate("/merchant/zid/settings")}
             className="w-full mt-4"
           >
             الذهاب إلى الإعدادات
@@ -67,21 +92,23 @@ export default function ZidProducts() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('zidProductsPage.text0')}</h1>
-        <p className="text-muted-foreground mt-2">{t('zidProducts.auto_1')}</p>
+        <h1 className="text-3xl font-bold">{t("zidProductsPage.text2")}</h1>
+        <p className="text-muted-foreground mt-2">{t("zidProducts.auto_1")}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />{t('zidProducts.auto_2')}</CardTitle>
-          <CardDescription>{t('zidProducts.auto_3')}</CardDescription>
+            <Package className="w-5 h-5" />
+            {t("zidProducts.auto_2")}
+          </CardTitle>
+          <CardDescription>{t("zidProducts.auto_3")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {status.lastSync && (
             <div>
               <p className="text-sm text-muted-foreground">
-                آخر مزامنة: {new Date(status.lastSync).toLocaleString('ar-SA')}
+                آخر مزامنة: {new Date(status.lastSync).toLocaleString("ar-SA")}
               </p>
             </div>
           )}
@@ -94,10 +121,14 @@ export default function ZidProducts() {
           >
             {syncProductsMutation.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidProducts.auto_4')}</>
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                {t("zidProducts.auto_4")}
+              </>
             ) : (
               <>
-                <RefreshCw className="w-4 h-4 ml-2" />{t('zidProducts.auto_5')}</>
+                <RefreshCw className="w-4 h-4 ml-2" />
+                {t("zidProducts.auto_5")}
+              </>
             )}
           </Button>
 
@@ -110,11 +141,11 @@ export default function ZidProducts() {
           )}
 
           <div className="pt-4 border-t">
-            <h3 className="font-semibold mb-2">{t('zidProductsPage.text1')}</h3>
+            <h3 className="font-semibold mb-2">{t("zidProductsPage.text3")}</h3>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>{t('zidProductsPage.text2')}</li>
-              <li>{t('zidProductsPage.text3')}</li>
-              <li>{t('zidProductsPage.text4')}</li>
+              <li>{t("zidProductsPage.text4")}</li>
+              <li>{t("zidProductsPage.text5")}</li>
+              <li>{t("zidProductsPage.text6")}</li>
             </ul>
           </div>
         </CardContent>

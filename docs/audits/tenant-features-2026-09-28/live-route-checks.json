@@ -1,0 +1,1600 @@
+{
+  "date": "2026-09-28T07:39:04.162Z",
+  "scope": "Initial page states on isolated tenant; DOM control counts include hidden controls. Not exhaustive feature or provider execution.",
+  "checks": [
+    {
+      "route": "/merchant/setup-wizard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 12,
+      "headings": [
+        "عرّفنا بنشاطك",
+        "نوع النشاط"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/setup-wizard",
+      "width": 480
+    },
+    {
+      "route": "/merchant",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مرحبًا، متجر نواة · تيننت الفحص",
+        "خطوتك التالية",
+        "آخر المحادثات",
+        "نبض العلاقة",
+        "الأكثر مبيعًا خلال الفترة",
+        "حالة المزامنة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مرحبًا، متجر نواة · تيننت الفحص",
+        "خطوتك التالية",
+        "آخر المحادثات",
+        "نبض العلاقة",
+        "الأكثر مبيعًا خلال الفترة",
+        "حالة المزامنة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "مرحبًا، متجر نواة · تيننت الفحص",
+        "خطوتك التالية",
+        "طلباتك خلال الفترة",
+        "ساري، إلى جانبك",
+        "آخر المحادثات",
+        "نبض العلاقة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/ai-hub",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "مركز المساعد الذكي"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/ai-hub",
+      "width": 480
+    },
+    {
+      "route": "/merchant/analytics-hub",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "مركز التحليلات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/analytics-hub",
+      "width": 480
+    },
+    {
+      "route": "/merchant/campaigns",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "الحملات التسويقية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/campaigns",
+      "width": 480
+    },
+    {
+      "route": "/merchant/campaigns/new",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "حملة جديدة، خطوة بخطوة",
+        "الجمهور"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/campaigns/new",
+      "width": 480
+    },
+    {
+      "route": "/merchant/campaigns/:id/edit",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "تعديل الحملة",
+        "الجمهور"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/campaigns/1/edit",
+      "width": 480
+    },
+    {
+      "route": "/merchant/campaigns/:id",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مسودة فحص تجربة المستخدم"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/campaigns/1",
+      "width": 480
+    },
+    {
+      "route": "/merchant/campaigns/:id/report",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مسودة فحص تجربة المستخدم"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/campaigns/1/report",
+      "width": 480
+    },
+    {
+      "route": "/merchant/products",
+      "loaded": true,
+      "alerts": [],
+      "controls": 22,
+      "headings": [
+        "إدارة المنتجات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/products",
+      "width": 480
+    },
+    {
+      "route": "/merchant/products/upload",
+      "loaded": true,
+      "alerts": [
+        "الأعمدة المدعومة: الاسم (مطلوب)، الوصف، السعر، رابط الصورة، الكمية، التصنيف"
+      ],
+      "controls": 6,
+      "headings": [
+        "رفع المنتجات"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/products/upload",
+      "width": 480
+    },
+    {
+      "route": "/merchant/conversations",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "المحادثات"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/conversations",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة أرقام الواتساب"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/whatsapp",
+      "width": 480
+    },
+    {
+      "route": "/merchant/salla",
+      "loaded": true,
+      "alerts": [
+        "متجر مربوطمتوقفربط متجر Sallaكيفية الحصول على Personal Access Token:سجل دخول إلى لوحة تحكم Salla"
+      ],
+      "controls": 7,
+      "headings": [
+        "ربط متجر سلة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/salla",
+      "width": 480
+    },
+    {
+      "route": "/merchant/integrations/byaan",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "ربط بيان"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/integrations/byaan",
+      "width": 480
+    },
+    {
+      "route": "/merchant/byaan-dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "لم يتم ربط بيان"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/byaan-dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/integrations/zid",
+      "loaded": true,
+      "alerts": [
+        "سيُنقلك ساري إلى زد للموافقة، ثم يعيدك تلقائيًا بعد اكتمال الربط الآمن."
+      ],
+      "controls": 1,
+      "headings": [
+        "تكامل زد (Zid)"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/integrations/zid",
+      "width": 480
+    },
+    {
+      "route": "/merchant/zid/settings",
+      "loaded": true,
+      "alerts": [
+        "سيُنقلك ساري إلى زد للموافقة، ثم يعيدك تلقائيًا بعد اكتمال الربط الآمن."
+      ],
+      "controls": 1,
+      "headings": [
+        "تكامل زد (Zid)"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/zid/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/zid/callback",
+      "loaded": false,
+      "alerts": [],
+      "controls": 1,
+      "headings": [],
+      "scrollWidth": 480,
+      "url": "/merchant/zid/callback",
+      "width": 480
+    },
+    {
+      "route": "/merchant/zid/products",
+      "loaded": false,
+      "alerts": [
+        "يجب ربط حسابك على Zid أولاً قبل مزامنة المنتجات"
+      ],
+      "controls": 1,
+      "headings": [],
+      "scrollWidth": 480,
+      "url": "/merchant/zid/products",
+      "width": 480
+    },
+    {
+      "route": "/merchant/zid/sync-logs",
+      "loaded": true,
+      "alerts": [
+        "لا توجد عمليات مزامنة بعد"
+      ],
+      "controls": 0,
+      "headings": [
+        "سجل المزامنة"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/zid/sync-logs",
+      "width": 480
+    },
+    {
+      "route": "/merchant/woocommerce/settings",
+      "loaded": true,
+      "alerts": [
+        "إنشاء مفاتيح بصلاحية القراءة والكتابةWooCommerce → Settings → Advanced → REST APIمرجع المصادقة الرسمي"
+      ],
+      "controls": 7,
+      "headings": [
+        "إعدادات WooCommerce"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/woocommerce/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/woocommerce/products",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "منتجات WooCommerce"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/woocommerce/products",
+      "width": 480
+    },
+    {
+      "route": "/merchant/woocommerce/orders",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "طلبات WooCommerce"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/woocommerce/orders",
+      "width": 480
+    },
+    {
+      "route": "/merchant/woocommerce/analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 9,
+      "headings": [
+        "تحليلات WooCommerce"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/woocommerce/analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/integrations/calendly",
+      "loaded": true,
+      "alerts": [
+        "للحصول على API Key، اذهب إلى Calendly &gt; Integrations &gt; API & Webhooks &gt; Personal Access Token"
+      ],
+      "controls": 2,
+      "headings": [
+        "تكامل Calendly"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/integrations/calendly",
+      "width": 480
+    },
+    {
+      "route": "/merchant/chat-orders",
+      "loaded": true,
+      "alerts": [],
+      "controls": 15,
+      "headings": [
+        "إدارة الطلبات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/orders",
+      "width": 480
+    },
+    {
+      "route": "/merchant/discounts",
+      "loaded": true,
+      "alerts": [],
+      "controls": 7,
+      "headings": [
+        "كودات الخصم"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/discounts",
+      "width": 480
+    },
+    {
+      "route": "/merchant/referrals",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "نظام الإحالة والمكافآت"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/referrals",
+      "width": 480
+    },
+    {
+      "route": "/merchant/abandoned-carts",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "السلال المهجورة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/abandoned-carts",
+      "width": 480
+    },
+    {
+      "route": "/merchant/occasion-campaigns",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "حملات المناسبات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/occasion-campaigns",
+      "width": 480
+    },
+    {
+      "route": "/merchant/promotions",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "العروض الترويجية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/promotions",
+      "width": 480
+    },
+    {
+      "route": "/merchant/analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "لوحة التحليلات المتقدمة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/message-analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/message-analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/overview-analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "نظرة عامة على الأداء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/overview-analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/orders",
+      "loaded": true,
+      "alerts": [],
+      "controls": 15,
+      "headings": [
+        "إدارة الطلبات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/orders",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp-instances",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة أرقام الواتساب"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/whatsapp-instances",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp-setup",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة أرقام الواتساب"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/whatsapp",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp-test",
+      "loaded": true,
+      "alerts": [
+        "خطوة 1: اختبر الاتصال أولاً للتأكد من صحة البيانات",
+        "خطوة 2: احفظ البيانات بعد نجاح الاتصال",
+        "خطوة 3: جرب إرسال رسالة لرقمك الشخصي"
+      ],
+      "controls": 10,
+      "headings": [
+        "اختبار WhatsApp"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/whatsapp-test",
+      "width": 480
+    },
+    {
+      "route": "/merchant/greenapi-setup",
+      "loaded": true,
+      "alerts": [
+        "ملاحظة: Green API يوفر 3 أيام تجريبية مجاناً، ثم يمكنك الاشتراك في باقة مدفوعة",
+        "مهم جداً: يجب إضافة هذا الرابط في حقل \"Webhook URL\" في إعدادات Green API",
+        "نصيحة: استخدم رقم جديد مخصص للمتجر، وليس رقمك الشخصي"
+      ],
+      "controls": 8,
+      "headings": [
+        "دليل إعداد Green API الشامل"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/greenapi-setup",
+      "width": 480
+    },
+    {
+      "route": "/merchant/test-sari",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "اختبار ساري AI"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/test-sari",
+      "width": 480
+    },
+    {
+      "route": "/merchant/metrics-dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "لوحة تحكم المقاييس",
+        "مقاييس التحويل والمبيعات",
+        "مقاييس الوقت والكفاءة",
+        "مقاييس جودة المحادثة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/metrics-dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp-webhook-setup",
+      "loaded": true,
+      "alerts": [
+        "ملاحظات مهمة:تأكد من أن رقم الواتساب متصل ونشط في Green APIWebhook URL يجب أن يكون متاحاً على الإنترنت (HTTPS)ساري يرد تلقائياً على الرسائل النصية والصوتيةيتم حفظ جميع المحادثات في قاعدة البيانات لمراجعتها لاحقاًتحقق من حدود باقتك (عدد المحادثات والرسائل الشهرية)"
+      ],
+      "controls": 2,
+      "headings": [
+        "تفعيل Webhook للواتساب"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/whatsapp-webhook-setup",
+      "width": 480
+    },
+    {
+      "route": "/merchant/bot-settings",
+      "loaded": true,
+      "alerts": [
+        "الروبوت نشط - يرد تلقائياً على الرسائل الواردة",
+        "ملاحظة: التغييرات ستطبق فوراً على جميع الرسائل الجديدة. لن تؤثر على المحادثات الجارية."
+      ],
+      "controls": 42,
+      "headings": [
+        "إعدادات الروبوت",
+        "صلاحية إصدار الخصومات",
+        "حد هامش الطلب المحلي"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/bot-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/human-takeover",
+      "loaded": true,
+      "alerts": [
+        "💡 نصيحة: العبارات تظهر للعميل كرسالة طبيعية ومهذبة — لا يعرف أنها أمر تقني لساري"
+      ],
+      "controls": 7,
+      "headings": [
+        "التدخل البشري"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/human-takeover",
+      "width": 480
+    },
+    {
+      "route": "/merchant/virtual-team",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "شخصيات فريقك الافتراضي",
+        "ليان · فحص الواجهة",
+        "كيف يتوزع العمل؟"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/virtual-team",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sari-brain",
+      "loaded": true,
+      "alerts": [],
+      "controls": 22,
+      "headings": [
+        "عقل ساري",
+        "توقيت المتابعات وحدودها",
+        "صلاحية إصدار الخصومات",
+        "حد هامش الطلب المحلي"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sari-brain",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sari-playground",
+      "loaded": true,
+      "alerts": [],
+      "controls": 8,
+      "headings": [
+        "ساري AI - ملعب التجربة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sari-playground",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sari-analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sari-analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sales-hub",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "مركز المبيعات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sales-hub",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sales-pipeline",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "غرفة قيادة المبيعات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sales-pipeline",
+      "width": 480
+    },
+    {
+      "route": "/merchant/acquisition-report",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "📊 مصادر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/acquisition-report",
+      "width": 480
+    },
+    {
+      "route": "/merchant/quotation-templates",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "قوالب عروض الأسعار"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/quotation-templates",
+      "width": 480
+    },
+    {
+      "route": "/merchant/media-library",
+      "loaded": true,
+      "alerts": [],
+      "controls": 13,
+      "headings": [
+        "مكتبة الوسائط"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/media-library",
+      "width": 480
+    },
+    {
+      "route": "/merchant/scheduled-messages",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "الرسائل المجدولة"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/scheduled-messages",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sari-personality",
+      "loaded": true,
+      "alerts": [
+        "الروبوت نشط - يرد تلقائياً على الرسائل الواردة",
+        "ملاحظة: التغييرات ستطبق فوراً على جميع الرسائل الجديدة. لن تؤثر على المحادثات الجارية."
+      ],
+      "controls": 42,
+      "headings": [
+        "إعدادات الروبوت"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/bot-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/quick-responses",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "إدارة الردود السريعة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/quick-responses",
+      "width": 480
+    },
+    {
+      "route": "/merchant/insights",
+      "loaded": true,
+      "alerts": [],
+      "controls": 8,
+      "headings": [
+        "لوحة الرؤى التحليلية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/insights",
+      "width": 480
+    },
+    {
+      "route": "/merchant/advanced-analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/advanced-analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/analytics-dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/analytics-dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/performance-metrics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مقاييس الأداء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/performance-metrics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/data-sync",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "مزامنة البيانات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/data-sync",
+      "width": 480
+    },
+    {
+      "route": "/merchant/reviews",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "تقييمات العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/reviews",
+      "width": 480
+    },
+    {
+      "route": "/merchant/booking-reviews",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "تقييمات الحجوزات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/booking-reviews",
+      "width": 480
+    },
+    {
+      "route": "/merchant/order-notifications",
+      "loaded": true,
+      "alerts": [],
+      "controls": 12,
+      "headings": [
+        "إعدادات إشعارات الطلبات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/order-notifications",
+      "width": 480
+    },
+    {
+      "route": "/merchant/settings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 13,
+      "headings": [
+        "الإعدادات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/privacy-center",
+      "loaded": true,
+      "alerts": [
+        "إجراء عالي التأثيرلن تتمكن من تسجيل الدخول بعد تأكيد الطلب. انقل ملكية أي متجر مشترك قبل الحذف."
+      ],
+      "controls": 7,
+      "headings": [
+        " مركز الخصوصية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/privacy-center",
+      "width": 480
+    },
+    {
+      "route": "/merchant/notifications",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "الإشعارات"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/notifications",
+      "width": 480
+    },
+    {
+      "route": "/merchant/language-settings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "إعدادات اللغة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/language-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/calendar/settings",
+      "loaded": true,
+      "alerts": [
+        "قم بربط حسابك في Google Calendar لتمكين:البريد الإلكترونيتاريخ الربطالمزامنة التلقائية للمواعيدمنع الحجز المزدوج"
+      ],
+      "controls": 1,
+      "headings": [
+        "ربط Google Calendar"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/calendar/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/calendar",
+      "loaded": true,
+      "alerts": [],
+      "controls": 7,
+      "headings": [
+        "تقويم المواعيد",
+        "سبتمبر 2026",
+        "مواعيد الفترة المعروضة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/calendar",
+      "width": 480
+    },
+    {
+      "route": "/merchant/staff",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مقدّمو الخدمات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/staff",
+      "width": 480
+    },
+    {
+      "route": "/merchant/team",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "إدارة الفريق"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/team",
+      "width": 480
+    },
+    {
+      "route": "/merchant/services",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "إدارة الخدمات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/services",
+      "width": 480
+    },
+    {
+      "route": "/merchant/services/new",
+      "loaded": true,
+      "alerts": [],
+      "controls": 17,
+      "headings": [
+        "إضافة خدمة جديدة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/services/new",
+      "width": 480
+    },
+    {
+      "route": "/merchant/services/:id/edit",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "هذه الصفحة ليست هنا"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/services/1/edit",
+      "width": 480
+    },
+    {
+      "route": "/merchant/services/:id",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "هذه الصفحة ليست هنا"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/services/1",
+      "width": 480
+    },
+    {
+      "route": "/merchant/bookings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة الحجوزات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/bookings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/service-categories",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "تصنيفات الخدمات"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/service-categories",
+      "width": 480
+    },
+    {
+      "route": "/merchant/service-packages",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "حزم الخدمات"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/service-packages",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sheets/settings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "ربط Google Sheets",
+        "فشل الإعداد"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/sheets/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sheets/export",
+      "loaded": true,
+      "alerts": [],
+      "controls": 67,
+      "headings": [
+        "تصدير المحادثات",
+        "المحادثات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sheets/export",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sheets/reports",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "تقارير Google Sheets",
+        "تم توليد التقرير اليومي بنجاح"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sheets/reports",
+      "width": 480
+    },
+    {
+      "route": "/merchant/sheets/inventory",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مخزون Google Sheets",
+        "تم الاستيراد بنجاح"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/sheets/inventory",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payments",
+      "loaded": false,
+      "alerts": [],
+      "controls": 4,
+      "headings": [],
+      "scrollWidth": 450,
+      "url": "/merchant/payments",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payments/:id",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "هذه الصفحة ليست هنا"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/payments/1",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payment-links",
+      "loaded": false,
+      "alerts": [],
+      "controls": 2,
+      "headings": [],
+      "scrollWidth": 480,
+      "url": "/merchant/payment-links",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payment-settings",
+      "loaded": true,
+      "alerts": [
+        "كيف يعمل؟بعد تفعيل Tap، سيتمكن ساري من إرسال روابط دفع آمنة لعملائك عبر واتساب عند إنشاء الطلبات.العميل يضغط على الرابط ويدفع مباشرة، وتصلك الأموال في حسابك.",
+        "وضع الاختباراستخدم مفاتيح sk_test وpk_test فقط. لن تُقبل مفاتيح الإنتاج في هذا الوضع."
+      ],
+      "controls": 9,
+      "headings": [
+        "إعدادات الدفع الإلكتروني"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/payment-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/loyalty/settings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 10,
+      "headings": [
+        "إعدادات برنامج الولاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/loyalty/settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/loyalty/tiers",
+      "loaded": true,
+      "alerts": [],
+      "controls": 18,
+      "headings": [
+        "مستويات الولاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/loyalty/tiers",
+      "width": 480
+    },
+    {
+      "route": "/merchant/loyalty/rewards",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "مكافآت الولاء"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/loyalty/rewards",
+      "width": 480
+    },
+    {
+      "route": "/merchant/loyalty/customers",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "عملاء الولاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/loyalty/customers",
+      "width": 480
+    },
+    {
+      "route": "/merchant/integrations-dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "حالة التكاملات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/integrations-dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/platform-integrations",
+      "loaded": true,
+      "alerts": [
+        "سلةيمكنك ربط منصة واحدة فقط في نفس الوقت لتجنب تضارب البيانات.\r\n          إذا أردت التبديل إلى منصة أخرى، يجب فصل المنصة الحالية أولاً."
+      ],
+      "controls": 7,
+      "headings": [
+        "ربط منصات التجارة الإلكترونية",
+        "اختر منصة للربط",
+        "خدمات Google"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/platform-integrations",
+      "width": 480
+    },
+    {
+      "route": "/merchant/notification-settings",
+      "loaded": true,
+      "alerts": [],
+      "controls": 12,
+      "headings": [
+        "إعدادات الإشعارات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/notification-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/currency-settings",
+      "loaded": true,
+      "alerts": [
+        "العملة الحالية:غير محدد"
+      ],
+      "controls": 2,
+      "headings": [
+        "إعدادات العملة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/currency-settings",
+      "width": 480
+    },
+    {
+      "route": "/merchant/push-notifications",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "إعدادات الإشعارات الفورية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/push-notifications",
+      "width": 480
+    },
+    {
+      "route": "/merchant/scheduled-reports",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "التقارير المجدولة"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/scheduled-reports",
+      "width": 480
+    },
+    {
+      "route": "/merchant/whatsapp-auto-notifications",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "أتمتة إشعارات العملاء"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/whatsapp-auto-notifications",
+      "width": 480
+    },
+    {
+      "route": "/merchant/reports",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "التقارير والإحصائيات",
+        "30 يوم"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/reports",
+      "width": 480
+    },
+    {
+      "route": "/merchant/subscriptions",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة الاشتراك"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/subscriptions",
+      "width": 480
+    },
+    {
+      "route": "/merchant/usage",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "استهلاك الباقة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/usage",
+      "width": 480
+    },
+    {
+      "route": "/merchant/usage-dashboard",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "لوحة تحكم الاستخدام"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/usage-dashboard",
+      "width": 480
+    },
+    {
+      "route": "/merchant/subscription/plans",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "اختر الباقة المناسبة لك"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/subscription/plans",
+      "width": 480
+    },
+    {
+      "route": "/merchant/subscription/compare",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "مقارنة الباقات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/subscription/compare",
+      "width": 480
+    },
+    {
+      "route": "/merchant/subscription",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة الاشتراك"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/subscription",
+      "width": 480
+    },
+    {
+      "route": "/merchant/checkout",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "الباقة غير موجودة"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/checkout",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payment/success",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "راجع حالة الدفع"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/payment/success",
+      "width": 480
+    },
+    {
+      "route": "/merchant/payment/cancel",
+      "loaded": true,
+      "alerts": [],
+      "controls": 0,
+      "headings": [
+        "تم إلغاء الدفع"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/payment/cancel",
+      "width": 480
+    },
+    {
+      "route": "/merchant/tools",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "جميع الأدوات"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/tools",
+      "width": 480
+    },
+    {
+      "route": "/merchant/customers",
+      "loaded": true,
+      "alerts": [],
+      "controls": 67,
+      "headings": [
+        "إدارة العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/customers",
+      "width": 480
+    },
+    {
+      "route": "/merchant/website-analysis",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "التحليل الذكي للموقع"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/smart-analysis",
+      "width": 480
+    },
+    {
+      "route": "/merchant/smart-analysis",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "التحليل الذكي للموقع"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/smart-analysis",
+      "width": 480
+    },
+    {
+      "route": "/merchant/competitor-analysis",
+      "loaded": true,
+      "alerts": [],
+      "controls": 2,
+      "headings": [
+        "تحليل المنافسين"
+      ],
+      "scrollWidth": 480,
+      "url": "/merchant/competitor-analysis",
+      "width": 480
+    },
+    {
+      "route": "/merchant/customers/:phone",
+      "loaded": true,
+      "alerts": [],
+      "controls": 4,
+      "headings": [
+        "عميل بحث الصفحة الثانية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/customers/ux-customer-001",
+      "width": 480
+    },
+    {
+      "route": "/merchant/ai-suggestions",
+      "loaded": true,
+      "alerts": [],
+      "controls": 8,
+      "headings": [
+        "لوحة الرؤى التحليلية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/ai-suggestions",
+      "width": 480
+    },
+    {
+      "route": "/merchant/keywords",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "التحليل الذكي للموقع"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/smart-analysis",
+      "width": 480
+    },
+    {
+      "route": "/merchant/voice-messages",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/voice-messages",
+      "width": 480
+    },
+    {
+      "route": "/merchant/analysis",
+      "loaded": true,
+      "alerts": [],
+      "controls": 5,
+      "headings": [
+        "التحليلات",
+        "تحليل مشاعر العملاء"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/analysis",
+      "width": 480
+    },
+    {
+      "route": "/merchant/weekly-reports",
+      "loaded": true,
+      "alerts": [],
+      "controls": 6,
+      "headings": [
+        "التقارير والإحصائيات",
+        "30 يوم"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/reports",
+      "width": 480
+    },
+    {
+      "route": "/merchant/ab-tests",
+      "loaded": true,
+      "alerts": [],
+      "controls": 8,
+      "headings": [
+        "لوحة الرؤى التحليلية"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/ab-tests",
+      "width": 480
+    },
+    {
+      "route": "/merchant/try-sari-analytics",
+      "loaded": true,
+      "alerts": [],
+      "controls": 1,
+      "headings": [
+        "لوحة تحكم المقاييس",
+        "مقاييس التحويل والمبيعات",
+        "مقاييس الوقت والكفاءة",
+        "مقاييس جودة المحادثة"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/try-sari-analytics",
+      "width": 480
+    },
+    {
+      "route": "/merchant/merchant-payments",
+      "loaded": false,
+      "alerts": [],
+      "controls": 4,
+      "headings": [],
+      "scrollWidth": 450,
+      "url": "/merchant/merchant-payments",
+      "width": 480
+    },
+    {
+      "route": "/merchant/my-subscription",
+      "loaded": true,
+      "alerts": [],
+      "controls": 3,
+      "headings": [
+        "إدارة الاشتراك"
+      ],
+      "scrollWidth": 450,
+      "url": "/merchant/my-subscription",
+      "width": 480
+    }
+  ]
+}

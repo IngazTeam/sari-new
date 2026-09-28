@@ -47,6 +47,11 @@ body.merchant-surface {
   --accent: #304433; --accent-foreground: #e5f0d9;
   --border: #35463a; --input: #405844; --ring: #a8cc83;
 }
+body.merchant-surface [data-slot="dialog-content"].mw-persona-dialog {
+  height: min(760px, calc(100dvh - 32px));
+  overflow: hidden;
+}
+.merchant-workspace [hidden] { display: none !important; }
 body.merchant-surface [data-slot$="dialog-content"] {
   border-radius: 18px;
   max-height: calc(100dvh - 32px);

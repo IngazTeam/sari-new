@@ -184,7 +184,9 @@ describe('CG-04: LanguageSettings must sync via botSettings', () => {
 
   it('LanguageSettings must pass language code to botSettings.update', () => {
     const lang = readFile('./client/src/pages/merchant/LanguageSettings.tsx');
-    expect(lang).toContain('language: lang.code');
+    expect(lang).toContain('language: selectedLanguage');
+    expect(lang).toContain('botSettings.get.useQuery');
+    expect(lang).not.toContain('changeAppLanguage');
   });
 });
 

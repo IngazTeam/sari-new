@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-28T08:02:12.146Z",
+  "scope": "Local disposable tenant; no external-provider end-to-end execution or production deployment",
+  "tests": {
+    "passed": 554,
+    "failed": 0,
+    "files": [
+      "server/merchant-feature-inventory.test.ts",
+      "server/merchant-integration-feedback.test.ts",
+      "server/merchant-assistant-prototype.test.ts",
+      "server/merchant-page-prototype.test.ts",
+      "server/merchant-brain-prototype.test.ts",
+      "server/merchant-knowledge-preview.test.ts",
+      "server/merchant-ux-route-recovery-pentest.test.ts",
+      "server/merchant-core-accessibility-pentest.test.ts",
+      "server/merchant-semantic-i18n-pentest.test.ts",
+      "server/mobile-navigation-soft404-pentest.test.ts",
+      "server/contract-guards.test.ts",
+      "server/sales-engine-pentest.test.ts",
+      "server/security-pentest.test.ts",
+      "server/core-team-access.test.ts",
+      "server/merchant-domains-access.test.ts"
+    ],
+    "command": "node scripts/testing/run-isolated.mjs server/merchant-feature-inventory.test.ts server/merchant-integration-feedback.test.ts server/merchant-assistant-prototype.test.ts server/merchant-page-prototype.test.ts server/merchant-brain-prototype.test.ts server/merchant-knowledge-preview.test.ts server/merchant-ux-route-recovery-pentest.test.ts server/merchant-core-accessibility-pentest.test.ts server/merchant-semantic-i18n-pentest.test.ts server/mobile-navigation-soft404-pentest.test.ts server/contract-guards.test.ts server/sales-engine-pentest.test.ts server/security-pentest.test.ts server/core-team-access.test.ts server/merchant-domains-access.test.ts"
+  },
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 7763,
+    "dynamicKeysChecked": 308,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "frontendBuild": {
+    "result": "passed",
+    "command": "node node_modules/vite/bin/vite.js build"
+  },
+  "types": {
+    "result": "failed-in-concurrent-work",
+    "command": "node node_modules/typescript/bin/tsc --noEmit",
+    "diagnostic": "server/ai/salla-checkout-agreements.ts(33,58): TS1501 Unicode regex flag requires ES6 or later target",
+    "earlierRunPassed": true
+  },
+  "routesVisited": 126,
+  "sourceInventory": {
+    "routes": 126,
+    "files": 178,
+    "controls": 1563,
+    "queryCalls": 285,
+    "errorSignalMissing": 191,
+    "choices": 51,
+    "conditions": 645
+  },
+  "browser": {
+    "actualPersona": "Create, required errors, edit, save hours, clear hours, pause; data persisted on local tenant",
+    "language": "Saved English, reloaded, verified, restored Arabic without changing UI language",
+    "prototypeAudit": "126 rows; search for personas returned 2 relevant pages"
+  },
+  "deployment": "not performed"
+}

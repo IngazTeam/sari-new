@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Check, Globe, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { changeAppLanguage } from '@/lib/i18n';
+import { WorkspaceState } from '@/components/merchant/WorkspaceState';
 
 interface Language {
   code: string;
@@ -19,8 +19,12 @@ interface Language {
 }
 
 export default function LanguageSettings() {
-  const { t, i18n } = useTranslation();
-  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'ar');
+  const { t } = useTranslation();
+  const settingsQuery = trpc.botSettings.get.useQuery();
+  const utils = trpc.useUtils();
+  const [selectedLanguage, setSelectedLanguage] = useState('ar');
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { if (settingsQuery.data && !dirty) setSelectedLanguage(settingsQuery.data.language || 'ar'); }, [settingsQuery.data, dirty]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Languages - inside component where t() is available
@@ -75,6 +79,7 @@ export default function LanguageSettings() {
   const updateBotSettingsMutation = trpc.botSettings.update.useMutation();
 
   const handleLanguageSelect = (langCode: string) => {
+    setDirty(true);
     setSelectedLanguage(langCode);
   };
 
@@ -82,16 +87,16 @@ export default function LanguageSettings() {
     setIsSaving(true);
     try {
       const lang = languages.find(l => l.code === selectedLanguage);
-      if (!lang) return;
+      if (!lang && selectedLanguage !== 'both') return;
 
       // Save language to bot_settings — this is the single source of truth
       // bot_settings.language is what chatWithSari reads for prompt language injection
       await updateBotSettingsMutation.mutateAsync({
-        language: lang.code as any,
+        language: selectedLanguage as 'ar' | 'en' | 'fr' | 'tr' | 'es' | 'it' | 'both',
       });
 
-      // Update i18n language
-      await changeAppLanguage(lang.code);
+      await utils.botSettings.get.invalidate();
+      setDirty(false);
 
       toast.success(t('languageSettingsPage.text0'));
     } catch (error) {
@@ -104,12 +109,15 @@ export default function LanguageSettings() {
 
   const currentMessages = sampleMessages[selectedLanguage as keyof typeof sampleMessages] || sampleMessages.ar;
 
+  if (settingsQuery.isError) return <WorkspaceState kind="error" onRetry={() => void settingsQuery.refetch()} />;
+  if (settingsQuery.isLoading) return <p role="status">{t('common.loading')}</p>;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('languageSettingsPage.text2')}</h1>
         <p className="text-muted-foreground mt-2">
-          {t('languageSettingsPage.text3')}
+          {t('assistantSectionsUx.languageScope')}
         </p>
       </div>
 
@@ -159,9 +167,6 @@ export default function LanguageSettings() {
                         <div>
                           <h3 className="font-semibold">{lang.nativeName}</h3>
                           <p className="text-sm text-muted-foreground">{lang.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {lang.currencySymbol} {lang.currency}
-                          </p>
                         </div>
                       </div>
                       {selectedLanguage === lang.code && (
@@ -175,6 +180,7 @@ export default function LanguageSettings() {
                   </CardContent>
                 </Card>
               ))}
+              <Button type="button" variant={selectedLanguage === 'both' ? 'secondary' : 'outline'} aria-pressed={selectedLanguage === 'both'} onClick={() => handleLanguageSelect('both')} className="w-full">{t('botSettingsPage.langBoth')}</Button>
 
               <Button
                 onClick={handleSave}
@@ -262,8 +268,7 @@ export default function LanguageSettings() {
                     {t('languageSettingsPage.text14')}
                   </h4>
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    {t('languageSettingsPage.text15')}
-                    {t('languageSettingsPage.text16')}
+                    {t('assistantSectionsUx.languageScope')}
                   </p>
                 </div>
               </div>

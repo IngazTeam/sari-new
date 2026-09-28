@@ -228,7 +228,7 @@ const CANONICAL_REDIRECTS: Readonly<Record<string, string>> = {
   '/merchant/whatsapp-setup': '/merchant/whatsapp',
   '/merchant/sari-personality': '/merchant/bot-settings',
   '/merchant/website-analysis': '/merchant/smart-analysis',
-  '/merchant/keywords': '/merchant/smart-analysis',
+  '/merchant/keywords': '/merchant/quick-responses',
   '/merchant/weekly-reports': '/merchant/reports',
   '/admin/packages': '/admin/subscription-plans',
   '/admin/addons': '/admin/subscription-addons',

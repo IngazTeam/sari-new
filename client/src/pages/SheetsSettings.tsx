@@ -1,22 +1,35 @@
-import { useState, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle2, XCircle, ExternalLink, FileSpreadsheet, Settings, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  ExternalLink,
+  FileSpreadsheet,
+  Settings,
+  RefreshCw,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function SheetsSettings() {
   const { t } = useTranslation();
   const [isConnecting, setIsConnecting] = useState(false);
 
   // الحصول على حالة الاتصال
-  const { data: status, isLoading: statusLoading, refetch: refetchStatus } = trpc.sheets.getStatus.useQuery();
+  const {
+    data: status,
+    isLoading: statusLoading,
+    refetch: refetchStatus,
+  } = trpc.sheets.getStatus.useQuery();
 
   // الحصول على إعدادات التقارير
-  const { data: reportSettings, refetch: refetchSettings } = trpc.sheets.getReportSettings.useQuery();
+  const { data: reportSettings, refetch: refetchSettings } =
+    trpc.sheets.getReportSettings.useQuery();
 
   // الحصول على رابط التفويض
   const { data: authData } = trpc.sheets.getAuthUrl.useQuery();
@@ -25,18 +38,14 @@ export default function SheetsSettings() {
   const setupMutation = trpc.sheets.setupSpreadsheet.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        (toast as any)({
-          title: 'نجح الإعداد',
-          description: data.message,
-        });
+        toast.success("نجح الإعداد", { description: data.message });
         refetchStatus();
       } else {
-        (toast as any)({
-          title: 'فشل الإعداد',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error("فشل الإعداد", { description: data.message });
       }
+    },
+    onError: error => {
+      toast.error(error.message);
     },
   });
 
@@ -44,18 +53,14 @@ export default function SheetsSettings() {
   const updateSettingsMutation = trpc.sheets.updateReportSettings.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        (toast as any)({
-          title: 'تم التحديث',
-          description: data.message,
-        });
+        toast.success("تم التحديث", { description: data.message });
         refetchSettings();
       } else {
-        (toast as any)({
-          title: 'فشل التحديث',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error("فشل التحديث", { description: data.message });
       }
+    },
+    onError: error => {
+      toast.error(error.message);
     },
   });
 
@@ -63,18 +68,14 @@ export default function SheetsSettings() {
   const disconnectMutation = trpc.sheets.disconnect.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        (toast as any)({
-          title: 'تم الفصل',
-          description: data.message,
-        });
+        toast.success("تم الفصل", { description: data.message });
         refetchStatus();
       } else {
-        (toast as any)({
-          title: 'فشل الفصل',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error("فشل الفصل", { description: data.message });
       }
+    },
+    onError: error => {
+      toast.error(error.message);
     },
   });
 
@@ -91,7 +92,7 @@ export default function SheetsSettings() {
   };
 
   const handleDisconnect = () => {
-    if (confirm('هل أنت متأكد من فصل الاتصال بـ Google Sheets؟')) {
+    if (confirm("هل أنت متأكد من فصل الاتصال بـ Google Sheets؟")) {
       disconnectMutation.mutate();
     }
   };
@@ -116,8 +117,10 @@ export default function SheetsSettings() {
     <>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('workspacePages.sheets')}</h1>
-          <p className="text-muted-foreground">{t('sheetsSettings.auto_0')}</p>
+          <h1 className="text-3xl font-bold mb-2">
+            {t("workspacePages.sheets")}
+          </h1>
+          <p className="text-muted-foreground">{t("sheetsSettings.auto_0")}</p>
         </div>
 
         {/* حالة الاتصال */}
@@ -126,9 +129,11 @@ export default function SheetsSettings() {
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-6 h-6 text-green-600" />
               <div>
-                <h2 className="text-xl font-semibold">{t('sheetsSettingsPage.text1')}</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("sheetsSettingsPage.text8")}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  {status?.isConnected ? 'متصل' : 'غير متصل'}
+                  {status?.isConnected ? "متصل" : "غير متصل"}
                 </p>
               </div>
             </div>
@@ -154,15 +159,23 @@ export default function SheetsSettings() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${status.spreadsheetId}`, '_blank')}
+                    onClick={() =>
+                      window.open(
+                        `https://docs.google.com/spreadsheets/d/${status.spreadsheetId}`,
+                        "_blank"
+                      )
+                    }
                   >
-                    <ExternalLink className="w-4 h-4 ml-2" />{t('sheetsSettings.auto_1')}</Button>
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                    {t("sheetsSettings.auto_1")}
+                  </Button>
                 </div>
               )}
 
               {status.lastSync && (
                 <p className="text-sm text-muted-foreground">
-                  آخر مزامنة: {new Date(status.lastSync).toLocaleString('ar-SA')}
+                  آخر مزامنة:{" "}
+                  {new Date(status.lastSync).toLocaleString("ar-SA")}
                 </p>
               )}
 
@@ -172,37 +185,42 @@ export default function SheetsSettings() {
                     onClick={handleSetup}
                     disabled={setupMutation.isPending}
                   >
-                    {setupMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                    {setupMutation.isPending && (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    )}
                     إعداد Spreadsheet
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  onClick={() => refetchStatus()}
-                >
-                  <RefreshCw className="w-4 h-4 ml-2" />{t('sheetsSettings.auto_2')}</Button>
+                <Button variant="outline" onClick={() => refetchStatus()}>
+                  <RefreshCw className="w-4 h-4 ml-2" />
+                  {t("sheetsSettings.auto_2")}
+                </Button>
 
                 <Button
                   variant="destructive"
                   onClick={handleDisconnect}
                   disabled={disconnectMutation.isPending}
                 >
-                  {disconnectMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                  {disconnectMutation.isPending && (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  )}
                   فصل الاتصال
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_3')}</p>
-              <Button
-                onClick={handleConnect}
-                disabled={isConnecting}
-                size="lg"
-              >
-                {isConnecting && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                <FileSpreadsheet className="w-5 h-5 ml-2" />{t('sheetsSettings.auto_4')}</Button>
+              <p className="text-sm text-muted-foreground">
+                {t("sheetsSettings.auto_3")}
+              </p>
+              <Button onClick={handleConnect} disabled={isConnecting} size="lg">
+                {isConnecting && (
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                )}
+                <FileSpreadsheet className="w-5 h-5 ml-2" />
+                {t("sheetsSettings.auto_4")}
+              </Button>
             </div>
           )}
         </Card>
@@ -213,47 +231,78 @@ export default function SheetsSettings() {
             <div className="flex items-center gap-3 mb-6">
               <Settings className="w-6 h-6 text-primary" />
               <div>
-                <h2 className="text-xl font-semibold">{t('sheetsSettingsPage.text2')}</h2>
-                <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_5')}</p>
+                <h2 className="text-xl font-semibold">
+                  {t("sheetsSettingsPage.text10")}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("sheetsSettings.auto_5")}
+                </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="daily-reports" className="text-base font-medium">{t('sheetsSettings.auto_6')}</Label>
-                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_7')}</p>
+                  <Label
+                    htmlFor="daily-reports"
+                    className="text-base font-medium"
+                  >
+                    {t("sheetsSettings.auto_6")}
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t("sheetsSettings.auto_7")}
+                  </p>
                 </div>
                 <Switch
                   id="daily-reports"
                   checked={reportSettings?.sendDailyReports || false}
-                  onCheckedChange={(checked) => handleToggleSetting('sendDailyReports', checked)}
+                  onCheckedChange={checked =>
+                    handleToggleSetting("sendDailyReports", checked)
+                  }
                   disabled={updateSettingsMutation.isPending}
                 />
               </div>
 
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="weekly-reports" className="text-base font-medium">{t('sheetsSettings.auto_8')}</Label>
-                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_9')}</p>
+                  <Label
+                    htmlFor="weekly-reports"
+                    className="text-base font-medium"
+                  >
+                    {t("sheetsSettings.auto_8")}
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t("sheetsSettings.auto_9")}
+                  </p>
                 </div>
                 <Switch
                   id="weekly-reports"
                   checked={reportSettings?.sendWeeklyReports || false}
-                  onCheckedChange={(checked) => handleToggleSetting('sendWeeklyReports', checked)}
+                  onCheckedChange={checked =>
+                    handleToggleSetting("sendWeeklyReports", checked)
+                  }
                   disabled={updateSettingsMutation.isPending}
                 />
               </div>
 
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="monthly-reports" className="text-base font-medium">{t('sheetsSettings.auto_10')}</Label>
-                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_11')}</p>
+                  <Label
+                    htmlFor="monthly-reports"
+                    className="text-base font-medium"
+                  >
+                    {t("sheetsSettings.auto_10")}
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t("sheetsSettings.auto_11")}
+                  </p>
                 </div>
                 <Switch
                   id="monthly-reports"
                   checked={reportSettings?.sendMonthlyReports || false}
-                  onCheckedChange={(checked) => handleToggleSetting('sendMonthlyReports', checked)}
+                  onCheckedChange={checked =>
+                    handleToggleSetting("sendMonthlyReports", checked)
+                  }
                   disabled={updateSettingsMutation.isPending}
                 />
               </div>
@@ -264,12 +313,14 @@ export default function SheetsSettings() {
         {/* معلومات إضافية */}
         {status?.isConnected && (
           <Card className="p-6 mt-6 bg-blue-50 border-blue-200">
-            <h3 className="font-semibold mb-2 text-blue-900">{t('sheetsSettingsPage.text3')}</h3>
+            <h3 className="font-semibold mb-2 text-blue-900">
+              {t("sheetsSettingsPage.text11")}
+            </h3>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>{t('sheetsSettingsPage.text4')}</li>
-              <li>{t('sheetsSettingsPage.text5')}</li>
-              <li>{t('sheetsSettingsPage.text6')}</li>
-              <li>{t('sheetsSettingsPage.text7')}</li>
+              <li>{t("sheetsSettingsPage.text12")}</li>
+              <li>{t("sheetsSettingsPage.text13")}</li>
+              <li>{t("sheetsSettingsPage.text14")}</li>
+              <li>{t("sheetsSettingsPage.text15")}</li>
             </ul>
           </Card>
         )}

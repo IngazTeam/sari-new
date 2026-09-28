@@ -1877,16 +1877,17 @@ window.TENANT_PAGES = [
     "route": "/merchant/keywords",
     "title": "مدخل لوحة التاجر",
     "group": "settings",
-    "redirect": "/merchant/smart-analysis",
+    "redirect": "/merchant/quick-responses",
     "note": "مسار مسجل ضمن مساحة التاجر؛ توحيد التنقل وحالات الصفحة.",
-    "kind": "analysis",
-    "action": "معاينة التحليل",
+    "kind": "list",
+    "action": "رد سريع جديد",
     "labels": [
-      "رابط الموقع",
-      "نطاق التحليل",
-      "اللغة"
+      "العبارة",
+      "الرد",
+      "الكلمات المفتاحية",
+      "الحالة"
     ],
-    "sample": "موقع النشاط"
+    "sample": "مدة التوصيل"
   },
   {
     "route": "/merchant/voice-messages",

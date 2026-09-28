@@ -176,7 +176,7 @@ export default function PlatformIntegrations() {
       logo: '🛍️',
       connected: sallaConnection?.connected,
       storeUrl: sallaConnection?.storeUrl,
-      setupUrl: '/merchant/integrations/salla',
+      setupUrl: '/merchant/salla',
     },
     {
       id: 'zid',
@@ -194,7 +194,7 @@ export default function PlatformIntegrations() {
       logo: '🛒',
       connected: wooSettings?.isActive === 1,
       storeUrl: wooSettings?.storeUrl,
-      setupUrl: '/merchant/integrations/woocommerce',
+      setupUrl: '/merchant/woocommerce/settings',
     },
     {
       id: 'shopify',
@@ -202,7 +202,7 @@ export default function PlatformIntegrations() {
       description: 'منصة عالمية للتجارة الإلكترونية',
       logo: '🏬',
       connected: false,
-      setupUrl: '/merchant/integrations/shopify',
+      setupUrl: '', unavailable: true,
     },
     {
       id: 'byaan',
@@ -318,10 +318,10 @@ export default function PlatformIntegrations() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  disabled={!!connectedPlatform}
+                  disabled={!!connectedPlatform || platform.unavailable}
                   onClick={() => (window.location.href = platform.setupUrl)}
                 >
-                  {connectedPlatform ? 'غير متاح (افصل المنصة الحالية أولاً)' : 'ربط الآن'}
+                  {platform.unavailable ? t('assistantSectionsUx.notAvailable') : connectedPlatform ? 'غير متاح (افصل المنصة الحالية أولاً)' : 'ربط الآن'}
                 </Button>
               </CardContent>
             </Card>

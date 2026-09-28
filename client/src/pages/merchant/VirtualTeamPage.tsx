@@ -1,596 +1,797 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
-  Users, Plus, Pencil, Trash2, Save, Sparkles,
-  MessageCircle, X, Star, Zap, Shield, Clock
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { trpc } from '@/lib/trpc';
-import { AgentAvatar, AVATAR_OPTIONS, AVATAR_LABELS, type AvatarKey } from '@/components/AgentAvatars';
-
-const TONE_OPTIONS = [
-  { value: 'friendly', label: 'ودود', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-  { value: 'professional', label: 'رسمي', color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  { value: 'casual', label: 'عفوي', color: 'bg-orange-100 text-orange-700 border-orange-300' },
-  { value: 'empathetic', label: 'متعاطف', color: 'bg-purple-100 text-purple-700 border-purple-300' },
-  { value: 'persuasive', label: 'مقنع', color: 'bg-amber-100 text-amber-700 border-amber-300' },
-];
-
-type AgentFormData = {
-  name: string;
-  role: string;
-  department: string;
-  personalityPrompt: string;
-  tone: string;
-  avatarEmoji: string;
-  isDefault: boolean;
-  triggerKeywords: string[];
-  shiftStart: string;
-  shiftEnd: string;
-};
-
-const emptyForm: AgentFormData = {
-  name: '', role: '', department: '', personalityPrompt: '',
-  tone: 'friendly', avatarEmoji: 'reception', isDefault: false, triggerKeywords: [],
-  shiftStart: '', shiftEnd: '',
-};
+  Plus,
+  Pencil,
+  Trash2,
+  Save,
+  Sparkles,
+  X,
+  Clock,
+  Star,
+} from "lucide-react";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { AgentAvatar, AVATAR_OPTIONS } from "@/components/AgentAvatars";
+import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import {
+  emptyVirtualAgent,
+  parseAgentKeywords,
+  validateVirtualAgent,
+  virtualAgentPayload,
+  virtualAgentTones,
+  type VirtualAgentDraft,
+} from "../../../../shared/virtual-agent-form";
 
 export default function VirtualTeamPage() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const { data: agents, isLoading } = trpc.virtualAgents.list.useQuery();
-
-  const createMutation = trpc.virtualAgents.create.useMutation({
-    onSuccess: () => { toast.success('تم إضافة الشخصية بنجاح ✨'); utils.virtualAgents.list.invalidate(); setDialogOpen(false); },
-    onError: (e) => toast.error('خطأ: ' + e.message),
+  const query = trpc.virtualAgents.list.useQuery();
+  type Agent = NonNullable<typeof query.data>[number];
+  const [open, setOpen] = useState(false),
+    [editing, setEditing] = useState<number | null>(null);
+  const [form, setForm] = useState<VirtualAgentDraft>({ ...emptyVirtualAgent });
+  const [keywords, setKeywords] = useState("");
+  const [errors, setErrors] = useState<ReturnType<typeof validateVirtualAgent>>(
+    {}
+  );
+  const [tab, setTab] = useState<"identity" | "routing">("identity");
+  const [deleting, setDeleting] = useState<Agent | null>(null);
+  const [filter, setFilter] = useState("");
+  const [saveError, setSaveError] = useState(false);
+  const saved = () => {
+    void utils.virtualAgents.list.invalidate();
+    setOpen(false);
+    setSaveError(false);
+    toast.success(t("virtualTeamUx.saved"));
+  };
+  const failed = () => setSaveError(true);
+  const create = trpc.virtualAgents.create.useMutation({
+    onSuccess: saved,
+    onError: failed,
   });
-  const updateMutation = trpc.virtualAgents.update.useMutation({
-    onSuccess: () => { toast.success('تم تحديث الشخصية'); utils.virtualAgents.list.invalidate(); setDialogOpen(false); },
-    onError: (e) => toast.error('خطأ: ' + e.message),
+  const update = trpc.virtualAgents.update.useMutation({
+    onSuccess: saved,
+    onError: failed,
   });
-  const deleteMutation = trpc.virtualAgents.delete.useMutation({
-    onSuccess: () => { toast.success('تم حذف الشخصية'); utils.virtualAgents.list.invalidate(); },
-    onError: (e) => toast.error('خطأ: ' + e.message),
-  });
-  const seedMutation = trpc.virtualAgents.seedTemplates.useMutation({
-    onSuccess: (data: any) => {
-      if (data.success) { toast.success(`تم إضافة ${data.count} شخصيات`); utils.virtualAgents.list.invalidate(); }
-      else toast.info('لديك شخصيات بالفعل');
+  const remove = trpc.virtualAgents.delete.useMutation({
+    onSuccess: () => {
+      setDeleting(null);
+      void query.refetch();
+      toast.success(t("virtualTeamUx.deleted"));
     },
-    onError: (e) => toast.error('خطأ: ' + e.message),
   });
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<AgentFormData>({ ...emptyForm });
-  const [kwInput, setKwInput] = useState('');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setForm({ ...emptyForm });
-    setDialogOpen(true);
+  const seed = trpc.virtualAgents.seedTemplates.useMutation({
+    onSuccess: () => {
+      void query.refetch();
+    },
+    onError: () => toast.error(t("virtualTeamUx.saveFailed")),
+  });
+  const busy = create.isPending || update.isPending;
+  const agents = query.data || [];
+  function edit(agent?: Agent) {
+    setEditing(agent?.id ?? null);
+    setKeywords("");
+    setErrors({});
+    setSaveError(false);
+    setTab("identity");
+    setForm(
+      agent
+        ? {
+            name: agent.name,
+            role: agent.role,
+            department: agent.department || "",
+            personalityPrompt: agent.personalityPrompt,
+            tone: agent.tone,
+            avatarEmoji: agent.avatarEmoji || "default",
+            isDefault: Boolean(agent.isDefault),
+            isActive: Boolean(agent.isActive),
+            triggerKeywords: parseAgentKeywords(agent.triggerKeywords),
+            shiftStart: agent.shiftStart || "",
+            shiftEnd: agent.shiftEnd || "",
+          }
+        : { ...emptyVirtualAgent, triggerKeywords: [] }
+    );
+    setOpen(true);
+  }
+  const set = <K extends keyof VirtualAgentDraft>(
+    key: K,
+    value: VirtualAgentDraft[K]
+  ) => {
+    setForm(old => ({ ...old, [key]: value }));
+    setErrors(old => ({ ...old, [key]: undefined }));
+    setSaveError(false);
   };
-
-  const openEdit = (agent: any) => {
-    setEditingId(agent.id);
-    let keywords: string[] = [];
-    try { keywords = agent.triggerKeywords ? JSON.parse(agent.triggerKeywords) : []; } catch { keywords = []; }
-    setForm({
-      name: agent.name,
-      role: agent.role,
-      department: agent.department || '',
-      personalityPrompt: agent.personalityPrompt,
-      tone: agent.tone,
-      avatarEmoji: agent.avatarEmoji || 'default',
-      isDefault: agent.isDefault === 1,
-      triggerKeywords: keywords,
-      shiftStart: agent.shiftStart || '',
-      shiftEnd: agent.shiftEnd || '',
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!form.name || !form.role || !form.personalityPrompt) {
-      toast.error('يرجى ملء الحقول المطلوبة');
+  function addKeyword() {
+    const word = keywords.trim();
+    if (!word) return;
+    const next = parseAgentKeywords([...form.triggerKeywords, word]);
+    if (JSON.stringify(next).length > 2000) {
+      setErrors(old => ({ ...old, triggerKeywords: "keywords" }));
       return;
     }
-    const payload = {
-      name: form.name, role: form.role,
-      department: form.department || undefined,
-      personalityPrompt: form.personalityPrompt,
-      tone: form.tone as any, avatarEmoji: form.avatarEmoji,
-      isDefault: form.isDefault,
-      triggerKeywords: JSON.stringify(form.triggerKeywords),
-      shiftStart: form.shiftStart || undefined,
-      shiftEnd: form.shiftEnd || undefined,
-    };
-    if (editingId) updateMutation.mutate({ id: editingId, ...payload });
-    else createMutation.mutate(payload);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container max-w-5xl py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse space-y-4 w-full max-w-lg">
-            <div className="h-8 bg-muted rounded w-2/3" />
-            <div className="h-4 bg-muted rounded w-1/2" />
-            <div className="grid grid-cols-3 gap-4">
-              <div className="h-48 bg-muted rounded-xl" />
-              <div className="h-48 bg-muted rounded-xl" />
-              <div className="h-48 bg-muted rounded-xl" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    set("triggerKeywords", next);
+    setKeywords("");
   }
-
+  function save() {
+    const draft = {
+      ...form,
+      triggerKeywords: parseAgentKeywords([
+        ...form.triggerKeywords,
+        keywords.trim(),
+      ]),
+    };
+    const next = validateVirtualAgent(draft);
+    setErrors(next);
+    setSaveError(false);
+    const first = Object.keys(next)[0];
+    if (first) {
+      setTab(
+        ["shiftStart", "triggerKeywords"].includes(first)
+          ? "routing"
+          : "identity"
+      );
+      requestAnimationFrame(() =>
+        document.getElementById(`agent-${first}`)?.focus()
+      );
+      return;
+    }
+    const payload = virtualAgentPayload(draft);
+    // null explicitly removes an existing shift; undefined leaves it unchanged.
+    if (editing !== null)
+      update.mutate({
+        id: editing,
+        ...payload,
+        isActive: draft.isActive,
+        shiftStart: draft.shiftStart || null,
+        shiftEnd: draft.shiftEnd || null,
+      });
+    else
+      create.mutate({
+        ...payload,
+        shiftStart: draft.shiftStart || undefined,
+        shiftEnd: draft.shiftEnd || undefined,
+      });
+  }
+  const error = (key: keyof VirtualAgentDraft) =>
+    errors[key] ? (
+      <p
+        id={`agent-${key}-error`}
+        role="alert"
+        className="text-sm text-destructive"
+      >
+        {t(
+          errors[key] === "required"
+            ? "virtualTeamUx.required"
+            : errors[key] === "tooLong"
+              ? "virtualTeamUx.tooLong"
+              : errors[key] === "schedule"
+                ? "virtualTeamUx.schedule"
+                : "virtualTeamUx.keywords"
+        )}
+      </p>
+    ) : null;
+  const field = (key: "name" | "role" | "department") => (
+    <div className="space-y-2">
+      <Label htmlFor={`agent-${key}`}>
+        {t(
+          key === "name"
+            ? "virtualTeamUx.name"
+            : key === "role"
+              ? "virtualTeamUx.role"
+              : "virtualTeamUx.department"
+        )}
+        {key !== "department" ? " *" : ""}
+      </Label>
+      <Input
+        id={`agent-${key}`}
+        autoComplete="off"
+        value={form[key]}
+        maxLength={100}
+        required={key !== "department"}
+        aria-invalid={!!errors[key]}
+        aria-describedby={errors[key] ? `agent-${key}-error` : undefined}
+        onChange={e => set(key, e.target.value)}
+      />
+      {error(key)}
+    </div>
+  );
+  if (query.isLoading)
+    return (
+      <p role="status" className="p-8">
+        {t("virtualTeamUx.loading")}
+      </p>
+    );
+  if (query.isError)
+    return <WorkspaceState kind="error" onRetry={() => void query.refetch()} />;
   return (
-    <div className="container max-w-5xl py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="mx-auto max-w-6xl space-y-6 py-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary text-white shadow-lg">
-              <Users className="h-6 w-6" />
-            </div>
-            فريق العمل الافتراضي
-          </h1>
-          <p className="text-muted-foreground">
-            فريقك الذكي يعمل 24/7 بأسلوب يناسب كل عميل — كل شخصية لها دور ونبرة وكلمات تفعيل
+          <p className="mb-2 text-sm text-muted-foreground">
+            {t("virtualTeamUx.eyebrow")}
+          </p>
+          <h1 className="text-2xl font-bold">{t("virtualTeamUx.title")}</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            {t("virtualTeamUx.description")}
           </p>
         </div>
-        <div className="flex gap-2">
-          {(!agents || agents.length === 0) && (
-            <Button variant="outline" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
-              <Sparkles className="h-4 w-4 ml-2" />
-              {seedMutation.isPending ? 'جارٍ...' : 'قوالب جاهزة'}
-            </Button>
-          )}
-          <Button onClick={openCreate} className="bg-primary shadow-lg">
-            <Plus className="h-4 w-4 ml-2" />
-            أضف شخصية
-          </Button>
-        </div>
+        <Button
+          type="button"
+          onClick={() => edit()}
+          disabled={agents.length >= 10}
+        >
+          <Plus className="size-4" />
+          {t("virtualTeamUx.new")}
+        </Button>
+      </header>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4">
+        <Badge variant="secondary">
+          {agents.length} / 10 {t("virtualTeamUx.personas")}
+        </Badge>
+        <span className="text-sm text-muted-foreground">
+          {agents.filter(a => a.isActive).length} {t("virtualTeamUx.active")}
+        </span>
+        <Link
+          className="ms-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
+          href="/merchant/bot-settings"
+        >
+          {t("virtualTeamUx.assistantSettings")}
+        </Link>
+        <Link
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          href="/merchant/test-sari"
+        >
+          {t("virtualTeamUx.test")}
+        </Link>
       </div>
-
-      {/* Agent Cards */}
-      {agents && agents.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {agents.map((agent: any) => {
-            const toneInfo = TONE_OPTIONS.find(t => t.value === agent.tone) || TONE_OPTIONS[0];
-            let keywords: string[] = [];
-            try { keywords = agent.triggerKeywords ? JSON.parse(agent.triggerKeywords) : []; } catch {}
-
-            return (
-              <Card
-                key={agent.id}
-                className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* Workspace header */}
-                <div className="h-20 bg-primary relative">
-                  {agent.isDefault && (
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 text-xs gap-1">
-                        <Star className="h-3 w-3 fill-current" />
-                        افتراضي
-                      </Badge>
+      {agents.length > 0 && (
+        <div className="max-w-sm space-y-2">
+          <Label htmlFor="agent-search">{t("virtualTeamUx.search")}</Label>
+          <Input
+            id="agent-search"
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+          />
+        </div>
+      )}
+      {!agents.length ? (
+        <Card>
+          <CardContent className="space-y-4 py-12 text-center">
+            <Sparkles className="mx-auto size-8 text-primary" />
+            <h2 className="text-xl font-semibold">
+              {t("virtualTeamUx.empty")}
+            </h2>
+            <p className="text-muted-foreground">
+              {t("virtualTeamUx.templatesDescription")}
+            </p>
+            <Button
+              type="button"
+              onClick={() => seed.mutate()}
+              disabled={seed.isPending}
+            >
+              {seed.isPending
+                ? t("virtualTeamUx.loading")
+                : t("virtualTeamUx.templates")}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {agents
+            .filter(a =>
+              `${a.name} ${a.role} ${a.department || ""}`.includes(filter)
+            )
+            .map(agent => (
+              <Card key={agent.id} className="flex flex-col">
+                <CardContent className="flex flex-1 flex-col gap-4 p-5">
+                  <div className="flex items-center gap-3">
+                    <AgentAvatar avatar={agent.avatarEmoji || "default"} />
+                    <div className="min-w-0 flex-1">
+                      <h2 className="break-words font-semibold">
+                        {agent.name}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.role}
+                      </p>
                     </div>
-                  )}
-                  {/* Status dot */}
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                    <span className={`h-2.5 w-2.5 rounded-full ${agent.isActive ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50 animate-pulse' : 'bg-white/40'}`} />
-                  </div>
-                  {/* Action buttons - appear on hover */}
-                  <div className="absolute bottom-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(agent)}
-                      aria-label={t('merchantUx.actions.editNamed', { name: agent.name })}
-                      className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirmId(agent.id)}
-                      aria-label={t('merchantUx.actions.deleteNamed', { name: agent.name })}
-                      className="p-1.5 rounded-lg bg-red-500/30 backdrop-blur-sm text-white hover:bg-red-500/50 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Avatar overlapping header */}
-                <div className="flex justify-center -mt-8 relative z-10">
-                  <AgentAvatar avatar={agent.avatarEmoji || 'default'} size="lg" />
-                </div>
-
-                <CardContent className="pt-3 pb-5 text-center space-y-3">
-                  {/* Name & Role */}
-                  <div>
-                    <h3 className="font-bold text-lg">{agent.name}</h3>
-                    <p className="text-sm text-muted-foreground">{agent.role}</p>
-                  </div>
-
-                  {/* Badges row */}
-                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                    {agent.department && (
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {agent.department}
-                      </Badge>
-                    )}
-                    <Badge className={`text-xs border ${toneInfo.color}`}>
-                      {toneInfo.label}
-                    </Badge>
-                    {agent.shiftStart && agent.shiftEnd ? (
-                      <Badge variant="outline" className="text-xs font-normal gap-1">
-                        <Clock className="h-3 w-3" />
-                        {agent.shiftStart} - {agent.shiftEnd}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs font-normal gap-1 text-emerald-600 border-emerald-200">
-                        <Clock className="h-3 w-3" />
-                        24/7
-                      </Badge>
+                    {!!agent.isDefault && (
+                      <Star
+                        className="size-4 text-primary"
+                        aria-label={t("virtualTeamUx.default")}
+                      />
                     )}
                   </div>
-
-                  {/* Keywords */}
-                  {keywords.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {keywords.slice(0, 3).map((kw, i) => (
-                        <span key={i} className="text-[11px] bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground">
-                          {kw}
-                        </span>
-                      ))}
-                      {keywords.length > 3 && (
-                        <span className="text-[11px] text-muted-foreground px-1">+{keywords.length - 3}</span>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={agent.isActive ? "secondary" : "outline"}>
+                      {t(
+                        agent.isActive
+                          ? "virtualTeamUx.active"
+                          : "virtualTeamUx.paused"
                       )}
-                    </div>
-                  )}
-
-                  {/* Prompt preview */}
-                  <p className="text-xs text-muted-foreground line-clamp-2 px-2 leading-relaxed">
+                    </Badge>
+                    <Badge variant="outline">
+                      {t(
+                        agent.tone === "friendly"
+                          ? "virtualTeamUx.tones.friendly"
+                          : agent.tone === "professional"
+                            ? "virtualTeamUx.tones.professional"
+                            : agent.tone === "casual"
+                              ? "virtualTeamUx.tones.casual"
+                              : agent.tone === "empathetic"
+                                ? "virtualTeamUx.tones.empathetic"
+                                : "virtualTeamUx.tones.persuasive"
+                      )}
+                    </Badge>
+                    {agent.department && (
+                      <Badge variant="outline">{agent.department}</Badge>
+                    )}
+                  </div>
+                  <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground">
                     {agent.personalityPrompt}
                   </p>
-
-                  {/* Status bar */}
-                  <div className="flex items-center justify-center gap-2 pt-1">
-                    <span className={`text-xs font-medium ${agent.isActive ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                      {agent.isActive ? '● نشط' : '○ متوقف'}
-                    </span>
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="size-4" />
+                    {agent.shiftStart && agent.shiftEnd ? (
+                      <span dir="ltr">
+                        {agent.shiftStart} – {agent.shiftEnd}
+                      </span>
+                    ) : (
+                      t("virtualTeamUx.always")
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {parseAgentKeywords(agent.triggerKeywords)
+                      .slice(0, 4)
+                      .map(k => (
+                        <Badge key={k} variant="outline">
+                          {k}
+                        </Badge>
+                      ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 border-t pt-3">
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => edit(agent)}
+                      aria-label={`${t("virtualTeamUx.edit")} ${agent.name}`}
+                    >
+                      <Pencil className="size-4" />
+                      {t("virtualTeamUx.edit")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        remove.reset();
+                        setDeleting(agent);
+                      }}
+                      aria-label={`${t("virtualTeamUx.delete")} ${agent.name}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
-
-          {/* Add New Card */}
-          <button
-            onClick={openCreate}
-            className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 transition-all min-h-[280px] group"
-          >
-            <div className="p-3 rounded-2xl bg-muted/50 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/30 transition-colors">
-              <Plus className="h-7 w-7" />
-            </div>
-            <span className="text-sm font-medium">أضف شخصية جديدة</span>
-          </button>
+            ))}
+          {filter &&
+            !agents.some(a =>
+              `${a.name} ${a.role} ${a.department || ""}`.includes(filter)
+            ) && <p role="status">{t("virtualTeamUx.noResults")}</p>}
         </div>
-      ) : (
-        <Card className="py-16 border-0 shadow-lg bg-accent">
-          <CardContent className="flex flex-col items-center gap-5 text-center">
-            <div className="p-5 rounded-2xl bg-primary text-white shadow-lg">
-              <Users className="h-10 w-10" />
-            </div>
-            <h3 className="text-2xl font-bold">أنشئ فريقك الافتراضي</h3>
-            <p className="text-muted-foreground max-w-md">
-              أضف شخصيات بأدوار مختلفة — استقبال، مبيعات، دعم فني — كل شخصية ترد بأسلوبها الخاص
-            </p>
-            <div className="flex gap-3 mt-2">
-              <Button onClick={() => seedMutation.mutate()} variant="outline" disabled={seedMutation.isPending} className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                ابدأ بقوالب جاهزة
-              </Button>
-              <Button onClick={openCreate} className="bg-primary gap-2">
-                <Plus className="h-4 w-4" />
-                أنشئ من الصفر
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       )}
-
-      {/* Preview Card */}
-      {agents && agents.length >= 2 && (
-        <Card className="border-0 shadow-md overflow-hidden">
-          <div className="p-5 border-b bg-muted/30">
-            <h3 className="font-semibold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-violet-600" />
-              معاينة التحويل
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">هكذا يبدو التحويل بين شخصيات فريقك</p>
-          </div>
-          <CardContent className="p-5">
-            <div className="bg-[#0b141a] rounded-xl p-4 space-y-3 max-w-sm mx-auto text-sm">
-              <div className="flex justify-start">
-                <div className="bg-[#202c33] text-white px-3 py-2 rounded-xl rounded-tl-sm max-w-[80%]">
-                  أبي أرجع المنتج اللي طلبته
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <div className="bg-[#005c4b] text-white px-3 py-2 rounded-xl rounded-tr-sm max-w-[80%]">
-                  <div className="text-xs text-emerald-300 mb-1">{agents[0]?.name}</div>
-                  لحظة أحولك لزميلي {agents.length > 1 ? agents[1].name : ''} من {agents.length > 1 ? agents[1].department || 'الدعم' : 'الدعم'}
-                </div>
-              </div>
-              {agents.length > 1 && (
-                <div className="flex justify-end">
-                  <div className="bg-[#005c4b] text-white px-3 py-2 rounded-xl rounded-tr-sm max-w-[80%]">
-                    <div className="text-xs text-emerald-300 mb-1">{agents[1].name}</div>
-                    أهلاً! أنا {agents[1].name}. أقدر أساعدك في موضوع الإرجاع 😊
+      <section className="rounded-xl border bg-muted/30 p-5">
+        <h2 className="font-semibold">{t("virtualTeamUx.how")}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {t("virtualTeamUx.howDescription")}
+        </p>
+      </section>
+      <Dialog
+        open={open}
+        onOpenChange={value => {
+          if (!busy) setOpen(value);
+        }}
+      >
+        <DialogContent
+          className="mw-persona-dialog flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+          onInteractOutside={e => e.preventDefault()}
+        >
+          <DialogHeader className="border-b p-5 pe-12 text-start">
+            <DialogTitle>
+              {t(editing !== null ? "virtualTeamUx.edit" : "virtualTeamUx.new")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("virtualTeamUx.formDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            noValidate
+            onSubmit={e => {
+              e.preventDefault();
+              save();
+            }}
+          >
+            <div
+              className="flex gap-2 border-b px-5 py-3"
+              aria-label={t("virtualTeamUx.sections")}
+            >
+              {(["identity", "routing"] as const).map(value => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={tab === value ? "secondary" : "ghost"}
+                  aria-pressed={tab === value}
+                  onClick={() => setTab(value)}
+                >
+                  {t(
+                    value === "identity"
+                      ? "virtualTeamUx.identity"
+                      : "virtualTeamUx.routing"
+                  )}
+                </Button>
+              ))}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+              {tab === "identity" ? (
+                <div className="space-y-5">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {field("name")}
+                    {field("role")}
+                  </div>
+                  {field("department")}
+                  <details className="rounded-xl border p-3">
+                    <summary className="cursor-pointer py-1 text-sm font-medium">
+                      {t("virtualTeamUx.avatar")} ·{" "}
+                      {AVATAR_OPTIONS.includes(
+                        form.avatarEmoji as (typeof AVATAR_OPTIONS)[number]
+                      )
+                        ? t(
+                            form.avatarEmoji === "support"
+                              ? "virtualTeamUx.avatars.support"
+                              : form.avatarEmoji === "sales"
+                                ? "virtualTeamUx.avatars.sales"
+                                : form.avatarEmoji === "reception"
+                                  ? "virtualTeamUx.avatars.reception"
+                                  : form.avatarEmoji === "manager"
+                                    ? "virtualTeamUx.avatars.manager"
+                                    : form.avatarEmoji === "tech"
+                                      ? "virtualTeamUx.avatars.tech"
+                                      : form.avatarEmoji === "marketing"
+                                        ? "virtualTeamUx.avatars.marketing"
+                                        : form.avatarEmoji === "consultant"
+                                          ? "virtualTeamUx.avatars.consultant"
+                                          : form.avatarEmoji === "creative"
+                                            ? "virtualTeamUx.avatars.creative"
+                                            : form.avatarEmoji === "analyst"
+                                              ? "virtualTeamUx.avatars.analyst"
+                                              : form.avatarEmoji === "hr"
+                                                ? "virtualTeamUx.avatars.hr"
+                                                : form.avatarEmoji === "finance"
+                                                  ? "virtualTeamUx.avatars.finance"
+                                                  : "virtualTeamUx.avatars.default"
+                          )
+                        : t("virtualTeamUx.currentAvatar")}
+                    </summary>
+                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {AVATAR_OPTIONS.map(avatar => (
+                        <button
+                          key={avatar}
+                          type="button"
+                          aria-pressed={form.avatarEmoji === avatar}
+                          onClick={() => set("avatarEmoji", avatar)}
+                          className={`flex flex-col items-center gap-2 rounded-xl border p-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${form.avatarEmoji === avatar ? "border-primary bg-primary/10" : "border-transparent hover:bg-muted"}`}
+                        >
+                          <AgentAvatar avatar={avatar} size="sm" />
+                          {t(
+                            avatar === "support"
+                              ? "virtualTeamUx.avatars.support"
+                              : avatar === "sales"
+                                ? "virtualTeamUx.avatars.sales"
+                                : avatar === "reception"
+                                  ? "virtualTeamUx.avatars.reception"
+                                  : avatar === "manager"
+                                    ? "virtualTeamUx.avatars.manager"
+                                    : avatar === "tech"
+                                      ? "virtualTeamUx.avatars.tech"
+                                      : avatar === "marketing"
+                                        ? "virtualTeamUx.avatars.marketing"
+                                        : avatar === "consultant"
+                                          ? "virtualTeamUx.avatars.consultant"
+                                          : avatar === "creative"
+                                            ? "virtualTeamUx.avatars.creative"
+                                            : avatar === "analyst"
+                                              ? "virtualTeamUx.avatars.analyst"
+                                              : avatar === "hr"
+                                                ? "virtualTeamUx.avatars.hr"
+                                                : avatar === "finance"
+                                                  ? "virtualTeamUx.avatars.finance"
+                                                  : "virtualTeamUx.avatars.default"
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+                  <fieldset className="space-y-2">
+                    <legend className="mb-2 text-sm font-medium">
+                      {t("virtualTeamUx.tone")}
+                    </legend>
+                    <div className="flex flex-wrap gap-2">
+                      {virtualAgentTones.map(tone => (
+                        <Button
+                          key={tone}
+                          type="button"
+                          variant={form.tone === tone ? "secondary" : "outline"}
+                          aria-pressed={form.tone === tone}
+                          onClick={() => set("tone", tone)}
+                        >
+                          {t(
+                            tone === "friendly"
+                              ? "virtualTeamUx.tones.friendly"
+                              : tone === "professional"
+                                ? "virtualTeamUx.tones.professional"
+                                : tone === "casual"
+                                  ? "virtualTeamUx.tones.casual"
+                                  : tone === "empathetic"
+                                    ? "virtualTeamUx.tones.empathetic"
+                                    : "virtualTeamUx.tones.persuasive"
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-personalityPrompt">
+                      {t("virtualTeamUx.instructions")} *
+                    </Label>
+                    <p
+                      id="agent-prompt-help"
+                      className="text-xs leading-relaxed text-muted-foreground"
+                    >
+                      {t("virtualTeamUx.instructionsHelp")}
+                    </p>
+                    <Textarea
+                      id="agent-personalityPrompt"
+                      rows={5}
+                      maxLength={2000}
+                      value={form.personalityPrompt}
+                      aria-invalid={!!errors.personalityPrompt}
+                      aria-describedby={`agent-prompt-help${errors.personalityPrompt ? " agent-personalityPrompt-error" : ""}`}
+                      onChange={e => set("personalityPrompt", e.target.value)}
+                    />
+                    <p className="text-end text-xs text-muted-foreground">
+                      {form.personalityPrompt.length} / 2000
+                    </p>
+                    {error("personalityPrompt")}
                   </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ─── Agent Editor Dialog (Popup) ─── */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              {editingId ? (
-                <><Pencil className="h-5 w-5 text-violet-600" /> تعديل الشخصية</>
               ) : (
-                <><Sparkles className="h-5 w-5 text-violet-600" /> شخصية جديدة</>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              {editingId ? 'عدّل بيانات الشخصية وأسلوبها' : 'أنشئ شخصية جديدة لفريقك الافتراضي'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 py-2">
-            {/* Avatar Picker */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">الصورة الرمزية</Label>
-              <div className="grid grid-cols-6 gap-2 p-3 bg-muted/40 rounded-xl">
-                {AVATAR_OPTIONS.map(key => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, avatarEmoji: key }))}
-                    aria-label={t('merchantUx.actions.selectNamed', { name: AVATAR_LABELS[key as AvatarKey] })}
-                    aria-pressed={form.avatarEmoji === key}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                      form.avatarEmoji === key
-                        ? 'bg-violet-100 dark:bg-violet-900/40 ring-2 ring-violet-500 scale-105 shadow-md'
-                        : 'hover:bg-muted hover:scale-105'
-                    }`}
-                  >
-                    <AgentAvatar avatar={key} size="sm" />
-                    <span className="text-[10px] text-muted-foreground">{AVATAR_LABELS[key]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Name + Role + Department */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-sm">الاسم <span className="text-red-500">*</span></Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="سارة"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-sm">الدور <span className="text-red-500">*</span></Label>
-                <Input
-                  value={form.role}
-                  onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}
-                  placeholder="موظفة استقبال"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-sm">القسم</Label>
-                <Input
-                  value={form.department}
-                  onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))}
-                  placeholder="الاستقبال"
-                />
-              </div>
-            </div>
-
-            {/* Tone Selector */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">الأسلوب</Label>
-              <div className="flex flex-wrap gap-2">
-                {TONE_OPTIONS.map(t => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, tone: t.value }))}
-                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      form.tone === t.value
-                        ? `${t.color} ring-2 ring-offset-2 shadow-sm`
-                        : 'border-muted text-muted-foreground hover:border-primary/30'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Personality Prompt */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">وصف الشخصية (System Prompt) <span className="text-red-500">*</span></Label>
-              <Textarea
-                value={form.personalityPrompt}
-                onChange={(e) => setForm(f => ({ ...f, personalityPrompt: e.target.value }))}
-                placeholder="أنتِ سارة، موظفة استقبال ودودة ومرحبة..."
-                rows={4}
-                className="resize-none"
-              />
-              <div className="text-xs text-muted-foreground text-left">
-                {form.personalityPrompt.length} حرف
-              </div>
-            </div>
-
-            {/* Trigger Keywords */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">كلمات التفعيل</Label>
-              {form.triggerKeywords.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {form.triggerKeywords.map((kw, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg">
-                      {kw}
-                      <button
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-triggerKeywords">
+                      {t("virtualTeamUx.keywordsLabel")}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t("virtualTeamUx.keywordsHelp")}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        id="agent-triggerKeywords"
+                        value={keywords}
+                        maxLength={100}
+                        aria-invalid={!!errors.triggerKeywords}
+                        onChange={e => setKeywords(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addKeyword();
+                          }
+                        }}
+                      />
+                      <Button
                         type="button"
-                        onClick={() => setForm(f => ({ ...f, triggerKeywords: f.triggerKeywords.filter((_, idx) => idx !== i) }))}
-                        aria-label={t('merchantUx.actions.removeNamed', { name: kw })}
-                        className="hover:text-destructive transition-colors"
+                        variant="outline"
+                        onClick={addKeyword}
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                        {t("virtualTeamUx.add")}
+                      </Button>
+                    </div>
+                    {error("triggerKeywords")}
+                    <div className="flex flex-wrap gap-2">
+                      {form.triggerKeywords.map(k => (
+                        <Badge key={k} variant="secondary" className="gap-2">
+                          {k}
+                          <button
+                            type="button"
+                            className="p-2"
+                            aria-label={`${t("virtualTeamUx.delete")} ${k}`}
+                            onClick={() =>
+                              set(
+                                "triggerKeywords",
+                                form.triggerKeywords.filter(v => v !== k)
+                              )
+                            }
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <fieldset className="space-y-3 rounded-xl border p-4">
+                    <legend className="px-1 text-sm font-medium">
+                      {t("virtualTeamUx.hours")}
+                    </legend>
+                    <p className="text-sm text-muted-foreground">
+                      {t("virtualTeamUx.hoursHelp")}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="agent-shiftStart">
+                          {t("virtualTeamUx.from")}
+                        </Label>
+                        <Input
+                          id="agent-shiftStart"
+                          type="time"
+                          dir="ltr"
+                          value={form.shiftStart}
+                          aria-invalid={!!errors.shiftStart}
+                          aria-describedby={
+                            errors.shiftStart
+                              ? "agent-shiftStart-error"
+                              : undefined
+                          }
+                          onChange={e => set("shiftStart", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="agent-shiftEnd">
+                          {t("virtualTeamUx.to")}
+                        </Label>
+                        <Input
+                          id="agent-shiftEnd"
+                          type="time"
+                          dir="ltr"
+                          value={form.shiftEnd}
+                          onChange={e => set("shiftEnd", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    {error("shiftStart")}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        set("shiftStart", "");
+                        set("shiftEnd", "");
+                      }}
+                    >
+                      {t("virtualTeamUx.clearHours")}
+                    </Button>
+                  </fieldset>
+                  <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
+                    <div>
+                      <Label htmlFor="agent-default">
+                        {t("virtualTeamUx.default")}
+                      </Label>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t("virtualTeamUx.defaultHelp")}
+                      </p>
+                    </div>
+                    <Switch
+                      id="agent-default"
+                      checked={form.isDefault}
+                      onCheckedChange={v => set("isDefault", v)}
+                    />
+                  </div>
+                  {editing !== null && (
+                    <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
+                      <div>
+                        <Label htmlFor="agent-active">
+                          {t("virtualTeamUx.enabled")}
+                        </Label>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {t("virtualTeamUx.enabledHelp")}
+                        </p>
+                      </div>
+                      <Switch
+                        id="agent-active"
+                        checked={form.isActive}
+                        onCheckedChange={v => set("isActive", v)}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
-              <Input
-                value={kwInput}
-                onChange={(e) => setKwInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && kwInput.trim()) {
-                    e.preventDefault();
-                    setForm(f => ({ ...f, triggerKeywords: [...f.triggerKeywords, kwInput.trim()] }));
-                    setKwInput('');
-                  }
-                }}
-                placeholder="اكتب كلمة ثم Enter"
-              />
             </div>
-
-            {/* Work Schedule */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4 text-violet-600" />
-                مواعيد العمل
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                حدد ساعات عمل هذه الشخصية. اتركه فارغاً لجعلها متاحة 24/7
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">من الساعة</Label>
-                  <Input
-                    type="time"
-                    value={form.shiftStart}
-                    onChange={(e) => setForm(f => ({ ...f, shiftStart: e.target.value }))}
-                    className="text-center"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">إلى الساعة</Label>
-                  <Input
-                    type="time"
-                    value={form.shiftEnd}
-                    onChange={(e) => setForm(f => ({ ...f, shiftEnd: e.target.value }))}
-                    className="text-center"
-                  />
+            <DialogFooter className="border-t bg-card p-4">
+              <div className="w-full space-y-3">
+                {saveError && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {t("virtualTeamUx.saveFailed")}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs text-muted-foreground">
+                    {t("virtualTeamUx.requiredHint")}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => setOpen(false)}
+                    >
+                      {t("virtualTeamUx.cancel")}
+                    </Button>
+                    <Button type="submit" disabled={busy}>
+                      <Save className="size-4" />
+                      {t(busy ? "virtualTeamUx.saving" : "virtualTeamUx.save")}
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {form.shiftStart && form.shiftEnd && (
-                <div className="text-xs text-violet-600 bg-violet-50 dark:bg-violet-950/30 rounded-lg p-2 text-center">
-                  ⏰ ستعمل هذه الشخصية من {form.shiftStart} إلى {form.shiftEnd} يومياً
-                </div>
-              )}
-              {!form.shiftStart && !form.shiftEnd && (
-                <div className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2 text-center">
-                  🟢 متاحة 24/7 — ترد في أي وقت
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Default Switch */}
-            <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl">
-              <div>
-                <Label className="font-semibold text-sm">الشخصية الافتراضية</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  ترد على العملاء عند عدم تطابق أي كلمة تفعيل
-                </p>
-              </div>
-              <Switch
-                checked={form.isDefault}
-                onCheckedChange={(v) => setForm(f => ({ ...f, isDefault: v }))}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 pt-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button
-              onClick={handleSave}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-primary gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {(createMutation.isPending || updateMutation.isPending) ? 'جارٍ الحفظ...' : 'حفظ الشخصية'}
-            </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={!!deleting}
+        onOpenChange={v => {
+          if (!v && !remove.isPending) setDeleting(null);
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center gap-2">
-              <Trash2 className="h-5 w-5" />
-              حذف الشخصية
+            <DialogTitle>
+              {t("virtualTeamUx.deleteTitle")} {deleting?.name}
             </DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف هذه الشخصية؟ لا يمكن التراجع عن هذا الإجراء.
+              {t("virtualTeamUx.deleteHelp")}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>إلغاء</Button>
+          {remove.isError && (
+            <p role="alert" className="text-destructive">
+              {t("virtualTeamUx.saveFailed")}
+            </p>
+          )}
+          <DialogFooter>
             <Button
-              variant="destructive"
-              onClick={() => {
-                if (deleteConfirmId) {
-                  deleteMutation.mutate({ id: deleteConfirmId });
-                  setDeleteConfirmId(null);
-                }
-              }}
-              disabled={deleteMutation.isPending}
+              type="button"
+              variant="outline"
+              disabled={remove.isPending}
+              onClick={() => setDeleting(null)}
             >
-              <Trash2 className="h-4 w-4 ml-2" />
-              {deleteMutation.isPending ? 'جارٍ الحذف...' : 'نعم، احذف'}
+              {t("virtualTeamUx.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={remove.isPending}
+              onClick={() => deleting && remove.mutate({ id: deleting.id })}
+            >
+              {t(
+                remove.isPending
+                  ? "virtualTeamUx.saving"
+                  : "virtualTeamUx.delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

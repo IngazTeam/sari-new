@@ -146,7 +146,7 @@ export default function ByaanDashboard() {
             <p className="text-muted-foreground">
               اربط حسابك في بيان لتظهر بيانات المتدربين والدورات هنا
             </p>
-            <Button variant="outline" onClick={() => window.location.href = "/merchant/integrations"}>
+            <Button variant="outline" onClick={() => window.location.href = "/merchant/integrations/byaan"}>
               اذهب للربط
             </Button>
           </CardContent>

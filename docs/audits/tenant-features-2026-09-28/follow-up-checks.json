@@ -1,0 +1,114 @@
+[
+  {
+    "route": "/merchant/sheets/settings",
+    "actualUrl": "http://127.0.0.1:3018/merchant/sheets/settings",
+    "body": "ربط Google Sheets\n\nربط حسابك في Google Sheets لحفظ البيانات تلقائياً\n\nحالة الاتصال\n\nغير متصل\n\nقم بربط حسابك في Google Sheets لتفعيل المزامنة التلقائية للبيانات\n\nربط Google Sheets",
+    "headings": [
+      "ربط Google Sheets",
+      "حالة الاتصال"
+    ],
+    "scrollWidth": 480,
+    "width": 480
+  },
+  {
+    "route": "/merchant/sheets/reports",
+    "actualUrl": "http://127.0.0.1:3018/merchant/sheets/reports",
+    "body": "تقارير Google Sheets\n\nتوليد وإرسال التقارير إلى Google Sheets و WhatsApp\n\nتقرير يومي\n\nملخص الأداء لليوم الحالي\n\nتوليد الآن\nإرسال عبر WhatsApp\n\n📅 يتم توليده تلقائياً في الساعة 11:59 مساءً\n\nتقرير أسبوعي\n\nملخص الأداء للأسبوع الماضي\n\nتوليد الآن\nإرسال عبر WhatsApp\n\n📅 يتم توليده تلقائياً كل يوم أحد\n\nتقرير شهري\n\nإحصائيات شاملة للشهر الماضي\n\nتوليد الآن\nإرسال عبر WhatsApp\n\n📅 يتم توليده تلقائياً في آخر يوم من الشهر\n\nمحتويات التقارير\n📊 الإحصائيات الأساس",
+    "headings": [
+      "تقارير Google Sheets",
+      "تقرير يومي",
+      "تقرير أسبوعي",
+      "تقرير شهري",
+      "محتويات التقارير",
+      "📊 الإحصائيات الأساسية",
+      "📈 التحليلات المتقدمة",
+      "💡 ملاحظات مهمة:"
+    ],
+    "scrollWidth": 450,
+    "width": 480
+  },
+  {
+    "route": "/merchant/sheets/inventory",
+    "actualUrl": "http://127.0.0.1:3018/merchant/sheets/inventory",
+    "body": "مخزون Google Sheets\n\nمزامنة ثنائية الاتجاه بين قاعدة البيانات و Google Sheets\n\nتصدير إلى Sheets\n\nنقل بيانات المخزون من قاعدة البيانات إلى Google Sheets\n\nتصدير المخزون\nمتى تستخدم هذا؟\n• عند إضافة منتجات جديدة\n• بعد تحديث الأسعار\n• لمشاركة المخزون مع الفريق\nاستيراد من Sheets\n\nتحديث كميات المخزون من Google Sheets إلى قاعدة البيانات\n\nاستيراد المخزون\nمتى تستخدم هذا؟\n• بعد جرد المخزون اليدوي\n• عند تحديث الكميات في Sheets\n• لمزامنة التغييرات من الفريق\nك",
+    "headings": [
+      "مخزون Google Sheets",
+      "تصدير إلى Sheets",
+      "استيراد من Sheets",
+      "كيف تعمل المزامنة؟",
+      "التصدير إلى Sheets",
+      "التعديل في Sheets",
+      "الاستيراد من Sheets",
+      "⚠️ تحذيرات مهمة:",
+      "💡 نصائح للاستخدام الأمثل:"
+    ],
+    "scrollWidth": 450,
+    "width": 480
+  },
+  {
+    "route": "/merchant/zid/callback",
+    "actualUrl": "http://127.0.0.1:3018/merchant/zid/callback",
+    "body": "تعذر الربط\nلم يكتمل تفويض زد. أعد المحاولة من صفحة الإعدادات.\nالعودة إلى الإعدادات",
+    "headings": [
+      "تعذر الربط"
+    ],
+    "scrollWidth": 480,
+    "width": 480
+  },
+  {
+    "route": "/merchant/zid/products",
+    "actualUrl": "http://127.0.0.1:3018/merchant/zid/products",
+    "body": "نجحت المزامنة\nيجب ربط حسابك على Zid أولاً قبل مزامنة المنتجات\nالذهاب إلى الإعدادات",
+    "headings": [
+      "نجحت المزامنة"
+    ],
+    "scrollWidth": 480,
+    "width": 480
+  },
+  {
+    "route": "/merchant/payments",
+    "actualUrl": "http://127.0.0.1:3018/merchant/payments",
+    "body": "معاملات الدفع\nإجمالي المعاملات\n0\n\n0.00 SAR\n\nمعاملات ناجحة\n0\n\n0.00 SAR\n\nقيد الانتظار\n0\nفاشلة\n0\nمعاملات الدفع\nإدارة ومتابعة جميع معاملات الدفع\nتحديث\nروابط الدفع\nجميع الحالات\nلا توجد معاملات دفع",
+    "headings": [
+      "معاملات الدفع"
+    ],
+    "scrollWidth": 450,
+    "width": 480
+  },
+  {
+    "route": "/merchant/payment-links",
+    "actualUrl": "http://127.0.0.1:3018/merchant/payment-links",
+    "body": "روابط الدفع\nإنشاء وإدارة روابط الدفع السريعة لمشاركتها مع العملاء\nإنشاء رابط جديد\nلا توجد روابط دفع\n\nابدأ بإنشاء رابط دفع لمشاركته مع عملائك\n\nإنشاء أول رابط",
+    "headings": [
+      "روابط الدفع",
+      "لا توجد روابط دفع"
+    ],
+    "scrollWidth": 480,
+    "width": 480
+  },
+  {
+    "route": "/merchant/keywords",
+    "actualUrl": "http://127.0.0.1:3018/merchant/smart-analysis",
+    "body": "التحليل الذكي للموقع\n\nاكتشف منصة متجرك واستخرج المنتجات والصفحات والأسئلة الشائعة تلقائياً\n\nتحليل موقع جديد\nأدخل رابط موقعك لبدء التحليل الذكي — ستراجع النتائج قبل الاعتماد\nتحليل الموقع\nإجمالي الصفحات\n0\nالأسئلة الشائعة\n0\nصفحات الشحن\n0\nصفحات FAQ\n0\nالصفحات (0)\nالأسئلة (0)\nالتحليلات (0)\nالتقييم\nلا توجد صفحات مكتشفة بعد. قم بتحليل موقعك أولاً.",
+    "headings": [
+      "التحليل الذكي للموقع"
+    ],
+    "scrollWidth": 450,
+    "width": 480
+  },
+  {
+    "route": "/merchant/keywords",
+    "auditUrl": "http://127.0.0.1:3018/merchant/keywords?audit=20260928",
+    "actualUrl": "http://127.0.0.1:3018/merchant/quick-responses?audit=20260928",
+    "verifiedHeading": [
+      "إدارة الردود السريعة"
+    ],
+    "note": "Fresh navigation bypasses previously cached redirect."
+  },
+  {
+    "route": "/merchant/zid/products",
+    "verifiedHeading": [
+      "مزامنة المنتجات من Zid"
+    ]
+  }
+]

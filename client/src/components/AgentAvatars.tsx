@@ -119,7 +119,8 @@ export type AvatarKey = keyof typeof avatarStyles;
 
 export function AgentAvatar({ avatar, size = 'md' }: { avatar: string; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClass = size === 'sm' ? 'w-10 h-10' : size === 'lg' ? 'w-20 h-20' : 'w-14 h-14';
-  const key = (avatar in avatarStyles ? avatar : 'default') as AvatarKey;
+  const legacy: Record<string, AvatarKey> = { '👩‍💼': 'reception', '👨‍💼': 'sales', '👩‍💻': 'support' };
+  const key = (avatar in avatarStyles ? avatar : legacy[avatar] || 'default') as AvatarKey;
   return (
     <div className={`${sizeClass} rounded-2xl overflow-hidden shadow-lg ring-2 ring-white dark:ring-gray-800`}>
       {avatarStyles[key]}

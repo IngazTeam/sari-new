@@ -1,0 +1,89 @@
+[
+  {
+    "page": "actual-persona-dialog",
+    "dialogHeight": 760,
+    "dialogScrollWidth": 416,
+    "dialogWidth": 418,
+    "scrollWidth": 450,
+    "viewportHeight": 1012,
+    "width": 480
+  },
+  {
+    "page": "actual-persona-dialog",
+    "dialogHeight": 760,
+    "dialogScrollWidth": 682,
+    "dialogWidth": 684.046875,
+    "scrollWidth": 738,
+    "viewportHeight": 1012,
+    "width": 768
+  },
+  {
+    "page": "actual-persona-dialog",
+    "dialogHeight": 760,
+    "dialogScrollWidth": 673,
+    "dialogWidth": 674.859375,
+    "scrollWidth": 1410,
+    "viewportHeight": 900,
+    "width": 1440
+  },
+  {
+    "page": "prototype-virtual-team",
+    "scrollWidth": 2560,
+    "title": "شخصيات المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-bot-settings",
+    "scrollWidth": 2560,
+    "title": "سلوك المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-human-takeover",
+    "scrollWidth": 2560,
+    "title": "التدخل البشري",
+    "width": 2560
+  },
+  {
+    "page": "prototype-language-settings",
+    "scrollWidth": 2560,
+    "title": "لغة المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-ai-hub",
+    "scrollWidth": 2560,
+    "title": "مركز المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-virtual-team",
+    "scrollWidth": 2560,
+    "title": "شخصيات المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-bot-settings",
+    "scrollWidth": 2560,
+    "title": "سلوك المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-human-takeover",
+    "scrollWidth": 2560,
+    "title": "التدخل البشري",
+    "width": 2560
+  },
+  {
+    "page": "prototype-language-settings",
+    "scrollWidth": 2560,
+    "title": "لغة المساعد",
+    "width": 2560
+  },
+  {
+    "page": "prototype-ai-hub",
+    "scrollWidth": 2560,
+    "title": "مركز المساعد",
+    "width": 2560
+  }
+]

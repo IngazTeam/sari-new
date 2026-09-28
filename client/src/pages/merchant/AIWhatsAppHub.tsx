@@ -13,6 +13,10 @@ import {
   BarChart3,
   TestTube,
   Lightbulb,
+  Users,
+  Brain,
+  UserCheck,
+  Globe,
 } from "lucide-react";
 
 interface HubCard {
@@ -29,11 +33,15 @@ export default function AIWhatsAppHub() {
   const { t } = useTranslation();
 
   const cards: HubCard[] = [
+    {icon:Brain,title:t('assistantSectionsUx.brain'),description:t('assistantSectionsUx.brainDescription'),path:'/merchant/sari-brain',color:'bg-primary/10 text-primary'},
+    {icon:Users,title:t('assistantSectionsUx.personas'),description:t('assistantSectionsUx.personasDescription'),path:'/merchant/virtual-team',color:'bg-primary/10 text-primary'},
+    {icon:UserCheck,title:t('assistantSectionsUx.takeover'),description:t('assistantSectionsUx.takeoverDescription'),path:'/merchant/human-takeover',color:'bg-primary/10 text-primary'},
+    {icon:Globe,title:t('assistantSectionsUx.language'),description:t('assistantSectionsUx.languageDescription'),path:'/merchant/language-settings',color:'bg-primary/10 text-primary'},
     {
       icon: Bot,
-      title: "تخصيص الشخصية",
-      description: "حدد نبرة ساري وأسلوبه في الردود — رسمي، ودود، أو احترافي.",
-      path: "/merchant/sari-personality",
+      title: t('assistantSectionsUx.basicTitle'),
+      description: t('assistantSectionsUx.basicDescription'),
+      path: "/merchant/bot-settings",
       badge: "مهم",
       badgeVariant: "default",
       color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
@@ -56,9 +64,9 @@ export default function AIWhatsAppHub() {
     },
     {
       icon: Key,
-      title: "الكلمات المفتاحية",
+      title: "الردود السريعة والكلمات",
       description: "أضف كلمات مفتاحية ليتعرف عليها ساري ويرد بردود محددة.",
-      path: "/merchant/keywords",
+      path: "/merchant/quick-responses",
       color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     },
     {
@@ -73,7 +81,7 @@ export default function AIWhatsAppHub() {
     {
       icon: Mic,
       title: "الرسائل الصوتية",
-      description: "إعدادات استقبال وتحويل الرسائل الصوتية لنصوص.",
+      description: "تحليلات استخدام الرسائل الصوتية وأدائها.",
       path: "/merchant/voice-messages",
       color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
     },
@@ -115,35 +123,7 @@ export default function AIWhatsAppHub() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-dashed">
-          <CardContent className="pt-4 pb-4 text-center">
-            <div className="text-2xl font-bold text-violet-600">9</div>
-            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_2')}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-dashed">
-          <CardContent className="pt-4 pb-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">AI</div>
-            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_3')}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-dashed">
-          <CardContent className="pt-4 pb-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600">24/7</div>
-            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_4')}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-dashed">
-          <CardContent className="pt-4 pb-4 text-center">
-            <div className="text-2xl font-bold text-amber-600">
-              <MessageSquare className="h-6 w-6 mx-auto" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_5')}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">{t('assistantSectionsUx.hubHint')}</div>
 
       {/* Feature Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -152,7 +132,7 @@ export default function AIWhatsAppHub() {
             <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 h-full">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className={`p-2.5 rounded-lg ${card.color}`}>
+                  <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
                     <card.icon className="h-5 w-5" />
                   </div>
                   {card.badge && (
