@@ -1,0 +1,255 @@
+{
+  "browser": "Chrome",
+  "nativeSafariTested": false,
+  "physicalIphoneTested": false,
+  "filePicker": "Not completed: browser extension disconnected during setFiles; shared reader verified in automated tests.",
+  "measurements": [
+    {
+      "name": "intake-errors-375",
+      "dialog": {
+        "bottom": 796,
+        "height": 780,
+        "left": 16,
+        "right": 344,
+        "top": 16,
+        "width": 328,
+        "x": 16,
+        "y": 16
+      },
+      "document": [
+        360,
+        360
+      ],
+      "fields": [
+        {
+          "font": "16px",
+          "type": null,
+          "width": 275
+        },
+        {
+          "font": "16px",
+          "type": null,
+          "width": 275
+        },
+        {
+          "font": "16px",
+          "type": "file",
+          "width": 275
+        },
+        {
+          "font": "16px",
+          "type": null,
+          "width": 275
+        },
+        {
+          "font": "16px",
+          "type": null,
+          "width": 275
+        },
+        {
+          "font": "16px",
+          "type": null,
+          "width": 275
+        }
+      ],
+      "footer": {
+        "bottom": 795,
+        "height": 89.390625,
+        "left": 17,
+        "right": 343,
+        "top": 705.609375,
+        "width": 326,
+        "x": 17,
+        "y": 705.609375
+      },
+      "viewport": [
+        375,
+        812
+      ]
+    },
+    {
+      "name": "intake-partial-390",
+      "dialog": {
+        "bottom": 828,
+        "height": 812,
+        "left": 16,
+        "right": 359,
+        "top": 16,
+        "width": 343,
+        "x": 16,
+        "y": 16
+      },
+      "document": [
+        375,
+        375
+      ],
+      "footer": {
+        "bottom": 827,
+        "height": 89.390625,
+        "left": 17,
+        "right": 358,
+        "top": 737.609375,
+        "width": 341,
+        "x": 17,
+        "y": 737.609375
+      },
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "name": "intake-320",
+      "dialog": {
+        "bottom": 552,
+        "height": 536,
+        "left": 16,
+        "right": 289,
+        "top": 16,
+        "width": 273,
+        "x": 16,
+        "y": 16
+      },
+      "document": [
+        305,
+        305
+      ],
+      "footer": {
+        "bottom": 551,
+        "height": 89.390625,
+        "left": 17,
+        "right": 288,
+        "top": 461.609375,
+        "width": 271,
+        "x": 17,
+        "y": 461.609375
+      },
+      "viewport": [
+        320,
+        568
+      ]
+    },
+    {
+      "name": "reset-320",
+      "dialog": {
+        "bottom": 552,
+        "height": 536,
+        "left": 16,
+        "right": 289,
+        "top": 16,
+        "width": 273,
+        "x": 16,
+        "y": 16
+      },
+      "document": [
+        305,
+        305
+      ],
+      "footer": {
+        "bottom": 551,
+        "height": 89.390625,
+        "left": 17,
+        "right": 288,
+        "top": 461.609375,
+        "width": 271,
+        "x": 17,
+        "y": 461.609375
+      },
+      "viewport": [
+        320,
+        568
+      ]
+    },
+    {
+      "name": "reset-landscape",
+      "dialog": {
+        "bottom": 374,
+        "height": 358,
+        "left": 34.5,
+        "right": 794.5,
+        "top": 16,
+        "width": 760,
+        "x": 34.5,
+        "y": 16
+      },
+      "document": [
+        829,
+        829
+      ],
+      "footer": {
+        "bottom": 373,
+        "height": 77,
+        "left": 35.5,
+        "right": 793.5,
+        "top": 296,
+        "width": 758,
+        "x": 35.5,
+        "y": 296
+      },
+      "viewport": [
+        844,
+        390
+      ]
+    },
+    {
+      "name": "reset-desktop",
+      "dialog": {
+        "bottom": 808.5,
+        "height": 717.0078125,
+        "left": 332.5,
+        "right": 1092.5,
+        "top": 91.4921875,
+        "width": 760,
+        "x": 332.5,
+        "y": 91.4921875
+      },
+      "document": [
+        1425,
+        1425
+      ],
+      "footer": {
+        "bottom": 807.5,
+        "height": 77,
+        "left": 333.5,
+        "right": 1091.5,
+        "top": 730.5,
+        "width": 758,
+        "x": 333.5,
+        "y": 730.5
+      },
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "name": "learning-uncertain-390",
+      "document": [
+        375,
+        375
+      ],
+      "footer": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "viewport": [
+        390,
+        844
+      ]
+    }
+  ],
+  "console": [],
+  "verifiedFlows": [
+    "inline required-field errors",
+    "sample analysis and partial indexing receipt",
+    "reset confirmation gated by exact name and attestation; closed without executing",
+    "uncertain learning status survives read-only refresh",
+    "website progress retained after close and reopen; read failure does not allow another start"
+  ]
+}

@@ -161,14 +161,14 @@ window.SaryBrainPreview = (() => {
     const match = data.gaps.find(g => ({ returns: /استرجاع|أرجع|ارجع|إرجاع/, delivery: /العلا|شحن|تشحن/, grinding: /طحن|مبتدئ/ })[g.id]?.test(question));
     const correction = match && ['retest', 'resolved'].includes(match.state) && file(match.chosenSource)?.active;
     const catalog = file('catalog');
-    const result = correction ? { text: match.answer, source: file(match.chosenSource) } : !match && /كولومبيا|سعر/.test(question) && catalog.active ? { text: catalog.facts[0].text, source: catalog } : null;
+    const result = correction ? { text: match.answer, source: file(match.chosenSource) } : !match && /كولومبيا|سعر/.test(question) && catalog?.active ? { text: catalog.facts[0].text, source: catalog } : null;
     return result ? `<div class="brain-answer"><h3>إجابة بمصدر</h3><p>${escape(result.text)}</p>${button(`المصدر: ${result.source.name}`, 'file', result.source.id)}</div>` : '<div class="brain-warning"><h3>نحتاج معلومة مؤكدة</h3><p>لا توجد في أمثلة المعرفة المفعّلة إجابة مؤكدة لهذا السؤال. سأطلب مساعدة الفريق بدل تقديم معلومة غير موثقة.</p></div>';
   }
 
   const reviewCases=['فهم الاحتياج','المقارنة بين الخيارات','اعتراض السعر','الموافقة على المتابعة','احترام رفض العميل','صحة المعلومات','التحويل إلى موظف','التعليمات المخالفة داخل الرسالة'];
   let reviewStep=0,reviewDraft=data.review?.cases?.length===8?JSON.parse(JSON.stringify(data.review.cases)):reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''}));
   function reviewComplete(r){return r.baseline.trim()&&r.baseline.length<=2000&&r.candidate.trim()&&r.candidate.length<=2000&&['pass','fail'].includes(r.baselineVerdict)&&['pass','fail'].includes(r.candidateVerdict)&&r.reason.trim().length>=20&&r.reason.length<=1000;}
-  function learning(){return '<section class="panel panel-pad"><h2>اقتراح لتحسين أسلوب البيع</h2><p>مثال توضيحي: سؤال العميل عن أداة التحضير قبل اقتراح الطحن. الاقتراح يحتاج مراجعة بشرية، ولا يصبح تعليمات فعالة تلقائيًا.</p><details><summary>الأدلة المؤيدة والمخالفة</summary><blockquote>العميل: عندي أداة تقطير وأحتاج طحن مناسب.</blockquote><blockquote>حالة مخالفة: عميل متكرر طلب إعادة نفس الطحن؛ السؤال مرة أخرى غير ضروري.</blockquote></details><h3>مراجعة مستقلة من 8 حالات</h3><p>قارن الرد الحالي والمقترح، دوّن الحكم والسبب، ثم راجع النتيجة. الحفظ لا يطلق تجربة ولا يرسل رسالة.</p>'+button('ابدأ / أكمل المراجعة','review-open')+(data.review?'<p role="status">آخر نتيجة محلية: '+escape(data.review.outcome)+' · لا تُغيّر نسبة احتراف المبيعات.</p>':'')+'<div class="as-note"><h3>تجارب المبيعات والردود</h3><p>في التطبيق: تصميم التجربة، حجم العينة، تأهيل الجمهور، التسجيل، المراجعة، التشغيل والسحب، ثم مراجعة الرد قبل إرساله. يمكنك مراجعة خطواتها محليًا من قسم تشغيل المبيعات.</p>'+button('فتح تشغيل المبيعات','navigate','operations')+'<a href="#/page/merchant/bot-settings">سياسات الخصم والهامش وإعدادات الرد ←</a></div></section>';}
+  function learning(){return window.SaryBrainWorkbench.learningStatus()+'<section class="panel panel-pad"><h2>اقتراح لتحسين أسلوب البيع</h2><p>مثال توضيحي: سؤال العميل عن أداة التحضير قبل اقتراح الطحن. الاقتراح يحتاج مراجعة بشرية، ولا يصبح تعليمات فعالة تلقائيًا.</p><details><summary>الأدلة المؤيدة والمخالفة</summary><blockquote>العميل: عندي أداة تقطير وأحتاج طحن مناسب.</blockquote><blockquote>حالة مخالفة: عميل متكرر طلب إعادة نفس الطحن؛ السؤال مرة أخرى غير ضروري.</blockquote></details><h3>مراجعة مستقلة من 8 حالات</h3><p>قارن الرد الحالي والمقترح، دوّن الحكم والسبب، ثم راجع النتيجة. الحفظ لا يطلق تجربة ولا يرسل رسالة.</p>'+button('ابدأ / أكمل المراجعة','review-open')+(data.review?'<p role="status">آخر نتيجة محلية: '+escape(data.review.outcome)+' · لا تُغيّر نسبة احتراف المبيعات.</p>':'')+'<div class="as-note"><h3>تجارب المبيعات والردود</h3><p>في التطبيق: تصميم التجربة، حجم العينة، تأهيل الجمهور، التسجيل، المراجعة، التشغيل والسحب، ثم مراجعة الرد قبل إرساله. يمكنك مراجعة خطواتها محليًا من قسم تشغيل المبيعات.</p>'+button('فتح تشغيل المبيعات','navigate','operations')+'<a href="#/page/merchant/bot-settings">سياسات الخصم والهامش وإعدادات الرد ←</a></div></section>';}
   function reviewDialog(){
     const r=reviewDraft[reviewStep],done=reviewDraft.filter(reviewComplete).length;
     openDialog('مراجعة التعلم · مثال محلي', '<form class="form-stack" data-brain-form="review"><p>الحالة '+(reviewStep+1)+' من 8 · '+done+' مكتملة</p><h3>'+reviewCases[reviewStep]+'</h3>'+[['baseline','الرد الحالي'],['candidate','الرد المقترح'],['reason','سبب الحكم']].map(([key,label])=>'<label for="brain-review-'+key+'">'+label+'</label><textarea id="brain-review-'+key+'" data-review-field="'+key+'" required maxlength="'+(key==='reason'?1000:2000)+'" '+(key==='reason'?'minlength="20"':'')+'>'+escape(r[key])+'</textarea>').join('')+[['baselineVerdict','حكم الرد الحالي'],['candidateVerdict','حكم الرد المقترح']].map(([key,label])=>'<label for="brain-review-'+key+'">'+label+'</label><select id="brain-review-'+key+'" data-review-field="'+key+'" required>'+[['','اختر الحكم'],['pass','اجتاز'],['fail','لم يجتز']].map(([value,label])=>'<option value="'+value+'" '+(r[key]===value?'selected':'')+'>'+label+'</option>').join('')+'</select>').join('')+'<div class="dialog-foot">'+button('السابق','review-prev','','',reviewStep===0?'disabled':'')+button('التالي','review-next','','',reviewStep===7?'disabled':'')+'</div><label class="check-label"><input id="brain-review-attest" type="checkbox" required>راجعت الردين والحكم لكل الحالات الثماني</label><button class="button primary" type="submit">حفظ نتيجة المراجعة المحلية</button><p id="brain-review-error" role="alert"></p></form>');
@@ -233,5 +233,19 @@ window.SaryBrainPreview = (() => {
     if (type === 'test') { document.getElementById('brain-test-output').innerHTML = testAnswer(String(values.get('question') || '').trim()); }
   });
   function reset() { data = JSON.parse(JSON.stringify(seed)); section = 'results'; search = ''; fileFilter = 'all'; gapFilter = 'all'; period = '30'; reviewStep=0;reviewDraft=reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''})); window.SaryBrainWorkbench?.reset();persist(); }
-  return { render, openAdd, reset, refresh, navigate, reviewResult:()=>data.review };
+  function removeSourceExamples(kind) {
+    if (kind === 'all') data.files = [];
+    else if (kind === 'document') data.files = data.files.filter(f => f.id === 'catalog');
+    else if (kind === 'products') data.files = data.files.filter(f => f.id !== 'catalog');
+    for (const g of data.gaps) if (!file(g.chosenSource)) {
+      g.state = 'open'; delete g.chosenSource; delete g.answer; g.tested = false;
+    }
+    delete data.review;
+    reviewStep = 0; reviewDraft = reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''}));
+    persist();
+  }
+  return { render, openAdd, reset, refresh, navigate, reviewResult:()=>data.review,
+    sourceCounts:()=>({document:data.files.filter(f=>f.id!=='catalog').length, products:data.files.filter(f=>f.id==='catalog').length}),
+    removeSourceExamples,
+  };
 })();

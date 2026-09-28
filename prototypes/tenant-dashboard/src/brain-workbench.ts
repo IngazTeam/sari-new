@@ -16,6 +16,7 @@ import { salesCohortRules } from "../../../shared/sales-experiment-cohort";
 import { replyReviewCriteria } from "../../../shared/sales-reply-review";
 
 import { createBrainEvaluation } from "./brain-evaluation";
+import { createBrainKnowledge } from "./brain-knowledge";
 
 window.SaryBrainWorkbench = (() => {
   const key = "sary-brain-workbench-v1",
@@ -304,17 +305,23 @@ window.SaryBrainWorkbench = (() => {
           ["faq", "الأسئلة الشائعة"],
           ["website", "صفحات الموقع"],
           ["intake", "فحص المحتوى"],
+          ["status", "حالة التحليل"],
+          ["sources", "إدارة المصادر"],
         ],
         knowledgeTab,
         "knowledge-tab"
       ) +
-      (knowledgeTab === "sections"
-        ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>المعرفة التي تراجعها</h2><p>صنّف المعلومة وراجعها قبل اعتمادها.</p></div>${btn("قسم معرفة جديد", "new-section", dis(), true)}</div><div class="bw-cards">${sectionRows()}</div></section>`
-        : knowledgeTab === "faq"
-          ? `<section class="panel panel-pad"><div class="panel-head"><h2>أسئلة العملاء المتكررة</h2>${btn("إضافة سؤال", "new-faq", dis(), true)}</div><p>حتى 50 سؤالًا، مع إجابة واضحة من معرفة النشاط.</p><div class="bw-cards">${data.faqs.map(r => `<article class="bw-card"><h3>${esc(r.question)}</h3><p>${esc(r.answer)}</p>${btn("حذف السؤال", "delete", `${idAttr(r.id)} data-kind="faqs" ${dis()}`)}</article>`).join("") || "<p>لا توجد أسئلة بعد.</p>"}</div></section>`
-          : knowledgeTab === "website"
-            ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>صفحات الموقع ومحتواها</h2><p>راجع النص وحالة استخدامه؛ إضافة رابط لا تعني قراءة محتواه.</p></div>${btn("إضافة رابط", "new-page", dis(), true)}</div>${btn("معاينة مراحل إعادة التحليل", "analysis")}<div class="bw-cards">${data.pages.map(r => `<article class="bw-card"><h3>${esc(r.title)}</h3><p dir="ltr">${esc(r.url)}</p>${badge(r.read ? (r.active ? "مستخدم في مثال المعرفة" : "الاستخدام متوقف") : "لم تُقرأ الصفحة")}<p>${r.read ? esc(r.content) : "لم نطلب هذا الرابط. أُضيفت بياناته فقط."}</p><footer>${btn("عرض المحتوى", "page-view", idAttr(r.id))}${r.read ? btn(r.active ? "إيقاف الاستخدام" : "تفعيل الاستخدام", "toggle-page", idAttr(r.id) + " " + dis()) : ""}${btn("حذف الصفحة", "delete", `${idAttr(r.id)} data-kind="pages" ${dis()}`)}</footer></article>`).join("") || "<p>لا توجد صفحات محفوظة.</p>"}</div></section>`
-            : `<section class="panel panel-pad"><h2>راجع المحتوى قبل إضافته</h2><p>الصق نصًا للمراجعة اليدوية أو افتح نتيجة المثال. لا يجري الموك أب تحليلًا آليًا للنص الذي تدخله.</p><div class="bw-actions">${btn("مراجعة نص جديد", "intake", dis(), true)}${btn("شاهد نتيجة فحص توضيحية", "intake-example")}</div><p>رفع ملفات المعرفة متاح في قسم الملفات؛ لا يُختلق استخراج أو تحليل ملف حقيقي.</p></section>`)
+      (knowledgeTab === "status"
+        ? knowledgeWorkbench.status()
+        : knowledgeTab === "sources"
+          ? knowledgeWorkbench.sources()
+          : knowledgeTab === "sections"
+            ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>المعرفة التي تراجعها</h2><p>صنّف المعلومة وراجعها قبل اعتمادها.</p></div>${btn("قسم معرفة جديد", "new-section", dis(), true)}</div><div class="bw-cards">${sectionRows()}</div></section>`
+            : knowledgeTab === "faq"
+              ? `<section class="panel panel-pad"><div class="panel-head"><h2>أسئلة العملاء المتكررة</h2>${btn("إضافة سؤال", "new-faq", dis(), true)}</div><p>حتى 50 سؤالًا، مع إجابة واضحة من معرفة النشاط.</p><div class="bw-cards">${data.faqs.map(r => `<article class="bw-card"><h3>${esc(r.question)}</h3><p>${esc(r.answer)}</p>${btn("حذف السؤال", "delete", `${idAttr(r.id)} data-kind="faqs" ${dis()}`)}</article>`).join("") || "<p>لا توجد أسئلة بعد.</p>"}</div></section>`
+              : knowledgeTab === "website"
+                ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>صفحات الموقع ومحتواها</h2><p>راجع النص وحالة استخدامه؛ إضافة رابط لا تعني قراءة محتواه.</p></div>${btn("إضافة رابط", "new-page", dis(), true)}</div>${knowledgeWorkbench.websiteButton()}<div class="bw-cards">${data.pages.map(r => `<article class="bw-card"><h3>${esc(r.title)}</h3><p dir="ltr">${esc(r.url)}</p>${badge(r.read ? (r.active ? "مستخدم في مثال المعرفة" : "الاستخدام متوقف") : "لم تُقرأ الصفحة")}<p>${r.read ? esc(r.content) : "لم نطلب هذا الرابط. أُضيفت بياناته فقط."}</p><footer>${btn("عرض المحتوى", "page-view", idAttr(r.id))}${r.read ? btn(r.active ? "إيقاف الاستخدام" : "تفعيل الاستخدام", "toggle-page", idAttr(r.id) + " " + dis()) : ""}${btn("حذف الصفحة", "delete", `${idAttr(r.id)} data-kind="pages" ${dis()}`)}</footer></article>`).join("") || "<p>لا توجد صفحات محفوظة.</p>"}</div></section>`
+                : knowledgeWorkbench.intakeSummary())
     );
   }
   function operations() {
@@ -1027,26 +1034,6 @@ window.SaryBrainWorkbench = (() => {
         );
       return;
     }
-    if (a === "analysis")
-      return window.openDialog(
-        "مراحل تحليل الموقع",
-        `<div class="bw-detail">${note}<ol><li>قراءة المصدر</li><li>استخراج النص</li><li>تصنيف المعرفة</li><li>المراجعة والفهرسة</li></ol><p class="bw-warning">مثال تعثّر: اكتمل استخراج النص وتعذّر التصنيف. الاستخراج لا يعني أن المعرفة أصبحت جاهزة للرد.</p>${btn("عرض حالة إعادة المحاولة", "analysis-retry")}</div>`
-      );
-    if (a === "analysis-retry")
-      return window.openDialog(
-        "إعادة المحاولة",
-        `<p>في التطبيق تحتاج إعادة التصنيف إلى خدمة المعالجة. لا نختلق نتيجة في الموك أب.</p>${note}`
-      );
-    if (a === "intake-example")
-      return window.openDialog(
-        "نتيجة فحص · بيانات مثال",
-        `<div class="bw-detail">${note}<h3>سياسة استرجاع توضيحية</h3><p>النوع: سياسة · تحتاج مراجعة</p><p>تعارض: المصدر السابق يذكر 14 يومًا، والنص المقترح 7 أيام.</p><p>الأثر: اختلاف وعد الاسترجاع. لا تُعتمد المدة تلقائيًا.</p><blockquote>سؤال مثال: هل أستطيع الإرجاع بعد 10 أيام؟</blockquote><p>التوصية: مراجعة التعارض من قسم الفجوات قبل التفعيل.</p>${btn("مراجعة الفجوة", "go-gaps")}</div>`
-      );
-    if (a === "go-gaps") {
-      close();
-      window.SaryBrainPreview.navigate("gaps");
-      return;
-    }
     if (a === "evaluation") return evaluation();
     if (a === "inspect" && protocol()?.cohort)
       return evaluationWorkbench.inspect(protocol());
@@ -1078,6 +1065,8 @@ window.SaryBrainWorkbench = (() => {
       acknowledged = false;
       if (document.querySelector(".be-workspace"))
         evaluationWorkbench.refreshBasis();
+      else if (document.querySelector(".bk-workspace"))
+        knowledgeWorkbench.refreshBasis();
       else if (draft) showEditor();
       else refresh();
       return;
@@ -1334,11 +1323,56 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const knowledgeWorkbench = createBrainKnowledge({
+    esc,
+    owner,
+    blocked: () => !!pending,
+    commit,
+    alert,
+    refresh,
+    manualButton: () => btn("مراجعة يدوية مختصرة", "intake", dis()),
+    sources: () => ({
+      ...window.SaryBrainPreview.sourceCounts(),
+      website: data.pages.length,
+      faqs: data.faqs.length,
+      sections: data.sections.length,
+    }),
+    ingest(d, mode) {
+      data.sections.unshift({
+        id: Math.max(0, ...data.sections.map(s => s.id)) + 1,
+        type: d.type === "products" ? "services" : "custom",
+        title: d.name.trim(),
+        content: d.content.trim(),
+        approved: false,
+        source: d.type === "document" ? "document" : "manual",
+        intakeState: mode,
+      });
+      data.candidate = false;
+      data.run = null;
+    },
+    remove(kind) {
+      window.SaryBrainPreview.removeSourceExamples(kind);
+      if (kind === "all") {
+        data.sections = [];
+        data.pages = [];
+        data.faqs = [];
+      } else {
+        if (kind === "website") data.pages = [];
+        if (kind === "faqs") data.faqs = [];
+        if (["document", "website"].includes(kind))
+          data.sections = data.sections.filter(s => s.source !== kind);
+      }
+      data.candidate = false;
+      data.run = null;
+    },
+  });
   return {
     render,
+    learningStatus: () => knowledgeWorkbench.status(),
     reset() {
       data = initial();
       evaluationWorkbench.reset();
+      knowledgeWorkbench.reset();
       draft = null;
       pending = null;
       role = "owner";
