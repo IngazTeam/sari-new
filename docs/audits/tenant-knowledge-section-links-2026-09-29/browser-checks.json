@@ -1,0 +1,47 @@
+{
+  "browser": "Chrome on Windows; viewport emulation only",
+  "live": [
+    {
+      "width": 1440,
+      "height": 900,
+      "client": 1425,
+      "scroll": 1425
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "client": 753,
+      "scroll": 753
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "client": 375,
+      "scroll": 375
+    },
+    {
+      "width": 320,
+      "height": 740,
+      "client": 305,
+      "scroll": 305
+    }
+  ],
+  "mock": [
+    {
+      "width": 390,
+      "height": 844,
+      "client": 375,
+      "scroll": 375,
+      "state": "content changed"
+    },
+    {
+      "width": 320,
+      "height": 740,
+      "client": 305,
+      "scroll": 305,
+      "state": "removed"
+    }
+  ],
+  "pagination": "Page 2 displayed sections 6 and 7; heading received focus",
+  "fixtures": "Synthetic local QA tenant only; no model calls"
+}

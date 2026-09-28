@@ -78,8 +78,10 @@ describe.skipIf(!process.env.DATABASE_URL)('exact reviewed knowledge plans (loca
   it('rolls back sections, changelog, receipt, archive and consumption after a failure during plan application', async () => {
     const { raw } = await prepare();
     const actual = await vi.importActual<typeof import('./knowledge/intake-plan')>('./knowledge/intake-plan');
-    vi.mocked(applyKnowledgePlan).mockImplementationOnce(async (...args) => { await actual.applyKnowledgePlan(...args); throw Error('synthetic write failure'); });
-    await expect(reserveIntake(owner.merchantId, raw)).rejects.toThrow('synthetic write failure');
+    // Persist across legitimate deadlock retries, which can happen with parallel DB suites.
+    vi.mocked(applyKnowledgePlan).mockImplementation(async (...args) => { await actual.applyKnowledgePlan(...args); throw Error('synthetic write failure'); });
+    try { await expect(reserveIntake(owner.merchantId, raw)).rejects.toThrow('synthetic write failure'); }
+    finally { vi.mocked(applyKnowledgePlan).mockImplementation(actual.applyKnowledgePlan); }
     const db = (await getDb())!;
     for (const table of [knowledgeSections, knowledgeChangelog, knowledgeIntakeReceipts, merchantKnowledgeDocs]) expect(await db.select().from(table).where(eq(table.merchantId, owner.merchantId))).toHaveLength(0);
     expect(await db.select().from(knowledgeIntakeReviews).where(eq(knowledgeIntakeReviews.merchantId, owner.merchantId))).toHaveLength(1);

@@ -5,6 +5,8 @@ import { knowledgeSections, knowledgeChangelog, merchants } from '../../drizzle/
 import { knowledgePlanSchema, knowledgeProposalsSchema, type KnowledgePlan } from '../../shared/knowledge-plan';
 import { getDb } from '../db/connection';
 import type { KnowledgeTransaction } from './transaction';
+import type { KnowledgeSectionLinks } from '../../shared/knowledge-section-links';
+import { sectionComparisonColumns, sectionFingerprints } from './section-fingerprints';
 
 // Embedding writes change updatedAt; they do not change the knowledge being approved.
 const { embedding, embeddingContentHash, updatedAt, ...basisColumns } = getTableColumns(knowledgeSections);
@@ -61,11 +63,14 @@ export function buildKnowledgePlan(basis: KnowledgePlanBasis, raw: unknown): Kno
 /** Apply the saved plan inside the same transaction as receipt/archive creation; no model calls here. */
 export async function applyKnowledgePlan(tx: KnowledgeTransaction, merchantId: number, plan: KnowledgePlan, source: 'document' | 'manual', provenance: { requestId: string; reviewId: string; documentId: number }) {
   const counts = { added: 0, evolved: 0, conflicts: 0, unchanged: 0, merged: 0 }, created = new Map<number, number>();
+  const sectionLinks: KnowledgeSectionLinks = { version: 1, items: [] };
   for (let index = 0; index < plan.items.length; index++) {
     const item = plan.items[index];
-    if (item.action === 'unchanged') { counts.unchanged++; continue; }
     let sectionId: number;
-    if (item.action === 'update') {
+    if (item.action === 'unchanged') {
+      sectionId = item.targetId!;
+      counts.unchanged++;
+    } else if (item.action === 'update') {
       sectionId = item.targetId!;
       await tx.update(knowledgeSections).set({ content: item.content, summary: item.summary, source, sourceUrl: null, provenance: { ...provenance, planVersion: plan.version }, embedding: null, embeddingContentHash: null })
         .where(and(eq(knowledgeSections.merchantId, merchantId), eq(knowledgeSections.id, sectionId)));
@@ -78,8 +83,13 @@ export async function applyKnowledgePlan(tx: KnowledgeTransaction, merchantId: n
       sectionId = inserted.insertId; created.set(index, sectionId);
       if (item.action === 'conflict') counts.conflicts++; else counts.added++;
     }
-    await tx.insert(knowledgeChangelog).values({ merchantId, sectionId, action: item.action === 'update' ? 'evolve' : item.action, reason: item.reason,
+    if (item.action !== 'unchanged') await tx.insert(knowledgeChangelog).values({ merchantId, sectionId, action: item.action === 'update' ? 'evolve' : item.action, reason: item.reason,
       oldContent: item.before?.content || null, newContent: item.content, source: `intake:${provenance.requestId}` });
+    // Read the actual stored result, including nullable legacy settings and generated parent IDs.
+    const [saved] = await tx.select(sectionComparisonColumns).from(knowledgeSections)
+      .where(and(eq(knowledgeSections.merchantId, merchantId), eq(knowledgeSections.id, sectionId)));
+    if (!saved) throw Error('Applied knowledge section disappeared');
+    sectionLinks.items.push({ planIndex: index, sectionId, ...sectionFingerprints(saved) });
   }
-  return counts;
+  return { counts, sectionLinks };
 }

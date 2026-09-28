@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { parseMerchantDate } from '@/lib/merchant-date';
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import type { KnowledgeReceipt } from '@shared/knowledge-intake';
@@ -43,7 +44,7 @@ export function KnowledgeReceiptView({ receipt: savedReceipt, onRefresh, busy }:
     {receipt.recoveredAt && <p className="rounded-lg bg-muted p-3 text-sm leading-7">{t('merchantUx.knowledgeIntake.recoveryDone')}</p>}
     {receipt.review ? <details className="space-y-3 border-t pt-3 text-sm leading-7" data-knowledge-saved-review><summary className="cursor-pointer py-2 font-medium">{t('merchantUx.knowledgeIntake.savedReview')}</summary>
       <p>{t('merchantUx.knowledgeIntake.reviewScope')}</p>
-      <p>{t('merchantUx.knowledgeIntake.reviewAcceptedAt')}: <bdi>{new Date(receipt.review.acceptedAt.replace(' ', 'T') + 'Z').toLocaleString(i18n?.language || 'ar')}</bdi></p>
+      <p>{t('merchantUx.knowledgeIntake.reviewAcceptedAt')}: <bdi>{parseMerchantDate(receipt.review.acceptedAt).toLocaleString(i18n?.language || 'ar')}</bdi></p>
       <KnowledgeAnalysisReport analysis={receipt.review.analysis} />
       {receipt.review.plan ? <KnowledgePlanView plan={receipt.review.plan} archived /> : <p className="text-muted-foreground">{t('merchantUx.knowledgeIntake.planLegacy')}</p>}
     </details> : receipt.state !== 'removed' && <p className="text-sm text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewUnavailable')}</p>}

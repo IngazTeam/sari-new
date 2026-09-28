@@ -1,5 +1,6 @@
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
 import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
+import { parseMerchantDate } from '@/lib/merchant-date';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
@@ -1142,7 +1143,7 @@ export default function SariBrain() {
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {source.type === 'products' ? `${source.contentLength} ${term('item')}` : source.type === 'document' ? t('merchantUx.knowledgeLibrary.groupCount', { count: source.documentCount }) : ''}
-                        {source.date && ` • ${new Date(source.date).toLocaleDateString('ar-SA')}`}
+                        {source.date && ` • ${parseMerchantDate(source.date).toLocaleDateString('ar-SA')}`}
                       </p>
                     </div>
                   </div>
@@ -1825,9 +1826,9 @@ export default function SariBrain() {
                           {isIngested ? 'اعتماد' : isDeleted ? 'حذف' : isAnalyzed ? 'فحص' : isWebsite ? 'موقع' : 'تحديث'}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {new Date(entry.createdAt).toLocaleDateString('ar-SA', {
+                          {parseMerchantDate(entry.createdAt).toLocaleDateString('ar-SA', {
                             day: 'numeric', month: 'short', year: 'numeric',
-                          })} — {new Date(entry.createdAt).toLocaleTimeString('ar-SA', {
+                          })} — {parseMerchantDate(entry.createdAt).toLocaleTimeString('ar-SA', {
                             hour: '2-digit', minute: '2-digit',
                           })}
                         </span>

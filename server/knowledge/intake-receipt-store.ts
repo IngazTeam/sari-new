@@ -53,9 +53,9 @@ export async function reserveIntake(merchantId: number, raw: unknown, beforeCrea
     const text = prepareKnowledgeText(input.content);
     const [document] = await tx.insert(docs).values({ merchantId, fileName: input.fileName || 'Knowledge intake', fileType: 'text', fileUrl: null,
       fileSize: Buffer.byteLength(text, 'utf8'), extractedText: text, extractionStatus: 'completed', intakeRequestId: input.requestId });
-    const evolveResult = await applyKnowledgePlan(tx, merchantId, plan, input.contentType === 'document' ? 'document' : 'manual', { requestId: input.requestId, reviewId: input.reviewId, documentId: document.insertId });
+    const { counts: evolveResult, sectionLinks } = await applyKnowledgePlan(tx, merchantId, plan, input.contentType === 'document' ? 'document' : 'manual', { requestId: input.requestId, reviewId: input.reviewId, documentId: document.insertId });
     const outcome = { success: Object.values(evolveResult).some(value => value > 0), evolveResult, embeddingsReady: false };
-    await tx.update(receipts).set({ documentId: document.insertId, outcome }).where(eq(receipts.id, inserted.insertId));
+    await tx.update(receipts).set({ documentId: document.insertId, outcome, sectionLinks }).where(eq(receipts.id, inserted.insertId));
     const [row] = await tx.select(receiptColumns).from(receipts).where(eq(receipts.id, inserted.insertId));
     return { created: true, execution, receipt: receiptView(row) };
   });

@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), list: vi.fn(), read: vi.fn() }));
+const mocks = vi.hoisted(() => ({ access: vi.fn(), list: vi.fn(), read: vi.fn(), sections: vi.fn() }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./knowledge/document-library', () => ({ listKnowledgeDocuments: mocks.list, readKnowledgeDocument: mocks.read }));
+vi.mock('./knowledge/document-sections', () => ({ readKnowledgeDocumentSections: mocks.sections }));
 import { knowledgeDocsRouter } from './routers-knowledge-docs';
 const caller = () => knowledgeDocsRouter.createCaller({ user: { id: 7, role: 'user' }, req: { headers: { 'x-merchant-id': '20' } }, res: {}, merchantId: 999 } as any);
 beforeEach(() => { vi.clearAllMocks(); mocks.access.mockResolvedValue({ merchantId: 20, role: 'owner' }); mocks.list.mockResolvedValue({ items: [], total: 0 }); mocks.read.mockResolvedValue({ text: 'Owned text' }); });
@@ -15,10 +16,21 @@ it.each(['viewer', 'sales_supervisor'])('denies %s raw text before querying stor
   mocks.access.mockResolvedValue({ merchantId: 20, role });
   await expect(caller().readText({ id: 4 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(mocks.read).not.toHaveBeenCalled();
+  await expect(caller().sections({ id: 4 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(mocks.sections).not.toHaveBeenCalled();
 });
 it('uses resolved tenant identity for raw text, never forged context', async () => {
   expect(await caller().readText({ id: 4 })).toEqual({ text: 'Owned text' });
   expect(mocks.read).toHaveBeenCalledWith(20, { id: 4, page: 1 });
+  await caller().sections({ id: 4 });
+  expect(mocks.sections).toHaveBeenCalledWith(20, { id: 4, page: 1 });
+});
+it.each([{ id: -1 }, { id: 4, page: 0 }, { id: 4, page: 1.5 }, { id: 4, page: 100001 }])('rejects invalid section-link reads %j', async input => {
+  await expect(caller().sections(input)).rejects.toMatchObject({ code: 'BAD_REQUEST' }); expect(mocks.sections).not.toHaveBeenCalled();
+});
+it('hides internal section-link read failures', async () => {
+  mocks.sections.mockRejectedValue(new Error('private database detail'));
+  await expect(caller().sections({ id: 4 })).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge section links are temporarily unavailable' });
 });
 it.each([{ page: 0 }, { page: 1.5 }, { search: 'a'.repeat(101) }, { status: 'active' }])('rejects invalid list inputs %j', async input => {
   await expect(caller().list(input as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' }); expect(mocks.list).not.toHaveBeenCalled();

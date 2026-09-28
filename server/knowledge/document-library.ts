@@ -37,16 +37,18 @@ export async function listKnowledgeDocuments(merchantId: number, raw: unknown) {
 
 export async function readKnowledgeDocument(merchantId: number, raw: unknown) {
   const input = knowledgeTextInput.parse(raw), db = await database(merchantId);
-  const [row] = await db.select({ ...metadata,
-    revision: sql<string>`SHA2(COALESCE(${docs.extractedText}, ''), 256)`,
-    text: sql<string>`SUBSTRING(COALESCE(${docs.extractedText}, ''), ${(input.page - 1) * KNOWLEDGE_TEXT_PAGE_SIZE + 1}, ${KNOWLEDGE_TEXT_PAGE_SIZE})`,
-  }).from(docs).where(and(eq(docs.id, input.id), eq(docs.merchantId, merchantId))).limit(1);
-  if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: 'Knowledge document not found' });
-  if (input.revision && input.revision !== row.revision) throw new TRPCError({ code: 'CONFLICT', message: 'Knowledge document changed' });
-  const totalPages = Math.max(1, Math.ceil(row.characterCount / KNOWLEDGE_TEXT_PAGE_SIZE));
-  if (input.page > totalPages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid document page' });
-  const [receipt] = row.intakeRequestId ? await db.select(receiptColumns).from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
-  return { ...row, page: input.page, totalPages, receipt: receipt ? receiptView(receipt) : null };
+  return db.transaction(async tx => {
+    const [row] = await tx.select({ ...metadata,
+      revision: sql<string>`SHA2(COALESCE(${docs.extractedText}, ''), 256)`,
+      text: sql<string>`SUBSTRING(COALESCE(${docs.extractedText}, ''), ${(input.page - 1) * KNOWLEDGE_TEXT_PAGE_SIZE + 1}, ${KNOWLEDGE_TEXT_PAGE_SIZE})`,
+    }).from(docs).where(and(eq(docs.id, input.id), eq(docs.merchantId, merchantId))).limit(1);
+    if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: 'Knowledge document not found' });
+    if (input.revision && input.revision !== row.revision) throw new TRPCError({ code: 'CONFLICT', message: 'Knowledge document changed' });
+    const totalPages = Math.max(1, Math.ceil(row.characterCount / KNOWLEDGE_TEXT_PAGE_SIZE));
+    if (input.page > totalPages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid document page' });
+    const [receipt] = row.intakeRequestId ? await tx.select(receiptColumns).from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
+    return { ...row, page: input.page, totalPages, receipt: receipt ? receiptView(receipt) : null };
+  }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
 export async function getKnowledgeDocumentSummary(merchantId: number) {

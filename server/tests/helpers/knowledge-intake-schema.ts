@@ -16,6 +16,8 @@ export async function ensureKnowledgeIntakeTestSchema() {
     if (!review.length) for (const statement of readFileSync('drizzle/0154_knowledge_intake_reviews.sql', 'utf8').split('--> statement-breakpoint')) await connection.query(statement);
     const [plan] = await connection.query<any[]>("SHOW COLUMNS FROM knowledge_intake_reviews LIKE 'basis_hash'");
     if (!plan.length) await connection.query(readFileSync('drizzle/0155_knowledge_intake_plans.sql', 'utf8'));
+    const [links] = await connection.query<any[]>("SHOW COLUMNS FROM knowledge_intake_receipts LIKE 'section_links'");
+    if (!links.length) await connection.query(readFileSync('drizzle/0156_knowledge_section_links.sql', 'utf8'));
   } finally {
     try { await connection.query("SELECT RELEASE_LOCK(CONCAT(DATABASE(), ':knowledge-receipt-test-schema'))"); } finally { connection.release(); }
   }

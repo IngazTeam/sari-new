@@ -86,6 +86,19 @@ it('distinguishes saved, partial, processing, unknown and empty intake outcomes 
 });
 const option = (s: string, v: string) =>
   set(`[data-bk-option="${s}"]`, v, "change");
+it('compares saved/current sections and distinguishes deleted, changed, missing-history and failed-read examples', () => {
+  sources(); node('[data-kl-action="read"]').click();
+  const before = snapshot();
+  expect(node('[data-kl-links]').textContent).toContain('مطابق للنتيجة المحفوظة');
+  set('[data-kl-links-state]', 'content', 'change'); expect(node('[data-kl-links]').textContent).toContain('خمسة أيام');
+  set('[data-kl-links-state]', 'settings', 'change'); expect(node('[data-kl-links]').textContent).toContain('معطّل في الإعدادات');
+  set('[data-kl-links-state]', 'removed', 'change'); expect(node('[data-kl-links]').textContent).toContain('قراءة النص المحفوظ'); expect(node('[data-kl-links]').textContent).not.toContain('إعدادات القسم الحالية');
+  set('[data-kl-links-state]', 'unavailable', 'change'); expect(node('[data-kl-links]').textContent).toContain('لا يوجد ربط موثوق');
+  set('[data-kl-links-state]', 'empty', 'change'); expect(node('[data-kl-links]').textContent).toContain('لا تحتوي هذه الخطة');
+  set('[data-kl-links-state]', 'failure', 'change'); expect(node('[data-kl-links]').textContent).toContain('تعذر قراءة');
+  node('[data-kl-action="links-refresh"]').click(); expect(node('[data-kl-links]').textContent).toContain('لم يتغير محتوى المعرفة');
+  expect(snapshot()).toEqual(before);
+});
 it('closes only an acknowledged interrupted example while retaining knowledge and avoiding provider work', () => {
   sources(); node('[data-kl-action="read"]').click();
   for (const state of ['processing', 'legacy']) {

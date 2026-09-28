@@ -19,8 +19,17 @@ import { assertKnowledgeDocumentSignature } from './security/upload-validation';
 import { knowledgeLibraryInput, knowledgeTextInput } from '../shared/knowledge-library';
 import { listKnowledgeDocuments, readKnowledgeDocument } from './knowledge/document-library';
 import { hasPermission } from './_core/permissions';
+import { knowledgeSectionLinksInput } from '../shared/knowledge-section-links';
+import { readKnowledgeDocumentSections } from './knowledge/document-sections';
 
 export const knowledgeDocsRouter = router({
+  sections: permissionProcedure('bot_settings.manage').input(knowledgeSectionLinksInput).query(async ({ ctx, input }) => {
+    try { return await readKnowledgeDocumentSections(ctx.merchantId, input); }
+    catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge section links are temporarily unavailable' });
+    }
+  }),
   list: merchantProcedure.input(knowledgeLibraryInput).query(async ({ ctx, input }) => {
     try {
       return { ...await listKnowledgeDocuments(ctx.merchantId, input), canReadText: hasPermission(ctx.merchantRole, 'bot_settings.manage') };

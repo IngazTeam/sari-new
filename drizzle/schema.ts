@@ -396,6 +396,7 @@ export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   inputHash: char('input_hash', { length: 64 }).notNull(),
   reviewId: varchar('review_id', { length: 36 }),
   reviewSnapshot: json('review_snapshot').$type<import('../shared/knowledge-intake').KnowledgeSavedReview>(),
+  sectionLinks: json('section_links').$type<import('../shared/knowledge-section-links').KnowledgeSectionLinks>(),
   executionToken: char('execution_token', { length: 36 }),
   leaseExpiresAt: timestamp('lease_expires_at', { mode: 'string' }),
   recoveredAt: timestamp('recovered_at', { mode: 'string' }),
