@@ -71,6 +71,7 @@ import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
+  campaignPerformance: import('./campaign-performance').CampaignPerformanceCopy;
   byaanSales: Record<keyof typeof import('./byaan-sales-review').byaanSalesReviewAr, string>;
   sallaCheckout: Record<keyof typeof import('./salla-checkout-review').sallaCheckoutReviewAr,string>;
   sallaEffects: Record<keyof typeof import('./salla-effect-review').sallaEffectReviewAr, string>;

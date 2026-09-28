@@ -1,0 +1,10 @@
+{
+  "cleanedTemporaryCampaigns": 1,
+  "restoredNoSampleVerified": true,
+  "prototype390": {
+    "rows": 7,
+    "scrollWidth": 375,
+    "selectFont": "16px",
+    "width": 390
+  }
+}

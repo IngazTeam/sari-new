@@ -35,8 +35,8 @@ export function withSuspense<T extends ComponentType<any>>(
 
 // Analytics (uses recharts - heavy)
 export const LazyAnalyticsDashboard = lazy(() => import('./pages/merchant/AnalyticsDashboard'));
-export const LazyAdvancedAnalytics = lazy(() => import('./pages/merchant/AdvancedAnalytics'));
-export const LazyAdvancedAnalyticsDashboard = lazy(() => import('./pages/merchant/AdvancedAnalyticsDashboard'));
+export const LazyAdvancedAnalytics = lazy(() => import('./pages/merchant/Analytics'));
+export const LazyAdvancedAnalyticsDashboard = lazy(() => import('./pages/merchant/Analytics'));
 export const LazyOverviewAnalytics = lazy(() => import('./pages/merchant/OverviewAnalytics'));
 export const LazyMetricsDashboard = lazy(() => import('./pages/merchant/MetricsDashboard'));
 export const LazyPerformanceMetrics = lazy(() => import('./pages/merchant/PerformanceMetrics'));

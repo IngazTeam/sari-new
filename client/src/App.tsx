@@ -112,7 +112,6 @@ const Analytics = lazyLoad(() => import("./pages/merchant/Analytics"));
 const OverviewAnalytics = lazyLoad(() => import("./pages/merchant/OverviewAnalytics"));
 const Orders = lazyLoad(() => import("./pages/merchant/Orders"));
 const WhatsAppInstancesPage = lazyLoad(() => import("./pages/merchant/WhatsAppInstancesPage"));
-const WhatsAppSetupWizard = lazyLoad(() => import("./pages/merchant/WhatsAppSetupWizard"));
 const OrderNotificationsSettings = lazyLoad(() => import("./pages/merchant/OrderNotificationsSettings"));
 const WhatsAppTest = lazyLoad(() => import("./pages/merchant/WhatsAppTest"));
 const GreenAPISetupGuide = lazyLoad(() => import("./pages/merchant/GreenAPISetupGuide"));

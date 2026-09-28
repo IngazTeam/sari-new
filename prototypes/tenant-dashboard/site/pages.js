@@ -112,7 +112,7 @@ window.TenantPages = (() => {
     if(p.redirect)return renderPage(find(p.redirect));
     const renderers={list,form,detail,analytics,integration,hub,directory,calendar,pipeline,knowledge,media,import:importer,assistant,compose,setup,plans,billing,checkout,result,privacy,guide,analysis,overview:()=>overview(),inbox:()=>inbox()};
       const content=window.TestingPreview?.handles(p)?window.TestingPreview.render(p):window.NotificationPreview?.handles(p)?window.NotificationPreview.render(p):window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
-    return (['overview','inbox'].includes(p.kind)?`<div class="page-breadcrumb">${link('جميع الصفحات','/merchant/tools')}${action('حالات الصفحة','states')}</div>`:head(p))+content;
+    return (['overview','inbox'].includes(p.kind)?`<div class="page-breadcrumb">${link('جميع الصفحات','/merchant/tools')}${action('حالات الصفحة','states')}</div>`:head(p))+(window.CampaignPreview?.handles(p)?window.CampaignPreview.render(p,content):content);
   }
   function rerender(keep = false) { render(keep); }
   function createDialog() {

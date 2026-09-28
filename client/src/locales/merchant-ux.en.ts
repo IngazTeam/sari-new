@@ -14,7 +14,10 @@ import { learningPolicyReviewEn } from './learning-policy-review';
 import { learningPolicyEvaluationEn } from './learning-policy-evaluation';
 import { salesExperimentProtocolEn } from './sales-experiment-protocol';
 
+import { campaignPerformanceEn } from './campaign-performance';
+
 const merchantUxEn: MerchantUxCopy = {
+  campaignPerformance: campaignPerformanceEn,
   byaanSales: byaanSalesReviewEn,
   sallaEffects: sallaEffectReviewEn,
   sallaCheckout: sallaCheckoutReviewEn,

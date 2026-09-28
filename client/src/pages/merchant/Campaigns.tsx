@@ -25,12 +25,15 @@ import {
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CampaignPerformance } from '@/components/merchant/CampaignPerformance';
+import { QueryStateCard } from '@/components/QueryStateCard';
 
 export default function Campaigns() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [manualReviewOpen, setManualReviewOpen] = useState(false);
-  const { data: campaigns, isLoading, refetch } = trpc.campaigns.list.useQuery();
+  const { data: campaigns, isLoading, isError, refetch } = trpc.campaigns.list.useQuery();
   const deleteMutation = trpc.campaigns.delete.useMutation({
     onSuccess: () => {
       toast.success(t('toast.campaigns.msg3'));
@@ -107,6 +110,12 @@ export default function Campaigns() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  if (isError) {
+    return <QueryStateCard kind="error" title={t('merchantUx.campaignPerformance.loadFailed')}
+      description={t('merchantUx.campaignPerformance.loadHint')} retryLabel={t('merchantUx.campaignPerformance.retry')}
+      onRetry={() => { void refetch(); }} />;
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -118,7 +127,7 @@ export default function Campaigns() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">{t('campaignsPage.title')}</h1>
           <p className="text-muted-foreground mt-2">
@@ -206,6 +215,13 @@ export default function Campaigns() {
         </Card>
       </div>
 
+      <Tabs defaultValue="list" className="min-w-0">
+        <TabsList className="mb-4 h-auto w-full sm:w-auto">
+          <TabsTrigger value="list" className="min-h-11 flex-1">{t('merchantUx.campaignPerformance.list')}</TabsTrigger>
+          <TabsTrigger value="performance" className="min-h-11 flex-1">{t('merchantUx.campaignPerformance.performance')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="performance"><CampaignPerformance onRefresh={() => { void refetch(); }} /></TabsContent>
+        <TabsContent value="list">
       {/* Campaigns Table */}
       <Card>
         <CardHeader>
@@ -335,6 +351,9 @@ export default function Campaigns() {
           )}
         </CardContent>
       </Card>
+
+        </TabsContent>
+      </Tabs>
 
       <AlertDialog open={manualReviewOpen} onOpenChange={setManualReviewOpen}>
         <AlertDialogContent>
