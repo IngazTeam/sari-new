@@ -8,6 +8,10 @@ describe('transactional truth guard', () => {
     'تم حجز موعدك',
     'وصلت طلبك للمختص',
     'استفسارك مسجل للمتابعة',
+    'تم إنشاء الطلب بنجاح',
+    'تم تأكيد الحجز',
+    'تم إنشاء الموعد',
+    'تم إرسال الطلب',
   ])('rejects a claim without a persisted identifier: %s', response => {
     expect(containsUnverifiedActionClaim(response)).toBe(true);
   });

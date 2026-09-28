@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
-import { withConversationUnderstanding, currentConversationUnderstanding } from './conversation-understanding-context';
+import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { getMerchantVirtualAgent } from './virtual-agent-context';
@@ -519,6 +519,12 @@ export async function shouldAutoRelease(
   customerMessage: string,
   conversationId?: number,
 ): Promise<string | null> {
+  const interpretation = currentConversationUnderstanding(customerMessage);
+  if (hasConversationUnderstanding()) {
+    return interpretation && interpretation.confidence >= 0.85 && !interpretation.ambiguous
+      && interpretation.topicChanged && !contextualHandoffRequested(customerMessage) ? 'new_topic' : null;
+  }
+
   // Rule 1: Max hold responses — customer frustrated after 2 "waiting" messages
   if (hold.holdResponseCount >= MAX_HOLD_RESPONSES) {
     return 'max_responses';
@@ -671,6 +677,8 @@ function productDenialGuard(
  * Returns true if escalation to merchant is needed.
  */
 function isKnowledgeGapResponse(botResponse: string, customerMessage: string): boolean {
+  // A product question containing "trainer" or a negated complaint is not a handoff.
+  if (hasConversationUnderstanding()) return contextualHandoffRequested(customerMessage);
   const resp = botResponse.toLowerCase();
   const msg = customerMessage.toLowerCase();
 
@@ -916,6 +924,17 @@ export async function searchRelevantProducts(
   const availableProducts = filterProductsAvailableForSale(allProducts);
   if (availableProducts.length === 0) return [];
 
+  const interpretation = currentConversationUnderstanding();
+  if (interpretation) {
+    if (interpretation.requestKind === 'catalog') return availableProducts;
+    // Resolve pronouns and preferences through the full dialogue interpretation.
+    // IDs only select fresh, available records supplied by this tenant's caller.
+    return interpretation.productIds.flatMap(id => {
+      const product = availableProducts.find(p => p.id === id);
+      return product ? [product] : [];
+    }).slice(0, limit);
+  }
+
   // FIX: Strip punctuation from message before keyword extraction
   const cleanMessage = message.replace(/[؟?!.,،;:()[\]{}""''\"]/g, ' ').trim();
 
@@ -998,6 +1017,8 @@ function extractConversationTopicContext(
   currentMessage: string,
   previousMessages: Array<{ role: string; content: string | any }>,
 ): string {
+  const interpretation = currentConversationUnderstanding(currentMessage);
+  if (interpretation) return [currentMessage, interpretation.summary, ...interpretation.needs, ...interpretation.unresolvedQuestions].join('\n');
   // Only activate for short messages with existing conversation
   if (currentMessage.length >= 15 || previousMessages.length === 0) {
     return currentMessage;
@@ -1628,6 +1649,13 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
 }
 
 async function chatWithSariUnderstood(params: ChatWithSariParams, memoryHistoryCutoff: number): Promise<string> {
+  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId && contextualHandoffRequested(params.message)) {
+    const escalation = await handleSmartEscalation({ merchantId: params.merchantId, conversationId: params.conversationId,
+      customerPhone: params.customerPhone, customerName: params.customerName, customerQuestion: params.message,
+      incomingMessageId: params.incomingMessageId, botResponse: 'طلب العميل مراجعة الفريق بناءً على سياق المحادثة.' });
+    if (escalation.escalationId) setEscalationHold(params.merchantId, params.customerPhone, params.message);
+    return escalation.message;
+  }
   if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
     const { handleByaanCheckout } = await import('./byaan-checkout-conversation');
     const enrollmentReply = await handleByaanCheckout({ merchantId:params.merchantId, conversationId:params.conversationId,
@@ -1779,9 +1807,8 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
       botSettingsOverridePrompt += `- إذا كان السؤال يحتاج تفاصيل خاصة، قل: "راسلني على الخاص وأعطيك التفاصيل كاملة 😊"\n`;
     }
 
-    // Merchant-defined exact/keyword replies are deterministic business rules.
-    // Resolve them before the off-topic classifier and never rewrite their text with an LLM.
-    const quickResponse = await findMatchingQuickResponse(params.merchantId, params.message);
+    // Legacy/group rules must not override a private turn interpreted in context.
+    const quickResponse = hasConversationUnderstanding() ? null : await findMatchingQuickResponse(params.merchantId, params.message);
     if (quickResponse) {
       if (containsUnverifiedActionClaim(quickResponse.response)) {
         console.warn(`[QuickResponse] Blocked unverified transactional claim in rule ${quickResponse.id}`);
@@ -1797,7 +1824,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
 
     // ═══ OFF-TOPIC GUARD — Reject questions unrelated to the business ═══
     // Runs BEFORE GPT to save API costs and prevent irrelevant responses
-    if (isOffTopicQuestion(params.message)) {
+    if (!hasConversationUnderstanding() && isOffTopicQuestion(params.message)) {
       const merchantName = merchant.businessName || 'متجرنا';
       console.log(`[chatWithSari] 🚫 Off-topic question blocked: "${params.message.substring(0, 60)}"`);
       return `أقدر أساعدك في خدمات ومنتجات *${merchantName}* بس 😊
@@ -2267,7 +2294,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
     // === RAG Cache Check ===
     try {
-      const cached = await findCachedResponse(params.merchantId, params.message);
+      const cached = hasConversationUnderstanding() ? null : await findCachedResponse(params.merchantId, params.message);
       if (cached) {
         // PEN-GAP-02 FIX: Don't serve cached knowledge gap responses — they're stale
         if (isKnowledgeGapResponse(cached.response, params.message)) {

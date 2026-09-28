@@ -1591,6 +1591,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       );
       
       await selectAction({
+        primaryReplyOwnsActions: !groupChatId,
         merchantId: instance.merchantId,
         customerMessage: messageText,
         botResponse: response,

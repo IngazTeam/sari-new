@@ -1,0 +1,429 @@
+{
+  "at": "2026-09-28T19:14:49.043Z",
+  "baselineCommit": "301be86846c8ca2c6fe9669cd933ab0fba502ba5",
+  "scope": "Contextual reply routing, guarded handoff, synthetic model evaluation tooling. No live model quality claim.",
+  "testEvidence": {
+    "initialBroad": {
+      "files": 47,
+      "passed": 1725,
+      "failed": 2
+    },
+    "initialFailures": "Two source-contract tests used a removed comment as a section boundary. Narrowed boundaries and added behavioral legacy quick-reply tests; these discovered and fixed definite-article transactional claim bypass.",
+    "finalFocused": {
+      "files": 7,
+      "passed": 138,
+      "failed": 0
+    },
+    "latestPerFile": {
+      "files": 50,
+      "passed": 1762,
+      "failed": 0,
+      "pending": 0,
+      "note": "Latest result per file, replacing earlier runs; not a single combined execution.",
+      "suites": [
+        {
+          "file": "server/ai-settings-provider-routing.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/appointment-reminder-pentest.test.ts",
+          "passed": 40,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-checkout-contract.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-conversation-routing.test.ts",
+          "passed": 39,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-dashboard-hardening-pentest.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-enrollment-consent-pentest.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-enrollment-recovery-pentest.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-faq-knowledge-pentest.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-pagination-pentest.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-sales-boundary-pentest.test.ts",
+          "passed": 67,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-sales-review-pentest.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-settings-sync-pentest.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-signature-v2.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-site-contract.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/byaan-trainee-sync-pentest.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/remediation-regression.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/sales-hardening-pentest.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/salla-checkout-cart-pentest.test.ts",
+          "passed": 80,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/salla-checkout-evidence-api-pentest.test.ts",
+          "passed": 78,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/salla-checkout-evidence-transport-pentest.test.ts",
+          "passed": 51,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/salla-checkout-review-pentest.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/training-byaan-marketing-pentest.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/whatsapp-byaan-channel-pentest.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/booking-agreements.mysql.test.ts",
+          "passed": 90,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/byaan-checkout-conversation.mysql.test.ts",
+          "passed": 61,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/byaan-enrollment-agreements.mysql.test.ts",
+          "passed": 67,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/byaan-enrollment-conversation.mysql.test.ts",
+          "passed": 48,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/byaan-enrollment-recovery.mysql.test.ts",
+          "passed": 52,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/checkout-agreements.mysql.test.ts",
+          "passed": 40,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/contextual-reply-routing.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding-evaluation.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding.mysql.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/conversation-understanding.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/customer-memory-chat.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/openai-zahypi.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-brain-decisions.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-decision-benchmark.test.ts",
+          "passed": 94,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sales-turn-policy.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/salla-checkout-conversation.mysql.test.ts",
+          "passed": 163,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/task-catalog.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/zid-checkout-agreements.mysql.test.ts",
+          "passed": 123,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/byaan-outbox.mysql.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/byaan-sales-boundary.mysql.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/byaan-sales-operations.mysql.test.ts",
+          "passed": 36,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/byaan-sales-review.mysql.test.ts",
+          "passed": 29,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/salla-checkout-carts.mysql.test.ts",
+          "passed": 73,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/integrations/salla-checkout-evidence.mysql.test.ts",
+          "passed": 74,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/action-execution.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/sari-preview.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "server/ai/transactional-truth.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "pending": 0
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ]
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ]
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ]
+    }
+  ],
+  "cliChecks": [
+    {
+      "name": "dry-run-without-runtime",
+      "exitCode": 0,
+      "mode": "dry-run",
+      "total": 30
+    },
+    {
+      "name": "missing-test-merchant",
+      "exitCode": 1,
+      "mode": "live",
+      "error": "invalid_arguments"
+    },
+    {
+      "name": "bounded-repeat",
+      "exitCode": 1,
+      "mode": "live",
+      "error": "invalid_arguments"
+    },
+    {
+      "name": "local-app-metadata-preflight",
+      "exitCode": 1,
+      "mode": "preflight",
+      "error": "runtime_preflight_failed"
+    }
+  ],
+  "liveEvaluation": {
+    "performed": false,
+    "casesPrepared": 30,
+    "providerCalls": 0,
+    "blocker": "Local application database rejected configured credentials (ER_ACCESS_DENIED_ERROR). Need a connected runtime and designated test merchant. No credential bypass or direct unbudgeted API calls."
+  },
+  "securityScope": "Local adversarial SQL, tenant isolation, consent, tampering and fake transport tests. Not a production penetration test.",
+  "deployment": {
+    "pushed": false,
+    "deployed": false,
+    "additionalMigration": false,
+    "prerequisiteMigration": "0150_conversation_understanding.sql"
+  },
+  "limitations": [
+    "Model quality and persuasion require live and human evaluation.",
+    "Group interpretation and full preview parity are outside this change.",
+    "Private supplementary action classifier disabled; primary contextual paths own actions.",
+    "Confidence is model-reported, not a calibrated probability."
+  ],
+  "sourceSha256": {
+    "scripts/testing/conversation-understanding-cases.ts": "f3bf62fad0399120ba4ac856e159b701a19379ff51233a228072eb0fd70198f2",
+    "scripts/testing/conversation-understanding-scoring.ts": "26f3f7ef8f838bb3320d725045ff10a1e512ffceee8b5aa33f951c22a12ae2f6",
+    "scripts/testing/evaluate-conversation-understanding.ts": "2045fe154c32ca542c96415fd26f1a85cbbdcbeae1649695198f9b5df097c33a",
+    "server/ai/action-selector.ts": "9d7e25e5d2473b371c18c67f34300fe36c1a9b4dd0f5069b4bf12e09b10a25ff",
+    "server/ai/conversation-understanding-context.ts": "74a036f340ef390bcf038deaeb3d166bf491a4eae50957b28c224d1b0130c4d7",
+    "server/ai/conversation-understanding.ts": "f5f1c111b5b21e9408e0f7d58ac2a819996e4a7fc4e479f8157bd6de69b86b06",
+    "server/ai/sari-personality.ts": "6c3033a75c159a6f2421fa26765cdea21a863c4b41fc92edf6ef2162647da1da",
+    "server/ai/smart-escalation.ts": "e13f0316f6a5a6a8c0920e39dad31389d660ec230e8cdedf7e08f329d424554d",
+    "server/ai/transactional-truth.ts": "bc5d374c767494a0a3db9895538a455213cd2ab03adc1db2a319ab295b8baf96",
+    "server/ai/transactional-truth.test.ts": "3dbecb6727d50c350a5f2fdd11b29355f1346fd35cee4a23aaf6008766ef04dc",
+    "server/ai/contextual-reply-routing.test.ts": "579c97629c5bb9418cde94c8acf673421251be7fa6e14e1fcc0d85d8ed35625e",
+    "server/ai/conversation-understanding-evaluation.test.ts": "3fd29cb069af7c52bad38f9aaceca1d73103cc631bbda2f3c689db0fe1943c70",
+    "server/byaan-conversation-routing.test.ts": "2dccf8c296a4f77c67f2535dca336928f2e9823093f0a3601b85e16eada34121",
+    "server/webhooks/greenapi.ts": "c11c5d094b0c2c5f9f07bb1d099a501a5892934f0bde957ee0f1c9ce19d41cf0",
+    "server/sales-hardening-pentest.test.ts": "d33428be23634a88934cb0c6abc3722bf0ae207f208b28423ce14407f85ea681",
+    "docs/SARI_CONTEXTUAL_AI_FOLLOWUP_2026-09-28.md": "066da00392250947d462ed5f9d11347f70fa5acdac6825a319a2878ceba03956",
+    "docs/SARI_CONTEXTUAL_AI_2026-09-28.md": "2ce166dcfa069cb2ded4e640fd56a4470b37d1171f1c589d2d1b8bcbb143053a",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "f6e1d466c39d70faa7ab5f1727a6d70c215bbd2ec4696f11aec6d360918fd35d"
+  }
+}

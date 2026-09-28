@@ -28,6 +28,7 @@ import {
 import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
 import { z } from 'zod';
+import { hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
 
 // ═══════════════════════════════════════════════════════════════
 // Escalation Contact Chain Types
@@ -656,6 +657,13 @@ export function evaluateSmartEscalationV2(ctx: {
   };
 
   const displayName = ctx.customerName || ctx.customerPhone;
+
+  if (hasConversationUnderstanding()) {
+    if (!contextualHandoffRequested(ctx.customerMessage)) return noEscalation;
+    return { shouldEscalate: true, trigger: 'knowledge_gap', priority: 'P1',
+      merchantMessage: 'تحتاج المحادثة مراجعة الفريق وفق تحليل السياق الحالي.',
+      customerMessage: '' }; // The durable escalation result supplies the acknowledgement.
+  }
 
   // ── T1: Complaint Risk (P0) ──
   if (V2_COMPLAINT_PATTERNS.some(p => p.test(ctx.customerMessage)) &&

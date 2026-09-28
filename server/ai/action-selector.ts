@@ -90,7 +90,11 @@ export async function selectAction(params: {
   availableProducts?: { name: string; id: number; price?: number }[];
   hasActiveDiscounts?: boolean;
   conversationHistory?: ChatMessage[];
+  primaryReplyOwnsActions?: boolean;
 }): Promise<SariAction> {
+  // Contextual private replies already ran the grounded sales/booking/handoff routes.
+  // A second, keyword-gated classifier after delivery must not contradict that decision.
+  if (params.primaryReplyOwnsActions) return { type: 'text_only' };
   const { customerMessage, botResponse, intent, profile } = params;
   if (intent === 'declined' || isSalesRefusal(customerMessage)) return { type: 'text_only' };
   const lastAssistant = params.conversationHistory?.filter(m => m.role === 'assistant').at(-1)?.content;

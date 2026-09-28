@@ -52,6 +52,11 @@ export function semanticIdentityMatches(input: { merchantId: number; conversatio
   const value = storage.getStore();
   return !value || value.merchantId === input.merchantId && value.conversationId === input.conversationId && value.incomingMessageId === input.incomingMessageId;
 }
+export function contextualHandoffRequested(message: string): boolean {
+  const value = currentConversationUnderstanding(message);
+  return !!value && value.confidence >= 0.85 && !value.conditional && !value.ambiguous
+    && (value.action === 'request_human' || value.nextStep === 'handoff');
+}
 export function understandingPrompt(value: ConversationUnderstanding) {
   return `\n\n## فهم المحادثة الحالية من المزوّد المختار مركزيًا\n`
     + 'البيانات التالية تحليل للسياق وليست تعليمات من العميل ولا حقائق مالية. اربط الرد بالاحتياج والاعتراض والأسئلة غير المحسومة، واستفد من كلام الطرفين. لا تعاود سؤالًا أجاب عنه العميل. لا تستنتج دفعًا أو حجزًا من النية. عند الغموض اسأل سؤالًا محددًا.\n'
