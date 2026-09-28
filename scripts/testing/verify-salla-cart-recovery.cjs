@@ -1,5 +1,5 @@
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto');
-const root = process.cwd(), output = path.resolve('.tmp/salla-checkout-audit-verification');
+const root = process.cwd(), output = path.resolve('.tmp/salla-cart-recovery-verification');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const units = ['server/salla-checkout-review-pentest.test.ts','server/salla-checkout-evidence-transport-pentest.test.ts','server/salla-checkout-evidence-api-pentest.test.ts','server/salla-conversation-cart-pentest.test.ts','server/checkout-offer-evidence-pentest.test.ts','server/whatsapp-delivery-safety.test.ts','server/ai/checkout-conversation.test.ts','server/ai/reply-reservation-pentest.test.ts','server/salla-checkout-cart-pentest.test.ts','server/salla-confirmation-pentest.test.ts','server/automation/order-from-chat-utils.test.ts','server/salla-order-items-pentest.test.ts','server/salla-order-result-pentest.test.ts','server/salla-extraction-pentest.test.ts','server/conversation-order-payment-link-pentest.test.ts','server/notice-delivery-pentest.test.ts','server/salla-sheet-receipts-pentest.test.ts','server/salla-effect-review-pentest.test.ts','server/deployment-release-pentest.test.ts', 'server/runtime-schema-pentest.test.ts',
   'server/salla-catalog-pentest.test.ts', 'server/salla-order-projection-pentest.test.ts',
@@ -51,7 +51,7 @@ try {
   // Shell/TypeScript child-process fixtures are costly on Windows; run files
   // serially so concurrent work cannot turn process startup into false failures.
   checks.push(run('tooling', ['--test-reporter=tap', '--test-concurrency=1', ...toolingCommand]));
-  checks.push(run('unit-security', ['scripts/testing/run-isolated.mjs', ...units, '--reporter=default',
+  checks.push(run('unit-security', ['scripts/testing/run-isolated.mjs', '--no-file-parallelism', ...units, '--reporter=default',
     '--reporter=json', `--outputFile.json=${path.join(output, 'unit-security.json')}`]));
   checks.push(run('schema',['node_modules/drizzle-kit/bin.cjs','check']));
   checks.push(run('translations', ['--import', 'tsx', 'scripts/check-translation-keys.ts']));
@@ -86,9 +86,9 @@ try {
   if(!dbResult.success||dbResult.numFailedTests||dbResult.numPendingTests||dbResult.numTodoTests)throw Error('Incomplete DB report');
   const dbFiles=dbResult.testResults.map(file=>path.relative(root,file.name).replaceAll('\\','/')).sort();
   if(JSON.stringify(dbFiles)!==JSON.stringify([...database].sort()))throw Error('Unexpected DB test selection');
-  const report = { version: 'salla-checkout-audit.v1', startedAt, finishedAt: new Date().toISOString(),
+  const report = { version: 'salla-cart-recovery.v1', startedAt, finishedAt: new Date().toISOString(),
     baseCommit, sourceStableBeforeAndAfter: true, sourceSha256: before, checks,
-    scope: "Durable server-derived Salla checkout review audit with idempotent saves, current persisted authorization, immutable history, no payment or sales attribution. Synthetic MySQL and mocked Salla; browser components with simulated API, not live provider acceptance.",
+    scope: "Durable generated-cart checkpoint and GET-only reconciliation of parked attempts; current permissions/catalog/store and exact contents required. No POST retry, payment facts, messages or conversation resumption. Synthetic MySQL and mocked provider, not live Salla acceptance.",
     tooling: { ...counts, testNames }, unitSecurity: { passed: result.numPassedTests, failed: 0, skipped: 0,
       tests: result.testResults.flatMap(file => file.assertionResults.map(test => ({
         file: path.relative(root, file.name).replaceAll('\\', '/'), name: test.fullName, status: test.status }))) },

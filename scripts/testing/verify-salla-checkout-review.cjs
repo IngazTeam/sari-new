@@ -58,7 +58,7 @@ try {
   checks.push(run('browser',['scripts/testing/verify-salla-effect-review-ui.cjs'],{SARI_SALLA_EFFECT_REVIEW_UI_OUTPUT:path.join(output,'browser')}));
   checks.push(run('checkout-browser',['scripts/testing/verify-salla-checkout-review-ui.cjs'],{SARI_SALLA_CHECKOUT_REVIEW_UI_OUTPUT:path.join(output,'checkout-browser')}));
   const checkoutBrowser=JSON.parse(fs.readFileSync(path.join(output,'checkout-browser/results.json')));
-  if(checkoutBrowser.errors.length||checkoutBrowser.results.length!==84||checkoutBrowser.results.some(r=>!r.passed))throw Error('Incomplete checkout browser verification');
+  if(checkoutBrowser.errors.length||checkoutBrowser.results.length!==114||checkoutBrowser.results.some(r=>!r.passed))throw Error('Incomplete checkout browser verification');
   const browser=JSON.parse(fs.readFileSync(path.join(output,'browser/results.json')));
   if(browser.errors.length||browser.results.length!==54||browser.results.some(r=>!r.passed))throw Error('Incomplete browser verification');
   if (JSON.stringify(before) !== JSON.stringify(manifest())) throw Error('Source changed during verification');

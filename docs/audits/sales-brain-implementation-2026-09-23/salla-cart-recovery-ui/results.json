@@ -1,0 +1,613 @@
+{
+  "generatedAt": "2026-09-28T11:37:31.368Z",
+  "browser": "Chrome/153.0.8010.54",
+  "scope": "Actual SallaCheckoutReview/history/recovery components and tRPC client with simulated API; loopback Chromium at mobile/desktop widths, not physical iPhone/Safari or live Salla.",
+  "externalRequestsBlocked": true,
+  "results": [
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "bad-page",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-scope",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "invalid_input_no_request",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "arabic_digits_keyboard_optional_transaction",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "inspect-error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-order",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "wrong-cart",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "false-sale",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "private-result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "different",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "draft",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "edit_hides_previous_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "same_input_refetched_and_failure_hides_result",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_edit",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_switch",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_close",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_evidence",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "paused_refresh_hides_cached_evidence",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "saved_history_responsive",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "saved_history_responsive",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "save_lost_ack_same_key_recovery",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "save_wrong_scope_rejected",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_edit",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_switch",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_close",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "history-error",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "history-scope",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "audit_pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "history_failed_refresh_hides_cached_data",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "cart_recovery_responsive",
+      "lang": "ar",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "cart_recovery_responsive",
+      "lang": "ar",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_preparing",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_dispatching",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_rejected",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "problem-missing",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "problem-invalid",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "recover-failed",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "recover-scope",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "recovery_lost_ack_replay",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_recovery_after_close",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "late_recovery_after_state",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "problems-scope",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "problems-state",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "problem_pagination",
+      "lang": "ar",
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 390,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 430,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "mode": "responsive_evidence",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "viewer_hidden",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "extra",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "bad-page",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-scope",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "unavailable",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "invalid_input_no_request",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "arabic_digits_keyboard_optional_transaction",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "inspect-error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-order",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "wrong-cart",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "xss",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "false-sale",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "private-result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "different",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "draft",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "edit_hides_previous_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "same_input_refetched_and_failure_hides_result",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_edit",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_switch",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_response_after_close",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "pagination",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "revocation_hides_evidence",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "paused_refresh_hides_cached_evidence",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "saved_history_responsive",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "saved_history_responsive",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "save_lost_ack_same_key_recovery",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "save_wrong_scope_rejected",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_edit",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_switch",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_save_after_close",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "history-error",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "history-scope",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "audit_pagination",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "history_failed_refresh_hides_cached_data",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "cart_recovery_responsive",
+      "lang": "en",
+      "width": 375,
+      "passed": true
+    },
+    {
+      "mode": "cart_recovery_responsive",
+      "lang": "en",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_preparing",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_dispatching",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "no_recovery_for_rejected",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "problem-missing",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "problem-invalid",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "recover-failed",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "recover-scope",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "recovery_lost_ack_replay",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_recovery_after_close",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "late_recovery_after_state",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "problems-scope",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "problems-state",
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "mode": "problem_pagination",
+      "lang": "en",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "audit-ar-1440.png",
+    "audit-ar-375.png",
+    "audit-en-1440.png",
+    "audit-en-375.png",
+    "checkout-ar-1440.png",
+    "checkout-ar-375.png",
+    "checkout-en-1440.png",
+    "checkout-en-375.png",
+    "recovery-ar-1440.png",
+    "recovery-ar-375.png",
+    "recovery-en-1440.png",
+    "recovery-en-375.png"
+  ]
+}

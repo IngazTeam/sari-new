@@ -6,6 +6,8 @@ import { getPool,closeDb } from '../db/connection';
 import { assertDisposableDatabase,createDisposableMerchant,cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
 import { encryptSecret } from '../security/secrets';
 import { runSallaCheckoutCart } from './salla-checkout-carts';
+import { recoverSallaCart,listSallaCartProblems } from './salla-cart-recovery';
+import { policyArtifactDigest as digest } from '../ai/learning-policy-evaluation-bundle';
 import { persistSallaCatalogRead } from './salla-catalog';
 import { normalizeSallaProduct } from './salla-product-normalization';
 import { createSyncLog,updateSyncLog } from '../db';
@@ -16,6 +18,10 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla checkout cart actual MySQL bou
   const input=()=>({requestId,items:[{productId,quantity:2}]});
   const run=()=>runSallaCheckoutCart(input(),merchant,user);
   const ledger=async()=>(await q('SELECT * FROM salla_checkout_carts WHERE merchant_id=? AND request_id=?',[merchant,requestId]))[0];
+  const recover=()=>recoverSallaCart(merchant,user,{requestId});
+  const problems=()=>listSallaCartProblems(merchant,user,{state:'review'});
+  const park=async()=>{http.get.mockRejectedValueOnce(Error('lost read'));await expect(run()).rejects.toMatchObject({code:'cart_review'});http.post.mockClear();http.get.mockClear();};
+  const decode=(v:any)=>typeof v==='string'?JSON.parse(v):v;
   const cart=(empty=false):any=>({status:200,success:true,data:{id:'abc123',store_id:store,checkout_url:'https://synthetic.example.test/checkout/abc123',currency:{code:'SAR'},
     amounts:{total:{amount:{value:empty?0:2.3,currency:'SAR'}}},items:empty?[]:[{id:'line-1',product_id:'123',sku:'SKU-123',quantity:2,variant_id:null,options:[]}]}});
   beforeEach(async()=>{
@@ -29,6 +35,96 @@ describe.skipIf(!process.env.DATABASE_URL)('Salla checkout cart actual MySQL bou
     http.get.mockReset().mockImplementation(async()=>({data:cart()}));
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(users);vi.unstubAllEnvs();});afterAll(closeDb);
+  it('persists the generation ID before the first item POST and keeps existing ready-cart behavior',async()=>{
+    http.post.mockImplementation(async(url:string)=>{
+      if(url.endsWith('/generate'))return{data:cart(true)};
+      const row=await ledger();expect(decode(row.snapshot).checkpoint.value).toMatchObject({operationId:row.id,merchantId:merchant,requestId,cartId:'abc123'});
+      return{data:{success:true,status:200}};
+    });await run();expect((await ledger()).state).toBe('ready');
+  });
+  it('recovers only a fully matching existing cart by GET and leaves sales, payment, quotations and notices unchanged',async()=>{
+    await park();expect((await problems()).items).toMatchObject([{requestId,diagnostic:'verifiable',cartId:'abc123'}]);
+    const result=await recover();expect(result).toMatchObject({merchantId:merchant,requestId,cartId:'abc123',replayed:false,outcome:'contents_verified',paymentFact:'not_recorded',attribution:'not_recorded',customerMessage:'not_sent'});
+    expect((await ledger()).state).toBe('ready');expect(decode((await ledger()).snapshot).recovery.value.reviewerUserId).toBe(user);
+    expect(http.post).not.toHaveBeenCalled();expect(http.get).toHaveBeenCalledTimes(1);expect((await problems()).items).toEqual([]);
+    const replay=await recover();expect(replay).toEqual({...result,replayed:true});expect(http.get).toHaveBeenCalledTimes(1);
+    for(const table of ['sales_quotations','ai_sales_payment_facts','ai_sales_order_facts','whatsapp_message_deliveries'])expect(await q(`SELECT * FROM ${table} WHERE merchant_id=?`,[merchant])).toEqual([]);
+    expect(await q('SELECT * FROM orders WHERE merchantId=?',[merchant])).toEqual([]);
+  });
+  it('serializes concurrent recoveries into one saved result',async()=>{
+    await park();const results=await Promise.all(Array.from({length:4},recover));
+    expect(results.filter(r=>!r.replayed)).toHaveLength(1);expect(new Set(results.map(r=>r.recovery.observedAt)).size).toBe(1);expect(http.post).not.toHaveBeenCalled();
+  });
+  it.each(['missing','legacy','preparing','dispatching','rejected','ready-without-recovery'])('never guesses or retries a %s attempt',async mode=>{
+    if(mode==='missing'){http.post.mockRejectedValueOnce(Error('lost generate'));await expect(run()).rejects.toThrow();}
+    else {await park();if(mode==='legacy')await q("UPDATE salla_checkout_carts SET snapshot=JSON_REMOVE(snapshot,'$.checkpoint') WHERE merchant_id=?",[merchant]);
+      if(['preparing','dispatching','rejected'].includes(mode))await q('UPDATE salla_checkout_carts SET state=? WHERE merchant_id=?',[mode,merchant]);
+      if(mode==='ready-without-recovery'){await recover();await q("UPDATE salla_checkout_carts SET snapshot=JSON_REMOVE(snapshot,'$.recovery') WHERE merchant_id=?",[merchant]);}}
+    http.post.mockClear();http.get.mockClear();await expect(recover()).rejects.toThrow(/^Salla cart recovery unavailable$/);expect(http.post).not.toHaveBeenCalled();expect(http.get).not.toHaveBeenCalled();
+  });
+  it.each(['empty','quantity','product','extra','total','read'])('keeps a %s remote result under review without POST',async mode=>{
+    await park();const raw=cart(mode==='empty');if(mode==='quantity')raw.data.items[0].quantity=3;if(mode==='product')raw.data.items[0].product_id='999';
+    if(mode==='extra')raw.data.items.push({...raw.data.items[0],id:'other',product_id:'999',sku:'other'});if(mode==='total')raw.data.amounts.total.amount.value='1.001';
+    if(mode==='read')http.get.mockRejectedValueOnce(Error('timeout'));else http.get.mockResolvedValueOnce({data:raw});
+    await expect(recover()).rejects.toThrow();expect((await ledger()).state).toBe('review');expect(http.post).not.toHaveBeenCalled();
+  });
+  it.each(['actor','merchant','store','stock','token','checkpoint'])('rejects changed %s after GET before saving',async mode=>{
+    await park();http.get.mockImplementationOnce(async()=>{
+      if(mode==='actor')await q("UPDATE users SET account_status='deletion_pending' WHERE id=?",[user]);if(mode==='merchant')await q("UPDATE merchants SET status='suspended' WHERE id=?",[merchant]);
+      if(mode==='store')await q('UPDATE salla_connections SET salla_store_id=? WHERE id=?',[store+'1',connectionId]);if(mode==='stock')await q('UPDATE products SET stock=0 WHERE id=?',[productId]);
+      if(mode==='token')await q('UPDATE salla_connections SET accessToken=? WHERE id=?',[encryptSecret('other'),connectionId]);
+      if(mode==='checkpoint')await q("UPDATE salla_checkout_carts SET snapshot=JSON_REMOVE(snapshot,'$.checkpoint') WHERE merchant_id=?",[merchant]);return{data:cart()};
+    });await expect(recover()).rejects.toThrow();expect((await ledger()).state).toBe('review');expect(http.post).not.toHaveBeenCalled();
+  });
+  it.each(['outsider','viewer','revoked','inactive-user'])('blocks %s before recovery GET or listing',async mode=>{
+    await park();let actor=otherUser;
+    if(mode==='viewer'||mode==='revoked')await q('INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,?,?)',[merchant,actor,mode==='viewer'?'viewer':'manager',mode==='viewer'?1:0]);
+    if(mode==='inactive-user'){actor=user;await q("UPDATE users SET account_status='deletion_pending' WHERE id=?",[user]);}
+    await expect(recoverSallaCart(merchant,actor,{requestId})).rejects.toThrow();await expect(listSallaCartProblems(merchant,actor,{state:'review'})).rejects.toThrow();expect(http.get).not.toHaveBeenCalled();
+  });
+  it.each(['id','actor','digest','rehashed-id'])('rejects corrupted checkpoint %s',async mode=>{
+    await park();const row=await ledger(),raw=decode(row.snapshot);if(mode==='id'||mode==='rehashed-id')raw.checkpoint.value.operationId++;
+    if(mode==='actor')raw.checkpoint.value.actorUserId++;if(mode==='digest')raw.checkpoint.digest='0'.repeat(64);if(mode==='rehashed-id')raw.checkpoint.digest=digest(raw.checkpoint.value);
+    await q('UPDATE salla_checkout_carts SET snapshot=? WHERE id=?',[JSON.stringify(raw),row.id]);
+    expect((await problems()).items).toMatchObject([{diagnostic:'invalid_evidence',cartId:null}]);await expect(recover()).rejects.toThrow();expect(http.get).not.toHaveBeenCalled();
+  });
+  it('does not add items after a saved checkpoint loses its commit acknowledgement',async()=>{
+    const pool=(await getPool())!,connect=pool.getConnection.bind(pool);let lost=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await connect(),execute=c.execute.bind(c),commit=c.commit.bind(c);let selected=false;
+      vi.spyOn(c,'execute').mockImplementation((async(sql:any,args:any)=>{if(String(sql).startsWith('UPDATE salla_checkout_carts SET snapshot='))selected=true;return execute(sql,args);})as any);
+      vi.spyOn(c,'commit').mockImplementation(async()=>{await commit();if(selected&&!lost){lost=true;throw Error('lost checkpoint acknowledgement');}});return c;});
+    await expect(run()).rejects.toThrow();vi.restoreAllMocks();expect(http.post).toHaveBeenCalledTimes(1);expect(http.get).not.toHaveBeenCalled();expect((await problems()).items).toMatchObject([{cartId:'abc123',diagnostic:'verifiable'}]);
+  });
+  it('replays recovery after lost commit confirmation without another GET or POST',async()=>{
+    await park();const pool=(await getPool())!,connect=pool.getConnection.bind(pool);let lost=false;
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await connect(),commit=c.commit.bind(c);vi.spyOn(c,'commit').mockImplementationOnce(async()=>{await commit();if(!lost){lost=true;throw Error('lost recovery acknowledgement');}});return c;});
+    await expect(recover()).rejects.toThrow();vi.restoreAllMocks();http.get.mockClear();expect((await recover()).replayed).toBe(true);expect(http.get).not.toHaveBeenCalled();expect(http.post).not.toHaveBeenCalled();
+  });
+  it('does not change the quote or cart when recovery storage rolls back',async()=>{
+    await park();const before=await ledger(),pool=(await getPool())!,connect=pool.getConnection.bind(pool);
+    vi.spyOn(pool,'getConnection').mockImplementation(async()=>{const c=await connect(),execute=c.execute.bind(c);vi.spyOn(c,'execute').mockImplementation((async(sql:any,args:any)=>{const result=await execute(sql,args);if(String(sql).includes("SET state='ready'"))throw Error('lost write');return result;})as any);return c;});
+    await expect(recover()).rejects.toThrow();vi.restoreAllMocks();expect(await ledger()).toEqual(before);expect(http.post).not.toHaveBeenCalled();
+  });
+  it.each(['actor','role'])('stops item writes if %s authority is revoked during generation',async mode=>{
+    if(mode==='role')await q("INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)",[merchant,user]);
+    http.post.mockImplementationOnce(async()=>{if(mode==='actor')await q("UPDATE users SET account_status='deletion_pending' WHERE id=?",[user]);else await q("UPDATE merchant_members SET role='viewer' WHERE merchant_id=? AND user_id=?",[merchant,user]);return{data:cart(true)};});
+    await expect(run()).rejects.toThrow();expect(http.post).toHaveBeenCalledTimes(1);expect(http.get).not.toHaveBeenCalled();expect(decode((await ledger()).snapshot).checkpoint.value.cartId).toBe('abc123');
+  });
+  it('keeps legacy ready rows readable without inventing a checkpoint',async()=>{
+    await run();await q("UPDATE salla_checkout_carts SET snapshot=JSON_REMOVE(snapshot,'$.checkpoint') WHERE merchant_id=?",[merchant]);
+    expect((await run()).replayed).toBe(true);expect(decode((await ledger()).snapshot).checkpoint).toBeUndefined();
+  });
+  it('rejects tampered recovery metadata on ready-cart replay',async()=>{
+    await park();await recover();await q("UPDATE salla_checkout_carts SET snapshot=JSON_SET(snapshot,'$.recovery.value.reviewerUserId',?) WHERE merchant_id=?",[otherUser,merchant]);http.get.mockClear();
+    await expect(run()).rejects.toMatchObject({code:'cart_unavailable'});await expect(recover()).rejects.toThrow();expect(http.get).not.toHaveBeenCalled();
+  });
+  it('paginates pending operations by exact state and hides other merchant operations',async()=>{
+    await park();const row=await ledger();
+    for(let n=0;n<21;n++)await q("INSERT INTO salla_checkout_carts(merchant_id,actor_user_id,request_id,request_hash,attempt_token,state,created_at,updated_at) VALUES (?,?,?,?,?,'review',UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",[merchant,user,randomUUID(),row.request_hash,randomUUID()]);
+    const first=await problems(),second=await listSallaCartProblems(merchant,user,{state:'review',beforeId:first.nextCursor!});expect(first.items).toHaveLength(20);expect(second.items).toHaveLength(2);expect(second.nextCursor).toBeNull();
+    expect(new Set([...first.items,...second.items].map(i=>i.id)).size).toBe(22);expect((await listSallaCartProblems(merchant,user,{state:'preparing'})).items).toEqual([]);
+    const [other]=await q('SELECT id FROM merchants WHERE userId=?',[otherUser]);expect((await listSallaCartProblems(other.id,otherUser,{state:'review'})).items).toEqual([]);expect(http.get).not.toHaveBeenCalled();
+  });
   it('prepares only a guest cart and replays through a fresh read without an order, payment or follow-up',async()=>{
     const first=await run();expect(first).toMatchObject({orderCreated:false,observedTotalMinor:230,pricing:'review_at_checkout',replayed:false});
     expect((await ledger()).state).toBe('ready');expect(await run()).toEqual({...first,replayed:true});

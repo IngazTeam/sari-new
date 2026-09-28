@@ -2,7 +2,8 @@ import type { PoolConnection } from 'mysql2/promise';
 import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { databaseTimeEpoch } from '../db/time';
-import { hasPermission } from '../_core/permissions';
+import { authorizeCheckoutReviewer } from './salla-checkout-authority';
+export { authorizeCheckoutReviewer } from './salla-checkout-authority';
 import { decryptSecret } from '../security/secrets';
 import { policyArtifactDigest as digest } from '../ai/learning-policy-evaluation-bundle';
 import { assertSallaCheckoutCartSchema } from './salla-checkout-carts';
@@ -11,6 +12,7 @@ import { sallaProductSelectionSchema } from './salla-catalog';
 import { sallaCheckoutCartInput } from '../../shared/salla-checkout-cart';
 import { sallaCheckoutEvidenceInput, sallaCheckoutEvidenceOutput, sallaEvidenceComparison, sallaCheckoutCartListInput, sallaCheckoutCartListOutput, type SallaCheckoutEvidenceInput } from '../../shared/salla-checkout-evidence';
 import { fetchSallaOrderEvidence, fetchSallaTransactionEvidence } from './salla-checkout-evidence-transport';
+import { readSallaCartCheckpoint } from './salla-cart-checkpoint';
 
 const id = z.number().int().positive().max(2147483647);
 const savedSnapshot = z.object({ version: z.literal(1), context: cartContext, connectionId: id,
@@ -34,14 +36,6 @@ export async function checkoutEvidenceTransaction<T>(work: (c: PoolConnection) =
   } finally { if (reusable) c.release(); }
 }
 const read = checkoutEvidenceTransaction;
-export async function authorizeCheckoutReviewer(c:PoolConnection,merchantId:number,actorId:number) {
-    const [merchants] = await c.execute<any[]>('SELECT userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
-    const [actors] = await c.execute<any[]>('SELECT account_status FROM users WHERE id=? FOR SHARE', [actorId]);
-    const [members] = await c.execute<any[]>('SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE', [merchantId,actorId]);
-    if (merchants.length !== 1 || merchants[0].status !== 'active' || actors[0]?.account_status !== 'active' || members.length > 1
-      || (members.length ? !members[0].is_active || !hasPermission(members[0].role, 'orders.manage') : merchants[0].userId !== actorId)) return unavailable();
-    return {owner:merchants[0].userId,members};
-}
 const authorize = authorizeCheckoutReviewer;
 function savedCart(row:any,active:any) {
     if (!active || active.syncStatus !== 'active' || !row || row.state !== 'ready') return unavailable();
@@ -57,6 +51,7 @@ function savedCart(row:any,active:any) {
       items:v.items.map((p:any) => ({id:p.cartItemId,product_id:p.productId,sku:p.sku,quantity:p.quantity,options:[]})),
     }}, snapshot.context, snapshot.items.map(p => ({externalId:p.externalId,sku:p.sku,quantity:p.quantity})), v.cartId);
     if (digest(normalized) !== result.digest) return unavailable();
+    readSallaCartCheckpoint(row);
     const token = decryptSecret(active.accessToken); if (!token) return unavailable();
     return {token,cart:{cartId:normalized.cartId,preparedTotalMinor:normalized.observedTotalMinor,currency:normalized.currency}};
 }
@@ -85,7 +80,9 @@ export async function listSallaCheckoutCarts(merchant:number,actor:number,raw:z.
         ${input.beforeId?'AND id<?':''} ORDER BY id DESC LIMIT 21 FOR SHARE`,input.beforeId?[merchantId,input.beforeId]:[merchantId]);
       const items=rows.slice(0,20).map(row=>{
         let cart=null;try{if(connections.length===1)cart=savedCart(row,connections[0]).cart;}catch{/* Show the operation, never its invalid evidence. */}
-        return {id:row.id,requestId:row.request_id,createdAt:new Date(databaseTimeEpoch(row.created_at)).toISOString(),cart};
+        const recovery=cart?readSallaCartCheckpoint(row)?.recovery:null;
+        return {id:row.id,requestId:row.request_id,createdAt:new Date(databaseTimeEpoch(row.created_at)).toISOString(),cart,
+          ...(recovery?{recovery:{reviewerUserId:recovery.reviewerUserId,observedAt:recovery.observedAt}}:{})};
       });
       return sallaCheckoutCartListOutput.parse({merchantId,items,nextCursor:rows.length>20?items.at(-1)!.id:null});
     });

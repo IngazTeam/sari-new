@@ -4,7 +4,7 @@ import { majorToMinor } from '../../shared/product-money';
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import { sallaOrderSku } from './salla-order-items';
 
-const cartId=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
+const cartId=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).refine(v=>v===v.trim());
 const count=z.number().int().min(1).max(10000);
 export const cartSelection=z.array(z.object({externalId:sallaExternalId,sku:sallaOrderSku,quantity:count}).strict()).min(1).max(20);
 function storeLocation(value:string) {
@@ -50,12 +50,14 @@ function headers(ctx:CartContext){return {'Store-Identifier':ctx.storeId,'s-sour
 
 /** Guest Storefront API only. Merchant OAuth credentials and customer PII are
  * never forwarded. The caller durably reserves the attempt before this runs. */
-export async function prepareCheckoutCart(context:CartContext,input:CartSelection,beforeWrite:()=>Promise<void>) {
+export async function prepareCheckoutCart(context:CartContext,input:CartSelection,beforeWrite:()=>Promise<void>,afterCreate:(cartId:string)=>Promise<void>=async()=>{}) {
   const ctx=cartContext.parse(context),selection=cartSelection.parse(input);
   if(new Set(selection.map(i=>i.sku)).size!==selection.length)throw Error('Duplicate cart SKU');
   await beforeWrite();
   const created=await http.post(base+'/generate',{source:'sari'},{headers:headers(ctx),params:{include_items:true}});
   const empty=readCheckoutCart(created.data,ctx,[]);
+  // The ledger must acknowledge the validated remote ID before any item POST.
+  await afterCreate(empty.cartId);
   for(const item of selection){
     await beforeWrite();
     const ack=await http.post(base+'/'+empty.cartId+'/items',{identifier_type:'sku',identifier:item.sku,quantity:item.quantity},

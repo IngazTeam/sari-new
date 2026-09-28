@@ -12,13 +12,14 @@ import en from '../../../client/src/locales/merchant-ux.en';
 const w=window as any,p=new URLSearchParams(location.search),mode=p.get('case')||'ready';
 w.__reads=[];w.__writes=[];w.__aborted=0;w.__late=0;w.__scope=20;
 w.__saved=[];
+w.__recoveries=[];
 const qc=new QueryClient();w.__refresh=()=>qc.invalidateQueries();w.__online=(v:boolean)=>onlineManager.setOnline(v);
 const time='2026-09-28T00:00:00.000Z',uuid=(id:number)=>`00000000-0000-4000-8000-${String(id).padStart(12,'0')}`;
 const cart=(id:number)=>({cartId:id===30?'9'.repeat(100):'cart-'+id,preparedTotalMinor:230,currency:'SAR'});
 const item=(id:number)=>({id,requestId:uuid(id),createdAt:time,cart:mode==='unavailable'?null:cart(id)});
 const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
-  const raw=op.input as any,isSave=op.path==='orders.saveSallaCheckoutAudit',input=isSave?raw.evidence:raw;
-  if(op.type!=='query'){w.__writes.push({path:op.path,input:raw});if(!isSave){observer.error(Error('Unexpected write'));return;}}
+  const raw=op.input as any,isSave=op.path==='orders.saveSallaCheckoutAudit',isRecovery=op.path==='orders.recoverSallaCart',input=isSave?raw.evidence:raw;
+  if(op.type!=='query'){w.__writes.push({path:op.path,input:raw});if(!isSave&&!isRecovery){observer.error(Error('Unexpected write'));return;}}
   else if(op.path!=='orders.checkoutEvidenceAccess')w.__reads.push({path:op.path,input});
   let completed=false;
   const aborted=()=>{w.__aborted++;};op.signal?.addEventListener('abort',aborted,{once:true});
@@ -34,6 +35,18 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
     if(op.path==='orders.listSallaCheckoutCarts'){
       result={merchantId:mode==='wrong-scope'?999:w.__scope,items:mode==='empty'?[]:Array.from({length:input.beforeId?2:mode==='paged'?20:2},(_,n)=>item((input.beforeId?input.beforeId-1:30)-n)),nextCursor:mode==='paged'&&!input.beforeId?11:null};
       if(mode==='extra')result.token='private';if(mode==='bad-page')result.items[1].id=30;
+    }else if(op.path==='orders.listSallaCartProblems'){
+      const problem=(id:number)=>({id,requestId:uuid(id),createdAt:time,state:mode==='problems-state'?'dispatching':input.state,
+        diagnostic:mode==='problem-missing'?'missing_reference':mode==='problem-invalid'?'invalid_evidence':mode==='problems-state'||['preparing','dispatching'].includes(input.state)?'in_progress':input.state==='rejected'?'rejected_before_send':'verifiable',
+        cartId:['problem-missing','problem-invalid'].includes(mode)?null:cart(id).cartId});
+      result={merchantId:mode==='problems-scope'?999:20,items:Array.from({length:input.beforeId?2:mode==='problems-paged'?20:1},(_,n)=>problem((input.beforeId?input.beforeId-1:30)-n)),nextCursor:mode==='problems-paged'&&!input.beforeId?11:null};
+    }else if(isRecovery){
+      if(mode==='recover-failed'){fail();return;}
+      const prior=w.__recoveries.find((v:any)=>v.requestId===input.requestId),id=Number(input.requestId.slice(-12));
+      result=prior?{...prior,replayed:true}:{merchantId:20,requestId:input.requestId,cartId:cart(id).cartId,recovery:{reviewerUserId:7,observedAt:time},replayed:false,outcome:'contents_verified',paymentFact:'not_recorded',attribution:'not_recorded',customerMessage:'not_sent'};
+      if(!prior)w.__recoveries.push(result);
+      if(mode==='recover-lost'&&w.__writes.length===1){fail();return;}
+      if(mode==='recover-scope')result={...result,merchantId:999};
     }else if(op.path==='orders.listSallaCheckoutAudits'){
       if(mode==='history-error'){fail();return;}
       const rows=w.__saved.filter((a:any)=>!input.beforeId||a.id<input.beforeId).sort((a:any,b:any)=>b.id-a.id);
@@ -56,7 +69,7 @@ const client=trpc.createClient({links:[()=>({op})=>observable(observer=>{
       }
     }else {fail();return;}
     observer.next({result:{data:result}});observer.complete();
-  },isSave&&mode==='save-slow'?1000:op.path==='orders.inspectSallaCheckoutEvidence'?mode==='slow'?1000:150:100);
+  },isRecovery&&mode==='recover-slow'||isSave&&mode==='save-slow'?1000:op.path==='orders.inspectSallaCheckoutEvidence'?mode==='slow'?1000:150:100);
   return()=>{op.signal?.removeEventListener('abort',aborted);clearTimeout(timer);};
 })]});
 (async()=>{const lng=p.get('lang')==='en'?'en':'ar';document.documentElement.lang=lng;document.documentElement.dir=lng==='ar'?'rtl':'ltr';

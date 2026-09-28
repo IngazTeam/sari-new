@@ -10,7 +10,8 @@ const localId = z.number().int().positive().max(2147483647);
 export const sallaCheckoutCartEvidence = z.object({cartId:sallaCheckoutReference,preparedTotalMinor:minor,currency:z.literal('SAR')}).strict();
 export const sallaCheckoutEvidenceAccess = z.object({canInspect:z.boolean(),merchantId:localId}).strict();
 export const sallaCheckoutCartListInput = z.object({beforeId:localId.optional()}).strict();
-export const sallaCheckoutCartListItem = z.object({id:localId,requestId:z.string().uuid(),createdAt:z.string().datetime({precision:3}),cart:sallaCheckoutCartEvidence.nullable()}).strict();
+export const sallaCheckoutCartListItem = z.object({id:localId,requestId:z.string().uuid(),createdAt:z.string().datetime({precision:3}),cart:sallaCheckoutCartEvidence.nullable(),
+  recovery:z.object({reviewerUserId:localId,observedAt:z.string().datetime({precision:3})}).strict().optional()}).strict();
 export const sallaCheckoutCartListOutput = z.object({merchantId:localId,items:z.array(sallaCheckoutCartListItem).max(20),nextCursor:localId.nullable()}).strict().superRefine((v,c)=>{
   if(new Set(v.items.map(i=>i.requestId.toLowerCase())).size!==v.items.length||v.items.some((i,n)=>n>0&&i.id>=v.items[n-1].id)
     ||v.nextCursor!==null&&(v.items.length!==20||v.items.at(-1)?.id!==v.nextCursor))c.addIssue({code:'custom',message:'Invalid cart page'});

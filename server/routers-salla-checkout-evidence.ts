@@ -5,8 +5,24 @@ import { sallaCheckoutEvidenceInput, sallaCheckoutEvidenceOutput, sallaCheckoutC
 import { inspectSallaCheckoutEvidence,listSallaCheckoutCarts } from './integrations/salla-checkout-evidence';
 import { sallaCheckoutAuditInput,sallaCheckoutAuditItem,sallaCheckoutAuditListInput,sallaCheckoutAuditPage } from '../shared/salla-checkout-audit';
 import { saveSallaCheckoutAudit,listSallaCheckoutAudits } from './integrations/salla-checkout-audit';
+import { sallaCartProblemListInput,sallaCartProblemPage,sallaCartRecoveryInput,sallaCartRecoveryOutput } from '../shared/salla-cart-recovery';
+import { listSallaCartProblems,recoverSallaCart } from './integrations/salla-cart-recovery';
 
 export const sallaCheckoutEvidenceProcedures = {
+  listSallaCartProblems:permissionProcedure('orders.manage').input(sallaCartProblemListInput).query(async({ctx,input})=>{
+    try{
+      const result=sallaCartProblemPage.parse(await listSallaCartProblems(ctx.merchantId,ctx.user.id,input));
+      if(result.merchantId!==ctx.merchantId||result.items.some(i=>i.state!==input.state||input.beforeId&&i.id>=input.beforeId))throw Error('Cart problem scope mismatch');
+      return result;
+    }catch{throw new TRPCError({code:'NOT_FOUND',message:'Salla cart recovery unavailable'});}
+  }),
+  recoverSallaCart:permissionProcedure('orders.manage').input(sallaCartRecoveryInput).mutation(async({ctx,input})=>{
+    try{
+      const result=sallaCartRecoveryOutput.parse(await recoverSallaCart(ctx.merchantId,ctx.user.id,input));
+      if(result.merchantId!==ctx.merchantId||result.requestId!==input.requestId)throw Error('Cart recovery scope mismatch');
+      return result;
+    }catch{throw new TRPCError({code:'NOT_FOUND',message:'Salla cart recovery unavailable'});}
+  }),
   saveSallaCheckoutAudit:permissionProcedure('orders.manage').input(sallaCheckoutAuditInput).mutation(async({ctx,input})=>{
     try {
       const result=sallaCheckoutAuditItem.parse(await saveSallaCheckoutAudit(ctx.merchantId,ctx.user.id,input));

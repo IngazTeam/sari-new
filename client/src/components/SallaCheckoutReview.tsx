@@ -4,6 +4,7 @@ import type { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { SallaCheckoutHistory } from './SallaCheckoutHistory';
+import { SallaCartRecovery } from './SallaCartRecovery';
 import { sallaCheckoutAuditItem } from '@shared/salla-checkout-audit';
 import { checkoutReviewInput,checkoutReviewResult } from '@/lib/salla-checkout-review';
 import { sallaCheckoutEvidenceAccess,sallaCheckoutCartListOutput,type sallaCheckoutCartListItem,type sallaCheckoutEvidenceOutput } from '@shared/salla-checkout-evidence';
@@ -124,6 +125,7 @@ function CartBrowser({merchantId}:{merchantId:number}) {
         {page.data.items.map(item=><article data-checkout-row={item.id} key={item.id} className="min-w-0 space-y-3 rounded-lg border p-4 [overflow-wrap:anywhere]">
           <p>{t('merchantUx.sallaCheckout.created')}: <time dateTime={item.createdAt}>{format.time(item.createdAt)}</time></p>
           <p>{t('merchantUx.sallaCheckout.operation')}: {identifier(item.requestId)}</p>
+          {item.recovery&&<p>{t('merchantUx.sallaCheckout.recovered')}: {format.time(item.recovery.observedAt)} · {t('merchantUx.sallaCheckout.reviewer')}: {item.recovery.reviewerUserId}</p>}
           {item.cart?<><p>{t('merchantUx.sallaCheckout.cart')}: {identifier(item.cart.cartId)}</p><p>{t('merchantUx.sallaCheckout.preparedTotal')}: {format.money(item.cart.preparedTotalMinor)}</p>
             <Button ref={el=>{if(el)triggers.current.set(item.id,el);else triggers.current.delete(item.id);}} data-checkout-select aria-pressed={selected===item.requestId} variant={selected===item.requestId?'default':'outline'} className={button+' w-full'} onClick={()=>setSelected(item.requestId)}>{t('merchantUx.sallaCheckout.select')}</Button></>:<p data-checkout-unavailable>{t('merchantUx.sallaCheckout.unavailable')}</p>}
         </article>)}
@@ -136,6 +138,7 @@ function CartBrowser({merchantId}:{merchantId:number}) {
     </div>
     <p className="text-muted-foreground">{t('merchantUx.sallaCheckout.listScope')}</p>
     <SallaCheckoutHistory merchantId={merchantId} renderEvidence={value=><Result value={value}/>}/>
+    <SallaCartRecovery merchantId={merchantId}/>
   </div>;
 }
 export function SallaCheckoutReview() {
