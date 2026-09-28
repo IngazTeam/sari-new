@@ -14,7 +14,7 @@ beforeEach(() => {
   w = dom.window; w.scrollTo = () => {};
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  for (const file of ['features.js', 'page-catalog.js', 'brain.js', 'assistant.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + file, 'utf8'), dom.getInternalVMContext());
+  for (const file of ['features.js', 'page-catalog.js', 'brain.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + file, 'utf8'), dom.getInternalVMContext());
 });
 afterEach(() => { expect(errors).toEqual([]); dom.window.close(); });
 const node = (selector: string) => { const element = w.document.querySelector(selector); expect(element, selector).toBeTruthy(); return element; };

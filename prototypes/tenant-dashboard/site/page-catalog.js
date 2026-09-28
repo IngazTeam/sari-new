@@ -1506,14 +1506,14 @@ window.TENANT_PAGES = [
     "file": "client/src/pages/IntegrationsDashboard.tsx",
     "note": "إعادة تعيين النصوص؛ عدم عرض نسبة نجاح 100% عندما لا توجد عمليات.",
     "kind": "hub",
-    "action": "إضافة تكامل",
+    "action": "تحديث العرض",
     "labels": [
-      "واتساب",
-      "سلة",
-      "زد",
-      "Google"
+      "المنصة",
+      "آخر مزامنة",
+      "نسبة النجاح",
+      "الأخطاء"
     ],
-    "sample": "قنواتك ومصادرك"
+    "sample": "حالة التكاملات"
   },
   {
     "route": "/merchant/platform-integrations",
@@ -1599,14 +1599,14 @@ window.TENANT_PAGES = [
     "file": "client/src/pages/WhatsAppAutoNotifications.tsx",
     "note": "العنوان إلغاء الطلب غير صحيح؛ معاينة لكل حدث وحذف محمي ومسمى.",
     "kind": "form",
-    "action": "حفظ الأتمتة",
+    "action": "قالب رسالة جديد",
     "labels": [
-      "تأكيد الحجز",
-      "تعديل الموعد",
-      "إلغاء الحجز",
-      "نص الرسالة"
+      "الحدث",
+      "نص الرسالة",
+      "المتغيرات",
+      "حالة الإعداد"
     ],
-    "sample": "إشعارات المواعيد"
+    "sample": "قوالب رسائل العملاء"
   },
   {
     "route": "/merchant/reports",

@@ -18,9 +18,11 @@ window.TenantPages = (() => {
   const localNote = '<p class="page-local-note">نموذج تفاعلي · بيانات توضيحية محفوظة في هذا المتصفح فقط.</p>';
   function head(page) {
     return `<div class="page-breadcrumb"><a href="#/overview">مساحة العمل</a><span>/</span><a href="${href('/merchant/tools')}">جميع الصفحات</a><span>/</span><span>${e(page.title)}</span></div>
-      <header class="page-head"><div><div class="eyebrow">متجر نواة / ${e(labels[page.group] || 'مساحة العمل')}</div><h1>${e(page.title)}</h1><p>${intro(page)}</p></div><div class="head-actions">${action(page.action, 'primary', true)}${action('حالات الصفحة', 'states')}</div></header>${localNote}`;
+      <header class="page-head"><div><div class="eyebrow">متجر نواة / ${e(labels[page.group] || 'مساحة العمل')}</div><h1>${e(page.title)}</h1><p>${intro(page)}</p></div><div class="head-actions">${action(page.action, 'primary', true, window.NotificationPreview?.handles(page) && !window.NotificationPreview.canPrimary(page) ? 'disabled' : '')}${action('حالات الصفحة', 'states')}</div></header>${localNote}`;
   }
   function intro(p) {
+    const specific = {'/merchant/scheduled-reports':'حدّد ما تريد مراجعته، ولمن، وفي أي موعد. إعداد واضح في نموذج واحد.','/merchant/whatsapp-auto-notifications':'اختر الحدث، واكتب رسالة مناسبة، ثم راجع كيف ستظهر للعميل.','/merchant/integrations-dashboard':'راجع سجلات المزامنة والأخطاء، وافتح إعدادات المصدر عند الحاجة.'};
+    if (specific[p.route]) return specific[p.route];
     return ({list:'المعلومات المهمة أولًا. ابحث، راجع التفاصيل، ثم اختر الإجراء المناسب.',form:'اضبط الأساسيات من مكان واحد. يمكنك مراجعة التغييرات قبل حفظها.',integration:'حالة الاتصال ومصدر البيانات وآخر مزامنة، بوضوح في صفحة واحدة.',analytics:'اختر الفترة، وافهم كل مؤشر، ثم صدّر البيانات التي تراجعها.',detail:'السجل وتفاصيله وآخر إجراء، دون فقدان سياق عملك.',calendar:'مواعيد فريقك في عرض واضح، مع التفاصيل وإجراءات المتابعة.',knowledge:'المعلومة من مصدرها، ومراجعتها قبل استخدامها في الرد.',privacy:'تحكّم ببياناتك وموافقاتك من مكان واحد.',pipeline:'تابع الفرص خطوة بخطوة، وافتح كل فرصة لمعرفة الإجراء التالي.',plans:'قارن على أساس احتياج نشاطك، ثم راجع التفاصيل قبل الاختيار.',compose:'الجمهور، الرسالة، ثم مراجعة واضحة قبل الحفظ.',import:'راجع الأعمدة والسجلات قبل الاعتماد.',result:'راجع الحالة المؤكدة قبل اتخاذ الخطوة التالية.'})[p.kind] || 'خطوة واضحة في كل مرة، والأدوات المرتبطة قريبة منك.';
   }
   function side(page, title = 'خطوتك التالية') {
@@ -109,7 +111,7 @@ window.TenantPages = (() => {
     if(p.kind==='state')return state(p,p.state);
     if(p.redirect)return renderPage(find(p.redirect));
     const renderers={list,form,detail,analytics,integration,hub,directory,calendar,pipeline,knowledge,media,import:importer,assistant,compose,setup,plans,billing,checkout,result,privacy,guide,analysis,overview:()=>overview(),inbox:()=>inbox()};
-      const content=window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
+      const content=window.NotificationPreview?.handles(p)?window.NotificationPreview.render(p):window.AssistantPreview?.handles(p)?window.AssistantPreview.render(p):selection?detail(p,rows(p).find(r=>r.id===selection)):renderers[p.kind](p);
     return (['overview','inbox'].includes(p.kind)?`<div class="page-breadcrumb">${link('جميع الصفحات','/merchant/tools')}${action('حالات الصفحة','states')}</div>`:head(p))+content;
   }
   function rerender(keep = false) { render(keep); }
@@ -118,6 +120,7 @@ window.TenantPages = (() => {
     openDialog(current.action,`<form class="form-stack" data-page-form="create">${labels.map((v,i)=>field(v,i,'')).join('')}<p class="hint">إضافة محلية لتجربة سير العمل.</p><div class="dialog-foot"><button type="submit" class="button primary">حفظ المعاينة</button>${action('إلغاء','cancel')}</div></form>`);
   }
   function primary() {
+    if(window.NotificationPreview?.handles(current))return window.NotificationPreview.primary(current);
     if(window.AssistantPreview?.handles(current))return window.AssistantPreview.primary(current);
     if(current.kind==='list'){
       if(current.route==='/merchant/campaigns'){location.hash=href('/merchant/campaigns/new');return;}
@@ -165,7 +168,7 @@ window.TenantPages = (() => {
     else if(a==='payment'){location.hash=href('/merchant/payment/success');}
     else if(a==='verify'){store({verified:true});rerender();}
     else if(a==='note')openDialog('ملاحظة داخلية',`<form class="form-stack" data-page-form="note">${field('الملاحظة',0,get().note||'')}<button class="button primary" type="submit">حفظ الملاحظة</button></form>`);
-    else if(a==='states')openDialog('جرّب حالات هذه الصفحة',`<div class="page-state-options">${[['normal','البيانات'],['empty','فارغة'],['loading','تحميل'],['error','خطأ'],['offline','انقطاع الاتصال'],['forbidden','صلاحية'],['session','الجلسة'],['missing','404']].map(([id,label])=>action(label,'state',false,`data-value="${id}"`)).join('')}</div>`);
+    else if(a==='states')openDialog('جرّب حالات هذه الصفحة',`<div class="page-state-options">${[['normal','البيانات'],['empty','فارغة'],['loading','تحميل'],['error','خطأ'],['offline','انقطاع الاتصال'],['forbidden','صلاحية'],['session','الجلسة'],['missing','404']].map(([id,label])=>action(label,'state',false,`data-value="${id}"`)).join('')}</div><div class="dialog-foot"><button type="button" class="button" data-action="reset-confirm">إعادة ضبط بيانات النموذج</button></div>`);
     else if(a==='state'){mode=el.dataset.value;document.getElementById('dialog').close();rerender();}
     else if(a==='recover'){if(current.kind==='state')location.hash=href('/merchant/dashboard');else{mode='normal';rerender();}}
     else if(a==='invoice')review('فاتورة سبتمبر','249 ر.س شامل الضريبة · فاتورة توضيحية غير صالحة للاستخدام المحاسبي.');
@@ -197,5 +200,5 @@ window.TenantPages = (() => {
       if(step<last){step++;rerender();}else{store({draft});toast('تم حفظ المعاينة محليًا.');location.hash=href(type==='setup'?'/merchant/dashboard':'/merchant/campaigns');}
     }
   });
-  return { find, render:renderPage, reset, href, pages };
+  return { find, render:renderPage, reset, href, pages, resetData(){saved={};persist();if(current)reset(current);} };
 })();

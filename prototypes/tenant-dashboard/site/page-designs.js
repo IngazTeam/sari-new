@@ -76,12 +76,13 @@ loyalty/settings|form|حفظ البرنامج|اسم البرنامج،نقاط 
 loyalty/tiers|list|مستوى جديد|المستوى،النقاط المطلوبة،المزايا،العملاء|المستوى الذهبي
 loyalty/rewards|list|مكافأة جديدة|المكافأة،النقاط،النوع،الحالة|خصم على الطلب القادم
 loyalty/customers|list|عرض رصيد العميل|العميل،المستوى،النقاط،آخر حركة|نورة أحمد
-integrations-dashboard,platform-integrations|hub|إضافة تكامل|واتساب،سلة،زد،Google|قنواتك ومصادرك
+integrations-dashboard|hub|تحديث العرض|المنصة،آخر مزامنة،نسبة النجاح،الأخطاء|حالة التكاملات
+platform-integrations|hub|إضافة تكامل|واتساب،سلة،زد،Google|قنواتك ومصادرك
 notification-settings|form|حفظ التفضيلات|قناة التنبيه،الطلبات الجديدة،الرسائل الجديدة،المواعيد|تفضيلات التنبيه
 currency-settings|form|حفظ العملة|عملة المتجر،طريقة عرض السعر|الريال السعودي
 push-notifications|form|معاينة الإشعارات|إشعارات المتصفح،تنبيه الطلبات،تنبيه المحادثات|إشعارات هذا الجهاز
 scheduled-reports|list|تقرير مجدول جديد|التقرير،المستلم،التكرار،الموعد|ملخص الأسبوع
-whatsapp-auto-notifications|form|حفظ الأتمتة|تأكيد الحجز،تعديل الموعد،إلغاء الحجز،نص الرسالة|إشعارات المواعيد
+whatsapp-auto-notifications|form|قالب رسالة جديد|الحدث،نص الرسالة،المتغيرات،حالة الإعداد|قوالب رسائل العملاء
 subscriptions,subscription,my-subscription|billing|إدارة الباقة|الباقة،الفترة،الاستخدام،الفاتورة|باقة النمو
 usage,usage-dashboard|analytics|مراجعة الباقة|المحادثات،الرسائل،الصوت،المتبقي|استخدام الباقة
 subscription/plans,subscription/compare|plans|مقارنة الباقات|البداية،النمو،الأعمال|اختر ما يناسب نشاطك
