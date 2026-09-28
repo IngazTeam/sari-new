@@ -138,6 +138,7 @@ export default function TestSari() {
   const [dealError, setDealError] = useState(false);
   const [showDealDialog, setShowDealDialog] = useState(false);
   const [scenarioId, setScenarioId] = useState("");
+  const [pendingReset, setPendingReset] = useState<string | null>(null);
   const selectedScenario = EXAMPLE_SCENARIOS.find(s => s.id === scenarioId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const create = trpc.testSari.createConversation.useMutation();
@@ -173,15 +174,24 @@ export default function TestSari() {
     setInputMessage("");
     await pending;
   };
-  const handleReset = async () => {
+  const replaceSession = async (id: string) => {
     if (await session.start()) {
-      setInputMessage("");
+      const scenario = EXAMPLE_SCENARIOS.find(item => item.id === id);
+      setInputMessage(
+        scenario ? scenario.messages[scenario.messages.length - 1].content : ""
+      );
       setDealValue("");
       setDealError(false);
-      setScenarioId("");
+      setScenarioId(id);
       setShowDealDialog(false);
+      setPendingReset(null);
       toast.success(t("testSariPage.resetSuccess"));
     }
+  };
+  const requestReset = (id: string) => {
+    if (busy) return;
+    if (messages.length || inputMessage.trim()) setPendingReset(id);
+    else void replaceSession(id);
   };
   const handleMarkAsDeal = async () => {
     const value = Number(dealValue);
@@ -209,17 +219,6 @@ export default function TestSari() {
         setDealError(false);
       }
       if (failed === "deal") setShowDealDialog(false);
-    }
-  };
-  const handleApplyScenario = async (id: string) => {
-    const scenario = EXAMPLE_SCENARIOS.find(item => item.id === id);
-    if (!scenario || busy) return;
-    if (await session.start()) {
-      setScenarioId(id);
-      setDealValue("");
-      setDealError(false);
-      setShowDealDialog(false);
-      setInputMessage(scenario.messages[scenario.messages.length - 1].content);
     }
   };
   const handleRating = (id: string, rating: "positive" | "negative") =>
@@ -262,7 +261,9 @@ export default function TestSari() {
                   disabled={
                     hasDeal ||
                     disabled ||
-                    !messages.some(m => m.role === "assistant")
+                    !messages.some(
+                      m => m.role === "assistant" && m.source !== "guardrail"
+                    )
                   }
                   className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
                 >
@@ -345,7 +346,11 @@ export default function TestSari() {
               </DialogContent>
             </Dialog>
 
-            <Button onClick={handleReset} variant="outline" disabled={busy}>
+            <Button
+              onClick={() => requestReset("")}
+              variant="outline"
+              disabled={busy}
+            >
               <RotateCcw className="h-4 w-4 ml-2" />
               {t("testSariPage.reset")}
             </Button>
@@ -365,7 +370,7 @@ export default function TestSari() {
           <Select
             value={scenarioId}
             disabled={busy}
-            onValueChange={handleApplyScenario}
+            onValueChange={requestReset}
           >
             <SelectTrigger
               aria-label={t("testSariPage.scenarioLabel")}
@@ -505,6 +510,18 @@ export default function TestSari() {
                     <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {message.content}
                     </p>
+                    {message.source && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {t(
+                          message.source === "guardrail"
+                            ? "testSariPage.guardrailSource"
+                            : "testSariPage.modelSource"
+                        )}
+                        {message.historyTruncated
+                          ? ` · ${t("testSariPage.contextTruncated")}`
+                          : ""}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
@@ -514,6 +531,7 @@ export default function TestSari() {
                       })}
                     </span>
                     {message.role === "assistant" &&
+                      message.source !== "guardrail" &&
                       message.id !== "welcome" && (
                         <TooltipProvider>
                           <div className="flex gap-1">
@@ -890,6 +908,54 @@ export default function TestSari() {
             </p>
           </CardContent>
         </Card>
+        <Dialog
+          open={pendingReset !== null}
+          onOpenChange={open => {
+            if (!open && !busy) setPendingReset(null);
+          }}
+        >
+          <DialogContent
+            closeLabel={t("testSariPage.closeDialog")}
+            className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+          >
+            <DialogHeader>
+              <DialogTitle>{t("testSariPage.replaceTitle")}</DialogTitle>
+              <DialogDescription>
+                {t("testSariPage.replaceHint")}
+              </DialogDescription>
+            </DialogHeader>
+            {error === "session" && (
+              <p role="alert" className="text-sm text-destructive">
+                {t("testSariPage.sessionFailed")}
+              </p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={busy}
+                onClick={() => setPendingReset(null)}
+              >
+                {t("testSariPage.cancel")}
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11"
+                disabled={busy}
+                onClick={() => {
+                  if (pendingReset !== null) void replaceSession(pendingReset);
+                }}
+              >
+                {t(
+                  busy
+                    ? "testSariPage.savingStatus"
+                    : "testSariPage.replaceConfirm"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

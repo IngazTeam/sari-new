@@ -8,10 +8,12 @@ import {
   testDealInput,
   testMessageInput,
   testSessionInput,
+  quickPreviewInput,
 } from "../shared/test-sari-workspace";
 import {
   createTestSession,
   readTestSession,
+  readTestTurn,
   saveOwnedTestDeal,
   saveOwnedTestMessage,
   TestWorkspaceError,
@@ -33,6 +35,28 @@ async function run<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 const manage = permissionProcedure("bot_settings.manage");
+function previewRateLimit(merchantId: number, userId: number) {
+  if (!checkRateLimit(`test_sari:${merchantId}:${userId}`, 15, 60000).allowed)
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "حاول بعد قليل.",
+    });
+}
+export const quickPreviewProcedure = manage
+  .input(quickPreviewInput)
+  .mutation(({ ctx, input }) =>
+    run(async () => {
+      previewRateLimit(ctx.merchantId, ctx.user.id);
+      const { previewSari } = await import("./ai/sari-preview");
+      return previewSari({
+        merchantId: ctx.merchantId,
+        userId: ctx.user.id,
+        message: input.message,
+        history: [],
+        historyTruncated: false,
+      });
+    })
+  );
 export const testSariRouter = router({
   createConversation: manage
     .input(testSessionInput)
@@ -61,24 +85,15 @@ export const testSariRouter = router({
     ),
   sendMessage: manage.input(testChatInput).mutation(({ ctx, input }) =>
     run(async () => {
-      await readTestSession(ctx.merchantId, input.conversationId);
-      if (
-        !checkRateLimit(`test_sari:${ctx.merchantId}:${ctx.user.id}`, 15, 60000)
-          .allowed
-      )
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "حاول بعد قليل.",
-        });
-      const { chatWithSari } = await import("./ai/sari-personality");
-      // Test-table IDs are NOT production conversation IDs. Do not cross those namespaces.
-      const response = await chatWithSari({
+      previewRateLimit(ctx.merchantId, ctx.user.id);
+      const turn = await readTestTurn(ctx.merchantId, input);
+      const { previewSari } = await import("./ai/sari-preview");
+      return previewSari({
         merchantId: ctx.merchantId,
-        customerPhone: "test-playground",
-        customerName: "عميل تجريبي",
+        userId: ctx.user.id,
         message: input.message,
+        ...turn,
       });
-      return { response };
     })
   ),
   getMetrics: permissionProcedure("conversations.read")

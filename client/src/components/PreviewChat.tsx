@@ -12,6 +12,8 @@ interface Message {
   sender: "user" | "bot";
   text: string;
   timestamp: Date;
+  source?: "model" | "guardrail";
+  historyTruncated?: boolean;
 }
 
 interface PreviewChatProps {
@@ -117,6 +119,8 @@ export default function PreviewChat({
             message.role === "user" ? ("user" as const) : ("bot" as const),
           text: message.content,
           timestamp: message.timestamp,
+          source: message.source,
+          historyTruncated: message.historyTruncated,
         })),
       ]
     : localMessages;
@@ -235,6 +239,18 @@ export default function PreviewChat({
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+              {message.source && (
+                <p className="mt-2 text-xs">
+                  {t(
+                    message.source === "guardrail"
+                      ? "testSariPage.guardrailSource"
+                      : "testSariPage.modelSource"
+                  )}
+                  {message.historyTruncated
+                    ? ` · ${t("testSariPage.contextTruncated")}`
+                    : ""}
+                </p>
+              )}
               <p
                 className={`text-xs mt-1 ${
                   message.sender === "user" ? "text-green-100" : "text-gray-400"

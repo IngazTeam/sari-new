@@ -25,6 +25,30 @@ beforeEach(() => {
   session = new TestSariSession(api, () => `request-${++id}`);
 });
 describe("actual test workspace lifecycle", () => {
+  it("does not count a guardrail notice as a model rating", async () => {
+    api.send.mockResolvedValue({
+      response: "simulation only",
+      source: "guardrail",
+      historyMessageCount: 20,
+      historyTruncated: true,
+    });
+    await session.start();
+    await session.send("hello");
+    const reply = session.snapshot().messages[1];
+    expect(reply).toMatchObject({
+      source: "guardrail",
+      historyTruncated: true,
+    });
+    session.rate(reply.id, "positive");
+    expect(session.snapshot().ratingHistory).toEqual([]);
+  });
+  it("releases the lock when session request identity creation fails", async () => {
+    const broken = new TestSariSession(api, () => {
+      throw new Error("UUID unavailable");
+    });
+    expect(await broken.start()).toBe(false);
+    expect(broken.snapshot()).toMatchObject({ busy: false, error: "session" });
+  });
   it("blocks send before session acknowledgement and locks duplicate starts synchronously", async () => {
     const wait = deferred<{ conversationId: number }>();
     api.create.mockReturnValue(wait.promise);
@@ -53,6 +77,7 @@ describe("actual test workspace lifecycle", () => {
     expect(api.save.mock.calls[0][0]).toEqual(api.save.mock.calls[1][0]);
     expect(api.send).toHaveBeenCalledWith({
       conversationId: 41,
+      clientMessageId: api.save.mock.calls[0][0].clientMessageId,
       message: "hello",
     });
     expect(session.snapshot().messages.map(m => m.role)).toEqual([

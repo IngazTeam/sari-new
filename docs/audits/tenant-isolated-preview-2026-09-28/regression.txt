@@ -1,0 +1,18 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/Users/ingaz/Herd/sari[39m
+
+ [32m✓[39m server/merchant-core-accessibility-pentest.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 466[2mms[22m[39m
+     [33m[2m✓[22m[39m discovers every merchant page and requires names, types, and keyboard semantics [33m 449[2mms[22m[39m
+ [32m✓[39m server/sari-playground-page.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 496[2mms[22m[39m
+ [32m✓[39m server/test-sari-access.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m server/test-sari-page.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1476[2mms[22m[39m
+     [33m[2m✓[22m[39m requires confirmation before replacing a conversation and keeps it on reset failure [33m 774[2mms[22m[39m
+     [33m[2m✓[22m[39m shows an amount field error and keeps failed deal registration visibly unconfirmed [33m 426[2mms[22m[39m
+ [32m✓[39m server/test-sari-session.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m server/sari-quick-preview.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m server/ai/sari-preview.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m      Tests [22m [1m[32m84 passed[39m[22m[90m (84)[39m
+[2m   Start at [22m 19:02:29
+[2m   Duration [22m 6.96s[2m (transform 1.06s, setup 0ms, import 5.79s, tests 2.53s, environment 3.33s)[22m

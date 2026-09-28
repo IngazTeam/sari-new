@@ -1,4 +1,5 @@
 import { testSariRouter } from './routers-test-sari';
+import { quickPreviewProcedure } from './routers-test-workspace';
 import { staffVoiceInput } from '../shared/staff-dashboard-voice';
 import { staffAttemptReviewProcedures } from './routers-staff-attempt-review';
 import { routeDashboardStaffVoice } from './staff-dashboard-voice-route';
@@ -4474,28 +4475,7 @@ export const appRouter = router({
   // AI & Sari Assistant
   ai: router({
     // Chat with Sari AI
-    chat: protectedProcedure
-      .input(z.object({
-        message: z.string(),
-        conversationId: z.number().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const { chatWithSari } = await import('./ai/sari-personality');
-
-        const response = await chatWithSari({
-          merchantId: merchant.id,
-          customerPhone: 'test', // For testing
-          message: input.message,
-          conversationId: input.conversationId,
-        });
-
-        return { response };
-      }),
+    chat: quickPreviewProcedure,
 
     // Search products with AI
     searchProducts: protectedProcedure

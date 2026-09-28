@@ -102,6 +102,28 @@ async function send() {
   );
 }
 describe("rendered production test workspace", () => {
+  it("requires confirmation before replacing a conversation and keeps it on reset failure", async () => {
+    await renderPage();
+    await send();
+    await click(button(ar.testSariPage.reset));
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      ar.testSariPage.replaceHint
+    );
+    await click(button(ar.testSariPage.cancel));
+    expect(container.textContent).toContain("رد الاختبار");
+    await click(button(ar.testSariPage.reset));
+    mocks.create.mockRejectedValueOnce(new Error("offline"));
+    await click(button(ar.testSariPage.replaceConfirm));
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(container.textContent).toContain("رد الاختبار");
+    await click(button(ar.testSariPage.replaceConfirm));
+    expect(mocks.create.mock.calls[1][0]).toEqual(
+      mocks.create.mock.calls[2][0]
+    );
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.textContent).not.toContain("رد الاختبار");
+  });
   it("waits for a real session and keeps the deal action disabled before a reply", async () => {
     let resolve!: (value: { conversationId: number }) => void;
     mocks.create.mockReturnValue(

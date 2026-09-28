@@ -1,0 +1,155 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const m = vi.hoisted(() => ({
+  db: vi.fn(),
+  settings: vi.fn(),
+  merchant: vi.fn(),
+  personality: vi.fn(),
+  products: vi.fn(),
+  search: vi.fn(),
+  context: vi.fn(),
+  prompt: vi.fn(),
+  call: vi.fn(),
+  budget: vi.fn(),
+  scope: vi.fn(),
+}));
+vi.mock("../db/connection", () => ({ getDb: m.db }));
+vi.mock("../db", () => ({
+  getMerchantById: m.merchant,
+  getSariPersonalitySettings: m.personality,
+  getProductsByMerchantId: m.products,
+}));
+vi.mock("./sari-personality", () => ({
+  buildEnhancedContextPrompt: m.context,
+  buildSystemPrompt: m.prompt,
+  searchRelevantProducts: m.search,
+}));
+vi.mock("./openai", () => ({ callGPT4: m.call }));
+vi.mock("./budget-ledger", () => ({ getAiBudgetStatus: m.budget }));
+vi.mock("./zahypi-client", () => ({ runWithZahyPiContext: m.scope }));
+import { previewSari } from "./sari-preview";
+const input = {
+  merchantId: 20,
+  userId: 7,
+  message: "كم سعرها؟",
+  history: [
+    { role: "user" as const, content: "أريد ساعة" },
+    { role: "assistant" as const, content: "أي لون؟" },
+  ],
+  historyTruncated: false,
+};
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.scope.mockImplementation((_scope, work) => work());
+  m.db.mockResolvedValue({
+    select: () => ({ from: () => ({ where: () => ({ limit: m.settings }) }) }),
+  });
+  m.settings.mockResolvedValue([
+    {
+      language: "en",
+      tone: "professional",
+      maxResponseLength: 100,
+      customInstructions: "Be concise",
+    },
+  ]);
+  m.merchant.mockResolvedValue({ businessName: "متجر الاختبار" });
+  m.personality.mockResolvedValue({ tone: "friendly", maxResponseLength: 200 });
+  m.products.mockResolvedValue([{ name: "ساعة", price: 40 }]);
+  m.search.mockImplementation((_query, products) => products);
+  m.context.mockResolvedValue("Store fact: watch costs 40.");
+  m.prompt.mockReturnValue("Store personality. ");
+  m.budget.mockResolvedValue({ exceeded: false });
+  m.call.mockResolvedValue("The watch costs 40.");
+});
+describe("isolated preview engine", () => {
+  it("does not cut a long knowledge fact in the middle", async () => {
+    m.context.mockResolvedValue("Complete fact.\n" + "x".repeat(48000));
+    await previewSari(input);
+    const prompt = m.call.mock.calls[0][0][0].content;
+    expect(prompt).toContain("Complete fact.");
+    expect(prompt).toContain("Knowledge context was trimmed");
+    expect(prompt).not.toContain("x".repeat(20));
+  });
+  it("honors bot settings before a personality row exists without creating defaults", async () => {
+    m.personality.mockResolvedValue(undefined);
+    await previewSari(input);
+    expect(m.prompt).toHaveBeenCalledWith({
+      tone: "professional",
+      maxResponseLength: 100,
+    });
+  });
+  it("reads merchant settings and knowledge, passes ordered history and asks the current question once", async () => {
+    const result = await previewSari(input);
+    expect(result).toEqual({
+      response: "The watch costs 40.",
+      source: "model",
+      historyMessageCount: 2,
+      historyTruncated: false,
+    });
+    expect(m.scope).toHaveBeenCalledWith(
+      { merchantId: 20, userId: 7, taskType: "sari.reply" },
+      expect.any(Function)
+    );
+    expect(m.context).toHaveBeenCalledWith(
+      expect.objectContaining({
+        merchantId: 20,
+        isFirstMessage: false,
+        customerMessage: "أريد ساعة\nكم سعرها؟",
+      })
+    );
+    expect(m.prompt).toHaveBeenCalledWith(
+      expect.objectContaining({ tone: "professional", maxResponseLength: 100 })
+    );
+    const [messages, options] = m.call.mock.calls[0];
+    expect(messages.slice(1)).toEqual([
+      ...input.history,
+      { role: "user", content: input.message },
+    ]);
+    expect(messages[0].content).toContain("watch costs 40");
+    expect(messages[0].content).toContain("Respond only in English.");
+    expect(messages[0].content).toContain(
+      "No tools or live customer actions are available"
+    );
+    expect(options).toMatchObject({
+      merchantId: 20,
+      userId: 7,
+      taskType: "sari.reply",
+    });
+    expect(options).not.toHaveProperty("conversationId");
+  });
+  it("labels a detected unverified action as a guardrail, never a successful model result", async () => {
+    m.call.mockResolvedValue("تم تسجيل طلبك");
+    expect(await previewSari(input)).toMatchObject({
+      source: "guardrail",
+      response:
+        "This is a simulation. No order, payment or handoff has been completed.",
+    });
+  });
+  it.each(["", "   ", "x".repeat(5001)])(
+    "rejects invalid provider output %#",
+    async response => {
+      m.call.mockResolvedValue(response);
+      await expect(previewSari(input)).rejects.toThrow(
+        "Invalid preview response"
+      );
+    }
+  );
+  it("propagates provider errors without fabricated fallback replies", async () => {
+    m.call.mockRejectedValue(new Error("provider unavailable"));
+    await expect(previewSari(input)).rejects.toThrow("provider unavailable");
+  });
+  it("stops before retrieval and generation when budget is exceeded", async () => {
+    m.budget.mockResolvedValue({ exceeded: true });
+    await expect(previewSari(input)).rejects.toThrow(
+      "Preview budget unavailable"
+    );
+    expect(m.context).not.toHaveBeenCalled();
+    expect(m.call).not.toHaveBeenCalled();
+  });
+  it("fails closed when the database is unavailable", async () => {
+    m.db.mockResolvedValue(null);
+    await expect(previewSari(input)).rejects.toThrow(
+      "Preview database unavailable"
+    );
+    expect(m.call).not.toHaveBeenCalled();
+  });
+});

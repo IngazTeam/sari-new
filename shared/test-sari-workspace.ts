@@ -14,9 +14,19 @@ export const testMessageInput = z
 export const testChatInput = z
   .object({
     conversationId: testConversationId,
+    clientMessageId: z.uuid(),
     message: z.string().trim().min(1).max(2000),
   })
   .strict();
+export const quickPreviewInput = z
+  .object({ message: z.string().trim().min(1).max(2000) })
+  .strict();
+export interface PreviewReply {
+  response: string;
+  source: "model" | "guardrail";
+  historyMessageCount: number;
+  historyTruncated: boolean;
+}
 export const testDealValue = z
   .number()
   .finite()

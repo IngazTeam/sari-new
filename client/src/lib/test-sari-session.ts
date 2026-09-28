@@ -6,6 +6,9 @@ export interface TestMessage {
   content: string;
   timestamp: Date;
   rating?: "positive" | "negative";
+  source?: "model" | "guardrail";
+  historyTruncated?: boolean;
+  historyMessageCount?: number;
 }
 interface TestApi {
   create(input: { requestId: string }): Promise<{ conversationId: number }>;
@@ -18,8 +21,14 @@ interface TestApi {
   }): Promise<unknown>;
   send(input: {
     conversationId: number;
+    clientMessageId: string;
     message: string;
-  }): Promise<{ response: string }>;
+  }): Promise<{
+    response: string;
+    source?: "model" | "guardrail";
+    historyTruncated?: boolean;
+    historyMessageCount?: number;
+  }>;
   deal(input: {
     conversationId: number;
     dealValue: number;
@@ -88,8 +97,8 @@ export class TestSariSession {
   async start(): Promise<boolean> {
     if (this.state.busy) return false;
     this.update({ busy: true, error: null, forbidden: false });
-    this.requestId ??= this.uuid();
     try {
+      this.requestId ??= this.uuid();
       const result = await this.api.create({ requestId: this.requestId });
       this.pending = null;
       this.pendingDeal = null;
@@ -148,8 +157,9 @@ export class TestSariSession {
       stage = "reply";
       if (!pending.reply) {
         const started = this.now().getTime();
-        const { response } = await this.api.send({
+        const result = await this.api.send({
           conversationId,
+          clientMessageId: pending.user.id,
           message: pending.user.content,
         });
         pending.responseTime = Math.min(
@@ -159,7 +169,10 @@ export class TestSariSession {
         pending.reply = {
           id: this.uuid(),
           role: "assistant",
-          content: response,
+          content: result.response,
+          source: result.source,
+          historyTruncated: result.historyTruncated,
+          historyMessageCount: result.historyMessageCount,
           timestamp: this.now(),
         };
         this.update({ messages: [...this.state.messages, pending.reply] });
@@ -220,7 +233,9 @@ export class TestSariSession {
     if (
       this.state.busy ||
       this.state.error ||
-      !this.state.messages.some(m => m.id === id && m.role === "assistant")
+      !this.state.messages.some(
+        m => m.id === id && m.role === "assistant" && m.source !== "guardrail"
+      )
     )
       return;
     const messages = this.state.messages.map(m =>

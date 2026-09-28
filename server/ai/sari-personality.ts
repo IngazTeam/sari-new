@@ -84,7 +84,7 @@ import dbZid from '../db_zid';
 /**
  * Build dynamic system prompt based on personality settings
  */
-function buildSystemPrompt(settings?: SariPersonalitySetting): string {
+export function buildSystemPrompt(settings?: Partial<SariPersonalitySetting>): string {
   // Sacred Wall — the absolute first thing GPT reads
   let prompt = `🛑🛑🛑 الجدار المقدس — قواعد لا يمكن كسرها أبداً 🛑🛑🛑
 
@@ -905,7 +905,7 @@ const FEW_SHOT_EXAMPLES: ChatMessage[] = [
 /**
  * Smart product search based on customer message
  */
-async function searchRelevantProducts(
+export async function searchRelevantProducts(
   message: string,
   allProducts: any[],
   limit: number = 20

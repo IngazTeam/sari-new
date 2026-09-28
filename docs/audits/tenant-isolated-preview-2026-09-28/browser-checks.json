@@ -1,0 +1,263 @@
+[
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 219
+      }
+    ],
+    "editorFont": "16px",
+    "height": 568,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 274
+      }
+    ],
+    "editorFont": "16px",
+    "height": 812,
+    "scrollWidth": 360,
+    "width": 375
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 289
+      }
+    ],
+    "editorFont": "16px",
+    "height": 844,
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 643
+      }
+    ],
+    "editorFont": "16px",
+    "height": 1024,
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 719
+      }
+    ],
+    "editorFont": "16px",
+    "height": 390,
+    "scrollWidth": 829,
+    "width": 844
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "السلام عليكم",
+        "width": 114.4375
+      },
+      {
+        "height": 44,
+        "label": "ما المنتجات المتوفرة؟",
+        "width": 159.796875
+      },
+      {
+        "height": 44,
+        "label": "ما سياسة التوصيل؟",
+        "width": 151.296875
+      },
+      {
+        "height": 44,
+        "label": "مسح التجربة",
+        "width": 122.8984375
+      },
+      {
+        "height": 44,
+        "label": "اختبر الرد",
+        "width": 99.4375
+      },
+      {
+        "height": 44,
+        "label": "إعادة المحاولة",
+        "width": 942
+      }
+    ],
+    "editorFont": "16px",
+    "height": 900,
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "case": "clear-dialog-320",
+    "dialog": {
+      "bottom": 408,
+      "left": 16,
+      "right": 289,
+      "top": 160
+    },
+    "height": 568,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "case": "replace-session-landscape",
+    "dialog": {
+      "bottom": 293,
+      "left": 158.5,
+      "right": 670.5,
+      "top": 97
+    },
+    "height": 390,
+    "width": 844
+  },
+  {
+    "case": "final-counters-320",
+    "counts": [
+      "1",
+      "0",
+      "1"
+    ],
+    "scrollWidth": 305,
+    "width": 320
+  }
+]

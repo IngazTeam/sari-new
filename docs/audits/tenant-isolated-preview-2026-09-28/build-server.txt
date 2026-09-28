@@ -1,0 +1,5 @@
+
+  .tmp\tenant-ux\isolated-preview-build\index.js   6.2mb
+  .tmp\tenant-ux\isolated-preview-build\worker.js  3.1mb
+
+Done in 285ms

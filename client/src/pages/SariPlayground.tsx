@@ -1,263 +1,315 @@
-/**
- * Sari AI Playground
- * Interactive testing page for Sari AI responses
- */
+import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Bot, Loader2, Send, RotateCcw } from "lucide-react";
+import type { PreviewReply } from "@shared/test-sari-workspace";
 
-import { useState, useRef, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Send, Bot, User, Sparkles, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+interface Turn {
+  question: string;
+  result?: PreviewReply;
 }
-
 export default function SariPlayground() {
-  const { t } = useTranslation();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const chatMutation = trpc.ai.chat.useMutation({
-    onSuccess: (data: { response: string }) => {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date(),
-      }]);
-    },
-    onError: (error: any) => {
-      toast.error(`خطأ: ${error.message}`);
-    },
-  });
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = () => {
-    if (!input.trim() || chatMutation.isPending) return;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    
-    chatMutation.mutate({ message: input });
-    setInput('');
-  };
-
-  const handleReset = () => {
-    setMessages([]);
-    setInput('');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const { t, i18n } = useTranslation();
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<"failed" | "forbidden" | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const locked = useRef(false);
+  const editor = useRef<HTMLTextAreaElement>(null);
+  const chat = trpc.ai.chat.useMutation();
+  const execute = async (question: string, retry = false) => {
+    if (locked.current || !question.trim() || question.trim().length > 2000)
+      return;
+    locked.current = true;
+    setBusy(true);
+    setError(null);
+    if (!retry) {
+      setTurns(previous => [...previous, { question: question.trim() }]);
+      setInput("");
+    }
+    try {
+      const result = await chat.mutateAsync({ message: question.trim() });
+      setTurns(previous =>
+        previous.map((turn, index) =>
+          index === previous.length - 1 ? { ...turn, result } : turn
+        )
+      );
+    } catch (failure) {
+      setError(
+        (failure as { data?: { code?: string } })?.data?.code === "FORBIDDEN"
+          ? "forbidden"
+          : "failed"
+      );
+    } finally {
+      locked.current = false;
+      setBusy(false);
     }
   };
-
-  const exampleQueries = [
-    'السلام عليكم',
-    'عندك جوالات؟',
-    'أبغى هدية لأمي',
-    'كم سعر المنتج؟',
-    'شكراً لك',
+  const examples = [
+    t("sariPlayground.greetingExample"),
+    t("sariPlayground.productsExample"),
+    t("sariPlayground.shippingExample"),
   ];
-
   return (
-    <div className="min-h-screen bg-accent p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-primary rounded-2xl">
-              <Sparkles className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold text-primary">{t('sariPlayground.auto_0')}</h1>
+    <div
+      className="mx-auto w-full min-w-0 max-w-5xl space-y-5 p-3 sm:p-6"
+      dir={i18n?.dir()}
+    >
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-2">
+          <div className="flex items-center gap-2">
+            <Bot className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+            <h1 className="text-2xl font-bold">{t("sariPlayground.title")}</h1>
           </div>
-          <p className="text-gray-600 text-lg">{t('sariPlayground.auto_1')}</p>
-          <Badge variant="outline" className="text-green-600 border-green-600">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />{t('sariPlayground.auto_2')}</div>
-          </Badge>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            {t("sariPlayground.scope")}
+          </p>
         </div>
-
-        {/* Example Queries */}
-        <Card className="p-4 bg-white/80 backdrop-blur">
-          <div className="flex items-center gap-2 mb-3">
-            <Bot className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-800">{t('sariPlaygroundPage.text0')}</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {exampleQueries.map((query, index) => (
+        <Button
+          asChild
+          variant="outline"
+          className="min-h-11 whitespace-normal"
+        >
+          <Link href="/merchant/test-sari">
+            {t("sariPlayground.openSession")}
+          </Link>
+        </Button>
+      </header>
+      <Card className="space-y-4 p-4 sm:p-5">
+        <div
+          className="flex flex-wrap gap-2"
+          aria-label={t("sariPlayground.examplesTitle")}
+        >
+          {examples.map(query => (
+            <Button
+              type="button"
+              key={query}
+              variant="outline"
+              className="h-auto min-h-11 whitespace-normal text-start"
+              disabled={busy || !!error}
+              onClick={() => {
+                setInput(query);
+                editor.current?.focus();
+              }}
+            >
+              {query}
+            </Button>
+          ))}
+        </div>
+        <form
+          className="space-y-3"
+          onSubmit={event => {
+            event.preventDefault();
+            if (!error) void execute(input);
+          }}
+        >
+          <Label htmlFor="quick-preview-question">
+            {t("sariPlayground.question")}
+          </Label>
+          <Textarea
+            ref={editor}
+            id="quick-preview-question"
+            value={input}
+            onChange={event => setInput(event.target.value)}
+            disabled={busy || !!error}
+            maxLength={2000}
+            aria-describedby="quick-preview-hint"
+            className="min-h-28 text-base [overflow-wrap:anywhere] md:text-base"
+            onKeyDown={event => {
+              if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing &&
+                event.keyCode !== 229
+              ) {
+                event.preventDefault();
+                if (!error) void execute(input);
+              }
+            }}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p
+              id="quick-preview-hint"
+              className="text-xs text-muted-foreground"
+            >
+              {t("sariPlayground.inputHint", { count: input.length })}
+            </p>
+            <div className="flex flex-wrap gap-2">
               <Button
-                key={index}
+                type="button"
                 variant="outline"
-                size="sm"
-                onClick={() => setInput(query)}
-                className="text-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+                className="min-h-11"
+                disabled={busy || (!turns.length && !input)}
+                onClick={() => setConfirmReset(true)}
               >
-                {query}
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                {t("sariPlayground.clear")}
               </Button>
-            ))}
-          </div>
-        </Card>
-
-        {/* Chat Container */}
-        <Card className="h-[500px] flex flex-col bg-white/90 backdrop-blur shadow-xl">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
-                <Bot className="h-16 w-16" />
-                <p className="text-lg">{t('sariPlaygroundPage.text1')}</p>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-3 ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.role === 'assistant' && (
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <Bot className="h-5 w-5 text-white" />
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                      message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
-                    <p
-                      className={`text-xs mt-2 ${
-                        message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}
-                    >
-                      {message.timestamp.toLocaleTimeString('ar-SA', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-
-                  {message.role === 'user' && (
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                        <User className="h-5 w-5 text-white" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            
-            {chatMutation.isPending && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <Bot className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{t('sariPlaygroundPage.text2')}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t bg-white p-4">
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={t('sariPlaygroundPage.text3')}
-                disabled={chatMutation.isPending}
-                className="flex-1 text-lg"
-                dir="rtl"
-              />
               <Button
-                onClick={handleSend}
-                disabled={!input.trim() || chatMutation.isPending}
-                className="bg-primary"
+                type="submit"
+                className="min-h-11"
+                disabled={busy || !!error || !input.trim()}
               >
-                {chatMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                {busy ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" aria-hidden="true" />
                 )}
-              </Button>
-              <Button
-                onClick={handleReset}
-                variant="outline"
-                disabled={messages.length === 0}
-              >
-                <RotateCcw className="h-5 w-5" />
+                {t("sariPlayground.ask")}
               </Button>
             </div>
           </div>
-        </Card>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="p-4 text-center bg-white/80 backdrop-blur">
-            <p className="text-2xl font-bold text-blue-600">{messages.filter(m => m.role === 'user').length}</p>
-            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text4')}</p>
-          </Card>
-          <Card className="p-4 text-center bg-white/80 backdrop-blur">
-            <p className="text-2xl font-bold text-purple-600">{messages.filter(m => m.role === 'assistant').length}</p>
-            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text5')}</p>
-          </Card>
-          <Card className="p-4 text-center bg-white/80 backdrop-blur">
-            <p className="text-2xl font-bold text-green-600">{messages.length}</p>
-            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text6')}</p>
-          </Card>
-        </div>
-
-        {/* Info */}
-        <Card className="p-4 bg-blue-50 border-blue-200">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="font-semibold text-blue-900">{t('sariPlaygroundPage.text7')}</h4>
-              <p className="text-sm text-blue-800">{t('sariPlayground.auto_3')}</p>
-            </div>
-          </div>
-        </Card>
+        </form>
+      </Card>
+      <div role="status" className="text-sm text-muted-foreground">
+        {busy
+          ? t("sariPlayground.preparing")
+          : error
+            ? t("testSariPage.attentionStatus")
+            : t("sariPlayground.independent")}
       </div>
+      {error && (
+        <Card role="alert" className="space-y-3 border-destructive/40 p-4">
+          <p className="text-sm">
+            {t(
+              error === "forbidden"
+                ? "testSariPage.accessDenied"
+                : "testSariPage.replyFailed"
+            )}
+          </p>
+          {error !== "forbidden" && (
+            <Button
+              type="button"
+              className="min-h-11"
+              variant="outline"
+              disabled={busy}
+              onClick={() =>
+                void execute(turns[turns.length - 1].question, true)
+              }
+            >
+              {t("testSariPage.retry")}
+            </Button>
+          )}
+        </Card>
+      )}
+      <section
+        className="space-y-3"
+        aria-label={t("sariPlayground.results")}
+        aria-busy={busy}
+      >
+        {turns.length > 0 && (
+          <dl className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div className="min-w-0 rounded-lg border bg-card p-3">
+              <dt>{t("sariPlayground.questionCount")}</dt>
+              <dd className="mt-1 text-xl font-semibold">{turns.length}</dd>
+            </div>
+            <div className="min-w-0 rounded-lg border bg-card p-3">
+              <dt>{t("sariPlayground.replyCount")}</dt>
+              <dd className="mt-1 text-xl font-semibold">
+                {turns.filter(turn => turn.result).length}
+              </dd>
+            </div>
+            <div className="min-w-0 rounded-lg border bg-card p-3">
+              <dt>{t("sariPlayground.totalCount")}</dt>
+              <dd className="mt-1 text-xl font-semibold">
+                {turns.length + turns.filter(turn => turn.result).length}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {!turns.length && (
+          <Card className="p-6 text-center text-muted-foreground">
+            <Bot className="mx-auto mb-3 h-8 w-8" aria-hidden="true" />
+            <p>{t("sariPlayground.empty")}</p>
+          </Card>
+        )}
+        {turns.map((turn, index) => (
+          <Card key={index} className="min-w-0 overflow-hidden">
+            <div className="space-y-2 bg-muted/50 p-4">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("sariPlayground.questionNumber", { count: index + 1 })}
+              </p>
+              <p className="whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">
+                {turn.question}
+              </p>
+            </div>
+            <div className="space-y-2 p-4">
+              <p className="text-xs font-medium text-primary">
+                {turn.result
+                  ? t(
+                      turn.result.source === "guardrail"
+                        ? "testSariPage.guardrailSource"
+                        : "testSariPage.modelSource"
+                    )
+                  : t(
+                      busy
+                        ? "sariPlayground.preparing"
+                        : "sariPlayground.noReply"
+                    )}
+              </p>
+              {turn.result && (
+                <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">
+                  {turn.result.response}
+                </p>
+              )}
+            </div>
+          </Card>
+        ))}
+      </section>
+      <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <DialogContent
+          closeLabel={t("testSariPage.closeDialog")}
+          className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        >
+          <DialogHeader>
+            <DialogTitle>{t("sariPlayground.clearTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("sariPlayground.clearHint")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setConfirmReset(false)}
+            >
+              {t("testSariPage.cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={busy}
+              onClick={() => {
+                if (locked.current) return;
+                setTurns([]);
+                setInput("");
+                setError(null);
+                setConfirmReset(false);
+              }}
+            >
+              {t("sariPlayground.clear")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   create: vi.fn(),
   read: vi.fn(),
+  turn: vi.fn(),
   save: vi.fn(),
   deal: vi.fn(),
   rate: vi.fn(),
@@ -18,11 +19,12 @@ vi.mock("./test-sari-store", async original => ({
   ...(await original<typeof import("./test-sari-store")>()),
   createTestSession: mocks.create,
   readTestSession: mocks.read,
+  readTestTurn: mocks.turn,
   saveOwnedTestMessage: mocks.save,
   saveOwnedTestDeal: mocks.deal,
 }));
 vi.mock("./_core/rateLimiter", () => ({ checkRateLimit: mocks.rate }));
-vi.mock("./ai/sari-personality", () => ({ chatWithSari: mocks.chat }));
+vi.mock("./ai/sari-preview", () => ({ previewSari: mocks.chat }));
 vi.mock("./db/connection", () => ({ getDb: mocks.db }));
 vi.mock("./metrics", () => ({ calculateAllMetrics: mocks.metrics }));
 import { testSariRouter } from "./routers-test-sari";
@@ -53,7 +55,16 @@ beforeEach(() => {
   mocks.save.mockResolvedValue({ messageId: 1 });
   mocks.deal.mockResolvedValue({ dealId: 1, dealValue: 149.5 });
   mocks.rate.mockReturnValue({ allowed: true });
-  mocks.chat.mockResolvedValue("reply");
+  mocks.chat.mockResolvedValue({
+    response: "reply",
+    source: "model",
+    historyMessageCount: 1,
+    historyTruncated: false,
+  });
+  mocks.turn.mockResolvedValue({
+    history: [{ role: "user", content: "prior question" }],
+    historyTruncated: false,
+  });
   mocks.db.mockResolvedValue({});
   mocks.metrics.mockResolvedValue({ conversion: { totalRevenue: 149.5 } });
 });
@@ -94,7 +105,12 @@ describe("test workspace API security boundaries", () => {
         () => caller().resetConversation({ requestId: uuid }),
         () => caller().saveMessage(message),
         () => caller().markAsDeal({ conversationId: 4, dealValue: 149.5 }),
-        () => caller().sendMessage({ conversationId: 4, message: "hello" }),
+        () =>
+          caller().sendMessage({
+            conversationId: 4,
+            clientMessageId: uuid,
+            message: "hello",
+          }),
       ])
         await expect(work()).rejects.toMatchObject({ code: "FORBIDDEN" });
       expect(mocks.create).not.toHaveBeenCalled();
@@ -104,21 +120,38 @@ describe("test workspace API security boundaries", () => {
     }
   );
   it("verifies ownership before the provider request and never passes test-table IDs as production IDs", async () => {
-    mocks.read.mockRejectedValueOnce(new TestWorkspaceError("NOT_FOUND"));
+    mocks.turn.mockRejectedValueOnce(new TestWorkspaceError("NOT_FOUND"));
     await expect(
-      caller().sendMessage({ conversationId: 888, message: "hello" })
+      caller().sendMessage({
+        conversationId: 888,
+        clientMessageId: uuid,
+        message: "hello",
+      })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(mocks.chat).not.toHaveBeenCalled();
-    await caller().sendMessage({ conversationId: 4, message: "hello" });
+    await caller().sendMessage({
+      conversationId: 4,
+      clientMessageId: uuid,
+      message: "hello",
+    });
     expect(mocks.chat).toHaveBeenCalledWith(
-      expect.objectContaining({ merchantId: 20, message: "hello" })
+      expect.objectContaining({
+        merchantId: 20,
+        userId: 7,
+        message: "hello",
+        history: [{ role: "user", content: "prior question" }],
+      })
     );
     expect(mocks.chat.mock.calls[0][0]).not.toHaveProperty("conversationId");
   });
   it("enforces the rate limit before calling the provider", async () => {
     mocks.rate.mockReturnValue({ allowed: false });
     await expect(
-      caller().sendMessage({ conversationId: 4, message: "hello" })
+      caller().sendMessage({
+        conversationId: 4,
+        clientMessageId: uuid,
+        message: "hello",
+      })
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(mocks.chat).not.toHaveBeenCalled();
   });
@@ -165,9 +198,14 @@ describe("test workspace API security boundaries", () => {
   });
   it("does not accept empty, oversized or client-supplied conversation history", async () => {
     for (const input of [
-      { conversationId: 4, message: "" },
-      { conversationId: 4, message: "x".repeat(2001) },
-      { conversationId: 4, message: "hello", conversationHistory: [] },
+      { conversationId: 4, clientMessageId: uuid, message: "" },
+      { conversationId: 4, clientMessageId: uuid, message: "x".repeat(2001) },
+      {
+        conversationId: 4,
+        clientMessageId: uuid,
+        message: "hello",
+        conversationHistory: [],
+      },
     ])
       await expect(caller().sendMessage(input as any)).rejects.toMatchObject({
         code: "BAD_REQUEST",

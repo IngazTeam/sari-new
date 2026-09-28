@@ -5,6 +5,7 @@ import { closeDb, getPool } from "./db/connection";
 import {
   createTestSession,
   readTestSession,
+  readTestTurn,
   saveOwnedTestDeal,
   saveOwnedTestMessage,
 } from "./test-sari-store";
@@ -27,6 +28,113 @@ describe.skipIf(!process.env.DATABASE_URL)(
       )
     );
     afterAll(closeDb);
+    it("reads only messages preceding the exact saved user turn, in order", async () => {
+      const { conversationId } = await createTestSession(first.merchantId, {
+        requestId: randomUUID(),
+      });
+      const save = (
+        sender: "user" | "sari",
+        content: string,
+        clientMessageId = randomUUID()
+      ) =>
+        saveOwnedTestMessage(first.merchantId, {
+          conversationId,
+          sender,
+          content,
+          clientMessageId,
+        });
+      await save("user", "أريد ساعة");
+      await save("sari", "ما اللون؟");
+      const clientMessageId = randomUUID();
+      await save("user", "أزرق", clientMessageId);
+      await save("sari", "future reply excluded on retry");
+      const input = { conversationId, clientMessageId, message: "أزرق" };
+      expect(await readTestTurn(first.merchantId, input)).toEqual({
+        history: [
+          { role: "user", content: "أريد ساعة" },
+          { role: "assistant", content: "ما اللون؟" },
+        ],
+        historyTruncated: false,
+      });
+      await expect(
+        readTestTurn(second.merchantId, input)
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        readTestTurn(first.merchantId, {
+          ...input,
+          clientMessageId: randomUUID(),
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        readTestTurn(first.merchantId, { ...input, message: "forged" })
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      const assistantId = randomUUID();
+      await save("sari", "assistant", assistantId);
+      await expect(
+        readTestTurn(first.merchantId, {
+          ...input,
+          clientMessageId: assistantId,
+          message: "assistant",
+        })
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+    });
+    it("bounds context to the newest twenty messages and reports truncation", async () => {
+      const { conversationId } = await createTestSession(first.merchantId, {
+        requestId: randomUUID(),
+      });
+      for (let i = 0; i < 23; i++)
+        await saveOwnedTestMessage(first.merchantId, {
+          conversationId,
+          clientMessageId: randomUUID(),
+          sender: i % 2 ? "sari" : "user",
+          content: `message ${i}`,
+        });
+      const input = {
+        conversationId,
+        clientMessageId: randomUUID(),
+        message: "current",
+      };
+      await saveOwnedTestMessage(first.merchantId, {
+        conversationId,
+        clientMessageId: input.clientMessageId,
+        sender: "user",
+        content: input.message,
+      });
+      const result = await readTestTurn(first.merchantId, input);
+      expect(result.history).toHaveLength(20);
+      expect(result.history[0].content).toBe("message 3");
+      expect(result.history[19].content).toBe("message 22");
+      expect(result.historyTruncated).toBe(true);
+    });
+    it("bounds history by characters without cutting a message in half", async () => {
+      const { conversationId } = await createTestSession(first.merchantId, {
+        requestId: randomUUID(),
+      });
+      for (let i = 0; i < 4; i++)
+        await saveOwnedTestMessage(first.merchantId, {
+          conversationId,
+          clientMessageId: randomUUID(),
+          sender: "sari",
+          content: String(i).repeat(5000),
+        });
+      const input = {
+        conversationId,
+        clientMessageId: randomUUID(),
+        message: "current",
+      };
+      await saveOwnedTestMessage(first.merchantId, {
+        conversationId,
+        clientMessageId: input.clientMessageId,
+        sender: "user",
+        content: input.message,
+      });
+      const result = await readTestTurn(first.merchantId, input);
+      expect(result.history.map(m => m.content.length)).toEqual([
+        5000, 5000, 5000,
+      ]);
+      expect(result.history[0].content).toBe("1".repeat(5000));
+      expect(result.historyTruncated).toBe(true);
+    });
     it("migrates historical integer amounts and safely resumes/repeats the DDL", async () => {
       const pool = (await getPool())!;
       const connection = await pool.getConnection();

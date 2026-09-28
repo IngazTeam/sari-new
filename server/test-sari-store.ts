@@ -10,6 +10,7 @@ import {
 } from "./db/schema-readiness";
 import {
   testConversationId,
+  testChatInput,
   testDealInput,
   testMessageInput,
   testSessionInput,
@@ -125,6 +126,40 @@ export async function readTestSession(
       deal: deals[0]
         ? { id: Number(deals[0].id), value: Number(deals[0].dealValue) }
         : null,
+    };
+  });
+}
+/** Snapshot before this exact saved question; never read live conversations. */
+export async function readTestTurn(
+  merchantId: number,
+  raw: z.infer<typeof testChatInput>
+) {
+  const input = testChatInput.parse(raw);
+  return owned(merchantId, input.conversationId, async connection => {
+    const [current] = await connection.execute<RowDataPacket[]>(
+      "SELECT id,sender,content FROM testMessages WHERE conversationId=? AND clientMessageId=?",
+      [input.conversationId, input.clientMessageId]
+    );
+    if (!current[0]) throw new TestWorkspaceError("NOT_FOUND");
+    if (current[0].sender !== "user" || current[0].content !== input.message)
+      throw new TestWorkspaceError("CONFLICT");
+    const [rows] = await connection.execute<RowDataPacket[]>(
+      "SELECT sender,content FROM testMessages WHERE conversationId=? AND id<? ORDER BY id DESC LIMIT 21",
+      [input.conversationId, current[0].id]
+    );
+    const history: { role: "user" | "assistant"; content: string }[] = [];
+    let length = 0;
+    for (const row of rows) {
+      if (history.length === 20 || length + row.content.length > 16000) break;
+      history.push({
+        role: row.sender === "user" ? "user" : "assistant",
+        content: row.content,
+      });
+      length += row.content.length;
+    }
+    return {
+      history: history.reverse(),
+      historyTruncated: history.length < rows.length,
     };
   });
 }
