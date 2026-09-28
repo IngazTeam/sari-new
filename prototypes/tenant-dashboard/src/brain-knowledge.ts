@@ -1,5 +1,6 @@
 // @ts-nocheck
 // Local UX simulation. Reads TXT/CSV locally; never sends content or requests a model.
+import { createKnowledgeLibrary } from './knowledge-library';
 import {
   readKnowledgePreview,
   KNOWLEDGE_PREVIEW_LIMIT,
@@ -73,6 +74,7 @@ const impacts = {
   all: "في التطبيق تُحذف الملفات والمنتجات وتحليلات الموقع وصفحاته والأسئلة الشائعة وجميع أقسام المعرفة وسجلات تغييراتها. تبقى الحسابات والمحادثات والطلبات والإعدادات خارج نطاق إعادة الضبط.",
 };
 export function createBrainKnowledge(host) {
+  const library = createKnowledgeLibrary(host);
   const key = "sary-brain-knowledge-v1",
     esc = host.esc;
   const initial = () => ({
@@ -240,7 +242,7 @@ export function createBrainKnowledge(host) {
                     .join("") ||
                   "<p>لا توجد مصادر محتوى؛ أضف معرفة من مصدر موثوق.</p>"
             }<article class="bw-card"><h3>إعدادات المتجر</h3><p>تبقى محفوظة؛ لا تُحذف من شاشة المصادر.</p></article></div>`
-    }<p>الحذف في الموك أب يزيل أمثلة هذا القسم فقط، ولا يغيّر كتالوج صفحات الموك أب الأخرى أو التيننت.</p></section>`;
+    }<p>الحذف في الموك أب يزيل أمثلة هذا القسم فقط، ولا يغيّر كتالوج صفحات الموك أب الأخرى أو التيننت.</p></section>${library.render()}`;
   }
   function destructive() {
     const stale = sourceSnapshot !== JSON.stringify(counts());

@@ -76,6 +76,7 @@ export function KnowledgeIntake() {
   const generation = useRef(0);
   useEffect(() => () => { generation.current++; }, []);
   const refresh = () => {
+    void utils.knowledgeDocs.invalidate();
     void utils.sariBrain.getSources.invalidate(); void utils.sariBrain.getKnowledgeSections.invalidate();
     void utils.sariBrain.getHealthScore.invalidate(); void utils.sariBrain.getActivityLog.invalidate();
     void utils.sariBrain.getPendingReviews.invalidate();

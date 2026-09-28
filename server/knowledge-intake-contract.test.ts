@@ -6,6 +6,7 @@ vi.mock('./_core/llm', () => ({ invokeLLM: api.llm }));
 vi.mock('./db/schema-readiness', () => ({ assertRuntimeSchema: vi.fn() }));
 vi.mock('./ai/knowledge-engine', () => ({ ingestContent: api.ingest }));
 vi.mock('./ai/rag-engine', () => ({ embedAllSections: api.embed }));
+vi.mock('./knowledge/document-library', () => ({ getKnowledgeDocumentSummary: vi.fn(async () => null) }));
 vi.mock('./db/knowledge', () => ({ invalidateCache: api.invalidate }));
 import { sariBrainRouter } from './routers-sari-brain';
 const valid = { contentType: 'general', summary: 'Reviewed source', itemCount: 1, conflicts: [], impact: 'Expected knowledge effect', riskLevel: 'low', sampleQA: [], recommendation: 'review', recommendationReason: 'Human review required' };

@@ -1,4 +1,5 @@
 import { knowledgeIntakeEn } from './knowledge-intake';
+import { knowledgeLibraryEn } from './knowledge-library';
 import {byaanSalesReviewEn} from './byaan-sales-review';
 import {staffTeamReviewEn} from './staff-team-review';
 import {sallaEffectReviewEn} from './salla-effect-review';
@@ -23,6 +24,7 @@ const merchantUxEn: MerchantUxCopy = {
   subscriptionWorkspace: subscriptionWorkspaceEn,
   whatsappWorkspace: whatsappWorkspaceEn,
   knowledgeIntake: knowledgeIntakeEn,
+  knowledgeLibrary: knowledgeLibraryEn,
   campaignPerformance: campaignPerformanceEn,
   byaanSales: byaanSalesReviewEn,
   sallaEffects: sallaEffectReviewEn,

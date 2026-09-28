@@ -1,0 +1,22 @@
+[
+  {
+    "clientWidth": 375,
+    "font": "16px",
+    "scrollWidth": 375,
+    "text": true,
+    "width": 390
+  },
+  {
+    "clientWidth": 305,
+    "emptyText": true,
+    "font": "16px",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "clientWidth": 1425,
+    "font": "14px",
+    "scrollWidth": 1425,
+    "width": 1440
+  }
+]

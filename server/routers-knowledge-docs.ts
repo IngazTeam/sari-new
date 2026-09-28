@@ -16,8 +16,26 @@ import {
 import { removeKnowledgeSource } from './knowledge/source-lifecycle';
 import { downloadPublicMedia } from './security/download-media';
 import { assertKnowledgeDocumentSignature } from './security/upload-validation';
+import { knowledgeLibraryInput, knowledgeTextInput } from '../shared/knowledge-library';
+import { listKnowledgeDocuments, readKnowledgeDocument } from './knowledge/document-library';
+import { hasPermission } from './_core/permissions';
 
 export const knowledgeDocsRouter = router({
+  list: merchantProcedure.input(knowledgeLibraryInput).query(async ({ ctx, input }) => {
+    try {
+      return { ...await listKnowledgeDocuments(ctx.merchantId, input), canReadText: hasPermission(ctx.merchantRole, 'bot_settings.manage') };
+    } catch {
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge library is temporarily unavailable' });
+    }
+  }),
+  // Source text is deliberately separate from metadata and restricted to knowledge managers.
+  readText: permissionProcedure('bot_settings.manage').input(knowledgeTextInput).query(async ({ ctx, input }) => {
+    try { return await readKnowledgeDocument(ctx.merchantId, input); }
+    catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge document is temporarily unavailable' });
+    }
+  }),
   // Get current knowledge doc for logged-in merchant
   getCurrent: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);

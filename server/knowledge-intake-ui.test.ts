@@ -5,7 +5,7 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { knowledgeIntakeEn as copy } from '../client/src/locales/knowledge-intake';
 const api = vi.hoisted(() => ({ analyze: vi.fn(), ingest: vi.fn(), invalidate: vi.fn(), analysisCallbacks: {} as any, ingestCallbacks: {} as any, analyzing: false, saving: false }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => copy[key.split('.').at(-1) as keyof typeof copy] || key }) }));
-vi.mock('@/lib/trpc', () => ({ trpc: { useUtils: () => ({ sariBrain: Object.fromEntries(['getSources', 'getKnowledgeSections', 'getHealthScore', 'getActivityLog', 'getPendingReviews'].map(key => [key, { invalidate: api.invalidate }])) }), sariBrain: {
+vi.mock('@/lib/trpc', () => ({ trpc: { useUtils: () => ({ knowledgeDocs: { invalidate: api.invalidate }, sariBrain: Object.fromEntries(['getSources', 'getKnowledgeSections', 'getHealthScore', 'getActivityLog', 'getPendingReviews'].map(key => [key, { invalidate: api.invalidate }])) }), sariBrain: {
   analyzeContent: { useMutation: (callbacks: any) => { api.analysisCallbacks = callbacks; return { mutate: api.analyze, isPending: api.analyzing }; } },
   ingestAnalyzedContent: { useMutation: (callbacks: any) => { api.ingestCallbacks = callbacks; return { mutate: api.ingest, isPending: api.saving }; } },
 } } }));

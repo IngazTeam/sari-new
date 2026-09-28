@@ -1,4 +1,5 @@
 import { knowledgeIntakeInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
+import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
@@ -509,18 +510,21 @@ export const sariBrainRouter = router({
 
     const sources: any[] = [];
 
-    // 1. Knowledge Document (uploaded PDF/DOCX)
-    const knowledgeDoc = await getKnowledgeDocByMerchantId(merchant.id);
+    // Document deletion affects the entire group; summarize every stored record.
+    let knowledgeDoc: Awaited<ReturnType<typeof getKnowledgeDocumentSummary>>;
+    try { knowledgeDoc = await getKnowledgeDocumentSummary(merchant.id); }
+    catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge sources are temporarily unavailable' }); }
     if (knowledgeDoc) {
       sources.push({
         id: `doc-${knowledgeDoc.id}`,
         type: 'document',
         icon: '📄',
-        name: knowledgeDoc.fileName || 'ملف تعريفي',
-        status: knowledgeDoc.extractionStatus,
-        hasContent: !!knowledgeDoc.extractedText,
-        contentLength: knowledgeDoc.extractedText?.length || 0,
-        date: knowledgeDoc.uploadedAt,
+        name: 'الملفات المحفوظة',
+        status: 'stored',
+        documentCount: knowledgeDoc.documentCount,
+        hasContent: knowledgeDoc.contentLength > 0,
+        contentLength: knowledgeDoc.contentLength,
+        date: knowledgeDoc.date,
         deletable: true,
       });
     }

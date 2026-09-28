@@ -1,4 +1,5 @@
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
+import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
@@ -143,6 +144,7 @@ export default function SariBrain() {
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
       toast.success('تم حذف المصدر بنجاح');
+      void utils.knowledgeDocs.invalidate();
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
     },
@@ -152,6 +154,7 @@ export default function SariBrain() {
   const resetBrainMutation = trpc.sariBrain.resetBrain.useMutation({
     onSuccess: (data: any) => {
       toast.success(`تم إعادة ضبط عقل ساري — حذف ${data.deletedSources.length} مصادر`);
+      void utils.knowledgeDocs.invalidate();
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
     },
@@ -454,7 +457,7 @@ export default function SariBrain() {
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.type === 'document').length || 0}</div>
+            <div className="text-2xl font-bold text-blue-600">{sourcesQuery.isError || isLoading ? '—' : sources?.find((s: any) => s.type === 'document')?.documentCount || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">ملف تعريفي</p>
           </CardContent>
         </Card>
@@ -1117,7 +1120,7 @@ export default function SariBrain() {
       <Card>
         <CardHeader>
           <CardTitle>📦 مصادر المعرفة</CardTitle>
-          <CardDescription>كل مصدر يؤثر على ردود ساري — يمكنك حذف أي مصدر بشكل مستقل</CardDescription>
+          <CardDescription>{t('merchantUx.knowledgeLibrary.sourcesDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {sourcesQuery.isError ? <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.sourcesError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void sourcesQuery.refetch(); }} /> : isLoading ? (
@@ -1125,20 +1128,20 @@ export default function SariBrain() {
           ) : sources && sources.length > 0 ? (
             <div className="space-y-3">
               {sources.map((source: any) => (
-                <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted">
+                <div key={source.id} className="flex min-w-0 items-center justify-between gap-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-lg bg-muted">
                       {SOURCE_ICONS[source.type] || <FileText className="h-5 w-5" />}
                     </div>
-                    <div>
-                      <div className="font-medium flex items-center gap-2">
-                        {source.name}
+                    <div className="min-w-0">
+                      <div className="font-medium flex flex-wrap items-center gap-2 break-words [overflow-wrap:anywhere]">
+                        {source.type === 'document' ? t('merchantUx.knowledgeLibrary.group') : source.name}
                         <Badge variant={source.status === 'active' || source.status === 'completed' ? 'default' : source.status === 'failed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {source.status === 'active' || source.status === 'completed' ? 'نشط' : source.status === 'failed' ? 'فشل' : source.status === 'pending' ? 'قيد المعالجة' : source.status}
+                          {source.type === 'document' ? t('merchantUx.knowledgeLibrary.stored') : source.status === 'active' || source.status === 'completed' ? 'نشط' : source.status === 'failed' ? 'فشل' : source.status === 'pending' ? 'قيد المعالجة' : source.status}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {source.type === 'products' ? `${source.contentLength} ${term('item')}` : source.type === 'document' ? `${Math.round((source.contentLength || 0) / 1000)}K حرف` : ''}
+                        {source.type === 'products' ? `${source.contentLength} ${term('item')}` : source.type === 'document' ? t('merchantUx.knowledgeLibrary.groupCount', { count: source.documentCount }) : ''}
                         {source.date && ` • ${new Date(source.date).toLocaleDateString('ar-SA')}`}
                       </p>
                     </div>
@@ -1150,22 +1153,23 @@ export default function SariBrain() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          aria-label={t('merchantUx.actions.deleteNamed', { name: source.name })}
+                          className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          disabled={deleteSourceMutation.isPending}
+                          aria-label={source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : t('merchantUx.actions.deleteNamed', { name: source.name })}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle className="text-right">حذف "{source.name}"</AlertDialogTitle>
+                          <AlertDialogTitle className="text-right">{source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : `حذف "${source.name}"`}</AlertDialogTitle>
                           <AlertDialogDescription className="text-right">
-                            سيتم حذف هذا المصدر من ذاكرة ساري. لن يستطيع ساري الرد على أسئلة متعلقة بهذه البيانات بعد الحذف.
+                            {source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroupHint') : t('merchantUx.knowledgeLibrary.deleteSourceHint')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex-row-reverse gap-2">
                           <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteSourceMutation.mutate({ sourceId: source.id, sourceType: source.type })} className="bg-destructive text-destructive-foreground">
+                          <AlertDialogAction disabled={deleteSourceMutation.isPending} onClick={() => deleteSourceMutation.mutate({ sourceId: source.id, sourceType: source.type })} className="bg-destructive text-destructive-foreground">
                             حذف
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -1190,6 +1194,8 @@ export default function SariBrain() {
           )}
         </CardContent>
       </Card>
+
+      <KnowledgeLibrary />
 
       {/* ═══ Website Knowledge Dashboard ═══ */}
       {websiteKnowledge && (

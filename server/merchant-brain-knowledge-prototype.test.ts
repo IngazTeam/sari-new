@@ -55,6 +55,18 @@ const bw = (a: string, extra = "") =>
   node(`[data-bw-action="${a}"]${extra}`).click();
 const nav = (s: string) =>
   node(`[data-brain-action="navigate"][data-id="${s}"]`).click();
+it('explores the independent file library, text pages, literal search, and failed reads without external calls', () => {
+  sources();
+  const action = (name: string) => node(`[data-kl-action="${name}"]`).click();
+  expect(node('[data-kl-library]').textContent).toContain('14 ملفات مطابقة');
+  action('next'); expect(node('[data-kl-library]').textContent).toContain('صفحة 2 من 2');
+  set('[data-kl-search]', 'تجريبية 13'); action('search'); expect(node('[data-kl-library]').textContent).toContain('1 ملفات مطابقة');
+  action('read'); action('text-next'); expect(node('[data-kl-text]').textContent).toContain('نهاية النص المحفوظ.'); action('close');
+  set('[data-kl-state]', 'failure', 'change'); expect(node('[data-kl-library]').textContent).toContain('تعذر تحميل مكتبة الملفات');
+  expect(w.document.querySelector('[data-kl-action="read"]')).toBeNull(); action('retry');
+  set('[data-kl-search]', '<img src=x>'); action('search'); expect(node('[data-kl-library]').textContent).toContain('لا توجد ملفات مطابقة');
+  expect(node('[data-kl-library]').querySelector('img')).toBeNull();
+});
 const set = (s: string, v: string, event = "input") => {
   const e = node(s);
   e.value = v;
