@@ -18,6 +18,7 @@ import { sallaOrderCreateSchema } from '../shared/salla-order-create';
 import { sallaCheckoutCartInput } from '../shared/salla-checkout-cart';
 import { runSallaCheckoutCart, SallaCheckoutCartError } from './integrations/salla-checkout-carts';
 import { sallaEffectReviewProcedures } from './routers-salla-effect-review';
+import { sallaCheckoutEvidenceProcedures } from './routers-salla-checkout-evidence';
 import { runSallaOrderCreation, readSallaCreationConfirmation, SallaCreationError } from './integrations/salla-order-creation';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
 import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
@@ -2165,6 +2166,7 @@ export const appRouter = router({
 
   // Orders from WhatsApp Chat
   orders: router({
+    ...sallaCheckoutEvidenceProcedures,
     // Create order from chat
     prepareSallaCheckout: permissionProcedure('orders.manage')
       .input(sallaCheckoutCartInput)
