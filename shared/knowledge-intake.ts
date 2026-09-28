@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { KNOWLEDGE_PREVIEW_LIMIT } from './knowledge-preview';
+import { knowledgePlanSchema } from './knowledge-plan';
 
 export const knowledgeIntakeInput = z.object({
   content: z.string().min(10).max(KNOWLEDGE_PREVIEW_LIMIT).refine(value => value.trim().length >= 10),
@@ -19,8 +20,8 @@ export const knowledgeAnalysisSchema = z.object({
   recommendationReason: explanation,
 });
 export type KnowledgeAnalysis = z.infer<typeof knowledgeAnalysisSchema>;
-export const knowledgeReviewSchema = z.object({ id: z.uuid(), createdAt: z.string().min(1), expiresAt: z.string().min(1) });
-export const knowledgeSavedReviewSchema = z.object({ id: z.uuid(), analyzedAt: z.string().min(1), acceptedAt: z.string().min(1), analysis: knowledgeAnalysisSchema });
+export const knowledgeReviewSchema = z.object({ id: z.uuid(), createdAt: z.string().min(1), expiresAt: z.string().min(1), plan: knowledgePlanSchema });
+export const knowledgeSavedReviewSchema = z.object({ id: z.uuid(), analyzedAt: z.string().min(1), acceptedAt: z.string().min(1), analysis: knowledgeAnalysisSchema, plan: knowledgePlanSchema.optional() });
 export type KnowledgeReview = z.infer<typeof knowledgeReviewSchema>;
 export type KnowledgeSavedReview = z.infer<typeof knowledgeSavedReviewSchema>;
 export const knowledgeIngestInput = knowledgeIntakeInput.extend({ requestId: z.uuid(), reviewId: z.uuid(), acknowledged: z.literal(true) });

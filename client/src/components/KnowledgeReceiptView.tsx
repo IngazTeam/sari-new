@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import type { KnowledgeReceipt } from '@shared/knowledge-intake';
 import { Button } from './ui/button';
 import { KnowledgeAnalysisReport } from './KnowledgeAnalysisReport';
+import { KnowledgePlanView } from './KnowledgePlanView';
 
 function KnowledgeRecoveryControl({ receipt, onRecovered }: { receipt: KnowledgeReceipt; onRecovered: (receipt: KnowledgeReceipt) => void }) {
   const { t } = useTranslation();
@@ -32,7 +33,7 @@ export function KnowledgeReceiptView({ receipt: savedReceipt, onRefresh, busy }:
     conflicts: t('merchantUx.knowledgeIntake.conflictCount'), unchanged: t('merchantUx.knowledgeIntake.unchanged'),
     merged: t('merchantUx.knowledgeIntake.merged'),
   };
-  return <section role="status" aria-live="polite" className="min-w-0 space-y-3 rounded-xl border p-4 [overflow-wrap:anywhere]" data-knowledge-receipt>
+  return <section role="status" aria-live="polite" className="min-w-0 space-y-3 border-y py-4 sm:rounded-xl sm:border sm:p-4 [overflow-wrap:anywhere]" data-knowledge-receipt>
     <h3 className="font-semibold">{receipt.recoveredAt && receipt.state === 'uncertain' ? t('merchantUx.knowledgeIntake.receiptRecovered') : labels[receipt.state]}</h3>
     {receipt.outcome && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.savedHint')}</p>
       <dl className="grid grid-cols-2 gap-3">{(['added', 'evolved', 'merged', 'conflicts', 'unchanged'] as const).filter(key => receipt.outcome!.evolveResult[key] !== undefined).map(key => <div key={key} className="min-w-0 rounded-lg bg-muted p-3"><dt className="text-sm">{labels[key]}</dt><dd className="mt-1 text-xl font-semibold">{receipt.outcome!.evolveResult[key]}</dd></div>)}</dl>
@@ -44,6 +45,7 @@ export function KnowledgeReceiptView({ receipt: savedReceipt, onRefresh, busy }:
       <p>{t('merchantUx.knowledgeIntake.reviewScope')}</p>
       <p>{t('merchantUx.knowledgeIntake.reviewAcceptedAt')}: <bdi>{new Date(receipt.review.acceptedAt.replace(' ', 'T') + 'Z').toLocaleString(i18n?.language || 'ar')}</bdi></p>
       <KnowledgeAnalysisReport analysis={receipt.review.analysis} />
+      {receipt.review.plan ? <KnowledgePlanView plan={receipt.review.plan} archived /> : <p className="text-muted-foreground">{t('merchantUx.knowledgeIntake.planLegacy')}</p>}
     </details> : receipt.state !== 'removed' && <p className="text-sm text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewUnavailable')}</p>}
     <details className="text-sm leading-7"><summary className="cursor-pointer py-2">{t('merchantUx.knowledgeIntake.receiptDetails')}</summary>
       <p>{t('merchantUx.knowledgeIntake.receiptArchive')}</p>

@@ -16,7 +16,7 @@ function KnowledgeText({ id, name, onClose }: { id: number; name: string; onClos
   useEffect(() => { panel.current?.focus(); }, []);
   const code = query.error?.data?.code;
   const data = query.isError ? undefined : query.data;
-  return <section ref={panel} tabIndex={-1} aria-label={name} aria-busy={query.isFetching} className="min-w-0 space-y-4 rounded-xl border p-4 focus:outline-primary" data-knowledge-text>
+  return <section ref={panel} tabIndex={-1} aria-label={name} aria-busy={query.isFetching} className="min-w-0 space-y-4 border-t py-4 sm:rounded-xl sm:border sm:p-4 focus:outline-primary" data-knowledge-text>
     <div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 break-all text-lg font-semibold">{name}</h3><Button variant="outline" onClick={onClose}>{t('merchantUx.knowledgeLibrary.close')}</Button></div>
     <p className="text-sm leading-7 text-muted-foreground">{t('merchantUx.knowledgeLibrary.textHint')}</p>
     {query.isError ? <div role="alert" className="space-y-3"><p>{code === 'CONFLICT' ? t('merchantUx.knowledgeLibrary.changed') : code === 'NOT_FOUND' ? t('merchantUx.knowledgeLibrary.missing') : t('merchantUx.knowledgeLibrary.textError')}</p>

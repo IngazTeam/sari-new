@@ -11,7 +11,7 @@ vi.mock('@/lib/trpc', () => ({ trpc: { useUtils: () => ({ knowledgeDocs: { inval
 } } }));
 import { KnowledgeIntake } from '../client/src/components/KnowledgeIntake';
 let root: Root, container: HTMLDivElement;
-const reviewRecord = { id: '00000000-0000-4000-8000-000000000003', createdAt: '2026-09-29 01:00:00', expiresAt: '2026-09-29 01:30:00' };
+const reviewRecord = { id: '00000000-0000-4000-8000-000000000003', createdAt: '2026-09-29 01:00:00', expiresAt: '2026-09-29 01:30:00', plan: { version: 1, items: [] } };
 const report = { contentType: 'general', summary: 'Reviewed', itemCount: 1, conflicts: ['Check old price'], impact: 'Expected effect', riskLevel: 'medium', sampleQA: [], recommendation: 'review', recommendationReason: 'Confirm prices' };
 beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); api.analyzing = false; api.saving = false; container = document.createElement('div'); document.body.append(container); root = createRoot(container); });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
@@ -22,7 +22,7 @@ const fill = (id: string, value: string) => act(async () => { const el = contain
 const reviewed = () => act(async () => (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click());
 const analyze = async () => { await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze); await act(async () => api.analysisCallbacks.onSuccess({ review: reviewRecord, analysis: report })); };
 it('shows field-specific errors, focuses the first error, and never submits invalid text', async () => { await render(); await click(copy.analyze); expect(document.activeElement?.id).toBe('knowledge-content'); expect(container.textContent).toContain(copy.contentError); await fill('#knowledge-name', 'x'.repeat(256)); await fill('#knowledge-content', 'x'.repeat(30_001)); await click(copy.analyze); expect(document.activeElement?.id).toBe('knowledge-name'); expect(api.analyze).not.toHaveBeenCalled(); });
-it('keeps the text and exposes a failed analysis without showing an approval action', async () => { await render(); await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze); await act(async () => api.analysisCallbacks.onError()); expect(container.textContent).toContain(copy.analysisError); expect((container.querySelector('#knowledge-content') as HTMLTextAreaElement).value).toBe('Complete text for review'); expect(button(copy.save)).toBeUndefined(); });
+it('keeps the text and exposes a failed analysis without showing an approval action', async () => { await render(); await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze); await act(async () => api.analysisCallbacks.onError({ data: { code: 'INTERNAL_SERVER_ERROR' } })); expect(container.textContent).toContain(copy.analysisError); expect((container.querySelector('#knowledge-content') as HTMLTextAreaElement).value).toBe('Complete text for review'); expect(button(copy.save)).toBeUndefined(); });
 it('requires review, invalidates it after edits, and prevents duplicate saves after success', async () => { await render(); await analyze(); expect(button(copy.save).disabled).toBe(true); await reviewed(); await fill('#knowledge-content', 'Changed source for another review'); expect(button(copy.save)).toBeUndefined(); await click(copy.analyze); await act(async () => api.analysisCallbacks.onSuccess({ review: reviewRecord, analysis: report })); expect(button(copy.save).disabled).toBe(true); await reviewed(); await click(copy.save); expect(api.ingest).toHaveBeenCalledTimes(1); await act(async () => api.ingestCallbacks.onSuccess({ requestId: '5b9b36a2-79d1-4fa5-b041-000000000001', documentId: 44, state: 'completed', outcome: { success: true, embeddingsReady: false, evolveResult: { added: 1, evolved: 0, conflicts: 1, unchanged: 0 } } })); expect(button(copy.save)).toBeUndefined(); expect(container.textContent).toContain(copy.indexing); expect(container.textContent).toContain(copy.savedHint); });
 it('locks editing and duplicate submission during processing', async () => { await render(); await analyze(); await reviewed(); api.saving = true; await render(); expect((container.querySelector('#knowledge-content') as HTMLTextAreaElement).disabled).toBe(true); await click(copy.saving); expect(api.ingest).not.toHaveBeenCalled(); });
 it('does not encourage retrying an uncertain save or report it as confirmed', async () => { await render(); await analyze(); await reviewed(); await click(copy.save); await act(async () => api.ingestCallbacks.onError({ data: { code: 'INTERNAL_SERVER_ERROR' } })); expect(container.textContent).toContain(copy.uncertain); expect(container.textContent).not.toContain(copy.saved); expect(button(copy.save)).toBeUndefined(); expect(button(copy.analyze).disabled).toBe(true); });
@@ -74,4 +74,19 @@ it('keeps text after an expired review, requires another analysis and a fresh co
 it('does not offer intake for a report that lacks its saved server reference', async () => {
   await render(); await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze);
   await act(async () => api.analysisCallbacks.onSuccess({ analysis: report })); expect(container.textContent).toContain(copy.analysisError); expect(button(copy.save)).toBeUndefined();
+});
+it('shows exact before/after text and activation states, and never accepts a legacy report without its plan', async () => {
+  await render(); await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze);
+  const item = { action: 'conflict', targetId: 10, parentIndex: null, sectionType: 'policies', title: 'Reviewed policy', content: '<img src=x onerror=alert(1)>', summary: 'A proposal summary', reason: 'A conflict reason', before: { title: 'Current policy', content: 'Current full policy', summary: 'Old summary' }, status: 'pending_review', useInBot: false, injectAs: 'fact' };
+  await act(async () => api.analysisCallbacks.onSuccess({ analysis: report, review: { ...reviewRecord, plan: { version: 1, items: [item] } } }));
+  const plan = container.querySelector('[data-knowledge-plan]')!; expect(plan.textContent).toContain('Current full policy'); expect(plan.textContent).toContain(item.content); expect(plan.textContent).toContain(copy.planInactive); expect(plan.querySelector('img')).toBeNull();
+  await fill('#knowledge-name', 'Changed'); await click(copy.analyze);
+  await act(async () => api.analysisCallbacks.onSuccess({ analysis: report, review: { ...reviewRecord, plan: undefined } }));
+  expect(button(copy.save)).toBeUndefined(); expect(container.textContent).toContain(copy.analysisError);
+});
+it.each(['PRECONDITION_FAILED', 'PAYLOAD_TOO_LARGE'])('keeps source and shows actionable %s during preparation', async code => {
+  await render(); await fill('#knowledge-content', 'Complete text for review'); await click(copy.analyze);
+  await act(async () => api.analysisCallbacks.onError({ data: { code } }));
+  expect(container.textContent).toContain(code === 'PRECONDITION_FAILED' ? copy.reviewExpired : copy.planTooLarge);
+  expect(button(copy.save)).toBeUndefined(); expect((container.querySelector('#knowledge-content') as HTMLTextAreaElement).value).toBe('Complete text for review');
 });

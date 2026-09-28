@@ -411,6 +411,8 @@ export const knowledgeIntakeReviews = mysqlTable('knowledge_intake_reviews', {
   reviewId: varchar('review_id', { length: 36 }).primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
   inputHash: char('input_hash', { length: 64 }).notNull(),
+  basisHash: char('basis_hash', { length: 64 }),
+  plan: json('plan').$type<import('../shared/knowledge-plan').KnowledgePlan>(),
   analysis: json('analysis').$type<import('../shared/knowledge-intake').KnowledgeAnalysis>().notNull(),
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
   expiresAt: timestamp('expires_at', { mode: 'string' }).notNull(),

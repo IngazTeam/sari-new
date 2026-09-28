@@ -1,6 +1,7 @@
 import { getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
 import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
 import { saveKnowledgeReview } from './knowledge/intake-reviews';
+import { capturePlanBasis, planContext, buildKnowledgePlan } from './knowledge/intake-plan';
 import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
 import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
@@ -851,22 +852,8 @@ export const sariBrainRouter = router({
       try {
         const { invokeLLM } = await import('./_core/llm');
 
-        // PERF-02+05 FIX: fetch only count + first 10 names instead of all products
-        const existingProductCount = await getProductCountByMerchantId(merchant.id);
-        const existingProductSample = existingProductCount > 0
-          ? await getProductsByMerchantId(merchant.id, { limit: 10 })
-          : [];
-        const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
-
-        const existingContext = [
-          existingProductCount > 0 ? `المنتجات الحالية (${existingProductCount}): ${existingProductSample.map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
-          existingDoc ? `ملف تعريفي موجود: ${existingDoc.fileName}` : 'لا يوجد ملف تعريفي',
-          `اسم المتجر: ${merchant.businessName}`,
-          // @ts-ignore
-          merchant.industry ? `التخصص: ${merchant.industry}` : '',
-          // @ts-ignore
-          merchant.city ? `المدينة: ${merchant.city}` : '',
-        ].filter(Boolean).join('\n');
+        const basis = await capturePlanBasis(merchant.id);
+        const existingContext = planContext(basis);
 
         // Sanitize content for prompt injection
         const sanitizedContent = prepareKnowledgeText(input.content);
@@ -886,6 +873,11 @@ export const sariBrainRouter = router({
 2. اكتشف أي تعارضات مع البيانات الحالية
 3. قيّم تأثير الإضافة على ردود البوت
 4. اقترح 3 نماذج أسئلة وأجوبة
+5. أضف proposedChanges: خطة دقيقة لكل تغيير في أقسام المعرفة، شاملة إرشادات المبيعات والفرص إن اقترحتها. لا توجد خطوة توليد أخرى بعد موافقة التاجر.
+6. لكل عنصر: action (add أو update أو conflict أو unchanged)، targetId (رقم القسم الحالي أو null للإضافة)، parentIndex (ترتيب إضافة أب سابقة بدءًا من صفر، أو null)، sectionType، title، content كامل، summary، reason.
+7. sectionType أحد identity, services, policies, faq, contact, team, achievements, sales_intel, opportunities, custom. لا تخترع حقائق أو تغيّر الكتالوج؛ هذه خطة أقسام معرفة فقط.
+8. حافظ على النص الكامل المفيد. update يعني استبدال محتوى القسم وملخصه بالكامل، مع الحفاظ على عنوانه ونوعه وإعدادات تفعيله. لا تكرر تحديث القسم ولا تعدّل merchantEdited؛ استخدم conflict للمعلومة المتناقضة أو القسم المحمي.
+9. conflict ينشئ اقتراحًا غير مفعّل ويُبقي القسم السابق. add ينشئ قسمًا معتمدًا؛ opportunities للتاجر فقط. children تُعرض كعناصر مستقلة مع parentIndex للإضافة. حد الخطة 60 عنصرًا، والمحتوى 30000 حرف والعنوان 500 والملخص 1000 لكل قسم.
 
 أجب بالعربية بتنسيق JSON فقط بهذا الشكل:
 {
@@ -901,7 +893,8 @@ export const sariBrainRouter = router({
     {"question": "سؤال 3", "answer": "رد 3"}
   ],
   "recommendation": "approve|review|reject",
-  "recommendationReason": "سبب التوصية"
+  "recommendationReason": "سبب التوصية",
+  "proposedChanges": [{ "action": "add", "targetId": null, "parentIndex": null, "sectionType": "policies", "title": "عنوان القسم", "content": "النص الكامل الذي سيحفظ", "summary": "ملخص القسم", "reason": "سبب التغيير" }]
 }`
             },
             {
@@ -915,7 +908,7 @@ ${existingContext}
 ${sanitizedContent}`
             }
           ],
-          maxTokens: 2000,
+          maxTokens: 12000,
           responseFormat: { type: 'json_object' },
         });
 
@@ -924,8 +917,10 @@ ${sanitizedContent}`
           : '';
 
         // Malformed or incomplete provider output is a failed analysis, never a fabricated review.
-        const analysis = knowledgeAnalysisSchema.parse(JSON.parse(responseText));
-        const review = await saveKnowledgeReview(merchant.id, input, analysis);
+        const response = JSON.parse(responseText);
+        const analysis = knowledgeAnalysisSchema.parse(response);
+        const plan = buildKnowledgePlan(basis, response.proposedChanges);
+        const review = await saveKnowledgeReview(merchant.id, input, analysis, { basisHash: basis.hash, plan });
 
         // Log the analysis
         await logBrainActivity(merchant.id, 'content_analyzed', `تم فحص "${input.fileName || 'محتوى جديد'}" — التوصية: ${analysis.recommendation}`, {
@@ -943,7 +938,7 @@ ${sanitizedContent}`
           tokensUsed: aiResult.usage?.total_tokens || 0,
         };
       } catch (error: any) {
-        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
+        if (error instanceof TRPCError) throw error;
         console.error('[SariBrain] Content analysis failed:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

@@ -1,4 +1,4 @@
-import { knowledgeIngestInput, prepareKnowledgeText } from '../../shared/knowledge-intake';
+import { knowledgeIngestInput } from '../../shared/knowledge-intake';
 import { reserveIntake, finishIntake } from './intake-receipt-store';
 import { runIntakeExecution, startIntakeHeartbeat } from './intake-execution';
 
@@ -12,10 +12,10 @@ export async function ingestReviewedKnowledge(merchant: { id: number; businessNa
   try {
     return await runIntakeExecution(execution, async () => {
       try {
-        const { ingestContent } = await import('../ai/knowledge-engine');
         const { embedAllSections, hasCurrentKnowledgeEmbeddings } = await import('../ai/rag-engine');
         const { invalidateCache } = await import('../db/knowledge');
-        const { evolveResult } = await ingestContent(merchant.id, prepareKnowledgeText(input.content), input.contentType === 'document' ? 'document' : 'manual', { businessName: merchant.businessName });
+        // The exact reviewed changes already committed atomically with this receipt.
+        const { evolveResult } = reservation.receipt.outcome!;
         const success = Object.values(evolveResult).some(value => value > 0);
         let embeddingsReady = false;
         if (success) {
@@ -30,7 +30,7 @@ export async function ingestReviewedKnowledge(merchant: { id: number; businessNa
         return receipt;
       } catch {
         // Mutations may already have committed. Never claim a rollback or automatically call the model again.
-        return finishIntake(merchant.id, input.requestId, 'uncertain', null, execution);
+        return finishIntake(merchant.id, input.requestId, 'uncertain', reservation.receipt.outcome, execution);
       }
     });
   } finally { await stopHeartbeat(); }

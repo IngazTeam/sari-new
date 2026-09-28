@@ -44,5 +44,8 @@ it('shows the stored report separately from the execution result and escapes its
   await render(); const report = container.querySelector('[data-knowledge-saved-review]')!;
   expect(report.textContent).toContain(copy.savedReview); expect(report.textContent).toContain(copy.reviewScope);
   expect(report.textContent).toContain('A saved conflict'); expect(report.textContent).toContain('Saved answer'); expect(report.querySelector('img')).toBeNull();
+  expect(report.textContent).toContain(copy.planLegacy);
+  receipt = { ...receipt, review: { ...receipt.review!, plan: { version: 1, items: [] } } }; await render();
+  expect(container.textContent).toContain(copy.planSavedTitle); expect(container.textContent).toContain(copy.planSavedHint);
   receipt = { ...receipt, review: null }; await render(); expect(container.textContent).toContain(copy.reviewUnavailable); expect(container.querySelector('[data-knowledge-saved-review]')).toBeNull();
 });

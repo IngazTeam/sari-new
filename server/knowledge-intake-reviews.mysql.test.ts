@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { getPool, closeDb } from './db/connection';
-import { saveKnowledgeReview } from './knowledge/intake-reviews';
+import { saveFixtureReview as saveKnowledgeReview } from './tests/helpers/knowledge-reviewed-input';
 import { reserveIntake, finishIntake, getIntakeReceipt } from './knowledge/intake-receipt-store';
 import { readKnowledgeDocument } from './knowledge/document-library';
 import { removeKnowledgeSource } from './knowledge/source-lifecycle';

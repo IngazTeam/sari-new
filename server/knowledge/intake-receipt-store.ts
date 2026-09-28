@@ -7,6 +7,8 @@ import { knowledgeIngestInput, knowledgeOutcomeSchema, knowledgeSavedReviewSchem
 import { knowledgeInputHash } from './intake-reviews';
 import { withKnowledgeTransaction } from './transaction';
 import { IntakeExecutionExpired, type IntakeExecution } from './intake-execution';
+import { applyKnowledgePlan, readPlanBasis } from './intake-plan';
+import { knowledgePlanSchema } from '../../shared/knowledge-plan';
 
 export const receiptColumns = { ...getTableColumns(receipts), leaseExpired: sql<boolean>`(${receipts.leaseExpiresAt} <= UTC_TIMESTAMP() OR ${receipts.createdAt} <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE))`.mapWith(Boolean) };
 type Row = typeof receipts.$inferSelect & { leaseExpired: boolean | null };
@@ -27,7 +29,7 @@ export async function getIntakeReceipt(merchantId: number, requestId: string): P
 export async function reserveIntake(merchantId: number, raw: unknown, beforeCreate: () => void = () => {}) {
   const input = knowledgeIngestInput.parse(raw);
   const hash = knowledgeInputHash(input);
-  return (await database()).transaction(async tx => {
+  return withKnowledgeTransaction(merchantId, async tx => {
     const [merchant] = await tx.select({ id: merchants.id }).from(merchants).where(eq(merchants.id, merchantId)).for('update');
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     const [existing] = await tx.select(receiptColumns).from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.requestId, input.requestId)));
@@ -39,8 +41,10 @@ export async function reserveIntake(merchantId: number, raw: unknown, beforeCrea
     if (running) throw new TRPCError({ code: 'CONFLICT', message: 'A knowledge intake is already in progress. Review its saved record first.' });
     const [review] = await tx.select({ ...getTableColumns(reviews), expired: sql<boolean>`${reviews.expiresAt} <= UTC_TIMESTAMP()`.mapWith(Boolean), acceptedAt: sql<string>`DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d %H:%i:%s')` }).from(reviews)
       .where(and(eq(reviews.merchantId, merchantId), eq(reviews.reviewId, input.reviewId))).for('update');
-    if (!review || review.expired || review.inputHash !== hash) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Review the current content again before adding it' });
-    const reviewSnapshot = knowledgeSavedReviewSchema.parse({ id: review.reviewId, analyzedAt: review.createdAt, acceptedAt: review.acceptedAt, analysis: review.analysis });
+    if (!review || review.expired || review.inputHash !== hash || !review.plan || !review.basisHash) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Review the current content again before adding it' });
+    if ((await readPlanBasis(tx, merchantId)).hash !== review.basisHash) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Knowledge changed after review' });
+    const plan = knowledgePlanSchema.parse(review.plan);
+    const reviewSnapshot = knowledgeSavedReviewSchema.parse({ id: review.reviewId, analyzedAt: review.createdAt, acceptedAt: review.acceptedAt, analysis: review.analysis, plan });
     beforeCreate();
     const execution: IntakeExecution = { merchantId, requestId: input.requestId, token: randomUUID() };
     const [inserted] = await tx.insert(receipts).values({ merchantId, requestId: input.requestId, inputHash: hash, reviewId: input.reviewId, reviewSnapshot, contentType: input.contentType, state: 'processing', executionToken: execution.token, leaseExpiresAt: sql`DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 SECOND)` });
@@ -49,7 +53,9 @@ export async function reserveIntake(merchantId: number, raw: unknown, beforeCrea
     const text = prepareKnowledgeText(input.content);
     const [document] = await tx.insert(docs).values({ merchantId, fileName: input.fileName || 'Knowledge intake', fileType: 'text', fileUrl: null,
       fileSize: Buffer.byteLength(text, 'utf8'), extractedText: text, extractionStatus: 'completed', intakeRequestId: input.requestId });
-    await tx.update(receipts).set({ documentId: document.insertId }).where(eq(receipts.id, inserted.insertId));
+    const evolveResult = await applyKnowledgePlan(tx, merchantId, plan, input.contentType === 'document' ? 'document' : 'manual', { requestId: input.requestId, reviewId: input.reviewId, documentId: document.insertId });
+    const outcome = { success: Object.values(evolveResult).some(value => value > 0), evolveResult, embeddingsReady: false };
+    await tx.update(receipts).set({ documentId: document.insertId, outcome }).where(eq(receipts.id, inserted.insertId));
     const [row] = await tx.select(receiptColumns).from(receipts).where(eq(receipts.id, inserted.insertId));
     return { created: true, execution, receipt: receiptView(row) };
   });
@@ -78,7 +84,7 @@ export async function recoverIntake(merchantId: number, requestId: string) {
     if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: 'Knowledge receipt not found' });
     if (row.state !== 'processing') return receiptView(row);
     if (!row.executionToken || !row.leaseExpiresAt || !row.leaseExpired) throw new TRPCError({ code: 'CONFLICT', message: 'Knowledge intake cannot be recovered in its current state' });
-    await tx.update(receipts).set({ state: 'uncertain', outcome: null, recoveredAt: sql`UTC_TIMESTAMP()`, leaseExpiresAt: null }).where(eq(receipts.id, row.id));
+    await tx.update(receipts).set({ state: 'uncertain', recoveredAt: sql`UTC_TIMESTAMP()`, leaseExpiresAt: null }).where(eq(receipts.id, row.id));
     await tx.insert(sariActivityLog).values({ merchantId, actionType: 'knowledge_intake_recovered', description: 'أُغلقت إضافة معرفة منقطعة للمراجعة دون إعادة تشغيلها', details: JSON.stringify({ requestId, documentId: row.documentId }) });
     const [saved] = await tx.select(receiptColumns).from(receipts).where(eq(receipts.id, row.id));
     return receiptView(saved);

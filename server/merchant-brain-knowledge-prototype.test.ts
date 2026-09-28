@@ -261,6 +261,15 @@ it('requires a current sample review, preserves the draft after expiry, and stor
   expect(node('[data-kl-saved-review]').textContent).toContain('ليست إجابات مختبرة');
   set('[data-kl-receipt-state]', 'legacy', 'change'); expect(w.document.querySelector('[data-kl-saved-review]')).toBeNull();
 });
+it('shows the proposed plan, blocks stale knowledge, and keeps the saved plan mode after later scenario changes', () => {
+  openIntake(); click('sample'); click('analyze'); option('result', 'conflict');
+  expect(node('[data-bk-plan]').textContent).toContain('المحتوى الحالي'); expect(node('[data-bk-plan]').textContent).toContain('المحتوى المقترح');
+  check(); click('change-basis'); expect(body()).toContain('تغيّرت المعرفة بعد الفحص');
+  expect(node('[data-bk-action="ingest"]').disabled).toBe(true); expect(node('#bk-content').value).toContain('7 أيام');
+  click('analyze'); expect(node('[data-bk-check]').checked).toBe(false); check(); click('ingest');
+  expect(state().receipt.review.mode).toBe('conflict'); option('result', 'empty');
+  expect(node('[data-bk-saved-review]').textContent).toContain('اقتراح متعارض');
+});
 it.each(["success", "partial", "conflict", "empty", "unchanged"])(
   "distinguishes %s intake receipt from activation and permits no duplicate save",
   kind => {

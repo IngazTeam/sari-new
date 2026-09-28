@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { knowledgeAnalysisSchema, knowledgeReviewSchema, type KnowledgeAnalysis, type KnowledgeReview, type KnowledgeReceipt } from '@shared/knowledge-intake';
 import { KnowledgeAnalysisReport } from './KnowledgeAnalysisReport';
+import { KnowledgePlanView } from './KnowledgePlanView';
 import { KnowledgeReceiptView } from './KnowledgeReceiptView';
 import { KNOWLEDGE_PREVIEW_LIMIT, readKnowledgePreview } from '@shared/knowledge-preview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -75,6 +76,7 @@ export function KnowledgeIntake() {
   const [reviewed, setReviewed] = useState(false);
   const [errors, setErrors] = useState({ name: false, content: false });
   const [analysisError, setAnalysisError] = useState(false);
+  const [analysisTooLarge, setAnalysisTooLarge] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [fileError, setFileError] = useState('');
   const [reading, setReading] = useState(false);
@@ -91,7 +93,7 @@ export function KnowledgeIntake() {
   };
   const analyze = trpc.sariBrain.analyzeContent.useMutation({
     onSuccess: data => { const parsed = knowledgeAnalysisSchema.safeParse(data.analysis), saved = knowledgeReviewSchema.safeParse(data.review); if (!parsed.success || !saved.success) { setAnalysisError(true); return; } setAnalysis(parsed.data); setReview(saved.data); void utils.sariBrain.getActivityLog.invalidate(); },
-    onError: () => setAnalysisError(true),
+    onError: error => { if (error.data?.code === 'PRECONDITION_FAILED') setReviewExpired(true); else if (error.data?.code === 'PAYLOAD_TOO_LARGE') setAnalysisTooLarge(true); else setAnalysisError(true); },
   });
   const ingest = trpc.sariBrain.ingestAnalyzedContent.useMutation({
     onSuccess: data => { setResult(data); refresh(); },
@@ -113,13 +115,13 @@ export function KnowledgeIntake() {
   };
   const busy = reading || analyze.isPending || ingest.isPending;
   const locked = busy || !!result || uncertain;
-  const invalidate = () => { generation.current++; setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setFileError(''); };
+  const invalidate = () => { generation.current++; setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setAnalysisTooLarge(false); setFileError(''); };
   const reset = () => { invalidate(); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); requestId.current = null; submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
   const runAnalysis = () => {
     if (locked) return;
     const next = { name: name.trim().length > 255, content: content.trim().length < 10 || content.length > KNOWLEDGE_PREVIEW_LIMIT };
     setErrors(next); if (next.name || next.content) { (next.name ? nameField.current : textField.current)?.focus(); return; }
-    setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false);
+    setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setAnalysisTooLarge(false);
     analyze.mutate({ content, contentType: type, fileName: name.trim() || undefined });
   };
   return <Card className="min-w-0" data-knowledge-intake><CardHeader><CardTitle>{copy('title')}</CardTitle><CardDescription className="leading-7">{copy('description')}</CardDescription></CardHeader>
@@ -139,10 +141,12 @@ export function KnowledgeIntake() {
       }} /><Button type="button" variant="outline" disabled={locked} className="max-w-full whitespace-normal" onClick={() => file.current?.click()}>{copy('choose')}</Button><p className="text-sm text-muted-foreground">{copy('fileHint')}</p>{fileError && <p role="alert" className="text-sm text-destructive">{fileError}</p>}</div>
       <div className="space-y-2"><Label htmlFor="knowledge-content">{copy('content')}</Label><Textarea id="knowledge-content" ref={textField} value={content} disabled={locked} dir="auto" className="min-h-44 text-base" onChange={e => { setContent(e.target.value); invalidate(); }} aria-invalid={errors.content} aria-describedby="knowledge-content-count knowledge-content-error" /><p id="knowledge-content-count" className="text-sm text-muted-foreground"><bdi>{t('merchantUx.knowledgeIntake.limit', { count: content.length, limit: KNOWLEDGE_PREVIEW_LIMIT })}</bdi></p><p id="knowledge-content-error" role={errors.content ? 'alert' : undefined} className="text-sm text-destructive">{errors.content ? copy('contentError') : ''}</p></div>
       {analysisError && <p role="alert" className="text-sm text-destructive">{copy('analysisError')}</p>}
+      {analysisTooLarge && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.planTooLarge')}</p>}
       {reviewExpired && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewExpired')}</p>}
       <Button disabled={locked} onClick={runAnalysis} className="w-full sm:w-auto">{analyze.isPending ? copy('analyzing') : copy('analyze')}</Button>
       {analysis && <section aria-label={copy('report')} className="min-w-0 space-y-4 rounded-xl border p-4 [overflow-wrap:anywhere]">
         <KnowledgeAnalysisReport analysis={analysis} />
+        {review && <KnowledgePlanView plan={review.plan} />}
         <p className="text-sm leading-7 text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewScope')}</p>
         {!result && !uncertain && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewValidity')}</p><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || !review || busy} onClick={() => { if (reviewed && review && !busy && !submitting.current) { submitting.current = true; requestId.current = crypto.randomUUID(); ingest.mutate({ requestId: requestId.current, reviewId: review.id, acknowledged: true, content, contentType: type, fileName: name.trim() || undefined }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
       </section>}

@@ -2,8 +2,9 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 const store = vi.hoisted(() => ({ reserve: vi.fn(), finish: vi.fn(), read: vi.fn(), recover: vi.fn() }));
-const reviews = vi.hoisted(() => ({ save: vi.fn() }));
+const reviews = vi.hoisted(() => ({ save: vi.fn(), basis: vi.fn() }));
 vi.mock('./knowledge/intake-reviews', () => ({ saveKnowledgeReview: reviews.save }));
+vi.mock('./knowledge/intake-plan', async original => ({ ...await original<typeof import('./knowledge/intake-plan')>(), capturePlanBasis: reviews.basis }));
 vi.mock('./knowledge/intake-receipt-store', () => ({ reserveIntake: store.reserve, finishIntake: store.finish, getIntakeReceipt: store.read, recoverIntake: store.recover }));
 const api = vi.hoisted(() => ({ merchantId: 5000, merchant: vi.fn(), count: vi.fn(), doc: vi.fn(), faqs: vi.fn(), pool: vi.fn(), execute: vi.fn(), llm: vi.fn(), ingest: vi.fn(), embed: vi.fn(), createDoc: vi.fn(), invalidate: vi.fn() }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: vi.fn(async () => ({ merchantId: api.merchantId, role: 'owner' })) }));
@@ -21,9 +22,12 @@ const caller = () => sariBrainRouter.createCaller({ user: { id: 7, role: 'user' 
 beforeEach(() => { vi.clearAllMocks(); api.merchantId++; api.merchant.mockResolvedValue({ id: api.merchantId, businessName: 'Test shop' }); api.count.mockResolvedValue(0); api.doc.mockResolvedValue(null); api.faqs.mockResolvedValue([]); api.pool.mockResolvedValue({ execute: api.execute }); api.execute.mockResolvedValue([[]]); api.llm.mockResolvedValue({ choices: [{ message: { content: JSON.stringify(valid) } }] }); api.ingest.mockResolvedValue({ evolveResult: { added: 1, evolved: 0, conflicts: 0, unchanged: 0 }, salesIntel: { usps: [], sellingTips: [], opportunities: [] } }); api.embed.mockResolvedValue(undefined); });
 const content = 'معلومة '.repeat(4284) + 'END_MARKER';
 beforeEach(() => {
-  reviews.save.mockResolvedValue({ id: '00000000-0000-4000-8000-000000000003', createdAt: '2026-09-29 01:00:00', expiresAt: '2026-09-29 01:30:00' });
+  reviews.basis.mockResolvedValue({ hash: 'fixture-basis', businessName: 'Test shop', sections: [] });
+  api.llm.mockResolvedValue({ choices: [{ message: { content: JSON.stringify({ ...valid, proposedChanges: [] }) } }] });
+  api.invalidate.mockResolvedValue(undefined);
+  reviews.save.mockResolvedValue({ id: '00000000-0000-4000-8000-000000000003', createdAt: '2026-09-29 01:00:00', expiresAt: '2026-09-29 01:30:00', plan: { version: 1, items: [] } });
   readiness.check.mockResolvedValue(true);
-  store.reserve.mockImplementation(async (merchantId, input, rateLimit) => { rateLimit(); return { created: true, execution: { merchantId, requestId: input.requestId, token: randomUUID() }, receipt: { requestId: input.requestId, documentId: 44, state: 'processing', outcome: null } }; });
+  store.reserve.mockImplementation(async (merchantId, input, rateLimit) => { rateLimit(); return { created: true, execution: { merchantId, requestId: input.requestId, token: randomUUID() }, receipt: { requestId: input.requestId, documentId: 44, state: 'processing', outcome: { success: true, evolveResult: { added: 1, evolved: 0, conflicts: 0, unchanged: 0 }, embeddingsReady: false } } }; });
   store.finish.mockImplementation(async (_id, requestId, state, outcome) => ({ requestId, documentId: 44, state, outcome }));
 });
 it('requires a review reference and explicit consent before reserving or processing knowledge', async () => {
@@ -37,6 +41,16 @@ it('does not return a usable report when its durable save fails', async () => {
   await expect(caller().analyzeContent({ content, contentType: 'document' })).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
   expect(api.ingest).not.toHaveBeenCalled();
 });
+it('rejects a valid summary without an explicit plan instead of inventing one', async () => {
+  api.llm.mockResolvedValue({ choices: [{ message: { content: JSON.stringify(valid) } }] });
+  await expect(caller().analyzeContent({ content, contentType: 'document' })).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+  expect(reviews.save).not.toHaveBeenCalled();
+});
+it('preserves a knowledge change rejection during plan saving', async () => {
+  reviews.save.mockRejectedValueOnce(new TRPCError({ code: 'PRECONDITION_FAILED' }));
+  await expect(caller().analyzeContent({ content, contentType: 'document' })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+  expect(store.reserve).not.toHaveBeenCalled();
+});
 it('preserves a preflight review rejection without running another model or claiming an unknown save', async () => {
   store.reserve.mockRejectedValueOnce(new TRPCError({ code: 'PRECONDITION_FAILED' }));
   await expect(caller().ingestAnalyzedContent({ requestId: randomUUID(), reviewId: randomUUID(), acknowledged: true, content, contentType: 'document' })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
@@ -47,8 +61,8 @@ it('sends the accepted tail beyond 15k to analysis and the same full text to ing
   const c = caller(); expect((await c.analyzeContent({ content, contentType: 'document' })).analysis).toEqual(valid);
   expect(api.llm.mock.calls[0][0].messages[1].content).toContain(content);
   await c.ingestAnalyzedContent({ reviewId: randomUUID(), acknowledged: true, requestId: randomUUID(), content, contentType: 'document' });
-  expect(api.ingest.mock.calls[0][1]).toBe(content); expect(store.reserve.mock.calls[0][1].content).toBe(content);
-  expect(reviews.save).toHaveBeenCalledWith(api.merchantId, { content, contentType: 'document' }, valid);
+  expect(api.ingest).not.toHaveBeenCalled(); expect(store.reserve.mock.calls[0][1].content).toBe(content);
+  expect(reviews.save).toHaveBeenCalledWith(api.merchantId, { content, contentType: 'document' }, valid, { basisHash: 'fixture-basis', plan: { version: 1, items: [] } });
 });
 it.each(['analyzeContent', 'ingestAnalyzedContent'] as const)('rejects over-limit and blank %s before provider work', async endpoint => {
   await expect(caller()[endpoint]({ requestId: randomUUID(), content: 'a'.repeat(30_001), contentType: 'document' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
@@ -75,15 +89,15 @@ it('does not call indexing ready just because the embedding loop returned normal
   readiness.check.mockResolvedValue(false);
   expect(await caller().ingestAnalyzedContent({ reviewId: randomUUID(), acknowledged: true, requestId: randomUUID(), content, contentType: 'document' })).toMatchObject({ outcome: { success: true, embeddingsReady: false } });
 });
-it('persists an uncertain result after a pipeline error without rerunning it', async () => {
-  api.ingest.mockRejectedValueOnce(Error('private provider failure after possible writes'));
+it('preserves committed plan counts after post-save failure without generating different content', async () => {
+  api.invalidate.mockRejectedValueOnce(Error('private cache failure after committed plan'));
   const requestId = randomUUID();
-  expect(await caller().ingestAnalyzedContent({ reviewId: randomUUID(), acknowledged: true, requestId, content, contentType: 'document' })).toMatchObject({ state: 'uncertain', outcome: null });
-  expect(store.finish).toHaveBeenCalledWith(api.merchantId, requestId, 'uncertain', null, expect.objectContaining({ merchantId: api.merchantId, requestId }));
-  expect(api.ingest).toHaveBeenCalledTimes(1);
+  expect(await caller().ingestAnalyzedContent({ reviewId: randomUUID(), acknowledged: true, requestId, content, contentType: 'document' })).toMatchObject({ state: 'uncertain', outcome: { evolveResult: { added: 1 } } });
+  expect(store.finish).toHaveBeenCalledWith(api.merchantId, requestId, 'uncertain', expect.objectContaining({ evolveResult: { added: 1, evolved: 0, conflicts: 0, unchanged: 0 } }), expect.objectContaining({ merchantId: api.merchantId, requestId }));
+  expect(api.ingest).not.toHaveBeenCalled(); expect(api.llm).not.toHaveBeenCalled();
 });
 it('persists an empty classification without claiming search readiness', async () => {
-  api.ingest.mockResolvedValueOnce({ evolveResult: { added: 0, evolved: 0, conflicts: 0, unchanged: 0 } });
+  store.reserve.mockResolvedValueOnce({ created: true, execution: { merchantId: api.merchantId, requestId: randomUUID(), token: randomUUID() }, receipt: { outcome: { evolveResult: { added: 0, evolved: 0, conflicts: 0, unchanged: 0 } } } });
   expect(await caller().ingestAnalyzedContent({ reviewId: randomUUID(), acknowledged: true, requestId: randomUUID(), content, contentType: 'document' })).toMatchObject({ state: 'empty', outcome: { success: false, embeddingsReady: false } });
   expect(api.embed).not.toHaveBeenCalled();
 });

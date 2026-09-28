@@ -50,7 +50,7 @@ describe.skipIf(!process.env.DATABASE_URL)('interrupted knowledge intake recover
       await expect(runIntakeExecution(execution, write)).rejects.toMatchObject({ name: 'IntakeExecutionExpired' });
     }
     expect(model.call).not.toHaveBeenCalled();
-    expect(await finishIntake(owner.merchantId, requestId, 'completed', { success: true, evolveResult: { added: 1, evolved: 0, conflicts: 0, unchanged: 0 }, embeddingsReady: true }, execution)).toMatchObject({ state: 'uncertain', outcome: null });
+    expect(await finishIntake(owner.merchantId, requestId, 'completed', { success: true, evolveResult: { added: 1, evolved: 0, conflicts: 0, unchanged: 0 }, embeddingsReady: true }, execution)).toMatchObject({ state: 'uncertain', outcome: { embeddingsReady: false, evolveResult: { added: 0 } } });
     await removeKnowledgeSource(owner.merchantId, 'document');
     await expect(runIntakeExecution(execution, create)).rejects.toMatchObject({ name: 'IntakeExecutionExpired' });
   });
