@@ -41,6 +41,17 @@ const declineMetadataSchema = z
   })
   .strict();
 const sourceMetadataSchema = z.union([metadataSchema, declineMetadataSchema]);
+/** Old operational heuristics are kept as history, never admitted as learned meaning. */
+export const nonSemanticLearningTypes = [
+  "merchant_correction",
+  "long_conversation",
+  "quick_resolution",
+  "customer_left",
+] as const;
+export const contextRequiredLearningTypes = [
+  "knowledge_gap",
+  "escalation_requested",
+] as const;
 
 /** Recheck contextual signals at every later use. Copies of transcript text are
  * not independent evidence. The caller owns a consistent snapshot or transaction.
@@ -78,6 +89,7 @@ export async function verifiedContextualLearningSources<
     metadata: z.infer<typeof sourceMetadataSchema>;
   }> = [];
   for (const row of rows) {
+    if (nonSemanticLearningTypes.includes(row.signal_type)) continue;
     let metadata: any;
     try {
       metadata = decode(row.context_summary);
@@ -88,6 +100,7 @@ export async function verifiedContextualLearningSources<
       String(row.source_key || "").startsWith("contextual_learning") ||
       String(row.source_key || "").startsWith("contextual_loss") ||
       row.signal_type === "sales_declined" ||
+      contextRequiredLearningTypes.includes(row.signal_type) ||
       ["interpreted_conversation", "interpreted_customer_decline"].includes(
         metadata?.basis
       );

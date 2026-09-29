@@ -35,7 +35,11 @@ import {
 import { captureConversationSignals } from "./learning-engine";
 import { persistLearningAnalysis } from "./learning-analysis";
 import { snapshotLearningSignals } from "./learning-analysis-contract";
-import { getLearningEvidence, getUnanalyzedSignals } from "../db/learning";
+import {
+  getLearningEvidence,
+  getUnanalyzedSignals,
+  countUnanalyzedSignals,
+} from "../db/learning";
 import { verifiedContextualLearningSources } from "./contextual-learning-source";
 import {
   claimLearningAnalysis,
@@ -172,6 +176,30 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(await capture()).toBe(2);
       return rows();
     };
+    it("filters newer operational history before the sampling limit without starving grounded sources", async () => {
+      await historicalSources();
+      const legacyTypes = [
+        "merchant_correction",
+        "long_conversation",
+        "quick_resolution",
+        "customer_left",
+        "knowledge_gap",
+        "escalation_requested",
+      ];
+      const values = Array.from({ length: 240 }, (_, i) => [
+        owner.merchantId,
+        input.conversationId,
+        legacyTypes[i % legacyTypes.length],
+      ]);
+      await q(
+        `INSERT INTO sari_learning_signals(merchant_id,conversation_id,signal_type) VALUES ${values.map(() => "(?,?,?)").join(",")}`,
+        values.flat()
+      );
+      expect(await getUnanalyzedSignals(owner.merchantId, 2)).toHaveLength(2);
+      expect(await countUnanalyzedSignals(owner.merchantId)).toBe(2);
+      expect(await rows()).toHaveLength(242);
+      expect(model.call).toHaveBeenCalledOnce();
+    });
     const proposedAnalysis = (sources: any[]) => ({
       updates: [
         {
@@ -738,6 +766,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
         expect(await interpret()).not.toBeNull();
         expect(await capture()).toBe(1);
         expect((await rows())[0].signal_type).toBe(type);
+        expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(1);
+        expect(await countUnanalyzedSignals(owner.merchantId)).toBe(1);
         if (type === "sales_objection")
           expect(JSON.parse((await rows())[0].context_summary).objection).toBe(
             "trust"

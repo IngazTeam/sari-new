@@ -27,7 +27,6 @@ import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
 import { logDelivery } from '../routers-monitor';
-import { captureMerchantCorrection } from '../ai/learning-engine';
 import {
   hasReachedConversationLimit,
   hasReachedMessageLimit,
@@ -641,22 +640,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           console.warn('[Takeover] Escalation auto-resolve failed (non-blocking):', escErr);
         }
 
-        // Learning Engine: Capture merchant correction signal
-        // When the merchant sends a message, it means the bot's response was inadequate
-        if (outText) {
-          try {
-            const messages = await getMessagesByConversationId(conv.id);
-            const lastBotMsg = messages.filter((m: any) => m.direction === 'outgoing').pop();
-            if (lastBotMsg) {
-              captureMerchantCorrection({
-                merchantId: instance.merchantId,
-                conversationId: conv.id,
-                lastBotMessage: (lastBotMsg as any).content || '',
-                merchantMessage: outText,
-              }).catch(() => {});
-            }
-          } catch { /* silent — learning is non-blocking */ }
-        }
+        // A manual reply changes ownership; it does not assert that the preceding AI reply was wrong.
+        // Explicit corrections remain in the sourced teaching/coaching review workflows.
 
         // ── UX: Confirm takeover + AI feedback to merchant (in-app notification) ──
         // NOTE: We CANNOT send WhatsApp in the customer chat (customer would see "تم إيقاف ساري")

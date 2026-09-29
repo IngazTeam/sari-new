@@ -25,7 +25,6 @@ import {
   markEscalationExhausted,
   getEscalationsNeedingCascade,
 } from '../db/learning';
-import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
 import { z } from 'zod';
 import { hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
@@ -260,18 +259,9 @@ export async function handleSmartEscalation(params: {
       }
     }
 
-    // 3. Capture learning signal
-    captureSignal({
-      merchantId: params.merchantId,
-      conversationId: params.conversationId,
-      signalType: 'knowledge_gap',
-      signalWeight: 1.5,
-      customerMessage: params.customerQuestion.substring(0, 500),
-      botMessage: params.botResponse?.substring(0, 500),
-      contextSummary: 'تم تصعيد السؤال للتاجر عبر بروتوكول التصعيد الذكي',
-    }).catch(() => {});
-
-    // 4. Choose response based on time of day
+    // Escalation is an operational event, not a knowledge-gap verdict. Sourced
+    // contextual learning separately interprets what the customer actually meant.
+    // 3. Choose response based on time of day
     const hour = new Date().getHours();
     const isBusinessHours = hour >= 8 && hour < 22;
 

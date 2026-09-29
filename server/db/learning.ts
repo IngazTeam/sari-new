@@ -9,7 +9,7 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { createHash } from 'node:crypto';
-import { verifiedContextualLearningSources } from '../ai/contextual-learning-source';
+import { verifiedContextualLearningSources, nonSemanticLearningTypes, contextRequiredLearningTypes } from '../ai/contextual-learning-source';
 import { readVerifiedTapOutcomeCounts } from '../ai/payment-learning-source';
 import { captureLearningSignals, type LearningSignalInput } from '../ai/learning-signal-capture';
 
@@ -116,8 +116,11 @@ export async function getUnanalyzedSignals(
       `SELECT s.* FROM sari_learning_signals s
        JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
        WHERE s.merchant_id = ? AND s.analyzed = 0
+         AND s.signal_type NOT IN (${nonSemanticLearningTypes.map(() => '?').join(',')})
+         AND (s.signal_type NOT IN (${contextRequiredLearningTypes.map(() => '?').join(',')})
+           OR BINARY LEFT(s.source_key,20)=BINARY 'contextual_learning:')
        ORDER BY s.created_at DESC, s.id DESC LIMIT ${safeLimit}`,
-      [merchantId],
+      [merchantId, ...nonSemanticLearningTypes, ...contextRequiredLearningTypes],
     );
     const verified = await verifiedContextualLearningSources(
       connection,
@@ -152,19 +155,9 @@ export async function markSignalsAnalyzed(
   );
 }
 
-/** Count unanalyzed signals */
+/** Eligible sample size for the learning trigger, capped at its 200-source window. */
 export async function countUnanalyzedSignals(merchantId: number): Promise<number> {
-  await ensureLearningTables();
-  const pool = await getPool();
-  if (!pool) return 0;
-
-  const [rows] = await pool.execute(
-    `SELECT COUNT(*) as cnt FROM sari_learning_signals s
-     JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
-     WHERE s.merchant_id = ? AND s.analyzed = 0`,
-    [merchantId]
-  );
-  return (rows as any[])[0]?.cnt || 0;
+  return (await getUnanalyzedSignals(merchantId, 200)).length;
 }
 
 /** Get signal distribution for a merchant (for dashboard) */

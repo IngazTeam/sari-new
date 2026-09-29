@@ -2,12 +2,12 @@
  * Learning Engine — Continuous Learning for Sari Bot
  * 
  * Descriptive signal analysis produces proposals for evaluation, never proven sales lift:
- * 1. captureConversationSignals() — Detect behavioral signals from messages
- * 2. analyzePatterns() — GPT-4o-mini finds patterns in accumulated signals
+ * 1. captureConversationSignals() — Admit stored contextual interpretations
+ * 2. triggerPatternAnalysis() — The centrally routed model proposes patterns
  * 3. persistLearningAnalysis() — Atomically save proposals and their source evidence
- * 4. buildDNAPrompt() — Convert DNA into system prompt injection
+ * 4. Policy review and evaluation govern later use; legacy DNA is not activated here.
  * 
- * Trigger: Every 50 new signals → automatic pattern analysis
+ * Trigger: 50 eligible signals in the bounded sample → automatic pattern analysis
  * Provider selection and cost admission use the central platform budget.
  */
 
@@ -17,7 +17,6 @@ import { resumeLearningAnalysis, claimLearningAnalysis, dispatchLearningAnalysis
 import { saveLearningProviderResponse } from './learning-response-handoff';
 import { snapshotLearningSignals, sanitizeLearningText } from './learning-analysis-contract';
 import {
-  captureSignal,
   getUnanalyzedSignals,
   countUnanalyzedSignals,
   getActiveDNA,
@@ -63,62 +62,26 @@ export async function captureConversationSignals(params: {
   }
 }
 
-/**
- * Capture a merchant correction signal.
- * Called when merchant sends a message during human takeover.
- */
-export async function captureMerchantCorrection(params: {
+/** @deprecated Unanchored manual text is not a correction verdict. Explicit
+ * teaching/coaching uses its sourced semantic review workflow instead. */
+export async function captureMerchantCorrection(_params: {
   merchantId: number;
   conversationId: number;
   lastBotMessage: string;
   merchantMessage: string;
 }): Promise<void> {
-  try {
-    await captureSignal({
-      merchantId: params.merchantId,
-      conversationId: params.conversationId,
-      signalType: 'merchant_correction',
-      signalWeight: 2.0, // High weight — direct merchant feedback
-      botMessage: params.lastBotMessage.substring(0, 500),
-      merchantCorrection: params.merchantMessage.substring(0, 500),
-      contextSummary: 'التاجر تدخل وصحح رد البوت',
-    });
-  } catch (err: any) {
-    console.warn('[Learning] Merchant correction capture not confirmed');
-  }
+  // Compatibility only: a caller cannot promote ordinary takeover text into training authority.
 }
 
-/**
- * Capture conversation outcome signal.
- * Called at end of conversation (customer left or long conversation).
- */
-export async function captureOutcomeSignal(params: {
+/** @deprecated Message counts and escalation state do not explain an outcome.
+ * Conversation evidence and verified payment receipts have their own writers. */
+export async function captureOutcomeSignal(_params: {
   merchantId: number;
   conversationId: number;
   messageCount: number;
   wasEscalated: boolean;
 }): Promise<void> {
-  try {
-    if (params.messageCount >= 5 && !params.wasEscalated) {
-      await captureSignal({
-        merchantId: params.merchantId,
-        conversationId: params.conversationId,
-        signalType: 'long_conversation',
-        signalWeight: 0.8,
-        contextSummary: `محادثة طويلة: ${params.messageCount} رسائل؛ لا تثبت نجاحاً أو شراء`,
-      });
-    } else if (params.messageCount <= 2 && !params.wasEscalated) {
-      await captureSignal({
-        merchantId: params.merchantId,
-        conversationId: params.conversationId,
-        signalType: 'quick_resolution',
-        signalWeight: 0.6,
-        contextSummary: `محادثة قصيرة: ${params.messageCount} رسائل؛ حل المشكلة غير مؤكد`,
-      });
-    }
-  } catch (err: any) {
-    console.warn('[Learning] Outcome capture not confirmed');
-  }
+  // Retained for callers of the old helper; no inferred learning event is written.
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -329,13 +292,13 @@ function formatSignalsForPrompt(
     positive_feedback: 'ردود إيجابية من العملاء',
     purchase_completed: 'عمليات شراء مكتملة',
     purchase_refunded: 'عمليات شراء مستردة؛ تخصم من النجاح البيعي',
-    question_repeated: 'أسئلة مكررة (البوت لم يفهم)',
+    question_repeated: 'تكرار سؤال؛ لا يثبت وحده إخفاق الرد',
     customer_left: 'إشارة تاريخية لانقطاع الحوار؛ لا تثبت رفضًا أو سببًا',
     sales_declined: 'رفض فرصة شراء حسب فهم الحوار الموثق؛ الأثر المالي والسببي غير مقاس',
-    escalation_requested: 'طلبات تحويل لبشري',
+    escalation_requested: 'طلبات تحويل لبشري حسب الحوار؛ التنفيذ يحتاج سجلًا مستقلًا',
     price_objection: 'اعتراضات على السعر؛ راجع مصدرها السياقي أو التاريخي',
     sales_objection: 'اعتراضات غير سعرية مفسرة من الحوار',
-    knowledge_gap: 'فجوات معرفية',
+    knowledge_gap: 'نقص معلن في الحوار؛ لا يثبت غياب المعلومة من مصادر النشاط',
     merchant_correction: 'تصحيحات من التاجر',
     long_conversation: 'محادثات طويلة دون استنتاج نجاح',
     quick_resolution: 'محادثات قصيرة دون استنتاج حل',
