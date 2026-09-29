@@ -1,3 +1,4 @@
+import { messageAnalyticsRouter } from "./routers-message-analytics";
 import { weeklyReportsRouter } from './routers-weekly-reports';
 import { messageWorkspaceRouter } from './routers-message-workspace';
 import { keywordsRouter } from './routers-keywords';
@@ -180,14 +181,12 @@ import {
   getConversationById,
   getConversationCountByMerchantId,
   getConversationsByMerchantId,
-  getConversionRate,
   getCouponUsageCountByMerchant,
   getCustomerByPhone,
   getCustomerReviewById,
   getCustomerReviewsByMerchantId,
   getCustomerStats,
   getCustomersByMerchant,
-  getDailyMessageCount,
   getDb,
   getDiscountCodeById,
   getDiscountCodesByMerchantId,
@@ -201,14 +200,12 @@ import {
   getMerchantCurrentSubscription,
   getMerchantPaymentSettings,
   getMerchantSentimentStats,
-  getMessageStats,
   getMessagesByConversationId,
   getOrderById,
   getOrderStats,
   getOrdersByMerchantId,
   getOrdersWithFilters,
   getPaymentByTransactionId,
-  getPeakHours,
   getPendingWhatsAppRequests,
   getPlanById,
   getPlanChangeLogs,
@@ -237,7 +234,6 @@ import {
   getSyncLogsByMerchantId,
   getTemplateTranslation,
   getTemplateTranslationsByTemplateId,
-  getTopProducts,
   getTrySariAnalyticsBySessionId,
   getTrySariAnalyticsStats,
   getTrySariDailyData,
@@ -3692,177 +3688,7 @@ export const appRouter = router({
 
   messageWorkspace: messageWorkspaceRouter,
   // Message Analytics APIs
-  messageAnalytics: router({
-    // إحصائيات الرسائل
-    getMessageStats: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-
-        return getMessageStats(merchant.id, startDate, endDate);
-      }),
-
-    // أوقات الذروة
-    getPeakHours: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-
-        return getPeakHours(merchant.id, startDate, endDate);
-      }),
-
-    // المنتجات الأكثر استفساراً
-    getTopProducts: protectedProcedure
-      .input(z.object({
-        limit: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        return getTopProducts(merchant.id, input.limit || 10);
-      }),
-
-    // معدل التحويل
-    getConversionRate: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-
-        return getConversionRate(merchant.id, startDate, endDate);
-      }),
-
-    // عدد الرسائل اليومي
-    getDailyMessageCount: protectedProcedure
-      .input(z.object({
-        days: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        return getDailyMessageCount(merchant.id, input.days || 30);
-      }),
-
-    // تصدير PDF
-    exportPDF: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-
-        // Gather all analytics data
-        const messageStats = await getMessageStats(merchant.id, startDate, endDate);
-        const peakHours = await getPeakHours(merchant.id, startDate, endDate);
-        const topProducts = await getTopProducts(merchant.id, 10);
-        const conversionRate = await getConversionRate(merchant.id, startDate, endDate);
-        const dailyMessages = await getDailyMessageCount(merchant.id, 30);
-
-        const dateRange = input.startDate && input.endDate
-          ? `${input.startDate} - ${input.endDate}`
-          : 'All Time';
-
-        const { generatePDFReport } = await import('./exportReports');
-        const pdfBuffer = generatePDFReport({
-          merchantName: merchant.businessName,
-          dateRange,
-          messageStats,
-          peakHours,
-          topProducts,
-          conversionRate,
-          dailyMessages,
-        });
-
-        // Return base64 encoded PDF
-        return {
-          data: pdfBuffer.toString('base64'),
-          filename: `sari-analytics-${Date.now()}.pdf`,
-        };
-      }),
-
-    // تصدير Excel
-    exportExcel: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
-        }
-
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-
-        // Gather all analytics data
-        const messageStats = await getMessageStats(merchant.id, startDate, endDate);
-        const peakHours = await getPeakHours(merchant.id, startDate, endDate);
-        const topProducts = await getTopProducts(merchant.id, 10);
-        const conversionRate = await getConversionRate(merchant.id, startDate, endDate);
-        const dailyMessages = await getDailyMessageCount(merchant.id, 30);
-
-        const dateRange = input.startDate && input.endDate
-          ? `${input.startDate} - ${input.endDate}`
-          : 'All Time';
-
-        const { generateExcelReport } = await import('./exportReports');
-        const excelBuffer = await generateExcelReport({
-          merchantName: merchant.businessName,
-          dateRange,
-          messageStats,
-          peakHours,
-          topProducts,
-          conversionRate,
-          dailyMessages,
-        });
-
-        // Return base64 encoded Excel
-        return {
-          data: excelBuffer.toString('base64'),
-          filename: `sari-analytics-${Date.now()}.xlsx`,
-        };
-      }),
-  }),
+  messageAnalytics: messageAnalyticsRouter,
 
   // Dashboard Analytics — MIGRATED to routers-dashboard.ts (registered below as dashboard: dashboardRouter)
   // Inline router removed to fix duplicate key warning

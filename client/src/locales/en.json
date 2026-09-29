@@ -2776,6 +2776,7 @@
     "healthReviewFailure": "The acknowledgement could not be saved. No incidents were changed."
   },
   "overviewAnalyticsPage": {
+    "associationFailed": "Conversation–order association could not be loaded. Reload the page to retry.",
     "text0": "Performance Overview",
     "text1": "Total Sales",
     "text2": "{totalRevenue.toLocaleString('en-US')} SAR",

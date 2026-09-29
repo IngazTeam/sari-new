@@ -2777,6 +2777,7 @@
     "healthReviewFailure": "تعذر حفظ الإقرار. لم تتغير الحالات."
   },
   "overviewAnalyticsPage": {
+    "associationFailed": "تعذر تحميل ارتباط المحادثات بالطلبات. أعد تحميل الصفحة للمحاولة.",
     "text0": "نظرة عامة على الأداء",
     "text1": "إجمالي المبيعات",
     "text2": "{totalRevenue.toLocaleString('ar-SA')} ر.س",

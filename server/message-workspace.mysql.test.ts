@@ -4,7 +4,10 @@ import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
-import { readMessageWorkspace } from "./message-workspace";
+import {
+  readMessageWorkspace,
+  readLegacyMessageWorkspace,
+} from "./message-workspace";
 describe.skipIf(!process.env.DATABASE_URL)(
   "message workspace evidence in MySQL",
   () => {
@@ -173,6 +176,37 @@ describe.skipIf(!process.env.DATABASE_URL)(
         salesProficiency: null,
         includesAllOrderStatuses: true,
       });
+    });
+    it("uses the same tenant evidence inside exact compatibility bounds", async () => {
+      const c = await conversation();
+      await message(c, "text", "incoming", "2026-09-28 10:00:00");
+      await message(c, "document", "incoming", "2026-09-28 10:00:01");
+      await message(c, "voice", "incoming", "2026-09-28 10:00:02");
+      await message(
+        await conversation(other.merchantId),
+        "image",
+        "incoming",
+        "2026-09-28 10:00:01"
+      );
+      const result = await readLegacyMessageWorkspace(
+        owner.merchantId,
+        { startDate: "2026-09-28T10:00:01Z", endDate: "2026-09-28T10:00:01Z" },
+        { now }
+      );
+      expect(result.messages).toMatchObject({ total: 1, incoming: 1 });
+      expect(
+        result.messages.byType.find(r => r.kind === "document")?.count
+      ).toBe(1);
+      expect(result.daily).toEqual([{ date: "2026-09-28", count: 1 }]);
+      expect(result.hourly.find(r => r.hour === 10)?.count).toBe(1);
+    });
+    it("rejects invalid compatibility limits before querying", async () => {
+      await expect(
+        readLegacyMessageWorkspace(owner.merchantId, {}, { days: 91 })
+      ).rejects.toThrow();
+      await expect(
+        readLegacyMessageWorkspace(owner.merchantId, {}, { limit: 0 })
+      ).rejects.toThrow();
     });
     it("returns zero counts but unavailable shares for a real empty tenant", async () => {
       const result = await read();

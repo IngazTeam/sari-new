@@ -15,16 +15,47 @@ import {
   type MessageWorkspaceInput,
 } from "../shared/message-workspace";
 import { observationArm } from "../shared/insights-workspace";
+import {
+  legacyMessageLimitInput,
+  legacyMessageWindow,
+} from "../shared/message-analytics-legacy";
 
 export async function readMessageWorkspace(
   merchantId: number,
   input: MessageWorkspaceInput,
   now = new Date()
 ) {
+  const selection = messageWorkspaceInput.parse(input);
+  return readWindow(
+    merchantId,
+    messageWindow(selection.period, now),
+    selection.period,
+    10
+  );
+}
+
+export async function readLegacyMessageWorkspace(
+  merchantId: number,
+  input: Parameters<typeof legacyMessageWindow>[0] = {},
+  options: { days?: number; limit?: number; now?: Date } = {}
+) {
+  const { limit } = legacyMessageLimitInput.parse({ limit: options.limit });
+  return readWindow(
+    merchantId,
+    legacyMessageWindow(input, options.now, options.days),
+    "custom",
+    limit
+  );
+}
+
+async function readWindow<P extends string>(
+  merchantId: number,
+  window: ReturnType<typeof messageWindow>,
+  period: P,
+  productLimit: number
+) {
   if (!Number.isSafeInteger(merchantId) || merchantId < 1)
     throw Error("Invalid merchant");
-  const selection = messageWorkspaceInput.parse(input),
-    window = messageWindow(selection.period, now);
   const db = await getDb();
   if (!db) throw Error("Message analytics unavailable");
   return db.transaction(
@@ -159,7 +190,7 @@ export async function readMessageWorkspace(
           products.currency
         )
         .orderBy(desc(count()), asc(products.id))
-        .limit(10);
+        .limit(productLimit);
       const [links] = await tx
         .select({
           total: sql<number>`count(distinct ${conversations.id})`,
@@ -185,7 +216,7 @@ export async function readMessageWorkspace(
         );
       return {
         merchantId,
-        period: selection.period,
+        period,
         from: window.from,
         through: window.through,
         timeZone: "UTC" as const,
@@ -232,7 +263,7 @@ export async function readMessageWorkspace(
             ...row,
             mentionCount: Number(row.mentionCount),
           })),
-          limit: 10,
+          limit: productLimit,
           evidenceKind:
             "literal_current_catalog_name_in_incoming_text" as const,
           priceMeaning: "current_catalog_price" as const,
