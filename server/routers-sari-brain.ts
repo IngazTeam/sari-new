@@ -1,3 +1,5 @@
+import { pageListInput, pageReadInput, pageChangeInput } from '../shared/knowledge-pages';
+import { listPageWorkspace, readPageWorkspace, changePageWorkspace } from './knowledge/page-workspace';
 import { sectionCreationReadInput } from '../shared/knowledge-sections';
 import { readSectionCreation } from './knowledge/section-workspace';
 import { readKnowledgeSourceInventory } from './knowledge/source-inventory';
@@ -1101,174 +1103,23 @@ ${sanitizedContent}`
    * Get detailed website knowledge data for the dashboard
    * Returns: analysis overview, crawled pages list, categories, coverage score
    */
-  getWebsiteKnowledge: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    try {
-      const dbConn = await getRawPool();
-      if (!dbConn) return null;
-
-      // 1. Get latest analysis — this is the primary data source
-      const [analyses] = await (dbConn as any).execute(
-        `SELECT id, url, title, description, industry, language, overall_score, word_count, 
-                seo_score, performance_score, ux_score, content_quality,
-                has_contact_info, has_whatsapp, analyzed_at, status
-         FROM website_analyses WHERE merchant_id = ? ORDER BY analyzed_at DESC LIMIT 1`,
-        [merchant.id]
-      );
-      const analysis = (analyses as any[])?.[0];
-      if (!analysis) return null;
-
-      // 2. Get discovered pages — RESILIENT: if table doesn't exist or is empty, continue with empty array
-      let discoveredPages: any[] = [];
-      try {
-        const [pages] = await (dbConn as any).execute(
-          `SELECT id, page_type, title, url, LENGTH(content) as content_length, 
-                  is_active, use_in_bot, discovered_at
-           FROM discovered_pages WHERE merchant_id = ? ORDER BY page_type, title`,
-          [merchant.id]
-        );
-        discoveredPages = (pages as any[]).map((p: any) => ({
-          id: p.id,
-          pageType: p.page_type,
-          title: p.title,
-          url: p.url,
-          contentLength: p.content_length || 0,
-          wordCount: Math.round((p.content_length || 0) / 5), // Approximate
-          isActive: !!p.is_active,
-          useInBot: !!p.use_in_bot,
-          discoveredAt: p.discovered_at,
-        }));
-      } catch (pageErr) {
-        console.warn('[SariBrain] discovered_pages query failed (table may not exist yet):', (pageErr as any)?.message);
-        // Continue with empty pages — dashboard will still show analysis data
-      }
-
-      // 3. Get FAQs count
-      let faqs: any[] = [];
-      try {
-        faqs = await getExtractedFaqsByMerchantId(merchant.id);
-      } catch { /* table may not exist */ }
-
-      // 4. Calculate content categories
-      const PAGE_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
-        about: { label: 'من نحن', icon: '🏢' },
-        contact: { label: 'تواصل معنا', icon: '📞' },
-        faq: { label: 'أسئلة شائعة', icon: '❓' },
-        shipping: { label: 'الشحن والتوصيل', icon: '🚚' },
-        returns: { label: 'الإرجاع والاستبدال', icon: '🔄' },
-        privacy: { label: 'سياسة الخصوصية', icon: '🔒' },
-        terms: { label: 'الشروط والأحكام', icon: '📋' },
-        services: { label: 'الخدمات', icon: '⚙️' },
-        products: { label: 'المنتجات', icon: '🛍️' },
-        courses: { label: 'الدورات', icon: '🎓' },
-        portfolio: { label: 'الأعمال', icon: '💼' },
-        content: { label: 'محتوى عام', icon: '📄' },
-        other: { label: 'صفحات أخرى', icon: '📑' },
-      };
-
-      const categories = Object.entries(
-        discoveredPages.reduce((acc: Record<string, number>, p: any) => {
-          acc[p.pageType] = (acc[p.pageType] || 0) + 1;
-          return acc;
-        }, {})
-      ).map(([type, count]) => ({
-        type,
-        count,
-        ...(PAGE_TYPE_LABELS[type] || PAGE_TYPE_LABELS.other),
-      }));
-
-      // 5. Load knowledge_sections to include Smart Intake, file uploads, manual edits
-      let knowledgeSectionTypes = new Set<string>();
-      let knowledgeSectionCount = 0;
-      try {
-        const knowledgeDb = await import('./db/knowledge');
-        const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-        knowledgeSectionCount = sections.length;
-        for (const s of sections) {
-          const st = (s as any).section_type || (s as any).sectionType;
-          if (st) knowledgeSectionTypes.add(st);
-        }
-      } catch { /* skip */ }
-
-      // Map knowledge section_types → equivalent page types for unified coverage
-      const sectionToPageTypeMap: Record<string, string> = {
-        identity: 'about', contact: 'contact', faq: 'faq',
-        policies: 'shipping', // policies covers shipping/returns/terms
-        services: 'services', team: 'about',
-      };
-      const hasPageType = (type: string) =>
-        discoveredPages.some((p: any) => p.pageType === type) ||
-        Array.from(knowledgeSectionTypes).some(st => sectionToPageTypeMap[st] === type);
-      const hasSectionType = (type: string) => knowledgeSectionTypes.has(type);
-
-      // 5b. Calculate Knowledge Coverage Score — includes all sources
-      const importantTypes = ['about', 'contact', 'faq', 'shipping', 'returns'];
-      const coveredTypes = importantTypes.filter(t => hasPageType(t));
-      const typeCoverage = coveredTypes.length / importantTypes.length;
-      const totalWords = analysis.word_count || 0;
-      const wordCoverage = Math.min(totalWords / 2000, 1); // 2000 words = 100%
-      const faqCoverage = Math.min(faqs.length / 10, 1); // 10 FAQs = 100%
-      // Boost from knowledge sections (max 15 points from 10+ sections)
-      const sectionBoost = Math.min(knowledgeSectionCount / 10, 1) * 15;
-      const knowledgeScore = Math.min(100, Math.round(typeCoverage * 35 + wordCoverage * 25 + faqCoverage * 15 + sectionBoost + 10));
-
-      // 6. Identify what Sari can now answer about — from ALL sources
-      const coverageTopics: string[] = [];
-      if (hasPageType('about') || hasSectionType('identity') || hasSectionType('team')) coverageTopics.push('معلومات عن الشركة والنشاط');
-      if (hasPageType('contact') || hasSectionType('contact')) coverageTopics.push('بيانات التواصل والموقع');
-      if (hasPageType('faq') || hasSectionType('faq') || faqs.length > 0) coverageTopics.push('الأسئلة الشائعة');
-      if (hasPageType('shipping') || hasSectionType('policies')) coverageTopics.push('الشحن والسياسات');
-      if (discoveredPages.some((p: any) => p.pageType === 'returns') || hasSectionType('policies')) coverageTopics.push('سياسة الإرجاع');
-      if (discoveredPages.some((p: any) => p.pageType === 'privacy' || p.pageType === 'terms') || hasSectionType('policies')) coverageTopics.push('السياسات والشروط');
-      if (hasSectionType('services')) coverageTopics.push('الخدمات والمنتجات');
-      if (hasSectionType('achievements')) coverageTopics.push('الإنجازات والشهادات');
-      if (hasSectionType('sales_intel')) coverageTopics.push('ذكاء المبيعات');
-      if (discoveredPages.some((p: any) => p.pageType === 'content' || p.pageType === 'other')) coverageTopics.push('محتوى وخدمات عامة');
-      // If no discovered pages but we have word count, the analysis itself provides general knowledge
-      if (discoveredPages.length === 0 && knowledgeSectionCount === 0 && totalWords > 50) coverageTopics.push('محتوى الموقع الرئيسي');
-
-      const missingTopics: string[] = [];
-      if (!hasPageType('about') && !hasSectionType('identity')) missingTopics.push('من نحن');
-      if (!hasPageType('contact') && !hasSectionType('contact')) missingTopics.push('تواصل معنا');
-      if (!hasPageType('faq') && !hasSectionType('faq') && faqs.length === 0) missingTopics.push('أسئلة شائعة');
-      if (!hasPageType('shipping') && !hasSectionType('policies')) missingTopics.push('الشحن والتوصيل');
-
-      return sanitizeForTRPC({
-        analysis: {
-          url: analysis.url,
-          title: analysis.title,
-          description: analysis.description,
-          industry: analysis.industry,
-          language: analysis.language,
-          overallScore: analysis.overall_score,
-          wordCount: analysis.word_count,
-          seoScore: analysis.seo_score,
-          performanceScore: analysis.performance_score,
-          uxScore: analysis.ux_score,
-          contentQuality: analysis.content_quality,
-          hasContactInfo: !!analysis.has_contact_info,
-          hasWhatsapp: !!analysis.has_whatsapp,
-          analyzedAt: analysis.analyzed_at,
-          status: analysis.status,
-        },
-        pages: discoveredPages,
-        categories,
-        faqCount: faqs.length,
-        knowledgeScore,
-        coverageTopics,
-        missingTopics,
-        totalPages: discoveredPages.length,
-        activePages: discoveredPages.filter((p: any) => p.useInBot).length,
-      });
-    } catch (error) {
-      console.error('[SariBrain] getWebsiteKnowledge failed:', error);
-      return null;
-    }
+  getWebsiteKnowledge: merchantProcedure.query(async ({ctx}) => {
+    try { const result = await listPageWorkspace(ctx.merchantId, pageListInput.parse(undefined)); return {totalPages:result.saved, activePages:result.enabled}; }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Website knowledge unavailable'}); }
+  }),
+  pageWorkspace: merchantProcedure.input(pageListInput).query(async ({ctx,input}) => {
+    try { return {...await listPageWorkspace(ctx.merchantId,input), canManage:hasPermission(ctx.merchantRole,'bot_settings.manage')}; }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Website knowledge unavailable'}); }
+  }),
+  pageReview: merchantProcedure.input(pageReadInput).query(async ({ctx,input}) => {
+    try { return await readPageWorkspace(ctx.merchantId,input.id); }
+    catch(error) { if(error instanceof TRPCError)throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Page review unavailable'}); }
+  }),
+  changeWorkspacePage: permissionProcedure('bot_settings.manage').input(pageChangeInput).mutation(async ({ctx,input}) => {
+    try { return await changePageWorkspace(ctx.merchantId,input); }
+    catch(error) { if(error instanceof TRPCError)throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Page change could not be confirmed'}); }
   }),
 
-  /** جلب محتوى صفحة مخزنة (للعرض في popup) */
   getPageContent: merchantProcedure
     .input(z.object({ pageId: z.number() }))
     .query(async ({ ctx, input }) => {
@@ -1544,129 +1395,8 @@ ${fencedContent}`,
   /**
    * Toggle whether a discovered page is used in bot responses
    */
-  togglePageInBot: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      pageId: z.number(),
-      useInBot: z.boolean(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const dbConn = await getRawPool();
-      if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
-
-      // Verify ownership + get URL for knowledge sync
-      const [rows] = await (dbConn as any).execute(
-        `SELECT id, title, url FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
-        [input.pageId, merchant.id]
-      );
-      if (!rows || (rows as any[]).length === 0) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
-      }
-
-      // PEN-KD-02 FIX: Defense-in-depth — include merchant_id in UPDATE too
-      await (dbConn as any).execute(
-        `UPDATE discovered_pages SET use_in_bot = ? WHERE id = ? AND merchant_id = ?`,
-        [input.useInBot ? 1 : 0, input.pageId, merchant.id]
-      );
-
-      const page = (rows as any[])[0];
-
-      // SYNC FIX: Also toggle knowledge_sections sourced from this URL
-      // RAG reads from knowledge_sections.use_in_bot, NOT discovered_pages.use_in_bot
-      try {
-        const knowledgeDb = await import('./db/knowledge');
-        if (page.url) {
-          const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-          for (const section of sections) {
-            const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
-            if (sourceUrl && urlsMatch(sourceUrl, page.url)) {
-              await knowledgeDb.updateSection((section as any).id, merchant.id, { useInBot: input.useInBot });
-            }
-          }
-        }
-      } catch { /* non-blocking */ }
-
-      await logBrainActivity(merchant.id, input.useInBot ? 'faq_updated' : 'faq_updated',
-        `${input.useInBot ? 'تفعيل' : 'إيقاف'} الصفحة "${page.title}" في ردود ساري`
-      );
-
-      // P1-6 FIX: Invalidate cache so bot respects the toggle immediately
-      try {
-        const knowledgeDb = await import('./db/knowledge');
-        await knowledgeDb.invalidateCache(merchant.id);
-      } catch { /* non-blocking */ }
-
-      return { success: true };
-    }),
-
-  /** حذف صفحة مسحوبة من ذاكرة ساري بالكامل */
-  deleteDiscoveredPage: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      pageId: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-DELETE-01: Rate limit — 2s cooldown to prevent mass-deletion abuse
-      checkRateLimit(destructiveRateLimit, merchant.id, 2000);
-
-      const dbConn = await getRawPool();
-      if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
-
-      // Verify ownership & get page info
-      const [rows] = await (dbConn as any).execute(
-        `SELECT id, title, url FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
-        [input.pageId, merchant.id]
-      );
-      if (!rows || (rows as any[]).length === 0) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
-      }
-      const page = (rows as any[])[0];
-
-      // 1. Delete from discovered_pages
-      await (dbConn as any).execute(
-        `DELETE FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
-        [input.pageId, merchant.id]
-      );
-
-      // 2. Also delete related FAQs linked to this page
-      try {
-        await (dbConn as any).execute(
-          `DELETE FROM extracted_faqs WHERE page_id = ? AND merchant_id = ?`,
-          [input.pageId, merchant.id]
-        );
-      } catch { /* table may not have merchant_id column */ }
-
-      // 3. Also remove knowledge_sections sourced from this URL
-      try {
-        const knowledgeDb = await import('./db/knowledge');
-        const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-        for (const section of sections) {
-          const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
-          if (sourceUrl && page.url && urlsMatch(sourceUrl, page.url)) {
-            await knowledgeDb.deleteSection((section as any).id, merchant.id);
-          }
-        }
-      } catch (knErr: any) {
-        console.warn('[SariBrain] Failed to cleanup knowledge sections:', knErr.message);
-      }
-
-      await logBrainActivity(merchant.id, 'document_deleted',
-        `تم حذف الصفحة "${page.title}" (${page.url}) من ذاكرة ساري`
-      );
-
-      // P1-6 FIX: Invalidate cache so bot stops using deleted page content
-      try {
-        const knowledgeDb2 = await import('./db/knowledge');
-        await knowledgeDb2.invalidateCache(merchant.id);
-      } catch { /* non-blocking */ }
-
-      console.log(`[SariBrain] Deleted discovered page ${input.pageId} (${page.url}) for merchant ${merchant.id}`);
-      return { success: true, deletedTitle: page.title };
-    }),
+  togglePageInBot: permissionProcedure('bot_settings.manage').input(z.unknown().optional()).mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'Use the reviewed page workspace'}); }),
+  deleteDiscoveredPage: permissionProcedure('bot_settings.manage').input(z.unknown().optional()).mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'Use the reviewed page workspace'}); }),
 
   // ═══════════════════════════════════════════════════════════════
   // Knowledge Engine v4 — Sections, Health, Changelog, Evolve

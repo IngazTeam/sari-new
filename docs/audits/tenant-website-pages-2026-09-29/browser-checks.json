@@ -1,0 +1,66 @@
+{
+  "browser": "Chrome on Windows",
+  "actualApplication": [
+    {
+      "scene": "saved list",
+      "width": 1440,
+      "documentScrollWidth": 1425,
+      "screenshot": "desktop-saved.png"
+    },
+    {
+      "scene": "linked review",
+      "width": 320,
+      "dialogClientWidth": 256,
+      "dialogScrollWidth": 256,
+      "dialogLeft": 16,
+      "dialogRight": 289,
+      "screenshot": "mobile-320-review.png"
+    },
+    {
+      "scene": "review controls",
+      "width": 320,
+      "actionReachableAndEnabledAfterAcknowledgement": true,
+      "screenshot": "mobile-320-actions.png"
+    },
+    {
+      "scene": "long stored text",
+      "width": 390,
+      "dialogClientWidth": 326,
+      "dialogScrollWidth": 326,
+      "fullTextEndPresent": true,
+      "injectedHtmlElements": 0,
+      "screenshot": "mobile-390-full-text.png"
+    },
+    {
+      "scene": "empty page",
+      "enableOptionDisabled": true,
+      "screenshot": "mobile-empty-blocked.png"
+    }
+  ],
+  "prototype": [
+    {
+      "scene": "review",
+      "width": 320,
+      "documentScrollWidth": 305,
+      "dialogClientWidth": 271,
+      "dialogScrollWidth": 271,
+      "screenshot": "mock-mobile-320.png"
+    }
+  ],
+  "fixture": {
+    "pages": [
+      162,
+      163,
+      164
+    ],
+    "section": 1712,
+    "faq": 369,
+    "finalPageUseFlags": 0,
+    "autoReplyEnabled": 0
+  },
+  "limitations": [
+    "No actual Safari/iPhone session",
+    "No provider retrieval or answer-quality measurement",
+    "No production changes"
+  ]
+}

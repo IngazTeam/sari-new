@@ -1,4 +1,5 @@
 import {knowledgeSourcesAr} from './knowledge-sources';
+import {knowledgePagesAr} from './knowledge-pages';
 import {knowledgeSectionsAr} from './knowledge-sections';
 import {knowledgeConflictsAr} from './knowledge-conflicts';
 import { knowledgeDraftAr } from './knowledge-draft';
@@ -35,6 +36,7 @@ const merchantUxAr: MerchantUxCopy = {
   knowledgeConflicts: knowledgeConflictsAr,
   knowledgeSources: knowledgeSourcesAr,
   knowledgeSections: knowledgeSectionsAr,
+  knowledgePages: knowledgePagesAr,
   knowledgeFaq: knowledgeFaqAr,
   campaignPerformance: campaignPerformanceAr,
   byaanSales: byaanSalesReviewAr,

@@ -279,11 +279,33 @@ it("rejects invalid website URLs and stores valid links as unread without fetchi
     active: false,
     content: "",
   });
-  click("page-view", '[data-id="3"]');
-  expect(dialog()).toContain("لم نقرأ");
-  node('[data-action="close"]').click();
-  click("toggle-page", '[data-id="1"]');
+  node('[data-pw-action="open"][data-id="3"]').click();
+  expect(dialog()).toContain("لا يوجد نص محفوظ");
+  node('[data-pw-action="close"]').click();
+  node('[data-pw-action="open"][data-id="1"]').click();
+  const choice=node('[data-pw-choice]');choice.value='pause';choice.dispatchEvent(new w.Event('change',{bubbles:true}));
+  node('[data-pw-ack]').click();
+  node('[data-pw-action="apply"]').click();
   expect(data().pages.find((r: any) => r.id === 1).active).toBe(false);
+});
+
+const pw=(a:string,id?:number)=>node(`[data-pw-action="${a}"]${id?`[data-id="${id}"]`:''}`).click();
+const pwChoose=(v:string)=>{const el=node('[data-pw-choice]');el.value=v;el.dispatchEvent(new w.Event('change',{bubbles:true}));};
+it('separates mock website read errors from an empty result',()=>{
+ tab('knowledge','website');const el=node('[data-pw-read]');el.value='error';el.dispatchEvent(new w.Event('change',{bubbles:true}));
+ expect(main()).toContain('تعذر تحميل الصفحات');expect(main()).not.toContain('لا توجد صفحات محفوظة تطابق');pw('retry');expect(main()).toContain('سياسة الشحن');
+});
+it('reviews full linked page records and renews consent after selecting another action',()=>{
+ dom.window.close();boot(JSON.stringify({version:1,protocols:[],history:[],sections:[{id:3,type:'policies',title:'Linked section',content:'Full linked text',approved:true,source:'website',sourceUrl:'https://example.test/shipping'}],faqs:[{id:4,pageId:1,question:'Linked question',answer:'Full linked answer'}]}));
+ tab('knowledge','website');pw('open',1);expect(dialog()).toContain('Full linked text');expect(dialog()).toContain('Full linked answer');
+ pwChoose('pause');node('[data-pw-ack]').click();pwChoose('enable');expect(node('[data-pw-ack]').checked).toBe(false);expect(node('[data-pw-action="apply"]').disabled).toBe(true);
+ pwChoose('pause');node('[data-pw-ack]').click();pw('apply');expect(data().pages[0].active).toBe(false);expect(data().sections[0].useInBot).toBe(false);expect(data().faqs[0].useInBot).toBe(false);
+});
+it('does not bypass website action review in read-only mode',()=>{
+ tab('knowledge','website');lab('role','viewer');pw('open',1);expect(dialog()).toContain('صلاحيتك تتيح مراجعة');expect(node('[data-pw-choice]').disabled).toBe(true);expect(node('[data-pw-action="apply"]').disabled).toBe(true);
+});
+it('keeps a failed website change unconfirmed and requires another review',()=>{
+ tab('knowledge','website');lab('mode','failure');pw('open',1);pwChoose('pause');node('[data-pw-ack]').click();pw('apply');expect(dialog()).toContain('تعذر تأكيد التغيير');expect(node('[data-pw-action="apply"]').disabled).toBe(true);pw('refresh');expect(node('[data-pw-ack]').checked).toBe(false);expect(node('[data-pw-choice]').value).toBe('');
 });
 
 it("honors FAQ bounds, confirms deletion and retains the audit trail", () => {

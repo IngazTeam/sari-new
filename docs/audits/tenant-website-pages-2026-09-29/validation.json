@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-29",
+  "branch": "main",
+  "pushed": false,
+  "deployed": false,
+  "tests": {
+    "passed": 247,
+    "failed": 0,
+    "files": 7,
+    "suites": {
+      "server/knowledge/page-workspace.mysql.test.ts": 25,
+      "server/knowledge-page-access.test.ts": 9,
+      "server/knowledge-page-ui.test.ts": 14,
+      "server/merchant-brain-workbench.test.ts": 38,
+      "server/knowledge-access.test.ts": 103,
+      "server/knowledge/section-workspace.mysql.test.ts": 33,
+      "server/knowledge-section-ui.test.ts": 25
+    }
+  },
+  "typescript": "passed",
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8658,
+    "dynamicKeysChecked": 344,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "worker": "passed",
+    "budget": {
+      "file": "index-D0RLlYGI.js",
+      "rawBytes": 337291,
+      "gzipBytes": 103366
+    }
+  },
+  "securityBaselineUnchanged": true,
+  "actualSafariOrIphoneTested": false,
+  "externalProviderCalls": false,
+  "migrationRequired": false
+}

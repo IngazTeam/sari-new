@@ -5,3 +5,5 @@
   [data-source-inventory-preview] .panel-head { display: block; }
   [data-source-inventory-preview] .panel-head > button { margin-block-start: 12px; }
 }
+
+@media(max-width:599px){.bw-savebar.pw-savebar{display:grid;grid-template-columns:1fr 1fr}.pw-savebar .button{min-height:44px}.pw-savebar [data-pw-action=apply]{grid-column:1/-1;grid-row:1}}

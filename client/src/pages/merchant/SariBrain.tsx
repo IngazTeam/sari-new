@@ -1,3 +1,4 @@
+import { KnowledgeWebsiteWorkspace } from '@/components/KnowledgeWebsiteWorkspace';
 import { KnowledgeSourceInventory } from '@/components/KnowledgeSourceInventory';
 import {KnowledgeSectionWorkspace,KnowledgeSectionReadiness} from '@/components/KnowledgeSectionWorkspace';
 import {KnowledgeConflictWorkspace} from '@/components/KnowledgeConflictWorkspace';
@@ -190,6 +191,7 @@ export default function SariBrain() {
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
       utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.pageWorkspace.invalidate();
       utils.sariBrain.getKnowledgeSections.invalidate();
       utils.sariBrain.getHealthScore.invalidate();
     } else if (data.status === 'error') {
@@ -247,42 +249,20 @@ export default function SariBrain() {
   const { term } = useIntegration();
 
   // Website Knowledge Dashboard
-  const { data: websiteKnowledge, isLoading: knowledgeLoading } = trpc.sariBrain.getWebsiteKnowledge.useQuery();
+  const websiteKnowledgeQuery = trpc.sariBrain.getWebsiteKnowledge.useQuery(undefined, {retry:false});
+  const websiteKnowledge = websiteKnowledgeQuery.data;
   const [customUrl, setCustomUrl] = useState('');
   const addUrlMutation = trpc.sariBrain.addCustomUrl.useMutation({
     onSuccess: (data: any) => {
       toast.success(`تم إضافة "${data.title}" — ${data.wordCount} كلمة`);
       setCustomUrl('');
       utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.pageWorkspace.invalidate();
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
     },
     onError: (e) => toast.error('فشل إضافة الصفحة: ' + e.message),
   });
-  const togglePageMutation = trpc.sariBrain.togglePageInBot.useMutation({
-    onSuccess: () => {
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-    },
-    onError: (e) => toast.error('فشل التحديث: ' + e.message),
-  });
-  const deletePageMutation = trpc.sariBrain.deleteDiscoveredPage.useMutation({
-    onSuccess: (data: any) => {
-      toast.success(`تم حذف "${data.deletedTitle}" من ذاكرة ساري`);
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-      utils.sariBrain.getKnowledgeSections.invalidate();
-      utils.sariBrain.getHealthScore.invalidate();
-    },
-    onError: (e) => toast.error('فشل الحذف: ' + e.message),
-  });
-
-  // ── Content preview state ──
-  const [viewingPageId, setViewingPageId] = useState<number | null>(null);
-  const { data: pageContentData, isLoading: pageContentLoading } = trpc.sariBrain.getPageContent.useQuery(
-    { pageId: viewingPageId! },
-    { enabled: viewingPageId !== null }
-  );
   const [urlPreview, setUrlPreview] = useState<{
     url: string;
     title: string;
@@ -359,6 +339,7 @@ export default function SariBrain() {
           {id:'sections',label:t('merchantUx.knowledgeSections.title')},
           {id:'conflicts',label:t('merchantUx.knowledgeSections.conflictsTab')},
           {id:'faq',label:t('merchantUx.knowledgeSections.faq')},
+          {id:'pages',label:t('merchantUx.knowledgePages.title')},
         ].map(pane=><Button key={pane.id} type="button" variant={knowledgePane===pane.id?'secondary':'ghost'} aria-pressed={knowledgePane===pane.id} onClick={()=>setKnowledgePane(pane.id)}>{pane.label}</Button>)}
       </nav>}
       <section hidden={brainView!=='overview'} className="space-y-6" data-brain-section="overview">
@@ -382,6 +363,7 @@ export default function SariBrain() {
 {brainView === 'overview' && <KnowledgeSourceInventory onOpen={kind => {
         if (kind === 'products') setLocation('/merchant/products');
         else if (kind === 'faqs') { setKnowledgePane('faq'); changeBrainView('knowledge'); }
+        else if (kind === 'pages') { setKnowledgePane('pages'); changeBrainView('knowledge'); }
         else changeBrainView('sources');
       }} />}
       </section>
@@ -389,7 +371,7 @@ export default function SariBrain() {
       <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
 {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        {websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
+        {websiteKnowledgeQuery.isLoading ? <p role="status">{t('merchantUx.knowledgePages.loading')}</p> : websiteKnowledgeQuery.error ? <div role="alert" className="space-y-2"><p>{t('merchantUx.knowledgePages.loadFailed')}</p><Button variant="outline" onClick={()=>void websiteKnowledgeQuery.refetch()}>{t('merchantUx.knowledgePages.retry')}</Button></div> : websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
           /* ── Re-analysis: show warning dialog ── */
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -859,185 +841,10 @@ export default function SariBrain() {
       <KnowledgeDocumentUpload />
       <KnowledgeLibrary />
 
-      {/* ═══ Website Knowledge Dashboard ═══ */}
-      {websiteKnowledge && (
-        <Card className="border-primary/20 overflow-hidden">
-          <CardHeader className="bg-accent">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-primary" />
-                  🌐 معرفة الموقع
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  {websiteKnowledge.analysis.title} — {websiteKnowledge.totalPages} صفحة مسحوبة
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* Knowledge Score Ring */}
-                <div className="relative w-16 h-16">
-                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted/20" />
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeDasharray={`${websiteKnowledge.knowledgeScore}, 100`} className={websiteKnowledge.knowledgeScore >= 70 ? 'stroke-green-500' : websiteKnowledge.knowledgeScore >= 40 ? 'stroke-yellow-500' : 'stroke-red-500'} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease-in-out' }} />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-bold">{websiteKnowledge.knowledgeScore}%</span>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground">تغطية المعرفة</p>
-                  <p className={`text-sm font-semibold ${websiteKnowledge.knowledgeScore >= 70 ? 'text-green-600' : websiteKnowledge.knowledgeScore >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {websiteKnowledge.knowledgeScore >= 70 ? 'ممتاز' : websiteKnowledge.knowledgeScore >= 40 ? 'جيد' : 'يحتاج تحسين'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-5 pt-5">
-            {/* Content Categories */}
-            {websiteKnowledge.categories.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  تصنيفات المحتوى المسحوب
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {websiteKnowledge.categories.map((cat: any) => (
-                    <Badge key={cat.type} variant="secondary" className="text-xs px-3 py-1.5 gap-1.5">
-                      <span>{cat.icon}</span>
-                      {cat.label}
-                      <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full text-[10px] font-bold">{cat.count}</span>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Crawled Pages Grid */}
-            <div>
-              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-primary" />
-                الصفحات المسحوبة ({websiteKnowledge.totalPages})
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {websiteKnowledge.pages.map((page: any) => {
-                  const typeIcons: Record<string, string> = {
-                    about: '🏢', contact: '📞', faq: '❓', shipping: '🚚',
-                    returns: '🔄', privacy: '🔒', terms: '📋', content: '📄', other: '📑',
-                    services: '⚙️', products: '🛍️', courses: '🎓', portfolio: '💼',
-                  };
-                  return (
-                    <div key={page.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${page.useInBot ? 'bg-card' : 'bg-muted/50 opacity-60'}`}>
-                      <span className="text-lg shrink-0">{typeIcons[page.pageType] || '📄'}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" title={page.title}>{page.title}</p>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          ~{page.wordCount.toLocaleString()} كلمة
-                          <span className="mx-1">•</span>
-                          <a href={page.url} target="_blank" rel="noopener" className="text-primary hover:underline inline-flex items-center gap-0.5">
-                            عرض <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          type="button"
-                          variant="ghost" size="sm" className="h-7 w-7 p-0"
-                          onClick={() => setViewingPageId(page.id)}
-                          title="عرض المحتوى المسحوب"
-                          aria-label={t('merchantUx.actions.viewContentNamed', { name: page.title })}
-                        >
-                          <Search className="h-3.5 w-3.5 text-primary" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost" size="sm" className="h-7 w-7 p-0"
-                          onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
-                          title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
-                          aria-label={t(
-                            page.useInBot
-                              ? 'merchantUx.actions.deactivateNamed'
-                              : 'merchantUx.actions.activateNamed',
-                            { name: page.title },
-                          )}
-                        >
-                          {page.useInBot ? <Eye className="h-3.5 w-3.5 text-green-600" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
-                              title="حذف الصفحة من ذاكرة ساري"
-                              aria-label={t('merchantUx.actions.deleteNamed', { name: page.title })}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-right">🗑️ حذف "{page.title}"</AlertDialogTitle>
-                              <AlertDialogDescription className="text-right">
-                                سيتم حذف هذه الصفحة من ذاكرة ساري بالكامل، بما في ذلك المحتوى والأسئلة الشائعة المرتبطة بها.
-                                <br />
-                                <strong className="text-destructive">لا يمكن التراجع عن هذا الإجراء.</strong>
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="flex-row-reverse gap-2">
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deletePageMutation.mutate({ pageId: page.id })}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                {deletePageMutation.isPending ? 'جاري الحذف...' : 'حذف نهائي'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Coverage Topics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {websiteKnowledge.coverageTopics.length > 0 && (
-                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                  <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    ساري يقدر يرد على
-                  </h4>
-                  <ul className="space-y-1">
-                    {websiteKnowledge.coverageTopics.map((topic: string, i: number) => (
-                      <li key={i} className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1.5">
-                        <Zap className="h-3 w-3" /> {topic}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {websiteKnowledge.missingTopics.length > 0 && (
-                <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
-                  <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2 flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    يحتاج تحسين
-                  </h4>
-                  <ul className="space-y-1">
-                    {websiteKnowledge.missingTopics.map((topic: string, i: number) => (
-                      <li key={i} className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1.5">
-                        <AlertTriangle className="h-3 w-3" /> {topic}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-2">أضف صفحات تحتوي على هذه المعلومات لتحسين ردود ساري</p>
-                </div>
-              )}
-            </div>
-
+      </section>
+      <section hidden={brainView !== 'knowledge' || knowledgePane !== 'pages'} className="space-y-6" data-brain-section="knowledge">
+      <KnowledgeWebsiteWorkspace />
+      <Card><CardContent className="pt-6">
             {/* Add Custom URL — Preview first, then confirm */}
             <div className="p-4 rounded-lg border border-dashed border-primary/30 space-y-3">
               <p className="text-sm font-medium flex items-center gap-1">
@@ -1160,66 +967,7 @@ export default function SariBrain() {
               </DialogContent>
             </Dialog>
 
-            {/* ── Page Content Viewer Dialog ── */}
-            <Dialog open={viewingPageId !== null} onOpenChange={(open) => { if (!open) setViewingPageId(null); }}>
-              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
-                <DialogHeader>
-                  <DialogTitle className="text-right">📖 محتوى الصفحة</DialogTitle>
-                </DialogHeader>
-                {pageContentLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <span className="mr-2 text-sm text-muted-foreground">جاري تحميل المحتوى...</span>
-                  </div>
-                ) : pageContentData ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <p className="font-semibold">{pageContentData.title}</p>
-                        <a href={pageContentData.url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline flex items-center gap-1" dir="ltr">
-                          {pageContentData.url} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{pageContentData.wordCount.toLocaleString()} كلمة</Badge>
-                        <Badge variant={pageContentData.useInBot ? 'default' : 'outline'}>
-                          {pageContentData.useInBot ? '✅ مفعّل' : '⏸️ متوقف'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-lg bg-muted/50 border max-h-[50vh] overflow-y-auto">
-                      <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed" dir="auto">{pageContentData.content.substring(0, 8000)}{pageContentData.content.length > 8000 ? '\n\n... (تم اختصار المحتوى)' : ''}</pre>
-                    </div>
-                  </div>
-                ) : null}
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setViewingPageId(null)}>إغلاق</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold text-primary">{websiteKnowledge.totalPages}</p>
-                <p className="text-[10px] text-muted-foreground">صفحة مسحوبة</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold text-blue-600">{(websiteKnowledge.analysis.wordCount || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">كلمة في المعرفة</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold text-green-600">{websiteKnowledge.faqCount}</p>
-                <p className="text-[10px] text-muted-foreground">سؤال شائع</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold text-purple-600">{websiteKnowledge.analysis.overallScore}/100</p>
-                <p className="text-[10px] text-muted-foreground">التقييم التقني (SEO)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      </CardContent></Card>
 
       </section>
 

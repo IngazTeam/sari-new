@@ -71,6 +71,7 @@ import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
+  knowledgePages: import('./knowledge-pages').KnowledgePagesCopy;
   subscriptionWorkspace: import('./subscription-workspace').SubscriptionWorkspaceCopy;
   whatsappWorkspace: import('./whatsapp-workspace').WhatsAppWorkspaceCopy;
   knowledgeIntake: import('./knowledge-intake').KnowledgeIntakeCopy;

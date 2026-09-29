@@ -1,3 +1,4 @@
+import {createPageWorkspace} from './page-workspace';
 import { createSourceInventory } from './source-inventory';
 import {createSectionWorkspace} from './section-workspace';
 // @ts-nocheck
@@ -319,7 +320,7 @@ window.SaryBrainWorkbench = (() => {
             : knowledgeTab === "faq"
               ? faqList.render()
               : knowledgeTab === "website"
-                ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>صفحات الموقع ومحتواها</h2><p>راجع النص وحالة استخدامه؛ إضافة رابط لا تعني قراءة محتواه.</p></div>${btn("إضافة رابط", "new-page", dis(), true)}</div>${knowledgeWorkbench.websiteButton()}<div class="bw-cards">${data.pages.map(r => `<article class="bw-card"><h3>${esc(r.title)}</h3><p dir="ltr">${esc(r.url)}</p>${badge(r.read ? (r.active ? "مستخدم في مثال المعرفة" : "الاستخدام متوقف") : "لم تُقرأ الصفحة")}<p>${r.read ? esc(r.content) : "لم نطلب هذا الرابط. أُضيفت بياناته فقط."}</p><footer>${btn("عرض المحتوى", "page-view", idAttr(r.id))}${r.read ? btn(r.active ? "إيقاف الاستخدام" : "تفعيل الاستخدام", "toggle-page", idAttr(r.id) + " " + dis()) : ""}${btn("حذف الصفحة", "delete", `${idAttr(r.id)} data-kind="pages" ${dis()}`)}</footer></article>`).join("") || "<p>لا توجد صفحات محفوظة.</p>"}</div></section>`
+                ? pageWorkspace.render()+`<section class="panel panel-pad">${btn("إضافة رابط", "new-page", dis(), true)}${knowledgeWorkbench.websiteButton()}</section>`
                 : knowledgeWorkbench.intakeSummary())
     );
   }
@@ -1025,15 +1026,6 @@ window.SaryBrainWorkbench = (() => {
       return refresh();
     }
     if (a === "protocol") return protocolView(id);
-    if (a === "page-view") {
-      const p = data.pages.find(p => p.id === Number(id));
-      if (p)
-        window.openDialog(
-          "محتوى صفحة المصدر",
-          `<div class="bw-detail"><h3>${esc(p.title)}</h3><p dir="ltr">${esc(p.url)}</p><blockquote>${esc(p.content || "لم نقرأ هذا الرابط في المعاينة.")}</blockquote>${note}</div>`
-        );
-      return;
-    }
     if (a === "evaluation") return evaluation();
     if (a === "inspect" && protocol()?.cohort)
       return evaluationWorkbench.inspect(protocol());
@@ -1187,23 +1179,7 @@ window.SaryBrainWorkbench = (() => {
         );
       }
     }
-    if (a === "toggle-page") {
-      const p = data.pages.find(p => p.id === Number(id));
-      if (p?.read) {
-        if (
-          commit(
-            () => {
-              p.active = !p.active;
-            },
-            "تغيير استخدام صفحة موقع",
-            "knowledge"
-          )
-        )
-          refresh();
-        else refresh();
-      }
-    }
-    if (a === "delete" && ["sections", "faqs", "pages"].includes(kind)) {
+    if (a === "delete" && ["sections", "faqs"].includes(kind)) {
       selectedId = Number(id);
       editorKind = "delete";
       draft = { kind };
@@ -1324,6 +1300,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const pageWorkspace = createPageWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.pages,sections:()=>data.sections,faqs:()=>data.faqs,commit,refresh,remove(id,sections,faqs){data.pages=data.pages.filter(r=>r.id!==id);data.sections=data.sections.filter(r=>!sections.includes(r.id));data.faqs=data.faqs.filter(r=>!faqs.includes(r.id));}});
   const sectionWorkspace = createSectionWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.sections,receipts:()=>data.sectionReceipts,commit,refresh,alert});
   const conflictWorkspace = createConflictReview({esc,owner,blocked:()=>!!pending,rows:()=>data.conflicts,commit,refresh,alert});
   const faqList = createFaqList({esc,owner,blocked:()=>!!pending,rows:()=>data.faqs,refresh});
@@ -1384,6 +1361,7 @@ window.SaryBrainWorkbench = (() => {
       faqList.reset();
       conflictWorkspace.reset();
       sectionWorkspace.reset();
+      pageWorkspace.reset();
       data = initial();
       evaluationWorkbench.reset();
       knowledgeWorkbench.reset();
