@@ -1,0 +1,8 @@
+{
+  "advertisedLocale": "ar",
+  "callsChecked": 8970,
+  "dynamicKeysChecked": 412,
+  "unresolvedDynamicCalls": [],
+  "missing": [],
+  "interpolationErrors": []
+}

@@ -10,10 +10,46 @@ import {
   insightDate,
   insightPage,
   insightWindow,
+  insightStoredList,
   observationArm,
   sentimentObservation,
   type InsightWorkspaceInput,
 } from "../shared/insights-workspace";
+
+export async function readInsightReport(merchantId: number, reportId: number) {
+  const db = await getDb();
+  if (!db) throw Error("Insights unavailable");
+  const [row] = await db
+    .select()
+    .from(weeklySentimentReports)
+    .where(
+      and(
+        eq(weeklySentimentReports.id, reportId),
+        eq(weeklySentimentReports.merchantId, merchantId)
+      )
+    )
+    .limit(1);
+  if (!row) return null;
+  return {
+    id: row.id,
+    merchantId: row.merchantId,
+    weekStart: insightDate(row.weekStartDate),
+    weekEnd: insightDate(row.weekEndDate),
+    createdAt: insightDate(row.createdAt),
+    observation: sentimentObservation(row),
+    topKeywords: insightStoredList(row.topKeywords),
+    topComplaints: insightStoredList(row.topComplaints),
+    recommendations: insightStoredList(row.recommendations),
+    emailMarkedSent: Boolean(row.emailSent),
+    emailSentAt: insightDate(row.emailSentAt),
+    evidenceKind: "legacy_report_without_generation_evidence" as const,
+    historicalValues: {
+      positivePercentage: row.positivePercentage,
+      negativePercentage: row.negativePercentage,
+      sentimentIndex: row.satisfactionScore,
+    },
+  };
+}
 
 /** Read-only coherent snapshot. Counts never substitute for a failed source. */
 export async function readInsightWorkspace(

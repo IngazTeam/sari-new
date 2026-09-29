@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceState, workspaceFailureKind } from "./WorkspaceState";
 import { KeywordReviewDialog } from "./KeywordReviewDialog";
+import { InsightReportDetails } from "./InsightReportDetails";
 import { insightCsv } from "@shared/insight-csv";
 import type { InsightWorkspaceInput } from "@shared/insights-workspace";
 type Tab = "keywords" | "reports" | "tests";
@@ -548,6 +549,10 @@ export function InsightsWorkspace() {
                           : t("insightsWorkspace.notFlagged"),
                       })}
                     </p>
+                    <InsightReportDetails
+                      reportId={row.id}
+                      merchantId={data.merchantId}
+                    />
                   </article>
                 ))
               )}

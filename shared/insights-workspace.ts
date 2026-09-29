@@ -12,6 +12,22 @@ export const insightWorkspaceInput = z
   .strict();
 export type InsightWorkspaceInput = z.infer<typeof insightWorkspaceInput>;
 export const INSIGHT_PAGE_SIZE = 20;
+/** Preserve legacy text instead of silently treating malformed JSON as empty. */
+export function insightStoredList(raw: string | null) {
+  if (!raw?.trim())
+    return { format: "empty" as const, items: [] as string[], raw: null };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      Array.isArray(parsed) &&
+      parsed.every(value => typeof value === "string")
+    )
+      return { format: "list" as const, items: parsed as string[], raw: null };
+  } catch {
+    /* Plain text and malformed legacy JSON remain available for review. */
+  }
+  return { format: "legacy" as const, items: [] as string[], raw };
+}
 export function insightPage(requested: number, total: number) {
   const pages = Math.max(1, Math.ceil(total / INSIGHT_PAGE_SIZE));
   const current = Math.min(requested, pages);

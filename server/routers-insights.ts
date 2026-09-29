@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import * as dbInsights from "./db-insights";
-import { readInsightWorkspace } from "./insights-workspace";
+import { readInsightWorkspace, readInsightReport } from "./insights-workspace";
 import {
   insightPeriod,
   insightWorkspaceInput,
@@ -19,6 +19,23 @@ async function guarded<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 export const insightsRouter = router({
+  report: read
+    .input(
+      z
+        .object({ reportId: z.number().int().positive().max(2147483647) })
+        .strict()
+    )
+    .query(async ({ ctx, input }) => {
+      const result = await guarded(() =>
+        readInsightReport(ctx.merchantId, input.reportId)
+      );
+      if (!result)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Report unavailable",
+        });
+      return result;
+    }),
   workspace: read
     .input(insightWorkspaceInput)
     .query(({ ctx, input }) =>

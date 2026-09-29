@@ -9766,5 +9766,24 @@
     "deleteConfirm": "I reviewed the displayed record and want to delete it.",
     "cancelDelete": "Cancel deletion",
     "deleted": "Keyword record deleted."
+  },
+  "insightReport": {
+    "open": "Report details and recommendations",
+    "created": "Record created",
+    "emailAt": "Email flag timestamp",
+    "keywords": "Keywords saved in this report",
+    "complaints": "Complaints saved in this report",
+    "recommendations": "Saved recommendations",
+    "noText": "No text is saved in this field.",
+    "legacyText": "This older text uses a different format. It is shown in full for review.",
+    "evidence": "Saved report content. This report type does not retain evidence of recommendation sources or generation method. Verify its facts before use. It does not measure sales proficiency.",
+    "history": "View unmeasured historical values",
+    "historyHelp": "These are older calculated values as stored and may differ from the report counters. They are not a satisfaction survey, verified purchase, or sales proficiency measure. The headline share above is calculated from the report sample.",
+    "oldPositive": "Stored historical positive percentage",
+    "oldNegative": "Stored historical negative percentage",
+    "oldIndex": "Legacy sentiment index — not measured satisfaction",
+    "export": "Export this full report as CSV",
+    "missing": "This report is unavailable for this store or no longer exists.",
+    "failed": "Could not read report details. Try again; stale or empty text is not used to represent a failure."
   }
 }

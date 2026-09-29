@@ -3,6 +3,7 @@ import {
   insightDate,
   insightPage,
   insightWindow,
+  insightStoredList,
   insightWorkspaceInput,
   observationArm,
   sentimentObservation,
@@ -11,6 +12,7 @@ import { insightCsv } from "../shared/insight-csv";
 const m = vi.hoisted(() => ({
   access: vi.fn(),
   read: vi.fn(),
+  report: vi.fn(),
   keyword: vi.fn(),
   reports: vi.fn(),
   tests: vi.fn(),
@@ -18,7 +20,10 @@ const m = vi.hoisted(() => ({
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
 }));
-vi.mock("./insights-workspace", () => ({ readInsightWorkspace: m.read }));
+vi.mock("./insights-workspace", () => ({
+  readInsightWorkspace: m.read,
+  readInsightReport: m.report,
+}));
 vi.mock("./db-insights", () => ({
   getKeywordInsights: m.keyword,
   getWeeklyReportsList: m.reports,
@@ -35,6 +40,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   m.access.mockResolvedValue({ merchantId: 20, role: "owner", memberId: 4 });
   m.read.mockResolvedValue({ merchantId: 20 });
+  m.report.mockResolvedValue({ merchantId: 20, id: 3 });
 });
 describe("selected-tenant insight reads", () => {
   it.each(["owner", "manager", "viewer", "sales_supervisor"])(
@@ -55,6 +61,11 @@ describe("selected-tenant insight reads", () => {
       expect(m.reports).toHaveBeenCalledWith(20, 8);
       await caller().getActiveABTests();
       expect(m.tests).toHaveBeenCalledWith(20);
+      expect(await caller().report({ reportId: 3 })).toEqual({
+        merchantId: 20,
+        id: 3,
+      });
+      expect(m.report).toHaveBeenCalledWith(20, 3);
     }
   );
   it("rejects missing membership before reading data", async () => {
@@ -101,8 +112,60 @@ describe("selected-tenant insight reads", () => {
       message: "Insights unavailable",
     });
   });
+  it.each([
+    { reportId: 0 },
+    { reportId: -1 },
+    { reportId: 1.2 },
+    { reportId: 2147483648 },
+    { reportId: 3, merchantId: 21 },
+  ])("rejects invalid report lookup %j", async input => {
+    await expect(caller().report(input as any)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(m.report).not.toHaveBeenCalled();
+  });
+  it("does not disguise a missing or failed report read as empty content", async () => {
+    m.report.mockResolvedValueOnce(null);
+    await expect(caller().report({ reportId: 3 })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Report unavailable",
+    });
+    m.report.mockRejectedValueOnce(Error("secret database detail"));
+    await expect(caller().report({ reportId: 3 })).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Insights unavailable",
+    });
+    m.access.mockResolvedValue(null);
+    await expect(caller().report({ reportId: 3 })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(m.report).toHaveBeenCalledTimes(2);
+  });
 });
 describe("evidence semantics and portable dates", () => {
+  it("preserves complete saved lists and legacy text instead of dropping unrecognized formats", () => {
+    expect(insightStoredList(null)).toEqual({
+      format: "empty",
+      items: [],
+      raw: null,
+    });
+    expect(insightStoredList('["first","<img src=x>"]')).toEqual({
+      format: "list",
+      items: ["first", "<img src=x>"],
+      raw: null,
+    });
+    for (const raw of [
+      "plain text",
+      "[invalid",
+      '[1,"text"]',
+      '{"text":"recommendation"}',
+    ])
+      expect(insightStoredList(raw)).toEqual({
+        format: "legacy",
+        items: [],
+        raw,
+      });
+  });
   it("normalizes UTC SQL strings independently of browser parsing and rejects unzoned dates", () => {
     expect(insightDate("2026-09-29 12:00:00")).toBe("2026-09-29T12:00:00.000Z");
     expect(insightDate("2026-09-29T15:00:00+03:00")).toBe(

@@ -4,7 +4,7 @@ import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
-import { readInsightWorkspace } from "./insights-workspace";
+import { readInsightWorkspace, readInsightReport } from "./insights-workspace";
 import { insightWorkspaceInput } from "../shared/insights-workspace";
 describe.skipIf(!process.env.DATABASE_URL)(
   "insight evidence read model in MySQL",
@@ -121,6 +121,37 @@ describe.skipIf(!process.env.DATABASE_URL)(
       });
       expect(result.reports.total).toBe(0);
       expect(result.tests.total).toBe(0);
+    });
+    it("reads the full report and preserves malformed fields while isolating its tenant", async () => {
+      const pool = (await getPool())!;
+      const [created] = await pool.execute<any>(
+        `INSERT INTO weekly_sentiment_reports (merchant_id,week_start_date,week_end_date,total_conversations,positive_count,negative_count,neutral_count,positive_percentage,satisfaction_score,top_keywords,top_complaints,recommendations,email_sent,email_sent_at) VALUES (?,DATE_SUB(UTC_TIMESTAMP(),INTERVAL 9 DAY),DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 DAY),10,4,1,2,99,100,?,?,?,1,UTC_TIMESTAMP())`,
+        [
+          owner.merchantId,
+          JSON.stringify(["shipping", "<img src=x>"]),
+          "old complaint text",
+          "[invalid",
+        ]
+      );
+      const result = await readInsightReport(
+        owner.merchantId,
+        created.insertId
+      );
+      expect(result).toMatchObject({
+        merchantId: owner.merchantId,
+        observation: { positiveShare: 40, unclassified: 3 },
+        topKeywords: { format: "list", items: ["shipping", "<img src=x>"] },
+        topComplaints: { format: "legacy", raw: "old complaint text" },
+        recommendations: { format: "legacy", raw: "[invalid" },
+        historicalValues: { positivePercentage: 99, sentimentIndex: 100 },
+        evidenceKind: "legacy_report_without_generation_evidence",
+        emailMarkedSent: true,
+      });
+      expect(result?.emailSentAt).toMatch(/Z$/);
+      expect(
+        await readInsightReport(other.merchantId, created.insertId)
+      ).toBeNull();
+      expect(await readInsightReport(owner.merchantId, 2147483647)).toBeNull();
     });
   }
 );
