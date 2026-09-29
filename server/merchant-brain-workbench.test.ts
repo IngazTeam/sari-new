@@ -287,6 +287,20 @@ it("honors FAQ bounds, confirms deletion and retains the audit trail", () => {
   expect(data().history).toHaveLength(2);
 });
 
+it('edits an FAQ, requires fresh activation approval and can pause it again in the mockup',()=>{
+  tab('knowledge','faq');click('edit-faq','[data-id="1"]');input('answer','إجابة محلية محدثة');submit();
+  expect(dialog()).toContain('أكمل الموافقة');check('attest');submit();
+  expect(data().faqs[0]).toMatchObject({answer:'إجابة محلية محدثة',isActive:true,useInBot:true});
+  click('edit-faq','[data-id="1"]');input('useInBot','false');submit();expect(data().faqs[0].useInBot).toBe(false);expect(main()).toContain('غير مفعّل للردود');
+});
+it('separates FAQ read failures, empty filters and loading without changing saved examples',()=>{
+  tab('knowledge','faq');const before=w.localStorage.getItem(key);
+  const select=(s:string,v:string)=>{const e=node(s);e.value=v;e.dispatchEvent(new w.Event('change',{bubbles:true}));};
+  select('[data-faq-read]','failure');expect(main()).toContain('تعذر تحميل الأسئلة');expect(main()).not.toContain('لا توجد أسئلة بعد');expect(node('[data-bw-action="new-faq"]').disabled).toBe(true);
+  node('[data-faq-action="reload"]').click();select('[data-faq-filter]','paused');expect(main()).toContain('لا توجد أسئلة مطابقة');
+  select('[data-faq-read]','loading');expect(main()).toContain('جارٍ تحميل الأسئلة');expect(w.localStorage.getItem(key)).toEqual(before);
+});
+
 it("validates followup timezone, time window and weekly limit while retaining false values after reload", () => {
   nav("operations");
   tab("ops", "followup");

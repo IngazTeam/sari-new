@@ -1,0 +1,86 @@
+{
+  "baseline": "e39ae831",
+  "method": "Compare complete source files responsible for the eight failing text assertions, normalizing CRLF only. This does not prove their security behavior correct.",
+  "files": [
+    {
+      "path": "server/ai/loss-detector.ts",
+      "unchanged": true,
+      "baselineSha256": "a13cc46a09426e15d5d8397d4dab347bf4699bab9b952b35ebed322cfe2ce4df",
+      "currentSha256": "a13cc46a09426e15d5d8397d4dab347bf4699bab9b952b35ebed322cfe2ce4df"
+    },
+    {
+      "path": "server/ai/sari-personality.ts",
+      "unchanged": false,
+      "baselineSha256": "f696ccedfa923838a08585cf3f4d9f70bdbc5d829920499fb0f8f4ef998c6c9e",
+      "currentSha256": "7ebf7a805deeed8c1c63d2dfb0e0b88b64f613dae2532d4b8d04e982366ad091"
+    },
+    {
+      "path": "server/_core/index.ts",
+      "unchanged": true,
+      "baselineSha256": "0d239e594d513a69c616c9b610e60f6035a1d424fde4b34024df30cfbed44247",
+      "currentSha256": "0d239e594d513a69c616c9b610e60f6035a1d424fde4b34024df30cfbed44247"
+    },
+    {
+      "path": "server/routers-knowledge-docs.ts",
+      "unchanged": true,
+      "baselineSha256": "e6014c10e424c6dd9724bfcc4aea2bc8cfdfc933ad333903d26e61764a76fcf1",
+      "currentSha256": "e6014c10e424c6dd9724bfcc4aea2bc8cfdfc933ad333903d26e61764a76fcf1"
+    },
+    {
+      "path": "server/routers-bot-settings.ts",
+      "unchanged": true,
+      "baselineSha256": "b3fd1fd8a0120fa9af6e0f14cd3ed8a49e3e5b66b3557cb8bf57731d6af88414",
+      "currentSha256": "b3fd1fd8a0120fa9af6e0f14cd3ed8a49e3e5b66b3557cb8bf57731d6af88414"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "PEN12 update SQL scoping",
+      "path": "server/ai/loss-detector.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN12 row merchant parameters",
+      "path": "server/ai/loss-detector.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN12 updateDealStage signature",
+      "path": "server/ai/sari-personality.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN12 updateDealStage call",
+      "path": "server/ai/sari-personality.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN17 tone override",
+      "path": "server/ai/sari-personality.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN30 upload embedding",
+      "path": "server/_core/index.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN30 reprocess embedding",
+      "path": "server/routers-knowledge-docs.ts",
+      "baselinePass": false,
+      "currentPass": false
+    },
+    {
+      "name": "PEN46 tone normalizer",
+      "path": "server/routers-bot-settings.ts",
+      "baselinePass": false,
+      "currentPass": false
+    }
+  ]
+}

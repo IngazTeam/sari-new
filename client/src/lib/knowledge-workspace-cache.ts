@@ -3,6 +3,7 @@ export type KnowledgeDraft = {
   content: string;
   type: 'document' | 'products' | 'custom';
   sourceDocument?: { id: number; revision: string };
+  faq?: { id?: number; revision?: string; category: string; isActive: boolean; useInBot: boolean; requestId: string; baseline: string; uncertain: boolean };
 };
 
 // Business text and binary files live only in memory. Only opaque request IDs

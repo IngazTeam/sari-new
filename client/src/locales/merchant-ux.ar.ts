@@ -29,6 +29,7 @@ const merchantUxAr: MerchantUxCopy = {
   knowledgeLibrary: knowledgeLibraryAr,
   knowledgeDocument: knowledgeDocumentAr,
   knowledgeDraft: knowledgeDraftAr,
+  knowledgeFaq: knowledgeFaqAr,
   campaignPerformance: campaignPerformanceAr,
   byaanSales: byaanSalesReviewAr,
   sallaEffects: sallaEffectReviewAr,
@@ -681,3 +682,4 @@ const merchantUxAr: MerchantUxCopy = {
 };
 
 export default merchantUxAr;
+import { knowledgeFaqAr } from './knowledge-faq';

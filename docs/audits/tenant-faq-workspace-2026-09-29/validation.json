@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-29",
+  "scope": "Tenant SariBrain FAQ workspace and interactive prototype",
+  "targetedTests": {
+    "distinctPassed": 186,
+    "files": 8,
+    "groups": {
+      "knowledge-faq-ui": 14,
+      "knowledge-faq-access": 9,
+      "knowledge-access": 95,
+      "knowledge-workspace-cache": 5,
+      "knowledge-workspace-scope": 2,
+      "merchant-brain-workbench": 16,
+      "merchant-brain-knowledge-prototype": 32,
+      "knowledge/faq-workspace.mysql": 13
+    }
+  },
+  "legacySalesEnginePentest": {
+    "passed": 176,
+    "failed": 8,
+    "baseline": "e39ae831",
+    "baselineEvidence": "legacy-baseline.json",
+    "groupsFailing": ["PEN-12", "PEN-17", "PEN-30", "PEN-46"],
+    "removedTextAssertions": "PEN-34 create/update/delete literal invalidateCache checks replaced by database behavior tests for all three operations"
+  },
+  "typecheck": {
+    "latestExitCode": 0,
+    "earlierConcurrentErrors": "TS2769 and TS18047 in unowned onboarding-store.ts; cleared by concurrent work before final check"
+  },
+  "translations": {
+    "callsChecked": 8429,
+    "dynamicKeysChecked": 346,
+    "missing": [],
+    "interpolationErrors": [],
+    "unresolvedDynamicCalls": []
+  },
+  "build": {
+    "client": "passed",
+    "serverAndWorker": "passed",
+    "prototype": "passed",
+    "bundleBudget": "passed",
+    "warning": "Existing Vite chunk over 600 kB"
+  },
+  "browser": {
+    "engine": "Chrome",
+    "appViewports": [320, 390],
+    "prototypeViewports": [320],
+    "horizontalOverflowObserved": false,
+    "evidence": "browser-checks.json",
+    "safariAndRealIPhone": "not tested",
+    "syntheticLocalMerchantOnly": true,
+    "liveProviderOrCustomerMessages": false
+  },
+  "coverage": {
+    "inventoryRegenerated": false,
+    "allPagesComplete": false,
+    "previousInventory": {"routes": 126, "generic": 101, "redirect": 8, "detailed": 10, "partial": 7}
+  },
+  "deployment": {"pushed": false, "productionDeployed": false}
+}

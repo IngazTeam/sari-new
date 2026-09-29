@@ -1,3 +1,4 @@
+import { KnowledgeFaqWorkspace } from '@/components/KnowledgeFaqWorkspace';
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
 import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
 import { KnowledgeDocumentUpload } from '@/components/KnowledgeDocumentUpload';
@@ -78,16 +79,12 @@ export default function SariBrain() {
   const [logFilter, setLogFilter] = useState<string>('all');
   const activityQuery = trpc.sariBrain.getActivityLog.useQuery({ page: logPage, pageSize: 10, actionType: logFilter === 'all' ? undefined : logFilter });
   const { data: activityLogData } = activityQuery;
-  const { data: faqs } = trpc.sariBrain.getFaqs.useQuery();
+
 
   // Knowledge Engine v4 hooks
   const { data: healthScore } = trpc.sariBrain.getHealthScore.useQuery();
   const { data: knowledgeSections, isLoading: sectionsLoading, error: sectionsError } = trpc.sariBrain.getKnowledgeSections.useQuery();
   const { data: pendingReviews } = trpc.sariBrain.getPendingReviews.useQuery();
-
-  // FAQ state
-  const [newFaqQ, setNewFaqQ] = useState('');
-  const [newFaqA, setNewFaqA] = useState('');
 
   const [testQuestion, setTestQuestion] = useState('');
   const [testResult, setTestResult] = useState<{ question: string; answer: string } | null>(null);
@@ -279,35 +276,6 @@ export default function SariBrain() {
       return;
     }
     testSariMutation.mutate({ question: testQuestion });
-  };
-
-  const createFaqMutation = trpc.sariBrain.createFaq.useMutation({
-    onSuccess: () => {
-      toast.success('تم إضافة السؤال');
-      utils.sariBrain.getFaqs.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-      setNewFaqQ(''); setNewFaqA('');
-    },
-    onError: (e) => toast.error('فشل الإضافة: ' + e.message),
-  });
-
-  const deleteFaqMutation = trpc.sariBrain.deleteFaq.useMutation({
-    onSuccess: () => {
-      toast.success('تم حذف السؤال');
-      utils.sariBrain.getFaqs.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-    },
-    onError: (e) => toast.error('فشل الحذف: ' + e.message),
-  });
-
-  const handleAddFaq = () => {
-    if (!newFaqQ.trim() || !newFaqA.trim()) {
-      toast.error('اكتب السؤال والجواب');
-      return;
-    }
-    createFaqMutation.mutate({ question: newFaqQ, answer: newFaqA });
   };
 
   const totalSources = sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
@@ -1565,84 +1533,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'knowledge'} className="space-y-6" data-brain-section="knowledge">
-{/* ═══ FAQ Management — Custom Q&A ═══ */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-orange-500" />
-            ❓ الأسئلة الشائعة
-          </CardTitle>
-          <CardDescription>أضف أسئلة وأجوبة مخصصة ليستخدمها ساري مباشرة في الردود</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add New FAQ */}
-          <div className="p-4 rounded-lg border border-dashed border-primary/30 space-y-3">
-            <p className="text-sm font-medium flex items-center gap-1">
-              <Plus className="h-4 w-4" /> إضافة سؤال جديد
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                value={newFaqQ}
-                onChange={(e) => setNewFaqQ(e.target.value)}
-                placeholder="السؤال (مثل: كم مدة التوصيل؟)"
-                dir="auto"
-              />
-              <Input
-                value={newFaqA}
-                onChange={(e) => setNewFaqA(e.target.value)}
-                placeholder="الجواب (مثل: يتم التوصيل خلال 2-3 أيام عمل)"
-                dir="auto"
-              />
-            </div>
-            <Button size="sm" onClick={handleAddFaq} disabled={!newFaqQ.trim() || !newFaqA.trim() || createFaqMutation.isPending}>
-              <Plus className="h-4 w-4 ml-1" />
-              {createFaqMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
-            </Button>
-          </div>
-
-          {/* FAQ List */}
-          {faqs && faqs.length > 0 ? (
-            <div className="space-y-2">
-              {faqs.map((faq: any) => (
-                <div key={faq.id} className={`p-3 rounded-lg border ${faq.isActive ? 'bg-card' : 'bg-muted/50 opacity-60'} transition-colors`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        س: {faq.question}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        ج: {faq.answer}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {faq.category && <Badge variant="outline" className="text-[10px]">{faq.category}</Badge>}
-                        <Badge variant={faq.useInBot ? 'default' : 'secondary'} className="text-[10px]">
-                          {faq.useInBot ? '🤖 نشط في البوت' : '⏸️ متوقف'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                      onClick={() => deleteFaqMutation.mutate({ id: faq.id })}
-                      aria-label={t('merchantUx.actions.deleteNamed', { name: faq.question })}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <HelpCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">لا توجد أسئلة شائعة بعد</p>
-              <p className="text-xs mt-1">أضف أسئلة وأجوبة ليستخدمها ساري في الردود التلقائية</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+<KnowledgeFaqWorkspace />
 
       </section>
 

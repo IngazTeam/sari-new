@@ -1,3 +1,5 @@
+import { faqCreateInput, faqUpdateInput, faqDeleteInput, faqListInput } from '../shared/knowledge-faq';
+import { listFaqWorkspace, createWorkspaceFaq, changeWorkspaceFaq } from './knowledge/faq-workspace';
 import { getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
 import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
 import { saveKnowledgeReview } from './knowledge/intake-reviews';
@@ -24,9 +26,7 @@ import { SalesExperimentTurnConflict } from './ai/sales-experiment-turn';
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
-  createExtractedFaq,
   createWebsiteAnalysis,
-  deleteExtractedFaq,
   getDb,
   getExtractedFaqsByMerchantId,
   getKnowledgeDocByMerchantId,
@@ -34,7 +34,6 @@ import {
   getPool,
   getProductCountByMerchantId,
   getProductsByMerchantId,
-  updateExtractedFaq,
   updateWebsiteAnalysis,
 } from './db';
 import { removeKnowledgeSource, resetKnowledgeSources, KnowledgeSourceNotFoundError } from './knowledge/source-lifecycle';
@@ -73,6 +72,11 @@ import { prepareSalesExperimentLaunch, authorizeSalesExperimentLaunch, revokeSal
  */
 async function getRawPool() {
   return await getPool();
+}
+
+async function faqOperation<T>(work: () => Promise<T>): Promise<T> {
+  try { return await work(); }
+  catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'FAQ result could not be confirmed'}); }
 }
 
 async function ensureActivityTable() {
@@ -988,91 +992,16 @@ ${sanitizedContent}`
     return sanitizeForTRPC(await getExtractedFaqsByMerchantId(merchant.id));
   }),
 
-  createFaq: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      question: z.string().min(3).max(500),
-      answer: z.string().min(3).max(2000),
-      category: z.string().max(100).optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-BRAIN-09 FIX: Cap FAQs at 50 per merchant
-      const existingFaqs = await getExtractedFaqsByMerchantId(merchant.id);
-      if (existingFaqs.length >= 50) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 50 سؤال شائع. احذف بعض الأسئلة أولاً.' });
-      }
-
-      const id = await createExtractedFaq({
-        merchantId: merchant.id,
-        question: input.question,
-        answer: input.answer,
-        category: input.category || 'عام',
-        isActive: true,
-        useInBot: true,
-      });
-
-      await logBrainActivity(merchant.id, 'faq_created', `تم إضافة سؤال: "${input.question.substring(0, 50)}"`, {
-        faqId: id,
-        category: input.category,
-      });
-
-      // Invalidate cache so bot sees new FAQ immediately
-      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      return { success: true, id };
-    }),
-
-  updateFaq: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      id: z.number(),
-      question: z.string().min(3).max(500).optional(),
-      answer: z.string().min(3).max(2000).optional(),
-      category: z.string().max(100).optional(),
-      isActive: z.boolean().optional(),
-      useInBot: z.boolean().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-BRAIN-07 FIX: Verify FAQ ownership before update
-      const merchantFaqs = await getExtractedFaqsByMerchantId(merchant.id);
-      if (!merchantFaqs.some((f: any) => f.id === input.id)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن تعديل سؤال لا يخصك' });
-      }
-
-      const { id, ...data } = input;
-      await updateExtractedFaq(id, data);
-      await logBrainActivity(merchant.id, 'faq_updated', `تم تحديث سؤال رقم ${id}`);
-
-      // Invalidate cache so bot sees FAQ changes immediately
-      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      return { success: true };
-    }),
-
-  deleteFaq: permissionProcedure('bot_settings.manage')
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-BRAIN-07 FIX: Verify FAQ ownership before delete
-      const ownedFaqs = await getExtractedFaqsByMerchantId(merchant.id);
-      if (!ownedFaqs.some((f: any) => f.id === input.id)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن حذف سؤال لا يخصك' });
-      }
-
-      await deleteExtractedFaq(input.id);
-      await logBrainActivity(merchant.id, 'faq_deleted', `تم حذف سؤال رقم ${input.id}`);
-
-      // Invalidate cache so bot stops using deleted FAQ immediately
-      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      return { success: true };
-    }),
+  faqWorkspace: merchantProcedure.input(faqListInput).query(async ({ctx,input}) => {
+    try { return {...await listFaqWorkspace(ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'bot_settings.manage')}; }
+    catch(error) { if(error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'FAQ workspace unavailable'}); }
+  }),
+  createFaq: permissionProcedure('bot_settings.manage').input(faqCreateInput)
+    .mutation(async ({ctx,input}) => faqOperation(() => createWorkspaceFaq(ctx.merchantId,input))),
+  updateFaq: permissionProcedure('bot_settings.manage').input(faqUpdateInput)
+    .mutation(async ({ctx,input}) => faqOperation(() => changeWorkspaceFaq(ctx.merchantId,input))),
+  deleteFaq: permissionProcedure('bot_settings.manage').input(faqDeleteInput)
+    .mutation(async ({ctx,input}) => faqOperation(() => changeWorkspaceFaq(ctx.merchantId,input,true))),
 
   // ════════════════════════════════════════════════════════════════
   // API Key Management — Generate/revoke REST API keys

@@ -16,6 +16,7 @@ import { salesCohortRules } from "../../../shared/sales-experiment-cohort";
 import { replyReviewCriteria } from "../../../shared/sales-reply-review";
 
 import { createBrainEvaluation } from "./brain-evaluation";
+import { createFaqList } from "./faq-list";
 import { createBrainKnowledge } from "./brain-knowledge";
 
 window.SaryBrainWorkbench = (() => {
@@ -318,7 +319,7 @@ window.SaryBrainWorkbench = (() => {
           : knowledgeTab === "sections"
             ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>المعرفة التي تراجعها</h2><p>صنّف المعلومة وراجعها قبل اعتمادها.</p></div>${btn("قسم معرفة جديد", "new-section", dis(), true)}</div><div class="bw-cards">${sectionRows()}</div></section>`
             : knowledgeTab === "faq"
-              ? `<section class="panel panel-pad"><div class="panel-head"><h2>أسئلة العملاء المتكررة</h2>${btn("إضافة سؤال", "new-faq", dis(), true)}</div><p>حتى 50 سؤالًا، مع إجابة واضحة من معرفة النشاط.</p><div class="bw-cards">${data.faqs.map(r => `<article class="bw-card"><h3>${esc(r.question)}</h3><p>${esc(r.answer)}</p>${btn("حذف السؤال", "delete", `${idAttr(r.id)} data-kind="faqs" ${dis()}`)}</article>`).join("") || "<p>لا توجد أسئلة بعد.</p>"}</div></section>`
+              ? faqList.render()
               : knowledgeTab === "website"
                 ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>صفحات الموقع ومحتواها</h2><p>راجع النص وحالة استخدامه؛ إضافة رابط لا تعني قراءة محتواه.</p></div>${btn("إضافة رابط", "new-page", dis(), true)}</div>${knowledgeWorkbench.websiteButton()}<div class="bw-cards">${data.pages.map(r => `<article class="bw-card"><h3>${esc(r.title)}</h3><p dir="ltr">${esc(r.url)}</p>${badge(r.read ? (r.active ? "مستخدم في مثال المعرفة" : "الاستخدام متوقف") : "لم تُقرأ الصفحة")}<p>${r.read ? esc(r.content) : "لم نطلب هذا الرابط. أُضيفت بياناته فقط."}</p><footer>${btn("عرض المحتوى", "page-view", idAttr(r.id))}${r.read ? btn(r.active ? "إيقاف الاستخدام" : "تفعيل الاستخدام", "toggle-page", idAttr(r.id) + " " + dis()) : ""}${btn("حذف الصفحة", "delete", `${idAttr(r.id)} data-kind="pages" ${dis()}`)}</footer></article>`).join("") || "<p>لا توجد صفحات محفوظة.</p>"}</div></section>`
                 : knowledgeWorkbench.intakeSummary())
@@ -468,7 +469,7 @@ window.SaryBrainWorkbench = (() => {
     if (editorKind === "delete")
       return editor(
         "حذف سجل المعرفة",
-        `<p>سيُحذف هذا السجل المحلي. لا يتأثر مصدر في متجر حقيقي.</p>${check("attest", "راجعت السجل وأوافق على حذفه من المثال.", attested)}`,
+        `${draft?.kind === "faqs" ? `<blockquote>${esc(data.faqs.find(r => r.id === Number(selectedId))?.question || "")}</blockquote><p>يُحذف سجل السؤال المحلي فقط. تبقى نسخه في مصادر أخرى ورسائل المحادثات السابقة.</p>` : ""}<p>سيُحذف هذا السجل المحلي. لا يتأثر مصدر في متجر حقيقي.</p>${check("attest", "راجعت السجل وأوافق على حذفه من المثال.", attested)}`,
         "تأكيد الحذف المحلي"
       );
     if (editorKind === "section")
@@ -485,9 +486,9 @@ window.SaryBrainWorkbench = (() => {
       );
     if (editorKind === "faq")
       return editor(
-        "سؤال شائع جديد",
+        selectedId ? "مراجعة السؤال" : "سؤال شائع جديد",
         field("question", "السؤال", { maxlength: 500 }) +
-          field("answer", "الإجابة", { type: "textarea", maxlength: 2000 })
+          field("answer", "الإجابة", { type: "textarea", maxlength: 2000 }) + field("category", "التصنيف", {required:false,maxlength:100}) + field("isActive", "إبقاء السؤال متاحًا", {options:{true:"نعم",false:"لا"}}) + field("useInBot", "السماح باستخدامه في ردود العملاء", {options:{false:"غير مفعّل",true:"مفعّل"}}) + check("attest","راجعت الإجابة وأوافق على استخدامها في الردود عند تفعيلها.",attested) + "<p>الحفظ وحده لا يثبت دقة الردود. تفعيل الاستخدام يتطلب مراجعتك.</p>"
       );
     if (editorKind === "page")
       return editor(
@@ -686,7 +687,7 @@ window.SaryBrainWorkbench = (() => {
     if (editorKind === "faq") {
       required("question", 3, 500);
       required("answer", 3, 2000);
-      if (data.faqs.length >= 50)
+      if (!selectedId && data.faqs.length >= 50)
         errors.question = "وصلت إلى الحد الأقصى 50 سؤالًا.";
     }
     if (editorKind === "page") {
@@ -842,6 +843,7 @@ window.SaryBrainWorkbench = (() => {
       evaluationWorkbench.hasDraft()
     )
       return;
+    if (editorKind === "faq" && String(draft.isActive) === "true" && String(draft.useInBot) === "true" && !attested) { error="راجع الإجابة وأكمل الموافقة قبل التفعيل."; showEditor(); return; }
     const v = clone(draft),
       kind = editorKind,
       p = protocol();
@@ -890,7 +892,7 @@ window.SaryBrainWorkbench = (() => {
           ...v,
           approved: true,
         }),
-      faq: () => data.faqs.unshift({ id: nextId(data.faqs), ...v }),
+      faq: () => { const values={...v,isActive:String(v.isActive)==="true",useInBot:String(v.useInBot)==="true"}; if(selectedId) Object.assign(data.faqs.find(r=>r.id===Number(selectedId)),values);else data.faqs.unshift({id:nextId(data.faqs),...values}); },
       page: () =>
         data.pages.unshift({
           id: nextId(data.pages),
@@ -984,7 +986,7 @@ window.SaryBrainWorkbench = (() => {
         operations[kind],
         {
           section: "إضافة قسم معرفة",
-          faq: "إضافة سؤال شائع",
+          faq: selectedId ? "تعديل سؤال شائع" : "إضافة سؤال شائع",
           page: "إضافة رابط ينتظر القراءة",
           intake: "حفظ محتوى للمراجعة",
           sector: "تغيير القطاع",
@@ -1087,7 +1089,8 @@ window.SaryBrainWorkbench = (() => {
       return;
     if (a === "new-section")
       start("section", { type: "custom", title: "", content: "" });
-    if (a === "new-faq") start("faq", { question: "", answer: "" });
+    if (a === "new-faq") start("faq", { question: "", answer: "",category:"",isActive:"true",useInBot:"false" });
+    if (a === "edit-faq") { const row=data.faqs.find(r=>r.id===Number(id));if(row)start("faq",{question:row.question,answer:row.answer,category:row.category||"",isActive:String(row.isActive??true),useInBot:String(row.useInBot??true)},Number(id)); }
     if (a === "new-page") start("page", { title: "", url: "" });
     if (a === "intake") start("intake", { title: "", content: "" });
     if (a === "sector") start("sector", { sector: data.sector });
@@ -1211,7 +1214,7 @@ window.SaryBrainWorkbench = (() => {
       error = "";
       editor(
         "حذف سجل المعرفة",
-        `<p>سيُحذف هذا السجل المحلي. لا يتأثر مصدر في متجر حقيقي.</p>${check("attest", "راجعت السجل وأوافق على حذفه من المثال.", attested)}`,
+        `${draft?.kind === "faqs" ? `<blockquote>${esc(data.faqs.find(r => r.id === Number(selectedId))?.question || "")}</blockquote><p>يُحذف سجل السؤال المحلي فقط. تبقى نسخه في مصادر أخرى ورسائل المحادثات السابقة.</p>` : ""}<p>سيُحذف هذا السجل المحلي. لا يتأثر مصدر في متجر حقيقي.</p>${check("attest", "راجعت السجل وأوافق على حذفه من المثال.", attested)}`,
         "تأكيد الحذف المحلي"
       );
     }
@@ -1323,6 +1326,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const faqList = createFaqList({esc,owner,blocked:()=>!!pending,rows:()=>data.faqs,refresh});
   const knowledgeWorkbench = createBrainKnowledge({
     esc,
     owner,
@@ -1370,6 +1374,7 @@ window.SaryBrainWorkbench = (() => {
     render,
     learningStatus: () => knowledgeWorkbench.status(),
     reset() {
+      faqList.reset();
       data = initial();
       evaluationWorkbench.reset();
       knowledgeWorkbench.reset();

@@ -29,6 +29,7 @@ const merchantUxEn: MerchantUxCopy = {
   knowledgeLibrary: knowledgeLibraryEn,
   knowledgeDocument: knowledgeDocumentEn,
   knowledgeDraft: knowledgeDraftEn,
+  knowledgeFaq: knowledgeFaqEn,
   campaignPerformance: campaignPerformanceEn,
   byaanSales: byaanSalesReviewEn,
   sallaEffects: sallaEffectReviewEn,
@@ -676,3 +677,4 @@ const merchantUxEn: MerchantUxCopy = {
 };
 
 export default merchantUxEn;
+import { knowledgeFaqEn } from './knowledge-faq';
