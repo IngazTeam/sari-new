@@ -96,6 +96,35 @@ describe("test workspace API security boundaries", () => {
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     expect(mocks.create).not.toHaveBeenCalled();
   });
+  it.each(["owner", "manager", "sales_supervisor", "viewer"])(
+    "scopes legacy metric reads by analytics membership for %s",
+    async role => {
+      mocks.access.mockResolvedValue({ merchantId: 20, role });
+      await caller().getMetrics({});
+      expect(mocks.metrics).toHaveBeenCalledWith(20, "day");
+    }
+  );
+  it.each([
+    { period: "all" },
+    { period: "90d" },
+    { merchantId: 99 },
+    { from: "2026-01-01" },
+  ])("rejects forged legacy metrics input %j", async input => {
+    await expect(caller().getMetrics(input as any)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(mocks.metrics).not.toHaveBeenCalled();
+  });
+  it("denies legacy metrics without a session or selected-tenant membership", async () => {
+    await expect(caller(null).getMetrics({})).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+    mocks.access.mockResolvedValue(null);
+    await expect(caller().getMetrics({})).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(mocks.metrics).not.toHaveBeenCalled();
+  });
   it.each(["viewer", "agent", "sales_supervisor"])(
     "blocks writes by %s",
     async role => {
@@ -165,11 +194,15 @@ describe("test workspace API security boundaries", () => {
     } catch (error) {
       expect(String(error)).not.toContain("confidential");
     }
-    mocks.db.mockResolvedValue(null);
+    mocks.metrics.mockRejectedValue(new Error("SQL confidential"));
     await expect(caller().getMetrics({ period: "day" })).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
     });
-    expect(mocks.metrics).not.toHaveBeenCalled();
+    try {
+      await caller().getMetrics({ period: "day" });
+    } catch (error) {
+      expect(String(error)).not.toContain("confidential");
+    }
   });
   it.each([
     { conversationId: 0 },

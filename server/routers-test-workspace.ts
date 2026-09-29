@@ -18,7 +18,7 @@ import {
   saveOwnedTestMessage,
   TestWorkspaceError,
 } from "./test-sari-store";
-import { getDb } from "./db/connection";
+import { testMetricsInput } from "../shared/test-metrics-workspace";
 
 async function run<T>(work: () => Promise<T>): Promise<T> {
   try {
@@ -96,13 +96,10 @@ export const testSariRouter = router({
       });
     })
   ),
-  getMetrics: permissionProcedure("conversations.read")
-    .input(
-      z.object({ period: z.enum(["day", "week", "month"]).default("day") })
-    )
+  getMetrics: permissionProcedure("analytics.read")
+    .input(testMetricsInput)
     .query(({ ctx, input }) =>
       run(async () => {
-        if (!(await getDb())) throw new Error("Database unavailable");
         const { calculateAllMetrics } = await import("./metrics");
         return calculateAllMetrics(ctx.merchantId, input.period);
       })

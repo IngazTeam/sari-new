@@ -5,6 +5,7 @@ import {
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
 import { readTestMetricsWorkspace } from "./test-metrics-workspace";
+import { calculateAllMetrics } from "./metrics";
 describe.skipIf(!process.env.DATABASE_URL)(
   "saved test metrics evidence in MySQL",
   () => {
@@ -135,6 +136,14 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(r.dealRecords).toBe(2);
       expect(r.duplicateDeals).toBe(1);
       expect(r.invalidDeals).toBe(1);
+      const legacy = await calculateAllMetrics(owner.merchantId, "day", now);
+      expect(legacy.evidence).toEqual(r);
+      expect(legacy.conversion).toEqual({
+        conversionRate: 50,
+        avgDealValue: 250,
+        totalRevenue: 250,
+      });
+      expect(legacy.time.avgTimeToConversion).toBe(60);
     });
     it("never derives unsupported business metrics from trial agreements or feedback", async () => {
       const c = await session();
@@ -165,6 +174,16 @@ describe.skipIf(!process.env.DATABASE_URL)(
         });
       expect(r.feedback.positiveShare).toBe(100);
       expect(r.salesProficiency).toBeNull();
+      const legacy = await calculateAllMetrics(owner.merchantId, "day", now);
+      expect(legacy.advanced).toEqual({
+        productClickRate: null,
+        orderCompletionRate: null,
+        csatScore: null,
+        npsScore: null,
+      });
+      expect(legacy.growth).toEqual({ returnRate: null, referralRate: null });
+      expect(legacy.quality.resolutionRate).toBeNull();
+      expect(legacy.evidence).toEqual(r);
     });
     it("includes exact time bounds and excludes future sessions", async () => {
       const a = await session(owner.merchantId, "2026-09-30 00:00:00"),
