@@ -74,9 +74,7 @@ export async function runInteractionJob(): Promise<boolean> {
 
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT c.customerPhone, c.customerName,
-        (SELECT COUNT(*) FROM messages history WHERE history.conversationId = c.id
-          AND history.direction = 'incoming' AND history.id <= m.id) AS message_count
+      `SELECT c.customerPhone, c.customerName
        FROM conversations c JOIN messages m ON m.conversationId = c.id
        WHERE c.id = ? AND c.merchantId = ? AND m.id = ? AND m.direction='incoming'`,
       [job.conversation_id, job.merchant_id, job.incoming_message_id]);
@@ -88,18 +86,9 @@ export async function runInteractionJob(): Promise<boolean> {
       const { getOrCreateProfile } = await import('../db/customer-intelligence');
       await captureConversationSignals({ merchantId: job!.merchant_id, conversationId: job!.conversation_id,
         incomingMessageId:job!.incoming_message_id,jobId:job!.id,leaseToken:token, strict: true });
-      const profile = await getOrCreateProfile(job!.merchant_id, interaction.customerPhone, interaction.customerName);
-      const { readStoredUnderstanding } = await import('./conversation-understanding');
-      const understood = await readStoredUnderstanding(pool, {merchantId:job!.merchant_id,conversationId:job!.conversation_id,
-        incomingMessageId:job!.incoming_message_id,customerPhone:interaction.customerPhone},true);
-      // Never reinterpret a sealed or failed primary analysis with a separate memory model.
-      // Only genuinely pre-interpreter jobs retain the legacy bounded enrichment path.
-      if (Number(interaction.message_count) % 5 === 0 && !understood) {
-        const { enrichCustomerProfile } = await import('./profile-enrichment');
-        await enrichCustomerProfile({ merchantId: job!.merchant_id, conversationId: job!.conversation_id,
-          customerPhone: interaction.customerPhone, currentProfile: profile, strict: true,
-          throughMessageId: job!.incoming_message_id, jobId: job!.id, leaseToken: token });
-      }
+      await getOrCreateProfile(job!.merchant_id, interaction.customerPhone, interaction.customerName);
+      // Memory is committed with the shared interpretation before replying. Historical jobs cannot
+      // create a second interpretation, overwrite a correction, or revive erased/unproven facts.
     });
     await pool.execute(`UPDATE ai_interaction_jobs SET state = 'completed', completed_at = UTC_TIMESTAMP(3),
       lease_token = NULL, lease_until = NULL, last_error = NULL WHERE id = ? AND lease_token = ? AND lease_until>UTC_TIMESTAMP(3)`, [job.id, token]);

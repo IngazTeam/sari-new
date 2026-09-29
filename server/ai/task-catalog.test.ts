@@ -39,7 +39,7 @@ describe("SARI_TASK_CATALOG", () => {
       "sari.booking.extract",
       "sari.booking.service-match",
       "sari.catalog.file-extraction",
-      "sari.customer.profile-enrichment",
+      "sari.customer.intent",
       "sari.knowledge.content-analysis",
       "sari.order.extract",
       "sari.product.selection",
@@ -65,6 +65,11 @@ describe("SARI_TASK_CATALOG", () => {
     expect(resolveSariTaskType("sari.next-action").taskType).toBe(
       "sari.sales.next-best-action",
     );
+  });
+
+  it("resolves retired independent memory inference to the shared conversation interpreter", () => {
+    expect(activeSariTaskTypes()).not.toContain("sari.customer.profile-enrichment");
+    expect(resolveSariTaskType("sari.customer.profile-enrichment").taskType).toBe("sari.customer.intent");
   });
 
   it("does not expose the generic sari.invoke escape hatch", () => {

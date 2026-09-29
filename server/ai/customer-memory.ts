@@ -2,12 +2,12 @@ import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { checkoutTransaction, type CheckoutIdentity } from './checkout-agreements';
 import { destroySession } from './session-context';
-import { memoryFields, memoryValueSchemas, parseDirectMemory, inferredMemorySchema,
-  type MemoryField, type CustomerMemoryFact } from '../../shared/customer-memory';
+import { memoryFields, memoryValueSchemas, parseDirectMemory, type MemoryField } from '../../shared/customer-memory';
 import type { CustomerProfile } from '../db/customer-intelligence';
 import { semanticIdentityMatches } from './conversation-understanding-context';
 import { resolvedMemoryFacts, validateMemoryFacts } from './contextual-memory-contract';
 import { currentInboundExecution } from '../messaging/inbound-context';
+import { readVerifiedCustomerMemory } from './customer-memory-reader';
 
 const positiveId = (n: number) => Number.isSafeInteger(n) && n > 0;
 function assertIdentity(input: CheckoutIdentity) {
@@ -18,25 +18,16 @@ function assertIdentity(input: CheckoutIdentity) {
 export async function readCustomerMemory(merchantId: number, phone: string) {
   if (!positiveId(merchantId) || typeof phone !== 'string' || phone.length > 50) throw new Error('Memory identity invalid');
   const pool = await getPool(); if (!pool) throw new Error('Memory storage unavailable');
-  const [profiles] = await pool.execute<any[]>(`SELECT id, memory_version, memory_forget_before_message_id
-    FROM customer_profiles WHERE merchant_id=? AND customer_phone=?`, [merchantId, phone]);
-  const profile = profiles[0];
-  if (!profile) return { revision: 0, forgetBeforeMessageId: 0, facts: [] as CustomerMemoryFact[] };
-  // A removed source, foreign message, changed phone or expired field cannot become prompt context.
-  const [rows] = await pool.execute<any[]>(`SELECT f.* FROM customer_memory_facts f
-    JOIN messages m ON m.id=f.source_message_id AND m.conversationId=f.conversation_id AND m.direction='incoming'
-    JOIN conversations c ON c.id=m.conversationId AND c.merchantId=f.merchant_id AND c.customerPhone=?
-    WHERE f.profile_id=? AND f.merchant_id=? AND f.deleted=0 AND f.expires_at>UTC_TIMESTAMP(3)`, [phone, profile.id, merchantId]);
-  const facts: CustomerMemoryFact[] = [];
-  for (const row of rows) {
-    if (!memoryFields.includes(row.field_key)) continue;
-    const field: MemoryField = row.field_key;
-    // mysql2 already decodes the JSON column, including scalar strings and booleans.
-    let value; try { value = memoryValueSchemas[field].parse(row.value_json); } catch { continue; }
-    facts.push({ field, value, kind: row.source_kind, sourceMessageId: row.source_message_id, conversationId: row.conversation_id,
-      observedAt: new Date(row.observed_at).toISOString(), expiresAt: new Date(row.expires_at).toISOString(), revision: row.revision });
-  }
-  return { revision: profile.memory_version, forgetBeforeMessageId: profile.memory_forget_before_message_id, facts };
+  const connection = await pool.getConnection();
+  try {
+    // One snapshot prevents a concurrent correction/deletion from mixing profile, fact and evidence versions.
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
+    const memory = await readVerifiedCustomerMemory(connection, merchantId, phone);
+    await connection.commit();
+    return memory;
+  } catch (error) { await connection.rollback(); throw error; }
+  finally { connection.release(); }
 }
 
 /** Legacy summaries remain available for audit; only sourced, unexpired memory reaches sales decisions. */
@@ -182,33 +173,5 @@ export async function captureContextualCustomerMemory(input: CheckoutIdentity): 
     await currentInboundExecution()?.assertOwned();
     if (applied) await connection.execute('UPDATE customer_profiles SET memory_version=memory_version+1 WHERE id=? AND merchant_id=?',[profile.id,input.merchantId]);
     return applied;
-  });
-}
-
-/** Lease, profile CAS, source ownership and per-field precedence are committed together. */
-export async function persistInferredCustomerMemory(input: { merchantId: number; customerPhone: string; conversationId: number;
-  throughMessageId: number; expectedVersion: number; jobId: number; leaseToken: string; extraction: unknown; allowedMessageIds: number[] }) {
-  const parsed = inferredMemorySchema.parse(input.extraction);
-  return checkoutTransaction(async connection => {
-    const profile = await lockProfile(connection, input);
-    if (Number(profile.last_enriched_message_id || 0) >= input.throughMessageId) return;
-    const [jobs] = await connection.execute<any[]>(`SELECT j.id FROM ai_interaction_jobs j
-      JOIN conversations c ON c.id=j.conversation_id AND c.merchantId=j.merchant_id
-      JOIN messages m ON m.id=j.incoming_message_id AND m.conversationId=c.id AND m.direction='incoming'
-      WHERE j.id=? AND j.merchant_id=? AND j.conversation_id=? AND j.incoming_message_id=?
-      AND j.state='processing' AND j.lease_token=? AND j.lease_until>UTC_TIMESTAMP(3) AND c.customerPhone=? FOR UPDATE`,
-    [input.jobId, input.merchantId, input.conversationId, input.throughMessageId, input.leaseToken, input.customerPhone]);
-    if (!jobs.length || profile.memory_version !== input.expectedVersion) throw new Error('Profile memory changed or interaction lease expired');
-    for (const fact of parsed.facts) {
-      if (!input.allowedMessageIds.includes(fact.sourceMessageId) || fact.sourceMessageId > input.throughMessageId
-        || fact.sourceMessageId <= profile.memory_forget_before_message_id) throw new Error('Memory evidence outside permitted history');
-      const [messages] = await connection.execute<any[]>(`SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversationId
-        WHERE m.id=? AND c.id=? AND c.merchantId=? AND c.customerPhone=? AND m.direction='incoming'`,
-      [fact.sourceMessageId, input.conversationId, input.merchantId, input.customerPhone]);
-      if (!messages.length) throw new Error('Memory evidence ownership mismatch');
-      await writeFact(connection, profile.id, input.merchantId, { field: fact.field, value: fact.value, kind: 'inferred', message: messages[0] });
-    }
-    await connection.execute(`UPDATE customer_profiles SET memory_version=memory_version+1, last_enriched_message_id=?
-      WHERE id=? AND merchant_id=?`, [input.throughMessageId, profile.id, input.merchantId]);
   });
 }

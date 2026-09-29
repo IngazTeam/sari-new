@@ -19,6 +19,7 @@ import { validateMemoryFacts } from './contextual-memory-contract';
 import { readAppointmentReminderTargets, type AppointmentReminderTarget } from '../appointment-reminder-context';
 import { agentCandidates, readAvailableAgents, type AgentCandidate } from './contextual-agent-routing';
 import { conversationUnderstandingSchema, withConversationUnderstanding, withoutConversationUnderstanding, type ConversationUnderstanding, type UnderstandingContext } from './conversation-understanding-context';
+import { understandingEvidenceSchema, verifyUnderstandingEvidence, recordedAiReply } from './understanding-evidence';
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const decode = (value: any) => typeof value === 'string' ? JSON.parse(value) : value;
@@ -173,7 +174,8 @@ async function readTurn(c: PoolConnection, input: CheckoutIdentity & { message: 
   // Failure to read marketing consent disables outreach, not the customer's ordinary reply.
   const automaticFollowupAllowed = policy.enabled && await hasActiveCampaignConsent(input.merchantId, input.customerPhone).catch(() => false);
   const appointmentReminderTargets = await readAppointmentReminderTargets(c, input);
-  const context: UnderstandingInput = { messages, catalog, targets, memory: memory.facts.filter(f => f.sourceMessageId < input.incomingMessageId && f.sourceMessageId > cutoff)
+  // Partial erasure retains unrelated verified facts; the cutoff still excludes old raw history/actions.
+  const context: UnderstandingInput = { messages, catalog, targets, memory: memory.facts.filter(f => f.sourceMessageId < input.incomingMessageId)
     .slice(-30).map(f => ({ field: f.field, value: f.value, sourceMessageId: f.sourceMessageId })),
     memoryRevision: memory.revision, services: services.map(s => ({ id: s.id, name: String(s.name).slice(0, 255) })), currentMessageId: input.incomingMessageId,
     agents, currentAgentId: agents.some(a => a.id === conversations[0].current_agent_id) ? conversations[0].current_agent_id : null,
@@ -188,9 +190,6 @@ async function readTurn(c: PoolConnection, input: CheckoutIdentity & { message: 
 }
 
 type Reader = Pool | PoolConnection;
-function recordedAiReply(m: any): boolean {
-  return m.direction === 'outgoing' && m.sender_type === 'assistant' && Number(m.isProcessed) === 1 && m.aiResponse != null && m.aiResponse === m.content;
-}
 /** Re-check persisted evidence by IDs. Historical consent is never looked up by its wording. */
 export async function readStoredUnderstanding(db: Reader, input: CheckoutIdentity, historical = false): Promise<UnderstandingContext | null> {
   const [rows] = await db.execute<any[]>('SELECT * FROM ai_conversation_understanding WHERE merchant_id=? AND conversation_id=? AND incoming_message_id=?', [input.merchantId, input.conversationId, input.incomingMessageId]);
@@ -208,11 +207,9 @@ export async function readStoredUnderstanding(db: Reader, input: CheckoutIdentit
   }
   const context = { merchantId: input.merchantId, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, message: String(source.content) };
   if (r.state !== 'ready') return { ...context, analysis: blocked(input.incomingMessageId, context.message) };
-  const evidence = z.array(z.object({ id: z.number().int().positive(), role: z.enum(['user', 'assistant']), digest: z.string().length(64), createdAt: z.string().datetime().optional(), isAiReply: z.boolean().optional() }).strict()).min(1).max(21).parse(decode(r.message_evidence));
-  const [messages] = await db.execute<any[]>(`SELECT id,direction,content,createdAt,sender_type,isProcessed,aiResponse FROM messages WHERE conversationId=? AND id IN (${evidence.map(() => '?').join(',')})`, [input.conversationId, ...evidence.map(e => e.id)]);
-  if (evidence.some(e => { const m = messages.find(m => m.id === e.id); return !m || m.id <= r.memory_cutoff || hash(String(m.content || '').slice(0, 16000)) !== e.digest || (m.direction === 'incoming' ? 'user' : 'assistant') !== e.role || e.createdAt !== undefined && e.createdAt !== new Date(m.createdAt).toISOString() || e.isAiReply !== undefined && e.isAiReply !== recordedAiReply(m); })) throw Error('Interpretation evidence changed');
-  const analysis = conversationUnderstandingSchema.parse(decode(r.result_json));
-  if (hash({ source: r.source_digest, context: r.context_digest, evidence, analysis }) !== r.result_digest) throw Error('Interpretation seal changed');
+  const evidence = understandingEvidenceSchema.parse(decode(r.message_evidence));
+  const [messages] = await db.execute<any[]>(`SELECT id,conversationId,direction,content,createdAt,sender_type,isProcessed,aiResponse FROM messages WHERE conversationId=? AND id IN (${evidence.map(() => '?').join(',')})`, [input.conversationId, ...evidence.map(e => e.id)]);
+  const { analysis } = verifyUnderstandingEvidence(r, messages);
   return { ...context, analysis };
 }
 

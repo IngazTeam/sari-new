@@ -4,7 +4,7 @@ vi.mock('./openai',()=>({callGPT4:model}));
 vi.mock('../db_ai_settings',()=>({getTextGenerationSettings:async()=>({model:'central-memory-test',isActive:true,textGenerationProvider:'openai'})}));
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
-import { captureDirectCustomerMemory, captureContextualCustomerMemory, readCustomerMemory, persistInferredCustomerMemory, groundCustomerProfile } from './customer-memory';
+import { captureDirectCustomerMemory, captureContextualCustomerMemory, readCustomerMemory, groundCustomerProfile } from './customer-memory';
 import { understandConversation } from './conversation-understanding';
 import { memoryUnderstandingFixture } from '../tests/helpers/memory-understanding-fixture';
 import { getOrCreateProfile, buildProfileContext } from '../db/customer-intelligence';
@@ -49,13 +49,19 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
     return privacy;
   };
   const read = () => readCustomerMemory(fixture.merchantId, phone);
-  const infer = async (id: number, facts: any[], overrides = {}) => {
-    const profile = await getOrCreateProfile(fixture.merchantId, phone);
-    const job = await sql(`INSERT INTO ai_interaction_jobs (merchant_id,conversation_id,incoming_message_id,reply_text,state,lease_token,lease_until)
-      VALUES (?,?,?,'fixture','processing','test-lease',TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)))
-      ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(ai_interaction_jobs.id)`, [fixture.merchantId, conversationId, id]);
-    return persistInferredCustomerMemory({ merchantId: fixture.merchantId, customerPhone: phone, conversationId, throughMessageId: id,
-      expectedVersion: profile.memoryVersion!, jobId: job.insertId, leaseToken: 'test-lease', extraction: { facts }, allowedMessageIds: facts.map(f => f.sourceMessageId), ...overrides });
+  const infer = async (id: number, facts: any[], overrides = {}, beforeCapture?: () => Promise<unknown>) => {
+    const identity={merchantId:fixture.merchantId,customerPhone:phone,conversationId,incomingMessageId:id,...overrides};
+    const [source]=await sql('SELECT content FROM messages WHERE id=?',[id]);
+    model.mockImplementation(async messages=>{
+      const context=JSON.parse(messages[1].content);
+      const analysis=memoryUnderstandingFixture(context,facts.map(f=>({field:f.field,value:f.value,kind:'inferred'})));
+      analysis.memoryFacts!.forEach((fact,index)=>{ const evidence=context.messages.find((m:any)=>m.id===facts[index].sourceMessageId);
+        fact.evidence=[{messageId:facts[index].sourceMessageId,excerpt:evidence?.content.slice(0,300)||'unavailable'}]; });
+      return JSON.stringify(analysis);
+    });
+    if(!await understandConversation({...identity,message:source.content}))throw Error('Memory evidence invalid');
+    await beforeCapture?.();
+    return captureContextualCustomerMemory(identity);
   };
   const profileContext = async () => buildProfileContext(groundCustomerProfile(await getOrCreateProfile(fixture.merchantId, phone), await read()));
 
@@ -114,7 +120,7 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
   it('does not extend a source TTL when a new extraction cites the same old evidence', async () => {
     const first = await message('أريد شيئا رخيصا'); await infer(first, [{ field: 'priceConscious', value: true, sourceMessageId: first }]);
     const before = (await read()).facts[0];
-    const next = await message('مرحبا'); await infer(next, [{ field: 'priceConscious', value: true, sourceMessageId: first }]);
+    const next = await message('مرحبا'); await expect(infer(next, [{ field: 'priceConscious', value: true, sourceMessageId: first }])).rejects.toThrow('Memory evidence');
     expect((await read()).facts[0]).toEqual(before);
   });
   it.each(['merchant', 'phone', 'conversation', 'outgoing'])('rejects a forged direct source: %s', async attack => {
@@ -131,14 +137,18 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
       ? await message('أريد الرخيص', foreign) : await message('رسالة أخرى');
     const through = attack === 'future' ? first : await message('مرحبا');
     await expect(infer(through, [{ field: 'priceConscious', value: true, sourceMessageId: first },
-      { field: 'qualityFocused', value: true, sourceMessageId: bad }], attack === 'unseen' ? { allowedMessageIds: [first] } : {})).rejects.toThrow(/Memory evidence/);
+      { field: 'qualityFocused', value: true, sourceMessageId: bad }], attack === 'unseen' ? { allowedMessageIds: [first] } : {})).rejects.toThrow(/Memory evidence|superseded/);
     expect((await read()).facts).toEqual([]);
   });
-  it.each(['version', 'lease', 'tenant', 'jobConversation'])('fences stale or foreign extraction commits: %s', async attack => {
+  it.each(['version', 'handoff', 'source', 'phone'])('fences a shared inference whose authority changes before commit: %s', async attack => {
     const id = await message('غالي');
-    const overrides = attack === 'version' ? { expectedVersion: 999 } : attack === 'lease' ? { leaseToken: 'wrong' }
-      : attack === 'tenant' ? { merchantId: fixture.merchantId + 1000000 } : { conversationId: conversationId + 1000000 };
-    await expect(infer(id, [{ field: 'priceConscious', value: true, sourceMessageId: id }], overrides)).rejects.toThrow();
+    await getOrCreateProfile(fixture.merchantId,phone);
+    await expect(infer(id, [{ field: 'priceConscious', value: true, sourceMessageId: id }], {}, async()=>{
+      if(attack==='version')await sql('UPDATE customer_profiles SET memory_version=memory_version+1 WHERE merchant_id=?',[fixture.merchantId]);
+      else if(attack==='handoff')await sql('UPDATE conversations SET handoff_version=handoff_version+1 WHERE id=?',[conversationId]);
+      else if(attack==='phone')await sql("UPDATE conversations SET customerPhone='966500000088' WHERE id=?",[conversationId]);
+      else await sql("UPDATE messages SET content='changed' WHERE id=?",[id]);
+    })).rejects.toThrow();
     expect((await read()).facts).toEqual([]);
   });
   it('excludes facts when their source is removed, and never reads another tenant', async () => {
@@ -149,7 +159,7 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
   });
   it('validates customer ownership even when the model returns no facts', async () => {
     const id = await message('مرحبا');
-    await expect(infer(id, [], { customerPhone: '966500000088' })).rejects.toThrow('interaction lease');
+    await expect(infer(id, [], { customerPhone: '966500000088' })).rejects.toThrow();
     expect(await sql("SELECT id FROM customer_profiles WHERE merchant_id=? AND customer_phone='966500000088'", [fixture.merchantId])).toHaveLength(0);
   });
   it('deletes the budget value and blocks historical extraction while keeping unrelated explicit facts', async () => {
@@ -162,7 +172,7 @@ describe.skipIf(!process.env.DATABASE_URL)('source-bound customer memory with re
     expect(tombstone).toEqual({ value_json: null, deleted: 1 });
     await capture(id); expect((await read()).facts.map(f => f.field)).toEqual(['preferredName']);
     const latest = await message('مرحبا');
-    await expect(infer(latest, [{ field: 'priceConscious', value: true, sourceMessageId: id }])).rejects.toThrow('permitted history');
+    await expect(infer(latest, [{ field: 'priceConscious', value: true, sourceMessageId: id }])).rejects.toThrow('Memory evidence');
     await capture(await message('ميزانيتي 800 ريال'));
     expect((await read()).facts).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'budget', value: { amountMinor: 80000, currency: 'SAR' } })]));
   });

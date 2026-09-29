@@ -358,6 +358,7 @@ function defineTask(definition: TaskDefinition): SariTaskContract {
 
 function operationalTask(definition: {
   taskType: `sari.${string}`;
+  aliases?: readonly `sari.${string}`[];
   businessNameAr: string;
   owner: string;
   sourceFiles: readonly string[];
@@ -884,16 +885,8 @@ const TASK_DEFINITIONS: readonly TaskDefinition[] = [
     fallback: "retain_existing_keyword_counts",
   }),
   operationalTask({
-    taskType: "sari.customer.profile-enrichment",
-    businessNameAr: "إثراء ملف العميل",
-    owner: "sari-insights-team",
-    sourceFiles: ["server/ai/profile-enrichment.ts"],
-    inputKind: "conversation",
-    outputKind: "analysis",
-    fallback: "retain_current_customer_profile",
-  }),
-  operationalTask({
     taskType: "sari.customer.intent",
+    aliases: ["sari.customer.profile-enrichment"],
     businessNameAr: "تحليل نية العميل",
     owner: "sari-conversation-team",
     sourceFiles: ["server/ai/sari-personality.ts", "server/ai/conversation-understanding.ts"],

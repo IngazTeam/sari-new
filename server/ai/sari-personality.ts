@@ -73,7 +73,6 @@ import { containsUnverifiedActionClaim, UNVERIFIED_ACTION_FALLBACK } from './tra
 import { buildDNAPrompt, captureConversationSignals } from './learning-engine';
 import { handleSmartEscalation } from './smart-escalation';
 import { virtualAgents } from '../../drizzle/schema';
-import { enrichCustomerProfile } from './profile-enrichment';
 import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { loadLightweightArsenal } from './lightweight-arsenal';
