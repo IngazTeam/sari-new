@@ -1,5 +1,7 @@
 import type { PoolConnection } from "mysql2/promise";
 import { z } from "zod";
+import { contextualSalesLossReason } from "./contextual-sales-loss-contract";
+import { verifiedTapLearningSources } from "./payment-learning-source";
 import {
   contextualLearningWeights,
   resolvedLearningSignals,
@@ -27,10 +29,23 @@ const metadataSchema = z
   })
   .strict();
 const decode = decodeUnderstandingJson;
+const declineMetadataSchema = z
+  .object({
+    version: z.literal(1),
+    basis: z.literal("interpreted_customer_decline"),
+    sourceMessageId: positive,
+    interpretationDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    reason: z.string().min(1),
+    causality: z.literal("unmeasured"),
+    financialOutcome: z.literal("unmeasured"),
+  })
+  .strict();
+const sourceMetadataSchema = z.union([metadataSchema, declineMetadataSchema]);
 
 /** Recheck contextual signals at every later use. Copies of transcript text are
  * not independent evidence. The caller owns a consistent snapshot or transaction.
- * Other source families retain their existing contracts; this does not certify them. */
+ * Also admits sealed decline and canonical Tap sources. Other historical source
+ * families retain their existing contracts; this does not certify them. */
 export async function verifiedContextualLearningSources<
   T extends Record<string, any>,
 >(
@@ -56,10 +71,11 @@ export async function verifiedContextualLearningSources<
       );
     return result;
   }
+  rows = await verifiedTapLearningSources(connection, merchantId, rows, lock);
   const accepted = new Set<T>();
   const candidates: Array<{
     row: T;
-    metadata: z.infer<typeof metadataSchema>;
+    metadata: z.infer<typeof sourceMetadataSchema>;
   }> = [];
   for (const row of rows) {
     let metadata: any;
@@ -70,18 +86,26 @@ export async function verifiedContextualLearningSources<
     }
     const contextual =
       String(row.source_key || "").startsWith("contextual_learning") ||
-      metadata?.basis === "interpreted_conversation";
+      String(row.source_key || "").startsWith("contextual_loss") ||
+      row.signal_type === "sales_declined" ||
+      ["interpreted_conversation", "interpreted_customer_decline"].includes(
+        metadata?.basis
+      );
     if (!contextual) {
       accepted.add(row);
       continue;
     }
     try {
-      const m = metadataSchema.parse(metadata);
+      const m = sourceMetadataSchema.parse(metadata);
+      const prefix =
+        m.basis === "interpreted_customer_decline"
+          ? "contextual_loss"
+          : "contextual_learning";
       if (
         row.merchant_id !== merchantId ||
         !Number.isSafeInteger(row.conversation_id) ||
         row.source_key !==
-          `contextual_learning:${row.conversation_id}:${m.sourceMessageId}`
+          `${prefix}:${row.conversation_id}:${m.sourceMessageId}`
       )
         continue;
       candidates.push({ row, metadata: m });
@@ -181,6 +205,31 @@ export async function verifiedContextualLearningSources<
           c.metadata.sourceMessageId === record.incoming_message_id &&
           c.metadata.interpretationDigest === record.result_digest
       )) {
+        if (metadata.basis === "interpreted_customer_decline") {
+          const reason = contextualSalesLossReason(analysis);
+          const evidence = analysis.salesLoss?.evidence || [];
+          if (
+            !reason ||
+            metadata.reason !== reason ||
+            row.signal_type !== "sales_declined" ||
+            Number(row.signal_weight) !== 1 ||
+            row.bot_message !== null ||
+            row.merchant_correction !== null ||
+            row.customer_message !== String(source.content).slice(0, 2000) ||
+            !evidence.some(e => e.messageId === source.id) ||
+            evidence.some(
+              e =>
+                !own.some(
+                  m =>
+                    m.id === e.messageId &&
+                    String(m.content).includes(e.excerpt)
+                )
+            )
+          )
+            continue;
+          accepted.add(row);
+          continue;
+        }
         const signal = resolvedLearningSignals(analysis).find(
           s => s.type === row.signal_type
         );

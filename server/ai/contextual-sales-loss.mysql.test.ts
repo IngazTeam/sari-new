@@ -30,6 +30,22 @@ import type { CheckoutIdentity } from "./checkout-agreements";
 import { snapshotLearningSignals } from "./learning-analysis-contract";
 import { persistLearningAnalysis } from "./learning-analysis";
 import { buildDNAPrompt } from "./learning-engine";
+import { getUnanalyzedSignals, getLearningEvidence } from "../db/learning";
+import {
+  getLearningPolicyReview,
+  recordLearningPolicyReview,
+} from "./learning-policy-review";
+import {
+  learningPolicyReviewSuite,
+  learningPolicyReviewSuiteDigest,
+} from "./learning-policy-review-contract";
+import { randomUUID } from "node:crypto";
+import {
+  claimLearningAnalysis,
+  dispatchLearningAnalysis,
+  storeLearningResponse,
+  resumeLearningAnalysis,
+} from "./learning-analysis-jobs";
 
 describe.skipIf(!process.env.DATABASE_URL)(
   "contextual sales loss atomicity and local penetration checks",
@@ -107,6 +123,258 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await cleanupDisposableMerchants(users);
     });
     afterAll(closeDb);
+
+    const historicalLoss = async () => {
+      await interpret();
+      expect(await project()).not.toBeNull();
+      return signals();
+    };
+    const proposalAnalysis = (sources: any[]) => ({
+      updates: [
+        {
+          dimension: "objection_handling" as const,
+          insight: "ناقش المواعيد المتاحة حين يوضح العميل تعارضها مع عمله.",
+          confidence: 0.7,
+          supporting_signal_ids: sources.map(s => s.id),
+          contrary_signal_ids: [],
+        },
+      ],
+      knowledge_gaps: [],
+    });
+    const withdraw = () =>
+      q("DELETE FROM messages WHERE id=?", [input.incomingMessageId]);
+    it("keeps an intact historical decline after the customer returns without rewriting the current deal", async () => {
+      const sources = await historicalLoss();
+      await q(
+        "INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'incoming','text','أصبح الموعد مناسبًا')",
+        [input.conversationId]
+      );
+      await q(
+        "UPDATE conversations SET deal_stage='paid',loss_reason=NULL WHERE id=?",
+        [input.conversationId]
+      );
+      expect(await getUnanalyzedSignals(owner.merchantId)).toEqual(sources);
+      expect(await state()).toMatchObject({
+        deal_stage: "paid",
+        loss_reason: null,
+      });
+      expect(model.call).toHaveBeenCalledOnce();
+    });
+    it.each([
+      "source_deleted",
+      "source_text",
+      "source_time",
+      "context_deleted",
+      "context_text",
+      "interpretation_deleted",
+      "interpretation_seal",
+      "reason",
+      "financial_claim",
+      "weight",
+      "copied_text",
+      "copied_bot",
+      "correction",
+      "source_key",
+      "metadata",
+      "unmarked",
+      "foreign_conversation",
+    ])(
+      "excludes historical decline with %s drift without changing the stored deal",
+      async change => {
+        await historicalLoss();
+        const before = await state();
+        if (change === "source_deleted") await withdraw();
+        if (change === "source_text")
+          await q(
+            "UPDATE messages SET content='استفسار عن الموعد' WHERE id=?",
+            [input.incomingMessageId]
+          );
+        if (change === "source_time")
+          await q(
+            "UPDATE messages SET createdAt=TIMESTAMPADD(SECOND,1,createdAt) WHERE id=?",
+            [input.incomingMessageId]
+          );
+        if (change === "context_deleted")
+          await q(
+            "DELETE FROM messages WHERE conversationId=? AND direction='outgoing'",
+            [input.conversationId]
+          );
+        if (change === "context_text")
+          await q(
+            "UPDATE messages SET content='سؤال مختلف' WHERE conversationId=? AND direction='outgoing'",
+            [input.conversationId]
+          );
+        if (change === "interpretation_deleted")
+          await q(
+            "DELETE FROM ai_conversation_understanding WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "interpretation_seal")
+          await q(
+            "UPDATE ai_conversation_understanding SET result_digest=REPEAT('a',64) WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "reason")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary=JSON_SET(context_summary,'$.reason','price') WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "financial_claim")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary=JSON_SET(context_summary,'$.financialOutcome','lost') WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "weight")
+          await q(
+            "UPDATE sari_learning_signals SET signal_weight=9 WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "copied_text")
+          await q(
+            "UPDATE sari_learning_signals SET customer_message='كلام منسوخ آخر' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "copied_bot")
+          await q(
+            "UPDATE sari_learning_signals SET bot_message='رد مخترع' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "correction")
+          await q(
+            "UPDATE sari_learning_signals SET merchant_correction='تصحيح غير مثبت' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "source_key")
+          await q(
+            "UPDATE sari_learning_signals SET source_key=NULL WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "metadata")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary='broken' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "unmarked")
+          await q(
+            "UPDATE sari_learning_signals SET source_key=NULL,context_summary=NULL WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "foreign_conversation") {
+          const other = await createDisposableMerchant("loss-source-other");
+          users.push(other.userId);
+          const conv = await q(
+            "INSERT INTO conversations(merchantId,customerPhone) VALUES (?,'966500000018')",
+            [other.merchantId]
+          );
+          await q("UPDATE messages SET conversationId=? WHERE id=?", [
+            conv.insertId,
+            input.incomingMessageId,
+          ]);
+        }
+        expect(await getUnanalyzedSignals(owner.merchantId)).toEqual([]);
+        expect(await state()).toEqual(before);
+        expect(await signals()).toHaveLength(1);
+        expect(model.call).toHaveBeenCalledOnce();
+      }
+    );
+    it.each(["claim", "dispatch", "response", "recovery", "projection"])(
+      "rechecks decline evidence at %s",
+      async checkpoint => {
+        const sources = await historicalLoss(),
+          snapshot = snapshotLearningSignals(owner.merchantId, sources),
+          analysis = proposalAnalysis(sources);
+        if (checkpoint === "claim") {
+          await withdraw();
+          expect(await claimLearningAnalysis(snapshot)).toMatchObject({
+            status: "stale",
+          });
+        } else if (checkpoint === "projection") {
+          await withdraw();
+          await expect(
+            persistLearningAnalysis(snapshot, analysis)
+          ).rejects.toThrow("source changed");
+        } else {
+          const acquired = await claimLearningAnalysis(snapshot);
+          if (acquired.status !== "claimed")
+            throw Error("Expected isolated claim");
+          if (checkpoint === "dispatch") {
+            await withdraw();
+            expect(await dispatchLearningAnalysis(acquired.claim)).toBe(false);
+          } else {
+            expect(await dispatchLearningAnalysis(acquired.claim)).toBe(true);
+            if (checkpoint === "recovery") {
+              expect(
+                await storeLearningResponse(
+                  acquired.claim,
+                  JSON.stringify(analysis)
+                )
+              ).not.toBeNull();
+              await withdraw();
+              expect(
+                await resumeLearningAnalysis(owner.merchantId)
+              ).toMatchObject({ status: "stale" });
+            } else {
+              await withdraw();
+              expect(
+                await storeLearningResponse(
+                  acquired.claim,
+                  JSON.stringify(analysis)
+                )
+              ).toBeNull();
+            }
+          }
+        }
+        expect(
+          await q("SELECT id FROM ai_learning_proposals WHERE merchant_id=?", [
+            owner.merchantId,
+          ])
+        ).toEqual([]);
+        expect(await signals()).toEqual(sources);
+      }
+    );
+    it("invalidates a reviewed decline proposal and its evidence count after the source is withdrawn", async () => {
+      const sources = await historicalLoss();
+      await persistLearningAnalysis(
+        snapshotLearningSignals(owner.merchantId, sources),
+        proposalAnalysis(sources)
+      );
+      const proposalId = (
+        await q("SELECT id FROM ai_learning_proposals WHERE merchant_id=?", [
+          owner.merchantId,
+        ])
+      )[0].id;
+      const before = await getLearningPolicyReview(owner.merchantId, {
+        proposalId,
+      });
+      await recordLearningPolicyReview(owner.merchantId, owner.userId, {
+        proposalId,
+        requestId: randomUUID(),
+        sourceDigest: before.sourceDigest,
+        suiteDigest: learningPolicyReviewSuiteDigest,
+        expectedRevision: 0,
+        styleOnly: true,
+        cases: learningPolicyReviewSuite.cases.map(c => ({
+          caseId: c.id as any,
+          baselineResponse: "Synthetic baseline",
+          candidateResponse: "Synthetic candidate",
+          baselineVerdict: "pass",
+          candidateVerdict: "pass",
+          reason: "Synthetic human review for this stored case.",
+        })),
+      });
+      await withdraw();
+      expect(
+        await getLearningPolicyReview(owner.merchantId, { proposalId })
+      ).toMatchObject({
+        stage: "stale",
+        eligible: false,
+        independentConversations: 0,
+        evidencePreview: [],
+      });
+      expect(
+        (await getLearningEvidence(owner.merchantId)).proposals[0]
+      ).toMatchObject({ evidenceCount: 0, evidence: [] });
+    });
 
     it.each(["openai", "zahypi"])(
       "projects a sealed %s interpretation once under parallel replay with no extra AI call",
@@ -232,9 +500,10 @@ describe.skipIf(!process.env.DATABASE_URL)(
         )
       ).toEqual([{ status: "proposed" }]);
       expect(
-        await q("SELECT signal_id FROM ai_learning_evidence_links WHERE merchant_id=?", [
-          owner.merchantId,
-        ])
+        await q(
+          "SELECT signal_id FROM ai_learning_evidence_links WHERE merchant_id=?",
+          [owner.merchantId]
+        )
       ).toHaveLength(3);
       expect(
         (await signals()).every(

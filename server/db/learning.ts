@@ -10,6 +10,7 @@ import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { createHash } from 'node:crypto';
 import { verifiedContextualLearningSources } from '../ai/contextual-learning-source';
+import { readVerifiedTapOutcomeCounts } from '../ai/payment-learning-source';
 import { captureLearningSignals, type LearningSignalInput } from '../ai/learning-signal-capture';
 
 // ═══════════════════════════════════════════════════════════════
@@ -295,19 +296,12 @@ export async function getLearningEvidence(merchantId: number) {
     WHERE merchant_id = ? AND status = 'proposed'`,
       [merchantId],
     );
-    const [outcomes] = await connection.execute<any[]>(
-      `SELECT
-    COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_completed' AND p.status = 'captured' THEN e.payment_id END) AS purchases,
-    COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_refunded' AND p.status = 'refunded' THEN e.payment_id END) AS refunds
-    FROM ai_purchase_outcomes e JOIN order_payments p ON p.id = e.payment_id AND p.merchant_id = e.merchant_id
-    WHERE e.merchant_id = ?`,
-      [merchantId],
-    );
+    const outcomes = await readVerifiedTapOutcomeCounts(connection, merchantId);
     await connection.commit();
     return {
       proposalCount: Number(counts[0]?.count || 0),
-      verifiedPurchases: Number(outcomes[0]?.purchases || 0),
-      verifiedRefunds: Number(outcomes[0]?.refunds || 0),
+      verifiedPurchases: Number(outcomes?.purchases || 0),
+      verifiedRefunds: Number(outcomes?.refunds || 0),
       source: 'tap' as const,
       proposals: proposals.map((row) => ({
         id: Number(row.id),
