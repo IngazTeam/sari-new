@@ -156,6 +156,7 @@ async function context(
   const wouldDisableParent =
     link === "verified" && current?.id === proposed.parentId;
   const canApprove =
+    provenance.origin !== "contextual_whatsapp_dialogue" &&
     link !== "unavailable" &&
     usable(proposed) &&
     parentReady &&

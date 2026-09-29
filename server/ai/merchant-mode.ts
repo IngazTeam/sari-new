@@ -391,9 +391,9 @@ export async function handleMerchantChat(
       }
       case "teach": {
         if (params.quotedMessageId) break;
-        const { handleMerchantTeaching } =
-          await import("./merchant-teaching-handler");
-        const result = await handleMerchantTeaching(
+        const { handleTeachingDialogue } =
+          await import("./teaching-dialogue-handler");
+        const result = await handleTeachingDialogue(
           params.merchantId,
           params.message
         );

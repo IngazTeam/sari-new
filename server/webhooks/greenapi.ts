@@ -903,6 +903,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           console.log(`[Classify] 🏪 MERCHANT detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
 
           const exactQuote = quotedEscalationMessageId(payload);
+          if (!exactQuote) {
+            const {handleTeachingDialogue}=await import('../ai/teaching-dialogue-handler');
+            const draft=await handleTeachingDialogue(instance.merchantId,incomingText,true);
+            if(draft.handled && draft.response){
+              const {sendMessageWithCredentials}=await import('../whatsapp');
+              const ack=await sendMessageWithCredentials(instance.instanceId,instance.token,instance.apiUrl||'https://api.green-api.com',customerPhone,draft.response);
+              return {success:ack.success,message:ack.success?'Teaching draft processed':'Teaching draft acknowledgement not confirmed'};
+            }
+          }
           const { handleOnboardingReply } = await import('../automation/onboarding-interview');
           const onboarding = await handleOnboardingReply(instance.merchantId, incomingText, exactQuote || undefined);
           if (onboarding.handled) {

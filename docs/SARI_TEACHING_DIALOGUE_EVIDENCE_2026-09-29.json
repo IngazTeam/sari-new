@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T16:01:50.813Z",
+  "scope": "Sourced multi-message merchant teaching drafts; approval still requires semantic conflict review",
+  "branch": "main",
+  "validationBaseHead": "f51fedaab68a2bbe724bfe34996829b8e2440137",
+  "runtime": {
+    "node": "v22.23.2",
+    "database": "MySQL 8.0 synthetic loopback:33089"
+  },
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "productionDataUsed": false,
+    "externalNetworkBlocked": true,
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "files": 62,
+    "passed": 1409,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 153,
+    "dialogueMysqlTests": 26
+  },
+  "reports": [
+    {
+      "file": ".tmp/phase36-checks/phase-unit.json",
+      "sha256": "505d48bed10200ec3aea1c10d5bd028915499ccc0f289ae043258466735fef6e",
+      "passed": 198,
+      "failed": 0,
+      "skipped": 0,
+      "files": 9
+    },
+    {
+      "file": ".tmp/phase36-checks/phase-mysql.json",
+      "sha256": "4857314a54d97c4279ca5f79da2dc88437300330b015af5a0aa226e8a70478cf",
+      "passed": 153,
+      "failed": 0,
+      "skipped": 0,
+      "files": 5
+    },
+    {
+      "file": ".tmp/phase36-checks/tests.json",
+      "sha256": "31e71bfdb660bbd08f9502816953a1d7f3426e234f43aac61726858cc6c16dff",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0,
+      "files": 48
+    }
+  ],
+  "checks": [
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase36-checks\\type-snapshot-fd651bf5-404f-41a8-bf75-ceedf09139f7\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase36-checks\\type-snapshot-fd651bf5-404f-41a8-bf75-ceedf09139f7",
+      "baseHead": "f51fedaab68a2bbe724bfe34996829b8e2440137",
+      "overlaySha256": {
+        "drizzle/0163_teaching_dialogues.sql": "9b1b47a1051daca5ecd687746adaa019f4b1e03bec88f4d2684b44cb24095d7a",
+        "drizzle/meta/_journal.json": "96f16251a3d100a3d6e2f8d07a191e7337e063967d6eaa7deaf410c1e3992ca0",
+        "drizzle/schema.ts": "b14b803b2e7bebcc0a8188055aa30421317b855e2b7fbf7e9f0ffc6ccf8221af",
+        "server/ai/coaching-engine.ts": "f63fa6f208575345cb810872450950ef809cc2174fc76d2eb446fbd81bfb7f01",
+        "server/ai/merchant-mode.ts": "143509ca71576aecde063448577434f4e23ce6d59139394230aa9926d0a8c9fe",
+        "server/ai/teaching-dialogue-handler.ts": "b72623abe5d4da3818815634693aadd214c956bf8b37fc7c9f5860c02c4400ed",
+        "server/ai/teaching-dialogue-understanding.ts": "1359d35f925d834b859ade1d7a9a8aa5ee9a99bb4e1d0d64677800f539bef122",
+        "server/ai/teaching-dialogue-understanding.test.ts": "96e823d48265636c88d0747bb85fe89815ceacf438febb9bbdf0af9fd4044f33",
+        "server/knowledge/teaching-dialogue.ts": "374df6357c34ae7995a78555adc56ef5db41ab5201a5f5f81984bcd0d7793377",
+        "server/knowledge/teaching-dialogue.mysql.test.ts": "a3a74d3d84a210e8fc89e0eaa8889c85ae98d36c0222b1bee5023daeb2d3f5be",
+        "server/knowledge/teaching-source-history.ts": "631c1064d6c7317b3a4381ed9830b6b099e9caac4df675cfddc124eecd36d5bb",
+        "server/knowledge/whatsapp-teaching.ts": "6d7ca950dabdc74cad6d1e0fc8b93cb4a3de436fa77c0d159b0d52475768b38c",
+        "server/knowledge/conflict-workspace.ts": "a5099cc61465e4653b37e762b365786dc2ca29793d597522fe2991205d3eaeb0",
+        "server/tests/helpers/teaching-dialogue-schema.ts": "236d3024300ca2fe594472417185fdbb7be6d4c28ae03b59cee5f00cbbb661a7",
+        "server/tests/helpers/teaching-dialogue-fixture.ts": "e5c46cbacdd996fdfcc1420f5fb09d8dc27a37d08b91088b1eff7da6e3d06731",
+        "server/webhooks/greenapi.ts": "3eba16701229616f990e57f065cc7df92a2d953c739640733b072869b9c29916",
+        "server/webhooks/greenapi-teaching.test.ts": "f6e1cf25dbcab59fe4a70b0e5198664ec82134cc55bd35a72611c9275176f0ba",
+        "server/ai/zahypi-context-propagation.test.ts": "bdf8894ba19d9316f61b5f15eb37b2583acba66bc7bc20102c2d570cca83c1a2"
+      },
+      "source": "Tracked main plus only contextual merchant phase36s; no .env or unrelated uncommitted edits"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase36-checks\\type-snapshot-fd651bf5-404f-41a8-bf75-ceedf09139f7",
+      "baseHead": "f51fedaab68a2bbe724bfe34996829b8e2440137",
+      "overlaySha256": {
+        "drizzle/0163_teaching_dialogues.sql": "9b1b47a1051daca5ecd687746adaa019f4b1e03bec88f4d2684b44cb24095d7a",
+        "drizzle/meta/_journal.json": "96f16251a3d100a3d6e2f8d07a191e7337e063967d6eaa7deaf410c1e3992ca0",
+        "drizzle/schema.ts": "b14b803b2e7bebcc0a8188055aa30421317b855e2b7fbf7e9f0ffc6ccf8221af",
+        "server/ai/coaching-engine.ts": "f63fa6f208575345cb810872450950ef809cc2174fc76d2eb446fbd81bfb7f01",
+        "server/ai/merchant-mode.ts": "143509ca71576aecde063448577434f4e23ce6d59139394230aa9926d0a8c9fe",
+        "server/ai/teaching-dialogue-handler.ts": "b72623abe5d4da3818815634693aadd214c956bf8b37fc7c9f5860c02c4400ed",
+        "server/ai/teaching-dialogue-understanding.ts": "1359d35f925d834b859ade1d7a9a8aa5ee9a99bb4e1d0d64677800f539bef122",
+        "server/ai/teaching-dialogue-understanding.test.ts": "96e823d48265636c88d0747bb85fe89815ceacf438febb9bbdf0af9fd4044f33",
+        "server/knowledge/teaching-dialogue.ts": "374df6357c34ae7995a78555adc56ef5db41ab5201a5f5f81984bcd0d7793377",
+        "server/knowledge/teaching-dialogue.mysql.test.ts": "a3a74d3d84a210e8fc89e0eaa8889c85ae98d36c0222b1bee5023daeb2d3f5be",
+        "server/knowledge/teaching-source-history.ts": "631c1064d6c7317b3a4381ed9830b6b099e9caac4df675cfddc124eecd36d5bb",
+        "server/knowledge/whatsapp-teaching.ts": "6d7ca950dabdc74cad6d1e0fc8b93cb4a3de436fa77c0d159b0d52475768b38c",
+        "server/knowledge/conflict-workspace.ts": "a5099cc61465e4653b37e762b365786dc2ca29793d597522fe2991205d3eaeb0",
+        "server/tests/helpers/teaching-dialogue-schema.ts": "236d3024300ca2fe594472417185fdbb7be6d4c28ae03b59cee5f00cbbb661a7",
+        "server/tests/helpers/teaching-dialogue-fixture.ts": "e5c46cbacdd996fdfcc1420f5fb09d8dc27a37d08b91088b1eff7da6e3d06731",
+        "server/webhooks/greenapi.ts": "3eba16701229616f990e57f065cc7df92a2d953c739640733b072869b9c29916",
+        "server/webhooks/greenapi-teaching.test.ts": "f6e1cf25dbcab59fe4a70b0e5198664ec82134cc55bd35a72611c9275176f0ba",
+        "server/ai/zahypi-context-propagation.test.ts": "bdf8894ba19d9316f61b5f15eb37b2583acba66bc7bc20102c2d570cca83c1a2"
+      }
+    },
+    {
+      "name": "snapshot-translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase36-checks\\type-snapshot-fd651bf5-404f-41a8-bf75-ceedf09139f7"
+    },
+    {
+      "name": "snapshot-eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase36-checks\\type-snapshot-fd651bf5-404f-41a8-bf75-ceedf09139f7"
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8696,
+    "dynamicKeysChecked": 344,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "dryRun": {
+    "total": 82,
+    "live": false
+  },
+  "sourceSha256": {
+    "drizzle/0163_teaching_dialogues.sql": "9b1b47a1051daca5ecd687746adaa019f4b1e03bec88f4d2684b44cb24095d7a",
+    "drizzle/meta/_journal.json": "96f16251a3d100a3d6e2f8d07a191e7337e063967d6eaa7deaf410c1e3992ca0",
+    "drizzle/schema.ts": "b14b803b2e7bebcc0a8188055aa30421317b855e2b7fbf7e9f0ffc6ccf8221af",
+    "server/ai/coaching-engine.ts": "f63fa6f208575345cb810872450950ef809cc2174fc76d2eb446fbd81bfb7f01",
+    "server/ai/merchant-mode.ts": "143509ca71576aecde063448577434f4e23ce6d59139394230aa9926d0a8c9fe",
+    "server/ai/teaching-dialogue-handler.ts": "b72623abe5d4da3818815634693aadd214c956bf8b37fc7c9f5860c02c4400ed",
+    "server/ai/teaching-dialogue-understanding.ts": "1359d35f925d834b859ade1d7a9a8aa5ee9a99bb4e1d0d64677800f539bef122",
+    "server/ai/teaching-dialogue-understanding.test.ts": "96e823d48265636c88d0747bb85fe89815ceacf438febb9bbdf0af9fd4044f33",
+    "server/knowledge/teaching-dialogue.ts": "374df6357c34ae7995a78555adc56ef5db41ab5201a5f5f81984bcd0d7793377",
+    "server/knowledge/teaching-dialogue.mysql.test.ts": "a3a74d3d84a210e8fc89e0eaa8889c85ae98d36c0222b1bee5023daeb2d3f5be",
+    "server/knowledge/teaching-source-history.ts": "631c1064d6c7317b3a4381ed9830b6b099e9caac4df675cfddc124eecd36d5bb",
+    "server/knowledge/whatsapp-teaching.ts": "6d7ca950dabdc74cad6d1e0fc8b93cb4a3de436fa77c0d159b0d52475768b38c",
+    "server/knowledge/conflict-workspace.ts": "a5099cc61465e4653b37e762b365786dc2ca29793d597522fe2991205d3eaeb0",
+    "server/tests/helpers/teaching-dialogue-schema.ts": "236d3024300ca2fe594472417185fdbb7be6d4c28ae03b59cee5f00cbbb661a7",
+    "server/tests/helpers/teaching-dialogue-fixture.ts": "e5c46cbacdd996fdfcc1420f5fb09d8dc27a37d08b91088b1eff7da6e3d06731",
+    "server/webhooks/greenapi.ts": "3eba16701229616f990e57f065cc7df92a2d953c739640733b072869b9c29916",
+    "server/webhooks/greenapi-teaching.test.ts": "f6e1cf25dbcab59fe4a70b0e5198664ec82134cc55bd35a72611c9275176f0ba",
+    "server/ai/zahypi-context-propagation.test.ts": "bdf8894ba19d9316f61b5f15eb37b2583acba66bc7bc20102c2d570cca83c1a2"
+  },
+  "limitations": [
+    "Local mocked AI contract checks are not a model-quality or conversion benchmark.",
+    "A prior parallel run exhausted local memory; final runs were sequential.",
+    "A fixed-count propagation assertion was updated after a committed removal of an obsolete AI path.",
+    "Workspace translations were temporarily incomplete due to unrelated website-import edits; verified committed snapshot translations instead.",
+    "Journal snapshot and staged blob include only migration 0163, preserving concurrent 0164 work unstaged.",
+    "No push or deployment. Live test tenant observations are a separate report."
+  ]
+}

@@ -9,7 +9,7 @@ import {
 import { createContextualCoachingSession } from "./coaching-store";
 import { sendCurrentCoachingQuestion } from "./coaching-delivery";
 export { getActiveSession, sendCurrentCoachingQuestion };
-export { handleMerchantTeaching as handleTeachCommand } from "./merchant-teaching-handler";
+export { handleTeachingDialogue as handleTeachCommand } from "./teaching-dialogue-handler";
 export { handleContextualCoachingReply as handleCoachingReply } from "./coaching-handler";
 const MIN_HOURS_BETWEEN_SESSIONS = 24;
 const MIN_CANDIDATES_TO_TRIGGER = 3;

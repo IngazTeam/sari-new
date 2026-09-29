@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   settings: vi.fn(),
   onboarding: vi.fn(),
   onboardingNext: vi.fn(),
+  draft: vi.fn(),
 }));
 vi.mock("../db", async original => ({
   ...(await original<typeof import("../db")>()),
@@ -30,6 +31,9 @@ vi.mock("../ai/coaching-engine", () => ({
   sendCurrentCoachingQuestion: mocks.next,
 }));
 vi.mock("../ai/merchant-mode", () => ({ handleMerchantChat: mocks.chat }));
+vi.mock("../ai/teaching-dialogue-handler", () => ({
+  handleTeachingDialogue: mocks.draft,
+}));
 vi.mock("../automation/onboarding-interview", () => ({
   isOnboardingActive: async () => false,
   handleOnboardingReply: mocks.onboarding,
@@ -66,6 +70,7 @@ beforeEach(() => {
   mocks.chain.mockResolvedValue(true);
   mocks.onboarding.mockResolvedValue({ handled: false, response: "" });
   mocks.onboardingNext.mockResolvedValue(true);
+  mocks.draft.mockResolvedValue({ handled: false });
   mocks.teach.mockResolvedValue({ handled: true, response: "تعليمة محفوظة" });
   mocks.coaching.mockResolvedValue({ handled: true });
   mocks.send.mockResolvedValue({ success: true, messageId: "receipt" });
@@ -73,6 +78,32 @@ beforeEach(() => {
   mocks.settings.mockResolvedValue({ groupMode: "disabled" });
 });
 describe("semantic teaching webhook dispatch", () => {
+  it("routes an existing teaching draft before interview or generic teaching without stripping final conditions", async () => {
+    const text = "أضف الاستثناء التالي\nلا يشمل الكسر";
+    mocks.draft.mockResolvedValueOnce({
+      handled: true,
+      response: "أضفت الاستثناء للمسودة",
+    });
+    expect(await handleGreenAPIWebhook(payload(text))).toMatchObject({
+      success: true,
+      message: "Teaching draft processed",
+    });
+    expect(mocks.draft).toHaveBeenCalledWith(12, text, true);
+    expect(mocks.onboarding).not.toHaveBeenCalled();
+    expect(mocks.teach).not.toHaveBeenCalled();
+  });
+  it("does not claim draft acknowledgement delivery or fall through after transport rejection", async () => {
+    mocks.draft.mockResolvedValueOnce({
+      handled: true,
+      response: "مسودة محفوظة",
+    });
+    mocks.send.mockResolvedValueOnce({ success: false });
+    expect(await handleGreenAPIWebhook(payload("أكمل الشروط"))).toMatchObject({
+      success: false,
+    });
+    expect(mocks.onboarding).not.toHaveBeenCalled();
+    expect(mocks.createConversation).not.toHaveBeenCalled();
+  });
   it("interprets a full interview answer before general teaching and confirms delivery in the receiving account", async () => {
     const text = "نبيع منتجات ونقدم تدريبًا\nلا تعتمد العروض السابقة";
     mocks.onboarding.mockResolvedValueOnce({

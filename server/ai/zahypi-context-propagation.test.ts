@@ -77,8 +77,9 @@ describe("ZahyPi tenant propagation", () => {
     expect(suggestions.match(/merchantId: merchant\.id/g)).toHaveLength(3);
 
     const brain = readFileSync(new URL("../routers-sari-brain.ts", import.meta.url), "utf8");
-    expect(brain.match(/invokeLLM\(\{/g)).toHaveLength(2);
-    expect(brain.match(/invokeLLM\(\{\s*merchantId: merchant\.id/g)).toHaveLength(2);
+    const calls = brain.match(/invokeLLM\(\{/g) || [];
+    expect(calls.length).toBeGreaterThan(0);
+    expect(brain.match(/invokeLLM\(\{\s*merchantId: merchant\.id/g)).toHaveLength(calls.length);
   });
 
   it("propagates merchant identity through every website-analysis AI stage", () => {

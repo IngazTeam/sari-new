@@ -20,9 +20,9 @@ export type TeachingReceipt = {
   usedToday: number;
 };
 export class TeachingLimitError extends Error {}
-const marker = (source: TeachingSource) =>
+export const marker = (source: TeachingSource) =>
   `wa_teach:${source.eventKey.slice(0, 40)}`;
-const reason = (source: TeachingSource) =>
+export const reason = (source: TeachingSource) =>
   `تعليم عام صريح عبر واتساب؛ مصدر ${source.eventKey}؛ بصمة ${source.digest}`;
 const sourceUrl = (source: TeachingSource) =>
   `whatsapp-teaching://${source.eventKey}`;
@@ -60,7 +60,7 @@ async function receipt(
     usedToday: await usage(tx, source.merchantId),
   };
 }
-async function usage(
+export async function usage(
   tx: KnowledgeTransaction,
   merchantId: number
 ): Promise<number> {

@@ -4951,3 +4951,16 @@ export const salesStaffReviews=mysqlTable('ai_sales_staff_reviews',{
   requestDigest:char('request_digest',{length:64}).notNull(),snapshot:json().notNull(),snapshotDigest:char('snapshot_digest',{length:64}).notNull(),
   createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },t=>[uniqueIndex('uq_staff_review_request').on(t.merchantId,t.requestId),index('idx_staff_review_history').on(t.merchantId,t.sourceKind,t.id)]);
+
+export const merchantTeachingDrafts = mysqlTable('merchant_teaching_drafts', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  instanceId:int('instance_id').notNull(),authorPhone:varchar('author_phone',{length:20}).notNull(),version:int().notNull(),
+  status:varchar({length:20}).notNull(),fragmentsJson:json('fragments_json').notNull(),lastInboundId:int('last_inbound_id').notNull(),
+  updatedAt:timestamp('updated_at',{mode:'string',fsp:3}).defaultNow().onUpdateNow().notNull(),
+},table=>[uniqueIndex('uq_teaching_draft_scope').on(table.merchantId,table.instanceId,table.authorPhone)]);
+export const merchantTeachingTurns = mysqlTable('merchant_teaching_turns', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  eventKey:char('event_key',{length:64}).notNull(),sourceDigest:char('source_digest',{length:64}).notNull(),sourceJson:json('source_json').notNull(),
+  contextJson:json('context_json').notNull(),decisionJson:json('decision_json').notNull(),resultJson:json('result_json').notNull(),
+  createdAt:timestamp('created_at',{mode:'string',fsp:3}).defaultNow().notNull(),
+},table=>[uniqueIndex('uq_teaching_turn_event').on(table.merchantId,table.eventKey),index('idx_teaching_turn_window').on(table.merchantId,table.createdAt)]);
