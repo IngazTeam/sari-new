@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,6 +31,7 @@ describe.skipIf(!process.env.DATABASE_URL)('versioned offline learning policy re
     for (let i = 0; i < 2; i++) signalIds.push((await query(`INSERT INTO sari_learning_signals
       (merchant_id,conversation_id,signal_type,customer_message,source_key) VALUES (?,?,'price_objection',?,?)`,
     [owner.merchantId, conversationId, `Private synthetic transcript ${i}`, `fixture:${i}`])).insertId);
+    await seedSealedLearningFixture(signalIds);
     await upsertDNA(proposal());
     proposalId = Number((await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?', [owner.merchantId]))[0].id);
     await attachLearningEvidence({ ...proposal(), observedSignalIds: signalIds, supportingSignalIds: [signalIds[0]], contrarySignalIds: [signalIds[1]] });
@@ -55,12 +57,22 @@ describe.skipIf(!process.env.DATABASE_URL)('versioned offline learning policy re
       {signalId:signalIds[0],relation:'supporting',excerpt:'Private synthetic transcript 0'},
     ]);
     await query('UPDATE sari_learning_signals SET customer_message=? WHERE id=?',['Changed '+ 'x'.repeat(700),signalIds[1]]);
-    const after=await get();expect(after.sourceDigest).not.toBe(before.sourceDigest);expect(after.evidencePreview[0].excerpt).toHaveLength(500);
+    const after=await get();expect(after.sourceDigest).not.toBe(before.sourceDigest);
+    expect(after.evidencePreview).toEqual([{signalId:signalIds[0],relation:'supporting',excerpt:'Private synthetic transcript 0'}]);
     expect(Object.keys(after.evidencePreview[0]).sort()).toEqual(['excerpt','relation','signalId']);
+  });
+  it('bounds a valid sealed evidence excerpt without displaying unverified text', async () => {
+    const signal=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection',?)",[owner.merchantId,conversationId,'Synthetic '+ 'x'.repeat(700)])).insertId;
+    await seedSealedLearningFixture([signal]);
+    await attachLearningEvidence({...proposal(),observedSignalIds:[signal]});
+    const preview=(await get()).evidencePreview.find(item=>item.signalId===signal)!;
+    expect(preview.excerpt).toBe(('Synthetic '+ 'x'.repeat(700)).slice(0,500));
+    expect(Object.keys(preview).sort()).toEqual(['excerpt','relation','signalId']);
   });
   it('bounds the displayed sample without reducing the full source count or digest authority', async () => {
     for(let i=0;i<24;i++) {
       const signal=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,conversationId])).insertId;
+      await seedSealedLearningFixture([signal]);
       await attachLearningEvidence({...proposal(),observedSignalIds:[signal]});
     }
     const before=await get();expect(before.evidenceLinks).toBe(26);expect(before.evidencePreview).toHaveLength(20);expect(before.independentConversations).toBe(1);
@@ -183,6 +195,7 @@ describe.skipIf(!process.env.DATABASE_URL)('versioned offline learning policy re
     await record(await input());
     const c = (await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000289')", [owner.merchantId])).insertId;
     const s = (await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')", [owner.merchantId,c])).insertId;
+    await seedSealedLearningFixture([s]);
     await attachLearningEvidence({ ...proposal(), observedSignalIds: [s], contrarySignalIds: [s] });
     expect(await get()).toMatchObject({ stage: 'stale', independentConversations: 2, evidenceLinks: 3 });
   });

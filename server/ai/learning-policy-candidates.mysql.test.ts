@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
@@ -32,6 +33,7 @@ describe.skipIf(!process.env.DATABASE_URL)('immutable sales policy candidates on
     const conversationId=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000296')",[owner.merchantId])).insertId;
     signalId=(await query(`INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message)
       VALUES (?,?,'price_objection','Private synthetic evidence that must not be copied')`,[owner.merchantId,conversationId])).insertId;
+    await seedSealedLearningFixture([signalId]);
     const proposal={merchantId:owner.merchantId,generation:1,dimension:'objection_handling' as const,insight:'Explain value before asking to proceed',evidenceCount:999,confidence:0.99};
     await upsertDNA(proposal);proposalId=Number((await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId]))[0].id);
     await attachLearningEvidence({...proposal,observedSignalIds:[signalId],supportingSignalIds:[signalId]});await review();

@@ -49,14 +49,24 @@ export const nonSemanticLearningTypes = [
   "customer_left",
 ] as const;
 export const contextRequiredLearningTypes = [
+  "positive_feedback",
+  "question_repeated",
+  "price_objection",
+  "sales_objection",
   "knowledge_gap",
   "escalation_requested",
+] as const;
+export const eligibleLearningTypes = [
+  ...contextRequiredLearningTypes,
+  "sales_declined",
+  "purchase_completed",
+  "purchase_refunded",
 ] as const;
 
 /** Recheck contextual signals at every later use. Copies of transcript text are
  * not independent evidence. The caller owns a consistent snapshot or transaction.
- * Also admits sealed decline and canonical Tap sources. Other historical source
- * families retain their existing contracts; this does not certify them. */
+ * Only sealed conversational/decline evidence and canonical Tap sources are
+ * admissible. Unmarked history and unknown types never gain authority by default. */
 export async function verifiedContextualLearningSources<
   T extends Record<string, any>,
 >(
@@ -82,6 +92,7 @@ export async function verifiedContextualLearningSources<
       );
     return result;
   }
+  rows = rows.filter(row => eligibleLearningTypes.includes(row.signal_type));
   rows = await verifiedTapLearningSources(connection, merchantId, rows, lock);
   const accepted = new Set<T>();
   const candidates: Array<{
@@ -89,7 +100,6 @@ export async function verifiedContextualLearningSources<
     metadata: z.infer<typeof sourceMetadataSchema>;
   }> = [];
   for (const row of rows) {
-    if (nonSemanticLearningTypes.includes(row.signal_type)) continue;
     let metadata: any;
     try {
       metadata = decode(row.context_summary);
@@ -105,6 +115,8 @@ export async function verifiedContextualLearningSources<
         metadata?.basis
       );
     if (!contextual) {
+      // Only the canonical payment families can reach this branch after the
+      // explicit type allowlist and payment-source verification above.
       accepted.add(row);
       continue;
     }

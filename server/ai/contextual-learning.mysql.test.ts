@@ -185,6 +185,13 @@ describe.skipIf(!process.env.DATABASE_URL)(
         "customer_left",
         "knowledge_gap",
         "escalation_requested",
+        "positive_feedback",
+        "question_repeated",
+        "price_objection",
+        "sales_objection",
+        "unknown_learning",
+        "PRICE_OBJECTION",
+        "Positive_Feedback",
       ];
       const values = Array.from({ length: 240 }, (_, i) => [
         owner.merchantId,

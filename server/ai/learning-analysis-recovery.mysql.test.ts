@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import {afterAll,afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {spawn} from 'node:child_process';
 import {getPool,closeDb} from '../db/connection';
@@ -18,6 +19,7 @@ describe.skipIf(!process.env.DATABASE_URL)('saved learning result autonomous rec
   async function fixture(merchantId=owner.merchantId){
     const c=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000178')",[merchantId])).insertId;
     const id=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Synthetic recovery source')",[merchantId,c])).insertId;
+    await seedSealedLearningFixture([id]);
     const s=snapshotLearningSignals(merchantId,await query('SELECT * FROM sari_learning_signals WHERE id=?',[id]));
     const claimed=await claimLearningAnalysis(s);if(claimed.status!=='claimed')throw Error('fixture claim missing');
     await dispatchLearningAnalysis(claimed.claim);
@@ -122,7 +124,7 @@ describe.skipIf(!process.env.DATABASE_URL)('saved learning result autonomous rec
   });
   it('does not claim analysis started below the actual ten-signal threshold',async()=>{
     const c=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000188')",[owner.merchantId])).insertId;
-    for(let i=0;i<7;i++)await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,c]);
+    for(let i=0;i<7;i++){const added=await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,c]);await seedSealedLearningFixture([added.insertId]);}
     expect(await triggerPatternAnalysis(owner.merchantId)).toEqual({status:'insufficient_signals',signalCount:7});expect(mocks.provider).not.toHaveBeenCalled();expect(await job()).toBeUndefined();
   });
 });

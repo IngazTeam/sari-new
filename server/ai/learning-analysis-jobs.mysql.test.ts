@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn } from 'node:child_process';
 import { getPool, closeDb } from '../db/connection';
@@ -26,6 +27,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable learning dispatch and recove
     conversationId=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000177')",[owner.merchantId])).insertId;
     for(let i=0;i<4;i++)ids.push((await query(`INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message)
       VALUES (?,?,'price_objection','Synthetic source')`,[owner.merchantId,conversationId])).insertId);
+    await seedSealedLearningFixture(ids);
   });
   afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants(userIds);});afterAll(closeDb);
   async function reserve(){const s=await snapshot(),result=await claimLearningAnalysis(s);if(result.status!=='claimed')throw Error('Missing fixture claim');return {s,claim:result.claim};}
@@ -150,7 +152,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable learning dispatch and recove
     expect((await Promise.all([worker(),worker(),worker()])).filter(Boolean)).toHaveLength(1);
   },20000);
   it('blocks repeated real-engine calls after a provider timeout and never enables internal retries',async()=>{
-    for(let i=0;i<8;i++)await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,conversationId]);
+    for(let i=0;i<8;i++){const added=await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,conversationId]);await seedSealedLearningFixture([added.insertId]);}
     provider.call.mockRejectedValue(Error('Simulated network timeout'));await triggerPatternAnalysis(owner.merchantId);await triggerPatternAnalysis(owner.merchantId);
     expect(provider.call).toHaveBeenCalledTimes(1);expect(provider.call.mock.calls[0][1]).toMatchObject({noRetry:true,merchantId:owner.merchantId,taskType:'sari.learning.pattern_analysis'});
     expect((await job()).state).toBe('uncertain');await untouched();
@@ -191,6 +193,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable learning dispatch and recove
   it('allows a new sample after completion without retaining the prior response text',async()=>{
     const {s,claim,analysis}=await saved();await persistLearningAnalysis(s,analysis,claim);
     const id=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type) VALUES (?,?,'price_objection')",[owner.merchantId,conversationId])).insertId;
+    await seedSealedLearningFixture([id]);
     const next=snapshotLearningSignals(owner.merchantId,await query('SELECT * FROM sari_learning_signals WHERE id=?',[id]));
     expect((await claimLearningAnalysis(next)).status).toBe('claimed');expect((await job()).response_json).toBeNull();expect((await job()).response_hash).toBeNull();
   });

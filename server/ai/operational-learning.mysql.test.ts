@@ -39,6 +39,20 @@ import {
   learningPolicyReviewSuiteDigest,
 } from "./learning-policy-review-contract";
 
+const unsealedSemanticTypes = [
+  "positive_feedback",
+  "question_repeated",
+  "price_objection",
+  "sales_objection",
+  "knowledge_gap",
+  "escalation_requested",
+];
+const noncanonicalTypes = [
+  "unknown_learning",
+  "PRICE_OBJECTION",
+  "Positive_Feedback",
+];
+
 describe.skipIf(!process.env.DATABASE_URL)(
   "quarantined operational learning and historical jobs",
   () => {
@@ -96,8 +110,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
       "long_conversation",
       "quick_resolution",
       "customer_left",
-      "knowledge_gap",
-      "escalation_requested",
+      ...unsealedSemanticTypes,
+      ...noncanonicalTypes,
     ])(
       "retains historical %s but excludes it from sampling, count and new claims",
       async type => {
@@ -115,9 +129,10 @@ describe.skipIf(!process.env.DATABASE_URL)(
       }
     );
     it.each(
-      ["knowledge_gap", "escalation_requested"].flatMap(type => [
+      [...unsealedSemanticTypes, ...noncanonicalTypes].flatMap(type => [
         [type, "CONTEXTUAL_LEARNING:123:456"],
         [type, "renamed-operational-event"],
+        [type, `contextual_learning:123:456`],
       ])
     )(
       "does not bypass interpretation authority for %s with source key %s",
@@ -144,7 +159,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       const values = Array.from({ length: 60 }, (_, i) => [
         owner.merchantId,
         conversationId,
-        i % 2 ? "merchant_correction" : "knowledge_gap",
+        unsealedSemanticTypes[i % unsealedSemanticTypes.length],
       ]);
       await query(
         `INSERT INTO sari_learning_signals(merchant_id,conversation_id,signal_type) VALUES ${values.map(() => "(?,?,?)").join(",")}`,
@@ -158,10 +173,20 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(model.call).not.toHaveBeenCalled();
       expect(await rows()).toHaveLength(60);
     });
-    it.each(["claim", "dispatch", "response", "recovery", "projection"])(
-      "rejects an unchanged pre-upgrade operational job at %s",
-      async checkpoint => {
-        await insert("merchant_correction");
+    it.each(
+      [
+        "merchant_correction",
+        ...unsealedSemanticTypes,
+        ...noncanonicalTypes,
+      ].flatMap(type =>
+        ["claim", "dispatch", "response", "recovery", "projection"].map(
+          checkpoint => [type, checkpoint]
+        )
+      )
+    )(
+      "rejects an unchanged pre-upgrade %s job at %s",
+      async (type, checkpoint) => {
+        await insert(type);
         const saved = await rows(),
           snapshot = snapshotLearningSignals(owner.merchantId, saved),
           result = analysis(saved);
@@ -215,7 +240,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
         expect(model.call).not.toHaveBeenCalled();
       }
     );
-    it.each(["merchant_correction", "knowledge_gap"])(
+    it.each([
+      "merchant_correction",
+      ...unsealedSemanticTypes,
+      ...noncanonicalTypes,
+    ])(
       "withdraws a pre-upgrade reviewed %s proposal without deleting history or changing its source",
       async type => {
         await insert(type);

@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn } from 'node:child_process';
 import { getPool, closeDb } from '../db/connection';
@@ -42,6 +43,7 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic learning analysis and source 
       (merchant_id,conversation_id,signal_type,signal_weight,customer_message,bot_message,context_summary,source_key)
       VALUES (?,?,'price_objection',1,?,'Relevant offer','Synthetic test evidence',?)`,
     [owner.merchantId, conversations[i%3], `Price objection ${i}`, `signal:${i}`])).insertId);
+    await seedSealedLearningFixture(signalIds);
   });
   afterEach(async () => { vi.restoreAllMocks(); await cleanupDisposableMerchants(userIds); });
   afterAll(closeDb);
@@ -220,8 +222,8 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic learning analysis and source 
     expect(result.proposals[0]).toMatchObject({ evidenceCount: 0, evidence: [] });
   });
   async function analysisThreshold() {
-    for (let i=0;i<8;i++) await query(`INSERT INTO sari_learning_signals
-      (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Need clearer value')`, [owner.merchantId, conversations[i%3]]);
+    for (let i=0;i<8;i++) { const added=await query(`INSERT INTO sari_learning_signals
+      (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Need clearer value')`, [owner.merchantId, conversations[i%3]]); await seedSealedLearningFixture([added.insertId]); }
   }
   function responseFor(messages: any[]) {
     const ids = [...String(messages[1].content).matchAll(/رقم الدليل: (\d+)/g)].map(row => Number(row[1]));

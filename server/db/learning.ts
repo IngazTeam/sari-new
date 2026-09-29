@@ -9,7 +9,7 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { createHash } from 'node:crypto';
-import { verifiedContextualLearningSources, nonSemanticLearningTypes, contextRequiredLearningTypes } from '../ai/contextual-learning-source';
+import { verifiedContextualLearningSources, eligibleLearningTypes, contextRequiredLearningTypes } from '../ai/contextual-learning-source';
 import { readVerifiedTapOutcomeCounts } from '../ai/payment-learning-source';
 import { captureLearningSignals, type LearningSignalInput } from '../ai/learning-signal-capture';
 
@@ -116,11 +116,13 @@ export async function getUnanalyzedSignals(
       `SELECT s.* FROM sari_learning_signals s
        JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
        WHERE s.merchant_id = ? AND s.analyzed = 0
-         AND s.signal_type NOT IN (${nonSemanticLearningTypes.map(() => '?').join(',')})
+         AND BINARY s.signal_type IN (${eligibleLearningTypes.map(() => '?').join(',')})
          AND (s.signal_type NOT IN (${contextRequiredLearningTypes.map(() => '?').join(',')})
            OR BINARY LEFT(s.source_key,20)=BINARY 'contextual_learning:')
+         AND (s.signal_type <> 'sales_declined' OR BINARY LEFT(s.source_key,16)=BINARY 'contextual_loss:')
+         AND (s.signal_type NOT IN ('purchase_completed','purchase_refunded') OR BINARY LEFT(s.source_key,4)=BINARY 'tap:')
        ORDER BY s.created_at DESC, s.id DESC LIMIT ${safeLimit}`,
-      [merchantId, ...nonSemanticLearningTypes, ...contextRequiredLearningTypes],
+      [merchantId, ...eligibleLearningTypes, ...contextRequiredLearningTypes],
     );
     const verified = await verifiedContextualLearningSources(
       connection,

@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
@@ -33,6 +34,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable human judgment on stored eva
     vi.stubGlobal('fetch', vi.fn(() => { throw Error('Review must not call providers'); }));
     const conversationId = (await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000287')", [owner.merchantId])).insertId;
     signalId = (await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Private synthetic evidence')", [owner.merchantId, conversationId])).insertId;
+    await seedSealedLearningFixture([signalId]);
     const proposal = { merchantId: owner.merchantId, generation: 1, dimension: 'objection_handling' as const, insight: 'Explain value clearly', evidenceCount: 1, confidence: 0.7 };
     await upsertDNA(proposal); proposalId = Number((await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?', [owner.merchantId]))[0].id);
     await attachLearningEvidence({ ...proposal, observedSignalIds: [signalId] });

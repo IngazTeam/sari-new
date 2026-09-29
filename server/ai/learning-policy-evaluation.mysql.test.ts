@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { randomUUID } from 'node:crypto';
 import { afterAll,afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { getPool,closeDb } from '../db/connection';
@@ -36,6 +37,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable evaluation through real adap
     for(const provider of ['openai','zahypi'])await query("INSERT INTO ai_price_cards (provider,model,version,input_micro_usd_per_million,output_micro_usd_per_million,flat_micro_usd,max_input_tokens,enabled) VALUES (?,?,'eval-fixture',1,1,1,1000000,1)",[provider,config.model]);
     const conversationId=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000286')",[owner.merchantId])).insertId;
     signalId=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Private synthetic source')",[owner.merchantId,conversationId])).insertId;
+    await seedSealedLearningFixture([signalId]);
     const proposal={merchantId:owner.merchantId,generation:1,dimension:'objection_handling' as const,insight:'Explain relevant value first',evidenceCount:1,confidence:0.7};
     await upsertDNA(proposal);proposalId=Number((await query('SELECT id FROM ai_learning_proposals WHERE merchant_id=?',[owner.merchantId]))[0].id);
     await attachLearningEvidence({...proposal,observedSignalIds:[signalId]});const source=await getLearningPolicyReview(owner.merchantId,{proposalId});

@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -47,6 +48,7 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
       output_micro_usd_per_million=1,flat_micro_usd=1,max_input_tokens=1000000,enabled=1`,[provider,model]);
     const conversation=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000177')",[owner.merchantId])).insertId;
     for(let i=0;i<10;i++)ids.push((await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection','Synthetic source')",[owner.merchantId,conversation])).insertId);
+    await seedSealedLearningFixture(ids);
   });
   afterEach(async()=>{
     vi.restoreAllMocks();vi.unstubAllGlobals();vi.unstubAllEnvs();clearZahyPiRuntimeConfigCache();
@@ -59,9 +61,14 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     await cleanupDisposableMerchants([owner.userId]);
   });afterAll(closeDb);
   async function claim(){
-    const s=snapshotLearningSignals(owner.merchantId,await query('SELECT * FROM sari_learning_signals WHERE merchant_id=? ORDER BY id',[owner.merchantId]));
+    const s=snapshotLearningSignals(owner.merchantId,await query('SELECT * FROM sari_learning_signals WHERE merchant_id=? AND analyzed=0 ORDER BY id',[owner.merchantId]));
     const r=await claimLearningAnalysis(s);if(r.status!=='claimed')throw Error('Missing fixture claim');
     await dispatchLearningAnalysis(r.claim);return r.claim;
+  }
+  async function newSource(text:string){
+    const conversation=(await query("INSERT INTO conversations (merchantId,customerPhone) VALUES (?,'966500000178')",[owner.merchantId])).insertId;
+    const source=(await query("INSERT INTO sari_learning_signals (merchant_id,conversation_id,signal_type,customer_message) VALUES (?,?,'price_objection',?)",[owner.merchantId,conversation,text])).insertId;
+    await seedSealedLearningFixture([source]);
   }
   async function attempt():Promise<AiBudgetAttempt>{const input=request(),r=await reserveAiBudget(input);return {...r,provider:input.provider,model:input.model,taskType:input.taskType};}
   function transport(content?:string){
@@ -176,7 +183,7 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
     expect((await job()).state).toBe('responded');expect((await ledger())[0].state).toBe('unknown');expect(fetch).toHaveBeenCalledOnce();vi.restoreAllMocks();await recover();
     expect((await ledger())[0]).toMatchObject({usage_prompt_tokens:3,usage_completion_tokens:2});
     // Replacing the one-per-merchant learning slot must not erase the financial recovery evidence.
-    await query('UPDATE sari_learning_signals SET customer_message=?,analyzed=0 WHERE merchant_id=?',['New source after recovered result',owner.merchantId]);await claim();
+    await newSource('New source after recovered result');await claim();
     await query('UPDATE ai_usage_reservations SET settlement_next_at=UTC_TIMESTAMP(3) WHERE scope_key=?',[`merchant:${owner.merchantId}`]);
     expect((await runAiSettlementBatch()).settled).toBe(1);expect((await ledger())[0].state).toBe('settled');expect(fetch).toHaveBeenCalledOnce();expect(config.notify).not.toHaveBeenCalled();
   });
@@ -195,7 +202,7 @@ describe.skipIf(!process.env.DATABASE_URL)('learning response handoff through re
   });
   it('clears a completed receipt when a different source snapshot obtains a new claim',async()=>{
     await accepted();await dueProvider();await runLearningProviderRecoveryBatch();await recover();
-    await query('UPDATE sari_learning_signals SET customer_message=?,analyzed=0 WHERE merchant_id=?',['New source snapshot',owner.merchantId]);
+    await newSource('New source snapshot');
     await claim();expect((await job()).provider_receipt).toBeNull();expect((await job()).ai_reservation_key).toBeNull();
   });
   it('acknowledges an identical acceptance and rejects a replacement provider job ID',async()=>{

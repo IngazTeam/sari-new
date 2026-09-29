@@ -1,3 +1,4 @@
+import { seedSealedLearningFixture } from '../tests/helpers/sealed-learning-fixture';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getPool, closeDb } from '../db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from '../tests/helpers/disposable-merchant';
@@ -15,6 +16,7 @@ describe.skipIf(!process.env.DATABASE_URL)('learning proposals have scoped, revi
     conversationId = (await query("INSERT INTO conversations (merchantId, customerPhone, status) VALUES (?, '966500000085', 'active')", [fixture.merchantId])).insertId;
     for (const text of ['السعر مرتفع', 'أحتاج المقارنة']) signalIds.push((await query(`INSERT INTO sari_learning_signals
       (merchant_id, conversation_id, signal_type, customer_message) VALUES (?, ?, 'price_objection', ?)`, [fixture.merchantId, conversationId, text])).insertId);
+    await seedSealedLearningFixture(signalIds);
     await upsertDNA(proposal());
   });
   afterEach(async () => cleanupDisposableMerchants([fixture.userId]));
