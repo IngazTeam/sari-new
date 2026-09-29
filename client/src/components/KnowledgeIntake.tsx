@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { KnowledgeWorkspaceScope } from './KnowledgeWorkspaceScope';
+import { cacheKnowledgeDraft, discardKnowledgeDraft, readKnowledgeDraft, readKnowledgeAttempt, rememberKnowledgeAttempt, forgetKnowledgeAttempt, knowledgeCacheEpoch } from '@/lib/knowledge-workspace-cache';
+import { useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { knowledgeAnalysisSchema, knowledgeReviewSchema, type KnowledgeAnalysis, type KnowledgeReview, type KnowledgeReceipt } from '@shared/knowledge-intake';
@@ -14,6 +16,16 @@ import { Textarea } from './ui/textarea';
 
 export type KnowledgeIntakeSource = { content: string; fileName: string; sourceDocument: { id: number; revision: string }; legacy?: boolean };
 export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIntakeSource }) {
+  return <KnowledgeWorkspaceScope slot={initialSource ? `text-source-${initialSource.sourceDocument.id}` : 'text'}>{key => <KnowledgeIntakeForm key={key} cacheKey={key} initialSource={initialSource} />}</KnowledgeWorkspaceScope>;
+}
+function KnowledgeIntakeForm({ initialSource, cacheKey }: { initialSource?: KnowledgeIntakeSource; cacheKey: string }) {
+  const [cache] = useState(() => {
+    let attempt: string | null = null, failed = false;
+    try { attempt = readKnowledgeAttempt(cacheKey); } catch { failed = true; }
+    return { draft: readKnowledgeDraft(cacheKey), attempt, failed, epoch: knowledgeCacheEpoch() };
+  });
+  const [restored, setRestored] = useState(!!cache.draft);
+  const [storageError, setStorageError] = useState(cache.failed);
   const { t } = useTranslation();
   const fieldId = useId();
   const labels = {
@@ -63,15 +75,15 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
   };
   const copy = (key: keyof typeof labels) => labels[key];
   const utils = trpc.useUtils();
-  const [content, setContent] = useState(initialSource?.content || '');
-  const [name, setName] = useState(initialSource?.fileName || '');
-  const [sourceDocument, setSourceDocument] = useState(initialSource?.sourceDocument);
-  const [type, setType] = useState<'document' | 'products' | 'custom'>('document');
+  const [content, setContent] = useState(cache.draft?.content ?? initialSource?.content ?? '');
+  const [name, setName] = useState(cache.draft?.name ?? initialSource?.fileName ?? '');
+  const [sourceDocument, setSourceDocument] = useState(cache.draft ? cache.draft.sourceDocument : initialSource?.sourceDocument);
+  const [type, setType] = useState<'document' | 'products' | 'custom'>(cache.draft?.type || 'document');
   const [analysis, setAnalysis] = useState<KnowledgeAnalysis | null>(null);
   const [review, setReview] = useState<KnowledgeReview | null>(null);
   const [reviewExpired, setReviewExpired] = useState(false);
   const [result, setResult] = useState<KnowledgeReceipt | null>(null);
-  const requestId = useRef<string | null>(null);
+  const requestId = useRef<string | null>(cache.attempt);
   const submitting = useRef(false);
   const [checking, setChecking] = useState(false);
   const [receiptError, setReceiptError] = useState(false);
@@ -80,7 +92,7 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
   const [errors, setErrors] = useState({ name: false, content: false });
   const [analysisError, setAnalysisError] = useState(false);
   const [analysisTooLarge, setAnalysisTooLarge] = useState(false);
-  const [uncertain, setUncertain] = useState(false);
+  const [uncertain, setUncertain] = useState(!!cache.attempt);
   const [fileError, setFileError] = useState('');
   const [reading, setReading] = useState(false);
   const file = useRef<HTMLInputElement>(null);
@@ -101,8 +113,10 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
   const ingest = trpc.sariBrain.ingestAnalyzedContent.useMutation({
     onSuccess: data => { setResult(data); refresh(); },
     onError: error => {
-      if (error.data?.code === 'PRECONDITION_FAILED') { setAnalysis(null); setReview(null); setReviewed(false); setReviewExpired(true); requestId.current = null; submitting.current = false; return; }
-      setRejected(['CONFLICT', 'TOO_MANY_REQUESTS', 'BAD_REQUEST', 'NOT_FOUND', 'FORBIDDEN', 'UNAUTHORIZED'].includes(error.data?.code || '')); setUncertain(true); refresh();
+      if (error.data?.code === 'PRECONDITION_FAILED') { setAnalysis(null); setReview(null); setReviewed(false); setReviewExpired(true); forgetRequest(); submitting.current = false; return; }
+      const confirmedRejection = ['CONFLICT', 'TOO_MANY_REQUESTS', 'BAD_REQUEST', 'NOT_FOUND', 'FORBIDDEN', 'UNAUTHORIZED'].includes(error.data?.code || '');
+      if (confirmedRejection) forgetRequest();
+      setRejected(confirmedRejection); setUncertain(true); refresh();
     },
   });
   const readReceipt = async () => {
@@ -110,16 +124,22 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
     const generationAtStart = generation.current;
     setChecking(true); setReceiptError(false);
     try {
-      const saved = await utils.sariBrain.getIntakeReceipt.fetch({ requestId: requestId.current });
+      const saved = await utils.sariBrain.getIntakeReceipt.fetch({ requestId: requestId.current }, { staleTime: 0 });
       if (generationAtStart !== generation.current) return;
       if (saved) { setResult(saved); setUncertain(false); refresh(); } else setReceiptError(true);
     } catch { if (generationAtStart === generation.current) setReceiptError(true); }
     finally { if (generationAtStart === generation.current) setChecking(false); }
   };
+  useLayoutEffect(() => {
+    const changed = content !== (initialSource?.content || '') || name !== (initialSource?.fileName || '') || type !== 'document';
+    if (!!(content || name) && (changed || !!requestId.current) && !result) cacheKnowledgeDraft(cacheKey, { content, name, type, sourceDocument }, cache.epoch);
+    else discardKnowledgeDraft(cacheKey);
+  }, [content, name, type, sourceDocument, result, uncertain, cacheKey, cache.epoch, initialSource]);
+  const forgetRequest = () => { forgetKnowledgeAttempt(cacheKey, requestId.current); requestId.current = null; };
   const busy = reading || analyze.isPending || ingest.isPending;
-  const locked = busy || !!result || uncertain;
+  const locked = busy || !!result || uncertain || storageError;
   const invalidate = () => { generation.current++; setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setAnalysisTooLarge(false); setFileError(''); };
-  const reset = () => { invalidate(); setSourceDocument(undefined); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); requestId.current = null; submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
+  const reset = () => { invalidate(); setSourceDocument(undefined); setContent(''); setName(''); setResult(null); setUncertain(false); setRestored(false); discardKnowledgeDraft(cacheKey); setErrors({ name: false, content: false }); forgetRequest(); submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
   const runAnalysis = () => {
     if (locked) return;
     const next = { name: name.trim().length > 255, content: content.trim().length < 10 || content.length > KNOWLEDGE_PREVIEW_LIMIT };
@@ -129,6 +149,11 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
   };
   return <Card className="min-w-0" data-knowledge-intake><CardHeader><CardTitle>{copy('title')}</CardTitle><CardDescription className="leading-7">{copy('description')}</CardDescription></CardHeader>
     <CardContent className="min-w-0 space-y-5">
+      {storageError && <p role="alert" className="rounded-xl border p-4 text-sm leading-7">{t('merchantUx.knowledgeDraft.storageError')}</p>}
+      {!result && <p className="text-sm leading-7 text-muted-foreground">{t('merchantUx.knowledgeDraft.memoryOnly')}</p>}
+      {restored && !uncertain && !result && <p role="status" className="rounded-xl border p-4 text-sm leading-7">{t('merchantUx.knowledgeDraft.restored')}</p>}
+      {cache.attempt && uncertain && <p role="status" className="text-sm leading-7">{t('merchantUx.knowledgeDraft.recovered')}</p>}
+      {!locked && (content || name) && <Button variant="ghost" onClick={reset}>{t('merchantUx.knowledgeDraft.discard')}</Button>}
       {sourceDocument && <p className="text-sm leading-7">{t('merchantUx.knowledgeDocument.reviewCopy')}{initialSource?.legacy && <> {t('merchantUx.knowledgeDocument.legacyText')}</>}</p>}
       <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <div className="min-w-0 space-y-2"><Label htmlFor={`${fieldId}-name`}>{copy('name')}</Label><Input id={`${fieldId}-name`} ref={nameField} value={name} disabled={locked} onChange={e => { setName(e.target.value); invalidate(); }} aria-invalid={errors.name} aria-describedby={errors.name ? `${fieldId}-name-error` : undefined} />{errors.name && <p id={`${fieldId}-name-error`} role="alert" className="text-sm text-destructive">{copy('nameError')}</p>}</div>
@@ -152,10 +177,10 @@ export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIn
         <KnowledgeAnalysisReport analysis={analysis} />
         {review && <KnowledgePlanView plan={review.plan} />}
         <p className="text-sm leading-7 text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewScope')}</p>
-        {!result && !uncertain && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewValidity')}</p><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || !review || busy} onClick={() => { if (reviewed && review && !busy && !submitting.current) { submitting.current = true; requestId.current = crypto.randomUUID(); ingest.mutate({ requestId: requestId.current, reviewId: review.id, acknowledged: true, content, contentType: type, fileName: name.trim() || undefined, ...(sourceDocument ? { sourceDocument } : {}) }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
+        {!result && !uncertain && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewValidity')}</p><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || !review || busy || storageError} onClick={() => { if (reviewed && review && !busy && !storageError && !submitting.current) { try { const id = crypto.randomUUID(); rememberKnowledgeAttempt(cacheKey, id, cache.epoch); requestId.current = id; } catch { setStorageError(true); return; } submitting.current = true; ingest.mutate({ requestId: requestId.current, reviewId: review.id, acknowledged: true, content, contentType: type, fileName: name.trim() || undefined, ...(sourceDocument ? { sourceDocument } : {}) }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
       </section>}
       {result && <KnowledgeReceiptView receipt={result} onRefresh={() => void readReceipt()} busy={checking} />}
-      {uncertain && <div role="alert" className="space-y-3 rounded-xl border p-4 text-sm leading-7"><p>{rejected ? t('merchantUx.knowledgeIntake.receiptRejected') : copy('uncertain')}</p>{!rejected && <><p>{t('merchantUx.knowledgeIntake.receiptId')}: <bdi className="break-all">{requestId.current}</bdi></p><Button variant="outline" disabled={checking} onClick={() => void readReceipt()}>{t('merchantUx.knowledgeIntake.receiptRefresh')}</Button></>}{rejected && <Button variant="outline" onClick={() => { requestId.current = null; submitting.current = false; setUncertain(false); setRejected(false); }}>{t('merchantUx.knowledgeIntake.receiptEdit')}</Button>}</div>}
+      {uncertain && <div role="alert" className="space-y-3 rounded-xl border p-4 text-sm leading-7"><p>{rejected ? t('merchantUx.knowledgeIntake.receiptRejected') : copy('uncertain')}</p>{!rejected && <><p>{t('merchantUx.knowledgeIntake.receiptId')}: <bdi className="break-all">{requestId.current}</bdi></p><Button variant="outline" disabled={checking} onClick={() => void readReceipt()}>{t('merchantUx.knowledgeIntake.receiptRefresh')}</Button></>}{rejected && <Button variant="outline" onClick={() => { forgetRequest(); submitting.current = false; setUncertain(false); setRejected(false); }}>{t('merchantUx.knowledgeIntake.receiptEdit')}</Button>}</div>}
       {receiptError && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.receiptError')}</p>}
       {result && result.state !== 'processing' && (result.state !== 'uncertain' || result.recoveredAt) && <Button variant="outline" disabled={checking} onClick={reset}>{copy('newContent')}</Button>}
     </CardContent></Card>;

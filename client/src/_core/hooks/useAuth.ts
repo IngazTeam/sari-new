@@ -1,3 +1,4 @@
+import { clearKnowledgeWorkspace } from '@/lib/knowledge-workspace-cache';
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -39,6 +40,7 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       // SECURITY: Clear all auth data on logout
       clearAssistantDrafts();
+      clearKnowledgeWorkspace();
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user-info");
       utils.auth.me.setData(undefined, null);
@@ -93,6 +95,7 @@ export function useAuth(options?: UseAuthOptions) {
 
     // Session expired or user not authenticated — clean up and redirect
     clearAssistantDrafts();
+    clearKnowledgeWorkspace();
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user-info");
     window.location.href = redirectPath;

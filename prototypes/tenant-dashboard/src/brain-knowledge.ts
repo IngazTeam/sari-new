@@ -156,6 +156,7 @@ export function createBrainKnowledge(host) {
   }
   function close() {
     clearConsent();
+    analysis = "none";
     readToken++;
     busy = false;
     document.getElementById("dialog").close();
@@ -215,7 +216,7 @@ export function createBrainKnowledge(host) {
             : '<p class="bw-warning">لم يُحلّل النص بالذكاء الاصطناعي. الحفظ اليدوي هنا محاكاة محلية منفصلة؛ الإضافة في التطبيق تتطلب تقرير فحص محفوظًا من الخادم.</p>';
     modal(
       "مراجعة محتوى المعرفة",
-      `${data.draft.sourceDocument ? '<p class="bw-note">تفحص نسخة من ملف محفوظ. التعديل هنا لا يستبدل الأصل، وتبقى نتيجة الموافقة مرتبطة به.</p>' : ""}<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${analysis === "ready" && isSample ? plannedText(data.draft.content, resultMode) : ""}${analysis === "ready" && isSample && !saved ? btn("محاكاة انتهاء صلاحية الفحص", "expire-review") + btn("محاكاة تغيّر المعرفة", "change-basis") + "<p>الفحص في التطبيق صالح لإضافة واحدة خلال 30 دقيقة، ويتغير بعد تعديل النص أو الاسم أو النوع.</p>" : ""}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
+      `${data.draft.content && analysis === "none" ? '<p role="status" class="bw-note" data-bk-restored>استعدنا مسودة النص. افحصها مجددًا وراجع الخطة الجديدة قبل الاعتماد.</p>' : ""}<p class="bw-note">في التطبيق يبقى النص أثناء التنقل داخل اللوحة المفتوحة فقط؛ تحديث الصفحة أو إغلاق التبويب أو الخروج يمسح النص غير المحفوظ. يحتفظ الموك أب بأمثلة تجربتك محليًا.</p>${data.draft.sourceDocument ? '<p class="bw-note">تفحص نسخة من ملف محفوظ. التعديل هنا لا يستبدل الأصل، وتبقى نتيجة الموافقة مرتبطة به.</p>' : ""}<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("تجاهل هذه المسودة", "discard-draft", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${analysis === "ready" && isSample ? plannedText(data.draft.content, resultMode) : ""}${analysis === "ready" && isSample && !saved ? btn("محاكاة انتهاء صلاحية الفحص", "expire-review") + btn("محاكاة تغيّر المعرفة", "change-basis") + "<p>الفحص في التطبيق صالح لإضافة واحدة خلال 30 دقيقة، ويتغير بعد تعديل النص أو الاسم أو النوع.</p>" : ""}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
       btn(
         "حفظ للمراجعة",
         "ingest",
@@ -432,6 +433,7 @@ export function createBrainKnowledge(host) {
       host.refresh();
       return;
     }
+    if (a === "discard-draft") { data.draft = initial().draft; analysis = "none"; clearConsent(); fields = {}; issue = ""; persist(); paint(); return; }
     if (a === "intake") {
       view = "intake";
       clearConsent();
@@ -548,6 +550,7 @@ export function createBrainKnowledge(host) {
   document.getElementById("dialog")?.addEventListener("close", () => {
     readToken++;
     busy = false;
+    analysis = "none";
     clearConsent();
   });
   return {

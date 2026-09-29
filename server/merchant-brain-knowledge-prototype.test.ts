@@ -462,3 +462,23 @@ it("keeps website progress on close, disallows parallel start and distinguishes 
   expect(state().website.state).toBe("completed");
   expect(body()).toContain("لا يعني حل كل الفجوات");
 });
+
+it('restores an extraction reference without a file or a replay after the simulated reload', () => {
+  sources(); set('[data-kd-scenario]', 'unknown', 'change'); node('[data-kd-action="extract"]').click();
+  const reference = node('[data-kd-reference]').textContent; node('[data-kd-action="restore"]').click();
+  expect(node('[data-kd-restored]').textContent).toContain('دون الملف الأصلي'); expect(w.document.querySelector('[data-kd-action="retry"]')).toBeNull();
+  expect(w.document.querySelector('[data-kd-action="new"]')).toBeNull(); node('[data-kd-action="check"]').click();
+  expect(node('[data-kd-reference]').textContent).toBe(reference); expect(node('[data-kd-document]').textContent).toContain('النص محفوظ وجاهز للفحص');
+});
+it('returns to a draft with a fresh review requirement and allows discarding its text only', () => {
+  openIntake(); click('sample'); click('analyze'); click('close'); click('intake');
+  expect(node('[data-bk-restored]').textContent).toContain('افحصها مجددًا'); expect(w.document.querySelector('[data-bk-plan]')).toBeNull();
+  expect(node('[data-bk-check]').checked).toBe(false); click('discard-draft'); expect(node('[data-bk-field="content"]').value).toBe('');
+});
+
+it('offers an explicit same-reference retry only after selecting the matching original in the recovery example', () => {
+  sources(); set('[data-kd-scenario]', 'unknown', 'change'); node('[data-kd-action="extract"]').click(); node('[data-kd-action="restore"]').click();
+  const reference = node('[data-kd-reference]').textContent; expect(w.document.querySelector('[data-kd-action="retry"]')).toBeNull();
+  node('[data-kd-action="original"]').click(); expect(node('[data-kd-document]').textContent).toContain('لم يُرسل بعد');
+  node('[data-kd-action="retry"]').click(); expect(node('[data-kd-reference]').textContent).toBe(reference);
+});

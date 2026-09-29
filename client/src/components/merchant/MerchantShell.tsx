@@ -1,3 +1,4 @@
+import { hasKnowledgeDrafts } from '@/lib/knowledge-workspace-cache';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -419,6 +420,7 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
             <AlertDialogDescription>
               هل تريد إنهاء جلسة العمل الحالية؟
               {hasAssistantDrafts() && <span className="mt-2 block">{t('assistantDraftUx.logoutWarning')}</span>}
+              {hasKnowledgeDrafts() && <span className="mt-2 block">{t('merchantUx.knowledgeDraft.logoutWarning')}</span>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

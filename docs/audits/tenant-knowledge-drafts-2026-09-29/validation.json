@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-29",
+  "scope": "Knowledge text drafts and request recovery",
+  "distinctTests": 219,
+  "testFiles": 13,
+  "tests": {
+    "primary": {
+      "passed": 218,
+      "files": 13,
+      "log": ".tmp/tenant-ux/draft-complete-tests.log"
+    },
+    "finalIntake": {
+      "passed": 24,
+      "added": 1,
+      "log": ".tmp/tenant-ux/draft-empty-final.log"
+    }
+  },
+  "types": {
+    "status": "passed",
+    "log": ".tmp/tenant-ux/draft-complete-types.log"
+  },
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8366,
+    "dynamicKeysChecked": 346,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "build": {
+    "status": "passed",
+    "log": ".tmp/tenant-ux/draft-final-artifacts.log",
+    "entry": "index-CoXjzRuD.js",
+    "rawBytes": 337096,
+    "gzipBytes": 103317,
+    "warning": "Vite chunks over 600 kB remain"
+  },
+  "browser": {
+    "engine": "Chrome",
+    "localApp": 3018,
+    "mockup": 4329,
+    "widths": [
+      320,
+      390
+    ],
+    "overflowObserved": false,
+    "nativeSafariOrIphone": false,
+    "liveExactOriginalReselection": "not completed; covered in isolated UI tests and mockup; additional live upload was rejected"
+  },
+  "deployment": "local only; not pushed or deployed"
+}

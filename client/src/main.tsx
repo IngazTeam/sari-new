@@ -1,3 +1,4 @@
+import { clearKnowledgeWorkspace } from '@/lib/knowledge-workspace-cache';
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -59,6 +60,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   isRedirecting = true;
   clearAssistantDrafts();
+  clearKnowledgeWorkspace();
 
   // SECURITY: Clear all auth data before redirecting
   localStorage.removeItem('auth_token');
