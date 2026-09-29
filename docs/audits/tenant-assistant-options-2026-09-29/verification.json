@@ -1,0 +1,68 @@
+{
+  "types": {
+    "exitCode": 0,
+    "scope": "full workspace"
+  },
+  "stage": "assistant-options",
+  "realSafari": false,
+  "pushed": false,
+  "tests": {
+    "failed": 0,
+    "passed": 290
+  },
+  "externalAiOrWhatsappInvoked": false,
+  "realIphone": false,
+  "deployed": false,
+  "liveWrites": {
+    "takeoverConflictVerified": true,
+    "fixtureRestoredTo": {
+      "takeoverTimeoutMinutes": 15,
+      "language": "ar"
+    },
+    "languageConflictVerified": true
+  },
+  "build": {
+    "entryGzipBytes": 103367,
+    "entryRawBytes": 337291,
+    "exitCode": 0
+  },
+  "date": "2026-09-29",
+  "responsive": [
+    {
+      "page": "live takeover",
+      "width": 320,
+      "scrollWidth": 305
+    },
+    {
+      "page": "live language",
+      "width": 320,
+      "scrollWidth": 305
+    },
+    {
+      "page": "live language",
+      "width": 390,
+      "scrollWidth": 375
+    },
+    {
+      "arMessages": 4,
+      "enMessages": 4,
+      "page": "prototype language",
+      "width": 320,
+      "scrollWidth": 305
+    },
+    {
+      "scrollWidth": 271,
+      "page": "prototype review dialog",
+      "clientWidth": 271
+    }
+  ],
+  "mysql": {
+    "failed": 0,
+    "passed": 17
+  },
+  "prototypeFinal": {
+    "numTotalTests": 20,
+    "numPassedTests": 20,
+    "numFailedTests": 0
+  }
+}

@@ -8,7 +8,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { workingTimeSchema, workingDaysSchema, InvalidWorkingScheduleError } from '../shared/bot-working-schedule';
-import { botSettingsFormRevision, AssistantSettingsConflictError } from './bot-settings-version';
+import { botSettingsFormRevision, assistantOptionRevision, AssistantSettingsConflictError } from './bot-settings-version';
+import { assistantOptionInput } from '../shared/assistant-options';
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { hasPermission } from './_core/permissions';
 import { discountPolicyUpdateSchema, hasDiscountSettings } from '../shared/discount-policy';
@@ -25,6 +26,10 @@ import {
 } from './db';
 
 export const botSettingsRouter = router({
+    takeoverWorkspace: permissionProcedure('conversations.read').input(z.object({ page: z.number().int().min(1).max(100000).default(1) })).query(async ({ctx,input}) => {
+        try { const { readTakeoverWorkspace } = await import('./takeover-workspace'); return await readTakeoverWorkspace(ctx.merchantId,input.page); }
+        catch { throw new TRPCError({ code:'INTERNAL_SERVER_ERROR',message:'Takeover conversations unavailable' }); }
+    }),
     getMarginPolicy: merchantProcedure.query(async ({ctx}) => {
         try { return { ...await getMarginPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole,'bot_settings.manage') }; }
         catch { throw new TRPCError({code:'CONFLICT',message:'Margin policy unavailable'}); }
@@ -49,13 +54,23 @@ export const botSettingsRouter = router({
         }
 
         const settings = await getAssistantSettings(merchant.id);
-        return { ...settings, formRevision: botSettingsFormRevision(settings), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') };
+        return { ...settings, formRevision: botSettingsFormRevision(settings), optionRevisions: { language: assistantOptionRevision(settings, 'language'), takeover: assistantOptionRevision(settings, 'takeover') }, canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') };
+    }),
+
+    updateOption: permissionProcedure('bot_settings.manage').input(assistantOptionInput).mutation(async ({ ctx, input }) => {
+        try {
+            const patch = input.kind === 'language' ? { language: input.language } : input.draft;
+            const saved = await updateBotSettings(ctx.merchantId, patch as any, { option: input.kind, expectedOptionRevision: input.expectedRevision });
+            return { ...saved, optionRevisions: { language: assistantOptionRevision(saved, 'language'), takeover: assistantOptionRevision(saved, 'takeover') } };
+        } catch (error) {
+            throw new TRPCError({ code: error instanceof AssistantSettingsConflictError ? 'CONFLICT' : 'INTERNAL_SERVER_ERROR', message: error instanceof AssistantSettingsConflictError ? error.message : 'Unable to save assistant option' });
+        }
     }),
 
     // Update bot settings
     update: permissionProcedure('bot_settings.manage')
         .input(z.object({
-            expectedRevision: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+            expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
             autoReplyEnabled: z.boolean().optional(),
             workingHoursEnabled: z.boolean().optional(),
             workingHoursStart: workingTimeSchema.optional(),
@@ -90,6 +105,7 @@ export const botSettingsRouter = router({
             autoDiscountExpireHours: z.number().int().min(1).max(168).optional(),
         }).strict().superRefine((input, context) => {
             if (hasDiscountSettings(input)) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Use the reviewed discount policy settings' });
+            if (input.takeoverTimeoutMinutes !== undefined || input.takeoverResumeMessage !== undefined || input.takeoverCommandsEnabled !== undefined) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Use the reviewed takeover settings' });
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantById(ctx.merchantId);
@@ -103,9 +119,7 @@ export const botSettingsRouter = router({
             let result;
             try {
                 // Boolean API flags are converted to tinyint by updateBotSettings.
-                result = expectedRevision === undefined
-                    ? await updateBotSettings(merchant.id, normalizedInput as any)
-                    : await updateBotSettings(merchant.id, normalizedInput as any, { expectedRevision });
+                result = await updateBotSettings(merchant.id, normalizedInput as any, { expectedRevision });
             } catch (error) {
                 throw new TRPCError({
                     code: error instanceof AssistantSettingsConflictError ? 'CONFLICT' : error instanceof InvalidWorkingScheduleError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',

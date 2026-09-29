@@ -114,8 +114,8 @@ describe("mounted personality compatibility and unified settings", () => {
       personalityInstructions: "personality",
       customInstructions: "operating",
     };
-    await caller().botSettings.update(patch);
-    expect(m.bot).toHaveBeenCalledWith(20, patch);
+    await caller().botSettings.update({ ...patch, expectedRevision: "a".repeat(64) });
+    expect(m.bot).toHaveBeenCalledWith(20, patch, { expectedRevision: "a".repeat(64) });
   });
   it("returns a safe error when the legacy write fails", async () => {
     m.update.mockRejectedValue(Error("password=secret"));

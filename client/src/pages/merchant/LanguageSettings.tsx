@@ -1,280 +1,261 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Check, Globe, Loader2, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { trpc } from '@/lib/trpc';
-import { WorkspaceState } from '@/components/merchant/WorkspaceState';
-
-interface Language {
-  code: string;
-  name: string;
-  nativeName: string;
-  flag: string;
-  currency: string;
-  currencySymbol: string;
-  dir: 'ltr' | 'rtl';
-}
-
+import { useTranslation } from "react-i18next";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
+import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import { AssistantOptionReview } from "@/components/merchant/AssistantOptionReview";
+import { useReviewedAssistantOption } from "@/hooks/useReviewedAssistantOption";
+import { assistantLanguages } from "@shared/assistant-options";
+type LanguageCode = (typeof assistantLanguages)[number];
+const readLanguage = (value: Record<string, any>) => ({
+  language: (value.language ?? "ar") as LanguageCode,
+});
+const input = (
+  draft: { language: LanguageCode },
+  expectedRevision: string
+) => ({
+  kind: "language" as const,
+  language: draft.language,
+  expectedRevision,
+});
 export default function LanguageSettings() {
+  return (
+    <KnowledgeWorkspaceScope slot="assistant-language">
+      {key => <LanguageWorkspace key={key} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+function LanguageWorkspace() {
   const { t } = useTranslation();
-  const settingsQuery = trpc.botSettings.get.useQuery();
-  const utils = trpc.useUtils();
-  const [selectedLanguage, setSelectedLanguage] = useState('ar');
-  const [dirty, setDirty] = useState(false);
-  useEffect(() => { if (settingsQuery.data && !dirty) setSelectedLanguage(settingsQuery.data.language || 'ar'); }, [settingsQuery.data, dirty]);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Languages - inside component where t() is available
-  const languages: Language[] = [
-    { code: 'ar', name: 'Arabic', nativeName: t('languageSettingsPage.text17'), flag: '🇸🇦', currency: 'SAR', currencySymbol: t('languageSettingsPage.text18'), dir: 'rtl' },
-    { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', currency: 'USD', currencySymbol: '$', dir: 'ltr' },
-    { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
-    { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', currency: 'TRY', currencySymbol: '₺', dir: 'ltr' },
-    { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
-    { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
+  const form = useReviewedAssistantOption("language", readLanguage, input);
+  const languages = [
+    { code: "ar", name: t("languageSettingsPage.text17"), flag: "🇸🇦" },
+    { code: "en", name: "English", flag: "🇬🇧" },
+    { code: "fr", name: "Français", flag: "🇫🇷" },
+    { code: "tr", name: "Türkçe", flag: "🇹🇷" },
+    { code: "es", name: "Español", flag: "🇪🇸" },
+    { code: "it", name: "Italiano", flag: "🇮🇹" },
+    { code: "both", name: t("botSettingsPage.langBoth"), flag: "🌐" },
   ];
-
   const sampleMessages = {
     ar: {
-      welcome: t('languageSettingsPage.text19'),
-      product: t('languageSettingsPage.text20'),
-      order: t('languageSettingsPage.text21'),
-      thanks: t('languageSettingsPage.text22'),
+      welcome: t("languageSettingsPage.text19"),
+      product: t("languageSettingsPage.text20"),
+      order: t("languageSettingsPage.text21"),
+      thanks: t("languageSettingsPage.text22"),
     },
     en: {
-      welcome: 'Hello! I\'m Sari, your smart assistant. How can I help you today?',
-      product: 'We have amazing products, you can check our full catalog',
-      order: 'Perfect! I\'ll register your order now. Can you provide the delivery address?',
-      thanks: 'Thank you! Your order has been received and we\'ll contact you soon 🎉',
+      welcome:
+        "Hello! I'm Sari, your smart assistant. How can I help you today?",
+      product: "We have amazing products, you can check our full catalog",
+      order:
+        "Perfect! I'll register your order now. Can you provide the delivery address?",
+      thanks:
+        "Thank you! Your order has been received and we'll contact you soon 🎉",
     },
     fr: {
-      welcome: 'Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd\'hui ?',
-      product: 'Nous avons des produits incroyables, vous pouvez consulter notre catalogue complet',
-      order: 'Parfait ! Je vais enregistrer votre commande maintenant. Pouvez-vous fournir l\'adresse de livraison ?',
-      thanks: 'Merci ! Votre commande a été reçue et nous vous contacterons bientôt 🎉',
+      welcome:
+        "Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd'hui ?",
+      product:
+        "Nous avons des produits incroyables, vous pouvez consulter notre catalogue complet",
+      order:
+        "Parfait ! Je vais enregistrer votre commande maintenant. Pouvez-vous fournir l'adresse de livraison ?",
+      thanks:
+        "Merci ! Votre commande a été reçue et nous vous contacterons bientôt 🎉",
     },
     tr: {
-      welcome: 'Merhaba! Ben Sari, akıllı asistanınız. Bugün size nasıl yardımcı olabilirim?',
-      product: 'Harika ürünlerimiz var, tam kataloğumuzu inceleyebilirsiniz',
-      order: 'Mükemmel! Şimdi siparişinizi kaydedeceğim. Teslimat adresini verebilir misiniz?',
-      thanks: 'Teşekkürler! Siparişiniz alındı ve yakında sizinle iletişime geçeceğiz 🎉',
+      welcome:
+        "Merhaba! Ben Sari, akıllı asistanınız. Bugün size nasıl yardımcı olabilirim?",
+      product: "Harika ürünlerimiz var, tam kataloğumuzu inceleyebilirsiniz",
+      order:
+        "Mükemmel! Şimdi siparişinizi kaydedeceğim. Teslimat adresini verebilir misiniz?",
+      thanks:
+        "Teşekkürler! Siparişiniz alındı ve yakında sizinle iletişime geçeceğiz 🎉",
     },
     es: {
-      welcome: '¡Hola! Soy Sari, tu asistente inteligente. ¿Cómo puedo ayudarte hoy?',
-      product: 'Tenemos productos increíbles, puedes ver nuestro catálogo completo',
-      order: '¡Perfecto! Voy a registrar tu pedido ahora. ¿Puedes proporcionar la dirección de entrega?',
-      thanks: '¡Gracias! Tu pedido ha sido recibido y te contactaremos pronto 🎉',
+      welcome:
+        "¡Hola! Soy Sari, tu asistente inteligente. ¿Cómo puedo ayudarte hoy?",
+      product:
+        "Tenemos productos increíbles, puedes ver nuestro catálogo completo",
+      order:
+        "¡Perfecto! Voy a registrar tu pedido ahora. ¿Puedes proporcionar la dirección de entrega?",
+      thanks:
+        "¡Gracias! Tu pedido ha sido recibido y te contactaremos pronto 🎉",
     },
     it: {
-      welcome: 'Ciao! Sono Sari, il tuo assistente intelligente. Come posso aiutarti oggi?',
-      product: 'Abbiamo prodotti fantastici, puoi vedere il nostro catalogo completo',
-      order: 'Perfetto! Registrerò il tuo ordine ora. Puoi fornire l\'indirizzo di consegna?',
-      thanks: 'Grazie! Il tuo ordine è stato ricevuto e ti contatteremo presto 🎉',
+      welcome:
+        "Ciao! Sono Sari, il tuo assistente intelligente. Come posso aiutarti oggi?",
+      product:
+        "Abbiamo prodotti fantastici, puoi vedere il nostro catalogo completo",
+      order:
+        "Perfetto! Registrerò il tuo ordine ora. Puoi fornire l'indirizzo di consegna?",
+      thanks:
+        "Grazie! Il tuo ordine è stato ricevuto e ti contatteremo presto 🎉",
     },
   };
 
-  const updateBotSettingsMutation = trpc.botSettings.update.useMutation();
-
-  const handleLanguageSelect = (langCode: string) => {
-    setDirty(true);
-    setSelectedLanguage(langCode);
+  if (!form.draft || !form.base)
+    return form.query.isError ? (
+      <WorkspaceState kind="error" onRetry={() => void form.query.refetch()} />
+    ) : (
+      <p role="status">{t("common.loading")}</p>
+    );
+  const language = form.draft.language;
+  const previewLanguages = language === "both" ? ["ar", "en"] : [language];
+  const name = (code: string) =>
+    languages.find(item => item.code === code)?.name || code;
+  const labels = {
+    welcome: t("languageSettingsPage.text10"),
+    product: t("languageSettingsPage.text11"),
+    order: t("languageSettingsPage.text12"),
+    thanks: t("languageSettingsPage.text13"),
   };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const lang = languages.find(l => l.code === selectedLanguage);
-      if (!lang && selectedLanguage !== 'both') return;
-
-      // Save language to bot_settings — this is the single source of truth
-      // bot_settings.language is what chatWithSari reads for prompt language injection
-      await updateBotSettingsMutation.mutateAsync({
-        language: selectedLanguage as 'ar' | 'en' | 'fr' | 'tr' | 'es' | 'it' | 'both',
-      });
-
-      await utils.botSettings.get.invalidate();
-      setDirty(false);
-
-      toast.success(t('languageSettingsPage.text0'));
-    } catch (error) {
-      toast.error(t('languageSettingsPage.text1'));
-      console.error('Failed to save language settings:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const currentMessages = sampleMessages[selectedLanguage as keyof typeof sampleMessages] || sampleMessages.ar;
-
-  if (settingsQuery.isError) return <WorkspaceState kind="error" onRetry={() => void settingsQuery.refetch()} />;
-  if (settingsQuery.isLoading) return <p role="status">{t('common.loading')}</p>;
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('languageSettingsPage.text2')}</h1>
-        <p className="text-muted-foreground mt-2">
-          {t('assistantSectionsUx.languageScope')}
+    <div className="mx-auto max-w-5xl space-y-6 py-4">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-bold">
+          {t("languageSettingsPage.text2")}
+        </h1>
+        <p className="text-muted-foreground">
+          {t("assistantSectionsUx.languageScope")}
         </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Language Selection */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                {t('languageSettingsPage.text4')}
-              </CardTitle>
-              <CardDescription>
-                {t('languageSettingsPage.text5')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent
-              className="space-y-3"
-              role="radiogroup"
-              aria-label={t('languageSettingsPage.text4')}
-            >
-              {languages.map((lang) => (
-                <Card
-                  key={lang.code}
-                  role="radio"
-                  tabIndex={0}
-                  aria-checked={selectedLanguage === lang.code}
-                  aria-label={t('merchantUx.actions.selectNamed', { name: lang.nativeName })}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    selectedLanguage === lang.code
-                      ? "border-primary border-2 bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  )}
-                  onClick={() => handleLanguageSelect(lang.code)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleLanguageSelect(lang.code);
-                    }
-                  }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{lang.flag}</span>
-                        <div>
-                          <h3 className="font-semibold">{lang.nativeName}</h3>
-                          <p className="text-sm text-muted-foreground">{lang.name}</p>
-                        </div>
-                      </div>
-                      {selectedLanguage === lang.code && (
-                        <div className="flex-shrink-0">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="w-4 h-4 text-primary-foreground" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              <Button type="button" variant={selectedLanguage === 'both' ? 'secondary' : 'outline'} aria-pressed={selectedLanguage === 'both'} onClick={() => handleLanguageSelect('both')} className="w-full">{t('botSettingsPage.langBoth')}</Button>
-
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="w-full"
-                size="lg"
+      </header>
+      {!form.canManage && (
+        <p role="note" className="rounded-xl border p-4 text-sm">
+          {t("virtualTeamReview.readOnly")}
+        </p>
+      )}
+      {form.query.isError && (
+        <WorkspaceState
+          kind="error"
+          inline
+          onRetry={() => void form.query.refetch()}
+        />
+      )}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <form
+          className="min-w-0 space-y-4"
+          onSubmit={e => {
+            e.preventDefault();
+            void form.save();
+          }}
+        >
+          <fieldset
+            disabled={form.busy || !form.canManage}
+            className="min-w-0 space-y-3 rounded-xl border bg-card p-4 sm:p-6"
+          >
+            <legend className="px-2 font-semibold">
+              {t("languageSettingsPage.text4")}
+            </legend>
+            {languages.map(item => (
+              <label
+                key={item.code}
+                className={
+                  "flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-4 " +
+                  (language === item.code ? "border-primary bg-primary/5" : "")
+                }
               >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t('languageSettingsPage.text6')}
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {t('languageSettingsPage.text7')}
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Preview */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                {t('languageSettingsPage.text8')}
-              </CardTitle>
-              <CardDescription>
-                {t('languageSettingsPage.text9')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Welcome Message */}
-              <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
-                  {t('languageSettingsPage.text10')}
-                </p>
-                <p className="text-sm text-green-800 dark:text-green-200">
-                  {currentMessages.welcome}
-                </p>
-              </div>
-
-              {/* Product Message */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                  {t('languageSettingsPage.text11')}
-                </p>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  {currentMessages.product}
-                </p>
-              </div>
-
-              {/* Order Message */}
-              <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                <p className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-1">
-                  {t('languageSettingsPage.text12')}
-                </p>
-                <p className="text-sm text-purple-800 dark:text-purple-200">
-                  {currentMessages.order}
-                </p>
-              </div>
-
-              {/* Thanks Message */}
-              <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
-                  {t('languageSettingsPage.text13')}
-                </p>
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  {currentMessages.thanks}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-4">
-              <div className="flex gap-3">
-                <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-medium text-blue-900 dark:text-blue-100">
-                    {t('languageSettingsPage.text14')}
-                  </h4>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    {t('assistantSectionsUx.languageScope')}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                <input
+                  type="radio"
+                  name="assistant-language"
+                  value={item.code}
+                  checked={language === item.code}
+                  onChange={() =>
+                    form.setDraft({ language: item.code as LanguageCode })
+                  }
+                />
+                <span aria-hidden="true" className="text-xl">
+                  {item.flag}
+                </span>
+                <span className="font-medium">{item.name}</span>
+              </label>
+            ))}
+          </fieldset>
+          {form.conflict && (
+            <div className="space-y-3 rounded-xl border p-4">
+              <p role="alert">{t("assistantOptionUx.conflict")}</p>
+              {!form.latest && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={form.busy}
+                  onClick={() => void form.loadReview()}
+                >
+                  {t("virtualTeamReview.load")}
+                </Button>
+              )}
+              {form.latest && (
+                <AssistantOptionReview
+                  key={form.latest.revision}
+                  base={form.base}
+                  draft={form.draft}
+                  latest={form.latest.draft}
+                  labels={{ language: t("languageSettingsPage.text4") }}
+                  display={(_, value) => name(value)}
+                  disabled={!form.canManage || form.busy}
+                  onApply={form.acceptReview}
+                />
+              )}
+            </div>
+          )}
+          {form.error && (
+            <p role="alert" className="text-sm text-destructive">
+              {t("assistantOptionUx.failed")}
+            </p>
+          )}
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            <p role="status" className="text-sm text-muted-foreground">
+              {t(
+                form.dirty
+                  ? "assistantOptionUx.unsaved"
+                  : "assistantSectionsUx.saved"
+              )}
+            </p>
+            <Button
+              type="submit"
+              className="min-h-11 w-full"
+              disabled={
+                !form.canManage || form.busy || form.conflict || !form.dirty
+              }
+            >
+              {t(form.busy ? "common.loading" : "languageSettingsPage.text7")}
+            </Button>
+          </div>
+        </form>
+        <section className="min-w-0 space-y-4">
+          <h2 className="text-lg font-semibold">
+            {t("languageSettingsPage.text8")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("assistantOptionUx.languagePreview")}
+          </p>
+          {previewLanguages.map(code => (
+            <Card key={code}>
+              <CardHeader>
+                <CardTitle className="text-base">{name(code)}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(
+                  sampleMessages[code as keyof typeof sampleMessages] ||
+                    sampleMessages.ar
+                ).map(([key, text]) => (
+                  <div key={key} className="rounded-xl border bg-muted/30 p-3">
+                    <h3 className="mb-2 text-xs font-semibold text-muted-foreground">
+                      {labels[key as keyof typeof labels]}
+                    </h3>
+                    <p
+                      lang={code}
+                      dir={code === "ar" ? "rtl" : "ltr"}
+                      className="whitespace-pre-wrap text-start text-sm leading-7 [overflow-wrap:anywhere]"
+                    >
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </section>
       </div>
     </div>
   );

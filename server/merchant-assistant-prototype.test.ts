@@ -17,7 +17,7 @@ beforeEach(()=>{
 afterEach(()=>{expect(errors).toEqual([]);dom.window.close();});
 const route=(page:string)=>{w.history.replaceState(null,'',`#/page/merchant/${page}`);w.dispatchEvent(new w.HashChangeEvent('hashchange'));};
 const click=(action:string,extra='')=>{const el=w.document.querySelector(`[data-as-action="${action}"]${extra}`);expect(el).toBeTruthy();el.click();};
-const input=(name:string,value:string|boolean)=>{const el=w.document.getElementById(`as-${name}`);expect(el).toBeTruthy();if(typeof value==='boolean')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));};
+const input=(name:string,value:string|boolean)=>{const el=w.document.getElementById(`as-${name}`)||w.document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`);expect(el).toBeTruthy();if(el.type==='radio')el.checked=true;if(typeof value==='boolean')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));};
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
@@ -144,8 +144,15 @@ describe('assistant feature workflows',()=>{
     route('bot-settings');expect(w.document.querySelectorAll('[data-as-action="bot-template"]')).toHaveLength(9);
     click('section','[data-value="groups"]');expect(w.document.getElementById('as-groupMode').options).toHaveLength(4);
     input('groupMode','private_redirect');input('groupRedirectMessage','تابع في الخاص');submit('settings');
-    route('human-takeover');input('takeoverTimeoutMinutes','30');input('takeoverResumeMessage','عدنا لخدمتك');input('takeoverCommandsEnabled',false);submit('takeover');
-    route('language-settings');input('language','it');submit('language');expect(data().settings).toMatchObject({language:'it',groupRedirectMessage:'تابع في الخاص',takeoverTimeoutMinutes:'30',takeoverCommandsEnabled:false});
+    route('human-takeover');input('takeoverTimeoutMinutes','90');expect(w.document.getElementById('as-takeoverResumeMessage')).toBeNull();input('takeoverCommandsEnabled',false);submit('takeover');
+    route('language-settings');expect(w.document.querySelectorAll('input[type="radio"][name="language"]')).toHaveLength(7);input('language','both');expect(w.document.querySelectorAll('p[lang="ar"]')).toHaveLength(4);expect(w.document.querySelectorAll('[lang="en"]')).toHaveLength(4);submit('language');expect(data().settings).toMatchObject({language:'both',groupRedirectMessage:'تابع في الخاص',takeoverTimeoutMinutes:90,takeoverCommandsEnabled:false,takeoverResumeMessage:'مرحبًا! عدت لخدمتك.'});
+  });
+  it('reviews option conflicts, merges unedited fields, and requires a separate save',()=>{
+    route('human-takeover');input('takeoverTimeoutMinutes','90');click('option-external');submit('takeover');expect(data().settings.takeoverTimeoutMinutes).toBe(60);
+    click('option-review');const review=w.document.querySelector('[data-as-form="option-review"]');expect(review.reportValidity()).toBe(false);review.querySelector('input[value="mine"]').checked=true;submit('option-review');
+    expect(w.document.getElementById('as-takeoverTimeoutMinutes').value).toBe('90');expect(w.document.getElementById('as-takeoverCommandsEnabled').checked).toBe(false);expect(data().settings.takeoverTimeoutMinutes).toBe(60);
+    submit('takeover');expect(data().settings.takeoverTimeoutMinutes).toBe(90);
+    route('language-settings');input('language','fr');click('option-failure');expect(w.document.querySelector('input[name="language"]:checked').value).toBe('fr');expect(data().settings.language).toBe('ar');submit('language');expect(data().settings.language).toBe('fr');
   });
   it('links brain, personas and all assistant tools from the hub',()=>{route('ai-hub');expect(w.document.querySelectorAll('.as-hub-card')).toHaveLength(13);for(const a of w.document.querySelectorAll('.as-hub-card'))expect(w.TenantPages.find(a.getAttribute('href').slice(6))).toBeTruthy();});
 });

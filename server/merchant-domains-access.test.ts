@@ -133,7 +133,7 @@ describe("mounted customer, bot and campaign permissions", () => {
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
       await expect(
-        caller().botSettings.update({ autoReplyEnabled: false })
+        caller().botSettings.update({ autoReplyEnabled: false, expectedRevision: "a".repeat(64) })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
         caller().botSettings.sendTestMessage()
@@ -146,10 +146,10 @@ describe("mounted customer, bot and campaign permissions", () => {
     "allows %s to configure the selected bot",
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
-      await caller().botSettings.update({ autoReplyEnabled: false });
+      await caller().botSettings.update({ autoReplyEnabled: false, expectedRevision: "a".repeat(64) });
       expect(mocks.updateBot).toHaveBeenCalledWith(20, {
         autoReplyEnabled: false,
-      });
+      }, {expectedRevision: "a".repeat(64)});
     }
   );
   it("fails before domain reads after access is revoked or identity cannot be verified", async () => {

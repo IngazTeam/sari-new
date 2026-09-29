@@ -4179,7 +4179,7 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
 export async function updateBotSettings(
   merchantId: number,
   updates: Omit<Partial<InsertBotSettings>, 'tone'> & Partial<Pick<import('../shared/assistant-settings-draft').AssistantSettingsDraft, 'tone' | 'style' | 'emojiUsage' | 'personalityInstructions' | 'brandVoice'>>,
-  options?: { expectedRevision: string }
+  options?: { expectedRevision: string } | { expectedOptionRevision: string; option: 'language' | 'takeover' }
 ) {
   const { hasDiscountSettings } = await import('../shared/discount-policy');
   if (hasDiscountSettings(updates)) throw new Error('Discount authority requires a reviewed, versioned policy update');
@@ -4228,8 +4228,12 @@ export async function updateBotSettings(
     }
     const { assistantSettingsView } = await import('../shared/assistant-personality');
     if (options) {
-      const { botSettingsFormRevision, AssistantSettingsConflictError } = await import('./bot-settings-version');
-      if (botSettingsFormRevision(assistantSettingsView(rows[0], personalityRows[0])) !== options.expectedRevision) throw new AssistantSettingsConflictError();
+      const { botSettingsFormRevision, assistantOptionRevision, AssistantSettingsConflictError } = await import('./bot-settings-version');
+      const view = assistantSettingsView(rows[0], personalityRows[0]);
+      const matches = 'expectedRevision' in options
+        ? botSettingsFormRevision(view) === options.expectedRevision
+        : assistantOptionRevision(view, options.option) === options.expectedOptionRevision;
+      if (!matches) throw new AssistantSettingsConflictError();
     }
     const errors = getWorkingScheduleErrors(dbUpdates, rows[0]);
     if (Object.keys(errors).length) throw new InvalidWorkingScheduleError(errors);

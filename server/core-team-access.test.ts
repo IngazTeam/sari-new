@@ -236,13 +236,13 @@ describe('real app router team boundaries', () => {
   it.each([{autoDiscountEnabled:true},{autoDiscountMaxPercent:3},{autoDiscountExpireHours:24},{autoDiscountRevision:1},{merchantId:30}])
     ('blocks bypass of discount review through legacy update %j',async attack=>{
       mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
-      await expect(caller().botSettings.update({autoReplyEnabled:true,...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+      await expect(caller().botSettings.update({autoReplyEnabled:true,expectedRevision:'a'.repeat(64),...attack} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
       expect(mocks.botWrite).not.toHaveBeenCalled();expect(mocks.discountWrite).not.toHaveBeenCalled();
     });
   it('keeps normal bot saves including custom instructions independent of discount authority',async()=>{
     mocks.access.mockResolvedValue({merchantId:20,role:'manager',memberId:3});
     const payload={autoReplyEnabled:true,customInstructions:'ابدأ بفهم احتياج العميل'};
-    await caller().botSettings.update(payload);expect(mocks.botWrite).toHaveBeenCalledWith(20,payload);expect(mocks.discountWrite).not.toHaveBeenCalled();
+    await caller().botSettings.update({...payload,expectedRevision:'a'.repeat(64)});expect(mocks.botWrite).toHaveBeenCalledWith(20,payload,{expectedRevision:'a'.repeat(64)});expect(mocks.discountWrite).not.toHaveBeenCalled();
   });
   it('hides policy storage details and rejects revoked membership',async()=>{
     mocks.discountRead.mockRejectedValueOnce(new Error('private detail'));

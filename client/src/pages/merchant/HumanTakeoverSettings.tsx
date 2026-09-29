@@ -1,363 +1,415 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
+import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import { AssistantOptionReview } from "@/components/merchant/AssistantOptionReview";
+import { useReviewedAssistantOption } from "@/hooks/useReviewedAssistantOption";
 import {
-  UserCheck, Clock, MessageSquare, Save, CheckCircle2,
-  Pause, Play, Info, Hash, Smartphone, Timer
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { trpc } from '@/lib/trpc';
-import { WorkspaceState } from '@/components/merchant/WorkspaceState';
+  takeoverDraft,
+  takeoverDraftSchema,
+  takeoverExpiry,
+  type TakeoverDraft,
+} from "@shared/assistant-options";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const TIMEOUT_OPTIONS = [5, 15, 30, 60];
-
+const input = (draft: TakeoverDraft, expectedRevision: string) => ({
+  kind: "takeover" as const,
+  draft,
+  expectedRevision,
+});
 export default function HumanTakeoverSettings() {
-  const { t } = useTranslation();
-  const utils = trpc.useUtils();
-
-  const settingsQuery = trpc.botSettings.get.useQuery();
-  const { data: settings, isLoading } = settingsQuery;
-  // @ts-ignore
-  const takeoverQuery = trpc.botSettings.getTakeoverConversations.useQuery(undefined, {
-    refetchInterval: 15000, // refresh every 15s
-  });
-  const takeoverConvs = takeoverQuery.data;
-
-  const updateMutation = trpc.botSettings.update.useMutation({
-    onSuccess: () => {
-      toast.success('تم حفظ إعدادات التدخل البشري');
-      utils.botSettings.get.invalidate();
-    },
-    onError: (error: any) => {
-      toast.error('خطأ في الحفظ: ' + error.message);
-    },
-  });
-
-  const [timeoutMinutes, setTimeoutMinutes] = useState(15);
-  const [resumeMessage, setResumeMessage] = useState('مرحباً! عدت لخدمتك 😊');
-  const [commandsEnabled, setCommandsEnabled] = useState(true);
-
-  useEffect(() => {
-    if (settings) {
-      setTimeoutMinutes(settings.takeoverTimeoutMinutes ?? 15);
-      setResumeMessage(settings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊');
-      // @ts-ignore
-      setCommandsEnabled((settings as any).takeoverCommandsEnabled != null ? !!(settings as any).takeoverCommandsEnabled : true);
-    }
-  }, [settings]);
-
-  const handleSave = () => {
-    updateMutation.mutate({
-      // @ts-ignore
-      takeoverTimeoutMinutes: timeoutMinutes as any,
-      takeoverResumeMessage: resumeMessage,
-      takeoverCommandsEnabled: commandsEnabled,
-    });
-  };
-
-  const activeCount = takeoverConvs?.length || 0;
-
-  if (settingsQuery.isError) return <WorkspaceState kind="error" onRetry={() => void settingsQuery.refetch()} />;
-  if (isLoading) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse space-y-4 w-full max-w-lg">
-            <div className="h-8 bg-muted rounded w-2/3" />
-            <div className="h-4 bg-muted rounded w-1/2" />
-            <div className="h-32 bg-muted rounded" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container max-w-4xl py-8 space-y-6">
-      {/* Header */}
-      <div className="mb-2">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary text-white">
-            <UserCheck className="h-6 w-6" />
-          </div>
-          التدخل البشري
-        </h1>
-        <p className="text-muted-foreground">
-          عندما ترد على عميل من الواتساب مباشرة، ساري يكتشف ذلك ويصمت تلقائياً حتى تنتهي
+    <KnowledgeWorkspaceScope slot="human-takeover">
+      {key => <TakeoverWorkspace key={key} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+function TakeoverWorkspace() {
+  const { t } = useTranslation();
+  const form = useReviewedAssistantOption("takeover", takeoverDraft, input);
+  const [page, setPage] = useState(1),
+    [invalid, setInvalid] = useState(false);
+  const listing = trpc.botSettings.takeoverWorkspace.useQuery(
+    { page },
+    { refetchInterval: 15000 }
+  );
+  if (!form.draft || !form.base)
+    return form.query.isError ? (
+      <WorkspaceState kind="error" onRetry={() => void form.query.refetch()} />
+    ) : (
+      <p role="status">{t("common.loading")}</p>
+    );
+  const draft = form.draft;
+  const labels = {
+    takeoverTimeoutMinutes: t("takeoverWorkspaceUx.timeout"),
+    takeoverCommandsEnabled: t("humanTakeoverPage.enableCommands"),
+  };
+  const display = (key: keyof TakeoverDraft, value: number | boolean) =>
+    key === "takeoverTimeoutMinutes"
+      ? t("takeoverWorkspaceUx.minutes", { count: Number(value) })
+      : t(value ? "virtualTeamReview.yes" : "virtualTeamReview.no");
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 py-4">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-bold">{t("humanTakeoverPage.title")}</h1>
+        <p className="max-w-3xl text-muted-foreground">
+          {t("takeoverWorkspaceUx.intro")}
         </p>
-      </div>
-
-      {/* Status Banner */}
-      {takeoverQuery.isError ? <WorkspaceState kind="error" inline onRetry={() => void takeoverQuery.refetch()} /> : takeoverQuery.isLoading ? <p role="status">{t('common.loading')}</p> : <Card className={`border-2 ${activeCount > 0 ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' : 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20'}`}>
-        <CardContent className="py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`h-3 w-3 rounded-full animate-pulse ${activeCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-              <div>
-                <p className="font-semibold text-lg">
-                  {activeCount > 0 ? `${activeCount} محادثة تحت إدارتك` : 'ساري نشط — جميع المحادثات تلقائية'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {activeCount > 0
-                    ? 'ساري صامت في هذه المحادثات حتى انتهاء المدة'
-                    : 'رد على أي عميل من الواتساب وساري سيصمت تلقائياً'}
-                </p>
-              </div>
-            </div>
-            <Badge variant={activeCount > 0 ? 'secondary' : 'default'} className="text-base px-4 py-1.5">
-              {activeCount > 0 ? '🟡 تدخل بشري' : '🟢 تلقائي'}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      }
-      {/* How It Works — Interactive Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            كيف يعمل؟
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-primary" />
-
-            <div className="space-y-6 pr-12">
-              {[
-                { icon: '📨', title: 'عميل يرسل رسالة', desc: 'ساري يرد تلقائياً كالمعتاد', color: 'bg-emerald-100 dark:bg-emerald-900/30' },
-                { icon: '📱', title: 'أنت ترد من الواتساب', desc: 'ساري يكتشف ردك ويصمت فوراً', color: 'bg-amber-100 dark:bg-amber-900/30' },
-                { icon: '⏱️', title: `مرت ${timeoutMinutes} دقيقة بدون رد منك`, desc: 'ساري يستأنف تلقائياً', color: 'bg-emerald-100 dark:bg-emerald-900/30' },
-                { icon: '🤖', title: 'ساري يرجع للعمل', desc: `يرسل: "${resumeMessage}"`, color: 'bg-emerald-100 dark:bg-emerald-900/30' },
-              ].map((step, i) => (
-                <div key={i} className="relative flex items-start gap-4">
-                  <div className="absolute right-[-2.25rem] w-6 h-6 rounded-full bg-background border-2 border-muted-foreground/20 flex items-center justify-center text-xs font-bold">
-                    {i + 1}
-                  </div>
-                  <div className={`flex-1 p-4 rounded-xl ${step.color} transition-all hover:scale-[1.01]`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl">{step.icon}</span>
-                      <span className="font-semibold">{step.title}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Timer className="h-5 w-5" />
-            إعدادات التدخل
-          </CardTitle>
-          <CardDescription>
-            تحكم في مدة صمت ساري ورسالة العودة
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Timeout Duration — Radio Chips */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              مدة الصمت التلقائي
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              بعد آخر رد منك، ساري ينتظر هذه المدة ثم يرجع تلقائياً
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {TIMEOUT_OPTIONS.map(min => (
-                <button
-                  key={min}
-                  type="button"
-                  aria-pressed={timeoutMinutes === min}
-                  onClick={() => setTimeoutMinutes(min)}
-                  className={`px-5 py-2.5 rounded-full border-2 transition-all font-medium text-sm
-                    ${timeoutMinutes === min
-                      ? 'border-primary bg-primary text-primary-foreground shadow-lg scale-105'
-                      : 'border-muted hover:border-primary/50 hover:bg-muted'
-                    }`}
-                >
-                  {min} دقيقة
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Resume Message */}
-          <div className="space-y-3">
-            <Label htmlFor="resumeMessage" className="text-base font-semibold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              رسالة الاستئناف
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              الرسالة التي يرسلها ساري عند عودته بعد انتهاء مدة الصمت
-            </p>
-            <Textarea
-              id="resumeMessage"
-              value={resumeMessage}
-              onChange={(e) => setResumeMessage(e.target.value)}
-              placeholder="مرحباً! عدت لخدمتك 😊"
-              rows={2}
-              maxLength={500}
-              className="resize-none"
-            />
-            <div className="text-xs text-muted-foreground text-left">
-              {resumeMessage.length}/500
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Quick Commands */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
-                  أوامر التدخل البشري
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  عبارات طبيعية ترسلها للعميل — ساري يكتشفها ويتصرف تلقائياً
-                </p>
-              </div>
-              <Switch
-                checked={commandsEnabled}
-                onCheckedChange={setCommandsEnabled}
-              />
-            </div>
-
-            {commandsEnabled && (
-              <div className="space-y-3">
-                {/* Stop Command */}
-                <div className="p-4 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Pause className="h-4 w-4 text-red-500" />
-                    <span className="font-semibold text-red-700 dark:text-red-400">إيقاف ساري (بدون مدة)</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-sm px-3">سأتولى المحادثة</Badge>
-                      <span className="text-xs text-muted-foreground">🇸🇦 عربي</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">I'll take over</Badge>
-                      <span className="text-xs text-muted-foreground">🇬🇧 English</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Start Command */}
-                <div className="p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Play className="h-4 w-4 text-emerald-500" />
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">إعادة تشغيل ساري</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-sm px-3">يسعدنا خدمتكم</Badge>
-                      <span className="text-xs text-muted-foreground">🇸🇦 عربي</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">Glad to help</Badge>
-                      <span className="text-xs text-muted-foreground">🇬🇧 English</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Alert className="bg-muted/50">
-                  <Smartphone className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    <span className="font-semibold">💡 نصيحة:</span> العبارات تظهر للعميل كرسالة طبيعية ومهذبة — لا يعرف أنها أمر تقني لساري
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Active Takeover Conversations */}
-      {takeoverConvs && takeoverConvs.length > 0 && (
+      </header>
+      <div className="grid gap-3 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Pause className="h-5 w-5 text-amber-500" />
-              المحادثات تحت إدارتك ({takeoverConvs.length})
+            <CardTitle className="text-base">
+              {t("takeoverWorkspaceUx.dashboardTitle")}
             </CardTitle>
-            <CardDescription>
-              ساري صامت في هذه المحادثات — أرسل <code className="font-mono">يسعدنا خدمتكم</code> أو <code className="font-mono">Glad to help</code> لإعادته
-            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {takeoverConvs.map((conv: any) => {
-                const expiresAt = conv.humanExpiresAt ? new Date(conv.humanExpiresAt) : null;
-                const now = new Date();
-                const minutesLeft = expiresAt ? Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / 60000)) : null;
-
-                return (
-                  <div
-                    key={conv.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                        <UserCheck className="h-5 w-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{conv.customerName || conv.customerPhone}</p>
-                        <p className="text-xs text-muted-foreground">{conv.customerPhone}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {conv.isPermanent ? (
-                        <Badge variant="destructive" className="flex items-center gap-1">
-                          <Pause className="h-3 w-3" />
-                          إيقاف يدوي
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Timer className="h-3 w-3" />
-                          {minutesLeft} دقيقة متبقية
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <CardContent className="text-sm leading-7">
+            {t("takeoverWorkspaceUx.dashboardHelp")}
           </CardContent>
         </Card>
-      )}
-
-      {/* Save Button */}
-      <div className="flex justify-end sticky bottom-4">
-        <Button
-          onClick={handleSave}
-          size="lg"
-          disabled={updateMutation.isPending}
-          className="shadow-lg px-8"
-        >
-          <Save className="h-4 w-4 ml-2" />
-          {updateMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}
-        </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {t("takeoverWorkspaceUx.whatsappTitle")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm leading-7">
+            {listing.data
+              ? t("takeoverWorkspaceUx.whatsappHelp", {
+                  hours: listing.data.directReplyHours,
+                })
+              : t("takeoverWorkspaceUx.rulesUnavailable")}
+          </CardContent>
+        </Card>
       </div>
+      <p className="rounded-xl border bg-muted/30 p-4 text-sm leading-7">
+        {t("takeoverWorkspaceUx.resumeHelp")}
+      </p>
+      {!form.canManage && (
+        <p role="note" className="rounded-xl border p-4 text-sm">
+          {t("virtualTeamReview.readOnly")}
+        </p>
+      )}
+      {form.query.isError && (
+        <WorkspaceState
+          kind="error"
+          inline
+          onRetry={() => void form.query.refetch()}
+        />
+      )}
+      <form
+        noValidate
+        className="space-y-4"
+        onSubmit={e => {
+          e.preventDefault();
+          if (!takeoverDraftSchema.safeParse(draft).success) {
+            setInvalid(true);
+            document.getElementById("takeover-minutes")?.focus();
+            return;
+          }
+          setInvalid(false);
+          void form.save();
+        }}
+      >
+        <fieldset
+          disabled={!form.canManage || form.busy}
+          className="min-w-0 space-y-5 rounded-xl border bg-card p-4 sm:p-6"
+        >
+          <legend className="px-2 font-semibold">
+            {t("humanTakeoverPage.settingsTitle")}
+          </legend>
+          <div className="max-w-lg space-y-3">
+            <Label htmlFor="takeover-minutes">
+              {labels.takeoverTimeoutMinutes}
+            </Label>
+            <p
+              id="takeover-minutes-help"
+              className="text-sm text-muted-foreground"
+            >
+              {t("takeoverWorkspaceUx.timeoutHelp")}
+            </p>
+            <Input
+              id="takeover-minutes"
+              type="number"
+              min={5}
+              max={120}
+              step={1}
+              value={
+                Number.isFinite(draft.takeoverTimeoutMinutes)
+                  ? draft.takeoverTimeoutMinutes
+                  : ""
+              }
+              aria-invalid={invalid}
+              aria-describedby={
+                invalid ? "takeover-minutes-error" : "takeover-minutes-help"
+              }
+              onChange={e => {
+                form.setDraft({
+                  ...draft,
+                  takeoverTimeoutMinutes:
+                    e.target.value === "" ? NaN : Number(e.target.value),
+                });
+                setInvalid(false);
+              }}
+            />
+            {invalid && (
+              <p
+                id="takeover-minutes-error"
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {t("takeoverWorkspaceUx.invalidMinutes")}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {[5, 15, 30, 60, 120].map(minutes => (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  key={minutes}
+                  aria-pressed={draft.takeoverTimeoutMinutes === minutes}
+                  onClick={() => {
+                    form.setDraft({
+                      ...draft,
+                      takeoverTimeoutMinutes: minutes,
+                    });
+                    setInvalid(false);
+                  }}
+                >
+                  {t("takeoverWorkspaceUx.minutes", { count: minutes })}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="takeover-commands">
+                {labels.takeoverCommandsEnabled}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {t("takeoverWorkspaceUx.commandsHelp")}
+              </p>
+            </div>
+            <Switch
+              id="takeover-commands"
+              checked={draft.takeoverCommandsEnabled}
+              onCheckedChange={checked =>
+                form.setDraft({ ...draft, takeoverCommandsEnabled: checked })
+              }
+            />
+          </div>
+          {draft.takeoverCommandsEnabled && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2 rounded-xl border p-3">
+                <h2 className="text-sm font-semibold">
+                  {t("takeoverWorkspaceUx.pause")}
+                </h2>
+                <p>سأتولى المحادثة</p>
+                <p dir="ltr" className="text-start">
+                  I'll take over
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {listing.data
+                    ? t("takeoverWorkspaceUx.manualLimit", {
+                        hours: listing.data.manualMaxHours,
+                      })
+                    : t("takeoverWorkspaceUx.rulesUnavailable")}
+                </p>
+              </div>
+              <div className="space-y-2 rounded-xl border p-3">
+                <h2 className="text-sm font-semibold">
+                  {t("takeoverWorkspaceUx.resume")}
+                </h2>
+                <p>يسعدنا خدمتكم</p>
+                <p dir="ltr" className="text-start">
+                  Glad to help
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("takeoverWorkspaceUx.commandVisibility")}
+                </p>
+              </div>
+            </div>
+          )}
+        </fieldset>
+        <details className="rounded-xl border p-4">
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">
+            {t("takeoverWorkspaceUx.legacyTitle")}
+          </summary>
+          <p className="text-sm text-muted-foreground">
+            {t("takeoverWorkspaceUx.legacyHelp")}
+          </p>
+          <p className="mt-3 whitespace-pre-wrap [overflow-wrap:anywhere]">
+            {form.query.data?.takeoverResumeMessage ||
+              t("virtualTeamReview.empty")}
+          </p>
+        </details>
+        {form.conflict && (
+          <div className="space-y-3 rounded-xl border p-4">
+            <p role="alert">{t("assistantOptionUx.conflict")}</p>
+            {!form.latest && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={form.busy}
+                onClick={() => void form.loadReview()}
+              >
+                {t("virtualTeamReview.load")}
+              </Button>
+            )}
+            {form.latest && (
+              <AssistantOptionReview
+                key={form.latest.revision}
+                base={form.base}
+                draft={draft}
+                latest={form.latest.draft}
+                labels={labels}
+                display={display}
+                disabled={!form.canManage || form.busy}
+                onApply={form.acceptReview}
+              />
+            )}
+          </div>
+        )}
+        {form.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {t("assistantOptionUx.failed")}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+          <p role="status" className="text-sm text-muted-foreground">
+            {t(
+              form.dirty
+                ? "assistantOptionUx.unsaved"
+                : "assistantSectionsUx.saved"
+            )}
+          </p>
+          <Button
+            type="submit"
+            className="min-h-11"
+            disabled={
+              !form.canManage || form.busy || form.conflict || !form.dirty
+            }
+          >
+            {t(form.busy ? "common.loading" : "humanTakeoverPage.saveSettings")}
+          </Button>
+        </div>
+      </form>
+      <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">
+            {t("humanTakeoverPage.activeConversations")}
+          </h2>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={listing.isFetching}
+            onClick={() => void listing.refetch()}
+          >
+            {t("takeoverWorkspaceUx.refresh")}
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {t("takeoverWorkspaceUx.listHelp")}
+        </p>
+        {listing.isError ? (
+          <WorkspaceState
+            kind="error"
+            inline
+            onRetry={() => void listing.refetch()}
+          />
+        ) : listing.isLoading || !listing.data ? (
+          <p role="status">{t("common.loading")}</p>
+        ) : (
+          <>
+            <p className="text-sm">
+              {t("takeoverWorkspaceUx.total", { count: listing.data.total })}
+            </p>
+            {!listing.data.rows.length ? (
+              <p className="py-5 text-muted-foreground">
+                {t(
+                  listing.data.total
+                    ? "takeoverWorkspaceUx.emptyPage"
+                    : "humanTakeoverPage.noActiveConversations"
+                )}
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {listing.data.rows.map(row => {
+                  const status = takeoverExpiry(row.humanExpiresAt, Date.now());
+                  return (
+                    <li
+                      key={row.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium [overflow-wrap:anywhere]">
+                          {row.customerName || row.customerPhone}
+                        </p>
+                        <p
+                          dir="ltr"
+                            className="text-start text-sm text-muted-foreground [overflow-wrap:anywhere]"
+                        >
+                          {row.customerPhone}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          {row.permanentSilence
+                            ? t("takeoverWorkspaceUx.silenced")
+                            : status.state === "timed"
+                              ? t("takeoverWorkspaceUx.remaining", {
+                                  count: status.minutes,
+                                })
+                              : status.state === "waiting"
+                                ? t("takeoverWorkspaceUx.awaitingRelease")
+                                : status.state === "unknown"
+                                  ? t("takeoverWorkspaceUx.unknownExpiry")
+                                  : t("takeoverWorkspaceUx.manual")}
+                        </p>
+                      </div>
+                      <Link
+                        className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
+                        href={`/merchant/conversations?phone=${encodeURIComponent(row.customerPhone)}`}
+                      >
+                        {t("takeoverWorkspaceUx.openConversation")}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page <= 1 || listing.isFetching}
+                onClick={() => setPage(page - 1)}
+              >
+                {t("common.previous")}
+              </Button>
+              <span className="text-sm">
+                {t("takeoverWorkspaceUx.page", {
+                  page,
+                  total: Math.max(1, Math.ceil(listing.data.total / 10)),
+                })}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page * 10 >= listing.data.total || listing.isFetching}
+                onClick={() => setPage(page + 1)}
+              >
+                {t("common.next")}
+              </Button>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
 }
