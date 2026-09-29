@@ -17,6 +17,15 @@ export interface TestMessage {
   historyTruncated?: boolean;
   historyMessageCount?: number;
 }
+export function loadedTestFeedback(messages: readonly TestMessage[]) {
+  const eligible = messages.filter(
+    message => message.role === "assistant" && message.source !== "guardrail"
+  );
+  return {
+    positive: eligible.filter(message => message.rating === "positive").length,
+    negative: eligible.filter(message => message.rating === "negative").length,
+  };
+}
 interface TestApi {
   transcript?(input: {
     conversationId: number;
@@ -470,8 +479,7 @@ export class TestSariSession {
           }
         : m
     );
-    const positive = messages.filter(m => m.rating === "positive").length,
-      negative = messages.filter(m => m.rating === "negative").length;
+    const { positive, negative } = loadedTestFeedback(messages);
     this.update({
       messages,
       ratingHistory: recordHistory

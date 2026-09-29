@@ -74,9 +74,12 @@ export function testMetricsFixture(): TestMetricsSnapshot {
     invalidLatency: 1,
     metrics,
     feedback: {
+      eligibleReplies: 3,
+      excludedGuardrails: 1,
+      unknownSourceReplies: 1,
       positive: 1,
       negative: 1,
-      unrated: 2,
+      unrated: 1,
       positiveShare: 50,
       meaning: "stored_test_feedback_not_customer_survey",
     },

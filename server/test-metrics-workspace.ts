@@ -26,11 +26,14 @@ export async function readTestMetricsWorkspace(
    ), msg AS (
     SELECT m.conversationId,COUNT(*) messageCount,
      SUM(m.sender='sari') replies,
+     SUM(m.sender='sari' AND (m.replySource IS NULL OR m.replySource!='guardrail')) eligibleReplies,
+     SUM(m.sender='sari' AND m.replySource='guardrail') excludedGuardrails,
+     SUM(m.sender='sari' AND m.replySource IS NULL) unknownSourceReplies,
      SUM(m.sender='sari' AND m.responseTime BETWEEN 0 AND 3600000) latencyCount,
      SUM(CASE WHEN m.sender='sari' AND m.responseTime BETWEEN 0 AND 3600000 THEN m.responseTime ELSE 0 END) latencySum,
      SUM(m.sender='sari' AND m.responseTime IS NOT NULL AND (m.responseTime<0 OR m.responseTime>3600000)) invalidLatency,
-     SUM(m.sender='sari' AND m.rating='positive') positive,
-     SUM(m.sender='sari' AND m.rating='negative') negative
+     SUM(m.sender='sari' AND (m.replySource IS NULL OR m.replySource!='guardrail') AND m.rating='positive') positive,
+     SUM(m.sender='sari' AND (m.replySource IS NULL OR m.replySource!='guardrail') AND m.rating='negative') negative
     FROM testMessages m JOIN cohort c ON c.id=m.conversationId
     WHERE m.sentAt>=c.startedAt AND m.sentAt<=${w.sqlThrough} GROUP BY m.conversationId
    ), deals AS (
@@ -39,6 +42,7 @@ export async function readTestMetricsWorkspace(
     FROM testDeals d JOIN cohort c ON c.id=d.conversationId
     WHERE d.merchantId=${merchantId} AND d.markedAt>=c.startedAt AND d.markedAt<=${w.sqlThrough} AND d.dealValue>0
    ) SELECT COUNT(*) sessions,COALESCE(SUM(m.messageCount),0) messages,COALESCE(SUM(m.replies),0) replies,
+    COALESCE(SUM(m.eligibleReplies),0) eligibleReplies,COALESCE(SUM(m.excludedGuardrails),0) excludedGuardrails,COALESCE(SUM(m.unknownSourceReplies),0) unknownSourceReplies,
     COALESCE(SUM(m.latencyCount),0) latencyCount,COALESCE(SUM(m.latencySum),0) latencySum,COALESCE(SUM(m.invalidLatency),0) invalidLatency,
     COALESCE(SUM(m.positive),0) positive,COALESCE(SUM(m.negative),0) negative,
     COALESCE(SUM(m.messageCount>=3),0) threePlus,COALESCE(SUM(m.messageCount>=5),0) fivePlus,
@@ -156,9 +160,12 @@ export async function readTestMetricsWorkspace(
         invalidLatency: n("invalidLatency"),
         metrics,
         feedback: {
+          eligibleReplies: n("eligibleReplies"),
+          excludedGuardrails: n("excludedGuardrails"),
+          unknownSourceReplies: n("unknownSourceReplies"),
           positive,
           negative,
-          unrated: replies - positive - negative,
+          unrated: n("eligibleReplies") - positive - negative,
           positiveShare: ratio(positive, positive + negative),
           meaning: "stored_test_feedback_not_customer_survey",
         },

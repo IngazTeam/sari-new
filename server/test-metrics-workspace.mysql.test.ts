@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { closeDb, getPool } from "./db/connection";
 import {
   createDisposableMerchant,
@@ -6,6 +14,8 @@ import {
 } from "./tests/helpers/disposable-merchant";
 import { readTestMetricsWorkspace } from "./test-metrics-workspace";
 import { calculateAllMetrics } from "./metrics";
+import { ensureTestFeedbackSchema } from "./tests/helpers/test-feedback-schema";
+import { readSavedTestTranscript } from "./test-feedback-workspace";
 describe.skipIf(!process.env.DATABASE_URL)(
   "saved test metrics evidence in MySQL",
   () => {
@@ -46,6 +56,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       );
     const read = () =>
       readTestMetricsWorkspace(owner.merchantId, { period: "day" }, now);
+    beforeAll(ensureTestFeedbackSchema);
     beforeEach(async () => {
       owner = await createDisposableMerchant("test-metrics");
       other = await createDisposableMerchant("metrics-other");
@@ -54,6 +65,69 @@ describe.skipIf(!process.env.DATABASE_URL)(
       cleanupDisposableMerchants([owner?.userId, other?.userId].filter(Boolean))
     );
     afterAll(closeDb);
+    it("excludes guardrail feedback from quality without hiding saved replies or unknown sources", async () => {
+      const a = await session(),
+        foreign = await session(other.merchantId);
+      await message(a, "user", null, "positive");
+      const guardedPositive = await message(a, "sari", 0, "positive"),
+        guardedNegative = await message(a, "sari", 0, "negative"),
+        modeled = await message(a, "sari", 1000, "positive"),
+        unknown = await message(a, "sari", 2000, "negative"),
+        unrated = await message(a, "sari", 1000);
+      await run(
+        "UPDATE testMessages SET replySource='guardrail' WHERE id IN (?,?)",
+        [guardedPositive, guardedNegative]
+      );
+      await run(
+        "UPDATE testMessages SET replySource='model' WHERE id IN (?,?)",
+        [modeled, unrated]
+      );
+      await message(foreign, "sari", 500, "positive");
+      const r = await read(),
+        transcript = await readSavedTestTranscript(owner.merchantId, {
+          conversationId: a,
+        });
+      expect(r.messages).toBe(6);
+      expect(r.replies).toBe(5);
+      expect(r.feedback).toMatchObject({
+        eligibleReplies: 3,
+        excludedGuardrails: 2,
+        unknownSourceReplies: 1,
+        positive: 1,
+        negative: 1,
+        unrated: 1,
+        positiveShare: 50,
+      });
+      expect(transcript.feedback).toEqual({
+        replies: r.feedback.eligibleReplies,
+        positive: r.feedback.positive,
+        negative: r.feedback.negative,
+      });
+      expect(r.metrics.avgResponseTime.denominator).toBe(5);
+      expect(
+        (await calculateAllMetrics(owner.merchantId, "day", now)).evidence
+          .feedback
+      ).toEqual(r.feedback);
+      expect(unknown).toBeGreaterThan(modeled);
+    });
+    it("has no feedback percentage when all replies are guardrails even with legacy ratings", async () => {
+      const a = await session();
+      const id = await message(a, "sari", 0, "positive");
+      await run("UPDATE testMessages SET replySource='guardrail' WHERE id=?", [
+        id,
+      ]);
+      const r = await read();
+      expect(r.replies).toBe(1);
+      expect(r.feedback).toMatchObject({
+        eligibleReplies: 0,
+        excludedGuardrails: 1,
+        unknownSourceReplies: 0,
+        positive: 0,
+        negative: 0,
+        unrated: 0,
+        positiveShare: null,
+      });
+    });
     it("returns complete empty evidence without inventing percentages or surveys", async () => {
       const r = await read();
       expect(r.sessions).toBe(0);

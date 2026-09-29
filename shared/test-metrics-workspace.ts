@@ -51,6 +51,9 @@ export type TestMetricsSnapshot = {
   invalidLatency: number;
   metrics: Record<TestMetricId, TestMetricObservation>;
   feedback: {
+    eligibleReplies: number;
+    excludedGuardrails: number;
+    unknownSourceReplies: number;
     positive: number;
     negative: number;
     unrated: number;

@@ -58,7 +58,14 @@ export function snapshot() {
     if (m.denominator !== null) m.denominator *= k;
   }
   d.metrics.totalRevenue.value! *= k;
-  for (const key of ["positive", "negative", "unrated"] as const)
+  for (const key of [
+    "positive",
+    "negative",
+    "unrated",
+    "eligibleReplies",
+    "excludedGuardrails",
+    "unknownSourceReplies",
+  ] as const)
     d.feedback[key] *= k;
   d.longSessions.count *= k;
   d.longSessions.total *= k;
@@ -80,6 +87,9 @@ export function snapshot() {
     }
     d.metrics.totalRevenue.value = 0;
     Object.assign(d.feedback, {
+      eligibleReplies: 0,
+      excludedGuardrails: 0,
+      unknownSourceReplies: 0,
       positive: 0,
       negative: 0,
       unrated: 0,

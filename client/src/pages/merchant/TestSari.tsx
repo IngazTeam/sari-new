@@ -4,7 +4,7 @@ import {
   readTestSessionReference,
   rememberTestSessionReference,
 } from "@/lib/test-session-reference";
-import { TestSariSession } from "@/lib/test-sari-session";
+import { TestSariSession, loadedTestFeedback } from "@/lib/test-sari-session";
 import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { testDealValue } from "@shared/test-sari-workspace";
 import { useState, useRef, useEffect, useSyncExternalStore } from "react";
@@ -173,10 +173,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
   const hasDeal = !!savedDeal;
   const isTyping = busy && send.isPending;
   const disabled = busy || !!error;
-  const ratings = {
-    positive: messages.filter(m => m.rating === "positive").length,
-    negative: messages.filter(m => m.rating === "negative").length,
-  };
+  const ratings = loadedTestFeedback(messages);
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;

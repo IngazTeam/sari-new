@@ -92,6 +92,9 @@ export function TestMetricsReport({
         <h2 id="tm-feedback">{l.feedback}</h2>
         <p className="ov-note">{l.feedbackNote}</p>
         <dl>
+          {row(l.eligibleReplies, n(d.feedback.eligibleReplies))}
+          {row(l.excludedGuardrails, n(d.feedback.excludedGuardrails))}
+          {row(l.unknownSourceReplies, n(d.feedback.unknownSourceReplies))}
           {row(l.positive, n(d.feedback.positive))}
           {row(l.negative, n(d.feedback.negative))}
           {row(l.unrated, n(d.feedback.unrated))}

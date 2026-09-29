@@ -9997,7 +9997,7 @@
     "totalRevenue": "Total recorded trial values",
     "valueNote": "A value entered by the tester; this table does not store currency. It is not revenue or collected money. The first valid mark per session is selected.",
     "avgResponseTime": "Average saved response time",
-    "latencyNote": "A timing value saved by the test client, not independent provider or delivery measurement. Includes zero; excludes negatives and values exceeding one hour.",
+    "latencyNote": "Average client-recorded time for a test reply, not WhatsApp response time or verified provider latency. Includes replies and guardrail notices; the sample counts valid timings out of all replies.",
     "avgConversationLength": "Average messages per session",
     "lengthNote": "All eligible messages divided by every session, including empty sessions. Length does not establish customer satisfaction.",
     "avgTimeToConversion": "Time until agreement mark",
@@ -10021,7 +10021,7 @@
     "npsScore": "Net Promoter Score · NPS",
     "npsScoreNote": "Requires a recommendation question and 0–10 responses; positive minus negative votes is not NPS.",
     "feedback": "Saved test reply feedback",
-    "feedbackNote": "Saved feedback from test reviewers, including legacy records. These are not customer survey responses. The test screen confirms a rating only after the server acknowledges it.",
+    "feedbackNote": "Stored team feedback on test replies, not a customer satisfaction survey. Known guardrail notices are excluded from positive, negative and unrated counts. Legacy replies with no recorded source remain eligible and are counted separately; this does not prove model generation. Positive share uses rated replies only.",
     "positive": "Positive",
     "negative": "Negative",
     "unrated": "No saved rating",
@@ -10044,6 +10044,9 @@
     "value": "Value",
     "unit": "Unit",
     "denominator": "Denominator",
-    "definition": "Definition"
+    "definition": "Definition",
+    "eligibleReplies": "Replies eligible for team feedback",
+    "excludedGuardrails": "Guardrail notices excluded from feedback",
+    "unknownSourceReplies": "Eligible replies with unrecorded source"
   }
 }

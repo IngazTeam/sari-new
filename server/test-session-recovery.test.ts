@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TestSariSession } from "../client/src/lib/test-sari-session";
+import {
+  TestSariSession,
+  loadedTestFeedback,
+} from "../client/src/lib/test-sari-session";
 import {
   readTestSessionReference,
   rememberTestSessionReference,
@@ -49,6 +52,23 @@ beforeEach(() => {
   session = new TestSariSession(api);
 });
 describe("saved session recovery", () => {
+  it("excludes historic guardrail and user ratings while retaining unknown assistant sources", async () => {
+    api.transcript.mockResolvedValue(
+      transcript({
+        items: [
+          { ...message(1), sender: "user" },
+          { ...message(2), replySource: "guardrail" },
+          { ...message(3), replySource: null, rating: "negative" },
+        ],
+        nextCursor: null,
+      })
+    );
+    await session.restore(12, 20);
+    expect(loadedTestFeedback(session.snapshot().messages)).toEqual({
+      positive: 0,
+      negative: 1,
+    });
+  });
   it("restores saved IDs, revisions and deal without sending or creating", async () => {
     expect(await session.restore(12, 20)).toBe(true);
     expect(session.snapshot()).toMatchObject({

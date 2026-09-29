@@ -108,7 +108,10 @@ describe("test metrics prototype parity", () => {
       expect(d.metrics.avgConversationLength.sample).toBe(d.messages);
       expect(
         d.feedback.positive + d.feedback.negative + d.feedback.unrated
-      ).toBe(d.replies);
+      ).toBe(d.feedback.eligibleReplies);
+      expect(d.feedback.eligibleReplies + d.feedback.excludedGuardrails).toBe(
+        d.replies
+      );
       expect(d.metrics.totalRevenue.value).toBe(
         d.metrics.avgDealValue.value * d.metrics.avgDealValue.sample
       );

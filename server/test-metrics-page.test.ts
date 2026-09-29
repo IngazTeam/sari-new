@@ -197,6 +197,9 @@ describe("test metrics evidence UI", () => {
       rows.slice(header + 1, header + 16).every(row => row.length === 6)
     ).toBe(true);
     expect(rows).toContainEqual([l.feedbackNote]);
+    expect(rows).toContainEqual([l.eligibleReplies, 3]);
+    expect(rows).toContainEqual([l.excludedGuardrails, 1]);
+    expect(rows).toContainEqual([l.unknownSourceReplies, 1]);
     expect(rows).toContainEqual([c.salesSkill, c.unmeasured]);
   });
   it("reports export failure truthfully", async () => {
