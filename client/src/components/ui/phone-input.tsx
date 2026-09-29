@@ -16,6 +16,7 @@ const COUNTRIES = [
     { code: 'YE', flag: '🇾🇪', nameKey: 'countryYE', dial: '+967', digits: 9 },
     { code: 'SD', flag: '🇸🇩', nameKey: 'countrySD', dial: '+249', digits: 9 },
     { code: 'LY', flag: '🇱🇾', nameKey: 'countryLY', dial: '+218', digits: 9 },
+    { code: 'INTL', flag: '🌐', nameKey: 'countryInternational', dial: '', digits: 15 },
 ] as const;
 
 type Country = (typeof COUNTRIES)[number];
@@ -39,8 +40,14 @@ interface PhoneInputProps {
  * Parse a full phone number string to extract country + local number.
  * Supports formats: "966501234567", "+966501234567", "0501234567"
  */
-function parsePhoneValue(value: string): { country: Country; localNumber: string } {
-    const cleaned = value.replace(/[^0-9]/g, '');
+function phoneDigits(value: string): string {
+    return value.replace(/[٠-٩]/g, char => String(char.charCodeAt(0) - 0x0660))
+        .replace(/[۰-۹]/g, char => String(char.charCodeAt(0) - 0x06f0)).replace(/[^0-9]/g, '');
+}
+export function parsePhoneValue(value: string): { country: Country; localNumber: string } {
+    const digits = phoneDigits(value);
+    const international = value.trim().startsWith('+') || digits.startsWith('00');
+    const cleaned = digits.startsWith('00') ? digits.slice(2) : digits;
 
     // Try matching against each country's dial code (longest match first)
     const sortedCountries = [...COUNTRIES].sort(
@@ -48,6 +55,7 @@ function parsePhoneValue(value: string): { country: Country; localNumber: string
     );
 
     for (const country of sortedCountries) {
+        if (!country.dial) continue;
         const dialDigits = country.dial.replace('+', '');
         if (cleaned.startsWith(dialDigits)) {
             return {
@@ -60,10 +68,13 @@ function parsePhoneValue(value: string): { country: Country; localNumber: string
     // Default to Saudi Arabia
     // If starts with 0, strip the leading 0 (local format like 05xxxxxxxx)
     const defaultCountry = COUNTRIES[0]; // SA
-    if (cleaned.startsWith('0')) {
+    if (cleaned.startsWith('0') && !international) {
         return { country: defaultCountry, localNumber: cleaned.slice(1) };
     }
 
+    if (international || cleaned.length > defaultCountry.digits) {
+        return {country: COUNTRIES[COUNTRIES.length - 1], localNumber: cleaned};
+    }
     return { country: defaultCountry, localNumber: cleaned };
 }
 
@@ -101,16 +112,16 @@ export function PhoneInput({
 
     const handleLocalNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // Only allow digits
-        const digits = e.target.value.replace(/[^0-9]/g, '');
+        const digits = phoneDigits(e.target.value);
         // Strip leading zero if user types it
-        const cleaned = digits.startsWith('0') ? digits.slice(1) : digits;
+        const cleaned = selectedCountry.code === 'INTL' ? (digits.startsWith('00') ? digits.slice(2) : digits) : digits.startsWith('0') ? digits.slice(1) : digits;
         // Enforce max digits
         const limited = cleaned.slice(0, selectedCountry.digits);
         setLocalNumber(limited);
 
         // Emit full international number (without +)
         const dialDigits = selectedCountry.dial.replace('+', '');
-        onChange(limited ? `${dialDigits}${limited}` : '');
+        onChange(limited ? `${selectedCountry.code === 'INTL' ? '+' : dialDigits}${limited}` : '');
     };
 
     const handleCountrySelect = (country: Country) => {
@@ -121,10 +132,10 @@ export function PhoneInput({
         // Also enforce new digit limit
         const limited = localNumber.slice(0, country.digits);
         setLocalNumber(limited);
-        onChange(limited ? `${dialDigits}${limited}` : '');
+        onChange(limited ? `${country.code === 'INTL' ? '+' : dialDigits}${limited}` : '');
     };
 
-    const defaultPlaceholder = '5' + '0'.repeat(selectedCountry.digits - 1);
+    const defaultPlaceholder = selectedCountry.code === 'INTL' ? t('authUx.signup.internationalNumberHint') : '5' + '0'.repeat(selectedCountry.digits - 1);
 
     return (
         <div className={cn('relative min-w-0 w-full', className)}>
@@ -153,7 +164,7 @@ export function PhoneInput({
                 >
                     {COUNTRIES.map((country) => (
                         <option key={country.code} value={country.code}>
-                            {country.flag} {t(`authUx.signup.${country.nameKey}`)} ({country.dial})
+                            {country.flag} {t(`authUx.signup.${country.nameKey}`)} {country.dial ? `(${country.dial})` : ''}
                         </option>
                     ))}
                 </select>
@@ -171,8 +182,9 @@ export function PhoneInput({
                     placeholder={placeholder || defaultPlaceholder}
                     disabled={disabled}
                     required={required}
-                    minLength={selectedCountry.digits}
+                    minLength={selectedCountry.code === 'INTL' ? 9 : selectedCountry.digits}
                     maxLength={selectedCountry.digits}
+                    pattern={selectedCountry.code === 'INTL' ? '[1-9][0-9]{8,14}' : '[0-9]+'}
                     className={cn(
                         'flex-1 min-w-0 px-2 py-2 text-base bg-transparent border-0',
                         'focus:outline-none placeholder:text-muted-foreground',

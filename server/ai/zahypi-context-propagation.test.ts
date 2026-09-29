@@ -92,8 +92,10 @@ describe("ZahyPi tenant propagation", () => {
     expect(websiteRouter).toMatch(/analyzer\.generateInsights\(insightsData, merchant\.id\)/);
 
     const analysisRouter = readFileSync(new URL("../routers\/analysis\.ts", import.meta.url), "utf8");
-    expect(analysisRouter).toMatch(/extractProducts\(input\.websiteUrl, html, homeText, merchant\.id\)/);
-    expect(analysisRouter).toMatch(/extractAllWithAI\(allText, input\.websiteUrl, siteType, merchant\.id\)/);
+    expect(analysisRouter).toMatch(/extractImportPreview\(ctx\.merchantId, input\.websiteUrl\)/);
+    const importer = readFileSync(new URL("../knowledge/website-import-extract.ts", import.meta.url), "utf8");
+    expect(importer).toMatch(/analyzer\.extractProducts\(\s*websiteUrl,\s*html,\s*text,\s*merchantId\s*\)/);
+    expect(importer).toMatch(/analyzer\.extractAllWithAI\(\s*allText,\s*websiteUrl,\s*siteType,\s*merchantId\s*\)/);
   });
 
   it.each([

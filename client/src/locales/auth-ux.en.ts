@@ -53,6 +53,7 @@ const authUxEn: AuthUxCopy = {
     countryBH: 'Bahrain', countryQA: 'Qatar', countryOM: 'Oman',
     countryEG: 'Egypt', countryJO: 'Jordan', countryIQ: 'Iraq',
     countryYE: 'Yemen', countrySD: 'Sudan', countryLY: 'Libya',
+    countryInternational: 'Full international number', internationalNumberHint: 'Country code and phone number',
   },
 };
 

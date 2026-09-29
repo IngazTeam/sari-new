@@ -605,8 +605,24 @@ export function getValidationStats(): typeof _stats {
 export function sanitizeIdentity(response: string, merchantName?: string, agentName?: string): string {
   if (!response) return response;
   
-  const replaceName = agentName || merchantName || '';
-  let sanitized = response;
+  // Treat configured names as literal text. A later alias pass must not expand
+  // the "Sari" inside a merchant/agent name again, or interpret $ replacement syntax.
+  const names = Array.from(new Set([agentName, merchantName].filter((name): name is string => !!name))).sort((a,b)=>b.length-a.length);
+  let prefix = '__IDENTITY_LITERAL_';
+  while ([response, ...names].some(value => value.includes(prefix))) prefix = '_' + prefix;
+  const literals = new Map<string, string>();
+  const protect = (text: string) => {
+    const key = `${prefix}${literals.size}__`;
+    literals.set(key, text);
+    return key;
+  };
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let sanitized = names.length ? response.replace(new RegExp(`(?<![\\p{L}\\p{N}_])(?:${names.map(escape).join('|')})(?![\\p{L}\\p{N}_])`, 'giu'), protect) : response;
+  sanitized = sanitized.replace(/ساري\s+المفعول/g, protect);
+  // Longer words are not assistant aliases (e.g. مساري, سارية, Saria).
+  sanitized = sanitized.replace(new RegExp('[\\p{L}\\p{N}_]+', 'gu'), word =>
+    ((word.includes('ساري') && !/^[وبلكف]?ساري$/.test(word)) || (word.toLowerCase().includes('sari') && word.toLowerCase() !== 'sari')) ? protect(word) : word);
+  const replaceName = agentName || merchantName ? protect(agentName || merchantName!) : '';
   
   // ── Phase 1: Specific Arabic self-identification patterns ──
   // (ordered from most specific to least to avoid double-replacement)
@@ -657,5 +673,6 @@ export function sanitizeIdentity(response: string, merchantName?: string, agentN
   // Clean up double spaces left by removals
   sanitized = sanitized.replace(/  +/g, ' ').trim();
   
+  literals.forEach((text, key) => { sanitized = sanitized.split(key).join(text); });
   return sanitized;
 }

@@ -53,6 +53,7 @@ const authUxAr: AuthUxCopy = {
     countryBH: 'البحرين', countryQA: 'قطر', countryOM: 'عُمان',
     countryEG: 'مصر', countryJO: 'الأردن', countryIQ: 'العراق',
     countryYE: 'اليمن', countrySD: 'السودان', countryLY: 'ليبيا',
+    countryInternational: 'رقم دولي كامل', internationalNumberHint: 'رمز الدولة ثم الرقم',
   },
 };
 

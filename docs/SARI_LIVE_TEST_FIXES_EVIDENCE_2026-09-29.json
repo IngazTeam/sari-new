@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T16:46:55.883Z",
+  "scope": "Literal merchant/agent identity and international phone preservation, discovered through a synthetic live tenant",
+  "branch": "main",
+  "validationBaseHead": "fb44065290394b455091f3793e5bd6c65181e37f",
+  "isolation": {
+    "localTests": {
+      "applicationEnvLoaded": false,
+      "externalNetworkBlocked": true,
+      "liveProviderCalls": 0,
+      "whatsAppSends": 0,
+      "payments": 0
+    },
+    "liveBrowser": {
+      "host": "sary.live",
+      "tenantName": "مختبر ساري — اختبار فقط",
+      "accountCreated": true,
+      "userCompletedCredentialsAndLegalConsent": true,
+      "knowledgeSaved": true,
+      "previewAttempts": 2,
+      "usefulPreviewAnswers": 0,
+      "providerIdentityObserved": false,
+      "whatsAppConnected": false,
+      "paymentsCreated": false,
+      "codeDeployed": false
+    }
+  },
+  "summary": {
+    "uniqueFiles": 52,
+    "uniquePassed": 1148,
+    "executions": 1241,
+    "failed": 0,
+    "identityTests": 14,
+    "phoneTests": 12
+  },
+  "suites": {
+    "server/bot-hardening-pentest.test.ts": 57,
+    "server/phone-input-international.test.ts": 12,
+    "server/signup-ux-accessibility-pentest.test.ts": 7,
+    "server/ai/contextual-generation.test.ts": 32,
+    "server/ai/identity-literal.test.ts": 14,
+    "server/ai/preview-provider-routing.test.ts": 8,
+    "server/ai/sales-reply-prompt.test.ts": 11,
+    "server/ai/sari-preview.test.ts": 42,
+    "server/ai-settings-provider-routing.test.ts": 10,
+    "server/appointment-reminder-access-pentest.test.ts": 30,
+    "server/appointment-reminder-context.test.ts": 21,
+    "server/appointment-reminder-pentest.test.ts": 41,
+    "server/assistant-reply-preview.test.ts": 12,
+    "server/bot-audit-pentest.test.ts": 93,
+    "server/byaan-conversation-routing.test.ts": 39,
+    "server/merchant-persona-routing.test.ts": 17,
+    "server/persona-preview-history.test.ts": 16,
+    "server/persona-preview.test.ts": 24,
+    "server/remediation-regression.test.ts": 6,
+    "server/sales-hardening-pentest.test.ts": 34,
+    "server/sari-quick-preview.test.ts": 12,
+    "server/virtual-team-page.test.ts": 6,
+    "server/ai/action-execution.test.ts": 12,
+    "server/ai/automatic-followup-context.test.ts": 24,
+    "server/ai/budget-boundaries.test.ts": 6,
+    "server/ai/contextual-agent-routing.test.ts": 15,
+    "server/ai/contextual-followup.test.ts": 32,
+    "server/ai/contextual-learning-contract.test.ts": 26,
+    "server/ai/contextual-memory-contract.test.ts": 29,
+    "server/ai/contextual-reply-routing.test.ts": 15,
+    "server/ai/contextual-sales-loss-contract.test.ts": 24,
+    "server/ai/conversation-understanding-evaluation.test.ts": 24,
+    "server/ai/conversation-understanding.test.ts": 20,
+    "server/ai/customer-memory-chat.test.ts": 6,
+    "server/ai/customer-memory.test.ts": 36,
+    "server/ai/followup-policy.test.ts": 20,
+    "server/ai/learning-analysis-pentest.test.ts": 37,
+    "server/ai/learning-signal-capture-pentest.test.ts": 32,
+    "server/ai/loss-detector.test.ts": 1,
+    "server/ai/openai-zahypi.test.ts": 6,
+    "server/ai/preview-prompt.test.ts": 7,
+    "server/ai/requested-followup-time.test.ts": 27,
+    "server/ai/sales-brain-decisions.test.ts": 22,
+    "server/ai/sales-brain-learning.test.ts": 7,
+    "server/ai/sales-reply-transport.test.ts": 6,
+    "server/ai/sales-turn-policy.test.ts": 15,
+    "server/ai/task-catalog.test.ts": 10,
+    "server/ai/transactional-truth.test.ts": 11,
+    "server/ai/zahypi-callsite-governance.test.ts": 7,
+    "server/ai/zahypi-client.test.ts": 102,
+    "server/ai/zahypi-context-propagation.test.ts": 14,
+    "server/ai/zahypi-runtime-config.test.ts": 11
+  },
+  "reports": [
+    {
+      "file": ".tmp/phase38-checks/live-fixes.json",
+      "sha256": "1066a2e504d6674ec18bac4ac7d86226e644950a38c7671fa1930e94241ddc7d",
+      "passed": 183,
+      "failed": 0,
+      "files": 8
+    },
+    {
+      "file": ".tmp/phase38-checks/tests.json",
+      "sha256": "c21dd4e8c24333cc6df725bed80677cfcad2f72556340526eddb729360d5a8fb",
+      "passed": 1058,
+      "failed": 0,
+      "files": 48
+    }
+  ],
+  "checks": [
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a",
+      "baseHead": "fb44065290394b455091f3793e5bd6c65181e37f",
+      "overlaySha256": {
+        "server/ai/response-validator.ts": "9cf36df31d242088a81caec883a1ef77fc85fb595d013a34814961e3b34103d7",
+        "server/ai/identity-literal.test.ts": "8c0d938a43d1758057e6993329c203fbd525617434e23705d4700942979c116f",
+        "client/src/components/ui/phone-input.tsx": "c6c5f70c6f70a9d3296a3ad04966f202ba2ac6e403caa17dc8d540a6d7ee8d23",
+        "server/phone-input-international.test.ts": "1264d39623373da5be4d9f48687bb9f740f502cef9792977b133283096ee53eb",
+        "server/signup-ux-accessibility-pentest.test.ts": "739e05cb0f53f18a36cae46b1c89807b20a8952522243e7c4ce45100b2d2ea1a",
+        "client/src/locales/auth-ux.ar.ts": "04303d9e5416dd59bf5754909c49abdfab0e7cc1289de04f88ca0f19a405e6c6",
+        "client/src/locales/auth-ux.en.ts": "d9232f6cfe458210eb4c2217bc1e4e3dde745107021efc68a70a15faabaaec68",
+        "client/src/locales/auth-ux.schema.ts": "a5abfb06de8ee5f5207a23d572880705f8c0ad00ec6b4c7656f6b033d615d1ff",
+        "server/ai/zahypi-context-propagation.test.ts": "5cc64f89911fefe03b6ac3a840aa3fb983a145a4577e0eee06f9006569157180"
+      },
+      "source": "Tracked main plus only contextual merchant phase38s; no .env or unrelated uncommitted edits"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a",
+      "baseHead": "fb44065290394b455091f3793e5bd6c65181e37f",
+      "overlaySha256": {
+        "server/ai/response-validator.ts": "9cf36df31d242088a81caec883a1ef77fc85fb595d013a34814961e3b34103d7",
+        "server/ai/identity-literal.test.ts": "8c0d938a43d1758057e6993329c203fbd525617434e23705d4700942979c116f",
+        "client/src/components/ui/phone-input.tsx": "c6c5f70c6f70a9d3296a3ad04966f202ba2ac6e403caa17dc8d540a6d7ee8d23",
+        "server/phone-input-international.test.ts": "1264d39623373da5be4d9f48687bb9f740f502cef9792977b133283096ee53eb",
+        "server/signup-ux-accessibility-pentest.test.ts": "739e05cb0f53f18a36cae46b1c89807b20a8952522243e7c4ce45100b2d2ea1a",
+        "client/src/locales/auth-ux.ar.ts": "04303d9e5416dd59bf5754909c49abdfab0e7cc1289de04f88ca0f19a405e6c6",
+        "client/src/locales/auth-ux.en.ts": "d9232f6cfe458210eb4c2217bc1e4e3dde745107021efc68a70a15faabaaec68",
+        "client/src/locales/auth-ux.schema.ts": "a5abfb06de8ee5f5207a23d572880705f8c0ad00ec6b4c7656f6b033d615d1ff",
+        "server/ai/zahypi-context-propagation.test.ts": "5cc64f89911fefe03b6ac3a840aa3fb983a145a4577e0eee06f9006569157180"
+      }
+    },
+    {
+      "name": "snapshot-translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a"
+    },
+    {
+      "name": "snapshot-eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a"
+    },
+    {
+      "name": "snapshot-regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\tests.json"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase38-checks\\type-snapshot-1855012d-ecc2-4c81-97bf-c83a203b839a"
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8749,
+    "dynamicKeysChecked": 345,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "dryRun": {
+    "total": 82,
+    "live": false
+  },
+  "publicSurface": {
+    "at": "2026-09-29T15:59:21.940Z",
+    "method": "GET",
+    "credentials": false,
+    "results": [
+      {
+        "path": "/health",
+        "status": 200,
+        "rpcCode": null,
+        "ms": 925
+      },
+      {
+        "path": "/ready",
+        "status": 200,
+        "rpcCode": null,
+        "ms": 917
+      },
+      {
+        "path": "/api/trpc/sariBrain.getLearningDashboard",
+        "status": 401,
+        "rpcCode": "UNAUTHORIZED",
+        "ms": 616
+      },
+      {
+        "path": "/api/trpc/orders.listByMerchant",
+        "status": 401,
+        "rpcCode": "UNAUTHORIZED",
+        "ms": 295
+      }
+    ]
+  },
+  "sourceSha256": {
+    "server/ai/response-validator.ts": "9cf36df31d242088a81caec883a1ef77fc85fb595d013a34814961e3b34103d7",
+    "server/ai/identity-literal.test.ts": "8c0d938a43d1758057e6993329c203fbd525617434e23705d4700942979c116f",
+    "client/src/components/ui/phone-input.tsx": "c6c5f70c6f70a9d3296a3ad04966f202ba2ac6e403caa17dc8d540a6d7ee8d23",
+    "server/phone-input-international.test.ts": "1264d39623373da5be4d9f48687bb9f740f502cef9792977b133283096ee53eb",
+    "server/signup-ux-accessibility-pentest.test.ts": "739e05cb0f53f18a36cae46b1c89807b20a8952522243e7c4ce45100b2d2ea1a",
+    "client/src/locales/auth-ux.ar.ts": "04303d9e5416dd59bf5754909c49abdfab0e7cc1289de04f88ca0f19a405e6c6",
+    "client/src/locales/auth-ux.en.ts": "d9232f6cfe458210eb4c2217bc1e4e3dde745107021efc68a70a15faabaaec68",
+    "client/src/locales/auth-ux.schema.ts": "a5abfb06de8ee5f5207a23d572880705f8c0ad00ec6b4c7656f6b033d615d1ff",
+    "server/ai/zahypi-context-propagation.test.ts": "5cc64f89911fefe03b6ac3a840aa3fb983a145a4577e0eee06f9006569157180"
+  },
+  "limitations": [
+    "Live previews returned an unavailable fallback, not proof of AI readiness. The provider settings, server log and running release must be checked before retrying acceptance.",
+    "Identity and phone fixes were validated locally and are not deployed.",
+    "No live WhatsApp, payment or cross-tenant data test was performed.",
+    "These local adversarial and read-only public checks are not a comprehensive production penetration test.",
+    "No push or deployment."
+  ]
+}

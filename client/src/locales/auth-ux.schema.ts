@@ -14,6 +14,7 @@ export const signupCopyKeys = [
   'signIn', 'countrySelector', 'phoneInputLabel',
   'countrySA', 'countryAE', 'countryKW', 'countryBH', 'countryQA', 'countryOM',
   'countryEG', 'countryJO', 'countryIQ', 'countryYE', 'countrySD', 'countryLY',
+  'countryInternational', 'internationalNumberHint',
 ] as const;
 
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;
