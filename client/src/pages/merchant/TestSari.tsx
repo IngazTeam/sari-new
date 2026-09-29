@@ -1,3 +1,9 @@
+import { TestSessionHistory } from "@/components/TestSessionHistory";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
+import {
+  readTestSessionReference,
+  rememberTestSessionReference,
+} from "@/lib/test-session-reference";
 import { TestSariSession } from "@/lib/test-sari-session";
 import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { testDealValue } from "@shared/test-sari-workspace";
@@ -47,25 +53,9 @@ import {
   Sparkles,
   ThumbsUp,
   ThumbsDown,
-  TrendingUp,
-  BarChart3,
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  LineChart,
-  Line,
-  Tooltip as RechartsTooltip,
-} from "recharts";
 
 interface Scenario {
   id: string;
@@ -77,12 +67,19 @@ interface Scenario {
 export default function TestSari() {
   return (
     <KnowledgeWorkspaceScope slot="test-sari-session">
-      {key => <TestSariWorkspace key={key} />}
+      {key => <TestSariWorkspace key={key} scopeKey={key} />}
     </KnowledgeWorkspaceScope>
   );
 }
-function TestSariWorkspace() {
-  const { t } = useTranslation();
+function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
+  const { t, i18n } = useTranslation();
+  const merchantId = Number(scopeKey.split(":")[1]);
+  const [epoch] = useState(knowledgeCacheEpoch);
+  const [storageFailed, setStorageFailed] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState<number | null>(null);
+  const initialized = useRef(false);
+  const loadingOlder = useRef(false);
 
   const EXAMPLE_SCENARIOS: Scenario[] = [
     {
@@ -167,22 +164,71 @@ function TestSariWorkspace() {
         rate: input => operations.current.rate.mutateAsync(input),
         readRating: input =>
           operations.current.utils.testSari.feedback.fetch(input),
+        transcript: input =>
+          operations.current.utils.testSari.transcript.fetch(input),
       })
   );
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
   const { messages, busy, error, deal: savedDeal, ratingHistory } = state;
   const hasDeal = !!savedDeal;
   const isTyping = busy && send.isPending;
-  const disabled = busy || !!error || !state.conversationId;
+  const disabled = busy || !!error;
   const ratings = {
     positive: messages.filter(m => m.rating === "positive").length,
     negative: messages.filter(m => m.rating === "negative").length,
   };
   useEffect(() => {
-    void session.start();
-  }, [session]);
+    if (initialized.current) return;
+    initialized.current = true;
+    const previous = readTestSessionReference(scopeKey);
+    if (previous) void session.restore(previous, merchantId);
+  }, [session, scopeKey, merchantId]);
+  useEffect(() => {
+    if (state.conversationId)
+      setStorageFailed(
+        !rememberTestSessionReference(scopeKey, state.conversationId, epoch)
+      );
+  }, [state.conversationId, scopeKey, epoch]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (inputMessage.trim() || busy || error) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [inputMessage, busy, error]);
+  const openSession = async (id: number) => {
+    if (await session.restore(id, merchantId)) {
+      setInputMessage("");
+      setScenarioId("");
+      setDealValue("");
+      setDealError(false);
+      setPendingOpen(null);
+    }
+  };
+  const requestOpen = (id: number) => {
+    setShowHistory(false);
+    if (inputMessage.trim() || messages.length || error) setPendingOpen(id);
+    else void openSession(id);
+  };
+  const loadOlder = async () => {
+    const viewport = scrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    const height = viewport?.scrollHeight ?? 0,
+      top = viewport?.scrollTop ?? 0;
+    loadingOlder.current = true;
+    await session.loadOlder(merchantId);
+    requestAnimationFrame(() => {
+      if (viewport) viewport.scrollTop = top + viewport.scrollHeight - height;
+      loadingOlder.current = false;
+    });
+  };
   const handleSendMessage = async () => {
     if (disabled || !inputMessage.trim()) return;
+    if (!state.conversationId && !(await session.start())) return;
     const pending = session.send(inputMessage);
     setInputMessage("");
     await pending;
@@ -203,7 +249,7 @@ function TestSariWorkspace() {
   };
   const requestReset = (id: string) => {
     if (busy) return;
-    if (messages.length || inputMessage.trim()) setPendingReset(id);
+    if (messages.length || inputMessage.trim() || error) setPendingReset(id);
     else void replaceSession(id);
   };
   const handleMarkAsDeal = async () => {
@@ -225,11 +271,15 @@ function TestSariWorkspace() {
   const handleRetry = async () => {
     const failed = state.error;
     if (await session.retry()) {
-      if (failed === "session") {
+      if (failed === "restore" && pendingOpen !== null) {
+        setPendingOpen(null);
         setInputMessage("");
         setScenarioId("");
-        setDealValue("");
-        setDealError(false);
+      }
+      if (failed === "session" && pendingReset !== null) {
+        setPendingReset(null);
+        setInputMessage("");
+        setScenarioId("");
       }
       if (failed === "deal") setShowDealDialog(false);
     }
@@ -242,125 +292,28 @@ function TestSariWorkspace() {
     const viewport = scrollRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     );
-    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+    if (viewport && !loadingOlder.current)
+      viewport.scrollTop = viewport.scrollHeight;
   }, [messages, isTyping]);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-6 p-3 sm:p-6">
-      <div className="mb-6">
+    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-4 p-3 sm:p-6">
+      <div>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold">{t("testSariPage.title")}</h1>
+            <h1 className="text-2xl font-bold">{t("testSariPage.title")}</h1>
             <p className="text-muted-foreground mt-2">
               {t("testSariPage.subtitle")}
             </p>
-            {hasDeal && (
-              <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
-                <CheckCircle2 className="h-4 w-4" />
-                {t("testSariPage.dealAgreed", {
-                  value: savedDeal?.value.toFixed(2),
-                })}
-              </div>
-            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Dialog
-              open={showDealDialog}
-              onOpenChange={open => {
-                if (!busy) setShowDealDialog(open);
-              }}
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => setShowHistory(true)}
             >
-              <DialogTrigger asChild>
-                <Button
-                  variant={hasDeal ? "default" : "outline"}
-                  disabled={
-                    hasDeal ||
-                    disabled ||
-                    !messages.some(
-                      m => m.role === "assistant" && m.source !== "guardrail"
-                    )
-                  }
-                  className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
-                >
-                  <CheckCircle2 className="h-4 w-4 ml-2" />
-                  {hasDeal
-                    ? t("testSariPage.dealDone")
-                    : t("testSariPage.dealButton")}
-                </Button>
-              </DialogTrigger>
-              <DialogContent
-                closeLabel={t("testSariPage.closeDialog")}
-                showCloseButton={!busy}
-                className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
-              >
-                <DialogHeader>
-                  <DialogTitle>{t("testSariPage.dealDialogTitle")}</DialogTitle>
-                  <DialogDescription>
-                    {t("testSariPage.dealDialogDesc")}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dealValue">
-                      {t("testSariPage.dealValueLabel")}
-                    </Label>
-                    <Input
-                      id="dealValue"
-                      type="number"
-                      placeholder={t("testSariPage.dealValuePlaceholder")}
-                      value={dealValue}
-                      onChange={e => {
-                        setDealValue(e.target.value);
-                        setDealError(false);
-                      }}
-                      disabled={busy || !!error}
-                      aria-invalid={dealError}
-                      aria-describedby={
-                        dealError ? "deal-value-error" : undefined
-                      }
-                      inputMode="decimal"
-                      min="0.01"
-                      max="9999999999.99"
-                      step="0.01"
-                    />
-                    {dealError && (
-                      <p
-                        id="deal-value-error"
-                        role="alert"
-                        className="text-sm text-destructive"
-                      >
-                        {t("testSariPage.invalidDealValue")}
-                      </p>
-                    )}
-                    {error === "deal" && (
-                      <div role="alert" className="space-y-2 text-sm">
-                        <p>{t("testSariPage.saveDealFailed")}</p>
-                        <Button
-                          variant="outline"
-                          disabled={busy || state.forbidden}
-                          onClick={handleRetry}
-                        >
-                          {t("testSariPage.retry")}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => setShowDealDialog(false)}
-                  >
-                    {t("testSariPage.cancel")}
-                  </Button>
-                  <Button disabled={disabled} onClick={handleMarkAsDeal}>
-                    {t("testSariPage.confirm")}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
+              {t("testSariPage.savedSessions")}
+            </Button>
             <Button
               onClick={() => requestReset("")}
               variant="outline"
@@ -371,70 +324,8 @@ function TestSariWorkspace() {
             </Button>
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-4 rounded-2xl border">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">
-              {t("testSariPage.tryExamples")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("testSariPage.chooseScenario")}
-            </p>
-          </div>
-          <Select
-            value={scenarioId}
-            disabled={busy}
-            onValueChange={requestReset}
-          >
-            <SelectTrigger
-              aria-label={t("testSariPage.scenarioLabel")}
-              className="w-full sm:w-[250px]"
-            >
-              <SelectValue placeholder={t("testSariPage.selectScenario")} />
-            </SelectTrigger>
-            <SelectContent>
-              {EXAMPLE_SCENARIOS.map(scenario => (
-                <SelectItem key={scenario.id} value={scenario.id}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{scenario.title}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {scenario.description}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
-      {selectedScenario && selectedScenario.messages.length > 1 && (
-        <details className="rounded-2xl border p-4 text-sm">
-          <summary className="cursor-pointer font-medium">
-            {t("testSariPage.scenarioPreview")}
-          </summary>
-          <p className="my-3 text-muted-foreground">
-            {t("testSariPage.scenarioPreviewHint")}
-          </p>
-          <ol className="space-y-2">
-            {selectedScenario.messages.map((message, index) => (
-              <li key={index} className="rounded-lg bg-muted p-3">
-                {message.content}
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
-      <div
-        className="space-y-2 rounded-2xl border bg-primary/5 p-4 text-sm"
-        role="note"
-      >
-        <p>{t("testSariPage.testingScope")}</p>
-        <p className="text-muted-foreground">
-          {t("testSariPage.contextLimit")}
-        </p>
-      </div>
       <div
         role="status"
         aria-live="polite"
@@ -446,7 +337,7 @@ function TestSariWorkspace() {
             ? t("testSariPage.attentionStatus")
             : state.conversationId
               ? t("testSariPage.readyStatus")
-              : t("testSariPage.startingStatus")}
+              : t("testSariPage.readyToStart")}
       </div>
       {error && (
         <div
@@ -456,19 +347,21 @@ function TestSariWorkspace() {
           <p className="min-w-0 text-sm">
             {state.forbidden
               ? t("testSariPage.accessDenied")
-              : error === "rating"
-                ? t(
-                    state.ratingConflict
-                      ? "testSariPage.ratingConflict"
-                      : "testSariPage.ratingFailed"
-                  )
-                : error === "session"
-                  ? t("testSariPage.sessionFailed")
-                  : error === "deal"
-                    ? t("testSariPage.saveDealFailed")
-                    : error === "reply"
-                      ? t("testSariPage.replyFailed")
-                      : t("testSariPage.messageSaveFailed")}
+              : error === "restore" || error === "older"
+                ? t("testSariPage.historyFailed")
+                : error === "rating"
+                  ? t(
+                      state.ratingConflict
+                        ? "testSariPage.ratingConflict"
+                        : "testSariPage.ratingFailed"
+                    )
+                  : error === "session"
+                    ? t("testSariPage.sessionFailed")
+                    : error === "deal"
+                      ? t("testSariPage.saveDealFailed")
+                      : error === "reply"
+                        ? t("testSariPage.replyFailed")
+                        : t("testSariPage.messageSaveFailed")}
           </p>
           <Button
             variant="outline"
@@ -492,8 +385,14 @@ function TestSariWorkspace() {
           {t("testSariPage.ratingSuperseded")}
         </p>
       )}
-      <Card className="flex min-w-0 flex-col overflow-hidden rounded-2xl">
-        <CardHeader className="border-b bg-muted/50">
+      {storageFailed && (
+        <p role="status" className="text-sm">
+          {t("testSariPage.storageUnavailable")}
+        </p>
+      )}
+
+      <Card className="flex min-w-0 flex-col gap-0 overflow-hidden rounded-2xl py-0">
+        <CardHeader className="border-b bg-muted/50 p-3 [.border-b]:pb-3">
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarFallback className="bg-primary text-primary-foreground">
@@ -510,10 +409,34 @@ function TestSariWorkspace() {
         </CardHeader>
 
         <ScrollArea
-          className="h-[min(55dvh,500px)] min-h-[240px] p-3 sm:p-4"
+          className={
+            messages.length
+              ? "h-[min(34dvh,340px)] min-h-[180px] p-3 sm:p-4"
+              : "p-3 sm:p-4"
+          }
           ref={scrollRef}
         >
           <div className="space-y-4">
+            {state.nextCursor && (
+              <Button
+                variant="outline"
+                disabled={disabled}
+                onClick={() => void loadOlder()}
+              >
+                {t("testSariPage.olderMessages")}
+              </Button>
+            )}
+            {state.restored && (
+              <p className="text-xs text-muted-foreground">
+                {t("testSariPage.loadedMessages", {
+                  loaded: messages.filter(m => m.savedId).length,
+                  total: Math.max(
+                    state.totalMessages,
+                    messages.filter(m => m.savedId).length
+                  ),
+                })}
+              </p>
+            )}
             {messages.length === 0 && (
               <p className="rounded-2xl bg-muted p-4 text-sm leading-7">
                 {t("testSariPage.welcomeMsg")}
@@ -544,12 +467,14 @@ function TestSariWorkspace() {
                     <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {message.content}
                     </p>
-                    {message.source && (
+                    {message.role === "assistant" && (
                       <p className="mt-2 text-xs text-muted-foreground">
                         {t(
                           message.source === "guardrail"
                             ? "testSariPage.guardrailSource"
-                            : "testSariPage.modelSource"
+                            : message.source === "model"
+                              ? "testSariPage.modelSource"
+                              : "testSariPage.unknownSource"
                         )}
                         {message.historyTruncated
                           ? ` · ${t("testSariPage.contextTruncated")}`
@@ -559,10 +484,13 @@ function TestSariWorkspace() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
-                      {message.timestamp.toLocaleTimeString("ar-SA", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {message.timestamp.toLocaleTimeString(
+                        i18n?.language || "ar",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
                     </span>
                     {message.role === "assistant" &&
                       message.source !== "guardrail" &&
@@ -692,256 +620,308 @@ function TestSariWorkspace() {
         </div>
       </Card>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="col-span-1 lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <span>{t("testSariPage.ratingStatsTitle")}</span>
-            </CardTitle>
-            <CardDescription>
-              {t("testSariPage.ratingStatsDesc")}{" "}
-              {t("testSariPage.ratingScope")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {ratings.positive + ratings.negative === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <BarChart3 className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  {t("testSariPage.noRatingsYet")}
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  {t("testSariPage.startRating")}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Stats Summary */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                        <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          {t("testSariPage.positiveRatings")}
-                        </p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {ratings.positive}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-                        <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          {t("testSariPage.negativeRatings")}
-                        </p>
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                          {ratings.negative}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          {t("testSariPage.satisfactionRate")}
-                        </p>
-                        <p className="text-2xl font-bold text-primary">
-                          {Math.round(
-                            (ratings.positive /
-                              (ratings.positive + ratings.negative)) *
-                              100
-                          )}
-                          %
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Charts */}
-                <div className="space-y-4">
-                  {/* Pie Chart */}
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={[
-                            {
-                              name: t("testSariPage.positive"),
-                              value: ratings.positive,
-                              color: "#22c55e",
-                            },
-                            {
-                              name: t("testSariPage.negative"),
-                              value: ratings.negative,
-                              color: "#ef4444",
-                            },
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) =>
-                            `${name}: ${(percent * 100).toFixed(0)}%`
-                          }
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {[
-                            {
-                              name: t("testSariPage.positive"),
-                              value: ratings.positive,
-                              color: "#22c55e",
-                            },
-                            {
-                              name: t("testSariPage.negative"),
-                              value: ratings.negative,
-                              color: "#ef4444",
-                            },
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Bar Chart */}
-                  <div className="h-[150px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[
-                          {
-                            name: t("testSariPage.positive"),
-                            value: ratings.positive,
-                          },
-                          {
-                            name: t("testSariPage.negative"),
-                            value: ratings.negative,
-                          },
-                        ]}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="name" />
-                        <YAxis allowDecimals={false} />
-                        <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                          <Cell fill="#22c55e" />
-                          <Cell fill="#ef4444" />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {ratingHistory.length >= 2 && (
-          <Card className="col-span-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span>{t("testSariPage.satisfactionTrend")}</span>
-              </CardTitle>
-              <CardDescription>
-                {t("testSariPage.satisfactionTrendDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={ratingHistory.map((item, index) => ({
-                      name: `#${index + 1}`,
-                      time: item.timestamp.toLocaleTimeString("ar-SA", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }),
-                      نسبة_الرضا: item.satisfactionRate,
-                    }))}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      <div className="flex flex-wrap items-center gap-3">
+        {" "}
+        <Dialog
+          open={showDealDialog}
+          onOpenChange={open => {
+            if (!busy) setShowDealDialog(open);
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button
+              variant={hasDeal ? "default" : "outline"}
+              disabled={
+                hasDeal ||
+                !state.conversationId ||
+                disabled ||
+                !messages.some(
+                  m => m.role === "assistant" && m.source !== "guardrail"
+                )
+              }
+              className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
+            >
+              <CheckCircle2 className="h-4 w-4 ml-2" />
+              {hasDeal
+                ? t("testSariPage.dealDone")
+                : t("testSariPage.dealButton")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            closeLabel={t("testSariPage.closeDialog")}
+            showCloseButton={!busy}
+            className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+          >
+            <DialogHeader>
+              <DialogTitle>{t("testSariPage.dealDialogTitle")}</DialogTitle>
+              <DialogDescription>
+                {t("testSariPage.dealDialogDesc")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="dealValue">
+                  {t("testSariPage.dealValueLabel")}
+                </Label>
+                <Input
+                  id="dealValue"
+                  type="number"
+                  placeholder={t("testSariPage.dealValuePlaceholder")}
+                  value={dealValue}
+                  onChange={e => {
+                    setDealValue(e.target.value);
+                    setDealError(false);
+                  }}
+                  disabled={busy || !!error}
+                  aria-invalid={dealError}
+                  aria-describedby={dealError ? "deal-value-error" : undefined}
+                  inputMode="decimal"
+                  min="0.01"
+                  max="9999999999.99"
+                  step="0.01"
+                />
+                {dealError && (
+                  <p
+                    id="deal-value-error"
+                    role="alert"
+                    className="text-sm text-destructive"
                   >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="time" />
-                    <YAxis
-                      domain={[0, 100]}
-                      label={{ value: "%", position: "insideLeft" }}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="نسبة_الرضا"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      dot={{ fill: "hsl(var(--primary))", r: 5 }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                    {t("testSariPage.invalidDealValue")}
+                  </p>
+                )}
+                {error === "deal" && (
+                  <div role="alert" className="space-y-2 text-sm">
+                    <p>{t("testSariPage.saveDealFailed")}</p>
+                    <Button
+                      variant="outline"
+                      disabled={busy || state.forbidden}
+                      onClick={handleRetry}
+                    >
+                      {t("testSariPage.retry")}
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span>{t("testSariPage.satisfactionPercent")}</span>
-                </div>
-                <span>•</span>
-                <span>
-                  {t("testSariPage.ratingChanges")} {ratingHistory.length}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => setShowDealDialog(false)}
+              >
+                {t("testSariPage.cancel")}
+              </Button>
+              <Button disabled={disabled} onClick={handleMarkAsDeal}>
+                {t("testSariPage.confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {hasDeal && (
+          <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+            <CheckCircle2 className="h-4 w-4" />
+            {t("testSariPage.dealAgreed", {
+              value: savedDeal?.value.toFixed(2),
+            })}
+          </div>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("testSariPage.tipTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {t("testSariPage.tipDesc")}
+      </div>
+      <details className="rounded-2xl border p-4 text-sm">
+        <summary className="cursor-pointer font-medium">
+          {t("testSariPage.tryExamples")}
+        </summary>
+        <div className="mt-3">
+          {" "}
+          <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-4 rounded-2xl border">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                {t("testSariPage.tryExamples")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("testSariPage.chooseScenario")}
+              </p>
+            </div>
+            <Select
+              value={scenarioId}
+              disabled={busy}
+              onValueChange={requestReset}
+            >
+              <SelectTrigger
+                aria-label={t("testSariPage.scenarioLabel")}
+                className="w-full sm:w-[250px]"
+              >
+                <SelectValue placeholder={t("testSariPage.selectScenario")} />
+              </SelectTrigger>
+              <SelectContent>
+                {EXAMPLE_SCENARIOS.map(scenario => (
+                  <SelectItem key={scenario.id} value={scenario.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{scenario.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {scenario.description}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedScenario && selectedScenario.messages.length > 1 && (
+            <details className="rounded-2xl border p-4 text-sm">
+              <summary className="cursor-pointer font-medium">
+                {t("testSariPage.scenarioPreview")}
+              </summary>
+              <p className="my-3 text-muted-foreground">
+                {t("testSariPage.scenarioPreviewHint")}
+              </p>
+              <ol className="space-y-2">
+                {selectedScenario.messages.map((message, index) => (
+                  <li key={index} className="rounded-lg bg-muted p-3">
+                    {message.content}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
+      </details>
+      <details className="rounded-2xl border p-4 text-sm">
+        <summary className="cursor-pointer font-medium">
+          {t("testSariPage.testingDetails")}
+        </summary>
+        <div className="space-y-3 pt-3 text-muted-foreground">
+          {state.restored && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t("testSariPage.restoredHint")}
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("testSariPage.nextStepTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          )}
+          <p>{t("testSariPage.testingScope")}</p>
+          <p>{t("testSariPage.contextLimit")}</p>
+          <p>{t("testSariPage.tipDesc")}</p>
+          <p>{t("testSariPage.nextStepDesc")}</p>
+        </div>
+      </details>
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle>{t("testSariPage.ratingStatsTitle")}</CardTitle>
+          <CardDescription>
+            {t("testSariPage.loadedRatingScope")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <dl className="grid grid-cols-3 gap-2 text-sm">
+            {[
+              [t("testSariPage.positiveRatings"), ratings.positive],
+              [t("testSariPage.negativeRatings"), ratings.negative],
+              [
+                t("testSariPage.satisfactionRate"),
+                ratings.positive + ratings.negative
+                  ? Math.round(
+                      (ratings.positive /
+                        (ratings.positive + ratings.negative)) *
+                        100
+                    ) + "%"
+                  : "—",
+              ],
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-0 rounded-xl bg-muted p-3">
+                <dt className="break-words">{label}</dt>
+                <dd className="mt-2 text-xl font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {ratings.positive + ratings.negative === 0 && (
             <p className="text-sm text-muted-foreground">
-              {t("testSariPage.nextStepDesc")}
+              {t("testSariPage.noRatingsYet")}
             </p>
-          </CardContent>
-        </Card>
+          )}
+          {!!ratingHistory.length && (
+            <details>
+              <summary className="cursor-pointer text-sm">
+                {t("testSariPage.satisfactionTrend")}
+              </summary>
+              <p className="my-2 text-sm text-muted-foreground">
+                {t("testSariPage.satisfactionTrendDesc")}
+              </p>
+              <ol className="space-y-2 text-sm">
+                {ratingHistory.map((item, index) => (
+                  <li
+                    key={index}
+                    className="flex flex-wrap justify-between gap-2 border-b py-2"
+                  >
+                    <span>
+                      #{index + 1} ·{" "}
+                      {item.timestamp.toLocaleTimeString(
+                        i18n?.language || "ar"
+                      )}
+                    </span>
+                    <span>
+                      {item.positive} {t("testSariPage.positive")} ·{" "}
+                      {item.negative} {t("testSariPage.negative")} ·{" "}
+                      {item.satisfactionRate === null
+                        ? "—"
+                        : item.satisfactionRate + "%"}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </CardContent>
+      </Card>
+      <TestSessionHistory
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        onSelect={requestOpen}
+        merchantId={merchantId}
+        currentId={state.conversationId}
+      />
+      <Dialog
+        open={pendingOpen !== null}
+        onOpenChange={open => {
+          if (!open && !busy) {
+            session.cancelRestore();
+            setPendingOpen(null);
+          }
+        }}
+      >
+        <DialogContent
+          closeLabel={t("testSariPage.closeDialog")}
+          showCloseButton={!busy}
+        >
+          <DialogHeader>
+            <DialogTitle>{t("testSariPage.openSessionTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("testSariPage.openSessionHint")}
+            </DialogDescription>
+          </DialogHeader>
+          {error === "restore" && (
+            <p role="alert">{t("testSariPage.historyFailed")}</p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                session.cancelRestore();
+                setPendingOpen(null);
+              }}
+            >
+              {t("testSariPage.cancel")}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                if (pendingOpen !== null) void openSession(pendingOpen);
+              }}
+            >
+              {t("testSariPage.openSessionConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div>
         <Dialog
           open={pendingReset !== null}
           onOpenChange={open => {

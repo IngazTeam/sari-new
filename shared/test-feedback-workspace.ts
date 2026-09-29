@@ -41,3 +41,23 @@ export type SavedTestMessage = {
   ratingRevision: number;
   ratedAt: string | null;
 };
+export type SavedTestTranscript = {
+  merchantId: number;
+  conversationId: number;
+  startedAt: string;
+  items: SavedTestMessage[];
+  nextCursor: number | null;
+  totalMessages: number;
+  feedback: { replies: number; positive: number; negative: number };
+  deal: { id: number; value: number } | null;
+};
+export type SavedTestSessionList = {
+  merchantId: number;
+  items: {
+    id: number;
+    startedAt: string;
+    messageCount: number;
+    hasDeal: boolean;
+  }[];
+  nextCursor: number | null;
+};

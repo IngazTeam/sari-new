@@ -10,13 +10,22 @@ const mocks = vi.hoisted(() => ({
   deal: vi.fn(),
   rate: vi.fn(),
   readRating: vi.fn(),
+  transcript: vi.fn(),
+  listSessions: vi.fn(),
 }));
 vi.mock("../client/src/components/KnowledgeWorkspaceScope", () => ({
-  KnowledgeWorkspaceScope: ({ children }: any) => children("test-scope"),
+  KnowledgeWorkspaceScope: ({ children }: any) =>
+    children("1:20:test-sari-session"),
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
-    useUtils: () => ({ testSari: { feedback: { fetch: mocks.readRating } } }),
+    useUtils: () => ({
+      testSari: {
+        feedback: { fetch: mocks.readRating },
+        transcript: { fetch: mocks.transcript },
+        listSessions: { fetch: mocks.listSessions },
+      },
+    }),
     testSari: Object.fromEntries(
       Object.entries({
         createConversation: mocks.create,
@@ -67,6 +76,7 @@ async function fill(el: HTMLInputElement, value: string) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   vi.stubGlobal("React", React);
   Object.assign(globalThis, {
     IS_REACT_ACT_ENVIRONMENT: true,
@@ -81,6 +91,39 @@ beforeEach(() => {
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
   mocks.create.mockResolvedValue({ conversationId: 41 });
+  mocks.listSessions.mockResolvedValue({
+    merchantId: 20,
+    items: [
+      {
+        id: 12,
+        startedAt: "2026-09-29T00:00:00Z",
+        messageCount: 1,
+        hasDeal: false,
+      },
+    ],
+    nextCursor: null,
+  });
+  mocks.transcript.mockResolvedValue({
+    merchantId: 20,
+    conversationId: 12,
+    startedAt: "2026-09-29T00:00:00Z",
+    items: [
+      {
+        id: 90,
+        clientMessageId: null,
+        sender: "sari",
+        content: "رد محفوظ",
+        sentAt: "2026-09-29T00:00:00Z",
+        replySource: "model",
+        rating: "positive",
+        ratingRevision: 3,
+      },
+    ],
+    nextCursor: null,
+    totalMessages: 1,
+    feedback: { replies: 1, positive: 1, negative: 0 },
+    deal: null,
+  });
   mocks.save.mockResolvedValue({ messageId: 1 });
   mocks.send.mockResolvedValue({
     response: "<script>alert(1)</script> رد الاختبار",
@@ -121,6 +164,53 @@ async function send() {
   );
 }
 describe("rendered production test workspace", () => {
+  it("restores the scoped reference without creating a session or repeating a reply", async () => {
+    sessionStorage.setItem("sary:test-session:v1:1:20:test-sari-session", "12");
+    await renderPage();
+    expect(container.textContent).toContain("رد محفوظ");
+    expect(container.textContent).toContain(ar.testSariPage.loadedRatingScope);
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(
+      container
+        .querySelector(
+          'button[aria-label="merchantUx.actions.positiveFeedback"]'
+        )
+        ?.getAttribute("aria-pressed")
+    ).toBe("true");
+  });
+  it("keeps the draft on failed creation and retries without submitting it automatically", async () => {
+    await renderPage();
+    mocks.create.mockRejectedValueOnce(Error("offline"));
+    await send();
+    expect(container.querySelector("input")!.value).toBe("رسالة تجريبية");
+    await click(button(ar.testSariPage.retry));
+    expect(container.querySelector("input")!.value).toBe("رسالة تجريبية");
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("confirms opening history, keeps the draft on failed load and can cancel safely", async () => {
+    await renderPage();
+    await fill(container.querySelector("input")!, "مسودة محفوظة في الذاكرة");
+    await click(button(ar.testSariPage.savedSessions));
+    await click(
+      Array.from(document.querySelectorAll('[role="dialog"] button')).find(el =>
+        el.textContent?.includes("جلسة #")
+      ) as HTMLElement
+    );
+    mocks.transcript.mockRejectedValueOnce(Error("offline"));
+    await click(button(ar.testSariPage.openSessionConfirm));
+    expect(container.querySelector("input")!.value).toBe(
+      "مسودة محفوظة في الذاكرة"
+    );
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      ar.testSariPage.historyFailed
+    );
+    await click(button(ar.testSariPage.cancel));
+    expect(container.querySelector("input")!.disabled).toBe(false);
+    expect(container.querySelector("input")!.value).toBe(
+      "مسودة محفوظة في الذاكرة"
+    );
+  });
   it("persists feedback only after acknowledgement and offers review for a changed rating", async () => {
     await renderPage();
     await send();
@@ -169,6 +259,9 @@ describe("rendered production test workspace", () => {
       })
     );
     await renderPage();
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(container.querySelector("input")!.disabled).toBe(false);
+    await send();
     expect(container.querySelector("input")!.disabled).toBe(true);
     expect(button(ar.testSariPage.dealButton).disabled).toBe(true);
     await act(async () => resolve({ conversationId: 41 }));
