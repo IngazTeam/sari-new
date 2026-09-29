@@ -1,0 +1,82 @@
+{
+  "date": "2026-09-29",
+  "scope": "Tenant knowledge sections workspace, coverage definition and matching interactive prototype",
+  "branch": "main",
+  "pushed": false,
+  "deployed": false,
+  "migrationsRequired": false,
+  "tests": {
+    "passed": 272,
+    "failed": 0,
+    "files": 11,
+    "isolatedWithoutDatabase": 246,
+    "loopbackMysql": 26,
+    "runner": "scripts/testing/run-isolated.mjs",
+    "externalNetwork": "blocked",
+    "mysqlDatabase": "sari_pages_test",
+    "suites": {
+      "server/knowledge/section-workspace.mysql.test.ts": 26,
+      "server/knowledge-section-ui.test.ts": 16,
+      "server/knowledge-section-access.test.ts": 9,
+      "server/merchant-brain-workbench.test.ts": 31,
+      "server/knowledge-access.test.ts": 101,
+      "server/knowledge-conflict-ui.test.ts": 14,
+      "server/knowledge-conflict-access.test.ts": 9,
+      "server/merchant-brain-knowledge-prototype.test.ts": 32,
+      "server/merchant-brain-prototype.test.ts": 11,
+      "server/merchant-brain-evaluation-prototype.test.ts": 15,
+      "server/merchant-semantic-i18n-pentest.test.ts": 8
+    }
+  },
+  "typescript": "passed",
+  "translations": {
+    "callsChecked": 8560,
+    "dynamicKeysChecked": 346,
+    "missing": [],
+    "interpolationErrors": [],
+    "unresolvedDynamicCalls": []
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "mainBundleBudget": "passed",
+    "mainBytes": 337096,
+    "mainGzipBytes": 103317,
+    "warnings": ["Existing Vite warning for chunks larger than 600 kB, including ExcelJS"]
+  },
+  "browser": {
+    "engine": "Chrome",
+    "actualApp": "http://127.0.0.1:3018/merchant/sari-brain",
+    "prototype": "http://127.0.0.1:4329/#/page/merchant/sari-brain",
+    "widths": [320, 390, 1440],
+    "horizontalOverflowInRecordedStates": false,
+    "viewportOverridesReset": true,
+    "deletionSubmitted": false,
+    "createdPausedSectionIds": [1364, 1365],
+    "latestSavedTextReopened": true,
+    "staleSaveRejected": true,
+    "safariVerified": false,
+    "physicalIphoneVerified": false,
+    "measurements": "browser-checks.json",
+    "databaseResult": "live-database-result.json"
+  },
+  "fullPenetrationTest": false,
+  "providerSuccessVerified": false,
+  "allTenantFeaturesComplete": false,
+  "unchangedRouteCoverage": {
+    "total": 126,
+    "generic": 101,
+    "redirect": 8,
+    "detailed": 10,
+    "partial": 7
+  },
+  "remaining": [
+    "Migrate legacy knowledge mutation procedures to reviewed writes",
+    "Audit legacy summary source and product counters",
+    "Persist section drafts across full reloads",
+    "Persist creation receipts independently of deletable section records",
+    "Load-test large knowledge trees",
+    "Review external consumers of the changed getHealthScore response",
+    "Verify providers, real Safari/iPhone and remaining tenant pages"
+  ]
+}

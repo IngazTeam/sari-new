@@ -19,6 +19,7 @@ function boot(stored?: string) {
   });
   w = dom.window;
   w.structuredClone = structuredClone;
+  w.TextEncoder = TextEncoder;
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
     throw Error("No provider calls in design preview");
@@ -219,38 +220,16 @@ function reply(fail = false) {
   submit();
 }
 
-it("validates manual knowledge inline, escapes markup, keeps intake pending and requires approval again after changes", () => {
-  click("new-section");
-  submit();
-  expect(node("#bw-title").getAttribute("aria-invalid")).toBe("true");
-  expect(w.document.activeElement.id).toBe("bw-title");
-  expect(node("#bw-content").maxLength).toBe(50000);
-  expect(node("#bw-type").options).toHaveLength(8);
-  input("title", "<img src=x onerror=alert(1)>");
-  input("content", "معرفة يدوية من مصدر المثال");
-  check("attest");
-  input("type", "policies");
-  expect(node('[data-bw-check="attest"]').checked).toBe(false);
-  submit();
-  expect(data()).toBeNull();
-  check("attest");
-  submit();
-  expect(data().sections[0].approved).toBe(true);
-  expect(node("#main").querySelector("img[src=x]")).toBeNull();
-  tab("knowledge", "intake");
-  click("intake");
-  input("title", "سياسة جديدة");
-  input("content", reason);
-  check("attest");
-  submit();
-  expect(data().sections[0].approved).toBe(false);
-  tab("knowledge", "sections");
-  click("approve-section");
-  submit();
-  expect(data().sections[0].approved).toBe(false);
-  check("attest");
-  submit();
-  expect(data().sections[0].approved).toBe(true);
+const sw = (a: string,id?:number)=>node('[data-sw-action="'+a+'"]'+(id?'[data-id="'+id+'"]':'')).click();
+const swInput=(key:string,value:string)=>{const el=node('[data-sw-field="'+key+'"]');el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));};
+const swCheck=(key='ack')=>{const el=node('[data-sw-'+key+']');el.checked=!el.checked;el.dispatchEvent(new w.Event('change',{bubbles:true}));};
+it("validates manual sections, escapes markup and prevents bypassing pending review",()=>{
+ sw('new');swCheck();sw('save');expect(main()).toContain('أدخل العنوان');
+ expect(node('[data-sw-field="content"]').maxLength).toBe(50000);
+ swInput('title','<img src=x onerror=alert(1)>');swInput('content',reason);swCheck();swInput('type','policies');expect(node('[data-sw-ack]').checked).toBe(false);swCheck();sw('save');
+ expect(data().sections.at(-1)).toMatchObject({approved:true,useInBot:false});expect(node('#main').querySelector('img[src=x]')).toBeNull();
+ tab('knowledge','intake');click('intake');input('title','سياسة جديدة');input('content',reason);check('attest');submit();const id=data().sections[0].id;expect(data().sections[0].approved).toBe(false);
+ tab('knowledge','sections');sw('open',id);expect(main()).toContain('احسم الاقتراح');expect(node('[data-sw-action="save"]').disabled).toBe(true);
 });
 
 it("rejects invalid website URLs and stores valid links as unread without fetching them", () => {
@@ -347,51 +326,16 @@ it("validates followup timezone, time window and weekly limit while retaining fa
   expect(node('[data-bw-check="enabled"]').checked).toBe(false);
 });
 
-it("keeps failed drafts, clears stale attestations, and reconciles an uncertain save exactly once", () => {
-  lab("mode", "failure");
-  click("new-section");
-  input("title", "مسودة تحت الاختبار");
-  input("content", reason);
-  check("attest");
-  submit();
-  expect(data()).toBeNull();
-  expect(node("#bw-title").value).toBe("مسودة تحت الاختبار");
-  expect(dialog()).toContain("تعذّر الحفظ");
-  click("close");
-  lab("mode", "stale");
-  click("new-section");
-  input("title", "إصدار قديم");
-  input("content", reason);
-  check("attest");
-  submit();
-  expect(node('[data-bw-check="attest"]').checked).toBe(false);
-  click("refresh-basis");
-  expect(node("#bw-title").value).toBe("إصدار قديم");
-  check("attest");
-  submit();
-  expect(data().sections).toHaveLength(3);
-  lab("mode", "unknown");
-  click("new-section");
-  input("title", "نتيجة غير مؤكدة");
-  input("content", reason);
-  check("attest");
-  submit();
-  expect(data().sections).toHaveLength(3);
-  expect(node("#bw-title").disabled).toBe(true);
-  submit();
-  click("close");
-  nav("operations");
-  tab("ops", "followup");
-  expect(main()).toContain("التحقق من نفس العملية");
-  click("reconcile");
-  expect(data().sections).toHaveLength(4);
-  expect(data().history).toHaveLength(2);
+it("keeps failed section drafts, clears consent and reconciles an uncertain save once",()=>{
+ lab('mode','failure');sw('new');swInput('title','مسودة تحت الاختبار');swInput('content',reason);swCheck();sw('save');expect(data()).toBeNull();expect(node('[data-sw-field="title"]').value).toBe('مسودة تحت الاختبار');expect(main()).toContain('تعذّر الحفظ');expect(node('[data-sw-ack]').checked).toBe(false);
+ lab('mode','stale');swCheck();sw('save');expect(node('[data-sw-ack]').checked).toBe(false);click('refresh-basis');swCheck();sw('save');expect(data().sections).toHaveLength(3);
+ lab('mode','unknown');sw('new');swInput('title','نتيجة غير مؤكدة');swInput('content',reason);swCheck();sw('save');expect(data().sections).toHaveLength(3);expect(node('[data-sw-action="save"]').disabled).toBe(true);click('reconcile');expect(data().sections).toHaveLength(4);expect(data().history).toHaveLength(2);
 });
 
 it("blocks editing in read-only mode and preserves the session when browser storage fails", () => {
   lab("role", "viewer");
-  expect(node('[data-bw-action="new-section"]').disabled).toBe(true);
-  click("new-section");
+  expect(node('[data-sw-action="new"]').disabled).toBe(true);
+  sw('new');
   expect(w.document.querySelector("[data-bw-form]")).toBeNull();
   nav("operations");
   tab("ops", "followup");
@@ -613,3 +557,11 @@ it("filters and paginates the local history and resets every specialized brain s
   expect(data().protocols).toHaveLength(0);
   expect(data().history).toHaveLength(0);
 });
+
+it('shows section eligibility, parentage and an explicit coverage formula',()=>{expect(main()).toContain('تغطية أقسام المعرفة');expect(main()).not.toContain('50%');expect(main()).toContain('17%');sw('open',1);expect(node('[data-sw-field="content"]').value).toContain('للقهوة');});
+it('requires renewed consent after section text changes',()=>{sw('open',1);swCheck();swInput('content','Changed draft');expect(node('[data-sw-action="save"]').disabled).toBe(true);swCheck();sw('save');expect(data().sections[0].content).toBe('Changed draft');});
+it('rejects a stale section after a simulated concurrent edit',()=>{sw('open',1);swInput('content','Draft');swCheck();sw('change');swCheck();sw('save');expect(main()).toContain('تغيّرت المعرفة');expect(data()).toBeNull();sw('refresh');expect(node('[data-sw-field="content"]').value).toContain('تغيّر');expect(node('[data-sw-ack]').checked).toBe(false);});
+it('preserves the draft until discard is explicitly selected',()=>{sw('new');swInput('title','Unsaved');sw('close');expect(main()).toContain('مغادرة المراجعة');sw('keep');expect(node('[data-sw-field="title"]').value).toBe('Unsaved');});
+it('filters paused knowledge separately from pending knowledge',()=>{sw('new');swInput('title','Paused');swInput('content',reason);swCheck();sw('save');const el=node('[data-sw-state]');el.value='paused';el.dispatchEvent(new w.Event('change',{bubbles:true}));expect(main()).toContain('Paused');expect(main()).not.toContain('عن متجر نواة');});
+it('does not turn a section read failure into empty knowledge or a score',()=>{const el=node('[data-sw-read]');el.value='failure';el.dispatchEvent(new w.Event('change',{bubbles:true}));expect(main()).toContain('تعذّر قراءة');expect(main()).not.toContain('لا توجد أقسام');expect(w.document.querySelector('[data-section-coverage]')).toBeNull();});
+it('shows descendant deletion and leaves unrelated sections',()=>{sw('open',1);sw('child');swInput('title','Child');swInput('content','Child content');swCheck();sw('save');sw('open',1);sw('delete');expect(main()).toContain('Child');expect(node('[data-sw-action="save"]').disabled).toBe(true);swCheck();sw('save');expect(data().sections.map((r:any)=>r.id)).toEqual([2]);});

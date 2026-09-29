@@ -1,0 +1,57 @@
+{
+  "rows": [
+    {
+      "id": 1364,
+      "title": "فحص الأقسام سبتمبر · هوية وهمية",
+      "content": "نص وهمي نهائي لاختبار إعادة فتح آخر نسخة محفوظة مباشرة دون إعادة تحميل الصفحة. هذا القسم متوقف الاستخدام.",
+      "use_in_bot": 0,
+      "parent_id": null
+    },
+    {
+      "id": 1365,
+      "title": "تابع وهمي · فحص الأقسام سبتمبر",
+      "content": "قسم تابع وهمي لتجربة إظهار علاقته بالأب ومعاينة نطاق الحذف دون تنفيذ حذف من المتصفح.",
+      "use_in_bot": 0,
+      "parent_id": 1364
+    }
+  ],
+  "readiness": {
+    "total": 17,
+    "covered": 1,
+    "areas": 6,
+    "saved": 15,
+    "counts": {
+      "eligible": 2,
+      "pending": 8,
+      "paused": 5,
+      "expired": 0,
+      "excluded": 0
+    },
+    "breakdown": [
+      {
+        "key": "identity",
+        "count": 0
+      },
+      {
+        "key": "services",
+        "count": 0
+      },
+      {
+        "key": "contact",
+        "count": 0
+      },
+      {
+        "key": "policies",
+        "count": 2
+      },
+      {
+        "key": "faq",
+        "count": 0
+      },
+      {
+        "key": "sales_intel",
+        "count": 0
+      }
+    ]
+  }
+}

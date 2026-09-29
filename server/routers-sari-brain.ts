@@ -1,3 +1,5 @@
+import { sectionListInput, sectionReadInput, sectionCreateInput, sectionUpdateInput, sectionDeleteInput } from '../shared/knowledge-sections';
+import { listSectionWorkspace, readSectionWorkspace, createWorkspaceSection, changeWorkspaceSection, sectionReadiness } from './knowledge/section-workspace';
 import { conflictListInput, conflictReviewInput, conflictDecisionInput } from '../shared/knowledge-conflicts';
 import { indexApprovedConflict } from './knowledge/conflict-indexing';
 import { listConflictWorkspace, readConflictReview, decideKnowledgeConflict } from './knowledge/conflict-workspace';
@@ -1710,11 +1712,30 @@ ${fencedContent}`,
 
   /** Get knowledge health score */
   getHealthScore: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    try { return await sectionReadiness(ctx.merchantId); }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge readiness unavailable'}); }
+  }),
 
-    const knowledgeDb = await import('./db/knowledge');
-    return sanitizeForTRPC(await knowledgeDb.calculateHealthScore(merchant.id));
+  sectionWorkspace: merchantProcedure.input(sectionListInput).query(async ({ctx,input})=>{
+    try { return {...await listSectionWorkspace(ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'bot_settings.manage')}; }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge sections unavailable'}); }
+  }),
+  sectionReview: merchantProcedure.input(sectionReadInput).query(async ({ctx,input})=>{
+    try { return await readSectionWorkspace(ctx.merchantId,input.id); }
+    catch(error) { if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section review unavailable'}); }
+  }),
+  createWorkspaceSection: permissionProcedure('bot_settings.manage').input(sectionCreateInput).mutation(async ({ctx,input})=>{
+    try { const result=await createWorkspaceSection(ctx.merchantId,input);return {...result,indexing:input.useInBot?await indexApprovedConflict(ctx.merchantId,result.id):'not_requested' as const}; }
+    catch(error){if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section result unconfirmed'});}
+  }),
+  updateWorkspaceSection: permissionProcedure('bot_settings.manage').input(sectionUpdateInput).mutation(async ({ctx,input})=>{
+    try { const result=await changeWorkspaceSection(ctx.merchantId,input);return {...result,indexing:input.useInBot?await indexApprovedConflict(ctx.merchantId,result.id):'not_requested' as const}; }
+    catch(error){if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section result unconfirmed'});}
+  }),
+  deleteWorkspaceSection: permissionProcedure('bot_settings.manage').input(sectionDeleteInput).mutation(async ({ctx,input})=>{
+    checkDestructiveRateLimit(ctx.merchantId);
+    try { return await changeWorkspaceSection(ctx.merchantId,input,true); }
+    catch(error){if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section result unconfirmed'});}
   }),
 
   /** Get integration sync status — what data is currently loaded for the merchant */

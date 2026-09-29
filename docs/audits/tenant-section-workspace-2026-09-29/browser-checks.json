@@ -1,0 +1,34 @@
+[
+  {
+    "stage": "saved edit at 320",
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "reopened latest saved text without page reload",
+    "text": "نص وهمي نهائي لاختبار إعادة فتح آخر نسخة محفوظة مباشرة دون إعادة تحميل الصفحة. هذا القسم متوقف الاستخدام.",
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "deletion preview only",
+    "deletionSubmitted": false,
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "coverage at 390",
+    "client": 375,
+    "scroll": 375
+  },
+  {
+    "stage": "coverage at 1440",
+    "client": 1425,
+    "scroll": 1425
+  },
+  {
+    "stage": "prototype stale review at 320",
+    "client": 305,
+    "scroll": 305
+  }
+]

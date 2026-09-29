@@ -1,3 +1,4 @@
+import {createSectionWorkspace} from './section-workspace';
 // @ts-nocheck
 // Design preview only. No network, provider, message dispatch or experiment assignment.
 import {
@@ -292,14 +293,6 @@ window.SaryBrainWorkbench = (() => {
     baseRevision = data.sectorRevision;
     showEditor();
   }
-  const sectionRows = () =>
-    data.sections
-      .map(
-        row =>
-          `<article class="bw-card"><header><div>${badge(typeNames[row.type])}<h3>${esc(row.title)}</h3></div>${badge(row.approved ? "اعتمدت في المثال" : "تحتاج مراجعة")}</header><p>${esc(row.content)}</p><footer>${!row.approved ? btn("مراجعة واعتماد", "approve-section", idAttr(row.id) + " " + dis()) : ""}${btn("حذف القسم", "delete", `${idAttr(row.id)} data-kind="sections" ${dis()}`)}</footer></article>`
-      )
-      .join("") ||
-    '<p class="bw-empty">لا توجد أقسام معرفة. أضف معلومة من مصدر راجعته.</p>';
   function knowledge() {
     return (
       tabs(
@@ -320,7 +313,7 @@ window.SaryBrainWorkbench = (() => {
         : knowledgeTab === "sources"
           ? knowledgeWorkbench.sources()
           : knowledgeTab === "sections"
-            ? `<section class="panel panel-pad"><div class="panel-head"><div><h2>المعرفة التي تراجعها</h2><p>صنّف المعلومة وراجعها قبل اعتمادها.</p></div>${btn("قسم معرفة جديد", "new-section", dis(), true)}</div><div class="bw-cards">${sectionRows()}</div></section>`
+            ? sectionWorkspace.render()
             : knowledgeTab === "faq"
               ? faqList.render()
               : knowledgeTab === "website"
@@ -1020,7 +1013,7 @@ window.SaryBrainWorkbench = (() => {
     const { bwAction: a, id, value, kind } = el.dataset;
     if (a === "close") return close();
     if (a === "knowledge-tab" || a === "ops-tab") {
-      if (a === "knowledge-tab") { conflictWorkspace.leave(); knowledgeTab = value; }
+      if (a === "knowledge-tab") { conflictWorkspace.leave(); sectionWorkspace.leave(); knowledgeTab = value; }
       else opsTab = value;
       if (!pending) error = "";
       return refresh();
@@ -1329,6 +1322,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const sectionWorkspace = createSectionWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.sections,commit,refresh,alert});
   const conflictWorkspace = createConflictReview({esc,owner,blocked:()=>!!pending,rows:()=>data.conflicts,commit,refresh,alert});
   const faqList = createFaqList({esc,owner,blocked:()=>!!pending,rows:()=>data.faqs,refresh});
   const knowledgeWorkbench = createBrainKnowledge({
@@ -1380,6 +1374,7 @@ window.SaryBrainWorkbench = (() => {
     reset() {
       faqList.reset();
       conflictWorkspace.reset();
+      sectionWorkspace.reset();
       data = initial();
       evaluationWorkbench.reset();
       knowledgeWorkbench.reset();

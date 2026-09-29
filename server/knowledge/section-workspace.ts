@@ -1,0 +1,352 @@
+import { createHash } from "node:crypto";
+import { and, eq, sql, getTableColumns, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import {
+  knowledgeSections as table,
+  knowledgeChangelog,
+  sariActivityLog,
+} from "../../drizzle/schema";
+import { getDb } from "../db/connection";
+import { databaseTimeEpoch } from "../db/time";
+import {
+  withKnowledgeTransaction,
+  type KnowledgeTransaction,
+} from "./transaction";
+import { sectionDescendants } from "./source-lifecycle";
+import {
+  sectionCreateInput,
+  sectionUpdateInput,
+  sectionDeleteInput,
+  sectionListInput,
+  sectionState,
+  summarizeSectionReadiness,
+  type SectionReview,
+  type SectionListItem,
+} from "../../shared/knowledge-sections";
+import type { z } from "zod";
+const { embedding, embeddingContentHash, updatedAt, ...columns } =
+  getTableColumns(table);
+type Row = Pick<typeof table.$inferSelect, keyof typeof columns> & {
+  expired: boolean;
+};
+const hash = (value: unknown) =>
+  createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const provenance = (value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+const revision = (row: Row) => hash(row);
+const expired =
+  sql<boolean>`(${table.validUntil} IS NOT NULL AND ${table.validUntil} <= UTC_TIMESTAMP(3))`.mapWith(
+    Boolean
+  );
+const metadata = {
+  id: table.id,
+  parentId: table.parentId,
+  sectionType: table.sectionType,
+  title: table.title,
+  source: table.source,
+  status: table.status,
+  useInBot: table.useInBot,
+  injectAs: table.injectAs,
+  expired,
+};
+const item = (
+  row: Omit<SectionListItem, "state" | "useInBot"> & { useInBot: number | null }
+): SectionListItem => ({
+  id: row.id,
+  parentId: row.parentId,
+  sectionType: row.sectionType,
+  title: row.title,
+  source: row.source,
+  status: row.status,
+  useInBot: !!row.useInBot,
+  injectAs: row.injectAs,
+  expired: row.expired,
+  state: sectionState(row),
+});
+async function database() {
+  const db = await getDb();
+  if (!db) throw Error("Knowledge database unavailable");
+  return db;
+}
+async function records(
+  tx: KnowledgeTransaction,
+  merchantId: number,
+  id: number,
+  lock = false
+) {
+  const treeQuery = tx
+    .select({ id: table.id, parentId: table.parentId })
+    .from(table)
+    .where(eq(table.merchantId, merchantId));
+  const tree = await (lock ? treeQuery.for("update") : treeQuery);
+  const root = tree.find(r => r.id === id);
+  if (!root)
+    throw new TRPCError({ code: "NOT_FOUND", message: "Section unavailable" });
+  const ids = sectionDescendants(tree, [id]);
+  if (root.parentId && tree.some(r => r.id === root.parentId))
+    ids.push(root.parentId);
+  const query = tx
+    .select({ ...columns, expired })
+    .from(table)
+    .where(and(eq(table.merchantId, merchantId), inArray(table.id, ids)))
+    .orderBy(table.id);
+  return (await (lock ? query.for("update") : query)) as Row[];
+}
+function review(rows: Row[], id: number): SectionReview {
+  const row = rows.find(r => r.id === id);
+  if (!row)
+    throw new TRPCError({ code: "NOT_FOUND", message: "Section unavailable" });
+  const descendantIds = new Set(sectionDescendants(rows, [id]));
+  const tree = rows.filter(r => descendantIds.has(r.id));
+  const parent = rows.find(r => r.id === row.parentId);
+  return {
+    section: {
+      ...item(row),
+      content: row.content,
+      summary: row.summary,
+      sourceUrl: row.sourceUrl,
+      validUntil: row.validUntil
+        ? new Date(databaseTimeEpoch(row.validUntil)).toISOString()
+        : null,
+    },
+    revision: revision(row),
+    deleteRevision: hash(tree),
+    parent: parent ? { id: parent.id, title: parent.title } : null,
+    descendants: tree
+      .filter(r => r.id !== id)
+      .map(r => ({ id: r.id, title: r.title })),
+  };
+}
+export async function listSectionWorkspace(
+  merchantId: number,
+  input: z.infer<typeof sectionListInput>
+) {
+  return (await database()).transaction(
+    async tx => {
+      const rows = (
+        await tx
+          .select(metadata)
+          .from(table)
+          .where(eq(table.merchantId, merchantId))
+          .orderBy(table.id)
+      ).map(item);
+      const search = input.search.toLocaleLowerCase();
+      const matches = rows.filter(
+        r =>
+          (input.type === "all" || r.sectionType === input.type) &&
+          (input.state === "all" || r.state === input.state) &&
+          (!search ||
+            r.title.toLocaleLowerCase().includes(search) ||
+            String(r.id) === search)
+      );
+      const total = matches.length,
+        totalPages = Math.max(1, Math.ceil(total / 8)),
+        page = Math.min(input.page, totalPages);
+      return {
+        items: matches.slice((page - 1) * 8, page * 8),
+        total,
+        page,
+        totalPages,
+      };
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" }
+  );
+}
+export async function sectionReadiness(merchantId: number) {
+  const rows = await (await database())
+    .select(metadata)
+    .from(table)
+    .where(eq(table.merchantId, merchantId));
+  return summarizeSectionReadiness(rows.map(item));
+}
+export async function readSectionWorkspace(merchantId: number, id: number) {
+  return (await database()).transaction(
+    async tx => review(await records(tx, merchantId, id), id),
+    { isolationLevel: "repeatable read", accessMode: "read only" }
+  );
+}
+async function audit(
+  tx: KnowledgeTransaction,
+  merchantId: number,
+  id: number,
+  action: "add" | "manual_edit" | "delete",
+  before: string | null,
+  after: string | null,
+  details: unknown
+) {
+  await tx
+    .insert(knowledgeChangelog)
+    .values({
+      merchantId,
+      sectionId: action === "delete" ? null : id,
+      action,
+      oldContent: before,
+      newContent: after,
+      source: "manual",
+      reason: "مراجعة يدوية من مساحة أقسام المعرفة",
+    });
+  await tx
+    .insert(sariActivityLog)
+    .values({
+      merchantId,
+      actionType:
+        action === "add"
+          ? "section_created"
+          : action === "delete"
+            ? "section_deleted"
+            : "section_updated",
+      description: "تحديث أقسام المعرفة بعد المراجعة",
+      details: JSON.stringify({ sectionId: id, ...Object(details) }),
+    });
+}
+export async function createWorkspaceSection(merchantId: number, raw: unknown) {
+  const input = sectionCreateInput.parse(raw),
+    inputHash = hash(input);
+  return withKnowledgeTransaction(merchantId, async tx => {
+    const [prior] = await tx
+      .select({ ...columns, expired })
+      .from(table)
+      .where(
+        and(
+          eq(table.merchantId, merchantId),
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${table.provenance}, '$.manualRequestId')) = ${input.requestId}`
+        )
+      )
+      .for("update");
+    if (prior) {
+      if (
+        provenance(prior.provenance).manualInputHash !== inputHash ||
+        prior.title !== input.title ||
+        prior.content !== input.content ||
+        !!prior.useInBot !== input.useInBot ||
+        prior.parentId !== input.parentId ||
+        prior.sectionType !== input.sectionType ||
+        prior.status !== "approved" ||
+        prior.injectAs !== "fact"
+      )
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Manual request changed",
+        });
+      return { success: true, id: prior.id };
+    }
+    if (input.parentId !== null) {
+      const [parent] = await tx
+        .select({ id: table.id })
+        .from(table)
+        .where(
+          and(eq(table.merchantId, merchantId), eq(table.id, input.parentId))
+        )
+        .for("update");
+      if (!parent)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Parent unavailable",
+        });
+    }
+    const [created] = await tx
+      .insert(table)
+      .values({
+        merchantId,
+        parentId: input.parentId,
+        sectionType: input.sectionType,
+        title: input.title,
+        content: input.content,
+        source: "manual",
+        status: "approved",
+        useInBot: input.useInBot ? 1 : 0,
+        injectAs: "fact",
+        merchantEdited: 1,
+        provenance: {
+          manualRequestId: input.requestId,
+          manualInputHash: inputHash,
+        },
+      });
+    await audit(tx, merchantId, created.insertId, "add", null, input.content, {
+      useInBot: input.useInBot,
+    });
+    return { success: true, id: created.insertId };
+  });
+}
+export async function changeWorkspaceSection(
+  merchantId: number,
+  raw: unknown,
+  remove = false
+) {
+  const input = remove
+    ? sectionDeleteInput.parse(raw)
+    : sectionUpdateInput.parse(raw);
+  return withKnowledgeTransaction(merchantId, async tx => {
+    const rows = await records(tx, merchantId, input.id, true),
+      current = review(rows, input.id);
+    if (
+      input.expectedRevision !==
+      (remove ? current.deleteRevision : current.revision)
+    )
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Reviewed section changed",
+      });
+    if (remove) {
+      const ids = [input.id, ...current.descendants.map(r => r.id)];
+      // A review includes every descendant, regardless of depth; tenant predicates are always retained.
+      await tx
+        .delete(knowledgeChangelog)
+        .where(
+          and(
+            eq(knowledgeChangelog.merchantId, merchantId),
+            inArray(knowledgeChangelog.sectionId, ids)
+          )
+        );
+      await tx
+        .delete(table)
+        .where(and(eq(table.merchantId, merchantId), inArray(table.id, ids)));
+      await audit(
+        tx,
+        merchantId,
+        input.id,
+        "delete",
+        current.section.content,
+        null,
+        { deletedIds: ids }
+      );
+      return { success: true, id: input.id };
+    }
+    const patch = sectionUpdateInput.parse(raw),
+      old = rows.find(r => r.id === input.id)!;
+    if (old.status === "pending_review")
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Review the pending proposal first",
+      });
+    if (patch.useInBot && sectionState({ ...old, useInBot: 1 }) !== "eligible")
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Section cannot be enabled",
+      });
+    await tx
+      .update(table)
+      .set({
+        title: patch.title,
+        content: patch.content,
+        useInBot: patch.useInBot ? 1 : 0,
+        merchantEdited: 1,
+        ...(old.title !== patch.title || old.content !== patch.content
+          ? { summary: null, embedding: null, embeddingContentHash: null }
+          : {}),
+      })
+      .where(and(eq(table.merchantId, merchantId), eq(table.id, input.id)));
+    await audit(
+      tx,
+      merchantId,
+      input.id,
+      "manual_edit",
+      old.content,
+      patch.content,
+      { useInBot: patch.useInBot, previousRevision: input.expectedRevision }
+    );
+    return { success: true, id: input.id };
+  });
+}

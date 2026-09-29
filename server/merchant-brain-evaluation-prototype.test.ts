@@ -392,7 +392,8 @@ it("clears the evaluation archive and unfinished review on the global prototype 
 
 it("keeps the evaluation visible during stale recovery even after another editor left a draft", () => {
   nav("knowledge");
-  bw("new-section");
+  bw("knowledge-tab", '[data-value="faq"]');
+  bw("new-faq");
   bw("close");
   candidate();
   lab("mode", "stale");

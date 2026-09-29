@@ -11,10 +11,10 @@ beforeEach(() => {
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error));
   dom = new JSDOM(readFileSync(base + 'index.html', 'utf8'), { url: 'http://127.0.0.1:4329/#/page/merchant/sari-brain', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
-  w = dom.window; w.scrollTo = () => {};
+  w = dom.window; w.scrollTo = () => {}; w.structuredClone = structuredClone; w.TextEncoder = TextEncoder;
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  for (const file of ['features.js', 'page-catalog.js', 'brain.js', 'brain-workbench.js', 'assistant.js', 'notifications.js', 'pages.js', 'app.js']) runInContext(readFileSync(base + file, 'utf8'), dom.getInternalVMContext());
+  for (const script of [...w.document.querySelectorAll('script[src]')] as any[]) runInContext(readFileSync(base + script.getAttribute('src'), 'utf8'), dom.getInternalVMContext());
 });
 afterEach(() => { expect(errors).toEqual([]); dom.window.close(); });
 const node = (selector: string) => { const element = w.document.querySelector(selector); expect(element, selector).toBeTruthy(); return element; };
