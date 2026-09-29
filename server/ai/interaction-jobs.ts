@@ -80,6 +80,12 @@ export async function runInteractionJob(): Promise<boolean> {
       [job.conversation_id, job.merchant_id, job.incoming_message_id]);
     const interaction = rows[0];
     if (!interaction) throw new Error('Interaction source unavailable');
+    // A multi-party exchange is not an individual customer's memory or sales outcome.
+    if (String(interaction.customerPhone).startsWith('group_')) {
+      await pool.execute(`UPDATE ai_interaction_jobs SET state='completed',completed_at=UTC_TIMESTAMP(3),lease_token=NULL,lease_until=NULL,last_error=NULL
+        WHERE id=? AND lease_token=? AND lease_until>UTC_TIMESTAMP(3)`,[job.id,token]);
+      return true;
+    }
     const { runWithZahyPiContext } = await import('./zahypi-client');
     await runWithZahyPiContext({ merchantId: job.merchant_id, conversationId: job.conversation_id, taskType: 'sari.profile.enrichment' }, async () => {
       const { captureConversationSignals } = await import('./learning-engine');

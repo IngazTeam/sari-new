@@ -1,391 +1,122 @@
-/**
- * Tests for Green API Webhook Integration
- */
-
-import { describe, it, expect, beforeAll } from 'vitest';
-import { handleGreenAPIWebhook } from './webhooks/greenapi';
-import * as db from './db';
-
-describe('Green API Webhook Tests', () => {
-  let testMerchantId: number;
-  let testInstanceId: string;
-
-  beforeAll(async () => {
-    // Get or create test merchant
-    const merchants = await db.getAllMerchants();
-    if (merchants.length > 0) {
-      testMerchantId = merchants[0].id;
-    } else {
-      const users = await db.getAllUsers();
-      if (users.length > 0) {
-        const merchant = await db.createMerchant({
-          userId: users[0].id,
-          businessName: 'Test Store',
-          phone: '966501234567',
-          status: 'active',
-        });
-        if (merchant) {
-          testMerchantId = merchant.id;
-        }
-      }
-    }
-
-    // Get or create test WhatsApp instance
-    const instances = await db.getWhatsAppInstancesByMerchantId(testMerchantId);
-    if (instances.length > 0) {
-      testInstanceId = instances[0].instanceId;
-    } else {
-      const instance = await db.createWhatsAppInstance({
-        merchantId: testMerchantId,
-        instanceId: '1234567890',
-        token: 'test-token',
-        status: 'active',
-        isPrimary: true,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const mock = vi.hoisted(() => ({
+  instance: vi.fn(),
+  settings: vi.fn(),
+  group: vi.fn(),
+}));
+vi.mock("./db", async original => ({
+  ...(await original<typeof import("./db")>()),
+  getWhatsAppInstanceByInstanceId: mock.instance,
+  getBotSettings: mock.settings,
+}));
+vi.mock("./messaging/group-handler", () => ({
+  handleContextualGroup: mock.group,
+}));
+import { handleGreenAPIWebhook } from "./webhooks/greenapi";
+// Ingress routing is pure here. Real queue/conversation/outbox contracts live in
+// messaging/group-understanding.mysql.test.ts and ai/reply-reservation.mysql.test.ts.
+// Never select an arbitrary merchant or use live credentials in webhook tests.
+const payload = () => ({
+  typeWebhook: "incomingMessageReceived",
+  instanceData: { idInstance: "synthetic" },
+  idMessage: "event",
+  timestamp: 1,
+  senderData: { chatId: "120363000000001@g.us", sender: "966500000111@c.us" },
+  messageData: {
+    typeMessage: "textMessage",
+    textMessageData: { textMessage: "أي خيار يناسب احتياجي؟" },
+  },
+});
+beforeEach(() => {
+  vi.resetAllMocks();
+  mock.instance.mockResolvedValue({
+    id: 1,
+    merchantId: 2,
+    status: "active",
+    instanceId: "synthetic",
+  });
+  mock.settings.mockResolvedValue({ groupMode: "disabled" });
+  mock.group.mockResolvedValue({
+    success: true,
+    message: "contextual handler",
+  });
+});
+describe("isolated Green API ingress routing", () => {
+  it("ignores non-message events before any account lookup", async () => {
+    expect(
+      await handleGreenAPIWebhook({ typeWebhook: "statusInstanceChanged" })
+    ).toMatchObject({ success: true, message: "Non-message webhook ignored" });
+    expect(mock.instance).not.toHaveBeenCalled();
+    expect(mock.group).not.toHaveBeenCalled();
+  });
+  it("keeps disabled groups silent", async () => {
+    expect(await handleGreenAPIWebhook(payload())).toMatchObject({
+      success: true,
+      message: "Group message ignored (disabled)",
+    });
+    expect(mock.group).not.toHaveBeenCalled();
+  });
+  it.each(["mention_only", "keyword_only", "private_redirect"])(
+    "delegates %s without a lexical or private-send branch",
+    async mode => {
+      mock.settings.mockResolvedValue({ groupMode: mode });
+      const p = payload();
+      expect(await handleGreenAPIWebhook(p)).toEqual({
+        success: true,
+        message: "contextual handler",
       });
-      if (instance) {
-        testInstanceId = instance.instanceId;
-      }
+      expect(mock.group).toHaveBeenCalledExactlyOnceWith(p);
+      expect(mock.settings).toHaveBeenCalledWith(2);
     }
+  );
+  it.each(["extendedTextMessage", "imageMessage", "audioMessage"])(
+    "keeps group %s in the group handler",
+    async type => {
+      mock.settings.mockResolvedValue({ groupMode: "keyword_only" });
+      const p = payload();
+      p.messageData.typeMessage = type;
+      expect((await handleGreenAPIWebhook(p)).success).toBe(true);
+      expect(mock.group).toHaveBeenCalledExactlyOnceWith(p);
+    }
+  );
+  it.each([undefined, { id: 1, merchantId: 2, status: "inactive" }])(
+    "rejects unavailable group accounts",
+    async instance => {
+      mock.instance.mockResolvedValue(instance);
+      expect(await handleGreenAPIWebhook(payload())).toMatchObject({
+        success: false,
+        message: "Group account unavailable",
+      });
+      expect(mock.group).not.toHaveBeenCalled();
+    }
+  );
+  it("preserves a contextual handler failure for queue review", async () => {
+    mock.settings.mockResolvedValue({ groupMode: "keyword_only" });
+    mock.group.mockResolvedValue({
+      success: false,
+      message: "review required",
+    });
+    expect(await handleGreenAPIWebhook(payload())).toEqual({
+      success: false,
+      message: "review required",
+    });
+    expect(mock.group).toHaveBeenCalledOnce();
   });
-
-  describe('Webhook Payload Validation', () => {
-    it('should ignore non-message webhooks', async () => {
-      const payload = {
-        typeWebhook: 'statusInstanceChanged',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-id',
-        senderData: {
-          chatId: '966501234567@c.us',
-          sender: '966501234567@c.us',
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('ignored');
+  it("rejects an unknown private account without entering group logic", async () => {
+    mock.instance.mockResolvedValue(undefined);
+    const p = payload();
+    p.senderData.chatId = p.senderData.sender;
+    expect(await handleGreenAPIWebhook(p)).toMatchObject({
+      success: false,
+      message: "No merchant found for this instance",
     });
-
-    it('should ignore group messages', async () => {
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-id',
-        senderData: {
-          chatId: '966501234567-123456789@g.us', // Group chat
-          sender: '966501234567@c.us',
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'Test message',
-          },
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('Group message ignored');
-    });
-
-    it('should handle missing instance gracefully', async () => {
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: 999999999, // Non-existent instance
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-id',
-        senderData: {
-          chatId: '966501234567@c.us',
-          sender: '966501234567@c.us',
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'Test message',
-          },
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('No merchant found');
-    });
+    expect(mock.group).not.toHaveBeenCalled();
   });
-
-  describe('Text Message Processing', () => {
-    it('should process text message successfully', async () => {
-      // Skip if test setup failed
-      if (!testMerchantId || !testInstanceId) {
-        console.log('[Test] Skipping - test setup failed');
-        expect(testMerchantId).toBeUndefined();
-        return;
-      }
-
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-text-msg',
-        senderData: {
-          chatId: '966501111111@c.us',
-          sender: '966501111111@c.us',
-          senderName: 'Test Customer',
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'السلام عليكم',
-          },
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      // If database is not connected, result.success will be false
-      if (!result.success) {
-        expect(result.success).toBe(false);
-        return;
-      }
-      
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('processed');
-      
-      // Verify conversation was created
-      const conversations = await db.getConversationsByMerchantId(testMerchantId);
-      const conversation = conversations.find(c => c.customerPhone === '966501111111');
-      expect(conversation).toBeDefined();
-      
-      if (conversation) {
-        // Verify messages were saved
-        const messages = await db.getMessagesByConversationId(conversation.id);
-        expect(messages.length).toBeGreaterThan(0);
-        
-        // Should have incoming and outgoing messages
-        const incoming = messages.find(m => m.direction === 'incoming');
-        const outgoing = messages.find(m => m.direction === 'outgoing');
-        
-        expect(incoming).toBeDefined();
-        expect(outgoing).toBeDefined();
-        
-        if (incoming) {
-          expect(incoming.content).toContain('السلام عليكم');
-        }
-        
-        if (outgoing) {
-          console.log('AI Response:', outgoing.content);
-          expect(outgoing.content.length).toBeGreaterThan(0);
-        }
-      }
-    }, 60000); // 60 second timeout for AI processing
-
-    it('should handle extended text messages', async () => {
-      // Skip if test setup failed
-      if (!testMerchantId || !testInstanceId) {
-        console.log('[Test] Skipping - test setup failed');
-        expect(testMerchantId).toBeUndefined();
-        return;
-      }
-
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-extended-msg',
-        senderData: {
-          chatId: '966502222222@c.us',
-          sender: '966502222222@c.us',
-        },
-        messageData: {
-          typeMessage: 'extendedTextMessage' as const,
-          extendedTextMessageData: {
-            text: 'عندكم منتجات؟',
-          },
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      // If database is not connected, result.success will be false
-      if (!result.success) {
-        expect(result.success).toBe(false);
-        return;
-      }
-      
-      expect(result.success).toBe(true);
-    }, 60000);
-  });
-
-  describe('Conversation Management', () => {
-    it('should create new conversation for new customer', async () => {
-      // Skip if test setup failed
-      if (!testMerchantId || !testInstanceId) {
-        console.log('[Test] Skipping - test setup failed');
-        expect(testMerchantId).toBeUndefined();
-        return;
-      }
-
-      const customerPhone = `96650${Date.now().toString().slice(-7)}`;
-      
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-new-conv',
-        senderData: {
-          chatId: `${customerPhone}@c.us`,
-          sender: `${customerPhone}@c.us`,
-          senderName: 'New Customer',
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'مرحبا',
-          },
-        },
-      };
-
-      const beforeCount = (await db.getConversationsByMerchantId(testMerchantId)).length;
-      
-      const result = await handleGreenAPIWebhook(payload);
-      
-      // If database is not connected, skip count check
-      if (!result.success) {
-        expect(result.success).toBe(false);
-        return;
-      }
-      
-      const afterCount = (await db.getConversationsByMerchantId(testMerchantId)).length;
-      
-      expect(afterCount).toBeGreaterThan(beforeCount);
-    }, 60000);
-
-    it('should reuse existing conversation', async () => {
-      const customerPhone = '966503333333';
-      
-      // First message
-      const payload1 = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-reuse-1',
-        senderData: {
-          chatId: `${customerPhone}@c.us`,
-          sender: `${customerPhone}@c.us`,
-        },
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'مرحبا',
-          },
-        },
-      };
-
-      await handleGreenAPIWebhook(payload1);
-      
-      const conversations1 = await db.getConversationsByMerchantId(testMerchantId);
-      const conv1 = conversations1.find(c => c.customerPhone === customerPhone);
-      
-      // Second message
-      const payload2 = {
-        ...payload1,
-        idMessage: 'test-reuse-2',
-        messageData: {
-          typeMessage: 'textMessage' as const,
-          textMessageData: {
-            textMessage: 'كيف حالك؟',
-          },
-        },
-      };
-
-      await handleGreenAPIWebhook(payload2);
-      
-      const conversations2 = await db.getConversationsByMerchantId(testMerchantId);
-      const conv2 = conversations2.find(c => c.customerPhone === customerPhone);
-      
-      // Should be the same conversation
-      expect(conv1?.id).toBe(conv2?.id);
-      
-      if (conv2) {
-        const messages = await db.getMessagesByConversationId(conv2.id);
-        // Should have at least 2 incoming messages
-        const incomingCount = messages.filter(m => m.direction === 'incoming').length;
-        expect(incomingCount).toBeGreaterThanOrEqual(2);
-      }
-    }, 120000);
-  });
-
-  describe('Error Handling', () => {
-    it('should handle messages with no text content', async () => {
-      const payload = {
-        typeWebhook: 'incomingMessageReceived',
-        instanceData: {
-          idInstance: parseInt(testInstanceId),
-          wid: 'test',
-          typeInstance: 'whatsapp',
-        },
-        timestamp: Date.now(),
-        idMessage: 'test-no-text',
-        senderData: {
-          chatId: '966504444444@c.us',
-          sender: '966504444444@c.us',
-        },
-        messageData: {
-          typeMessage: 'imageMessage' as const,
-          // No text or caption
-        },
-      };
-
-      const result = await handleGreenAPIWebhook(payload);
-      
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('No text content');
-    });
-
-    it('should handle malformed payload gracefully', async () => {
-      const payload = {
-        // Missing required fields
-        typeWebhook: 'incomingMessageReceived',
-      };
-
-      const result = await handleGreenAPIWebhook(payload as any);
-      
-      expect(result.success).toBe(false);
-    });
+  it("rejects a malformed incoming payload", async () => {
+    expect(
+      (await handleGreenAPIWebhook({ typeWebhook: "incomingMessageReceived" }))
+        .success
+    ).toBe(false);
+    expect(mock.group).not.toHaveBeenCalled();
   });
 });

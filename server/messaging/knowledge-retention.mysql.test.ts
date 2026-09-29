@@ -1,3 +1,4 @@
+import { ensureGroupTestSchema } from "../tests/helpers/group-schema";
 import {
   beforeAll,
   beforeEach,
@@ -35,6 +36,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     let f: Awaited<ReturnType<typeof createTeachingFixture>>;
     const users: number[] = [];
     beforeAll(async () => {
+      await ensureGroupTestSchema();
       await ensureTeachingDialogueSchema();
       await ensureOnboardingTestSchema();
     });

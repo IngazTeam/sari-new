@@ -895,6 +895,15 @@ const TASK_DEFINITIONS: readonly TaskDefinition[] = [
     fallback: "mark_customer_intent_unknown",
   }),
   operationalTask({
+    taskType: "sari.group.intent",
+    businessNameAr: "فهم نقاش مجموعة واتساب وصياغة رد عام",
+    owner: "sari-conversation-team",
+    sourceFiles: ["server/ai/group-understanding.ts"],
+    inputKind: "conversation",
+    outputKind: "analysis",
+    fallback: "retain_group_event_for_review_without_reply",
+  }),
+  operationalTask({
     taskType: "sari.conversation.topic-change",
     businessNameAr: "اكتشاف تغير موضوع المحادثة",
     owner: "sari-conversation-team",

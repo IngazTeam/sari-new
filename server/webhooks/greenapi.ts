@@ -716,91 +716,17 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       };
     }
     
-    // ── Smart Group Handling ──
-    // GAP-4 FIX: Track group chatId so replies go to the group, not sender's private chat
-    let groupChatId: string | null = null;
+    // Group admission, interpretation and delivery are scoped to the owned group event.
+    let groupChatId: string | null = isGroupMessage(payload.senderData.chatId) ? payload.senderData.chatId : null;
     if (isGroupMessage(payload.senderData.chatId)) {
-      // Need instance to get settings
-      const gInstanceId = payload.instanceData.idInstance.toString();
-      const gInstance = await getWhatsAppInstanceByInstanceId(gInstanceId);
-      if (!gInstance) return { success: true, message: 'Group: instance not found' };
-
-      const gSettings = await getBotSettings(gInstance.merchantId);
-      const groupMode = gSettings.groupMode || 'disabled';
-
-      switch (groupMode) {
-        case 'disabled':
-          console.log('[Webhook] Group mode disabled — ignoring');
-          return { success: true, message: 'Group message ignored (disabled)' };
-
-        case 'mention_only': {
-          const msgText = extractMessageText(payload) || '';
-          const botWid = payload.instanceData.wid;
-          const botPhone = botWid ? botWid.split('@')[0] : '';
-
-          // ── Mention Detection (3 layers) ──
-          // Layer 1: GreenAPI mentionedJidList (most reliable — WhatsApp native)
-          const mentionedJids: string[] = (payload.messageData.extendedTextMessageData as any)?.mentionedJidList
-            || (payload.messageData as any)?.contextInfo?.mentionedJidList
-            || [];
-          const isMentionedViaJid = botWid
-            ? mentionedJids.some(jid => jid.includes(botPhone))
-            : false;
-
-          // Layer 2: Text contains @phone (some clients embed phone in text)
-          const isMentionedViaText = botPhone
-            ? msgText.includes(`@${botPhone}`)
-            : false;
-
-          // Layer 3: Text contains @botName (display name mention)
-          // GreenAPI wid format: "966501234567@c.us"
-          const botName = payload.senderData?.chatName || '';
-          const isMentionedViaName = false; // Too risky — would match customer names
-
-          console.log('[Webhook] Group mention evaluated', {
-            mentionedJidCount: mentionedJids.length,
-            viaJid: isMentionedViaJid,
-            viaText: isMentionedViaText,
-          });
-
-          if (!isMentionedViaJid && !isMentionedViaText) {
-            return { success: true, message: 'Group: no mention' };
-          }
-          // Has mention — reply to group
-          groupChatId = payload.senderData.chatId; // e.g. "120363XXX@g.us"
-          break;
-        }
-
-        case 'keyword_only': {
-          const msgText = extractMessageText(payload) || '';
-          let keywords: string[] = [];
-          try { keywords = gSettings.groupKeywords ? JSON.parse(gSettings.groupKeywords) : []; } catch { keywords = []; }
-          const hasKeyword = keywords.some(kw => msgText.toLowerCase().includes(kw.toLowerCase()));
-          if (!hasKeyword) {
-            return { success: true, message: 'Group: no keyword match' };
-          }
-          // Has keyword — reply to group
-          groupChatId = payload.senderData.chatId;
-          break;
-        }
-
-        case 'private_redirect': {
-          const senderPhone = extractPhoneNumber(payload.senderData.sender || payload.senderData.chatId);
-          const redirectMsg = gSettings.groupRedirectMessage || 'مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊';
-          await sendResponseWithDelay({
-            idempotencyKey: whatsAppEventEffectKey(gInstance.merchantId, gInstance.instanceId, payload.idMessage, 'private_redirect'),
-            customerPhone: senderPhone,
-            message: redirectMsg,
-            delayMs: 1000,
-            instanceId: gInstance.instanceId,
-            token: gInstance.token,
-            apiUrl: gInstance.apiUrl || undefined,
-          });
-          return { success: true, message: 'Group: redirected to private' };
-        }
-      }
+      const connected = await getWhatsAppInstanceByInstanceId(String(payload.instanceData.idInstance));
+      if (!connected || connected.status !== 'active') return {success:false,message:'Group account unavailable'};
+      const settings = await getBotSettings(connected.merchantId);
+      if (!settings.groupMode || settings.groupMode === 'disabled') return {success:true,message:'Group message ignored (disabled)'};
+      const {handleContextualGroup} = await import('../messaging/group-handler');
+      return handleContextualGroup(payload);
     }
-    
+
     // Extract customer info
     // GAP-4 FIX: For group messages, use sender (personal phone), not chatId (group ID)
     const customerPhone = groupChatId

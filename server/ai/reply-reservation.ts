@@ -52,6 +52,10 @@ export async function canDispatchConversationReply(input: SendMerchantWhatsAppIn
     return await checkoutTransaction(async c => {
       await lockReplySource(c, input.merchantId, guard.conversationId, guard.incomingMessageId!);
       if (!await canSendConversationReply(c, input.merchantId, guard, input.to)) return false;
+      if (input.to.endsWith('@g.us')) {
+        const { canDispatchGroupReply } = await import('../messaging/group-handler');
+        if (!await canDispatchGroupReply(c, input, instanceRecordId)) return false;
+      }
       const [latest] = await c.execute<any[]>("SELECT id FROM messages WHERE conversationId=? AND direction='incoming' ORDER BY id DESC LIMIT 1 FOR SHARE", [guard.conversationId]);
       if (Number(latest[0]?.id) !== guard.incomingMessageId) return false;
       const { replyGuard: _, ...effect } = input;

@@ -1,3 +1,4 @@
+import { ensureGroupTestSchema } from "../tests/helpers/group-schema";
 import { randomUUID } from "node:crypto";
 import {
   beforeAll,
@@ -59,6 +60,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     const query = async (s: string, a: unknown[] = []): Promise<any> =>
       (await (await getPool())!.execute(s, a))[0];
     beforeAll(async () => {
+      await ensureGroupTestSchema();
       await ensureOnboardingTestSchema();
       await ensureTeachingDialogueSchema();
     });

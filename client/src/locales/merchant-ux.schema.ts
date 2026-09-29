@@ -71,6 +71,7 @@ import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
+  groupConversation: import('./group-conversation').GroupConversationCopy;
   websiteImport: import('./website-import').WebsiteImportCopy;
   knowledgePageIntake: import('./knowledge-page-intake').KnowledgePageIntakeCopy;
   websiteReports: import('./website-reports').WebsiteReportsCopy;

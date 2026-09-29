@@ -1,4 +1,5 @@
 import { websiteImportAr } from './website-import';
+import { groupConversationAr } from './group-conversation';
 import {websiteReportsAr} from './website-reports';
 import {knowledgePageIntakeAr} from './knowledge-page-intake';
 import {knowledgeSourcesAr} from './knowledge-sources';
@@ -30,6 +31,7 @@ import { subscriptionWorkspaceAr } from './subscription-workspace';
 import { whatsappWorkspaceAr } from './whatsapp-workspace';
 
 const merchantUxAr: MerchantUxCopy = {
+  groupConversation: groupConversationAr,
   subscriptionWorkspace: subscriptionWorkspaceAr,
   whatsappWorkspace: whatsappWorkspaceAr,
   knowledgeIntake: knowledgeIntakeAr,

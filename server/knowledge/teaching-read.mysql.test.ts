@@ -1,3 +1,4 @@
+import { ensureGroupTestSchema } from "../tests/helpers/group-schema";
 import {
   beforeAll,
   beforeEach,
@@ -49,6 +50,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       id: number;
     const users: number[] = [];
     beforeAll(async () => {
+      await ensureGroupTestSchema();
       await ensureTeachingDialogueSchema();
       await ensureOnboardingTestSchema();
     });

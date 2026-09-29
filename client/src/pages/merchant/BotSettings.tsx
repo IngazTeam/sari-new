@@ -1177,20 +1177,20 @@ export default function BotSettings() {
                   {
                     value: "mention_only",
                     icon: "🟡",
-                    label: t("assistantSettingsReviewUx.groupMention"),
-                    desc: t("assistantSettingsReviewUx.groupMentionHelp"),
+                    label: t("merchantUx.groupConversation.mention"),
+                    desc: t("merchantUx.groupConversation.mentionHelp"),
                   },
                   {
                     value: "keyword_only",
                     icon: "🟢",
-                    label: t("assistantSettingsReviewUx.groupKeywords"),
-                    desc: t("assistantSettingsReviewUx.groupKeywordsHelp"),
+                    label: t("merchantUx.groupConversation.topics"),
+                    desc: t("merchantUx.groupConversation.topicsHelp"),
                   },
                   {
                     value: "private_redirect",
                     icon: "🔵",
-                    label: t("assistantSettingsReviewUx.groupPrivate"),
-                    desc: t("assistantSettingsReviewUx.groupPrivateHelp"),
+                    label: t("merchantUx.groupConversation.private"),
+                    desc: t("merchantUx.groupConversation.privateHelp"),
                   },
                 ].map(opt => (
                   <button
@@ -1224,7 +1224,7 @@ export default function BotSettings() {
                       className="font-semibold flex items-center gap-2"
                     >
                       <KeyRound className="h-4 w-4" />
-                      {t("assistantSettingsReviewUx.keywords")}
+                      {t("merchantUx.groupConversation.topicsLabel")}
                     </Label>
                     <div className="flex flex-wrap gap-2 min-h-[40px]">
                       {groupKeywords.map((kw, i) => (
@@ -1267,7 +1267,7 @@ export default function BotSettings() {
                           }
                         }}
                         placeholder={t(
-                          "assistantSettingsReviewUx.keywordPlaceholder"
+                          "merchantUx.groupConversation.topicPlaceholder"
                         )}
                         className="flex-1"
                       />
@@ -1285,34 +1285,14 @@ export default function BotSettings() {
                           }
                         }}
                       >
-                        {t("assistantSettingsReviewUx.addKeyword")}
+                        {t("merchantUx.groupConversation.addTopic")}
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* Redirect Message — shown when private_redirect */}
-                {groupMode === "private_redirect" && (
-                  <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-">
-                    <Label
-                      htmlFor="bot-group-redirect"
-                      className="font-semibold flex items-center gap-2"
-                    >
-                      <ArrowUpRight className="h-4 w-4" />
-                      {t("assistantSettingsReviewUx.privateMessage")}
-                    </Label>
-                    <Textarea
-                      id="bot-group-redirect"
-                      value={groupRedirectMessage}
-                      onChange={e => setGroupRedirectMessage(e.target.value)}
-                      placeholder={t(
-                        "assistantSettingsReviewUx.privatePlaceholder"
-                      )}
-                      rows={2}
-                      maxLength={500}
-                    />
-                  </div>
-                )}
+                {groupMode === "private_redirect" && <p className="rounded-xl border p-4 leading-7">{t("merchantUx.groupConversation.privateNote")}</p>}
+                <p className="text-sm text-muted-foreground leading-7">{t("merchantUx.groupConversation.scope")}</p>
               </CardContent>
             </Card>
           </section>

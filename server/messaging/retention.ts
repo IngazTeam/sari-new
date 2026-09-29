@@ -19,6 +19,10 @@ export async function purgeCompletedInboundPayloads(
     { table: "merchant_teaching_drafts" },
     { table: "merchant_teaching_turns" },
     { table: "knowledge_sections", columns: ["provenance", "valid_until"] },
+    {
+      table: "ai_group_understanding",
+      columns: ["decision_json", "inbound_id"],
+    },
   ]);
   const pool = await getPool();
   if (!pool) throw new Error("Queue database unavailable");
@@ -60,7 +64,21 @@ export async function purgeCompletedInboundPayloads(
        AND whatsapp_message_deliveries.idempotency_key=CONCAT('escalation_relay:',s.merchant_id,':',s.escalation_id) AND s.status<>'accepted')
      ORDER BY id LIMIT ${limit}`
   );
+  // Keep identifiers for replay protection, but do not retain participants' text
+  // in derived AI evidence after its terminal source reaches the retention age.
+  const [groups] = await pool.execute<any>(
+    `UPDATE ai_group_understanding a SET decision_json=JSON_OBJECT('redacted',true)
+     WHERE decision_json<>JSON_OBJECT('redacted',true)
+       AND EXISTS (SELECT 1 FROM whatsapp_inbound_jobs j WHERE j.id=a.inbound_id
+         AND j.merchant_id=a.merchant_id AND j.instance_id=a.instance_id
+         AND j.event_key=a.event_key AND j.status IN ('completed','dismissed')
+         AND j.updated_at<TIMESTAMPADD(DAY,-30,UTC_TIMESTAMP()))
+     ORDER BY a.id LIMIT ${limit}`
+  );
   return (
-    Number(minimized.affectedRows) + redacted + Number(deliveries.affectedRows)
+    Number(minimized.affectedRows) +
+    redacted +
+    Number(deliveries.affectedRows) +
+    Number(groups.affectedRows)
   );
 }

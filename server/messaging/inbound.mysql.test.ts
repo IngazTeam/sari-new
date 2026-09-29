@@ -1,5 +1,6 @@
+import { ensureGroupTestSchema } from "../tests/helpers/group-schema";
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 const provider = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../channels/whatsapp/providers', () => ({ getWhatsAppProvider: () => provider }));
 import { getPool, closeDb } from '../db/connection';
@@ -23,6 +24,7 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
   const payload = (id = randomUUID(), chat = `${phone}@c.us`) => ({ typeWebhook: 'incomingMessageReceived',
     instanceData: { idInstance: account }, idMessage: id, timestamp: Math.floor(Date.now() / 1000),
     senderData: { chatId: chat, sender: chat }, messageData: { typeMessage: 'textMessage', textMessageData: { textMessage: 'fixture' } } });
+  beforeAll(ensureGroupTestSchema);
   beforeEach(async () => {
     fixture = await createDisposableMerchant('inbound');
     await createDisposableTrialSubscription(fixture.merchantId);

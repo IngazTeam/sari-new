@@ -48,7 +48,7 @@ export function AssistantDraftReview({
     language: t("botSettingsPage.language"),
     customInstructions: t("assistantSettingsReviewUx.instructionsTitle"),
     groupMode: t("assistantSettingsReviewUx.groupsTitle"),
-    groupKeywords: t("assistantSettingsReviewUx.keywords"),
+    groupKeywords: t("merchantUx.groupConversation.topicsLabel"),
     groupRedirectMessage: t("assistantSettingsReviewUx.privateMessage"),
   };
   const id = useId();
@@ -90,9 +90,9 @@ export function AssistantDraftReview({
         (
           {
             disabled: t("assistantSettingsReviewUx.groupOff"),
-            mention_only: t("assistantSettingsReviewUx.groupMention"),
-            keyword_only: t("assistantSettingsReviewUx.groupKeywords"),
-            private_redirect: t("assistantSettingsReviewUx.groupPrivate"),
+            mention_only: t("merchantUx.groupConversation.mention"),
+            keyword_only: t("merchantUx.groupConversation.topics"),
+            private_redirect: t("merchantUx.groupConversation.private"),
           } as Record<string, string>
         )[String(value)] || String(value)
       );

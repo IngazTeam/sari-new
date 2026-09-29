@@ -1,4 +1,5 @@
 import { websiteImportEn } from './website-import';
+import { groupConversationEn } from './group-conversation';
 import {websiteReportsEn} from './website-reports';
 import {knowledgePageIntakeEn} from './knowledge-page-intake';
 import {knowledgeSourcesEn} from './knowledge-sources';
@@ -30,6 +31,7 @@ import { subscriptionWorkspaceEn } from './subscription-workspace';
 import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
+  groupConversation: groupConversationEn,
   subscriptionWorkspace: subscriptionWorkspaceEn,
   whatsappWorkspace: whatsappWorkspaceEn,
   knowledgeIntake: knowledgeIntakeEn,
