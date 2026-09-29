@@ -3,6 +3,7 @@ import {
   testSessionListInput,
   testTranscriptInput,
   testFeedbackInput,
+  testFeedbackReadInput,
   type SavedTestMessage,
   type TestRating,
 } from "../shared/test-feedback-workspace";
@@ -14,6 +15,25 @@ import {
   TestWorkspaceError,
 } from "./test-sari-store";
 import { assertRuntimeSchema } from "./db/schema-readiness";
+
+export async function readTestFeedback(
+  merchantId: number,
+  raw: z.infer<typeof testFeedbackReadInput>
+) {
+  const input = testFeedbackReadInput.parse(raw);
+  return withOwnedTestSession(merchantId, input.conversationId, async c => {
+    const [rows] = await c.execute<RowDataPacket[]>(
+      "SELECT id,rating,ratingRevision FROM testMessages WHERE id=? AND conversationId=? AND sender='sari'",
+      [input.messageId, input.conversationId]
+    );
+    if (!rows[0]) throw new TestWorkspaceError("NOT_FOUND");
+    return {
+      messageId: Number(rows[0].id),
+      rating: rows[0].rating as TestRating,
+      revision: Number(rows[0].ratingRevision),
+    };
+  });
+}
 
 export async function listSavedTestSessions(
   merchantId: number,
@@ -30,14 +50,12 @@ export async function listSavedTestSessions(
     FROM testConversations c WHERE c.merchantId=? AND c.id<? ORDER BY c.id DESC LIMIT ?`,
     [merchantId, input.beforeId ?? 2147483648, input.limit + 1]
   );
-  const items = rows
-    .slice(0, input.limit)
-    .map(r => ({
-      id: Number(r.id),
-      startedAt: String(r.startedAt),
-      messageCount: Number(r.messageCount),
-      hasDeal: !!r.hasDeal,
-    }));
+  const items = rows.slice(0, input.limit).map(r => ({
+    id: Number(r.id),
+    startedAt: String(r.startedAt),
+    messageCount: Number(r.messageCount),
+    hasDeal: !!r.hasDeal,
+  }));
   return {
     merchantId,
     items,
@@ -74,20 +92,18 @@ export async function readSavedTestTranscript(
       "SELECT DATE_FORMAT(startedAt,'%Y-%m-%dT%H:%i:%s.000Z') startedAt FROM testConversations WHERE id=?",
       [input.conversationId]
     );
-    const items = rows
-      .slice(0, input.limit)
-      .map(r => ({
-        id: Number(r.id),
-        clientMessageId: r.clientMessageId ?? null,
-        sender: r.sender,
-        content: r.content,
-        sentAt: r.sentAt,
-        replySource: r.replySource ?? null,
-        responseTime: r.responseTime === null ? null : Number(r.responseTime),
-        rating: r.rating ?? null,
-        ratingRevision: Number(r.ratingRevision),
-        ratedAt: r.ratedAt ?? null,
-      })) as SavedTestMessage[];
+    const items = rows.slice(0, input.limit).map(r => ({
+      id: Number(r.id),
+      clientMessageId: r.clientMessageId ?? null,
+      sender: r.sender,
+      content: r.content,
+      sentAt: r.sentAt,
+      replySource: r.replySource ?? null,
+      responseTime: r.responseTime === null ? null : Number(r.responseTime),
+      rating: r.rating ?? null,
+      ratingRevision: Number(r.ratingRevision),
+      ratedAt: r.ratedAt ?? null,
+    })) as SavedTestMessage[];
     const nextCursor = rows.length > input.limit ? items.at(-1)!.id : null;
     return {
       merchantId,

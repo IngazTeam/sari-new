@@ -12,6 +12,8 @@ let api: {
   save: ReturnType<typeof vi.fn>;
   send: ReturnType<typeof vi.fn>;
   deal: ReturnType<typeof vi.fn>;
+  rate: ReturnType<typeof vi.fn>;
+  readRating: ReturnType<typeof vi.fn>;
 };
 let session: TestSariSession;
 beforeEach(() => {
@@ -20,11 +22,98 @@ beforeEach(() => {
     save: vi.fn().mockResolvedValue({ messageId: 1 }),
     send: vi.fn().mockResolvedValue({ response: "رد تجريبي" }),
     deal: vi.fn().mockResolvedValue({ dealId: 1, dealValue: 149.5 }),
+    rate: vi
+      .fn()
+      .mockImplementation(async input => ({
+        messageId: input.messageId,
+        rating: input.rating,
+        revision: input.expectedRevision + 1,
+        replayed: false,
+        superseded: false,
+      })),
+    readRating: vi
+      .fn()
+      .mockResolvedValue({ messageId: 1, rating: "negative", revision: 2 }),
   };
   let id = 0;
   session = new TestSariSession(api, () => `request-${++id}`);
 });
 describe("actual test workspace lifecycle", () => {
+  it("waits for feedback acknowledgement and retries the same receipt after a lost reply", async () => {
+    await session.start();
+    await session.send("hello");
+    const id = session.snapshot().messages[1].id;
+    api.rate.mockRejectedValueOnce(Error("lost acknowledgement"));
+    expect(await session.rate(id, "positive")).toBe(false);
+    expect(session.snapshot().messages[1].rating).toBeUndefined();
+    expect(session.snapshot().ratingHistory).toEqual([]);
+    expect(await session.retry()).toBe(true);
+    expect(api.rate.mock.calls[0][0]).toEqual(api.rate.mock.calls[1][0]);
+    expect(session.snapshot().messages[1]).toMatchObject({
+      rating: "positive",
+      ratingRevision: 1,
+    });
+  });
+  it("locks send, deal, reset and another rating while feedback is pending", async () => {
+    await session.start();
+    await session.send("hello");
+    const wait = deferred<any>();
+    api.rate.mockReturnValueOnce(wait.promise);
+    const id = session.snapshot().messages[1].id,
+      pending = session.rate(id, "positive");
+    expect(await session.rate(id, "negative")).toBe(false);
+    expect(await session.send("other")).toBe(false);
+    expect(await session.start()).toBe(false);
+    expect(await session.markDeal(10)).toBe(false);
+    expect(session.snapshot().messages[1].rating).toBeUndefined();
+    wait.resolve({
+      messageId: 1,
+      rating: "positive",
+      revision: 1,
+      replayed: false,
+      superseded: false,
+    });
+    await pending;
+    expect(session.snapshot().messages[1].rating).toBe("positive");
+  });
+  it("reads a conflicting rating without applying the stale selection", async () => {
+    await session.start();
+    await session.send("hello");
+    const id = session.snapshot().messages[1].id;
+    api.rate.mockRejectedValueOnce({ data: { code: "CONFLICT" } });
+    await session.rate(id, "positive");
+    expect(session.snapshot().ratingConflict).toBe(true);
+    expect(await session.retry()).toBe(false);
+    expect(api.rate).toHaveBeenCalledTimes(1);
+    expect(await session.reviewRating()).toBe(true);
+    expect(session.snapshot().messages[1]).toMatchObject({
+      rating: "negative",
+      ratingRevision: 2,
+    });
+    expect(session.snapshot().ratingHistory).toEqual([]);
+    await session.rate(id, "positive");
+    expect(api.rate.mock.calls[1][0].expectedRevision).toBe(2);
+  });
+  it("uses the latest state for a superseded receipt without claiming a new saved choice", async () => {
+    await session.start();
+    await session.send("hello");
+    api.rate.mockResolvedValue({
+      messageId: 1,
+      rating: "negative",
+      revision: 3,
+      replayed: true,
+      superseded: true,
+    });
+    expect(
+      await session.rate(session.snapshot().messages[1].id, "positive")
+    ).toBe(false);
+    expect(session.snapshot()).toMatchObject({
+      ratingSuperseded: true,
+      error: null,
+      ratingHistory: [],
+    });
+    expect(session.snapshot().messages[1].rating).toBe("negative");
+  });
   it("does not count a guardrail notice as a model rating", async () => {
     api.send.mockResolvedValue({
       response: "simulation only",
@@ -39,7 +128,7 @@ describe("actual test workspace lifecycle", () => {
       source: "guardrail",
       historyTruncated: true,
     });
-    session.rate(reply.id, "positive");
+    await session.rate(reply.id, "positive");
     expect(session.snapshot().ratingHistory).toEqual([]);
   });
   it("releases the lock when session request identity creation fails", async () => {
@@ -88,7 +177,7 @@ describe("actual test workspace lifecycle", () => {
   it("retries saving a received reply without another provider request or duplicate message", async () => {
     await session.start();
     api.save
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ messageId: 1 })
       .mockRejectedValueOnce(new Error("reply save timeout"));
     await session.send("Hello");
     expect(session.snapshot().error).toBe("saveReply");
@@ -136,7 +225,7 @@ describe("actual test workspace lifecycle", () => {
   it("preserves the old session on reset failure and clears all session state after success", async () => {
     await session.start();
     await session.send("hello");
-    session.rate(session.snapshot().messages[1].id, "positive");
+    await session.rate(session.snapshot().messages[1].id, "positive");
     await session.markDeal(149.5);
     api.create
       .mockRejectedValueOnce(new Error("offline"))
@@ -157,9 +246,9 @@ describe("actual test workspace lifecycle", () => {
     await session.start();
     await session.send("hello");
     const id = session.snapshot().messages[1].id;
-    session.rate(id, "positive");
-    session.rate(id, "negative");
-    session.rate(id, "negative");
+    await session.rate(id, "positive");
+    await session.rate(id, "negative");
+    await session.rate(id, "negative");
     expect(
       session.snapshot().ratingHistory.map(p => p.satisfactionRate)
     ).toEqual([100, 0, null]);

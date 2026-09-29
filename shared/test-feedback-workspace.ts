@@ -19,6 +19,16 @@ export const testFeedbackInput = z
   })
   .strict();
 export type TestRating = "positive" | "negative" | null;
+export const testFeedbackReadInput = z
+  .object({ conversationId: testConversationId, messageId: testConversationId })
+  .strict();
+export type TestFeedbackResult = {
+  messageId: number;
+  rating: TestRating;
+  revision: number;
+  replayed: boolean;
+  superseded: boolean;
+};
 export type SavedTestMessage = {
   id: number;
   clientMessageId: string | null;

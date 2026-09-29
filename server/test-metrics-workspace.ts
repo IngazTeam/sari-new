@@ -160,7 +160,7 @@ export async function readTestMetricsWorkspace(
           negative,
           unrated: replies - positive - negative,
           positiveShare: ratio(positive, positive + negative),
-          meaning: "stored_legacy_test_feedback_not_customer_survey",
+          meaning: "stored_test_feedback_not_customer_survey",
         },
         longSessions: {
           count: n("fivePlus"),

@@ -78,7 +78,7 @@ export function testMetricsFixture(): TestMetricsSnapshot {
       negative: 1,
       unrated: 2,
       positiveShare: 50,
-      meaning: "stored_legacy_test_feedback_not_customer_survey",
+      meaning: "stored_test_feedback_not_customer_survey",
     },
     longSessions: { count: 1, total: 4, share: 25 },
     salesProficiency: null,

@@ -19,6 +19,7 @@ import {
   listSavedTestSessions,
   readSavedTestTranscript,
   saveTestFeedback,
+  readTestFeedback,
 } from "./test-feedback-workspace";
 describe.skipIf(!process.env.DATABASE_URL)(
   "recoverable test feedback in MySQL",
@@ -118,6 +119,18 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     it("rejects foreign transcripts and feedback targets without altering them", async () => {
       const m = await message();
+      expect(
+        await readTestFeedback(owner.merchantId, {
+          conversationId,
+          messageId: m.messageId,
+        })
+      ).toMatchObject({ rating: null, revision: 0 });
+      await expect(
+        readTestFeedback(other.merchantId, {
+          conversationId,
+          messageId: m.messageId,
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
       await expect(
         readSavedTestTranscript(other.merchantId, { conversationId })
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -205,11 +218,13 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await expect(
           write({ ...input, ...patch } as any)
         ).rejects.toMatchObject({ code: "CONFLICT" });
-    expect(
-      (await readSavedTestTranscript(owner.merchantId, { conversationId }))
-        .items[1].rating
-    ).toBeNull();
-    await expect(saveTestFeedback(owner.merchantId,other.userId,input)).rejects.toMatchObject({code:"CONFLICT"});
+      expect(
+        (await readSavedTestTranscript(owner.merchantId, { conversationId }))
+          .items[1].rating
+      ).toBeNull();
+      await expect(
+        saveTestFeedback(owner.merchantId, other.userId, input)
+      ).rejects.toMatchObject({ code: "CONFLICT" });
     });
     it("preserves saved feedback and reply classification when migration repeats", async () => {
       const m = await message("sari", "model");

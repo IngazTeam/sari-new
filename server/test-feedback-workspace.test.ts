@@ -4,6 +4,7 @@ const m = vi.hoisted(() => ({
   list: vi.fn(),
   read: vi.fn(),
   rate: vi.fn(),
+  feedback: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
@@ -12,6 +13,7 @@ vi.mock("./test-feedback-workspace", () => ({
   listSavedTestSessions: m.list,
   readSavedTestTranscript: m.read,
   saveTestFeedback: m.rate,
+  readTestFeedback: m.feedback,
 }));
 import { testSariRouter } from "./routers-test-sari";
 const caller = (user: any = { id: 7, role: "user" }) =>
@@ -37,9 +39,14 @@ describe("test transcript and feedback access", () => {
     await caller().listSessions({});
     await caller().transcript({ conversationId: 3 });
     await caller().rateReply(input);
+    await caller().feedback({ conversationId: 3, messageId: 4 });
     expect(m.list).toHaveBeenCalledWith(20, { limit: 20 });
     expect(m.read).toHaveBeenCalledWith(20, { conversationId: 3, limit: 20 });
     expect(m.rate).toHaveBeenCalledWith(20, 7, input);
+    expect(m.feedback).toHaveBeenCalledWith(20, {
+      conversationId: 3,
+      messageId: 4,
+    });
   });
   it.each(["viewer", "sales_supervisor"])(
     "allows %s to read but not rate",

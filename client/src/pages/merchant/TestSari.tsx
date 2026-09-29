@@ -1,4 +1,5 @@
 import { TestSariSession } from "@/lib/test-sari-session";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { testDealValue } from "@shared/test-sari-workspace";
 import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
@@ -74,6 +75,13 @@ interface Scenario {
 }
 
 export default function TestSari() {
+  return (
+    <KnowledgeWorkspaceScope slot="test-sari-session">
+      {key => <TestSariWorkspace key={key} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+function TestSariWorkspace() {
   const { t } = useTranslation();
 
   const EXAMPLE_SCENARIOS: Scenario[] = [
@@ -145,8 +153,10 @@ export default function TestSari() {
   const save = trpc.testSari.saveMessage.useMutation();
   const send = trpc.testSari.sendMessage.useMutation();
   const deal = trpc.testSari.markAsDeal.useMutation();
-  const operations = useRef({ create, save, send, deal });
-  operations.current = { create, save, send, deal };
+  const rate = trpc.testSari.rateReply.useMutation();
+  const utils = trpc.useUtils();
+  const operations = useRef({ create, save, send, deal, rate, utils });
+  operations.current = { create, save, send, deal, rate, utils };
   const [session] = useState(
     () =>
       new TestSariSession({
@@ -154,6 +164,9 @@ export default function TestSari() {
         save: input => operations.current.save.mutateAsync(input),
         send: input => operations.current.send.mutateAsync(input),
         deal: input => operations.current.deal.mutateAsync(input),
+        rate: input => operations.current.rate.mutateAsync(input),
+        readRating: input =>
+          operations.current.utils.testSari.feedback.fetch(input),
       })
   );
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
@@ -221,8 +234,10 @@ export default function TestSari() {
       if (failed === "deal") setShowDealDialog(false);
     }
   };
-  const handleRating = (id: string, rating: "positive" | "negative") =>
-    session.rate(id, rating);
+  const handleRating = async (id: string, rating: "positive" | "negative") => {
+    if (await session.rate(id, rating))
+      toast.success(t("testSariPage.ratingSaved"));
+  };
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
@@ -441,22 +456,41 @@ export default function TestSari() {
           <p className="min-w-0 text-sm">
             {state.forbidden
               ? t("testSariPage.accessDenied")
-              : error === "session"
-                ? t("testSariPage.sessionFailed")
-                : error === "deal"
-                  ? t("testSariPage.saveDealFailed")
-                  : error === "reply"
-                    ? t("testSariPage.replyFailed")
-                    : t("testSariPage.messageSaveFailed")}
+              : error === "rating"
+                ? t(
+                    state.ratingConflict
+                      ? "testSariPage.ratingConflict"
+                      : "testSariPage.ratingFailed"
+                  )
+                : error === "session"
+                  ? t("testSariPage.sessionFailed")
+                  : error === "deal"
+                    ? t("testSariPage.saveDealFailed")
+                    : error === "reply"
+                      ? t("testSariPage.replyFailed")
+                      : t("testSariPage.messageSaveFailed")}
           </p>
           <Button
             variant="outline"
             disabled={busy || state.forbidden}
-            onClick={handleRetry}
+            onClick={
+              state.ratingConflict
+                ? () => void session.reviewRating()
+                : handleRetry
+            }
           >
-            {t("testSariPage.retry")}
+            {t(
+              state.ratingConflict
+                ? "testSariPage.reviewRating"
+                : "testSariPage.retry"
+            )}
           </Button>
         </div>
+      )}
+      {state.ratingSuperseded && (
+        <p role="status" className="rounded-2xl border p-4 text-sm">
+          {t("testSariPage.ratingSuperseded")}
+        </p>
       )}
       <Card className="flex min-w-0 flex-col overflow-hidden rounded-2xl">
         <CardHeader className="border-b bg-muted/50">

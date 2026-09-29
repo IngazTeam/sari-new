@@ -8,15 +8,22 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(),
   send: vi.fn(),
   deal: vi.fn(),
+  rate: vi.fn(),
+  readRating: vi.fn(),
+}));
+vi.mock("../client/src/components/KnowledgeWorkspaceScope", () => ({
+  KnowledgeWorkspaceScope: ({ children }: any) => children("test-scope"),
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({ testSari: { feedback: { fetch: mocks.readRating } } }),
     testSari: Object.fromEntries(
       Object.entries({
         createConversation: mocks.create,
         saveMessage: mocks.save,
         sendMessage: mocks.send,
         markAsDeal: mocks.deal,
+        rateReply: mocks.rate,
       }).map(([key, fn]) => [
         key,
         { useMutation: () => ({ mutateAsync: fn, isPending: false }) },
@@ -79,6 +86,18 @@ beforeEach(() => {
     response: "<script>alert(1)</script> رد الاختبار",
   });
   mocks.deal.mockResolvedValue({ dealId: 2, dealValue: 149.5 });
+  mocks.rate.mockImplementation(async input => ({
+    messageId: input.messageId,
+    rating: input.rating,
+    revision: input.expectedRevision + 1,
+    replayed: false,
+    superseded: false,
+  }));
+  mocks.readRating.mockResolvedValue({
+    messageId: 1,
+    rating: "negative",
+    revision: 2,
+  });
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -102,6 +121,24 @@ async function send() {
   );
 }
 describe("rendered production test workspace", () => {
+  it("persists feedback only after acknowledgement and offers review for a changed rating", async () => {
+    await renderPage();
+    await send();
+    const feedback = () =>
+      container.querySelector(
+        'button[aria-label="merchantUx.actions.positiveFeedback"]'
+      ) as HTMLButtonElement;
+    mocks.rate.mockRejectedValueOnce({ data: { code: "CONFLICT" } });
+    await click(feedback());
+    expect(feedback().getAttribute("aria-pressed")).toBe("false");
+    expect(container.textContent).toContain(ar.testSariPage.ratingConflict);
+    await click(button(ar.testSariPage.reviewRating));
+    expect(container.textContent).toContain(ar.testSariPage.ratingSuperseded);
+    expect(mocks.rate).toHaveBeenCalledTimes(1);
+    await click(feedback());
+    expect(feedback().getAttribute("aria-pressed")).toBe("true");
+    expect(mocks.rate.mock.calls[1][0].expectedRevision).toBe(2);
+  });
   it("requires confirmation before replacing a conversation and keeps it on reset failure", async () => {
     await renderPage();
     await send();
@@ -140,7 +177,7 @@ describe("rendered production test workspace", () => {
   it("renders reply content as text and retries failed persistence without regenerating it", async () => {
     await renderPage();
     mocks.save
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ messageId: 1 })
       .mockRejectedValueOnce(new Error("lost acknowledgement"));
     await send();
     expect(container.textContent).toContain("<script>alert(1)</script>");

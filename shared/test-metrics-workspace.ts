@@ -55,7 +55,7 @@ export type TestMetricsSnapshot = {
     negative: number;
     unrated: number;
     positiveShare: number | null;
-    meaning: "stored_legacy_test_feedback_not_customer_survey";
+    meaning: "stored_test_feedback_not_customer_survey";
   };
   longSessions: { count: number; total: number; share: number | null };
   salesProficiency: null;

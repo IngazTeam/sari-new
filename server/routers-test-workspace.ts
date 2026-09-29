@@ -23,11 +23,13 @@ import {
   testSessionListInput,
   testTranscriptInput,
   testFeedbackInput,
+  testFeedbackReadInput,
 } from "../shared/test-feedback-workspace";
 import {
   listSavedTestSessions,
   readSavedTestTranscript,
   saveTestFeedback,
+  readTestFeedback,
 } from "./test-feedback-workspace";
 
 async function run<T>(work: () => Promise<T>): Promise<T> {
@@ -68,6 +70,11 @@ export const quickPreviewProcedure = manage
     })
   );
 export const testSariRouter = router({
+  feedback: permissionProcedure("conversations.read")
+    .input(testFeedbackReadInput)
+    .query(({ ctx, input }) =>
+      run(() => readTestFeedback(ctx.merchantId, input))
+    ),
   listSessions: permissionProcedure("conversations.read")
     .input(testSessionListInput)
     .query(({ ctx, input }) =>

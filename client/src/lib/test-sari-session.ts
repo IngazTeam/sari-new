@@ -1,7 +1,13 @@
 import { testDealValue } from "@shared/test-sari-workspace";
+import type {
+  TestFeedbackResult,
+  TestRating,
+} from "@shared/test-feedback-workspace";
 
 export interface TestMessage {
   id: string;
+  savedId?: number;
+  ratingRevision?: number;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
@@ -18,7 +24,19 @@ interface TestApi {
     sender: "user" | "sari";
     content: string;
     responseTime?: number;
-  }): Promise<unknown>;
+    replySource?: "model" | "guardrail";
+  }): Promise<{ messageId: number }>;
+  rate?(input: {
+    conversationId: number;
+    messageId: number;
+    requestId: string;
+    expectedRevision: number;
+    rating: TestRating;
+  }): Promise<TestFeedbackResult>;
+  readRating?(input: {
+    conversationId: number;
+    messageId: number;
+  }): Promise<Pick<TestFeedbackResult, "messageId" | "rating" | "revision">>;
   send(input: {
     conversationId: number;
     clientMessageId: string;
@@ -34,13 +52,21 @@ interface TestApi {
     dealValue: number;
   }): Promise<{ dealId: number; dealValue: number }>;
 }
-type Failure = "session" | "saveUser" | "reply" | "saveReply" | "deal";
+type Failure =
+  | "session"
+  | "saveUser"
+  | "reply"
+  | "saveReply"
+  | "deal"
+  | "rating";
 export interface TestSessionState {
   conversationId: number | null;
   messages: TestMessage[];
   busy: boolean;
   error: Failure | null;
   forbidden: boolean;
+  ratingConflict: boolean;
+  ratingSuperseded: boolean;
   deal: { value: number } | null;
   ratingHistory: {
     timestamp: Date;
@@ -59,6 +85,8 @@ export class TestSariSession {
     busy: false,
     error: null,
     forbidden: false,
+    ratingConflict: false,
+    ratingSuperseded: false,
     deal: null,
     ratingHistory: [],
   };
@@ -71,6 +99,10 @@ export class TestSariSession {
     responseTime?: number;
   } | null = null;
   private pendingDeal: number | null = null;
+  private pendingRating: {
+    id: string;
+    input: Parameters<NonNullable<TestApi["rate"]>>[0];
+  } | null = null;
   constructor(
     private api: TestApi,
     private uuid = () => crypto.randomUUID(),
@@ -88,10 +120,13 @@ export class TestSariSession {
     this.listeners.forEach(listener => listener());
   }
   private failure(error: unknown, stage: Failure) {
+    const code = (error as { data?: { code?: string } })?.data?.code;
     this.update({
       error: stage,
-      forbidden:
-        (error as { data?: { code?: string } })?.data?.code === "FORBIDDEN",
+      forbidden: code === "FORBIDDEN" || code === "UNAUTHORIZED",
+      ratingConflict:
+        stage === "rating" &&
+        (this.state.ratingConflict || code === "CONFLICT"),
     });
   }
   async start(): Promise<boolean> {
@@ -102,12 +137,15 @@ export class TestSariSession {
       const result = await this.api.create({ requestId: this.requestId });
       this.pending = null;
       this.pendingDeal = null;
+      this.pendingRating = null;
       this.requestId = null;
       this.update({
         conversationId: result.conversationId,
         messages: [],
         deal: null,
         ratingHistory: [],
+        ratingConflict: false,
+        ratingSuperseded: false,
       });
       return true;
     } catch (error) {
@@ -146,13 +184,16 @@ export class TestSariSession {
     let stage: Failure = "saveUser";
     try {
       if (!pending.userSaved) {
-        await this.api.save({
+        const saved = await this.api.save({
           conversationId,
           clientMessageId: pending.user.id,
           sender: "user",
           content: pending.user.content,
         });
+        if (!Number.isSafeInteger(saved.messageId) || saved.messageId < 1)
+          throw Error("Unconfirmed save");
         pending.userSaved = true;
+        pending.user.savedId = saved.messageId;
       }
       stage = "reply";
       if (!pending.reply) {
@@ -178,13 +219,19 @@ export class TestSariSession {
         this.update({ messages: [...this.state.messages, pending.reply] });
       }
       stage = "saveReply";
-      await this.api.save({
+      const saved = await this.api.save({
         conversationId,
         clientMessageId: pending.reply.id,
         sender: "sari",
         content: pending.reply.content,
         responseTime: pending.responseTime,
+        replySource: pending.reply.source,
       });
+      if (!Number.isSafeInteger(saved.messageId) || saved.messageId < 1)
+        throw Error("Unconfirmed save");
+      pending.reply.savedId = saved.messageId;
+      pending.reply.ratingRevision = 0;
+      this.update({ messages: [...this.state.messages] });
       this.pending = null;
       return true;
     } catch (error) {
@@ -200,6 +247,7 @@ export class TestSariSession {
       !this.state.conversationId ||
       this.state.deal ||
       this.pending ||
+      this.pendingRating ||
       this.requestId ||
       !testDealValue.safeParse(value).success
     )
@@ -226,39 +274,127 @@ export class TestSariSession {
     if (this.state.error === "session") return this.start();
     if (this.state.error === "deal" && this.pendingDeal !== null)
       return this.markDeal(this.pendingDeal);
+    if (this.state.error === "rating" && !this.state.ratingConflict)
+      return this.saveRating();
     if (this.pending) return this.completeMessage();
     return false;
   }
-  rate(id: string, rating: "positive" | "negative") {
+  async rate(id: string, rating: "positive" | "negative"): Promise<boolean> {
     if (
+      !this.api.rate ||
       this.state.busy ||
       this.state.error ||
       !this.state.messages.some(
-        m => m.id === id && m.role === "assistant" && m.source !== "guardrail"
+        m =>
+          m.id === id &&
+          m.role === "assistant" &&
+          m.source !== "guardrail" &&
+          m.savedId
       )
     )
-      return;
+      return false;
+    const target = this.state.messages.find(m => m.id === id)!;
+    try {
+      this.pendingRating = {
+        id,
+        input: {
+          conversationId: this.state.conversationId!,
+          messageId: target.savedId!,
+          rating: target.rating === rating ? null : rating,
+          expectedRevision: target.ratingRevision ?? 0,
+          requestId: this.uuid(),
+        },
+      };
+    } catch (error) {
+      this.failure(error, "rating");
+      return false;
+    }
+    return this.saveRating();
+  }
+  private applyRating(
+    id: string,
+    result: Pick<TestFeedbackResult, "rating" | "revision">,
+    recordHistory: boolean
+  ) {
     const messages = this.state.messages.map(m =>
       m.id === id
-        ? { ...m, rating: m.rating === rating ? undefined : rating }
+        ? {
+            ...m,
+            rating: result.rating ?? undefined,
+            ratingRevision: result.revision,
+          }
         : m
     );
     const positive = messages.filter(m => m.rating === "positive").length,
       negative = messages.filter(m => m.rating === "negative").length;
     this.update({
       messages,
-      ratingHistory: [
-        ...this.state.ratingHistory,
-        {
-          timestamp: this.now(),
-          positive,
-          negative,
-          satisfactionRate:
-            positive + negative
-              ? Math.round((positive / (positive + negative)) * 100)
-              : null,
-        },
-      ],
+      ratingHistory: recordHistory
+        ? [
+            ...this.state.ratingHistory,
+            {
+              timestamp: this.now(),
+              positive,
+              negative,
+              satisfactionRate:
+                positive + negative
+                  ? Math.round((positive / (positive + negative)) * 100)
+                  : null,
+            },
+          ]
+        : this.state.ratingHistory,
     });
+  }
+  private async saveRating(): Promise<boolean> {
+    if (this.state.busy || !this.pendingRating || !this.api.rate) return false;
+    const pending = this.pendingRating;
+    this.update({
+      busy: true,
+      error: null,
+      forbidden: false,
+      ratingConflict: false,
+      ratingSuperseded: false,
+    });
+    try {
+      const result = await this.api.rate(pending.input);
+      if (result.messageId !== pending.input.messageId)
+        throw Error("Unexpected reply");
+      this.applyRating(pending.id, result, !result.superseded);
+      this.pendingRating = null;
+      this.update({ ratingSuperseded: result.superseded });
+      return !result.superseded;
+    } catch (error) {
+      this.failure(error, "rating");
+      return false;
+    } finally {
+      this.update({ busy: false });
+    }
+  }
+  async reviewRating(): Promise<boolean> {
+    if (this.state.busy || this.state.forbidden || !this.pendingRating || !this.api.readRating)
+      return false;
+    const pending = this.pendingRating;
+    this.update({ busy: true });
+    try {
+      const result = await this.api.readRating({
+        conversationId: pending.input.conversationId,
+        messageId: pending.input.messageId,
+      });
+      if (result.messageId !== pending.input.messageId)
+        throw Error("Unexpected reply");
+      this.applyRating(pending.id, result, false);
+      this.pendingRating = null;
+      this.update({
+        error: null,
+        ratingConflict: false,
+        ratingSuperseded: true,
+      });
+      return true;
+    } catch (error) {
+      this.failure(error, "rating");
+      return false;
+    } finally {
+      this.update({ busy: false });
+    }
   }
 }
