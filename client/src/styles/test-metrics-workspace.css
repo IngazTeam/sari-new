@@ -1,0 +1,21 @@
+.tm-tools label {
+  flex: 1 1 200px;
+}
+.tm-tools select {
+  width: 100%;
+  min-width: 0;
+}
+.tm-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-block: 12px;
+}
+.tm-unmeasured {
+  font-weight: 600;
+  margin-block: 12px;
+}
+@media (max-width: 480px) {
+  .tm-tools label {
+    flex-basis: 100%;
+  }
+}
