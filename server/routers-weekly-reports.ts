@@ -1,56 +1,64 @@
-/**
- * Weekly Reports Router Module
- * Handles weekly sentiment reports
- * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
- */
-
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId, getWeeklySentimentReportById, getWeeklySentimentReports } from './db';
+import { permissionProcedure, router } from "./_core/trpc";
+import {
+  readWeeklyReportRecords,
+  readWeeklyReportRecord,
+} from "./weekly-reports-store";
 
+async function guarded<T>(work: () => Promise<T>) {
+  try {
+    return await work();
+  } catch {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Weekly reports unavailable",
+    });
+  }
+}
+const read = permissionProcedure("analytics.read");
 export const weeklyReportsRouter = router({
-    // Get merchant's weekly reports
-    list: protectedProcedure
-        .input(z.object({
-            limit: z.number().optional(),
-        }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            return await getWeeklySentimentReports(merchant.id, input.limit || 10);
-        }),
-
-    // Get specific report
-    getById: protectedProcedure
-        .input(z.object({
-            reportId: z.number(),
-        }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            const report = await getWeeklySentimentReportById(input.reportId);
-            if (!report || report.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            return report;
-        }),
-
-    // Generate test report (for current week)
-    generateTest: protectedProcedure
-        .mutation(async ({ ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const { generateWeeklyReport } = await import('./reports/sentiment-weekly');
-            const reportId = await generateWeeklyReport(merchant.id);
-
-            return { reportId, success: true };
-        }),
+  list: read
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(52).default(10),
+          page: z.number().int().min(1).max(100000).default(1),
+        })
+        .strict()
+    )
+    .query(({ ctx, input }) =>
+      guarded(() =>
+        readWeeklyReportRecords(ctx.merchantId, input.limit, input.page)
+      )
+    ),
+  getById: read
+    .input(
+      z
+        .object({ reportId: z.number().int().positive().max(2147483647) })
+        .strict()
+    )
+    .query(async ({ ctx, input }) => {
+      const row = await guarded(() =>
+        readWeeklyReportRecord(ctx.merchantId, input.reportId)
+      );
+      if (!row)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Report unavailable",
+        });
+      return row;
+    }),
+  // Generates a stored current-week snapshot; does not send email or claim provider-quality evidence.
+  generateTest: permissionProcedure("bot_settings.manage")
+    .input(z.void())
+    .mutation(({ ctx }) =>
+      guarded(async () => {
+        const { generateWeeklyReport } =
+          await import("./reports/sentiment-weekly");
+        const reportId = await generateWeeklyReport(ctx.merchantId);
+        return { reportId, success: true };
+      })
+    ),
 });
-
 export type WeeklyReportsRouter = typeof weeklyReportsRouter;

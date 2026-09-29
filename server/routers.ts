@@ -1,3 +1,4 @@
+import { weeklyReportsRouter } from './routers-weekly-reports';
 import { keywordsRouter } from './routers-keywords';
 import { quickResponsesRouter } from './routers-quick-responses';
 import { testSariRouter } from './routers-test-sari';
@@ -241,8 +242,6 @@ import {
   getTrySariDailyData,
   getUserByEmail,
   getUserById,
-  getWeeklySentimentReportById,
-  getWeeklySentimentReports,
   getWhatsAppConnectionRequestById,
   getWhatsAppConnectionRequestByMerchantId,
   getActiveInstanceByPhoneNumber,
@@ -4311,51 +4310,7 @@ export const appRouter = router({
   // ============================================
   // Weekly Sentiment Reports APIs
   // ============================================
-  weeklyReports: router({
-    // Get merchant's weekly reports
-    list: protectedProcedure
-      .input(z.object({
-        limit: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getWeeklySentimentReports(merchant.id, input.limit || 10);
-      }),
-
-    // Get specific report
-    getById: protectedProcedure
-      .input(z.object({
-        reportId: z.number(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const report = await getWeeklySentimentReportById(input.reportId);
-        if (!report || report.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        return report;
-      }),
-
-    // Generate test report (for current week)
-    generateTest: protectedProcedure
-      .mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Import report generator
-        const { generateWeeklyReport } = await import('./reports/sentiment-weekly');
-
-        // Generate report for current week
-        const reportId = await generateWeeklyReport(merchant.id);
-
-        return { reportId, success: true };
-      }),
-  }),
+  weeklyReports: weeklyReportsRouter,
 
   // ============================================
   // A/B Testing APIs
