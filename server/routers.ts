@@ -1,3 +1,4 @@
+import { keywordsRouter } from './routers-keywords';
 import { quickResponsesRouter } from './routers-quick-responses';
 import { testSariRouter } from './routers-test-sari';
 import { quickPreviewProcedure } from './routers-test-workspace';
@@ -140,7 +141,6 @@ import {
   deleteBooking,
   deleteDiscountCode,
   deleteGoogleIntegration,
-  deleteKeywordAnalysis,
   deleteSallaConnection,
   deleteScheduledMessage,
   deleteService,
@@ -194,8 +194,6 @@ import {
   getGoogleIntegration,
   getInvoiceById,
   getInvoicesByMerchantId,
-  getKeywordAnalysisById,
-  getKeywordStats,
   getMerchantById,
   getMerchantByUserId,
   getMerchantCurrentSubscription,
@@ -203,7 +201,6 @@ import {
   getMerchantSentimentStats,
   getMessageStats,
   getMessagesByConversationId,
-  getNewKeywords,
   getOrderById,
   getOrderStats,
   getOrdersByMerchantId,
@@ -273,7 +270,6 @@ import {
   updateDiscountCode,
   updateDiscountCoupon,
   updateGoogleIntegration,
-  updateKeywordStatus,
   updateMerchant,
   updatePlan,
   updateSallaConnection,
@@ -4310,105 +4306,7 @@ export const appRouter = router({
   // ============================================
   // Keyword Analysis APIs
   // ============================================
-  keywords: router({
-    // Get keyword statistics
-    getStats: protectedProcedure
-      .input(z.object({
-        category: z.enum(['product', 'price', 'shipping', 'complaint', 'question', 'other']).optional(),
-        status: z.enum(['new', 'reviewed', 'response_created', 'ignored']).optional(),
-        minFrequency: z.number().optional(),
-        limit: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getKeywordStats(merchant.id, input);
-      }),
-
-    // Get new keywords that need review
-    getNew: protectedProcedure
-      .input(z.object({
-        limit: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getNewKeywords(merchant.id, input.limit || 20);
-      }),
-
-    // Get suggested responses based on frequent questions
-    getSuggested: protectedProcedure
-      .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Get top keywords
-        const keywords = await getKeywordStats(merchant.id, {
-          status: 'new',
-          minFrequency: 3,
-          limit: 10,
-        });
-
-        if (keywords.length === 0) {
-          return [];
-        }
-
-        // Import AI function
-        const { suggestQuickResponses } = await import('./ai/keyword-analysis');
-
-        // Convert to format expected by AI
-        const frequentQuestions = keywords.map((k: any) => ({
-          question: k.keyword,
-          frequency: k.frequency,
-          category: k.category,
-        }));
-
-        // Get suggestions
-        const suggestions = await suggestQuickResponses(frequentQuestions, {
-          merchantId: merchant.id,
-          businessName: merchant.businessName,
-        });
-
-        return suggestions;
-      }),
-
-    // Update keyword status
-    updateStatus: protectedProcedure
-      .input(z.object({
-        keywordId: z.number(),
-        status: z.enum(['new', 'reviewed', 'response_created', 'ignored']),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const keyword = await getKeywordAnalysisById(input.keywordId);
-        if (!keyword || keyword.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        await updateKeywordStatus(input.keywordId, input.status);
-        return { success: true };
-      }),
-
-    // Delete keyword
-    delete: protectedProcedure
-      .input(z.object({
-        keywordId: z.number(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const keyword = await getKeywordAnalysisById(input.keywordId);
-        if (!keyword || keyword.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        await deleteKeywordAnalysis(input.keywordId);
-        return { success: true };
-      }),
-  }),
+  keywords: keywordsRouter,
 
   // ============================================
   // Weekly Sentiment Reports APIs
