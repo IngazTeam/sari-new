@@ -555,34 +555,43 @@ export function getFollowUpMessage(): string {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Build and send daily knowledge gap digest.
- * Shows the merchant what customers are asking about that the bot can't answer.
+ * Summarize sourced conversational observations for merchant review.
+ * A handoff alone is not a knowledge gap; model interpretation is not proof
+ * that an answer is absent from the merchant's knowledge.
  */
 export async function sendKnowledgeGapDigest(merchantId: number): Promise<void> {
   try {
     const { getDailyKnowledgeGaps } = await import('../db/learning');
+    const utcDay = new Date().toISOString().slice(0, 10);
     const gaps = await getDailyKnowledgeGaps(merchantId);
 
     if (gaps.length === 0) return;
 
     const gapList = gaps
-      .map((g, i) => `${i + 1}. "${g.question.substring(0, 80)}" — سأل عنها ${g.count} عميل`)
+      .map((g, i) => `${i + 1}. "${g.question.substring(0, 80)}${g.question.length > 80 ? '…' : ''}" — ${g.count} محادثة`)
       .join('\n');
 
-    const body = `❓ أسئلة لم أجد لها إجابة اليوم:\n${gapList}\n\n💡 أضف هذه المعلومات في عقل ساري لأتمكن من الرد تلقائياً في المستقبل`;
+    const body = `📋 مقتطفات من رسائل رصد تحليل الحوار فيها نقصًا معلنًا في المعلومات، وسُجّلت إشاراتها اليوم (UTC):\n${gapList}\n\nالعدد محادثات مستقلة لكل مقتطف، وليس مجموع عملاء مختلفين. راجع السياق ومصادر المعرفة قبل تعديلها؛ هذه الملاحظات لا تثبت غياب الإجابة من معلومات نشاطك.`;
 
-    await sendNotification({
+    const sent = await sendNotification({
       merchantId,
       type: 'custom',
-      title: '📋 تقرير ساري — فجوات المعرفة',
+      title: '📋 تقرير ساري — ملاحظات معلومات تحتاج مراجعة',
       body,
       url: '/merchant/sari-brain',
-      metadata: { type: 'knowledge_gap_digest', gapCount: gaps.length },
+      metadata: { type: 'knowledge_gap_digest', gapCount: gaps.length,
+        basis: 'interpreted_conversation', countUnit: 'conversation', period: 'utc_day', utcDay },
+    }, async () => {
+      // Recheck at the notification service's transport authorization boundary.
+      if (new Date().toISOString().slice(0, 10) !== utcDay ||
+          JSON.stringify(await getDailyKnowledgeGaps(merchantId)) !== JSON.stringify(gaps))
+        throw Error('Learning digest source changed');
     });
 
-    console.log(`[Escalation] 📋 Gap digest sent to merchant ${merchantId}: ${gaps.length} gaps`);
-  } catch (err: any) {
-    console.error('[Escalation] Gap digest failed:', err.message);
+    if (sent) console.log(`[Escalation] Review digest accepted for merchant ${merchantId}: ${gaps.length} excerpts`);
+    else console.warn('[Escalation] Review digest delivery not confirmed', { merchantId });
+  } catch {
+    console.error('[Escalation] Review digest unavailable', { merchantId });
   }
 }
 

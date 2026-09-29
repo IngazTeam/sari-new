@@ -592,18 +592,38 @@ export async function expireStaleEscalations(): Promise<number> {
   return (result as any).affectedRows || 0;
 }
 
-/** Get today's unanswered questions for gap digest */
+/** Today's UTC contextual gap observations, counted by independent conversation.
+ * A declared gap is not proof that the merchant's knowledge source lacks an answer. */
 export async function getDailyKnowledgeGaps(merchantId: number): Promise<{ question: string; count: number }[]> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) throw Error('Invalid learning digest scope');
   await ensureLearningTables();
   const pool = await getPool();
-  if (!pool) return [];
-
-  const [rows] = await pool.execute(
-    `SELECT question, COUNT(*) as count 
-     FROM sari_escalation_queue 
-     WHERE merchant_id = ? AND created_at >= CURDATE()
-     GROUP BY question ORDER BY count DESC LIMIT 10`,
-    [merchantId]
-  );
-  return (rows as any[]).map(r => ({ question: r.question, count: Number(r.count) }));
+  if (!pool) throw Error('Learning digest unavailable');
+  const c = await pool.getConnection();
+  try {
+    await c.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await c.query('START TRANSACTION READ ONLY');
+    const [rows] = await c.execute<any[]>(`SELECT s.* FROM sari_learning_signals s
+      JOIN conversations v ON v.id=s.conversation_id AND v.merchantId=s.merchant_id
+      WHERE s.merchant_id=? AND BINARY s.signal_type=BINARY 'knowledge_gap'
+        AND BINARY LEFT(s.source_key,20)=BINARY 'contextual_learning:'
+        AND s.created_at>=UTC_DATE() AND s.created_at<UTC_DATE()+INTERVAL 1 DAY
+      ORDER BY s.id LIMIT 2001`, [merchantId]);
+    if (rows.length > 2000) throw Error('Learning digest exceeds source capacity');
+    const verified = await verifiedContextualLearningSources(c, merchantId, rows);
+    const observations = new Map<string, Set<number>>();
+    for (const row of verified) {
+      const excerpt = String(row.customer_message || '');
+      if (!excerpt.trim()) continue;
+      const conversations = observations.get(excerpt) || new Set<number>();
+      conversations.add(row.conversation_id);
+      observations.set(excerpt, conversations);
+    }
+    const result = Array.from(observations).map(([question, conversations]) => ({ question, count: conversations.size }))
+      .sort((a, b) => b.count - a.count || a.question.localeCompare(b.question, 'ar')).slice(0, 10);
+    await c.commit();
+    return result;
+  } finally {
+    try { await c.rollback(); } finally { c.release(); }
+  }
 }
