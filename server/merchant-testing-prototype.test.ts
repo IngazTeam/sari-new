@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
+import { TextEncoder, TextDecoder } from "node:util";
+import { MessageChannel } from "node:worker_threads";
 import { JSDOM, VirtualConsole } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,6 +19,15 @@ function boot(saved?: string) {
     virtualConsole: console,
   });
   w = dom.window;
+  w.TextEncoder = TextEncoder;
+  w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel {
+    constructor() {
+      super();
+      this.port1.unref();
+      this.port2.unref();
+    }
+  };
   w.structuredClone = structuredClone;
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
@@ -50,8 +61,10 @@ const node = (selector: string): any => {
   expect(n, selector).toBeTruthy();
   return n;
 };
-const click = (action: string, extra = "") =>
+const click = (action: string, extra = "") => {
   node(`[data-tp-action="${action}"]${extra}`).click();
+  if (action === "rate") node('[data-tp-action="finish"]').click();
+};
 const input = (id: string, value: string) => {
   const n = node("#tp-" + id);
   n.value = value;
@@ -92,6 +105,136 @@ const reload = () => {
 };
 
 describe("assistant testing workspace prototype", () => {
+  it("waits for feedback acknowledgement and retries the identical receipt without optimistic success", () => {
+    route();
+    example();
+    option("feedback", "failure");
+    node('[data-tp-action="rate"][data-value="positive"]').click();
+    const pending = session().pending;
+    expect(session().messages[1].rating).toBeUndefined();
+    expect(node('[data-tp-action="rate"]').disabled).toBe(true);
+    click("finish");
+    expect(session().messages[1].rating).toBeUndefined();
+    expect(text()).toContain("لم يتأكد حفظ التقييم");
+    option("feedback", "success");
+    click("retry-rating");
+    expect(session().pending.receipt).toBe(pending.receipt);
+    click("finish");
+    expect(session().messages[1]).toMatchObject({
+      rating: "positive",
+      revision: 1,
+    });
+    expect(session().history).toHaveLength(1);
+  });
+  it("reviews a conflict before permitting a new decision and does not count superseded receipts", () => {
+    route();
+    example();
+    option("feedback", "conflict");
+    click("rate", '[data-value="positive"]');
+    expect(session().messages[1].rating).toBeUndefined();
+    click("review-rating");
+    expect(session().messages[1]).toMatchObject({
+      rating: "negative",
+      revision: 1,
+    });
+    expect(session().history).toHaveLength(0);
+    option("feedback", "superseded");
+    click("rate", '[data-value="positive"]');
+    expect(session().messages[1]).toMatchObject({
+      rating: "negative",
+      revision: 3,
+    });
+    expect(text()).toContain("تجاوزته نسخة أخرى");
+    expect(session().history).toHaveLength(0);
+  });
+  it("archives replacement sessions, pages the list and opens only a reviewed session", () => {
+    route();
+    example();
+    click("rate", '[data-value="positive"]');
+    click("reset");
+    confirm();
+    submit("dialog");
+    input("question", "keep this draft");
+    click("seed-history");
+    click("history");
+    expect(
+      w.document.querySelectorAll('[data-tp-action="open-session"]')
+    ).toHaveLength(20);
+    click("history-more");
+    expect(
+      w.document.querySelectorAll('[data-tp-action="open-session"]')
+    ).toHaveLength(27);
+    click("open-session", '[data-id="1"]');
+    expect(node("#dialog-title").textContent).toBe("فتح جلسة محفوظة؟");
+    click("close");
+    expect(node("#tp-question").value).toBe("keep this draft");
+    click("history");
+    click("history-more");
+    click("open-session", '[data-id="1"]');
+    submit("dialog");
+    expect(session().id).toBe(1);
+    expect(session().messages[1].rating).toBe("positive");
+    expect(session().draft).toBe("");
+    expect(session().history).toHaveLength(0);
+  });
+  it("retains the current draft when opening fails and distinguishes missing permission from an empty list", () => {
+    route();
+    example();
+    input("question", "draft");
+    click("seed-history");
+    option("restore", "failure");
+    click("history");
+    click("open-session", '[data-id="124"]');
+    submit("dialog");
+    expect(node("#dialog").textContent).toContain(
+      "لم نستبدل المحادثة أو المسودة"
+    );
+    expect(session().id).toBe(1);
+    expect(session().draft).toBe("draft");
+    click("close");
+    option("history", "forbidden");
+    click("history");
+    expect(node("#dialog").textContent).toContain("لا تملك صلاحية");
+    expect(
+      w.document.querySelector('[data-tp-action="open-session"]')
+    ).toBeNull();
+  });
+  it("loads older replies without losing current feedback and labels the loaded denominator", () => {
+    route();
+    click("seed-history");
+    click("history");
+    click("open-session", '[data-id="124"]');
+    submit("dialog");
+    expect(w.document.querySelectorAll("[data-tp-message]")).toHaveLength(30);
+    expect(text()).toContain("المعروض 30 من 36");
+    click("rate", '[data-id="8"][data-value="positive"]');
+    option("history", "failure");
+    click("older");
+    expect(w.document.querySelectorAll("[data-tp-message]")).toHaveLength(30);
+    expect(text()).toContain("تعذر تحميل الرسائل الأقدم");
+    option("history", "success");
+    click("older");
+    expect(w.document.querySelectorAll("[data-tp-message]")).toHaveLength(36);
+    expect(
+      node(
+        '[data-tp-action="rate"][data-id="8"][data-value="positive"]'
+      ).getAttribute("aria-pressed")
+    ).toBe("true");
+    expect(text()).toContain("للردود المحمّلة فقط");
+  });
+  it("permits a reader to open history while preventing rating and session creation", () => {
+    route();
+    click("seed-history");
+    option("role", "viewer");
+    click("history");
+    click("open-session", '[data-id="124"]');
+    submit("dialog");
+    expect(session().id).toBe(124);
+    click("older");
+    expect(w.document.querySelectorAll("[data-tp-message]")).toHaveLength(36);
+    expect(node('[data-tp-action="rate"]').disabled).toBe(true);
+    expect(node('[data-tp-action="reset"]').disabled).toBe(true);
+  });
   it("clears modal validation when the native close button or Escape closes the dialog", () => {
     route();
     example();
@@ -166,7 +309,7 @@ describe("assistant testing workspace prototype", () => {
     expect(text()).toContain("هذا نص خارج الأمثلة الجاهزة");
     expect(w.document.querySelector("[data-tp-action=rate]")).toBeNull();
   });
-  it("preserves draft through route changes and reload; Enter composition and Shift Enter do not submit", () => {
+  it("preserves draft across routes, clears it on reload, and respects IME composition", () => {
     route();
     input("question", "سؤال محفوظ");
     for (const opts of [{ shiftKey: true }, { isComposing: true }])
@@ -183,7 +326,8 @@ describe("assistant testing workspace prototype", () => {
     route();
     expect(node("#tp-question").value).toBe("سؤال محفوظ");
     reload();
-    expect(node("#tp-question").value).toBe("سؤال محفوظ");
+    expect(node("#tp-question").value).toBe("");
+    input("question", "سؤال جديد");
     node("#tp-question").dispatchEvent(
       new w.KeyboardEvent("keydown", {
         key: "Enter",
@@ -215,7 +359,7 @@ describe("assistant testing workspace prototype", () => {
       expect(session().messages[0].failed).toBeUndefined();
     }
   );
-  it("locks uncertain work and reconciles it once, including restoration after reload", () => {
+  it("restores only saved messages after reload without repeating uncertain work", () => {
     route();
     option("fault", "uncertain");
     input("question", "السلام عليكم");
@@ -224,16 +368,10 @@ describe("assistant testing workspace prototype", () => {
     expect(text()).toContain("النتيجة غير مؤكدة");
     expect(node("[data-tp-action=reset]").disabled).toBe(true);
     reload();
-    click("reconcile");
-    expect(session().messages).toHaveLength(2);
+    expect(session().messages).toHaveLength(1);
     expect(session().pending).toBeNull();
+    expect(text()).toContain("لا تُستعاد المسودة أو العملية غير المؤكدة");
     expect(w.document.querySelector("[data-tp-action=reconcile]")).toBeNull();
-    input("question", "شكراً لك");
-    submit();
-    reload();
-    expect(text()).toContain("النتيجة غير مؤكدة");
-    click("reconcile");
-    expect(session().messages).toHaveLength(4);
   });
   it("snapshots the reply outcome before lab controls change", () => {
     route();
@@ -257,7 +395,7 @@ describe("assistant testing workspace prototype", () => {
     expect(text()).toContain("لا توجد تقييمات");
     expect(session().history.at(-1)).toEqual({ rate: null, total: 0 });
     reload();
-    expect(session().history).toHaveLength(3);
+    expect(session().history).toHaveLength(0);
     expect(text()).toContain("لا تقيس التحويل أو احتراف المبيعات");
   });
   it("reviews scenario replacement, keeps it unsent, and does not grade its fixed preamble", () => {
@@ -271,14 +409,14 @@ describe("assistant testing workspace prototype", () => {
     confirm();
     submit("dialog");
     expect(session().id).toBe(2);
-    expect(session().messages).toHaveLength(2);
+    expect(session().messages).toHaveLength(0);
     expect(node("#tp-question").value).toBe("عندك ساعات ذكية؟");
     expect(session().pending).toBeNull();
     expect(session().history).toHaveLength(0);
     expect(w.document.querySelector("[data-tp-action=rate]")).toBeNull();
     submit();
     click("finish");
-    expect(session().messages).toHaveLength(4);
+    expect(session().messages).toHaveLength(2);
     expect(w.document.querySelectorAll("[data-tp-action=rate]")).toHaveLength(
       2
     );
@@ -335,7 +473,8 @@ describe("assistant testing workspace prototype", () => {
     expect(session().deal).toMatchObject({ value: "150.00", messageCount: 2 });
     expect(node("[data-tp-action=deal]").disabled).toBe(true);
     reload();
-    expect(text()).toContain("150.00 ر.س");
+    expect(text()).toContain("150.00");
+    expect(text()).not.toContain("ر.س");
   });
   it("recovers a failed deal save with its value intact and reconciles an uncertain result only once", () => {
     route();
@@ -355,8 +494,8 @@ describe("assistant testing workspace prototype", () => {
     confirm();
     submit("dialog");
     click("finish");
-    reload();
     click("reconcile");
+    reload();
     expect(session().deal.value).toBe("250.00");
     expect(session().pending).toBeNull();
   });

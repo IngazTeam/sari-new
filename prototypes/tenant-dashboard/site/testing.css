@@ -1,6 +1,79 @@
 .tp-preview {
   min-width: 0;
 }
+.tp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tp-detailed {
+  max-width: 1000px;
+  margin-inline: auto;
+}
+.tp-detailed .tp-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tp-detailed .tp-chat {
+  order: -1;
+}
+.tp-detailed .tp-messages {
+  min-height: 100px;
+  max-height: min(34dvh, 340px);
+}
+.tp-detailed .tp-empty {
+  margin: 12px auto;
+}
+.tp-detailed .tp-composer {
+  padding: 14px;
+}
+.tp-detailed .tp-composer textarea {
+  min-height: 48px;
+}
+.tp-detailed .tp-chat-head {
+  padding: 14px;
+}
+.tp-detailed .tp-scope {
+  display: none;
+}
+body:has(.tp-detailed) .page-head .head-actions {
+  display: none;
+}
+body:has(.tp-detailed) .page-head {
+  margin-bottom: 12px;
+}
+body:has(.tp-detailed) .page-breadcrumb {
+  display: none;
+}
+.tp-detailed .tp-context {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.tp-scenarios summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.tp-scenarios[open] summary {
+  margin-bottom: 16px;
+}
+.tp-session-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.tp-session-list .button {
+  width: 100%;
+  white-space: normal;
+  min-height: 48px;
+  text-align: start;
+  justify-content: space-between;
+}
+.tp-loaded {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0;
+}
 .tp-scope {
   margin: 0 0 20px;
   color: var(--muted);
