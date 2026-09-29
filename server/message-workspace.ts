@@ -1,10 +1,10 @@
+import { readOrderAssociation } from "./order-association";
 import { and, asc, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 import {
   conversations,
   messages,
   sentimentAnalysis,
   products,
-  orders,
 } from "../drizzle/schema";
 import { getDb } from "./db/connection";
 import {
@@ -191,29 +191,7 @@ async function readWindow<P extends string>(
         )
         .orderBy(desc(count()), asc(products.id))
         .limit(productLimit);
-      const [links] = await tx
-        .select({
-          total: sql<number>`count(distinct ${conversations.id})`,
-          matched: sql<number>`count(distinct case when ${orders.id} is not null then ${conversations.id} end)`,
-        })
-        .from(conversations)
-        .leftJoin(
-          orders,
-          and(
-            eq(orders.merchantId, conversations.merchantId),
-            eq(orders.customerPhone, conversations.customerPhone),
-            sql`trim(${conversations.customerPhone}) <> ''`,
-            gte(orders.createdAt, window.sqlFrom),
-            lte(orders.createdAt, window.sqlThrough)
-          )
-        )
-        .where(
-          and(
-            eq(conversations.merchantId, merchantId),
-            gte(conversations.createdAt, window.sqlFrom),
-            lte(conversations.createdAt, window.sqlThrough)
-          )
-        );
+      const association = await readOrderAssociation(tx, merchantId, window);
       return {
         merchantId,
         period,
@@ -268,13 +246,7 @@ async function readWindow<P extends string>(
             "literal_current_catalog_name_in_incoming_text" as const,
           priceMeaning: "current_catalog_price" as const,
         },
-        orderAssociation: {
-          ...observationArm(Number(links.total), Number(links.matched)),
-          evidenceKind: "exact_phone_match_to_any_order_in_period" as const,
-          includesAllOrderStatuses: true,
-          salesConversion: null,
-          salesProficiency: null,
-        },
+        orderAssociation: association,
       };
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
