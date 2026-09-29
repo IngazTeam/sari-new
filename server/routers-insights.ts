@@ -6,6 +6,7 @@ import { readInsightWorkspace, readInsightReport } from "./insights-workspace";
 import {
   insightPeriod,
   insightWorkspaceInput,
+  legacyInsightTestSelection,
 } from "../shared/insights-workspace";
 const read = permissionProcedure("analytics.read");
 async function guarded<T>(work: () => Promise<T>): Promise<T> {
@@ -55,7 +56,9 @@ export const insightsRouter = router({
         dbInsights.getWeeklyReportsList(ctx.merchantId, input.limit)
       )
     ),
-  getActiveABTests: read.query(({ ctx }) =>
-    guarded(() => dbInsights.getActiveABTests(ctx.merchantId))
-  ),
+  getActiveABTests: read
+    .input(legacyInsightTestSelection.optional())
+    .query(({ ctx, input }) =>
+      guarded(() => dbInsights.getActiveABTests(ctx.merchantId, input))
+    ),
 });

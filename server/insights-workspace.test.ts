@@ -43,6 +43,23 @@ beforeEach(() => {
   m.report.mockResolvedValue({ merchantId: 20, id: 3 });
 });
 describe("selected-tenant insight reads", () => {
+  it.each([
+    { limit: 0 },
+    { limit: 101 },
+    { limit: 1.5 },
+    { page: 0 },
+    { page: 100001 },
+    { merchantId: 21 },
+  ])("bounds compatibility A/B selection %j", async input => {
+    await expect(caller().getActiveABTests(input as any)).rejects.toMatchObject(
+      { code: "BAD_REQUEST" }
+    );
+    expect(m.tests).not.toHaveBeenCalled();
+  });
+  it("passes bounded compatibility pagination to the selected tenant", async () => {
+    await caller().getActiveABTests({ limit: 5, page: 2 });
+    expect(m.tests).toHaveBeenCalledWith(20, { limit: 5, page: 2 });
+  });
   it.each(["owner", "manager", "viewer", "sales_supervisor"])(
     "permits authorized %s and binds every endpoint to the selected tenant",
     async role => {
@@ -60,7 +77,7 @@ describe("selected-tenant insight reads", () => {
       await caller().getWeeklyReports({ limit: 8 });
       expect(m.reports).toHaveBeenCalledWith(20, 8);
       await caller().getActiveABTests();
-      expect(m.tests).toHaveBeenCalledWith(20);
+      expect(m.tests).toHaveBeenCalledWith(20, undefined);
       expect(await caller().report({ reportId: 3 })).toEqual({
         merchantId: 20,
         id: 3,

@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const insightPeriod = z.enum(["7d", "30d", "90d"]);
+export const legacyInsightTestSelection = z
+  .object({
+    limit: z.number().int().min(1).max(100).default(20),
+    page: z.number().int().min(1).max(100000).default(1),
+  })
+  .strict();
 const page = z.number().int().min(1).max(100000).default(1);
 export const insightWorkspaceInput = z
   .object({
