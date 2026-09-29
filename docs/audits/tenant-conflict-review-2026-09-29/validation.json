@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-29",
+  "scope": "Knowledge conflict review and atomic decisions",
+  "tests": {
+    "distinctPassed": 202,
+    "files": 7,
+    "groups": {"knowledge-conflict-ui": 14, "knowledge-conflict-access": 9, "knowledge-conflict-indexing": 4, "knowledge-access": 95, "merchant-brain-workbench": 24, "merchant-brain-knowledge-prototype": 32, "knowledge/conflict-workspace.mysql": 24},
+    "legacySalesEngineSuite": "not rerun; see previous FAQ report for known failures"
+  },
+  "typecheck": "passed",
+  "translations": {"callsChecked": 8475, "dynamicKeysChecked": 346, "missing": [], "interpolationErrors": [], "unresolvedDynamicCalls": []},
+  "build": {"client": "passed", "serverAndWorker": "passed", "prototype": "passed", "bundleBudget": "passed", "warning": "Existing Vite chunk over 600 kB"},
+  "browser": {"engine": "Chrome", "appViewports": [320,390,1440], "prototypeViewports": [320], "horizontalOverflowObserved": false, "safariAndRealIPhone": "not tested", "liveProvider": "not tested", "customerMessagesSent": false, "evidence": "browser-checks.json", "databaseEvidence": "live-database-result.json"},
+  "coverage": {"inventoryRegenerated": false, "allPagesComplete": false, "routes": 126, "generic": 101, "redirect": 8, "detailed": 10, "partial": 7},
+  "deployment": {"pushed": false, "productionDeployed": false}
+}

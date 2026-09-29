@@ -16,6 +16,7 @@ import { salesCohortRules } from "../../../shared/sales-experiment-cohort";
 import { replyReviewCriteria } from "../../../shared/sales-reply-review";
 
 import { createBrainEvaluation } from "./brain-evaluation";
+import { createConflictReview, conflictExamples } from './conflict-review';
 import { createFaqList } from "./faq-list";
 import { createBrainKnowledge } from "./brain-knowledge";
 
@@ -69,6 +70,7 @@ window.SaryBrainWorkbench = (() => {
   };
   const initial = () => ({
     version: 1,
+    conflicts: conflictExamples(),
     sector: "store",
     sectorRevision: 1,
     followup: clone(defaultFollowupPolicy),
@@ -304,6 +306,7 @@ window.SaryBrainWorkbench = (() => {
         [
           ["sections", "أقسام المعرفة"],
           ["faq", "الأسئلة الشائعة"],
+          ["conflicts", "مراجعة التعارضات"],
           ["website", "صفحات الموقع"],
           ["intake", "فحص المحتوى"],
           ["status", "حالة التحليل"],
@@ -312,7 +315,7 @@ window.SaryBrainWorkbench = (() => {
         knowledgeTab,
         "knowledge-tab"
       ) +
-      (knowledgeTab === "status"
+      (knowledgeTab === "conflicts" ? conflictWorkspace.render() : knowledgeTab === "status"
         ? knowledgeWorkbench.status()
         : knowledgeTab === "sources"
           ? knowledgeWorkbench.sources()
@@ -1017,7 +1020,7 @@ window.SaryBrainWorkbench = (() => {
     const { bwAction: a, id, value, kind } = el.dataset;
     if (a === "close") return close();
     if (a === "knowledge-tab" || a === "ops-tab") {
-      if (a === "knowledge-tab") knowledgeTab = value;
+      if (a === "knowledge-tab") { conflictWorkspace.leave(); knowledgeTab = value; }
       else opsTab = value;
       if (!pending) error = "";
       return refresh();
@@ -1326,6 +1329,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const conflictWorkspace = createConflictReview({esc,owner,blocked:()=>!!pending,rows:()=>data.conflicts,commit,refresh,alert});
   const faqList = createFaqList({esc,owner,blocked:()=>!!pending,rows:()=>data.faqs,refresh});
   const knowledgeWorkbench = createBrainKnowledge({
     esc,
@@ -1375,6 +1379,7 @@ window.SaryBrainWorkbench = (() => {
     learningStatus: () => knowledgeWorkbench.status(),
     reset() {
       faqList.reset();
+      conflictWorkspace.reset();
       data = initial();
       evaluationWorkbench.reset();
       knowledgeWorkbench.reset();

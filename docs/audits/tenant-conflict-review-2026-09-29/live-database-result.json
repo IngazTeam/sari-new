@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1146,
+    "title": "الأصل الوهمي · اعتماد",
+    "content": "نص وهمي محدّث أثناء المراجعة: الاسترجاع خلال 8 أيام للمنتج غير المفتوح.",
+    "status": "approved",
+    "use_in_bot": 0,
+    "provenance": null
+  },
+  {
+    "id": 1147,
+    "title": "اختبار مراجعة التعارض · اعتماد · سبتمبر",
+    "content": "نص وهمي مقترح: الاسترجاع خلال 10 أيام للمنتج غير المفتوح. هذه بيانات اختبار للوحة فقط، وليست سياسة متجر حقيقية.",
+    "status": "approved",
+    "use_in_bot": 1,
+    "provenance": {
+      "reviewId": "fe2e6c3f-06a9-446c-bb26-e84d99344a05",
+      "requestId": "f844cf68-dae4-4550-8251-dd535715c9b2",
+      "documentId": 1022,
+      "planVersion": 1,
+      "reviewDecision": {
+        "action": "approve",
+        "revision": "b05499a7cd08feaf15ff48d51a85f712e66984cd62b9b8c5b9eaec6bb0c5ac99",
+        "replacedSectionId": 1146
+      }
+    }
+  },
+  {
+    "id": 1148,
+    "title": "الأصل الوهمي · رفض",
+    "content": "نص وهمي سابق: الاسترجاع خلال 7 أيام للمنتج غير المفتوح.",
+    "status": "approved",
+    "use_in_bot": 1,
+    "provenance": null
+  },
+  {
+    "id": 1149,
+    "title": "اختبار مراجعة التعارض · رفض · سبتمبر",
+    "content": "نص وهمي مقترح: الاسترجاع خلال 10 أيام للمنتج غير المفتوح. هذه بيانات اختبار للوحة فقط، وليست سياسة متجر حقيقية.",
+    "status": "approved",
+    "use_in_bot": 0,
+    "provenance": {
+      "reviewId": "d9c758c2-85b2-4de7-9f9e-68b3488cca6a",
+      "requestId": "4f58f9de-e803-4dcf-8548-15e576a1ee5e",
+      "documentId": 1023,
+      "planVersion": 1,
+      "reviewDecision": {
+        "action": "reject",
+        "revision": "e40520d5c7b9d3621ac05519f89399ea4b1daa1f97cc6cc5084058c31d82097f",
+        "replacedSectionId": null
+      }
+    }
+  }
+]

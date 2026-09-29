@@ -79,6 +79,17 @@ const dialog = () => node("#dialog").textContent;
 const main = () => node("#main").textContent;
 const reason =
   "راجعت المعلومات والحدود والمصدر وتأكدت من وضوح القرار في هذا المثال المحلي.";
+const cr = (action: string, id?: number) => node(`[data-cr-action="${action}"]${id ? `[data-id="${id}"]` : ''}`).click();
+const crChoice = (value: string) => { const el=node('[data-cr-decision]');el.value=value;el.dispatchEvent(new w.Event('change',{bubbles:true})); };
+const crAck = () => { const el=node('[data-cr-ack]');el.checked=true;el.dispatchEvent(new w.Event('change',{bubbles:true})); };
+it('reviews conflict text and replaces only the linked record after consent',()=>{tab('knowledge','conflicts');cr('review',1);expect(main()).toContain('السجل الحالي المرتبط فقط');crChoice('approve');expect(node('[data-cr-action="save"]').disabled).toBe(true);crAck();cr('save');expect(data().conflicts[0]).toMatchObject({closed:true,currentEnabled:false,proposalEnabled:true});expect(data().conflicts[1].closed).toBe(false);});
+it('closes a proposal without removing it or disabling the original',()=>{tab('knowledge','conflicts');cr('review',1);crChoice('reject');crAck();cr('save');expect(data().conflicts).toHaveLength(10);expect(data().conflicts[0]).toMatchObject({closed:true,currentEnabled:true,proposalEnabled:false});});
+it('shows unlinked consequences and does not retire a guessed current record',()=>{tab('knowledge','conflicts');cr('review',2);expect(main()).toContain('لا يوجد ربط موثوق');crChoice('approve');crAck();cr('save');expect(data().conflicts[1]).toMatchObject({closed:true,currentEnabled:true,proposalEnabled:true});});
+it('blocks activation when the source link is unavailable',()=>{tab('knowledge','conflicts');cr('review',3);expect(node('[data-cr-decision] option[value="approve"]').disabled).toBe(true);crChoice('approve');crAck();cr('save');expect(main()).toContain('تعذر التحقق');expect(w.localStorage.getItem(key)).toBeNull();});
+it('invalidates consent on a simulated concurrent change',()=>{tab('knowledge','conflicts');cr('review',1);crChoice('approve');crAck();cr('change');expect(node('[data-cr-ack]').checked).toBe(false);crAck();cr('save');expect(main()).toContain('تغيّر الاقتراح');expect(w.localStorage.getItem(key)).toBeNull();cr('refresh');expect(node('[data-cr-ack]').checked).toBe(false);});
+it('retains proposal review on simulated save failure',()=>{tab('knowledge','conflicts');cr('review',1);crChoice('reject');crAck();lab('mode','failure');cr('save');expect(main()).toContain('تعذّر الحفظ');expect(node('[data-cr-review]')).toBeTruthy();expect(w.localStorage.getItem(key)).toBeNull();});
+it('paginates past eight proposals and separates read error from empty',()=>{tab('knowledge','conflicts');cr('next');expect(main()).toContain('مثال 9');const el=node('[data-cr-read]');el.value='failure';el.dispatchEvent(new w.Event('change',{bubbles:true}));expect(main()).toContain('تعذر قراءة الاقتراحات');expect(main()).not.toContain('لا توجد اقتراحات تنتظر');});
+it('does not allow a read-only actor to decide a conflict',()=>{tab('knowledge','conflicts');lab('role','viewer');cr('review',1);expect(w.document.querySelector('[data-cr-decision]')).toBeNull();expect(node('[data-cr-action="save"]').disabled).toBe(true);});
 function reviewLearning(fail = false) {
   nav("learning");
   node('[data-brain-action="review-open"]').click();

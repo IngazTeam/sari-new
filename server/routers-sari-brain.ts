@@ -1,3 +1,6 @@
+import { conflictListInput, conflictReviewInput, conflictDecisionInput } from '../shared/knowledge-conflicts';
+import { indexApprovedConflict } from './knowledge/conflict-indexing';
+import { listConflictWorkspace, readConflictReview, decideKnowledgeConflict } from './knowledge/conflict-workspace';
 import { faqCreateInput, faqUpdateInput, faqDeleteInput, faqListInput } from '../shared/knowledge-faq';
 import { listFaqWorkspace, createWorkspaceFaq, changeWorkspaceFaq } from './knowledge/faq-workspace';
 import { getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
@@ -1832,8 +1835,7 @@ ${fencedContent}`,
         updatedAt: s.updated_at instanceof Date ? s.updated_at.toISOString() : String(s.updated_at ?? s.updatedAt ?? ''),
       }));
     } catch (err: any) {
-      console.error('[getPendingReviews] ERROR:', err.message);
-      return [];
+      throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge proposals unavailable'});
     }
   }),
 
@@ -2001,51 +2003,22 @@ ${fencedContent}`,
       return { success: true };
     }),
 
-  /** Approve a pending review section (resolve conflict) */
-  approveSection: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      sectionId: z.number(),
-      action: z.enum(['approve', 'reject']),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const knowledgeDb = await import('./db/knowledge');
-      const section = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
-      if (!section) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
-
-      if (input.action === 'approve') {
-        await knowledgeDb.updateSection(input.sectionId, merchant.id, {
-          status: 'approved',
-          useInBot: true,
-        });
-        // Embed the newly approved section
-        try {
-          const ragEngine = await import('./ai/rag-engine');
-          const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
-          if (updated) await ragEngine.embedSection(updated, merchant.id);
-        } catch { /* non-blocking */ }
-      } else {
-        await knowledgeDb.deleteSection(input.sectionId, merchant.id);
-      }
-
-      // Resolve related changelog conflicts
-      const changelog = await knowledgeDb.getUnresolvedConflicts(merchant.id);
-      for (const entry of changelog) {
-        if ((entry as any).section_id === input.sectionId || entry.sectionId === input.sectionId) {
-          await knowledgeDb.resolveConflict(entry.id, merchant.id);
-        }
-      }
-
-      // GAP-3 FIX: Invalidate cache after approve/reject so bot reflects the change immediately
-      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      await logBrainActivity(merchant.id, 'conflict_resolved',
-        `${input.action === 'approve' ? 'قبول' : 'رفض'} تعارض: ${section.title || (section as any).title}`
-      );
-      return { success: true };
-    }),
+  conflictWorkspace: merchantProcedure.input(conflictListInput).query(async ({ctx,input}) => {
+    try { return {...await listConflictWorkspace(ctx.merchantId,input.page),canManage:hasPermission(ctx.merchantRole,'bot_settings.manage')}; }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge proposals unavailable'}); }
+  }),
+  conflictReview: merchantProcedure.input(conflictReviewInput).query(async ({ctx,input}) => {
+    try { return await readConflictReview(ctx.merchantId,input.sectionId); }
+    catch(error) { if(error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge proposal review unavailable'}); }
+  }),
+  approveSection: permissionProcedure('bot_settings.manage').input(conflictDecisionInput).mutation(async ({ctx,input}) => {
+    try {
+      const result=await decideKnowledgeConflict(ctx.merchantId,input);
+      const indexing=input.action==='approve'?await indexApprovedConflict(ctx.merchantId,input.sectionId):result.indexing;
+      return {...result,indexing};
+    }
+    catch(error) { if(error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge decision result unconfirmed'}); }
+  }),
 
   /** Trigger re-embedding of all sections */
   reembedSections: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
