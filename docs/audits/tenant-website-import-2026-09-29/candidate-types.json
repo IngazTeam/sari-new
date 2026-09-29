@@ -1,0 +1,14 @@
+{
+  "base": "9b8245c311ef7e0ee1d2616f950f9de4a3680d04",
+  "checked": "HEAD plus explicitly owned import files; unrelated concurrent edits read from HEAD in memory",
+  "ignoredConcurrentTrackedFiles": [
+    "client/src/components/ui/phone-input.tsx",
+    "client/src/locales/auth-ux.ar.ts",
+    "client/src/locales/auth-ux.en.ts",
+    "client/src/locales/auth-ux.schema.ts",
+    "docs/audits/tenant-testing-workspace-2026-09-28/REMAINING.md",
+    "server/ai/response-validator.ts",
+    "server/signup-ux-accessibility-pentest.test.ts"
+  ],
+  "diagnostics": []
+}

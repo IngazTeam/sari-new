@@ -1,3 +1,4 @@
+import { storeImportReview } from '../knowledge/website-import';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyAnalysisSnapshot, mergeAnalyzedProducts } from './analysis-snapshot';
@@ -117,42 +118,28 @@ describe.skipIf(!process.env.DATABASE_URL)('analysis snapshot isolation and reco
     expect(await catalogue()).toEqual(before);
   });
 
-  it('does not ingest skipped proposals and still invalidates short or unchanged saved context', async () => {
-    await caller().analysis.applyAnalysis({ ...input(), productsAction: 'skip', faqsAction: 'skip', pagesAction: 'skip' });
+  it('rejects unreviewed legacy application without writes or model calls', async () => {
+    await expect(caller().analysis.applyAnalysis(input())).rejects.toMatchObject({code:'PRECONDITION_FAILED'});
     expect(ingestContent).not.toHaveBeenCalled();
-    expect(invalidateCache).toHaveBeenCalledWith(owner.merchantId);
     expect(await catalogue()).toHaveLength(0);
   });
 
-  it('replays the legacy analysis without duplicate products or lost page/FAQ identifiers', async () => {
-    const html = '<html><body><div class="faq"><h3>What is your return policy?</h3><p>Returns are accepted within thirty days.</p></div></body></html>';
-    vi.mocked(analyzer.scrapeWebsite).mockResolvedValue({ html, dom: new JSDOM(html), text: 'Returns are accepted within thirty days.' });
-    vi.mocked(analyzer.extractProducts).mockResolvedValue([{ ...input().products[0], currency: 'SAR', description: '', imageUrl: '', inStock: true }]);
-    vi.mocked(analyzer.discoverPages).mockReturnValue([{ pageType: 'faq', title: 'FAQ', url: 'https://catalog.example.test/faq' }]);
-    expect(await caller().analysis.analyzeWebsite({ websiteUrl: input().websiteUrl })).toMatchObject({ success: true, productsCount: 1, pagesCount: 1, faqsCount: 1 });
-    const products = await catalogue();
-    const pages = await query('SELECT id,content FROM discovered_pages WHERE merchant_id=?', [owner.merchantId]);
-    const faqs = await query('SELECT id FROM extracted_faqs WHERE merchant_id=?', [owner.merchantId]);
-    expect(await caller().analysis.analyzeWebsite({ websiteUrl: input().websiteUrl })).toMatchObject({ success: true, productsCount: 0, pagesCount: 1, faqsCount: 1 });
-    expect(await catalogue()).toEqual(products);
-    expect(await query('SELECT id,content FROM discovered_pages WHERE merchant_id=?', [owner.merchantId])).toEqual(pages);
-    expect(await query('SELECT id FROM extracted_faqs WHERE merchant_id=?', [owner.merchantId])).toEqual(faqs);
-    expect(pages[0].content).toContain('thirty days');
+  it('retires the legacy one-shot crawl without making a network request', async () => {
+    await expect(caller().analysis.analyzeWebsite({websiteUrl:input().websiteUrl})).rejects.toMatchObject({code:'PRECONDITION_FAILED'});
+    expect(analyzer.scrapeWebsite).not.toHaveBeenCalled();
+    expect(await catalogue()).toHaveLength(0);
   });
 
   it('allows a manager in the selected store without writing their legacy-owned store', async () => {
     const manager = await account();
     await query("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)", [owner.merchantId, manager.userId]);
-    await caller(manager.userId, owner.merchantId).analysis.applyAnalysis(input());
+    const preview=await storeImportReview(owner.merchantId,input());
+    if(preview.state!=='review')throw Error('Expected saved preview');
+    await caller(manager.userId,owner.merchantId).analysis.applyImport({previewId:preview.review.previewId,expectedRevision:preview.review.revision,choices:{productsAction:'replace',pagesAction:'replace',faqsAction:'replace',applyContactInfo:false},acknowledged:true});
     expect(await catalogue()).toHaveLength(1);
     expect(await catalogue(manager.merchantId)).toHaveLength(0);
     expect((await caller(manager.userId, owner.merchantId).analysis.getExistingData()).products).toHaveLength(1);
     expect(await caller(manager.userId, owner.merchantId).websiteAnalysis.listAnalyses()).toEqual([]);
-    const faq = await caller(manager.userId, owner.merchantId).sariBrain.createFaq({ question: 'Manager FAQ?', answer: 'A scoped answer.' });
-    expect(faq.id).toBeGreaterThan(0);
-    await caller(manager.userId, owner.merchantId).sariBrain.updateFaq({ id: faq.id, answer: 'Updated by manager.' });
-    expect(await query('SELECT merchant_id,answer FROM extracted_faqs WHERE id=?', [faq.id])).toEqual([{ merchant_id: owner.merchantId, answer: 'Updated by manager.' }]);
-    expect(await caller(manager.userId, manager.merchantId).sariBrain.getFaqs()).toEqual([]);
     const ambiguous = appRouter.createCaller({ user: { id: manager.userId, role: 'user' }, req: { headers: {} }, res: {} } as any);
     await expect(ambiguous.analysis.applyAnalysis(input())).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
   });

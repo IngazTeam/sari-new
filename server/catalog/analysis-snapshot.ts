@@ -6,34 +6,8 @@ import { majorToMinor } from '../../shared/product-money';
 import { formatDateForDB } from '../db/connection';
 import { withKnowledgeTransaction, type KnowledgeTransaction } from '../knowledge/transaction';
 
-const action = z.enum(['replace', 'merge', 'skip']);
-const pageType = z.enum(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
-export const analysisProductSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().max(15000).default(''),
-  price: z.number().finite().refine(value => { try { majorToMinor(value); return true; } catch { return false; } }, 'Product price requires verification'),
-  currency: z.enum(['SAR', 'USD']).default('SAR'),
-  imageUrl: z.string().max(500).nullish(),
-  productUrl: z.string().max(500).nullish(),
-  category: z.string().max(100).nullish(),
-});
-export const analysisSnapshotSchema = z.object({
-  websiteUrl: z.string().url().max(500),
-  platform: z.enum(['salla', 'zid', 'shopify', 'woocommerce', 'custom', 'unknown']),
-  productsAction: action,
-  products: z.array(analysisProductSchema).max(2000).default([]),
-  faqsAction: action,
-  faqs: z.array(z.object({ question: z.string().trim().min(1).max(15000), answer: z.string().trim().min(1).max(15000), category: z.string().max(255).default('') })).max(2000).default([]),
-  pagesAction: action,
-  pages: z.array(z.object({ pageType, title: z.string().max(500), url: z.string().url().max(1000), content: z.string().max(15000).optional() })).max(2000).default([]),
-  applyContactInfo: z.boolean().default(false),
-  contactInfo: z.object({
-    phones: z.array(z.string().max(20)).max(20).default([]),
-    emails: z.array(z.string()).default([]),
-    whatsappNumber: z.string().nullable().default(null),
-    address: z.string().max(500).nullable().default(null),
-  }).optional(),
-});
+import { analysisProductSchema, analysisSnapshotSchema } from '../../shared/website-import';
+export { analysisProductSchema, analysisSnapshotSchema };
 
 type Transaction = KnowledgeTransaction;
 const identity = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -43,7 +17,7 @@ export class AnalysisSnapshotValidationError extends Error {
 }
 
 /** URLs are stored, not fetched here. Fetching still requires the DNS/SSRF guard. */
-function storedUrl(value: string, base?: string): string {
+export function storedUrl(value: string, base?: string): string {
   let url: URL;
   try { url = new URL(value, base); } catch { throw new AnalysisSnapshotValidationError(); }
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new AnalysisSnapshotValidationError();
@@ -115,13 +89,13 @@ export async function mergeAnalyzedProducts(merchantId: number, websiteUrl: stri
 }
 
 /** The user's selected changes commit together. No AI/network call runs inside the transaction. */
-export async function applyAnalysisSnapshot(merchantId: number, raw: z.input<typeof analysisSnapshotSchema>, options: { updateWebsiteInfo?: boolean } = {}) {
+export async function applyAnalysisSnapshotInTransaction(tx: Transaction, merchantId: number, raw: z.input<typeof analysisSnapshotSchema>, options: { updateWebsiteInfo?: boolean } = {}) {
   const input = analysisSnapshotSchema.parse(raw);
   const websiteUrl = storedUrl(input.websiteUrl);
   const batch = input.productsAction === 'skip' ? [] : prepareProducts(websiteUrl, input.products);
   const pages = input.pages.map(page => ({ ...page, url: storedUrl(page.url) }));
   if (websiteUrl.length > 500 || pages.some(page => page.url.length > 1000)) throw new AnalysisSnapshotValidationError();
-  return withKnowledgeTransaction(merchantId, async tx => {
+
     let savedProducts = 0, savedFaqs = 0, savedPages = 0;
     // Preserve the existing contract: an empty extraction cannot clear a catalogue.
     if (input.productsAction !== 'skip' && batch.length) savedProducts = await saveProducts(tx, merchantId, input.productsAction, batch);
@@ -177,5 +151,8 @@ export async function applyAnalysisSnapshot(merchantId: number, raw: z.input<typ
     };
     if (Object.keys(merchantUpdate).length) await tx.update(merchants).set(merchantUpdate).where(eq(merchants.id, merchantId));
     return { success: true as const, savedProducts, savedFaqs, savedPages };
-  });
+}
+
+export function applyAnalysisSnapshot(merchantId: number, raw: z.input<typeof analysisSnapshotSchema>, options: { updateWebsiteInfo?: boolean } = {}) {
+  return withKnowledgeTransaction(merchantId, tx => applyAnalysisSnapshotInTransaction(tx, merchantId, raw, options));
 }

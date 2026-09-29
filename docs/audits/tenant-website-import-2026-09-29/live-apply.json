@@ -1,0 +1,22 @@
+{
+  "fixture": "local-only",
+  "receipt": {
+    "receipt": {
+      "choices": {
+        "faqsAction": "merge",
+        "pagesAction": "skip",
+        "productsAction": "skip",
+        "applyContactInfo": false
+      },
+      "success": true,
+      "appliedAt": "2026-09-29T16:20:40.064Z",
+      "savedFaqs": 1,
+      "savedPages": 0,
+      "savedProducts": 0,
+      "pausedSections": 0
+    }
+  },
+  "savedFaqCount": 1,
+  "auditCount": 1,
+  "fixtureFaqPaused": true
+}

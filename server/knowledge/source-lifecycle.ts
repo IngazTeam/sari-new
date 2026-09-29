@@ -4,6 +4,7 @@ import { withKnowledgeTransaction, type KnowledgeTransaction } from './transacti
 import type { SectionSource } from '../db/knowledge';
 import { knowledgeIntakeReceipts, knowledgeIntakeReviews, knowledgePagePreviews } from '../../drizzle/schema';
 import { TRPCError } from '@trpc/server';
+import { websiteImportReviews } from '../../drizzle/website-import-schema';
 
 // Called while holding the merchant lock, shared with intake reservation.
 async function assertNoRunningIntake(tx: KnowledgeTransaction, merchantId: number) {
@@ -85,6 +86,7 @@ async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source
     const [pages] = await tx.delete(discoveredPages).where(eq(discoveredPages.merchantId, merchantId));
     // Cancel unconsumed previews on website removal/reset; keep consumed receipts to prevent replay resurrection.
     await tx.delete(knowledgePagePreviews).where(and(eq(knowledgePagePreviews.merchantId, merchantId), isNull(knowledgePagePreviews.pageId)));
+    await tx.delete(websiteImportReviews).where(and(eq(websiteImportReviews.merchantId, merchantId), isNull(websiteImportReviews.receipt)));
     deleted = analyses.affectedRows + pages.affectedRows;
     sections = await deleteSections(tx, merchantId, 'website');
     await tx.update(merchants).set({ analysisStatus: 'pending', lastAnalysisDate: null }).where(eq(merchants.id, merchantId));

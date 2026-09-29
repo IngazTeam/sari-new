@@ -1,3 +1,4 @@
+import { websiteImportEn } from './website-import';
 import {websiteReportsEn} from './website-reports';
 import {knowledgePageIntakeEn} from './knowledge-page-intake';
 import {knowledgeSourcesEn} from './knowledge-sources';
@@ -38,6 +39,7 @@ const merchantUxEn: MerchantUxCopy = {
   knowledgeConflicts: knowledgeConflictsEn,
   knowledgeSources: knowledgeSourcesEn,
   knowledgeSections: knowledgeSectionsEn,
+  websiteImport: websiteImportEn,
   websiteReports: websiteReportsEn,
   knowledgePageIntake: knowledgePageIntakeEn,
   knowledgePages: knowledgePagesEn,

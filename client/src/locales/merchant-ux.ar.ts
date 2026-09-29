@@ -1,3 +1,4 @@
+import { websiteImportAr } from './website-import';
 import {websiteReportsAr} from './website-reports';
 import {knowledgePageIntakeAr} from './knowledge-page-intake';
 import {knowledgeSourcesAr} from './knowledge-sources';
@@ -38,6 +39,7 @@ const merchantUxAr: MerchantUxCopy = {
   knowledgeConflicts: knowledgeConflictsAr,
   knowledgeSources: knowledgeSourcesAr,
   knowledgeSections: knowledgeSectionsAr,
+  websiteImport: websiteImportAr,
   websiteReports: websiteReportsAr,
   knowledgePageIntake: knowledgePageIntakeAr,
   knowledgePages: knowledgePagesAr,
