@@ -152,6 +152,32 @@
 .in-workspace [role="alert"] {
   color: #963b2d;
 }
+.in-report-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.in-report-content > section {
+  min-width: 0;
+}
+.in-report-content .in-samples {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.in-report-content .in-samples dd {
+  font-size: 14px;
+}
+.in-history {
+  display: grid;
+  gap: 12px;
+}
+.in-history dd {
+  margin: 4px 0 0;
+}
+.in-report-details select {
+  min-height: 44px;
+  width: 100%;
+  font: inherit;
+}
 #dialog.in-review-dialog[open] {
   display: flex;
   flex-direction: column;

@@ -454,3 +454,89 @@ describe("keyword review prototype parity", () => {
     );
   });
 });
+
+const openReport = async (id = 1) => {
+  click("tab", "reports");
+  const details = w.document.querySelector(`[data-in-report="${id}"]`);
+  details.open = true;
+  details.dispatchEvent(new w.Event("toggle"));
+  await settle();
+  return details;
+};
+const reportMode = async (details: any, value: string) => {
+  const el = details.querySelector("[data-in-report-mode]");
+  el.value = value;
+  el.dispatchEvent(new w.Event("change", { bubbles: true }));
+  await settle();
+};
+describe("saved report detail prototype parity", () => {
+  it("loads details only when opened and exposes complete text with historical caveats", async () => {
+    click("tab", "reports");
+    expect(
+      w.document.querySelector('[data-in-report="1"] .in-report-content')
+        .textContent
+    ).toBe("");
+    const details = await openReport();
+    expect(details.textContent).toContain("مثال محلي لنص قديم");
+    expect(details.textContent).toContain("الشكاوى المحفوظة في التقرير");
+    expect(details.textContent).toContain("تصنيف المشاعر لا يثبت الشراء");
+    expect(details.textContent).toContain("قد تختلف عن عدادات التقرير");
+    expect(details.textContent).toContain("ليست نتيجة استبيان رضا");
+  });
+  it.each(["error", "missing", "loading"])(
+    "hides stale contents and export when detail source is %s",
+    async state => {
+      const details = await openReport();
+      await reportMode(details, state);
+      expect(
+        details.querySelector("[data-in-action=export-report]")
+      ).toBeNull();
+      expect(
+        details.querySelector(".in-report-content").textContent
+      ).not.toContain("الشكاوى المحفوظة");
+      expect(exported).toHaveLength(0);
+      if (state === "loading")
+        expect(details.querySelector("[role=status]")).toBeTruthy();
+      else expect(details.querySelector("[role=alert]")).toBeTruthy();
+      await reportMode(details, "normal");
+      expect(
+        details.querySelector("[data-in-action=export-report]")
+      ).toBeTruthy();
+    }
+  );
+  it("represents absent fields explicitly instead of failing the entire report", async () => {
+    const details = await openReport(3);
+    expect(
+      details.textContent.split("لا يوجد نص محفوظ في هذا الحقل.")
+    ).toHaveLength(4);
+    expect(details.querySelector("[role=alert]")).toBeNull();
+  });
+  it("exports complete report content and keeps historical values distinct from calculated share", async () => {
+    const details = await openReport();
+    details.querySelector("[data-in-action=export-report]").click();
+    expect(exported).toHaveLength(1);
+    expect(exported[0].filename).toBe("sary-insight-report-preview-1.csv");
+    const text = await csv(exported[0].blob);
+    expect(text).toContain('"preview","local design sample"');
+    expect(text).toContain('"positive_share_percent","40"');
+    expect(text).toContain('"unverified_historical_positive_percentage","99"');
+    expect(text).toContain('"top_complaints_format","legacy"');
+    expect(text).toContain("مثال محلي لنص قديم:\nاستفسار عن مدة التوصيل.");
+    expect(text).toContain('"recommendations","2"');
+  });
+  it("ignores a pending detail read after closing the section or changing routes", async () => {
+    click("tab", "reports");
+    const details = w.document.querySelector('[data-in-report="1"]');
+    details.open = true;
+    details.dispatchEvent(new w.Event("toggle"));
+    details.open = false;
+    details.dispatchEvent(new w.Event("toggle"));
+    await settle();
+    expect(details.querySelector("[data-in-action=export-report]")).toBeNull();
+    details.open = true;
+    details.dispatchEvent(new w.Event("toggle"));
+    route("ab-tests");
+    await settle();
+    expect(w.document.querySelector(".in-report-content")).toBeNull();
+  });
+});

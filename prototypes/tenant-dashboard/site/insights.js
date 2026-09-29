@@ -67,6 +67,30 @@ window.InsightsPreview = (() => {
     })),
     reports: Array.from({ length: 24 }, (_, i) => ({
       id: i + 1,
+      createdAt: ago(i),
+      emailSentAt: i === 0 ? ago(0) : null,
+      topKeywords:
+        i === 2
+          ? null
+          : JSON.stringify(["الشحن · مثال محلي", "الاسترجاع · مثال محلي"]),
+      topComplaints:
+        i === 2
+          ? null
+          : i === 0
+            ? "مثال محلي لنص قديم:\nاستفسار عن مدة التوصيل."
+            : JSON.stringify(["مثال محلي: سؤال عن موعد الطلب"]),
+      recommendations:
+        i === 2
+          ? null
+          : JSON.stringify([
+              "مثال محلي: راجع مدة الشحن من المصدر قبل تغيير الرد.",
+              "مثال محلي: تصنيف المشاعر لا يثبت الشراء أو احتراف المبيعات.",
+            ]),
+      historicalValues: {
+        positivePercentage: i === 0 ? 99 : 40,
+        negativePercentage: 10,
+        sentimentIndex: 65,
+      },
       weekStart: ago(i + 7),
       weekEnd: ago(i + 1),
       total: i === 2 ? 0 : 10,
@@ -95,6 +119,8 @@ window.InsightsPreview = (() => {
     })),
   });
   const source = initial();
+  const reportModes = new Map(),
+    reportReads = new WeakMap();
   let route = "",
     tab = "keywords",
     period = 30,
@@ -249,7 +275,7 @@ window.InsightsPreview = (() => {
             )
             .join(
               ""
-            )}</dl><p class='hint'>النسبة = المصنّف إيجابيًا ÷ إجمالي عينة التقرير. تصنيف آلي للمشاعر؛ لا يمثل رضا مقاسًا أو شراءً مؤكدًا أو احتراف المبيعات. عدم وجود عينة يظهر «غير متاح».</p><p class='hint'>علامة البريد في السجل: ${row.emailMarkedSent ? "معلّم بالإرسال" : "غير معلّم بالإرسال"}. لا تثبت تسليم البريد أو قراءته.</p></article>`;
+            )}</dl><p class='hint'>النسبة = المصنّف إيجابيًا ÷ إجمالي عينة التقرير. تصنيف آلي للمشاعر؛ لا يمثل رضا مقاسًا أو شراءً مؤكدًا أو احتراف المبيعات. عدم وجود عينة يظهر «غير متاح».</p><p class='hint'>علامة البريد في السجل: ${row.emailMarkedSent ? "معلّم بالإرسال" : "غير معلّم بالإرسال"}. لا تثبت تسليم البريد أو قراءته.</p>${reportDetails(source)}</article>`;
         })
         .join("") ||
       '<p class="panel panel-pad">لا توجد تقارير محفوظة تنتهي ضمن هذه الفترة.</p>'
@@ -276,6 +302,148 @@ window.InsightsPreview = (() => {
       '<p class="panel panel-pad">لا توجد سجلات A/B أُنشئت ضمن هذه الفترة.</p>'
     }`;
   }
+  function storedText(raw) {
+    if (!raw?.trim()) return { format: "empty", items: [], raw: null };
+    try {
+      const parsed = JSON.parse(raw);
+      if (
+        Array.isArray(parsed) &&
+        parsed.every(value => typeof value === "string")
+      )
+        return { format: "list", items: parsed, raw: null };
+    } catch {}
+    return { format: "legacy", items: [], raw };
+  }
+  function reportDetails(row) {
+    return `<details class='in-report-details' data-in-report='${row.id}'><summary>تفاصيل التقرير والتوصيات</summary><div class='in-report-content'></div><details><summary>حالات تفاصيل التقرير لتجربة التصميم</summary><label for='in-report-mode-${row.id}'>حالة تفاصيل التقرير</label><select id='in-report-mode-${row.id}' data-in-report-mode='${row.id}'>${[
+      ["normal", "البيانات"],
+      ["error", "فشل القراءة"],
+      ["missing", "السجل غير متاح"],
+      ["loading", "تحميل"],
+    ]
+      .map(
+        ([value, label]) =>
+          `<option value='${value}' ${(reportModes.get(row.id) || "normal") === value ? "selected" : ""}>${label}</option>`
+      )
+      .join("")}</select></details></details>`;
+  }
+  function reportContent(row) {
+    const section = (label, raw) => {
+      const value = storedText(raw);
+      return `<section><h3>${label}</h3>${value.format === "legacy" ? `<p class='hint'>هذا نص قديم بصيغة مختلفة؛ نعرضه كاملًا للمراجعة.</p><p class='in-text panel panel-pad'>${e(value.raw)}</p>` : value.items.length ? `<ul>${value.items.map(text => `<li class='in-text'>${e(text)}</li>`).join("")}</ul>` : '<p class="hint">لا يوجد نص محفوظ في هذا الحقل.</p>'}</section>`;
+    };
+    return `<p class='hint'>محتوى تقرير محفوظ. لا يحتفظ هذا النوع بإثبات مصادر التوصيات أو طريقة توليدها؛ راجع حقائقها قبل استخدامها. لا تمثل تقييمًا لاحتراف المبيعات.</p><dl class='in-samples'><div><dt>تاريخ إنشاء السجل</dt><dd>${date(row.createdAt)}</dd></div><div><dt>تاريخ علامة إرسال البريد</dt><dd>${row.emailSentAt ? date(row.emailSentAt) : "غير متاح"}</dd></div></dl><p class='hint'>علامة البريد في السجل: ${row.emailMarkedSent ? "معلّم بالإرسال" : "غير معلّم بالإرسال"}. لا تثبت تسليم البريد أو قراءته.</p>${section("الكلمات المحفوظة في التقرير", row.topKeywords)}${section("الشكاوى المحفوظة في التقرير", row.topComplaints)}${section("التوصيات المحفوظة", row.recommendations)}<details><summary>عرض القيم التاريخية غير المقاسة</summary><p class='hint'>هذه قيم حسابية قديمة كما حُفظت، وقد تختلف عن عدادات التقرير. ليست نتيجة استبيان رضا أو شراء موثّق أو قياس احتراف مبيعات. النسبة الرئيسية أعلاه محسوبة من عينة التقرير.</p><dl class='in-history'>${[
+      [
+        "نسبة الإيجابي التاريخية المحفوظة",
+        row.historicalValues.positivePercentage,
+      ],
+      [
+        "نسبة السلبي التاريخية المحفوظة",
+        row.historicalValues.negativePercentage,
+      ],
+      [
+        "مؤشر المشاعر القديم — ليس قياس رضا",
+        row.historicalValues.sentimentIndex,
+      ],
+    ]
+      .map(
+        ([label, value]) =>
+          `<div><dt>${label}</dt><dd>${number(value)}</dd></div>`
+      )
+      .join(
+        ""
+      )}</dl></details>${button("تصدير هذا التقرير كاملًا CSV", "export-report", `data-id='${row.id}'`)}`;
+  }
+  async function loadReport(details) {
+    if (!details?.open) return;
+    const token = {},
+      id = Number(details.dataset.inReport),
+      content = details.querySelector(".in-report-content");
+    reportReads.set(details, token);
+    content.innerHTML = '<p role="status">جارٍ تحميل تفاصيل التقرير…</p>';
+    await Promise.resolve();
+    if (
+      !details.isConnected ||
+      !details.open ||
+      reportReads.get(details) !== token
+    )
+      return;
+    const state = reportModes.get(id) || "normal";
+    if (state === "loading") return;
+    const row = source.reports.find(row => row.id === id);
+    if (state === "error" || state === "missing" || !row) {
+      content.innerHTML = `<div role='alert'><p>${state === "missing" || !row ? "التقرير غير متاح لهذا المتجر أو لم يعد موجودًا." : "تعذّر قراءة تفاصيل التقرير. أعد المحاولة؛ لا نعرض بيانات قديمة أو نصًا فارغًا بدل الفشل."}</p>${button("إعادة المحاولة", "retry-report", `data-id='${id}'`)}</div>`;
+      return;
+    }
+    content.innerHTML = reportContent(row);
+  }
+  function exportReport(id) {
+    if ((reportModes.get(id) || "normal") !== "normal") return;
+    const sourceRow = source.reports.find(row => row.id === id);
+    if (!sourceRow) return;
+    const row = observation(sourceRow),
+      rows = [
+        ["preview", "local design sample"],
+        ["report_id", row.id],
+        ["evidence", "legacy_report_without_generation_evidence"],
+        ["week_start_utc", row.weekStart],
+        ["week_end_utc", row.weekEnd],
+        ["created_utc", row.createdAt],
+        ["total", row.total],
+        ["positive", row.positive],
+        ["negative", row.negative],
+        ["neutral", row.neutral],
+        ["unclassified", row.unclassified],
+        ["valid_sample", String(row.valid)],
+        ["positive_share_percent", row.positiveShare],
+        ["email_record_flag", String(row.emailMarkedSent)],
+        ["email_flag_utc", row.emailSentAt],
+        [
+          "unverified_historical_positive_percentage",
+          row.historicalValues.positivePercentage,
+        ],
+        [
+          "unverified_historical_negative_percentage",
+          row.historicalValues.negativePercentage,
+        ],
+        [
+          "unverified_historical_sentiment_index",
+          row.historicalValues.sentimentIndex,
+        ],
+      ];
+    for (const [name, raw] of [
+      ["top_keywords", row.topKeywords],
+      ["top_complaints", row.topComplaints],
+      ["recommendations", row.recommendations],
+    ]) {
+      const value = storedText(raw);
+      rows.push([name + "_format", value.format]);
+      if (value.format === "legacy") rows.push([name + "_raw", value.raw]);
+      else
+        value.items.forEach((text, index) =>
+          rows.push([name, index + 1, text])
+        );
+    }
+    const url = URL.createObjectURL(
+        new Blob([csv(rows)], { type: "text/csv;charset=utf-8" })
+      ),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = `sary-insight-report-preview-${id}.csv`;
+    a.hidden = true;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.addEventListener(
+    "toggle",
+    event => {
+      if (event.target.matches?.("[data-in-report]"))
+        void loadReport(event.target);
+    },
+    true
+  );
   function render(page) {
     if (route !== page.route) {
       route = page.route;
@@ -477,6 +645,13 @@ window.InsightsPreview = (() => {
     );
   }
   document.addEventListener("change", event => {
+    if (event.target.hasAttribute("data-in-report-mode")) {
+      reportModes.set(
+        Number(event.target.dataset.inReportMode),
+        event.target.value
+      );
+      void loadReport(event.target.closest("[data-in-report]"));
+    }
     if (event.target.id === "in-mode") {
       generation++;
       pending = false;
@@ -489,6 +664,9 @@ window.InsightsPreview = (() => {
     const button = event.target.closest("[data-in-action]");
     if (!button || button.disabled) return;
     const action = button.dataset.inAction;
+    if (action === "export-report") exportReport(Number(button.dataset.id));
+    if (action === "retry-report")
+      void loadReport(button.closest("[data-in-report]"));
     if (action === "review") {
       const id = Number(button.dataset.id);
       const fault = code => Object.assign(new Error(code), { code });
