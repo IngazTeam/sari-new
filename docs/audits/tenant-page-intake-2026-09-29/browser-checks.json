@@ -1,0 +1,59 @@
+{
+  "browser": "Chrome on Windows",
+  "actual": [
+    {
+      "scene": "full review",
+      "width": 320,
+      "documentScrollWidth": 305,
+      "dialogClientWidth": 271,
+      "dialogScrollWidth": 271,
+      "headerAndFooterShrink": 0,
+      "screenshot": "live-review-320.png"
+    },
+    {
+      "scene": "acknowledgement",
+      "width": 320,
+      "saveEnabledAfterCheck": true,
+      "screenshot": "live-consent-320.png"
+    },
+    {
+      "scene": "long source end",
+      "width": 390,
+      "dialogClientWidth": 341,
+      "dialogScrollWidth": 341,
+      "endMarkerPresent": true,
+      "injectedImageElements": 0,
+      "screenshot": "live-consent-390.png"
+    },
+    {
+      "scene": "receipt restored after reload",
+      "width": 390,
+      "pageId": 386,
+      "sectionId": 2043,
+      "screenshot": "live-receipt-390.png"
+    },
+    {
+      "scene": "saved receipt desktop",
+      "width": 1440,
+      "documentScrollWidth": 1425,
+      "screenshot": "live-receipt-desktop.png"
+    }
+  ],
+  "mock": [
+    {
+      "scene": "review and consent",
+      "width": 320,
+      "documentScrollWidth": 305,
+      "dialogClientWidth": 271,
+      "dialogScrollWidth": 271,
+      "screenshot": "mock-review-320.png",
+      "saveResult": "one paused page and section"
+    }
+  ],
+  "limitations": [
+    "No actual Safari or iPhone hardware",
+    "Browser path restores a server-seeded synthetic snapshot; downloader tested separately with mocked transport",
+    "Provider indexing was blocked locally and shown as unconfirmed",
+    "No production data or settings changed"
+  ]
+}

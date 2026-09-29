@@ -399,6 +399,22 @@ export const knowledgeSectionCreations = mysqlTable('knowledge_section_creations
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
 }, table => [uniqueIndex('uq_section_creation_request').on(table.merchantId, table.requestId)]);
 
+// Page/section IDs intentionally have no FK: receipts survive deletion and never recreate records.
+export const knowledgePagePreviews = mysqlTable('knowledge_page_previews', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  previewId: varchar('preview_id', { length: 36 }).notNull(),
+  url: varchar({ length: 1000 }).notNull(),
+  title: varchar({ length: 500 }).notNull(),
+  content: text(),
+  analysis: json().$type<import('../shared/knowledge-page-intake').PageClassification>(),
+  contentHash: varchar('content_hash', { length: 64 }).notNull(),
+  pageId: int('page_id'),
+  sectionId: int('section_id'),
+  expiresAt: datetime('expires_at', { mode: 'string', fsp: 3 }).notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_page_preview').on(table.merchantId, table.previewId), index('idx_page_preview_expiry').on(table.merchantId, table.expiresAt)]);
+
 export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   id: int().autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

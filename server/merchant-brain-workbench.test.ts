@@ -262,32 +262,11 @@ it("validates manual sections, escapes markup and prevents bypassing pending rev
  tab('knowledge','sections');sw('open',id);expect(main()).toContain('احسم الاقتراح');expect(node('[data-sw-action="save"]').disabled).toBe(true);
 });
 
-it("rejects invalid website URLs and stores valid links as unread without fetching them", () => {
-  tab("knowledge", "website");
-  click("new-page");
-  input("title", "صفحة اختبار");
-  input("url", "javascript:alert(1)");
-  submit();
-  expect(node("#bw-url").getAttribute("aria-invalid")).toBe("true");
-  input("url", "https://user:password@example.test");
-  submit();
-  expect(node("#bw-url").getAttribute("aria-invalid")).toBe("true");
-  input("url", "https://example.test/review");
-  submit();
-  expect(data().pages[0]).toMatchObject({
-    read: false,
-    active: false,
-    content: "",
-  });
-  node('[data-pw-action="open"][data-id="3"]').click();
-  expect(dialog()).toContain("لا يوجد نص محفوظ");
-  node('[data-pw-action="close"]').click();
-  node('[data-pw-action="open"][data-id="1"]').click();
-  const choice=node('[data-pw-choice]');choice.value='pause';choice.dispatchEvent(new w.Event('change',{bubbles:true}));
-  node('[data-pw-ack]').click();
-  node('[data-pw-action="apply"]').click();
-  expect(data().pages.find((r: any) => r.id === 1).active).toBe(false);
-});
+const pi=(a:string)=>node('[data-pi-action="'+a+'"]').click();
+const piUrl=(url:string)=>{const e=node('[data-pi-url]');e.value=url;e.dispatchEvent(new w.Event('input',{bubbles:true}));node('[data-pi-form]').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));};
+it('previews safe website URLs locally and saves the reviewed page and section paused',()=>{tab('knowledge','website');piUrl('javascript:alert(1)');expect(main()).toContain('أدخل رابط HTTPS');piUrl('https://user:password@example.test');expect(main()).toContain('أدخل رابط HTTPS');piUrl('https://example.test/review');expect(dialog()).toContain('نص مثال ثابت');expect(node('[data-pi-action="save"]').disabled).toBe(true);node('[data-pi-ack]').click();pi('save');expect(data().pages[0]).toMatchObject({read:true,active:false});expect(data().sections[0].content).toBe(data().pages[0].content);expect(data().sections[0].useInBot).toBe(false);expect(data().pageReceipts).toHaveLength(1);expect(dialog()).toContain('تم حفظ الصفحة');});
+it('resets mock preview consent and blocks expired or read-only saves',()=>{tab('knowledge','website');piUrl('https://example.test/review');node('[data-pi-ack]').click();pi('close');pi('open');expect(node('[data-pi-action="save"]').disabled).toBe(true);pi('close');pi('expire');expect(main()).toContain('انتهت المعاينة');});
+it('recovers the same mock save once after an unknown result',()=>{tab('knowledge','website');piUrl('https://example.test/review');node('[data-pi-ack]').click();lab('mode','unknown');pi('save');pi('close');click('reconcile');expect(data().pageReceipts).toHaveLength(1);pi('recover');expect(main()).toContain('تم حفظ الصفحة');expect(data().pages).toHaveLength(3);});
 
 const pw=(a:string,id?:number)=>node(`[data-pw-action="${a}"]${id?`[data-id="${id}"]`:''}`).click();
 const pwChoose=(v:string)=>{const el=node('[data-pw-choice]');el.value=v;el.dispatchEvent(new w.Event('change',{bubbles:true}));};

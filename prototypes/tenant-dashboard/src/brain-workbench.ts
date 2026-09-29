@@ -1,3 +1,4 @@
+import {createPageIntake} from './page-intake';
 import {createPageWorkspace} from './page-workspace';
 import { createSourceInventory } from './source-inventory';
 import {createSectionWorkspace} from './section-workspace';
@@ -95,6 +96,7 @@ window.SaryBrainWorkbench = (() => {
       },
     ],
     sectionReceipts: [],
+    pageReceipts: [],
     faqs: [
       {
         id: 1,
@@ -320,7 +322,7 @@ window.SaryBrainWorkbench = (() => {
             : knowledgeTab === "faq"
               ? faqList.render()
               : knowledgeTab === "website"
-                ? pageWorkspace.render()+`<section class="panel panel-pad">${btn("إضافة رابط", "new-page", dis(), true)}${knowledgeWorkbench.websiteButton()}</section>`
+                ? pageWorkspace.render()+pageIntake.render()+`<section class="panel panel-pad">${knowledgeWorkbench.websiteButton()}</section>`
                 : knowledgeWorkbench.intakeSummary())
     );
   }
@@ -488,13 +490,6 @@ window.SaryBrainWorkbench = (() => {
         selectedId ? "مراجعة السؤال" : "سؤال شائع جديد",
         field("question", "السؤال", { maxlength: 500 }) +
           field("answer", "الإجابة", { type: "textarea", maxlength: 2000 }) + field("category", "التصنيف", {required:false,maxlength:100}) + field("isActive", "إبقاء السؤال متاحًا", {options:{true:"نعم",false:"لا"}}) + field("useInBot", "السماح باستخدامه في ردود العملاء", {options:{false:"غير مفعّل",true:"مفعّل"}}) + check("attest","راجعت الإجابة وأوافق على استخدامها في الردود عند تفعيلها.",attested) + "<p>الحفظ وحده لا يثبت دقة الردود. تفعيل الاستخدام يتطلب مراجعتك.</p>"
-      );
-    if (editorKind === "page")
-      return editor(
-        "إضافة صفحة إلى المصادر",
-        field("title", "عنوان للمراجعة", { maxlength: 200 }) +
-          field("url", "الرابط", { type: "url", maxlength: 2000 }) +
-          "<p>سيُحفظ الرابط بانتظار القراءة؛ لا نطلبه أو نستخرج محتواه في هذه المعاينة.</p>"
       );
     if (editorKind === "intake")
       return editor(
@@ -689,20 +684,6 @@ window.SaryBrainWorkbench = (() => {
       if (!selectedId && data.faqs.length >= 50)
         errors.question = "وصلت إلى الحد الأقصى 50 سؤالًا.";
     }
-    if (editorKind === "page") {
-      required("title", 1, 200);
-      try {
-        const u = new URL(draft.url);
-        if (
-          !["http:", "https:"].includes(u.protocol) ||
-          u.username ||
-          u.password
-        )
-          throw 0;
-      } catch {
-        errors.url = "أدخل رابط HTTP أو HTTPS صالحًا دون بيانات دخول.";
-      }
-    }
     if (editorKind === "intake") {
       required("title", 1, 200);
       required("content", 1, 10000);
@@ -892,15 +873,6 @@ window.SaryBrainWorkbench = (() => {
           approved: true,
         }),
       faq: () => { const values={...v,isActive:String(v.isActive)==="true",useInBot:String(v.useInBot)==="true"}; if(selectedId) Object.assign(data.faqs.find(r=>r.id===Number(selectedId)),values);else data.faqs.unshift({id:nextId(data.faqs),...values}); },
-      page: () =>
-        data.pages.unshift({
-          id: nextId(data.pages),
-          ...v,
-          read: false,
-          active: false,
-          content: "",
-          type: "other",
-        }),
       intake: () =>
         data.sections.unshift({
           id: nextId(data.sections),
@@ -973,7 +945,7 @@ window.SaryBrainWorkbench = (() => {
             "قبل المزود الطلب في سيناريو المثال؛ لا يوجد دليل تسليم أو قراءة",
         }),
     };
-    const category = ["section", "faq", "page", "intake"].includes(kind)
+    const category = ["section", "faq", "intake"].includes(kind)
       ? "knowledge"
       : ["reply", "send"].includes(kind)
         ? "reply"
@@ -986,7 +958,6 @@ window.SaryBrainWorkbench = (() => {
         {
           section: "إضافة قسم معرفة",
           faq: selectedId ? "تعديل سؤال شائع" : "إضافة سؤال شائع",
-          page: "إضافة رابط ينتظر القراءة",
           intake: "حفظ محتوى للمراجعة",
           sector: "تغيير القطاع",
           followup: "تعديل سياسة المتابعة",
@@ -1081,7 +1052,7 @@ window.SaryBrainWorkbench = (() => {
       start("section", { type: "custom", title: "", content: "" });
     if (a === "new-faq") start("faq", { question: "", answer: "",category:"",isActive:"true",useInBot:"false" });
     if (a === "edit-faq") { const row=data.faqs.find(r=>r.id===Number(id));if(row)start("faq",{question:row.question,answer:row.answer,category:row.category||"",isActive:String(row.isActive??true),useInBot:String(row.useInBot??true)},Number(id)); }
-    if (a === "new-page") start("page", { title: "", url: "" });
+
     if (a === "intake") start("intake", { title: "", content: "" });
     if (a === "sector") start("sector", { sector: data.sector });
     if (a === "followup") {
@@ -1300,6 +1271,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
+  const pageIntake = createPageIntake({esc,owner,blocked:()=>!!pending,pages:()=>data.pages,sections:()=>data.sections,receipts:()=>data.pageReceipts,commit,refresh,nextId});
   const pageWorkspace = createPageWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.pages,sections:()=>data.sections,faqs:()=>data.faqs,commit,refresh,remove(id,sections,faqs){data.pages=data.pages.filter(r=>r.id!==id);data.sections=data.sections.filter(r=>!sections.includes(r.id));data.faqs=data.faqs.filter(r=>!faqs.includes(r.id));}});
   const sectionWorkspace = createSectionWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.sections,receipts:()=>data.sectionReceipts,commit,refresh,alert});
   const conflictWorkspace = createConflictReview({esc,owner,blocked:()=>!!pending,rows:()=>data.conflicts,commit,refresh,alert});
@@ -1362,6 +1334,7 @@ window.SaryBrainWorkbench = (() => {
       conflictWorkspace.reset();
       sectionWorkspace.reset();
       pageWorkspace.reset();
+      pageIntake.reset();
       data = initial();
       evaluationWorkbench.reset();
       knowledgeWorkbench.reset();

@@ -1,0 +1,67 @@
+{
+  "date": "2026-09-29",
+  "branch": "main",
+  "pushed": false,
+  "deployed": false,
+  "tests": {
+    "passed": 323,
+    "failed": 0,
+    "files": 14,
+    "suites": {
+      "server/knowledge/section-workspace.mysql.test.ts": 33,
+      "server/knowledge/page-workspace.mysql.test.ts": 25,
+      "server/knowledge-page-ui.test.ts": 14,
+      "server/merchant-brain-workbench.test.ts": 40,
+      "server/knowledge-section-ui.test.ts": 25,
+      "server/knowledge-page-intake-ui.test.ts": 12,
+      "server/knowledge/page-intake.mysql.test.ts": 14,
+      "server/knowledge/page-fetch.test.ts": 10,
+      "server/knowledge-access.test.ts": 105,
+      "server/knowledge/lifecycle.mysql.test.ts": 10,
+      "server/security/download-media.test.ts": 9,
+      "server/knowledge/source-inventory.mysql.test.ts": 10,
+      "server/knowledge-page-intake-access.test.ts": 7,
+      "server/knowledge-page-access.test.ts": 9
+    },
+    "finalChangedFilesRerun": {
+      "passed": 66,
+      "failed": 0,
+      "files": 3,
+      "includedInTotal": true
+    },
+    "finalUrlAndMockRerun": {
+      "passed": 62,
+      "failed": 0,
+      "files": 3,
+      "includedInTotal": true
+    }
+  },
+  "typescript": "passed",
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8694,
+    "dynamicKeysChecked": 344,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "worker": "passed",
+    "budget": {
+      "file": "index-BrF0HRFW.js",
+      "rawBytes": 337291,
+      "gzipBytes": 103361
+    },
+    "qaFixturePageAbsent": true
+  },
+  "migration": {
+    "id": 162,
+    "localAppliedTwice": true,
+    "productionApplied": false
+  },
+  "securityBaselineUnchanged": true,
+  "actualSafariOrIphoneTested": false,
+  "externalProviderCalls": false
+}

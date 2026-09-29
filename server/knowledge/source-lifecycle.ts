@@ -1,8 +1,8 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { discoveredPages, extractedFaqs, knowledgeChangelog, knowledgeSections, merchantKnowledgeDocs, merchants, products, sariActivityLog, websiteAnalyses } from '../../drizzle/schema';
 import { withKnowledgeTransaction, type KnowledgeTransaction } from './transaction';
 import type { SectionSource } from '../db/knowledge';
-import { knowledgeIntakeReceipts, knowledgeIntakeReviews } from '../../drizzle/schema';
+import { knowledgeIntakeReceipts, knowledgeIntakeReviews, knowledgePagePreviews } from '../../drizzle/schema';
 import { TRPCError } from '@trpc/server';
 
 // Called while holding the merchant lock, shared with intake reservation.
@@ -83,6 +83,8 @@ async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source
     }
     const [analyses] = await tx.delete(websiteAnalyses).where(eq(websiteAnalyses.merchantId, merchantId));
     const [pages] = await tx.delete(discoveredPages).where(eq(discoveredPages.merchantId, merchantId));
+    // Cancel unconsumed previews on website removal/reset; keep consumed receipts to prevent replay resurrection.
+    await tx.delete(knowledgePagePreviews).where(and(eq(knowledgePagePreviews.merchantId, merchantId), isNull(knowledgePagePreviews.pageId)));
     deleted = analyses.affectedRows + pages.affectedRows;
     sections = await deleteSections(tx, merchantId, 'website');
     await tx.update(merchants).set({ analysisStatus: 'pending', lastAnalysisDate: null }).where(eq(merchants.id, merchantId));

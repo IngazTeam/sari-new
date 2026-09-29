@@ -1,3 +1,4 @@
+import { KnowledgeWebsiteIntake } from '@/components/KnowledgeWebsiteIntake';
 import { KnowledgeWebsiteWorkspace } from '@/components/KnowledgeWebsiteWorkspace';
 import { KnowledgeSourceInventory } from '@/components/KnowledgeSourceInventory';
 import {KnowledgeSectionWorkspace,KnowledgeSectionReadiness} from '@/components/KnowledgeSectionWorkspace';
@@ -251,35 +252,6 @@ export default function SariBrain() {
   // Website Knowledge Dashboard
   const websiteKnowledgeQuery = trpc.sariBrain.getWebsiteKnowledge.useQuery(undefined, {retry:false});
   const websiteKnowledge = websiteKnowledgeQuery.data;
-  const [customUrl, setCustomUrl] = useState('');
-  const addUrlMutation = trpc.sariBrain.addCustomUrl.useMutation({
-    onSuccess: (data: any) => {
-      toast.success(`تم إضافة "${data.title}" — ${data.wordCount} كلمة`);
-      setCustomUrl('');
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-      utils.sariBrain.pageWorkspace.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-    },
-    onError: (e) => toast.error('فشل إضافة الصفحة: ' + e.message),
-  });
-  const [urlPreview, setUrlPreview] = useState<{
-    url: string;
-    title: string;
-    content: string;
-    rawContent?: string;
-    wordCount: number;
-    analysis?: {
-      sections: Array<{ type: string; title: string; icon: string; points: string[] }>;
-      summary: string;
-      language: string;
-      businessType: string;
-    } | null;
-  } | null>(null);
-  const previewUrlMutation = trpc.sariBrain.previewUrl.useMutation({
-    onSuccess: (data: any) => setUrlPreview(data),
-    onError: (e) => toast.error('فشل سحب الصفحة: ' + e.message),
-  });
 
   return (
     <div className="space-y-6">
@@ -844,130 +816,7 @@ export default function SariBrain() {
       </section>
       <section hidden={brainView !== 'knowledge' || knowledgePane !== 'pages'} className="space-y-6" data-brain-section="knowledge">
       <KnowledgeWebsiteWorkspace />
-      <Card><CardContent className="pt-6">
-            {/* Add Custom URL — Preview first, then confirm */}
-            <div className="p-4 rounded-lg border border-dashed border-primary/30 space-y-3">
-              <p className="text-sm font-medium flex items-center gap-1">
-                <Link className="h-4 w-4" /> إضافة صفحة مخصصة
-              </p>
-              <p className="text-xs text-muted-foreground">أضف رابط صفحة محددة من موقعك — سيتم عرض المحتوى للمراجعة قبل الإضافة</p>
-              <div className="flex gap-2">
-                <Input
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  placeholder="https://example.com/services"
-                  dir="ltr"
-                  className="font-mono text-sm"
-                  onKeyDown={(e) => { if (e.key === 'Enter' && customUrl.trim()) previewUrlMutation.mutate({ url: customUrl }); }}
-                />
-                <Button
-                  size="sm" className="shrink-0"
-                  onClick={() => previewUrlMutation.mutate({ url: customUrl })}
-                  disabled={!customUrl.trim() || previewUrlMutation.isPending}
-                >
-                  <Search className="h-4 w-4 ml-1" />
-                  {previewUrlMutation.isPending ? 'جاري السحب...' : 'معاينة'}
-                </Button>
-              </div>
-            </div>
-
-            {/* ── URL Preview Dialog — GPT-classified content ── */}
-            <Dialog open={!!urlPreview} onOpenChange={(open) => { if (!open) setUrlPreview(null); }}>
-              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    🔍 تحليل المحتوى المسحوب
-                  </DialogTitle>
-                  <DialogDescription>
-                    تم تحليل المحتوى وتصنيفه تلقائياً — راجع الأقسام واعتمدها لإضافتها لذاكرة ساري
-                  </DialogDescription>
-                </DialogHeader>
-                {urlPreview && (
-                  <div className="space-y-4">
-                    {/* URL + Title header */}
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-base truncate">{urlPreview.title}</p>
-                        <a href={urlPreview.url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline inline-flex items-center gap-1" dir="ltr">
-                          {urlPreview.url} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="secondary">{urlPreview.wordCount.toLocaleString()} كلمة</Badge>
-                        {urlPreview.analysis?.businessType && (
-                          <Badge variant="outline" className="text-xs">{urlPreview.analysis.businessType}</Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* GPT Summary */}
-                    {urlPreview.analysis?.summary && (
-                      <div className="p-3 rounded-xl bg-accent border border-primary/20">
-                        <p className="text-sm font-medium text-primary flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 shrink-0" />
-                          {urlPreview.analysis.summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* GPT Classified Sections */}
-                    {urlPreview.analysis?.sections && urlPreview.analysis.sections.length > 0 ? (
-                      <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                        {urlPreview.analysis.sections.map((section: any, idx: number) => (
-                          <div key={idx} className="rounded-xl border bg-card overflow-hidden">
-                            <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/40 border-b">
-                              <span className="text-lg">{section.icon}</span>
-                              <h4 className="text-sm font-bold flex-1">{section.title}</h4>
-                              <Badge variant="secondary" className="text-[10px]">{section.points.length} نقطة</Badge>
-                            </div>
-                            <div className="px-4 py-3">
-                              <ul className="space-y-1.5">
-                                {section.points.map((point: any, i: number) => (
-                                  <li key={i} className="flex items-start gap-2 text-sm">
-                                    <span className="text-primary mt-1 shrink-0">•</span>
-                                    <span className="leading-relaxed">{point}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      /* Fallback: show clean text if GPT analysis unavailable */
-                      <div className="p-4 rounded-lg bg-muted/50 border max-h-[50vh] overflow-y-auto">
-                        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                          // @ts-ignore
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          لم يتم التصنيف التلقائي — المحتوى المنظّف:
-                        </p>
-                        <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed" dir="auto">
-                          {urlPreview.content.substring(0, 5000)}{urlPreview.content.length > 5000 ? '\n\n... (تم اختصار المحتوى)' : ''}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <DialogFooter className="flex-row-reverse gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setUrlPreview(null)}>إلغاء</Button>
-                  <Button
-                    onClick={() => {
-                      if (urlPreview) {
-                        addUrlMutation.mutate({ url: urlPreview.url, title: urlPreview.title });
-                        setUrlPreview(null);
-                      }
-                    }}
-                    disabled={addUrlMutation.isPending}
-                    className="gap-1.5"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {addUrlMutation.isPending ? 'جاري الإضافة...' : 'موافق — أضف للمعرفة'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-      </CardContent></Card>
+      <KnowledgeWebsiteIntake />
 
       </section>
 
