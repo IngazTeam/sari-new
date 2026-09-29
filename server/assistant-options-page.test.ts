@@ -305,6 +305,16 @@ describe("reviewed assistant options UI", () => {
     expect(container.querySelector("textarea")).toBeNull();
     expect(container.textContent).toContain("legacy text");
     expect(container.textContent).toContain(ar.takeoverWorkspaceUx.resumeHelp);
+    expect(
+      Array.from(container.querySelectorAll("code")).map(
+        node => node.textContent
+      )
+    ).toEqual(["#stop", "#start"]);
+    expect(container.textContent).toContain(
+      ar.takeoverWorkspaceUx.commandsHelp
+    );
+    expect(container.textContent).not.toContain("يسعدنا خدمتكم");
+    expect(container.textContent).not.toContain("I'll take over");
     expect(container.textContent).toContain(
       ar.takeoverWorkspaceUx.dashboardTitle
     );

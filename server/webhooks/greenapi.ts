@@ -1,5 +1,6 @@
 import { quotedEscalationMessageId, merchantReplyText } from '../ai/escalation-relay';
 import { transitionConversationOwnership } from '../ai/conversation-handoff';
+import { applyWhatsAppOwnershipCommand, explicitOwnershipCommand, isUnquotedManualText } from '../ai/whatsapp-ownership-command';
 /**
  * Green API Webhook Handler
  * Receives incoming WhatsApp messages and processes them with Sari AI
@@ -534,57 +535,22 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       if (!chatId || isGroupMessage(chatId)) return { success: true, message: 'Ignored' };
       const customerPhone = extractPhoneNumber(chatId);
 
-      // Check for takeover commands (natural phrases + legacy hashtag fallback)
+      // Only explicit, standalone controls can change ownership. Normal prose,
+      // quoted replies and media captions stay in the manual-message workflow.
       const outText = merchantReplyText(payload);
       const botSettings = await getBotSettings(instance.merchantId);
 
-      if (outText && !quotedEscalationMessageId(payload) && !extractQuotedText(payload) && botSettings.takeoverCommandsEnabled) {
-        const cmd = outText.trim();
-        const cmdLower = cmd.toLowerCase();
-
-        // Stop commands: Arabic "سأتولى المحادثة" + English "I'll take over" + legacy "#stop"
-        const isStopCmd = cmd.includes('سأتولى المحادثة') || cmd.includes('ساتولى المحادثة') || cmdLower.includes("i'll take over") || cmdLower.includes("i will take over") || cmdLower === '#stop';
-        // Start commands: Arabic "يسعدنا خدمتكم" + English "Glad to help" + legacy "#start"
-        const isStartCmd = cmd.includes('يسعدنا خدمتكم') || cmdLower.includes('glad to help') || cmdLower === '#start';
-
-        if (isStopCmd) {
-          const convs = await getConversationsByMerchantId(instance.merchantId);
-          const conv = convs.find(c => c.customerPhone === customerPhone);
-          if (conv) {
-            await updateConversation(conv.id, {
-              humanTakeover: 1,
-              humanTakeoverAt: new Date(),
-              humanExpiresAt: null, // no expiry until resume command
-            } as any);
-            console.log(`[Takeover] "سأتولى المحادثة" — permanent takeover on conv ${conv.id}`);
-          }
-          return { success: true, message: 'Human takeover activated (permanent)' };
-        }
-        if (isStartCmd) {
-          const convs = await getConversationsByMerchantId(instance.merchantId);
-          const conv = convs.find(c => c.customerPhone === customerPhone);
-          if (conv) {
-            await transitionConversationOwnership(conv.id, { humanTakeover: 0, humanExpiresAt: null },
-              { merchantId: instance.merchantId, expectedVersion: conv.handoffVersion, reason: 'manual' });
-            console.log(`[Takeover] "يسعدنا خدمتكم" — Sari resumed on conv ${conv.id}`);
-
-          }
-          return { success: true, message: 'Sari resumed with context' };
-        }
+      if (outText && isUnquotedManualText(payload)
+        && botSettings.takeoverCommandsEnabled && explicitOwnershipCommand(outText)) {
+        const result = await applyWhatsAppOwnershipCommand({ merchantId: instance.merchantId, instanceRecordId: instance.id,
+          customerPhone, messageId: payload.idMessage, text: outText });
+        return { success: true, message: result.duplicate ? 'Ownership command already observed'
+          : result.changed ? result.action === 'takeover' ? 'Human takeover activated (manual)' : 'Sari resumed with context'
+            : 'Ownership unchanged' };
       }
 
-      // Auto-detect: merchant replied manually → activate takeover
-      // ── VULN-2 FIX: Skip system-generated messages (cron reminders, API messages) ──
-      const isAPIMessage = payload.typeWebhook === 'outgoingAPIMessageReceived'
-        || payload.typeWebhook === 'outgoingAPIMessageWebhook';
-      if (outText && (
-        outText.startsWith('⚠️ *تنبيه من ساري:*') || // legacy system reminder
-        outText.startsWith('⚠️ *تنبيه:*') || // new format system reminder
-        isAPIMessage  // Message sent via API (bot's own responses)
-      )) {
-        console.log('[Takeover] Skipping system/API message — not a manual merchant reply');
-        return { success: true, message: 'System message ignored' };
-      }
+      // API callbacks were excluded by their transport event above. A familiar
+      // prefix in manually typed text is not proof that the system authored it.
 
       // Quoted alerts must be bound to a persisted delivery; text is not customer identity.
       const quotedAlertId = quotedEscalationMessageId(payload);

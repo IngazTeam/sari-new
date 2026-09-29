@@ -9,7 +9,7 @@ import { transitionConversationOwnership } from '../ai/conversation-handoff';
  * A) TIMED TAKEOVER (humanExpiresAt is set — from manual merchant reply)
  *    - When humanExpiresAt < NOW(): release ownership and notify the merchant.
  * 
- * B) PERMANENT TAKEOVER (humanExpiresAt is NULL — from "سأتولى المحادثة")
+ * B) MANUAL TAKEOVER (humanExpiresAt is NULL — from explicit #stop)
  *    - After 1 hour: Send reminder to merchant about waiting customers
  *    - After 24 hours: expire only if permanentSilence is not set.
  * 
@@ -255,7 +255,7 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
       await notifyNewMessage(
         conv.merchantId,
         'ساري ⚠️',
-        `${pendingCount} ${pendingCount > 1 ? 'عملاء' : 'عميل'} بانتظار ردك منذ ${ageHours} ساعة — أرسل "يسعدنا خدمتكم" لاستئناف ساري`,
+        `${pendingCount} ${pendingCount > 1 ? 'عملاء' : 'عميل'} بانتظار ردك منذ ${ageHours} ساعة — راجع المحادثة واستأنف ساري من لوحة التحكم. عند تمكين أوامر واتساب يمكن إرسال #start وحده داخل محادثة العميل.`,
       );
       console.log(`[TakeoverExpiry] 📢 In-app notification sent to merchant ${conv.merchantId}`);
     } catch { /* non-blocking */ }
@@ -287,10 +287,10 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
 
 ${pendingCount === 1 ? `👤 *${customerName}* ينتظر ردك` : `👤 آخرهم: *${customerName}*`}
 
-📌 لاستئناف ساري، أرسل:
-*يسعدنا خدمتكم*
+📌 راجع المحادثة واستأنف ساري من لوحة التحكم.
+عند تمكين أوامر واتساب، يمكن إرسال #start وحده داخل محادثة العميل؛ سيراه العميل.
 
-⏰ سيعود ساري تلقائياً بعد 24 ساعة من التدخل البشري.`;
+⏰ التدخل العادي بلا مؤقت قد ينتهي بعد 24 ساعة؛ الإيقاف الدائم الصريح مستثنى. بعد الاستئناف يحتاج ساري إلى رسالة جديدة من العميل.`;
 
     const { sendMessageWithCredentials } = await import('../whatsapp');
     const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';

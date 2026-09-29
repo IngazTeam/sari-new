@@ -211,9 +211,8 @@ function TakeoverWorkspace() {
                 <h2 className="text-sm font-semibold">
                   {t("takeoverWorkspaceUx.pause")}
                 </h2>
-                <p>سأتولى المحادثة</p>
                 <p dir="ltr" className="text-start">
-                  I'll take over
+                  <code>#stop</code>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {listing.data
@@ -227,9 +226,8 @@ function TakeoverWorkspace() {
                 <h2 className="text-sm font-semibold">
                   {t("takeoverWorkspaceUx.resume")}
                 </h2>
-                <p>يسعدنا خدمتكم</p>
                 <p dir="ltr" className="text-start">
-                  Glad to help
+                  <code>#start</code>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {t("takeoverWorkspaceUx.commandVisibility")}
@@ -354,7 +352,7 @@ function TakeoverWorkspace() {
                         </p>
                         <p
                           dir="ltr"
-                            className="text-start text-sm text-muted-foreground [overflow-wrap:anywhere]"
+                          className="text-start text-sm text-muted-foreground [overflow-wrap:anywhere]"
                         >
                           {row.customerPhone}
                         </p>
