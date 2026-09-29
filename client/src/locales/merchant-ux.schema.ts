@@ -78,6 +78,7 @@ export type MerchantUxCopy = {
   knowledgeDocument: import('./knowledge-document').KnowledgeDocumentCopy;
   knowledgeDraft: import('./knowledge-draft').KnowledgeDraftCopy;
   knowledgeConflicts: import('./knowledge-conflicts').KnowledgeConflictsCopy;
+  knowledgeSources: import('./knowledge-sources').KnowledgeSourcesCopy;
   knowledgeSections: import('./knowledge-sections').KnowledgeSectionsCopy;
   knowledgeFaq: import('./knowledge-faq').KnowledgeFaqCopy;
   campaignPerformance: import('./campaign-performance').CampaignPerformanceCopy;

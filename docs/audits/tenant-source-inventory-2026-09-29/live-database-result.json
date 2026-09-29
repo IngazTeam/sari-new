@@ -1,0 +1,24 @@
+{
+  "documents": {
+    "total": 29,
+    "textReady": 25,
+    "empty": 0,
+    "pending": 0,
+    "processing": 0,
+    "failed": 4
+  },
+  "products": {
+    "total": 6,
+    "active": 6
+  },
+  "faqs": {
+    "total": 1,
+    "enabled": 0,
+    "archived": 0
+  },
+  "pages": {
+    "total": 0,
+    "enabled": 0,
+    "withText": 0
+  }
+}

@@ -1,3 +1,5 @@
+import { readKnowledgeSourceInventory } from './knowledge/source-inventory';
+import { retiredSectionMutation } from './knowledge/retired-section-mutation';
 import { sectionListInput, sectionReadInput, sectionCreateInput, sectionUpdateInput, sectionDeleteInput } from '../shared/knowledge-sections';
 import { listSectionWorkspace, readSectionWorkspace, createWorkspaceSection, changeWorkspaceSection, sectionReadiness } from './knowledge/section-workspace';
 import { conflictListInput, conflictReviewInput, conflictDecisionInput } from '../shared/knowledge-conflicts';
@@ -516,6 +518,11 @@ export const sariBrainRouter = router({
       try { return await updateSalesSectorSettings({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
       catch { throw new TRPCError({ code: 'CONFLICT', message: 'تغير إعداد دليل البيع؛ حدّث البيانات وأعد المحاولة.' }); }
     }),
+  getSourceInventory: merchantProcedure.query(async ({ ctx }) => {
+    try { return await readKnowledgeSourceInventory(ctx.merchantId); }
+    catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Source inventory unavailable' }); }
+  }),
+
   // Get all knowledge sources for the merchant
   getSources: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
@@ -550,7 +557,7 @@ export const sariBrainRouter = router({
         type: 'products',
         icon: '🛍️',
         name: `قائمة المنتجات (${productCount} منتج)`,
-        status: 'active',
+        status: 'stored',
         hasContent: true,
         contentLength: productCount,
         date: new Date().toISOString(),
@@ -574,7 +581,7 @@ export const sariBrainRouter = router({
             type: 'website',
             icon: '🌐',
             name: analysis.title || analysis.url || 'تحليل الموقع',
-            status: 'active',
+            status: 'stored',
             hasContent: true,
             contentLength: 1,
             date: analysis.analyzed_at,
@@ -591,13 +598,12 @@ export const sariBrainRouter = router({
     try {
       const faqs = await getExtractedFaqsByMerchantId(merchant.id);
       if (faqs.length > 0) {
-        const activeFaqs = faqs.filter((f: any) => f.isActive);
         sources.push({
           id: `faqs-${merchant.id}`,
           type: 'faqs',
           icon: '❓',
-          name: `أسئلة شائعة (${faqs.length} سؤال — ${activeFaqs.length} نشط)`,
-          status: 'active',
+          name: `أسئلة شائعة (${faqs.length} سجل محفوظ)`,
+          status: 'stored',
           hasContent: true,
           contentLength: faqs.length,
           date: faqs[0]?.extractedAt || new Date().toISOString(),
@@ -612,7 +618,7 @@ export const sariBrainRouter = router({
       type: 'settings',
       icon: '⚙️',
       name: `إعدادات المتجر (${merchant.businessName})`,
-      status: 'active',
+      status: 'stored',
       hasContent: true,
       contentLength: 1,
       date: merchant.createdAt,
@@ -1888,141 +1894,10 @@ ${fencedContent}`,
       }
     }),
 
-  /** Create a manual knowledge section */
-  createSection: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      sectionType: z.enum(['identity', 'services', 'policies', 'faq', 'contact', 'team', 'achievements', 'custom']),
-      title: z.string().min(1).max(500),
-      content: z.string().min(1).max(50000),
-      parentId: z.number().int().positive().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const knowledgeDb = await import('./db/knowledge');
-      if (input.parentId !== undefined && !await knowledgeDb.getSectionById(input.parentId, merchant.id)) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم الأب غير موجود' });
-      }
-      const sectionId = await knowledgeDb.createSection({
-        merchantId: merchant.id,
-        sectionType: input.sectionType,
-        title: input.title,
-        content: input.content,
-        parentId: input.parentId,
-        source: 'manual',
-        merchantEdited: true,
-        status: 'approved',
-      });
-
-      await knowledgeDb.logChange({
-        merchantId: merchant.id,
-        sectionId,
-        action: 'manual_edit',
-        reason: `إضافة يدوية: ${input.title}`,
-        newContent: input.content,
-        source: 'manual',
-      });
-
-      // Generate embedding for the new section
-      try {
-        const ragEngine = await import('./ai/rag-engine');
-        const section = await knowledgeDb.getSectionById(sectionId, merchant.id);
-        if (section) await ragEngine.embedSection(section, merchant.id);
-      } catch { /* non-blocking */ }
-
-      // GAP-3 FIX: Invalidate cache so the bot immediately sees the new section
-      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      await logBrainActivity(merchant.id, 'section_created', `إضافة قسم: ${input.title}`);
-      return { success: true, sectionId };
-    }),
-
-  /** Update a knowledge section */
-  updateSection: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      sectionId: z.number(),
-      title: z.string().min(1).max(500).optional(),
-      content: z.string().min(1).max(50000).optional(),
-      useInBot: z.boolean().optional(),
-      status: z.enum(['auto_approved', 'approved', 'pending_review']).optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const knowledgeDb = await import('./db/knowledge');
-      
-      // Verify ownership
-      const existing = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
-      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
-
-      const oldContent = existing.content || (existing as any).content;
-
-      await knowledgeDb.updateSection(input.sectionId, merchant.id, {
-        ...(input.title && { title: input.title }),
-        ...(input.content && { content: input.content }),
-        ...(input.useInBot !== undefined && { useInBot: input.useInBot }),
-        ...(input.status && { status: input.status }),
-        merchantEdited: true,
-      });
-
-      if (input.content) {
-        await knowledgeDb.logChange({
-          merchantId: merchant.id,
-          sectionId: input.sectionId,
-          action: 'manual_edit',
-          reason: `تعديل يدوي: ${input.title || existing.title || (existing as any).title}`,
-          oldContent,
-          newContent: input.content,
-          source: 'manual',
-        });
-
-        // Re-embed after content change
-        try {
-          const ragEngine = await import('./ai/rag-engine');
-          const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
-          if (updated) await ragEngine.embedSection(updated, merchant.id);
-        } catch { /* non-blocking */ }
-      }
-
-      // GAP-3 FIX: Always invalidate cache on ANY section update (content, useInBot, status, title)
-      // Previously only invalidated on content change — useInBot/status changes were invisible to bot
-      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      await logBrainActivity(merchant.id, 'section_updated', `تعديل قسم: ${input.title || existing.title || (existing as any).title}`);
-      return { success: true };
-    }),
-
-  /** Delete a knowledge section */
-  deleteSection: permissionProcedure('bot_settings.manage')
-    .input(z.object({ sectionId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      checkDestructiveRateLimit(merchant.id);
-
-      const knowledgeDb = await import('./db/knowledge');
-      const existing = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
-      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
-
-      await knowledgeDb.logChange({
-        merchantId: merchant.id,
-        sectionId: input.sectionId,
-        action: 'delete',
-        reason: `حذف: ${existing.title || (existing as any).title}`,
-        oldContent: existing.content || (existing as any).content,
-      });
-
-      await knowledgeDb.deleteSection(input.sectionId, merchant.id);
-
-      // ARCH-03 FIX: Purge stale cache after knowledge deletion
-      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
-
-      await logBrainActivity(merchant.id, 'section_deleted', `حذف قسم: ${existing.title || (existing as any).title}`);
-      return { success: true };
-    }),
+  // Retained only to tell old clients to reload the reviewed workspace.
+  createSection: permissionProcedure('bot_settings.manage').input(z.unknown().optional()).mutation(retiredSectionMutation),
+  updateSection: permissionProcedure('bot_settings.manage').input(z.unknown().optional()).mutation(retiredSectionMutation),
+  deleteSection: permissionProcedure('bot_settings.manage').input(z.unknown().optional()).mutation(retiredSectionMutation),
 
   conflictWorkspace: merchantProcedure.input(conflictListInput).query(async ({ctx,input}) => {
     try { return {...await listConflictWorkspace(ctx.merchantId,input.page),canManage:hasPermission(ctx.merchantRole,'bot_settings.manage')}; }

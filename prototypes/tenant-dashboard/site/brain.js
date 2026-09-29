@@ -78,7 +78,7 @@ window.SaryBrainPreview = (() => {
   function results() {
     const first = remaining()[0];
     const approved = data.files.filter(f => f.status === 'ready' && f.active);
-    return `<div class="brain-results"><div class="brain-overview"><section class="brain-hero panel">
+    return `${window.SaryBrainWorkbench.renderSourceInventory()}<div class="brain-results"><div class="brain-overview"><section class="brain-hero panel">
       <span class="eyebrow">من المعلومة إلى إجابة يمكن الوثوق بها</span><h2>${first ? 'المعرفة موجودة. هذه خطوتك لتحسينها.' : 'عالجت فجوات المعاينة. راجع النتائج.'}</h2>
       <p>${first ? 'ابدأ بالفجوات التي تؤثر في قرار الشراء، ثم جرّب الإجابة قبل استخدامها مع العملاء.' : 'التحقق من أمثلة محددة بداية جيدة؛ راقب الأسئلة الجديدة ونتائج المحادثات.'}</p>
       ${first ? `<div class="brain-next"><div>${badge(first.severity === 'high' ? 'أولوية عالية' : 'للمتابعة', 'amber')}<h3>${escape(first.title)}</h3><p>${escape(first.impact)}</p></div>${button(first.state === 'retest' ? 'اختبر الإجابة' : 'عالج الفجوة', 'gap', first.id, true)}</div>` : button('راجع الاختبارات', 'navigate', 'gaps', true)}

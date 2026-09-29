@@ -1,3 +1,4 @@
+import { createSourceInventory } from './source-inventory';
 import {createSectionWorkspace} from './section-workspace';
 // @ts-nocheck
 // Design preview only. No network, provider, message dispatch or experiment assignment.
@@ -1368,10 +1369,17 @@ window.SaryBrainWorkbench = (() => {
       data.run = null;
     },
   });
+  const sourceInventory = createSourceInventory({esc,refresh,open(kind) {
+    if (kind === 'products') { window.location.hash = '#/page/merchant/products'; return; }
+    knowledgeTab = kind === 'faqs' ? 'faq' : kind === 'pages' ? 'website' : 'sources';
+    document.querySelector<HTMLButtonElement>('[data-brain-action="navigate"][data-id="knowledge"]')?.click();
+  }});
   return {
+    renderSourceInventory: () => sourceInventory.render(),
     render,
     learningStatus: () => knowledgeWorkbench.status(),
     reset() {
+      sourceInventory.reset();
       faqList.reset();
       conflictWorkspace.reset();
       sectionWorkspace.reset();

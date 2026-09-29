@@ -1,0 +1,18 @@
+{
+  "baselineCommit": "5d2878dd",
+  "baselinePassed": 218,
+  "baselineFailed": 8,
+  "currentTotalPassed": 499,
+  "currentTotalFailed": 8,
+  "newFailures": [],
+  "unchangedFailures": [
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-12: Loss Detector & updateDealStage hardening > all 3 loss-detector UPDATEs must include AND merchantId = ?",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-12: Loss Detector & updateDealStage hardening > all 3 loss-detector UPDATEs must pass row.merchantId",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-12: Loss Detector & updateDealStage hardening > updateDealStage call site must pass params.merchantId",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-12: Loss Detector & updateDealStage hardening > updateDealStage must accept merchantId parameter",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-17: bot_settings → AI layer bridge > bot_settings.tone must override personality.tone when different",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-30: forceAll=true after every ingestContent > doc upload must use forceAll=true",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-30: forceAll=true after every ingestContent > knowledge docs reprocess must use forceAll=true",
+    " FAIL  server/sales-engine-pentest.test.ts > PEN-46: GAP-5 — tone enum consistency > router tone normalizer must match schema exactly (3 values)"
+  ]
+}

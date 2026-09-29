@@ -1,3 +1,4 @@
+import { KnowledgeSourceInventory } from '@/components/KnowledgeSourceInventory';
 import {KnowledgeSectionWorkspace,KnowledgeSectionReadiness} from '@/components/KnowledgeSectionWorkspace';
 import {KnowledgeConflictWorkspace} from '@/components/KnowledgeConflictWorkspace';
 import { KnowledgeFaqWorkspace } from '@/components/KnowledgeFaqWorkspace';
@@ -378,40 +379,11 @@ export default function SariBrain() {
         <details className="mw-feature-details"><summary>{t('brainWorkspaceUx.permissions')}</summary><div className="space-y-4"><DiscountPolicySettings /><CheckoutMarginPolicySettings /></div></details>
       </section>
       <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
-{/* Summary counters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مصادر المعرفة</CardTitle>
-            <Brain className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{totalSources}</div>
-            <p className="text-xs text-muted-foreground mt-1">مصدر نشط يغذي ساري</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الملفات المرفقة</CardTitle>
-            <FileText className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{sourcesQuery.isError || isLoading ? '—' : sources?.find((s: any) => s.type === 'document')?.documentCount || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">ملف تعريفي</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{term('products')}</CardTitle>
-            <Package className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{sourcesQuery.isError || isLoading ? '—' : sources?.find((s: any) => s.type === 'products')?.contentLength || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">{term('item')} في ذاكرة ساري</p>
-          </CardContent>
-        </Card>
-      </div>
-
+{brainView === 'overview' && <KnowledgeSourceInventory onOpen={kind => {
+        if (kind === 'products') setLocation('/merchant/products');
+        else if (kind === 'faqs') { setKnowledgePane('faq'); changeBrainView('knowledge'); }
+        else changeBrainView('sources');
+      }} />}
       </section>
 
       <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
@@ -826,7 +798,7 @@ export default function SariBrain() {
                       <div className="font-medium flex flex-wrap items-center gap-2 break-words [overflow-wrap:anywhere]">
                         {source.type === 'document' ? t('merchantUx.knowledgeLibrary.group') : source.name}
                         <Badge variant={source.status === 'active' || source.status === 'completed' ? 'default' : source.status === 'failed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {source.type === 'document' ? t('merchantUx.knowledgeLibrary.stored') : source.status === 'active' || source.status === 'completed' ? 'نشط' : source.status === 'failed' ? 'فشل' : source.status === 'pending' ? 'قيد المعالجة' : source.status}
+                          {source.type === 'settings' ? t('merchantUx.knowledgeSources.configured') : t('merchantUx.knowledgeSources.stored')}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">

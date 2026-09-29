@@ -59,11 +59,11 @@ describe('mounted knowledge permissions', () => {
     await expect(caller().knowledgeDocs.delete()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
     expect(mocks.merchant).not.toHaveBeenCalled();
   });
-  it('rejects an unowned parent before creating a knowledge section', async () => {
+  it('retires unreviewed creation before any parent read or write', async () => {
     mocks.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 });
     mocks.section.mockResolvedValue(null);
-    await expect(caller().sariBrain.createSection({ sectionType: 'custom', title: 'Child', content: 'Owned content', parentId: 90 })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect(mocks.section).toHaveBeenCalledWith(90, 20);
+    await expect(caller().sariBrain.createSection({ sectionType: 'custom', title: 'Child', content: 'Owned content', parentId: 90 })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    expect(mocks.section).not.toHaveBeenCalled();
     expect(mocks.createSection).not.toHaveBeenCalled();
   });
 });

@@ -29,6 +29,21 @@ function draftReturn(answer = 'يمكن استرجاع المنتج غير ال�
   set('#brain-answer', answer); set('#brain-source', 'policy', 'change'); submit('gap-draft');
 }
 
+it('separates saved source counts from extraction and reply settings in an independent example', () => {
+  expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(4);
+  expect(text()).toContain('اكتمل السجل بلا نص قابل للقراءة');
+  expect(text()).toContain('مثال مستقل لشرح العدادات');
+});
+it.each(['loading','error'])('hides source inventory values during %s without inventing zeros', state => {
+  set('[data-si-state]',state,'change');expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(0);
+  node('[data-si-action="retry"]').click();expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(4);
+});
+it('shows genuine empty-state examples and navigates to FAQ review', () => {
+  set('[data-si-state]','empty','change');
+  expect([...w.document.querySelectorAll('[data-source-inventory] strong')].map((e:any)=>e.textContent)).toEqual(['0','0','0','0']);
+  node('[data-si-action="faqs"]').click();expect(text()).toContain('هل يتوفر طحن للتقطير؟');expect(w.document.querySelector('[data-bw-action="new-faq"]')).toBeTruthy();
+});
+
 it('separates results, source files, actionable gaps and a sourced sales rubric', () => {
   expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
   expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(8);

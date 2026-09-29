@@ -211,7 +211,7 @@ describe('CG-05: Knowledge pipeline cache invalidation coverage', () => {
       const idx = content.indexOf(m.searchStart);
       expect(idx).toBeGreaterThan(-1);
       const block = content.substring(idx, idx + m.window);
-      expect(block).toContain('invalidateCache');
+      expect(block).toContain(['createSection', 'updateSection', 'deleteSection'].includes(m.name) ? 'mutation(retiredSectionMutation)' : 'invalidateCache');
     });
   }
 });

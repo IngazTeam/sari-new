@@ -1,3 +1,4 @@
+import {knowledgeSourcesEn} from './knowledge-sources';
 import {knowledgeSectionsEn} from './knowledge-sections';
 import {knowledgeConflictsEn} from './knowledge-conflicts';
 import { knowledgeDraftEn } from './knowledge-draft';
@@ -32,6 +33,7 @@ const merchantUxEn: MerchantUxCopy = {
   knowledgeDocument: knowledgeDocumentEn,
   knowledgeDraft: knowledgeDraftEn,
   knowledgeConflicts: knowledgeConflictsEn,
+  knowledgeSources: knowledgeSourcesEn,
   knowledgeSections: knowledgeSectionsEn,
   knowledgeFaq: knowledgeFaqEn,
   campaignPerformance: campaignPerformanceEn,

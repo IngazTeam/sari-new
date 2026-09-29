@@ -1,0 +1,122 @@
+{
+  "date": "2026-09-29",
+  "scope": "Saved source inventory and retired legacy manual section mutations",
+  "branch": "main",
+  "pushed": false,
+  "deployed": false,
+  "migrationsRequired": false,
+  "tests": {
+    "passed": 499,
+    "failed": 8,
+    "files": 13,
+    "newFailures": 0,
+    "legacyFailures": 8,
+    "suites": [
+      {
+        "file": "server/sales-engine-pentest.test.ts",
+        "passed": 176,
+        "failed": 8
+      },
+      {
+        "file": "server/merchant-brain-knowledge-prototype.test.ts",
+        "passed": 32,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-brain-workbench.test.ts",
+        "passed": 31,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-semantic-i18n-pentest.test.ts",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-brain-prototype.test.ts",
+        "passed": 15,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-intake-contract.test.ts",
+        "passed": 28,
+        "failed": 0
+      },
+      {
+        "file": "server/contract-guards.test.ts",
+        "passed": 42,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-source-inventory-ui.test.ts",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-section-access.test.ts",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-access.test.ts",
+        "passed": 101,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-source-inventory-access.test.ts",
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge/source-inventory.mysql.test.ts",
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge/section-workspace.mysql.test.ts",
+        "passed": 26,
+        "failed": 0
+      }
+    ],
+    "runner": "scripts/testing/run-isolated.mjs",
+    "database": "loopback sari_pages_test",
+    "externalNetwork": "blocked"
+  },
+  "typescript": "passed",
+  "translations": {
+    "callsChecked": 8591,
+    "dynamicKeysChecked": 346,
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "mainBundleBudget": "passed",
+    "bytes": 337096,
+    "gzipBytes": 103313,
+    "warning": "Existing Vite chunks larger than 600 kB"
+  },
+  "browser": {
+    "engine": "Chrome",
+    "widths": [
+      320,
+      390,
+      1440
+    ],
+    "horizontalOverflowInRecordedStates": false,
+    "viewportOverridesReset": true,
+    "actualRecordMutations": 0,
+    "safariVerified": false,
+    "physicalIphoneVerified": false
+  },
+  "completeTenantAudit": false,
+  "fullPenetrationTest": false,
+  "routeCoverageUnchanged": {
+    "total": 126,
+    "generic": 101,
+    "redirect": 8,
+    "detailed": 10,
+    "partial": 7
+  }
+}

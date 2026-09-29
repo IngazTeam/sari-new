@@ -1,0 +1,41 @@
+[
+  {
+    "stage": "actual desktop",
+    "width": 1440,
+    "client": 1425,
+    "scroll": 1425
+  },
+  {
+    "stage": "actual inventory mobile",
+    "width": 320,
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "actual FAQ navigation",
+    "width": 320,
+    "visibleText": "كيف تتم مراجعة سؤال تجريبي في متجر نواة؟",
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "actual inventory mobile",
+    "width": 390,
+    "client": 375,
+    "scroll": 375
+  },
+  {
+    "stage": "prototype read failure",
+    "width": 320,
+    "visibleCards": 0,
+    "client": 305,
+    "scroll": 305
+  },
+  {
+    "stage": "prototype recovered counts",
+    "width": 320,
+    "visibleCards": 4,
+    "client": 305,
+    "scroll": 305
+  }
+]
