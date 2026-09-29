@@ -9,6 +9,8 @@ import { withKnowledgeTransaction } from './transaction';
 import { IntakeExecutionExpired, type IntakeExecution } from './intake-execution';
 import { applyKnowledgePlan, readPlanBasis } from './intake-plan';
 import { knowledgePlanSchema } from '../../shared/knowledge-plan';
+import { knowledgeDocumentResultSchema } from '../../shared/knowledge-document';
+import { verifyKnowledgeDocumentSource } from './document-source';
 
 export const receiptColumns = { ...getTableColumns(receipts), leaseExpired: sql<boolean>`(${receipts.leaseExpiresAt} <= UTC_TIMESTAMP() OR ${receipts.createdAt} <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE))`.mapWith(Boolean) };
 type Row = typeof receipts.$inferSelect & { leaseExpired: boolean | null };
@@ -17,7 +19,8 @@ export function receiptView(row: Row): KnowledgeReceipt {
     state: row.documentId === null ? 'removed' : row.state,
     outcome: row.documentId === null || row.outcome === null ? null : knowledgeOutcomeSchema.parse(row.outcome), updatedAt: row.updatedAt,
     recovery: row.documentId === null || row.state !== 'processing' ? null : !row.executionToken || !row.leaseExpiresAt ? 'legacy' : row.leaseExpired ? 'available' : 'waiting', recoveredAt: row.recoveredAt,
-    review: row.documentId === null || !row.reviewSnapshot ? null : knowledgeSavedReviewSchema.parse(row.reviewSnapshot) };
+    review: row.documentId === null || !row.reviewSnapshot ? null : knowledgeSavedReviewSchema.parse(row.reviewSnapshot),
+    ...(row.documentId !== null && row.documentResult ? { document: knowledgeDocumentResultSchema.parse(row.documentResult) } : {}) };
 }
 async function database() { const db = await getDb(); if (!db) throw Error('Knowledge receipt database unavailable'); return db; }
 export async function getIntakeReceipt(merchantId: number, requestId: string): Promise<KnowledgeReceipt | null> {
@@ -44,10 +47,11 @@ export async function reserveIntake(merchantId: number, raw: unknown, beforeCrea
     if (!review || review.expired || review.inputHash !== hash || !review.plan || !review.basisHash) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Review the current content again before adding it' });
     if ((await readPlanBasis(tx, merchantId)).hash !== review.basisHash) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Knowledge changed after review' });
     const plan = knowledgePlanSchema.parse(review.plan);
-    const reviewSnapshot = knowledgeSavedReviewSchema.parse({ id: review.reviewId, analyzedAt: review.createdAt, acceptedAt: review.acceptedAt, analysis: review.analysis, plan });
+    const sourceDocument = input.sourceDocument ? await verifyKnowledgeDocumentSource(tx, merchantId, input.sourceDocument) : undefined;
+    const reviewSnapshot = knowledgeSavedReviewSchema.parse({ id: review.reviewId, analyzedAt: review.createdAt, acceptedAt: review.acceptedAt, analysis: review.analysis, plan, sourceDocument });
     beforeCreate();
     const execution: IntakeExecution = { merchantId, requestId: input.requestId, token: randomUUID() };
-    const [inserted] = await tx.insert(receipts).values({ merchantId, requestId: input.requestId, inputHash: hash, reviewId: input.reviewId, reviewSnapshot, contentType: input.contentType, state: 'processing', executionToken: execution.token, leaseExpiresAt: sql`DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 SECOND)` });
+    const [inserted] = await tx.insert(receipts).values({ merchantId, requestId: input.requestId, inputHash: hash, reviewId: input.reviewId, reviewSnapshot, sourceDocumentId: sourceDocument?.id, contentType: input.contentType, state: 'processing', executionToken: execution.token, leaseExpiresAt: sql`DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 SECOND)` });
     // Consume once, atomically with reservation. A different request cannot reuse this review.
     await tx.delete(reviews).where(and(eq(reviews.merchantId, merchantId), eq(reviews.reviewId, input.reviewId)));
     const text = prepareKnowledgeText(input.content);
@@ -72,6 +76,14 @@ export async function finishIntake(merchantId: number, requestId: string, state:
     if (row.state !== 'processing') return receiptView(row);
     if (row.executionToken !== execution.token || (state !== 'uncertain' && row.leaseExpired)) throw new IntakeExecutionExpired();
     await tx.update(receipts).set({ state, outcome: validated, leaseExpiresAt: null }).where(eq(receipts.id, row.id));
+    if (row.documentResult) {
+      const document = knowledgeDocumentResultSchema.parse(row.documentResult);
+      const extracted = state === 'empty' && document.extraction === 'extracted';
+      await tx.insert(sariActivityLog).values({ merchantId,
+        actionType: extracted ? 'file_uploaded' : state === 'uncertain' ? 'knowledge_document_uncertain' : 'knowledge_document_failed',
+        description: extracted ? `حُفظ نص ملف "${document.fileName}" للفحص دون تفعيل معرفة` : state === 'uncertain' ? 'لم تتأكد نتيجة استخراج المستند؛ راجع سجل الطلب' : `تعذر استخراج نص ملف "${document.fileName}"`,
+        details: JSON.stringify({ requestId, documentId: row.documentId, sourceDocumentId: row.sourceDocumentId, extraction: document.extraction, issue: document.issue, characters: document.characters, originalStored: document.originalStored }) });
+    }
     const [saved] = await tx.select(receiptColumns).from(receipts).where(eq(receipts.id, row.id));
     return receiptView(saved);
   });

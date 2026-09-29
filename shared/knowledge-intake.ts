@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import { KNOWLEDGE_PREVIEW_LIMIT } from './knowledge-preview';
 import { knowledgePlanSchema } from './knowledge-plan';
+import { knowledgeDocumentSource, type KnowledgeDocumentResult } from './knowledge-document';
 
 export const knowledgeIntakeInput = z.object({
   content: z.string().min(10).max(KNOWLEDGE_PREVIEW_LIMIT).refine(value => value.trim().length >= 10),
   contentType: z.enum(['document', 'products', 'custom']),
   fileName: z.string().trim().max(255).optional(),
+  sourceDocument: knowledgeDocumentSource.optional(),
 });
 const explanation = z.string().trim().min(1).max(5000);
 export const knowledgeAnalysisSchema = z.object({
@@ -21,7 +23,7 @@ export const knowledgeAnalysisSchema = z.object({
 });
 export type KnowledgeAnalysis = z.infer<typeof knowledgeAnalysisSchema>;
 export const knowledgeReviewSchema = z.object({ id: z.uuid(), createdAt: z.string().min(1), expiresAt: z.string().min(1), plan: knowledgePlanSchema });
-export const knowledgeSavedReviewSchema = z.object({ id: z.uuid(), analyzedAt: z.string().min(1), acceptedAt: z.string().min(1), analysis: knowledgeAnalysisSchema, plan: knowledgePlanSchema.optional() });
+export const knowledgeSavedReviewSchema = z.object({ id: z.uuid(), analyzedAt: z.string().min(1), acceptedAt: z.string().min(1), analysis: knowledgeAnalysisSchema, plan: knowledgePlanSchema.optional(), sourceDocument: z.object({ id: z.number().int().positive(), fileName: z.string() }).optional() });
 export type KnowledgeReview = z.infer<typeof knowledgeReviewSchema>;
 export type KnowledgeSavedReview = z.infer<typeof knowledgeSavedReviewSchema>;
 export const knowledgeIngestInput = knowledgeIntakeInput.extend({ requestId: z.uuid(), reviewId: z.uuid(), acknowledged: z.literal(true) });
@@ -41,6 +43,7 @@ export type KnowledgeReceipt = {
   recovery: 'available' | 'waiting' | 'legacy' | null;
   recoveredAt: string | null;
   review: KnowledgeSavedReview | null;
+  document?: KnowledgeDocumentResult | null;
 };
 
 // Keep the complete accepted text; filtering is not a substitute for prompt boundaries.

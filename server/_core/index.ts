@@ -2,6 +2,7 @@
 // so esbuild places it at the top of the bundle
 import "./loadEnv";
 import { authorizeKnowledgeUpload, KnowledgeUploadAccessError } from '../knowledge/upload-access';
+import { knowledgeDocumentRequest } from '../../shared/knowledge-document';
 import express from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
@@ -35,10 +36,6 @@ import { startSupervisorRecoveryJob } from "../jobs/supervisor-cron";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { reserveApiRateLimit } from "../api/distributed-rate-limit";
-import {
-  UploadValidationError,
-  assertKnowledgeDocumentSignature,
-} from "../security/upload-validation";
 import { validateEnv } from "./validateEnv";
 import { applySecurityMiddleware, securityLogger } from "./security";
 import { logError } from "./logger";
@@ -285,6 +282,7 @@ async function startServer() {
       if (!user) return res.status(401).json({ error: 'غير مصرح' });
 
       const merchant = await authorizeKnowledgeUpload(user.id, req.headers['x-merchant-id']);
+      if (!knowledgeDocumentRequest.safeParse({ requestId: req.headers['x-knowledge-request-id'] }).success) return res.status(400).json({ error: 'حدّث الصفحة لبدء رفع موثق برقم طلب.' });
 
       const decision = await reserveApiRateLimit({
         namespace: 'merchant_knowledge_upload',
@@ -315,225 +313,19 @@ async function startServer() {
     });
   }, async (req: any, res: any) => {
     try {
-      const merchant = req.uploadMerchant;
-      if (!merchant) return res.status(503).json({ error: 'تعذر التحقق من جاهزية الرفع حاليًا.' });
-
-      const { createKnowledgeDoc, updateKnowledgeDoc, getKnowledgeDocByMerchantId, deleteKnowledgeDocsByMerchantId } = await import('../db');
-
-      if (!req.file) {
-        return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
-      }
-
-      const file = req.file;
-      const { getFileTypeFromMime } = await import('../document-parser');
-      const fileType = getFileTypeFromMime(file.mimetype);
-      if (!fileType) {
-        return res.status(400).json({ error: 'نوع الملف غير مدعوم' });
-      }
-      try {
-        assertKnowledgeDocumentSignature(file.buffer, fileType);
-      } catch (error) {
-        if (!(error instanceof UploadValidationError)) throw error;
-        console.warn(`[KnowledgeDocs] Upload content rejected. merchant=${merchant.id} reason=${error.reason}`);
-        return res.status(400).json({ error: 'الملف غير صالح أو لا يتطابق مع نوعه المعلن.' });
-      }
-
-      console.log(`[KnowledgeDocs] Upload started: merchant=${merchant.id}, size=${file.size}`);
-
-      // SEC-01/SEC-02 FIX: Sanitize filename — strip path separators, control chars, and HTML
-      const sanitizedName = file.originalname
-        .replace(/[/\\<>"'`:;|?*\x00-\x1f]/g, '_')  // Strip path separators & dangerous chars
-        .replace(/\.{2,}/g, '.')                       // Prevent ..
-        .substring(0, 200);                            // Limit length
-
-      // Check for existing doc — UPDATE instead of DELETE to preserve knowledge
-      const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
-
-      // Save to storage — SEC-01 FIX: Use sanitized name in storage key
-      let fileUrl: string | null = null;
-      try {
-        const { storagePut } = await import('../storage');
-        const storageKey = `knowledge-docs/${merchant.id}/${Date.now()}-${sanitizedName}`;
-        const result = await storagePut(storageKey, file.buffer, file.mimetype);
-        fileUrl = result.key;
-      } catch (err) {
-        console.warn('[KnowledgeDocs] Storage upload failed, proceeding without file URL:', err);
-      }
-
-      let docId: number;
-      if (existingDoc) {
-        // UPDATE existing doc metadata (knowledge sections evolve via ingestContent below)
-        docId = existingDoc.id;
-        await updateKnowledgeDoc(docId, {
-          fileName: sanitizedName,
-          fileType,
-          fileUrl,
-          fileSize: file.size,
-          extractionStatus: 'processing',
-        });
-        console.log(`[KnowledgeDocs] Updating existing doc ${docId} for merchant ${merchant.id} (evolve, not replace)`);
-      } else {
-        // Create new DB record — SEC-02 FIX: Store sanitized filename
-        docId = await createKnowledgeDoc({
-          merchantId: merchant.id,
-          fileName: sanitizedName,
-          fileType,
-          fileUrl,
-          fileSize: file.size,
-          extractionStatus: 'processing',
-        });
-      }
-
-      // Extract text
-      try {
-        const { extractTextFromDocument } = await import('../document-parser');
-        const { text, pageCount } = await extractTextFromDocument(file.buffer, fileType);
-
-        // AI-Powered Understanding: Send extracted text to GPT-4 for sales-oriented analysis
-        let finalText = text;
-        try {
-          const { invokeLLM } = await import('./llm');
-          const aiResult = await invokeLLM({
-            merchantId: merchant.id,
-            taskType: 'sari.knowledge.profile-analysis',
-            messages: [
-              {
-                role: 'system',
-                content: `أنت محلل أعمال متخصص. مهمتك تحليل ملف بروفايل تاجر وتحويله لملخص مبيعات ذكي يستخدمه بوت مبيعات واتساب اسمه "ساري".
-
-قواعد التحليل:
-1. حدد نوع النشاط التجاري وتخصصه
-2. استخرج المنتجات والخدمات المقدمة مع أسعارها إن وُجدت
-3. حدد نقاط القوة والتميز (USPs)
-4. حدد الجمهور المستهدف
-5. اكتب عبارات بيعية يستخدمها البوت عند الترويج
-6. حدد الأسئلة الشائعة المتوقعة وأجوبتها
-7. اكتب بالعربية
-
-الشكل:
-=== ملخص النشاط ===
-[وصف مختصر وشامل]
-
-=== المنتجات/الخدمات ===
-[قائمة مفصلة]
-
-=== نقاط القوة ===
-[أبرز مميزات التاجر]
-
-=== عبارات بيعية مقترحة ===
-[جمل يستخدمها البوت]
-
-=== أسئلة شائعة ===
-[سؤال: جواب]`
-              },
-              {
-                role: 'user',
-                content: `حلل ملف البروفايل هذا:\n\n${text.substring(0, 15000)
-                  // SEC-02: Sanitize to prevent prompt injection from malicious docs
-                  .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
-                  .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
-                  .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
-                  .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
-                  .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
-                  .replace(/do\s+not\s+follow/gi, '[filtered]')
-                  .replace(/override\s+(system|all|your)/gi, '[filtered]')}`
-              }
-            ],
-            maxTokens: 3000,
-          });
-
-          const aiSummary = typeof aiResult.choices[0]?.message?.content === 'string'
-            ? aiResult.choices[0].message.content
-            : '';
-
-          if (aiSummary && aiSummary.length > 50) {
-            // Store both raw text AND AI analysis
-            finalText = aiSummary + '\n\n=== النص الأصلي للملف ===\n' + text;
-            console.log(`[KnowledgeDocs] ✅ AI analyzed profile: ${aiSummary.length} chars of sales intelligence`);
-          }
-        } catch (aiErr) {
-          console.warn('[KnowledgeDocs] AI analysis failed, using raw text:', aiErr);
-          // Fall back to raw text if AI fails
-        }
-
-        await updateKnowledgeDoc(docId, {
-          extractedText: finalText,
-          extractionStatus: 'completed',
-        });
-
-        console.log(`[KnowledgeDocs] ✅ Extraction completed: merchant=${merchant.id}, chars=${text.length}, pages=${pageCount || 'N/A'}`);
-
-        // === Knowledge Engine v4: Classify document into structured sections ===
-        // Uses evolveKnowledge() — compares with existing, adds new, evolves changed, flags conflicts
-        let evolveStats: any = null;
-        try {
-          if (finalText.trim().length > 100) {
-            const { ingestContent } = await import('../ai/knowledge-engine');
-            const { embedAllSections } = await import('../ai/rag-engine');
-            const knowledgeDb = await import('../db/knowledge');
-            
-            const { evolveResult, salesIntel } = await ingestContent(
-              merchant.id,
-              finalText,
-              'document',
-              { businessName: merchant.businessName },
-            );
-            
-            evolveStats = { ...evolveResult, salesIntel: { usps: salesIntel.usps.length, tips: salesIntel.sellingTips.length, opportunities: salesIntel.opportunities.length } };
-            
-            await embedAllSections(merchant.id, true);
-            await knowledgeDb.invalidateCache(merchant.id);
-            console.log(`[KnowledgeDocs] ✅ Knowledge Engine evolved: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
-          }
-        } catch (keErr: any) {
-          console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
-        }
-
-        // Log to Sari Brain activity
-        try {
-          const { logBrainActivity } = await import('../routers-sari-brain');
-          await logBrainActivity(merchant.id, 'file_uploaded', `تم رفع ملف "${sanitizedName}" (${fileType})`, { fileName: sanitizedName, fileType, textLength: text.length });
-        } catch (e) { /* skip */ }
-
-        return res.json({
-          success: true,
-          isUpdate: !!existingDoc,
-          evolveStats,
-          doc: {
-            id: docId,
-            fileName: sanitizedName,
-            fileType,
-            fileSize: file.size,
-            extractionStatus: 'completed',
-            textLength: text.length,
-            pageCount,
-            // Smart Intake: return raw text for frontend preview (truncated)
-            extractedTextPreview: text.substring(0, 30000),
-          },
-        });
-      } catch (extractError) {
-        console.error('[KnowledgeDocs] Text extraction failed:', extractError);
-        await updateKnowledgeDoc(docId, { extractionStatus: 'failed' });
-
-        return res.json({
-          success: true,
-          doc: {
-            id: docId,
-            fileName: sanitizedName,
-            fileType,
-            fileSize: file.size,
-            extractionStatus: 'failed',
-          },
-          warning: 'تم رفع الملف لكن فشل استخراج النص. يمكنك إعادة المحاولة.',
-        });
-      }
-    } catch (error: any) {
-      // SEC-03 FIX: Don't expose raw error messages
-      console.error('[KnowledgeDocs] Upload error:', error);
-      return res.status(500).json({ error: 'حدث خطأ أثناء رفع الملف. حاول مرة أخرى.' });
+      if (!req.uploadMerchant) return res.status(503).json({ error: 'تعذر التحقق من جاهزية الرفع.' });
+      if (!req.file) return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
+      const { extractKnowledgeDocument } = await import('../knowledge/document-extraction');
+      const receipt = await extractKnowledgeDocument(req.uploadMerchant.id, req.headers['x-knowledge-request-id'], {
+        file: { buffer: req.file.buffer, fileName: typeof req.body?.fileName === 'string' ? req.body.fileName : req.file.originalname, mimeType: req.file.mimetype },
+      });
+      return res.json({ receipt });
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      const status = code === 'BAD_REQUEST' ? 400 : code === 'CONFLICT' ? 409 : 503;
+      return res.status(status).json({ error: status === 400 ? 'الملف أو رقم الطلب غير صالح.' : status === 409 ? 'توجد عملية معرفة جارية أو رقم طلب مستخدم لمحتوى آخر. راجع السجل.' : 'تعذر تأكيد النتيجة. تحقق من سجل الطلب قبل إعادة الرفع.' });
     }
   });
-
   // tRPC API (rate limited: 100 requests per minute)
   app.use(
     "/api/trpc",

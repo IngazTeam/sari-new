@@ -70,7 +70,7 @@ async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source
       .where(eq(merchantKnowledgeDocs.merchantId, merchantId)).orderBy(desc(merchantKnowledgeDocs.uploadedAt), desc(merchantKnowledgeDocs.id)).for('update');
     if (sourceId !== undefined && sourceId !== `doc-${rows[0]?.id}`) throw new KnowledgeSourceNotFoundError();
     await tx.delete(knowledgeIntakeReviews).where(eq(knowledgeIntakeReviews.merchantId, merchantId));
-    await tx.update(knowledgeIntakeReceipts).set({ reviewSnapshot: null, sectionLinks: null }).where(eq(knowledgeIntakeReceipts.merchantId, merchantId));
+    await tx.update(knowledgeIntakeReceipts).set({ reviewSnapshot: null, sectionLinks: null, documentResult: null }).where(eq(knowledgeIntakeReceipts.merchantId, merchantId));
     // There is one active document source; do not expose an older upload after removing the latest.
     const [result] = await tx.delete(merchantKnowledgeDocs).where(eq(merchantKnowledgeDocs.merchantId, merchantId));
     deleted = result.affectedRows;

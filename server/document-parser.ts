@@ -3,7 +3,10 @@
  * Extracts text from PDF, DOCX, and Excel files for the Knowledge Base feature
  */
 
-const MAX_TEXT_LENGTH = 8000; // Maximum characters to extract
+import { KNOWLEDGE_PREVIEW_LIMIT } from '../shared/knowledge-preview';
+export class DocumentExtractionError extends Error {
+  constructor(public readonly issue: 'empty' | 'too_large' | 'unreadable') { super('Document extraction failed'); }
+}
 
 /**
  * Extract text content from a PDF, DOCX, or Excel buffer
@@ -21,8 +24,9 @@ export async function extractTextFromDocument(
       return await extractFromDocx(buffer);
     }
   } catch (error) {
-    console.error(`[DocumentParser] Failed to extract text from ${fileType}:`, error);
-    throw new Error(`فشل استخراج النص من الملف. تأكد من أن الملف صالح وغير تالف.`);
+    if (error instanceof DocumentExtractionError) throw error;
+    // Parser errors may contain document contents; do not log raw exception details.
+    throw new DocumentExtractionError('unreadable');
   }
 }
 
@@ -34,9 +38,9 @@ async function extractFromPdf(buffer: Buffer): Promise<{ text: string; pageCount
   const { PDFParse } = await import('pdf-parse');
   const parser = new PDFParse({ data: buffer });
   try {
-    const result = await parser.getText();
+    const result = await parser.getText({ pageJoiner: '' });
     return {
-      text: cleanAndTruncateText(result.text),
+      text: normalizeDocumentText(result.text),
       pageCount: result.total || 0,
     };
   } finally {
@@ -52,12 +56,12 @@ async function extractFromDocx(buffer: Buffer): Promise<{ text: string }> {
   const result = await mammoth.extractRawText({ buffer });
 
   return {
-    text: cleanAndTruncateText(result.value),
+    text: normalizeDocumentText(result.value),
   };
 }
 
 /**
- * Extract text from an Excel file (xlsx/xls) using exceljs
+ * Extract text from an Excel file (xlsx) using exceljs
  * Reads all worksheets and formats cell values into structured text
  */
 async function extractFromExcel(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
@@ -74,57 +78,41 @@ async function extractFromExcel(buffer: Buffer): Promise<{ text: string; pageCou
     sheetCount++;
     const sheetName = worksheet.name || `Sheet ${sheetCount}`;
     const rows: string[] = [];
-    let headerRow: string[] = [];
+    rows.push(`[${sheetName}]`);
 
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    worksheet.eachRow({ includeEmpty: false }, (row) => {
       const cells: string[] = [];
-      row.eachCell({ includeEmpty: true }, (cell) => {
-        let value = '';
-        if (cell.value !== null && cell.value !== undefined) {
-          if (typeof cell.value === 'object' && 'text' in cell.value) {
-            // Rich text or hyperlink
-            value = (cell.value as any).text || String(cell.value);
-          } else if (cell.value instanceof Date) {
-            value = cell.value.toLocaleDateString('ar-SA');
-          } else {
-            value = String(cell.value);
-          }
-        }
-        cells.push(value.trim());
+      row.eachCell({ includeEmpty: false }, (cell) => {
+        const value = documentCellText(cell.value).trim();
+        if (value) cells.push(`${cell.address}: ${value}`);
       });
 
       const line = cells.filter(c => c.length > 0).join('\t');
       if (line.trim().length === 0) return;
 
-      if (rowNumber === 1) {
-        headerRow = cells;
-        rows.push(`📋 [${sheetName}]`);
-        rows.push(line);
-      } else {
-        rows.push(line);
-      }
+      rows.push(line);
     });
 
-    if (rows.length > 0) {
+    if (rows.length > 1) {
       sections.push(rows.join('\n'));
     }
   });
 
   if (sections.length === 0) {
-    throw new Error('الملف فارغ أو لا يحتوي على بيانات');
+    throw new DocumentExtractionError('empty');
   }
 
   return {
-    text: cleanAndTruncateText(sections.join('\n\n')),
+    text: normalizeDocumentText(sections.join('\n\n')),
     pageCount: sheetCount,
   };
 }
 
 /**
  * Clean up extracted text: remove excessive whitespace, normalize newlines,
- * and truncate to MAX_TEXT_LENGTH
+ * Never silently discard text: a file too large for a complete review must be split.
  */
-function cleanAndTruncateText(raw: string): string {
+function normalizeDocumentText(raw: string): string {
   let text = raw
     // Remove excessive newlines (more than 2 consecutive)
     .replace(/\n{3,}/g, '\n\n')
@@ -137,20 +125,26 @@ function cleanAndTruncateText(raw: string): string {
     .join('\n')
     .trim();
 
-  // Truncate to max length, preserving word boundaries
-  if (text.length > MAX_TEXT_LENGTH) {
-    text = text.substring(0, MAX_TEXT_LENGTH);
-    // Cut at last complete sentence or paragraph
-    const lastPeriod = text.lastIndexOf('.');
-    const lastNewline = text.lastIndexOf('\n');
-    const cutPoint = Math.max(lastPeriod, lastNewline);
-    if (cutPoint > MAX_TEXT_LENGTH * 0.7) {
-      text = text.substring(0, cutPoint + 1);
-    }
-    text += '\n\n[... تم اختصار المحتوى]';
-  }
-
+  if (text.length > KNOWLEDGE_PREVIEW_LIMIT || Buffer.byteLength(text, 'utf8') > 65_535) throw new DocumentExtractionError('too_large');
+  if (!text) throw new DocumentExtractionError('empty');
   return text;
+}
+
+function documentCellText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toISOString();
+  if (['string', 'number', 'boolean'].includes(typeof value)) return String(value);
+  if (typeof value === 'object') {
+    const cell = value as Record<string, any>;
+    if (Array.isArray(cell.richText)) return cell.richText.map(part => String(part.text || '')).join('');
+    if (typeof cell.text === 'string') return cell.text;
+    // Read cached formula values only. Never invent values or execute formulas/external links.
+    if ('formula' in cell || 'sharedFormula' in cell) {
+      if (cell.result === undefined || cell.result === null) throw new DocumentExtractionError('unreadable');
+      return documentCellText(cell.result);
+    }
+  }
+  throw new DocumentExtractionError('unreadable');
 }
 
 /**

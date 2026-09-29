@@ -74,6 +74,29 @@ const set = (s: string, v: string, event = "input") => {
   e.value = v;
   e.dispatchEvent(new w.Event(event, { bubbles: true }));
 };
+it('models binary extraction separately from approval and retains a retry reference without activating knowledge', () => {
+  sources(); const before = snapshot();
+  set('[data-kd-scenario]', 'unknown', 'change'); node('[data-kd-action="extract"]').click();
+  const reference = node('[data-kd-reference]').textContent;
+  expect(w.document.querySelector('[data-kd-action="review"]')).toBeNull();
+  node('[data-kd-action="retry"]').click(); expect(node('[data-kd-reference]').textContent).toBe(reference);
+  expect(snapshot()).toEqual(before); expect(node('[data-kd-document]').textContent).toContain('لا يفعّل معرفة');
+  node('[data-kd-action="review"]').click(); expect(node('[data-bk-field="content"]').value).toContain('سياسة متجر نواة');
+  expect(node('.bk-workspace').textContent).toContain('لا يستبدل الأصل');
+  const stored = JSON.parse(w.localStorage.getItem('sary-brain-knowledge-v1'));
+  expect(stored).toMatchObject({ receipt: null, state: 'idle', proposals: 0, draft: { sourceDocument: { id: 1 } } });
+  expect(w.localStorage.getItem('sary-brain-workbench-v1')).toBeNull();
+});
+it('separates oversized/empty/unreadable files and prevents re-extraction without a stored original', () => {
+  sources();
+  for (const scenario of ['large', 'empty', 'unreadable']) {
+    set('[data-kd-scenario]', scenario, 'change'); node('[data-kd-action="extract"]').click();
+    expect(node('[data-kd-document] [role="alert"]')).toBeTruthy(); expect(w.document.querySelector('[data-kd-action="review"]')).toBeNull();
+    node('[data-kd-action="new"]').click();
+  }
+  set('[data-kd-scenario]', 'noOriginal', 'change'); node('[data-kd-action="extract"]').click();
+  expect(node('[data-kd-action="reextract"]').disabled).toBe(true); expect(node('[data-kd-action="review"]').disabled).toBe(false);
+});
 it('distinguishes saved, partial, processing, unknown and empty intake outcomes without repeating model work', () => {
   sources(); node('[data-kl-action="read"]').click();
   expect(node('[data-kl-receipt]').textContent).toContain('لم تكتمل الفهرسة');

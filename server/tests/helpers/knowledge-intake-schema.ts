@@ -18,6 +18,8 @@ export async function ensureKnowledgeIntakeTestSchema() {
     if (!plan.length) await connection.query(readFileSync('drizzle/0155_knowledge_intake_plans.sql', 'utf8'));
     const [links] = await connection.query<any[]>("SHOW COLUMNS FROM knowledge_intake_receipts LIKE 'section_links'");
     if (!links.length) await connection.query(readFileSync('drizzle/0156_knowledge_section_links.sql', 'utf8'));
+    const [document] = await connection.query<any[]>("SHOW COLUMNS FROM knowledge_intake_receipts LIKE 'document_result'");
+    if (!document.length) await connection.query(readFileSync('drizzle/0157_knowledge_document_extraction.sql', 'utf8'));
   } finally {
     try { await connection.query("SELECT RELEASE_LOCK(CONCAT(DATABASE(), ':knowledge-receipt-test-schema'))"); } finally { connection.release(); }
   }

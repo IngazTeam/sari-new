@@ -852,6 +852,11 @@ export const sariBrainRouter = router({
       try {
         const { invokeLLM } = await import('./_core/llm');
 
+        if (input.sourceDocument) {
+          const { getDocumentReviewSource } = await import('./knowledge/document-source');
+          const source = await getDocumentReviewSource(merchant.id, input.sourceDocument.id);
+          if (source.sourceDocument.revision !== input.sourceDocument.revision) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Source changed before review' });
+        }
         const basis = await capturePlanBasis(merchant.id);
         const existingContext = planContext(basis);
 

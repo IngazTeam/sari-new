@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Local UX simulation. Reads TXT/CSV locally; never sends content or requests a model.
 import { createKnowledgeLibrary } from './knowledge-library';
+import { createKnowledgeDocument } from './knowledge-document';
 import {
   readKnowledgePreview,
   KNOWLEDGE_PREVIEW_LIMIT,
@@ -112,6 +113,13 @@ export function createBrainKnowledge(host) {
     readToken = 0,
     generation = 0,
     storageFailed = false;
+  const documents = createKnowledgeDocument({ ...host, linked: id => data.receipt?.review?.sourceDocument?.id === id,
+    review(id) {
+      if (locked() || busy) return;
+      data.draft = { name: 'سياسة متجر نواة — أصل توضيحي', content: sample, type: 'document', sourceDocument: { id } };
+      view = 'intake'; analysis = 'none'; fields = {}; issue = ''; clearConsent(); persist(); paint();
+    },
+  });
   const locked = () => !host.owner() || host.blocked();
   const plannedText = (text, mode, archived = false) => `<section data-bk-plan class="bw-summary"><h3>${archived ? "الخطة التي وافقت عليها · مثال" : "التغييرات التي ستُحفظ · مثال"}</h3><p>${archived ? "نسخة وقت الموافقة، وليست حالة المعرفة الحالية." : "الخطة محفوظة للمراجعة. تغيّر أقسام المعرفة يتطلب فحصًا جديدًا قبل الإضافة."}</p>${['empty', 'unchanged'].includes(mode) ? '<p>لا توجد تغييرات على الأقسام في هذا السيناريو.</p>' : `<details open><summary>${mode === 'conflict' ? 'اقتراح متعارض' : 'إضافة معلّقة للمراجعة'} · سياسة المثال</summary><h4>المحتوى الحالي</h4><p>يمكن استرجاع المنتج غير المفتوح خلال 14 يومًا.</p><h4>المحتوى المقترح</h4><p>${esc(text)}</p><p>لن يُفعّل هذا الاقتراح في ردود العملاء. هذه محاكاة محلية.</p></details>`}</section>`;
   const off = value => (value ? "disabled" : "");
@@ -207,7 +215,7 @@ export function createBrainKnowledge(host) {
             : '<p class="bw-warning">لم يُحلّل النص بالذكاء الاصطناعي. الحفظ اليدوي هنا محاكاة محلية منفصلة؛ الإضافة في التطبيق تتطلب تقرير فحص محفوظًا من الخادم.</p>';
     modal(
       "مراجعة محتوى المعرفة",
-      `<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${analysis === "ready" && isSample ? plannedText(data.draft.content, resultMode) : ""}${analysis === "ready" && isSample && !saved ? btn("محاكاة انتهاء صلاحية الفحص", "expire-review") + btn("محاكاة تغيّر المعرفة", "change-basis") + "<p>الفحص في التطبيق صالح لإضافة واحدة خلال 30 دقيقة، ويتغير بعد تعديل النص أو الاسم أو النوع.</p>" : ""}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
+      `${data.draft.sourceDocument ? '<p class="bw-note">تفحص نسخة من ملف محفوظ. التعديل هنا لا يستبدل الأصل، وتبقى نتيجة الموافقة مرتبطة به.</p>' : ""}<ol class="bk-steps"><li>1. أدخل النص</li><li>2. راجع الأثر</li><li>3. احفظ للمراجعة</li></ol>${field("name", "اسم المصدر", false)}${select("type", "نوع المصدر", { document: "مستند", products: "منتجات", custom: "محتوى مخصص" }, data.draft.type, locked() || busy)}<label class="field">اختر ملف TXT أو CSV<input type="file" data-bk-file accept=".txt,.csv,text/plain,text/csv" ${off(locked() || busy)}></label><p>يُقرأ الملف محليًا حتى 30,000 حرف. CSV يعرض نصه الأصلي؛ لا يُستورد كمنتجات تلقائيًا.</p><p class="bw-note">تقرير الفحص والحفظ لا يثبتان دقة الردود أو نسبة احتراف المبيعات. تبقى النتائج أمثلة محلية تحتاج مراجعة.</p>${busy ? '<p role="status">جارٍ قراءة الملف محليًا…</p>' : ""}${field("content", "النص المراد مراجعته", true, KNOWLEDGE_PREVIEW_LIMIT)}<p role="status" data-bk-count>${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف</p><div class="bw-actions">${btn("تحميل نص المثال", "sample", off(locked() || busy))}${btn("فحص المثال المحفوظ", "analyze", off(locked() || busy || !isSample))}</div><details><summary>حالات تجربة الفحص والإضافة</summary>${select("analysis", "نتيجة فحص المثال", { none: "لم يبدأ", loading: "تحميل", failure: "تعذر الفحص", ready: "عرض النتيجة" }, analysis, locked() || busy || !isSample)}${select("result", "نتيجة الإضافة التوضيحية", { success: "حفظ بانتظار المراجعة", partial: "حفظ مع فهرسة غير مكتملة", conflict: "تعارض يحتاج مراجعة", empty: "لم يستخرج أقسامًا", unchanged: "لا تغيير" }, resultMode, locked() || busy)}</details>${report}${analysis === "ready" && isSample ? plannedText(data.draft.content, resultMode) : ""}${analysis === "ready" && isSample && !saved ? btn("محاكاة انتهاء صلاحية الفحص", "expire-review") + btn("محاكاة تغيّر المعرفة", "change-basis") + "<p>الفحص في التطبيق صالح لإضافة واحدة خلال 30 دقيقة، ويتغير بعد تعديل النص أو الاسم أو النوع.</p>" : ""}${saved ? receipt() : ""}${check("راجعت النص ومصدره؛ الحفظ محلي وبانتظار المراجعة ولا يفعّل معرفة في ردود العملاء.")}`,
       btn(
         "حفظ للمراجعة",
         "ingest",
@@ -244,7 +252,7 @@ export function createBrainKnowledge(host) {
                     .join("") ||
                   "<p>لا توجد مصادر محتوى؛ أضف معرفة من مصدر موثوق.</p>"
             }<article class="bw-card"><h3>إعدادات المتجر</h3><p>تبقى محفوظة؛ لا تُحذف من شاشة المصادر.</p></article></div>`
-    }<p>الحذف في الموك أب يزيل أمثلة هذا القسم فقط، ولا يغيّر كتالوج صفحات الموك أب الأخرى أو التيننت.</p></section>${library.render()}`;
+    }<p>الحذف في الموك أب يزيل أمثلة هذا القسم فقط، ولا يغيّر كتالوج صفحات الموك أب الأخرى أو التيننت.</p></section>${documents.render()}${library.render()}`;
   }
   function destructive() {
     const stale = sourceSnapshot !== JSON.stringify(counts());
@@ -500,7 +508,7 @@ export function createBrainKnowledge(host) {
       const input = fingerprint(),
         d = clone(data.draft),
         mode = resultMode,
-        review = d.content === sample && analysis === 'ready' ? { name: d.name, content: d.content, mode } : null;
+        review = d.content === sample && analysis === 'ready' ? { name: d.name, content: d.content, mode, sourceDocument: d.sourceDocument || null } : null;
       clearConsent();
       return write(() => {
         const add = !["empty", "unchanged"].includes(mode);
@@ -553,6 +561,7 @@ export function createBrainKnowledge(host) {
       paint();
     },
     reset() {
+      documents.reset();
       generation++;
       readToken++;
       data = initial();

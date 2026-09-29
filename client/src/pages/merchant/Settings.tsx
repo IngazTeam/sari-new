@@ -1,13 +1,13 @@
 import { trpc } from '@/lib/trpc';
-import { selectedMerchantId } from '@/lib/merchant-selection';
+import { KnowledgeDocumentUpload } from '@/components/KnowledgeDocumentUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image, Globe, MailCheck } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, Trash2, CheckCircle2, Loader2, Image, Globe, MailCheck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -30,78 +30,6 @@ export default function MerchantSettings() {
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
   const [timezone, setTimezone] = useState('Asia/Riyadh');
   const [logoUrl, setLogoUrl] = useState('');
-
-  // Knowledge doc state
-  const { data: knowledgeDoc, refetch: refetchKnowledgeDoc } = trpc.knowledgeDocs.getCurrent.useQuery();
-  const deleteKnowledgeDocMutation = trpc.knowledgeDocs.delete.useMutation({
-    onSuccess: () => {
-      toast.success('تم حذف الملف التعريفي بنجاح');
-      refetchKnowledgeDoc();
-    },
-    onError: (err) => toast.error(err.message || 'فشل حذف الملف'),
-  });
-  const reprocessMutation = trpc.knowledgeDocs.reprocess.useMutation({
-    onSuccess: () => {
-      toast.success('تم إعادة معالجة الملف بنجاح');
-      refetchKnowledgeDoc();
-    },
-    onError: (err) => toast.error(err.message || 'فشل إعادة المعالجة'),
-  });
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = useCallback(async (file: File) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('نوع الملف غير مدعوم. يرجى رفع PDF أو Word أو Excel فقط.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الملف أكبر من 5 ميجابايت.');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const selected = selectedMerchantId();
-      const res = await fetch('/api/knowledge-docs/upload', {
-        method: 'POST',
-        headers: selected ? { 'x-merchant-id': selected } : {},
-        body: formData,
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-      toast.success(data.isUpdate
-        ? `تم تحديث الملف بنجاح! ✅ — المعرفة تطورت ${data.evolveStats ? `(+${data.evolveStats.added} جديد، ↗${data.evolveStats.evolved} تطوير)` : ''}`
-        : 'تم رفع الملف بنجاح! ✅ — اذهب لصفحة "عقل ساري" لمراجعة التأثير', {
-        action: {
-          label: '🧠 مراجعة',
-          onClick: () => window.location.assign('/merchant/sari-brain'),
-        },
-        duration: 8000,
-      });
-      refetchKnowledgeDoc();
-    } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ أثناء رفع الملف');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }, [refetchKnowledgeDoc]);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   // Initialize form data
   useEffect(() => {
@@ -448,116 +376,7 @@ export default function MerchantSettings() {
         </CardContent>
       </Card>
 
-      {/* Knowledge Document Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />{t('settings.auto_0')}</CardTitle>
-          <CardDescription>{t('settings.auto_1')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Current doc display */}
-          {knowledgeDoc && (
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-              <div className="flex items-center gap-3">
-                <FileText className="w-8 h-8 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">{knowledgeDoc.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(knowledgeDoc.fileSize)} • {knowledgeDoc.fileType.toUpperCase()}
-                  </p>
-                </div>
-                {knowledgeDoc.extractionStatus === 'completed' && (
-                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-950 px-2 py-1 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" />{t('settings.auto_2')}</span>
-                )}
-                {knowledgeDoc.extractionStatus === 'failed' && (
-                  <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded-full">
-                    <XCircle className="w-3 h-3" />{t('settings.auto_3')}</span>
-                )}
-                {knowledgeDoc.extractionStatus === 'processing' && (
-                  <span className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950 px-2 py-1 rounded-full">
-                    <Loader2 className="w-3 h-3 animate-spin" />{t('settings.auto_4')}</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {knowledgeDoc.extractionStatus === 'failed' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => reprocessMutation.mutate()}
-                    disabled={reprocessMutation.isPending}
-                  >
-                    <RefreshCw className={`w-4 h-4 ml-1 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />{t('settings.auto_5')}</Button>
-                )}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => { if (confirm('هل تريد حذف الملف التعريفي؟')) deleteKnowledgeDocMutation.mutate(); }}
-                  disabled={deleteKnowledgeDocMutation.isPending}
-                >
-                  <Trash2 className="w-4 h-4 ml-1" />{t('settings.auto_6')}</Button>
-              </div>
-            </div>
-          )}
-
-          {/* Upload area */}
-          <div
-            role="button"
-            tabIndex={isUploading ? -1 : 0}
-            aria-disabled={isUploading}
-            aria-label={t('merchantUx.actions.chooseKnowledgeDocument')}
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-              isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
-            } ${isUploading ? 'pointer-events-none opacity-60' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragOver(false);
-              const file = e.dataTransfer.files[0];
-              if (file) handleFileUpload(file);
-            }}
-            onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(event) => {
-              if (!isUploading && (event.key === 'Enter' || event.key === ' ')) {
-                event.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.docx,.xlsx"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-            />
-            {isUploading ? (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-sm font-medium">{t('settings.auto_7')}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Upload className="w-10 h-10 text-muted-foreground" />
-                <p className="text-sm font-medium">
-                  {knowledgeDoc ? 'اسحب ملفاً جديداً هنا أو اضغط للاستبدال' : 'اسحب الملف هنا أو اضغط لاختيار ملف'}
-                </p>
-                <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX — {t('settings.auto_8')}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              💡 <strong>{t('settings.auto_9')}</strong>{t('settings.auto_10')}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <KnowledgeDocumentUpload />
 
       {/* AI Auto-Reply Settings */}
       <Card>

@@ -9,6 +9,7 @@ const metadata = {
   id: docs.id, fileName: docs.fileName, fileType: docs.fileType, fileSize: docs.fileSize,
   intakeRequestId: docs.intakeRequestId,
   extractionStatus: docs.extractionStatus, uploadedAt: docs.uploadedAt, updatedAt: docs.updatedAt,
+  canReextract: sql<boolean>`(${docs.fileUrl} IS NOT NULL AND ${docs.fileType} IN ('pdf', 'docx', 'xlsx'))`.mapWith(Boolean),
   characterCount: sql<number>`COALESCE(CHAR_LENGTH(${docs.extractedText}), 0)`.mapWith(Number),
 };
 async function database(merchantId: number) {
@@ -28,7 +29,8 @@ export async function listKnowledgeDocuments(merchantId: number, raw: unknown) {
     const [count] = await tx.select({ total: sql<number>`COUNT(*)`.mapWith(Number) }).from(docs).where(where);
     const totalPages = Math.max(1, Math.ceil(count.total / KNOWLEDGE_LIBRARY_PAGE_SIZE));
     const page = Math.min(input.page, totalPages);
-    const items = await tx.select({ ...metadata, intakeState: receipts.state }).from(docs)
+    const items = await tx.select({ ...metadata, intakeState: receipts.state, sourceDocumentId: receipts.sourceDocumentId,
+      documentExtraction: sql<string | null>`JSON_UNQUOTE(JSON_EXTRACT(${receipts.documentResult}, '$.extraction'))` }).from(docs)
       .leftJoin(receipts, and(eq(receipts.merchantId, docs.merchantId), eq(receipts.documentId, docs.id), eq(receipts.requestId, docs.intakeRequestId))).where(where)
       .orderBy(desc(docs.uploadedAt), desc(docs.id)).limit(KNOWLEDGE_LIBRARY_PAGE_SIZE).offset((page - 1) * KNOWLEDGE_LIBRARY_PAGE_SIZE);
     return { items, total: count.total, page, totalPages };
@@ -48,6 +50,22 @@ export async function readKnowledgeDocument(merchantId: number, raw: unknown) {
     if (input.page > totalPages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid document page' });
     const [receipt] = row.intakeRequestId ? await tx.select(receiptColumns).from(receipts).where(and(eq(receipts.merchantId, merchantId), eq(receipts.documentId, row.id), eq(receipts.requestId, row.intakeRequestId))).limit(1) : [];
     return { ...row, page: input.page, totalPages, receipt: receipt ? receiptView(receipt) : null };
+  }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
+}
+
+/** A source may produce several reviews/copies. Never hide results beyond the first page. */
+export async function listKnowledgeDocumentCopies(merchantId: number, raw: unknown) {
+  const input = knowledgeTextInput.pick({ id: true, page: true }).parse(raw), db = await database(merchantId);
+  return db.transaction(async tx => {
+    const [source] = await tx.select({ id: docs.id }).from(docs).where(and(eq(docs.merchantId, merchantId), eq(docs.id, input.id)));
+    if (!source) throw new TRPCError({ code: 'NOT_FOUND', message: 'Source document not found' });
+    const where = and(eq(receipts.merchantId, merchantId), eq(receipts.sourceDocumentId, input.id), eq(docs.merchantId, merchantId));
+    const [count] = await tx.select({ total: sql<number>`COUNT(*)`.mapWith(Number) }).from(receipts).innerJoin(docs, eq(docs.id, receipts.documentId)).where(where);
+    const totalPages = Math.max(1, Math.ceil(count.total / KNOWLEDGE_LIBRARY_PAGE_SIZE)), page = Math.min(input.page, totalPages);
+    const items = await tx.select({ id: docs.id, fileName: docs.fileName, state: receipts.state, isExtraction: sql<boolean>`(${receipts.documentResult} IS NOT NULL)`.mapWith(Boolean) })
+      .from(receipts).innerJoin(docs, eq(docs.id, receipts.documentId)).where(where).orderBy(desc(receipts.id))
+      .limit(KNOWLEDGE_LIBRARY_PAGE_SIZE).offset((page - 1) * KNOWLEDGE_LIBRARY_PAGE_SIZE);
+    return { items, total: count.total, page, totalPages };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 

@@ -46,8 +46,8 @@ describe('knowledge multipart access boundaries', () => {
     expect(auth).toBeLessThan(route.indexOf('reserveApiRateLimit'));
     expect(auth).toBeLessThan(route.indexOf("upload.single('file')"));
     expect(route).not.toContain('getMerchantByUserId');
-    const ui = readFileSync('client/src/pages/merchant/Settings.tsx', 'utf8');
-    expect(ui).toContain("headers: selected ? { 'x-merchant-id': selected } : {}");
+    const ui = readFileSync('client/src/components/KnowledgeDocumentUpload.tsx', 'utf8');
+    expect(ui).toContain("'x-knowledge-request-id': request.current");
     expect(ui).toContain('accept=".pdf,.docx,.xlsx"');
   });
 });

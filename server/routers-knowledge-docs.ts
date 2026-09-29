@@ -10,19 +10,23 @@ import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   getKnowledgeDocByMerchantId,
   getMerchantById,
-  updateKnowledgeDoc,
 } from './db';
 
 import { removeKnowledgeSource } from './knowledge/source-lifecycle';
-import { downloadPublicMedia } from './security/download-media';
-import { assertKnowledgeDocumentSignature } from './security/upload-validation';
+import { extractKnowledgeDocument } from './knowledge/document-extraction';
+import { getDocumentReviewSource } from './knowledge/document-source';
+import { knowledgeDocumentReprocess } from '../shared/knowledge-document';
 import { knowledgeLibraryInput, knowledgeTextInput } from '../shared/knowledge-library';
-import { listKnowledgeDocuments, readKnowledgeDocument } from './knowledge/document-library';
+import { listKnowledgeDocuments, readKnowledgeDocument, listKnowledgeDocumentCopies } from './knowledge/document-library';
 import { hasPermission } from './_core/permissions';
 import { knowledgeSectionLinksInput } from '../shared/knowledge-section-links';
 import { readKnowledgeDocumentSections } from './knowledge/document-sections';
 
 export const knowledgeDocsRouter = router({
+  copies: permissionProcedure('bot_settings.manage').input(knowledgeTextInput.pick({ id: true, page: true })).query(async ({ ctx, input }) => {
+    try { return await listKnowledgeDocumentCopies(ctx.merchantId, input); }
+    catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Linked copies are temporarily unavailable' }); }
+  }),
   sections: permissionProcedure('bot_settings.manage').input(knowledgeSectionLinksInput).query(async ({ ctx, input }) => {
     try { return await readKnowledgeDocumentSections(ctx.merchantId, input); }
     catch (error) {
@@ -68,65 +72,13 @@ export const knowledgeDocsRouter = router({
     return { success: true };
   }),
 
-  // Reprocess (re-extract text from existing doc)
-  reprocess: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    const doc = await getKnowledgeDocByMerchantId(merchant.id);
-    if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد ملف تعريفي مرفوع' });
-
-    if (!doc.fileUrl) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد ملف محفوظ لإعادة المعالجة' });
-    }
-    const fileType = doc.fileType;
-    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'xlsx') {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع الملف غير مدعوم لإعادة المعالجة' });
-    }
-
-    // Re-download and re-extract
-    try {
-      const { storageGet } = await import('./storage');
-      const fileData = await storageGet(doc.fileUrl);
-
-      const { data: buffer } = await downloadPublicMedia(fileData.url, 5 * 1024 * 1024);
-      assertKnowledgeDocumentSignature(buffer, fileType);
-
-      const { extractTextFromDocument } = await import('./document-parser');
-      const { text } = await extractTextFromDocument(buffer, fileType);
-
-      await updateKnowledgeDoc(doc.id, {
-        extractedText: text,
-        extractionStatus: 'completed',
-      });
-
-      // === Knowledge Engine v4: Classify document into structured sections ===
-      try {
-        if (text.trim().length > 100) {
-          const { ingestContent } = await import('./ai/knowledge-engine');
-          const { embedAllSections } = await import('./ai/rag-engine');
-          const knowledgeDb = await import('./db/knowledge');
-          
-          await ingestContent(
-            merchant.id,
-            text,
-            'document',
-            { businessName: merchant.businessName },
-          );
-          
-          await embedAllSections(merchant.id, true);
-          await knowledgeDb.invalidateCache(merchant.id);
-        }
-      } catch {
-        console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking)');
-      }
-
-      return { success: true, textLength: text.length };
-    } catch {
-      console.error('[KnowledgeDocs] Reprocess failed');
-      await updateKnowledgeDoc(doc.id, { extractionStatus: 'failed' });
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إعادة معالجة الملف' });
-    }
+  reviewSource: permissionProcedure('bot_settings.manage').input(knowledgeDocumentReprocess.pick({ id: true })).query(async ({ ctx, input }) => {
+    try { return await getDocumentReviewSource(ctx.merchantId, input.id); }
+    catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Source text is temporarily unavailable' }); }
+  }),
+  reprocess: permissionProcedure('bot_settings.manage').input(knowledgeDocumentReprocess).mutation(async ({ ctx, input }) => {
+    try { return await extractKnowledgeDocument(ctx.merchantId, input.requestId, { sourceDocumentId: input.id }); }
+    catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Check the saved request before extracting again' }); }
   }),
 });
 

@@ -1,5 +1,6 @@
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
 import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
+import { KnowledgeDocumentUpload } from '@/components/KnowledgeDocumentUpload';
 import { parseMerchantDate } from '@/lib/merchant-date';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
@@ -1196,6 +1197,7 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
+      <KnowledgeDocumentUpload />
       <KnowledgeLibrary />
 
       {/* ═══ Website Knowledge Dashboard ═══ */}

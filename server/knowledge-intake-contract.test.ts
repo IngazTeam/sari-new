@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 const store = vi.hoisted(() => ({ reserve: vi.fn(), finish: vi.fn(), read: vi.fn(), recover: vi.fn() }));
 const reviews = vi.hoisted(() => ({ save: vi.fn(), basis: vi.fn() }));
+const origin = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock('./knowledge/document-source', () => ({ getDocumentReviewSource: origin.read }));
 vi.mock('./knowledge/intake-reviews', () => ({ saveKnowledgeReview: reviews.save }));
 vi.mock('./knowledge/intake-plan', async original => ({ ...await original<typeof import('./knowledge/intake-plan')>(), capturePlanBasis: reviews.basis }));
 vi.mock('./knowledge/intake-receipt-store', () => ({ reserveIntake: store.reserve, finishIntake: store.finish, getIntakeReceipt: store.read, recoverIntake: store.recover }));
@@ -35,6 +37,13 @@ it('requires a review reference and explicit consent before reserving or process
     await expect(caller().ingestAnalyzedContent({ requestId: randomUUID(), content, contentType: 'document', ...extra } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   }
   expect(store.reserve).not.toHaveBeenCalled(); expect(api.ingest).not.toHaveBeenCalled();
+});
+it.each(['foreign', 'stale'])('rejects %s document origins before sending content to the model', async kind => {
+  const sourceDocument = { id: 41, revision: 'a'.repeat(64) };
+  if (kind === 'foreign') origin.read.mockRejectedValueOnce(new TRPCError({ code: 'NOT_FOUND' }));
+  else origin.read.mockResolvedValueOnce({ sourceDocument: { id: 41, revision: 'b'.repeat(64) } });
+  await expect(caller().analyzeContent({ content, contentType: 'document', sourceDocument })).rejects.toMatchObject({ code: kind === 'foreign' ? 'NOT_FOUND' : 'PRECONDITION_FAILED' });
+  expect(origin.read).toHaveBeenCalledWith(api.merchantId, 41); expect(api.llm).not.toHaveBeenCalled(); expect(reviews.save).not.toHaveBeenCalled();
 });
 it('does not return a usable report when its durable save fails', async () => {
   reviews.save.mockRejectedValueOnce(Error('private review write failure'));

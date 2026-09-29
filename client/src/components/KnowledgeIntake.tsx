@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { knowledgeAnalysisSchema, knowledgeReviewSchema, type KnowledgeAnalysis, type KnowledgeReview, type KnowledgeReceipt } from '@shared/knowledge-intake';
@@ -12,8 +12,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 
-export function KnowledgeIntake() {
+export type KnowledgeIntakeSource = { content: string; fileName: string; sourceDocument: { id: number; revision: string }; legacy?: boolean };
+export function KnowledgeIntake({ initialSource }: { initialSource?: KnowledgeIntakeSource }) {
   const { t } = useTranslation();
+  const fieldId = useId();
   const labels = {
     title: t('merchantUx.knowledgeIntake.title'),
     description: t('merchantUx.knowledgeIntake.description'),
@@ -61,8 +63,9 @@ export function KnowledgeIntake() {
   };
   const copy = (key: keyof typeof labels) => labels[key];
   const utils = trpc.useUtils();
-  const [content, setContent] = useState('');
-  const [name, setName] = useState('');
+  const [content, setContent] = useState(initialSource?.content || '');
+  const [name, setName] = useState(initialSource?.fileName || '');
+  const [sourceDocument, setSourceDocument] = useState(initialSource?.sourceDocument);
   const [type, setType] = useState<'document' | 'products' | 'custom'>('document');
   const [analysis, setAnalysis] = useState<KnowledgeAnalysis | null>(null);
   const [review, setReview] = useState<KnowledgeReview | null>(null);
@@ -116,19 +119,20 @@ export function KnowledgeIntake() {
   const busy = reading || analyze.isPending || ingest.isPending;
   const locked = busy || !!result || uncertain;
   const invalidate = () => { generation.current++; setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setAnalysisTooLarge(false); setFileError(''); };
-  const reset = () => { invalidate(); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); requestId.current = null; submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
+  const reset = () => { invalidate(); setSourceDocument(undefined); setContent(''); setName(''); setResult(null); setUncertain(false); setErrors({ name: false, content: false }); requestId.current = null; submitting.current = false; setReceiptError(false); setRejected(false); textField.current?.focus(); };
   const runAnalysis = () => {
     if (locked) return;
     const next = { name: name.trim().length > 255, content: content.trim().length < 10 || content.length > KNOWLEDGE_PREVIEW_LIMIT };
     setErrors(next); if (next.name || next.content) { (next.name ? nameField.current : textField.current)?.focus(); return; }
     setAnalysis(null); setReview(null); setReviewExpired(false); setReviewed(false); setAnalysisError(false); setAnalysisTooLarge(false);
-    analyze.mutate({ content, contentType: type, fileName: name.trim() || undefined });
+    analyze.mutate({ content, contentType: type, fileName: name.trim() || undefined, ...(sourceDocument ? { sourceDocument } : {}) });
   };
   return <Card className="min-w-0" data-knowledge-intake><CardHeader><CardTitle>{copy('title')}</CardTitle><CardDescription className="leading-7">{copy('description')}</CardDescription></CardHeader>
     <CardContent className="min-w-0 space-y-5">
+      {sourceDocument && <p className="text-sm leading-7">{t('merchantUx.knowledgeDocument.reviewCopy')}{initialSource?.legacy && <> {t('merchantUx.knowledgeDocument.legacyText')}</>}</p>}
       <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-        <div className="min-w-0 space-y-2"><Label htmlFor="knowledge-name">{copy('name')}</Label><Input id="knowledge-name" ref={nameField} value={name} disabled={locked} onChange={e => { setName(e.target.value); invalidate(); }} aria-invalid={errors.name} aria-describedby={errors.name ? 'knowledge-name-error' : undefined} />{errors.name && <p id="knowledge-name-error" role="alert" className="text-sm text-destructive">{copy('nameError')}</p>}</div>
-        <div className="min-w-0 space-y-2"><Label htmlFor="knowledge-type">{copy('type')}</Label><select id="knowledge-type" className="h-10 w-full rounded-md border bg-background px-3 text-base" value={type} disabled={locked} onChange={e => { setType(e.target.value as typeof type); invalidate(); }}><option value="document">{copy('document')}</option><option value="products">{copy('products')}</option><option value="custom">{copy('custom')}</option></select></div>
+        <div className="min-w-0 space-y-2"><Label htmlFor={`${fieldId}-name`}>{copy('name')}</Label><Input id={`${fieldId}-name`} ref={nameField} value={name} disabled={locked} onChange={e => { setName(e.target.value); invalidate(); }} aria-invalid={errors.name} aria-describedby={errors.name ? `${fieldId}-name-error` : undefined} />{errors.name && <p id={`${fieldId}-name-error`} role="alert" className="text-sm text-destructive">{copy('nameError')}</p>}</div>
+        <div className="min-w-0 space-y-2"><Label htmlFor={`${fieldId}-type`}>{copy('type')}</Label><select id={`${fieldId}-type`} className="h-10 w-full rounded-md border bg-background px-3 text-base" value={type} disabled={locked} onChange={e => { setType(e.target.value as typeof type); invalidate(); }}><option value="document">{copy('document')}</option><option value="products">{copy('products')}</option><option value="custom">{copy('custom')}</option></select></div>
       </div>
       <div className="space-y-2"><input type="file" ref={file} hidden accept=".txt,.csv" disabled={locked} onChange={async e => {
         const selected = e.target.files?.[0]; e.target.value = ''; if (!selected || locked) return;
@@ -137,9 +141,9 @@ export function KnowledgeIntake() {
         if (request !== generation.current) return;
         setReading(false);
         if ('error' in value) { setFileError(value.error === 'tooLong' ? t('knowledgePreviewUx.tooLong') : value.error === 'unsupported' ? t('knowledgePreviewUx.unsupported') : value.error === 'empty' ? t('knowledgePreviewUx.empty') : t('knowledgePreviewUx.unreadable'));  return; }
-        setContent(value.content); setName(value.name); invalidate(); setErrors({ name: false, content: false });
+        setSourceDocument(undefined); setContent(value.content); setName(value.name); invalidate(); setErrors({ name: false, content: false });
       }} /><Button type="button" variant="outline" disabled={locked} className="max-w-full whitespace-normal" onClick={() => file.current?.click()}>{copy('choose')}</Button><p className="text-sm text-muted-foreground">{copy('fileHint')}</p>{fileError && <p role="alert" className="text-sm text-destructive">{fileError}</p>}</div>
-      <div className="space-y-2"><Label htmlFor="knowledge-content">{copy('content')}</Label><Textarea id="knowledge-content" ref={textField} value={content} disabled={locked} dir="auto" className="min-h-44 text-base" onChange={e => { setContent(e.target.value); invalidate(); }} aria-invalid={errors.content} aria-describedby="knowledge-content-count knowledge-content-error" /><p id="knowledge-content-count" className="text-sm text-muted-foreground"><bdi>{t('merchantUx.knowledgeIntake.limit', { count: content.length, limit: KNOWLEDGE_PREVIEW_LIMIT })}</bdi></p><p id="knowledge-content-error" role={errors.content ? 'alert' : undefined} className="text-sm text-destructive">{errors.content ? copy('contentError') : ''}</p></div>
+      <div className="space-y-2"><Label htmlFor={`${fieldId}-content`}>{copy('content')}</Label><Textarea id={`${fieldId}-content`} ref={textField} value={content} disabled={locked} dir="auto" className="min-h-44 text-base" onChange={e => { setContent(e.target.value); invalidate(); }} aria-invalid={errors.content} aria-describedby={`${fieldId}-content-count ${fieldId}-content-error`} /><p id={`${fieldId}-content-count`} className="text-sm text-muted-foreground"><bdi>{t('merchantUx.knowledgeIntake.limit', { count: content.length, limit: KNOWLEDGE_PREVIEW_LIMIT })}</bdi></p><p id={`${fieldId}-content-error`} role={errors.content ? 'alert' : undefined} className="text-sm text-destructive">{errors.content ? copy('contentError') : ''}</p></div>
       {analysisError && <p role="alert" className="text-sm text-destructive">{copy('analysisError')}</p>}
       {analysisTooLarge && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.planTooLarge')}</p>}
       {reviewExpired && <p role="alert" className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewExpired')}</p>}
@@ -148,7 +152,7 @@ export function KnowledgeIntake() {
         <KnowledgeAnalysisReport analysis={analysis} />
         {review && <KnowledgePlanView plan={review.plan} />}
         <p className="text-sm leading-7 text-muted-foreground">{t('merchantUx.knowledgeIntake.reviewScope')}</p>
-        {!result && !uncertain && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewValidity')}</p><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || !review || busy} onClick={() => { if (reviewed && review && !busy && !submitting.current) { submitting.current = true; requestId.current = crypto.randomUUID(); ingest.mutate({ requestId: requestId.current, reviewId: review.id, acknowledged: true, content, contentType: type, fileName: name.trim() || undefined }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
+        {!result && !uncertain && <><p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.reviewValidity')}</p><label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 h-4 w-4 shrink-0" checked={reviewed} disabled={busy} onChange={e => setReviewed(e.target.checked)} />{copy('reviewed')}</label><Button className="w-full sm:w-auto" disabled={!reviewed || !review || busy} onClick={() => { if (reviewed && review && !busy && !submitting.current) { submitting.current = true; requestId.current = crypto.randomUUID(); ingest.mutate({ requestId: requestId.current, reviewId: review.id, acknowledged: true, content, contentType: type, fileName: name.trim() || undefined, ...(sourceDocument ? { sourceDocument } : {}) }); } }}>{ingest.isPending ? copy('saving') : copy('save')}</Button></>}
       </section>}
       {result && <KnowledgeReceiptView receipt={result} onRefresh={() => void readReceipt()} busy={checking} />}
       {uncertain && <div role="alert" className="space-y-3 rounded-xl border p-4 text-sm leading-7"><p>{rejected ? t('merchantUx.knowledgeIntake.receiptRejected') : copy('uncertain')}</p>{!rejected && <><p>{t('merchantUx.knowledgeIntake.receiptId')}: <bdi className="break-all">{requestId.current}</bdi></p><Button variant="outline" disabled={checking} onClick={() => void readReceipt()}>{t('merchantUx.knowledgeIntake.receiptRefresh')}</Button></>}{rejected && <Button variant="outline" onClick={() => { requestId.current = null; submitting.current = false; setUncertain(false); setRejected(false); }}>{t('merchantUx.knowledgeIntake.receiptEdit')}</Button>}</div>}

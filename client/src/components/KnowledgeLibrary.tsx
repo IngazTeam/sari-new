@@ -9,8 +9,11 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { KnowledgeReceiptView } from './KnowledgeReceiptView';
 import { KnowledgeDocumentSections } from './KnowledgeDocumentSections';
+import { KnowledgeDocumentReview } from './KnowledgeDocumentReview';
+import { KnowledgeDocumentUpload } from './KnowledgeDocumentUpload';
+import { KnowledgeDocumentCopies } from './KnowledgeDocumentCopies';
 
-function KnowledgeText({ id, name, onClose }: { id: number; name: string; onClose: () => void }) {
+function KnowledgeText({ id, name, onClose, onOpen }: { id: number; name: string; onClose: () => void; onOpen: (item: { id: number; name: string }) => void }) {
   const { t } = useTranslation();
   const [position, setPosition] = useState<{ page: number; revision?: string }>({ page: 1 });
   const query = trpc.knowledgeDocs.readText.useQuery({ id, ...position }, { retry: false, refetchOnWindowFocus: false });
@@ -25,7 +28,11 @@ function KnowledgeText({ id, name, onClose }: { id: number; name: string; onClos
       {code !== 'NOT_FOUND' && <Button variant="outline" onClick={() => { if (code === 'CONFLICT') setPosition({ page: 1 }); else void query.refetch(); }}>{code === 'CONFLICT' ? t('merchantUx.knowledgeLibrary.reopen') : t('merchantUx.knowledgeLibrary.retry')}</Button>}</div>
       : query.isLoading ? <p role="status">{t('merchantUx.knowledgeLibrary.textLoading')}</p> : data && <>
         {data.receipt && <KnowledgeReceiptView receipt={data.receipt} onRefresh={() => void query.refetch()} busy={query.isFetching} />}
-        <KnowledgeDocumentSections documentId={id} />
+        {!data.receipt?.document && <KnowledgeDocumentSections documentId={id} />}
+        {data.receipt?.review?.sourceDocument && <Button variant="outline" onClick={() => onOpen({ id: data.receipt!.review!.sourceDocument!.id, name: data.receipt!.review!.sourceDocument!.fileName })}>{t('merchantUx.knowledgeDocument.openSource')}</Button>}
+        <KnowledgeDocumentCopies id={id} onOpen={onOpen} />
+        {data.extractionStatus === 'completed' && data.characterCount >= 10 && <KnowledgeDocumentReview key={id} id={id} />}
+        {data.canReextract && <KnowledgeDocumentUpload key={`reextract:${id}`} sourceDocumentId={id} />}
         <div role="status" aria-live="polite" className="text-sm">{t('merchantUx.knowledgeLibrary.page', { page: data.page, pages: data.totalPages })} · {t('merchantUx.knowledgeLibrary.characters', { count: data.characterCount })}</div>
         {data.text ? <pre key={`${id}:${data.page}:${data.revision}`} dir="auto" className="max-h-[55vh] overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 font-sans text-base leading-8 [overflow-wrap:anywhere]">{data.text}</pre> : <p>{t('merchantUx.knowledgeLibrary.noText')}</p>}
         <div className="flex flex-wrap gap-3"><Button variant="outline" disabled={query.isFetching || data.page <= 1} onClick={() => setPosition({ page: data.page - 1, revision: data.revision })}>{t('merchantUx.knowledgeLibrary.previous')}</Button><Button variant="outline" disabled={query.isFetching || data.page >= data.totalPages} onClick={() => setPosition({ page: data.page + 1, revision: data.revision })}>{t('merchantUx.knowledgeLibrary.next')}</Button></div>
@@ -61,12 +68,13 @@ export function KnowledgeLibrary() {
             <p className="break-words text-sm text-muted-foreground">{item.fileType.toUpperCase()} · {t('merchantUx.knowledgeLibrary.size', { count: Math.ceil(item.fileSize / 1024) })} · {t('merchantUx.knowledgeLibrary.characters', { count: item.characterCount })}</p>
             <p className="text-sm text-muted-foreground">{t('merchantUx.knowledgeLibrary.uploaded')}: {formatDate(item.uploadedAt)} · {t('merchantUx.knowledgeLibrary.updated')}: {formatDate(item.updatedAt)}</p>
             {item.intakeRequestId && <p className="text-sm leading-7">{t('merchantUx.knowledgeIntake.receiptLibrary')}</p>}
-            {item.intakeState && <p className="text-sm font-medium">{intakeStatuses[item.intakeState]}</p>}
+            {item.intakeState === 'uncertain' ? <p className="text-sm font-medium">{intakeStatuses.uncertain}</p> : item.documentExtraction ? <p className="text-sm font-medium">{item.documentExtraction === 'extracted' ? t('merchantUx.knowledgeDocument.ready') : item.documentExtraction === 'failed' ? t('merchantUx.knowledgeDocument.failed') : t('merchantUx.knowledgeDocument.pending')}</p> : item.intakeState && <p className="text-sm font-medium">{intakeStatuses[item.intakeState]}</p>}
+            {item.sourceDocumentId && !item.documentExtraction && <p className="text-sm">{t('merchantUx.knowledgeDocument.derived')}</p>}
             {data.canReadText && <Button variant="outline" className="w-full sm:w-auto" aria-label={t('merchantUx.knowledgeLibrary.readNamed', { name: item.fileName })} onClick={e => { opener.current = e.currentTarget; setSelected({ id: item.id, name: item.fileName }); }}>{t('merchantUx.knowledgeLibrary.read')}</Button>}
           </li>)}</ul>}
           {data.totalPages > 1 && <div className="flex flex-wrap gap-3"><Button variant="outline" disabled={query.isFetching || data.page <= 1} onClick={() => { setSelected(null); setFilters({ ...filters, page: data.page - 1 }); }}>{t('merchantUx.knowledgeLibrary.previous')}</Button><Button variant="outline" disabled={query.isFetching || data.page >= data.totalPages} onClick={() => { setSelected(null); setFilters({ ...filters, page: data.page + 1 }); }}>{t('merchantUx.knowledgeLibrary.next')}</Button></div>}
         </>}
-      {selected && data?.canReadText && <KnowledgeText key={selected.id} id={selected.id} name={selected.name} onClose={() => { setSelected(null); opener.current?.focus(); }} />}
+      {selected && data?.canReadText && <KnowledgeText key={selected.id} id={selected.id} name={selected.name} onOpen={setSelected} onClose={() => { setSelected(null); opener.current?.focus(); }} />}
     </CardContent>
   </Card>;
 }

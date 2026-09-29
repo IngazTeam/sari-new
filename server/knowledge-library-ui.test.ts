@@ -6,6 +6,8 @@ import { knowledgeLibraryEn as copy } from '../client/src/locales/knowledge-libr
 const api = vi.hoisted(() => ({ list: {} as any, read: {} as any, listInput: {} as any, readInput: {} as any, retry: vi.fn() }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: 'en' }, t: (key: string, vars: any = {}) => (copy[key.split('.').at(-1) as keyof typeof copy] || key).replace(/{{(\w+)}}/g, (_, k) => String(vars[k])) }) }));
 vi.mock('@/lib/trpc', () => ({ trpc: { knowledgeDocs: {
+  reviewSource: { useQuery: () => ({}) },
+  copies: { useQuery: () => ({}) },
   sections: { useQuery: () => ({ data: { available: false } }) },
   list: { useQuery: (input: any) => { api.listInput = input; return { refetch: api.retry, ...api.list }; } },
   readText: { useQuery: (input: any) => { api.readInput = input; return { refetch: api.retry, ...api.read }; } },

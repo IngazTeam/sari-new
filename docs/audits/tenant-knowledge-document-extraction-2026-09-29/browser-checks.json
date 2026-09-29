@@ -1,0 +1,61 @@
+{
+  "browser": "Chrome on Windows; viewport testing only; no Safari or physical iPhone",
+  "checks": [
+    {
+      "available": 1425,
+      "content": 1425,
+      "view": "linked-result",
+      "width": 1440
+    },
+    {
+      "available": 375,
+      "content": 375,
+      "view": "source",
+      "width": 390
+    },
+    {
+      "available": 305,
+      "content": 305,
+      "view": "source",
+      "width": 320
+    },
+    {
+      "available": 753,
+      "content": 753,
+      "view": "source",
+      "width": 768
+    },
+    {
+      "available": 375,
+      "content": 375,
+      "view": "settings",
+      "width": 390
+    },
+    {
+      "available": 375,
+      "content": 375,
+      "dialog": {
+        "content": 341,
+        "width": 341
+      },
+      "view": "mock-review",
+      "width": 390
+    },
+    {
+      "available": 305,
+      "content": 305,
+      "dialog": {
+        "content": 271,
+        "width": 271
+      },
+      "view": "mock-review",
+      "width": 320
+    }
+  ],
+  "wordCharacters": 10170,
+  "wordTailPreserved": true,
+  "arabicFilenamePreserved": true,
+  "oversizedFileRejected": true,
+  "blankPdfRejected": true,
+  "mockRetryReferencePreserved": true
+}

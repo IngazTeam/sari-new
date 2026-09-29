@@ -397,6 +397,8 @@ export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   reviewId: varchar('review_id', { length: 36 }),
   reviewSnapshot: json('review_snapshot').$type<import('../shared/knowledge-intake').KnowledgeSavedReview>(),
   sectionLinks: json('section_links').$type<import('../shared/knowledge-section-links').KnowledgeSectionLinks>(),
+  documentResult: json('document_result').$type<import('../shared/knowledge-document').KnowledgeDocumentResult>(),
+  sourceDocumentId: int('source_document_id').references(() => merchantKnowledgeDocs.id, { onDelete: 'set null' }),
   executionToken: char('execution_token', { length: 36 }),
   leaseExpiresAt: timestamp('lease_expires_at', { mode: 'string' }),
   recoveredAt: timestamp('recovered_at', { mode: 'string' }),
@@ -406,7 +408,7 @@ export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   outcome: json('outcome').$type<import('../shared/knowledge-intake').KnowledgeOutcome>(),
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-}, table => [uniqueIndex('uq_knowledge_intake_request').on(table.merchantId, table.requestId), index('idx_knowledge_intake_state').on(table.merchantId, table.state)]);
+}, table => [uniqueIndex('uq_knowledge_intake_request').on(table.merchantId, table.requestId), index('idx_knowledge_intake_state').on(table.merchantId, table.state), index('idx_intake_source_document').on(table.merchantId, table.sourceDocumentId)]);
 
 export const knowledgeIntakeReviews = mysqlTable('knowledge_intake_reviews', {
   reviewId: varchar('review_id', { length: 36 }).primaryKey(),
