@@ -232,3 +232,13 @@ it("does not auto-extract a site while opening the page", async () => {
   expect(api.prepare).not.toHaveBeenCalled();
   expect(button(c.extract).disabled).toBe(true);
 });
+it("shows an actionable source limitation without displaying the raw server failure", async () => {
+  api.read.mockRejectedValue({
+    message: "WEBSITE_NO_READABLE_TEXT",
+    data: { code: "BAD_REQUEST" },
+  });
+  await render();
+  expect(body()).toContain(c.sourceUnavailable);
+  expect(body()).not.toContain("WEBSITE_NO_READABLE_TEXT");
+  expect(button(c.save)).toBeUndefined();
+});

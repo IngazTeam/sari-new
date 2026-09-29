@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 export function useWebsiteImportCopy() {
   const { t } = useTranslation();
   return {
+    sourceUnavailable: t('merchantUx.websiteImport.sourceUnavailable'),
     pageTitle: t('merchantUx.websiteImport.pageTitle'),
     effects: t('merchantUx.websiteImport.effects'),
     websiteInfoEffect: t('merchantUx.websiteImport.websiteInfoEffect'),

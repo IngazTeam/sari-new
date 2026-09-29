@@ -19,8 +19,10 @@ export const websiteImportEn = {
   extractionAck:
     "I agree to visit this website and use AI services to prepare a preview.",
   previewHelp:
-    "Previewing does not change your catalogue, active knowledge or contact details. Extraction may be incomplete; prices and AI suggestions need verification.",
+    "Previewing does not change your catalogue, active knowledge or contact details. Public HTTPS only; page scripts are not executed. Extraction may be incomplete; prices and AI suggestions need verification.",
   invalid: "Enter a valid HTTPS website URL.",
+  sourceUnavailable:
+    "We could not read this public HTTPS source. Check the link and access restrictions. If it requires sign-in or JavaScript, upload the content as a knowledge file instead.",
   readOnly:
     "You can review saved data. Importing requires assistant settings permission.",
   permissionError: "Access could not be checked. Refresh before continuing.",
@@ -102,8 +104,10 @@ export const websiteImportAr: WebsiteImportCopy = {
   extractionAck:
     "أوافق على زيارة هذا الموقع واستخدام خدمات الذكاء الاصطناعي لإعداد المعاينة.",
   previewHelp:
-    "المعاينة لا تغيّر الكتالوج أو المعرفة الفعالة أو معلومات التواصل. قد يكون الاستخراج ناقصًا؛ تحتاج الأسعار واقتراحات الذكاء الاصطناعي إلى مراجعة.",
+    "المعاينة لا تغيّر الكتالوج أو المعرفة الفعالة أو معلومات التواصل. نقرأ HTTPS العام دون تشغيل سكربتات الصفحة. قد يكون الاستخراج ناقصًا؛ تحتاج الأسعار واقتراحات الذكاء الاصطناعي إلى مراجعة.",
   invalid: "أدخل رابط موقع HTTPS صالحًا.",
+  sourceUnavailable:
+    "تعذرت قراءة مصدر HTTPS العام. تحقق من الرابط وقيود الوصول. إذا كان يتطلب تسجيل الدخول أو JavaScript، ارفع المحتوى كملف معرفة.",
   readOnly:
     "يمكنك مراجعة البيانات المحفوظة. يتطلب الاستيراد صلاحية إعدادات المساعد.",
   permissionError: "تعذر التحقق من الصلاحية. حدّث الصفحة قبل المتابعة.",

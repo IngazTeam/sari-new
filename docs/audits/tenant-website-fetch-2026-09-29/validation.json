@@ -1,0 +1,8 @@
+{
+  "tests": 110,
+  "build": "client, server, worker and bundle budget passed",
+  "externalNetworkTested": false,
+  "deployment": "not deployed",
+  "typescript": "full workspace passed",
+  "stage": "public website fetch"
+}

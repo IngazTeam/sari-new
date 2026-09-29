@@ -205,6 +205,12 @@ function Workspace({ scope }: { scope: string }) {
     );
   const message = (e: unknown) => {
     const value = e as { data?: { code?: string }; message?: string };
+    if (
+      value.message === "WEBSITE_URL_INVALID" ||
+      value.message === "IMPORT_URL_INVALID"
+    )
+      return c.invalid;
+    if (value.message?.startsWith("WEBSITE_")) return c.sourceUnavailable;
     return value.data?.code === "CONFLICT"
       ? c.conflict
       : ["PAYLOAD_TOO_LARGE", "TOO_MANY_REQUESTS"].includes(

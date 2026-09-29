@@ -20,6 +20,7 @@ vi.mock("./knowledge/website-import", () => ({
   applyReviewedImport: m.apply,
 }));
 import { analysisRouter } from "./routers/analysis";
+import { PublicWebsiteError } from "./security/public-website";
 const id = "8b72f09a-1964-4d32-bc51-62c47bc9b727";
 const caller = () =>
   analysisRouter.createCaller({
@@ -117,4 +118,19 @@ it("sanitizes unexpected database errors", async () => {
     code: "INTERNAL_SERVER_ERROR",
     message: "Website import unavailable",
   });
+});
+it("returns a safe, actionable source error when static extraction is unavailable", async () => {
+  m.extract.mockRejectedValue(
+    new PublicWebsiteError("WEBSITE_NO_READABLE_TEXT")
+  );
+  await expect(
+    caller().previewImport({
+      websiteUrl: "https://example.test",
+      acknowledged: true,
+    })
+  ).rejects.toMatchObject({
+    code: "BAD_REQUEST",
+    message: "WEBSITE_NO_READABLE_TEXT",
+  });
+  expect(m.store).not.toHaveBeenCalled();
 });

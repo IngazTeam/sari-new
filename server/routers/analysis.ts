@@ -2,6 +2,7 @@ import { hasPermission } from "../_core/permissions";
 import { router, merchantProcedure, permissionProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { PublicWebsiteError } from "../security/public-website";
 import {
   getActiveFaqsForBot,
   getAnalysisStats,
@@ -31,6 +32,8 @@ async function importOperation<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (error) {
     if (error instanceof TRPCError) throw error;
+    if (error instanceof PublicWebsiteError)
+      throw new TRPCError({ code: "BAD_REQUEST", message: error.code });
     console.error("[WebsiteImport]", error);
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",

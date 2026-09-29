@@ -7,96 +7,19 @@
 
 import { invokeLLM } from "./llm";
 import { JSDOM } from "jsdom";
-import { execFileSync } from "child_process";
-import { chromiumLaunchArgs, resolveChromiumExecutable } from "../browser/chromium-runtime";
+import { publicWebsiteUrl, requestPublicWebsite, samePublicWebsiteOrigin, PublicWebsiteError } from "../security/public-website";
 
-/**
- * Validate URL to prevent SSRF attacks (internal IP, metadata endpoints, etc.)
- */
-export function isUrlSafe(urlStr: string): boolean {
-  try {
-    const parsed = new URL(urlStr);
-    // Only allow HTTP/HTTPS
-    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
-
-    const hostname = parsed.hostname.toLowerCase();
-
-    // Block empty or dotdot
-    if (hostname === '' || hostname.includes('..')) return false;
-
-    // Block bracketed IPv6 (Node URL parser strips brackets, but be safe)
-    if (hostname.startsWith('[') || urlStr.includes('[')) return false;
-
-    // Block localhost variants
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
-    if (hostname === '0.0.0.0' || hostname === '0') return false;
-
-    // Block hex/decimal/octal IP bypass (e.g., 0x7f000001, 2130706433, 0177.0.0.1)
-    if (/^(0x[\da-f]+|0\d+|\d+)$/i.test(hostname)) return false; // pure number or hex
-    if (/^[\d.]+$/.test(hostname)) {
-      // Looks like an IP — validate each octet
-      const parts = hostname.split('.');
-      for (const part of parts) {
-        // Block octal (leading zero like 0177) and hex (0x7f)
-        if (/^0\d+/.test(part) || /^0x/i.test(part)) return false;
-      }
-    }
-
-    // Block internal/private IPs
-    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return false;
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false;
-
-    // Block AWS/GCP/Azure metadata endpoints
-    if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal') return false;
-    // Block link-local
-    if (hostname.startsWith('169.254.')) return false;
-
-    // Block IPv6 patterns (mapped, link-local, unique-local)
-    if (hostname.startsWith('fc00:') || hostname.startsWith('fe80:')) return false;
-    if (hostname.includes('::ffff:') || hostname.includes('::1')) return false;
-    // Block any remaining IPv6 (colon-containing hostnames)
-    if (hostname.includes(':')) return false;
-
-    // Block internal hostnames
-    if (hostname.endsWith('.internal') || hostname.endsWith('.local')) return false;
-
-    return true;
-  } catch {
-    return false;
-  }
+/** Preliminary syntax check; DNS and every redirect are validated at request time. */
+export function isUrlSafe(value: string): boolean {
+  try { publicWebsiteUrl(value); return true; } catch { return false; }
 }
 
-/**
- * Fetch URL using curl as fallback when Node.js fetch is blocked by Cloudflare.
- * Uses execFileSync (no shell) to prevent command injection.
- */
-async function curlFetch(url: string, headers?: Record<string, string>): Promise<{ ok: boolean; status: number; body: string }> {
+/** Optional discovery: a failed public request never falls back to a weaker transport. */
+async function fetchPublicText(url: string, headers?: Record<string,string>): Promise<{ok:boolean;status:number;body:string}> {
   try {
-    // Validate URL to prevent SSRF
-    if (!isUrlSafe(url)) {
-      console.warn('[WebsiteAnalyzer] Blocked unsafe URL:', url);
-      return { ok: false, status: 0, body: '' };
-    }
-
-    // Build args as array (safe — no shell interpolation)
-    const args: string[] = ['-4', '-s', '--max-time', '15', '-w', '\n__HTTP_STATUS__%{http_code}'];
-    for (const [k, v] of Object.entries(headers || {})) {
-      args.push('-H', `${k}: ${v}`);
-    }
-    args.push(url);
-
-    const output = execFileSync('curl', args, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-
-    // Extract HTTP status from the last line
-    const statusMatch = output.match(/__HTTP_STATUS__(\d+)$/);
-    const status = statusMatch ? parseInt(statusMatch[1]) : 0;
-    const body = output.replace(/__HTTP_STATUS__\d+$/, '').trim();
-
-    return { ok: status >= 200 && status < 300, status, body };
-  } catch (error) {
-    console.warn('[WebsiteAnalyzer] curlFetch failed:', error instanceof Error ? error.message : 'unknown');
-    return { ok: false, status: 0, body: '' };
-  }
+    const response = await requestPublicWebsite(url, {headers});
+    return {ok:response.ok,status:response.status,body:await response.text()};
+  } catch { return {ok:false,status:0,body:''}; }
 }
 
 // ============================================
@@ -376,175 +299,30 @@ export function cleanScrapedText(raw: string): string {
 // ============================================
 
 /**
- * استخراج محتوى الموقع — with retry, anti-bot headers, and SPA fallback
+ * استخراج المحتوى العام دون تشغيل JavaScript أو تحميل موارد المتصفح.
  */
-export async function scrapeWebsite(url: string): Promise<{
-  html: string;
-  dom: JSDOM;
-  text: string;
-}> {
-  // SEC-W1: SSRF guard — block internal/private IPs before any network request
-  if (!isUrlSafe(url)) {
-    throw new Error(`[SECURITY] Blocked unsafe URL: ${url}`);
-  }
-  const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Googlebot/2.1 (+http://www.google.com/bot.html)',
-  ];
-
-  /** Helper: parse raw HTML into { html, dom, text } — with SPA fallback */
-  const parseHtml = (html: string) => {
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
-    // Remove scripts/styles for text extraction
-    document.querySelectorAll('script, style').forEach(el => el.remove());
-    let text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
-
-    // SPA Fallback: If DOM text is too short, extract from raw HTML
-    if (text.length < 100 && html.length > 500) {
-      console.log(`[WebsiteAnalyzer] SPA detected (DOM text=${text.length} chars, HTML=${html.length} bytes) — extracting from HTML`);
-      const htmlText = extractTextFromHtml(html);
-      if (htmlText.length > text.length) {
-        text = htmlText;
-        console.log(`[WebsiteAnalyzer] SPA fallback recovered ${text.length} chars from HTML`);
-      }
-    }
-
-    return { html, dom, text };
-  };
-
-  /** Helper: detect Cloudflare challenge page */
-  const isCloudflareChallenge = (html: string) =>
-    html.includes('cf-browser-verification') ||
-    html.includes('challenge-platform') ||
-    (html.length < 1000 && html.includes('Just a moment'));
-
-  let lastError: Error | null = null;
-
-  // Strategy 1: Node.js fetch with multiple User-Agents
-  for (const ua of userAgents) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': ua,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'ar,en;q=0.9',
-          'Accept-Encoding': 'identity',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-        signal: controller.signal,
-        redirect: 'follow',
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        lastError = new Error(`HTTP ${response.status} ${response.statusText}`);
-        continue;
-      }
-
-      const html = await response.text();
-
-      if (isCloudflareChallenge(html)) {
-        console.warn(`[WebsiteAnalyzer] Cloudflare challenge detected with UA: ${ua.substring(0, 30)}...`);
-        lastError = new Error('Cloudflare challenge detected');
-        continue;
-      }
-
-      const result = parseHtml(html);
-      console.log(`[WebsiteAnalyzer] Scraped ${url} — ${html.length} bytes, ${result.text.length} chars text`);
-      // SPA guard: if we got HTML but text is very short, this is likely a SPA shell
-      // Continue to Strategy 2/3 instead of returning empty content
-      if (result.text.length > 200) {
-        return result;
-      }
-      console.log(`[WebsiteAnalyzer] ⚠️ fetch got HTML but text too short (${result.text.length} chars) — SPA likely, trying next strategy...`);
-      lastError = new Error(`SPA detected: only ${result.text.length} chars of text extracted`);
-      break; // Skip remaining UAs, go to Strategy 2
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(`[WebsiteAnalyzer] Fetch attempt failed (${ua.substring(0, 20)}...):`, lastError.message);
-    }
-  }
-
-  // Strategy 2: curl fallback — bypasses TLS fingerprinting that Cloudflare uses
-  console.log(`[WebsiteAnalyzer] All fetch attempts failed, trying curl fallback for ${url}...`);
-  const curlUAs = [
-    'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  ];
-
-  for (const ua of curlUAs) {
-    const curlResult = await curlFetch(url, {
-      'User-Agent': ua,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'ar,en;q=0.9',
-    });
-
-    if (curlResult.ok && curlResult.body.length > 500 && !isCloudflareChallenge(curlResult.body)) {
-      const result = parseHtml(curlResult.body);
-      console.log(`[WebsiteAnalyzer] ✅ curl fallback succeeded for ${url} — ${curlResult.body.length} bytes, ${result.text.length} chars text`);
-      // If curl got HTML but text is still short (SPA), continue to Strategy 3
-      if (result.text.length > 200) {
-        return result;
-      }
-      console.log(`[WebsiteAnalyzer] curl got HTML but text too short (${result.text.length}), trying headless browser...`);
-    }
-  }
-
-  // Strategy 3: Puppeteer headless browser — renders JavaScript for SPA sites
+export async function scrapeWebsite(url: string): Promise<{html:string;dom:JSDOM;text:string}> {
+  const response=await requestPublicWebsite(url, {headers:{'Accept':'text/html,application/xhtml+xml,text/plain','Accept-Language':'ar,en;q=0.9'}});
+  if(!response.ok)throw new PublicWebsiteError('WEBSITE_FETCH_FAILED');
+  const mime=(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
+  if(!['text/html','application/xhtml+xml','text/plain'].includes(mime))throw new PublicWebsiteError('WEBSITE_FETCH_FAILED');
+  const html=await response.text();
+  if(html.includes('cf-browser-verification')||html.includes('challenge-platform')||(html.length<1000&&html.includes('Just a moment')))
+    throw new PublicWebsiteError('WEBSITE_NO_READABLE_TEXT');
+  // JSDOM does not execute scripts or load remote resources. Dynamic-only sites need an explicit source upload.
+  const dom=new JSDOM(mime==='text/plain'?'':html,{url:response.url});
   try {
-    const puppeteerCore = await import('puppeteer-core').catch(() => null);
-    const chromiumPath = resolveChromiumExecutable();
-    
-    if (puppeteerCore && chromiumPath) {
-      console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url} (chromium: ${chromiumPath})`);
-      const browser = await puppeteerCore.launch({
-        headless: true,
-        executablePath: chromiumPath,
-        args: chromiumLaunchArgs(),
-        timeout: 15000,
-      });
-      try {
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
-        // Wait a bit more for lazy-loaded content
-        await new Promise(r => setTimeout(r, 3000));
-        
-        const html = await page.content();
-        const text = await page.evaluate(() => {
-          // Remove scripts, styles, and hidden elements
-          document.querySelectorAll('script, style, [hidden], .hidden, [aria-hidden="true"]').forEach(el => el.remove());
-          return document.body?.innerText || '';
-        });
-
-        await browser.close();
-
-        if (text.length > 100) {
-          const dom = new JSDOM(html);
-          console.log(`[WebsiteAnalyzer] ✅ Puppeteer extracted ${text.length} chars from ${url}`);
-          return { html, dom, text: text.replace(/\s+/g, ' ').trim() };
-        }
-        console.log(`[WebsiteAnalyzer] Puppeteer text still short (${text.length} chars)`);
-      } catch (pageError) {
-        console.warn(`[WebsiteAnalyzer] Puppeteer page error:`, (pageError as Error).message);
-        try { await browser.close(); } catch {}
-      }
-    } else {
-      console.warn(`[WebsiteAnalyzer] Puppeteer/Chromium not available — headless browser scraping disabled.`);
+    const doc=dom.window.document;
+    if(mime==='text/plain')doc.body.textContent=html;
+    doc.querySelectorAll('script,style,noscript,template,iframe,[hidden],[aria-hidden="true"]').forEach(el=>el.remove());
+    let text=(doc.body?.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length<100&&mime!=='text/plain'){
+      const embedded=extractTextFromHtml(html);
+      if(embedded.length>text.length)text=embedded;
     }
-  } catch (puppeteerError) {
-    console.warn(`[WebsiteAnalyzer] Puppeteer init error:`, (puppeteerError as Error).message);
-  }
-
-  throw new Error(`Failed to scrape website after all attempts (fetch + curl + puppeteer): ${lastError?.message}`);
+    if(text.length<50)throw new PublicWebsiteError('WEBSITE_NO_READABLE_TEXT');
+    return {html,dom,text};
+  } catch(error){dom.window.close();throw error;}
 }
 
 
@@ -846,6 +624,8 @@ const PAGE_TYPE_KEYWORDS: Record<string, string[]> = {
  * Discover important sub-pages from the homepage HTML
  */
 export function discoverPages(dom: JSDOM, baseUrl: string): DiscoveredPage[] {
+  // Relative links belong to the final validated URL after redirects.
+  if (isUrlSafe(dom.window.location.href)) baseUrl = dom.window.location.href;
   const document = dom.window.document;
   const pages: DiscoveredPage[] = [];
   const seenUrls = new Set<string>();
@@ -950,65 +730,21 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
 
   // Track content hashes to detect SPA duplicate content
   const contentHashes = new Set<string>();
-  let spaDetected = false;
 
   for (const page of sorted.slice(0, 50)) {
+    let dom: JSDOM | undefined;
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
 
-      let text = '';
-      let dom: any;
-      let html = '';
-
-      // If SPA detected (duplicate content), force Puppeteer for unique content
-      if (spaDetected) {
-        try {
-          const puppeteerCore = await import('puppeteer-core').catch(() => null);
-          const chromiumPath = resolveChromiumExecutable();
-          if (puppeteerCore && chromiumPath) {
-            const browser = await puppeteerCore.launch({
-              headless: true, executablePath: chromiumPath,
-              args: chromiumLaunchArgs(),
-              timeout: 15000,
-            });
-            try {
-              const browserPage = await browser.newPage();
-              await browserPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
-              await browserPage.goto(page.url, { waitUntil: 'networkidle2', timeout: 15000 });
-              await new Promise(r => setTimeout(r, 2000));
-              html = await browserPage.content();
-              text = await browserPage.evaluate(() => {
-                document.querySelectorAll('script, style, [hidden], .hidden, nav, header, footer, [aria-hidden="true"]').forEach(el => el.remove());
-                return document.body?.innerText || '';
-              });
-              text = text.replace(/\s+/g, ' ').trim();
-              dom = new JSDOM(html);
-              console.log(`[WebsiteAnalyzer] 🚀 Puppeteer (SPA mode) extracted ${text.length} chars from ${page.url}`);
-            } finally {
-              try { await browser.close(); } catch {}
-            }
-          }
-        } catch (puppErr: any) {
-          console.warn(`[WebsiteAnalyzer] Puppeteer SPA fallback failed:`, puppErr.message);
-        }
-      }
-
-      // Default scrape if Puppeteer didn't run or failed
-      if (!text || text.length < 50) {
-        const scraped = await scrapeWebsite(page.url);
-        dom = scraped.dom;
-        text = scraped.text;
-        html = scraped.html;
-      }
+      // Every page uses the same bounded, pinned public transport.
+      const scraped = await scrapeWebsite(page.url);
+      dom = scraped.dom;
+      const {text,html} = scraped;
 
       // Duplicate detection: hash first 500 chars of content (ignores minor layout diffs)
       const contentHash = text.substring(0, 500).replace(/\s+/g, '');
       if (contentHashes.size > 0 && contentHashes.has(contentHash)) {
         console.warn(`[WebsiteAnalyzer] ⚠️ DUPLICATE content detected for ${page.url} — SPA shell repeat`);
-        if (!spaDetected) {
-          spaDetected = true;
-          console.log(`[WebsiteAnalyzer] 🔄 SPA detected! Switching to Puppeteer-only mode for remaining pages`);
-        }
         // Skip this duplicate — don't add same content twice
         crawledPages.push({
           url: page.url,
@@ -1092,6 +828,8 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
         success: false,
       });
       console.warn(`[WebsiteAnalyzer] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
+    } finally {
+      dom?.window.close();
     }
   }
 
@@ -1102,11 +840,13 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
  * تحليل شامل للموقع — مع multi-page crawling
  */
 export async function analyzeWebsite(url: string, merchantId: number): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string; _enrichedText: string; _crawledPages: CrawledPageData[] }> {
+  let mainDom: JSDOM | undefined;
   try {
     console.log('[WebsiteAnalyzer] Analyzing website:', url);
 
     // Scrape website
     const { html, dom, text } = await scrapeWebsite(url);
+    mainDom = dom;
     const document = dom.window.document;
 
     // Basic info
@@ -1146,7 +886,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
 
       for (const sitemapUrl of sitemapUrls) {
         try {
-          const smResult = await curlFetch(sitemapUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
+          const smResult = await fetchPublicText(sitemapUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
           if (smResult.ok && smResult.body.includes('<loc>')) {
             let allPageUrls: string[] = [];
 
@@ -1158,9 +898,9 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
               // Fetch each child sitemap to get the actual page URLs
               console.log(`[WebsiteAnalyzer] Sitemap INDEX found at ${sitemapUrl} with ${childLocs.length} child sitemaps`);
               for (const childUrl of childLocs.slice(0, 10)) { // Max 10 child sitemaps
-                if (!childUrl.endsWith('.xml') || !childUrl.startsWith(baseOrigin)) continue;
+                if (!childUrl.endsWith('.xml') || !samePublicWebsiteOrigin(childUrl, baseOrigin)) continue;
                 try {
-                  const childResult = await curlFetch(childUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
+                  const childResult = await fetchPublicText(childUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
                   if (childResult.ok && childResult.body.includes('<loc>')) {
                     const pages = extractLocs(childResult.body).filter(u => !u.endsWith('.xml'));
                     allPageUrls.push(...pages);
@@ -1176,7 +916,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
             // Add discovered pages
             for (const pageUrl of allPageUrls) {
               // SEC-SITEMAP-01: Validate sitemap URLs (defense-in-depth: scrapeWebsite also checks)
-              if (!seenUrls.has(pageUrl) && pageUrl.startsWith(baseOrigin) && isUrlSafe(pageUrl)) {
+              if (!seenUrls.has(pageUrl) && samePublicWebsiteOrigin(pageUrl, baseOrigin)) {
                 seenUrls.add(pageUrl);
                 // Classify from URL path
                 const path = pageUrl.toLowerCase();
@@ -1305,6 +1045,8 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);
     throw error;
+  } finally {
+    mainDom?.window.close();
   }
 }
 
@@ -1373,29 +1115,29 @@ export function detectPlatform(url: string, html: string): 'salla' | 'zid' | 'sh
 async function discoverZidStoreId(url: string): Promise<string | null> {
   const baseUrl = new URL(url).origin;
 
-  // Strategy 1: Use curl to fetch the page (bypasses Cloudflare TLS fingerprinting)
-  console.log('[WebsiteAnalyzer] Trying curl to fetch page for store-id discovery...');
-  const curlPage = await curlFetch(url, {
+  // Strategy 1: Read the public page through the validated transport
+  console.log('[WebsiteAnalyzer] Reading public page for store-id discovery...');
+  const publicPage = await fetchPublicText(url, {
     'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
     'Accept': 'text/html',
   });
-  if (curlPage.ok && curlPage.body) {
-    const storeId = extractZidStoreId(curlPage.body);
+  if (publicPage.ok && publicPage.body) {
+    const storeId = extractZidStoreId(publicPage.body);
     if (storeId) {
-      console.log(`[WebsiteAnalyzer] Discovered Zid store-id from curl page: ${storeId}`);
+      console.log(`[WebsiteAnalyzer] Discovered Zid store-id from public page: ${storeId}`);
       return storeId;
     }
   }
 
-  // Strategy 2: Try Zid API via curl — extract store-id UUID from image URLs in response
-  console.log('[WebsiteAnalyzer] Trying curl to Zid API for store-id discovery...');
-  const curlApi = await curlFetch(`${baseUrl}/api/v1/products`, {
+  // Strategy 2: Read the public Zid API — extract store-id UUID from image URLs in response
+  console.log('[WebsiteAnalyzer] Reading public Zid API for store-id discovery...');
+  const publicApi = await fetchPublicText(`${baseUrl}/api/v1/products`, {
     'Accept': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   });
-  if (curlApi.ok && curlApi.body) {
+  if (publicApi.ok && publicApi.body) {
     try {
-      const data = JSON.parse(curlApi.body);
+      const data = JSON.parse(publicApi.body);
       // Extract store-id UUID from media.zid.store image URLs
       const imageUrl = JSON.stringify(data).match(/media\.zid\.store\/thumbs\/([a-f0-9-]{36})\//);
       if (imageUrl?.[1]) {
@@ -1407,14 +1149,11 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
 
   // Strategy 3: Fallback to fetch (in case Cloudflare is not blocking)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(url, {
+
+    const response = await requestPublicWebsite(url, {
       headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)', 'Accept': '*/*' },
-      signal: controller.signal,
-      redirect: 'follow',
     });
-    clearTimeout(timeoutId);
+
     if (response.ok) {
       const text = await response.text();
       const storeId = extractZidStoreId(text);
@@ -1984,20 +1723,19 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
           'Origin': baseUrl,
         };
 
-        // Try fetch first, then curl
+        // Retry only through the same validated public transport
         let body: string | null = null;
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-          const response = await fetch(endpoint.url, { headers, signal: controller.signal });
-          clearTimeout(timeoutId);
+
+          const response = await requestPublicWebsite(endpoint.url, { headers });
+
           const contentType = response.headers.get('content-type') || '';
           if (response.ok && contentType.includes('json')) {
             body = await response.text();
           }
         } catch {
-          const curlResult = await curlFetch(endpoint.url, headers);
-          if (curlResult.ok) body = curlResult.body;
+          const publicResult = await fetchPublicText(endpoint.url, headers);
+          if (publicResult.ok) body = publicResult.body;
         }
 
         if (!body) continue;
@@ -2038,16 +1776,15 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
     let body: string | null = null;
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-      const response = await fetch(endpoint, { headers, signal: controller.signal });
-      clearTimeout(timeoutId);
+
+      const response = await requestPublicWebsite(endpoint, { headers });
+
       if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
         body = await response.text();
       }
     } catch {
-      const curlResult = await curlFetch(endpoint, headers);
-      if (curlResult.ok) body = curlResult.body;
+      const publicResult = await fetchPublicText(endpoint, headers);
+      if (publicResult.ok) body = publicResult.body;
     }
 
     if (!body) return [];
@@ -2140,16 +1877,15 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
         let body: string | null = null;
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          const response = await fetch(endpoint, { headers, signal: controller.signal });
-          clearTimeout(timeoutId);
+
+          const response = await requestPublicWebsite(endpoint, { headers });
+
           if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
             body = await response.text();
           }
         } catch {
-          const curlResult = await curlFetch(endpoint, headers);
-          if (curlResult.ok) body = curlResult.body;
+          const publicResult = await fetchPublicText(endpoint, headers);
+          if (publicResult.ok) body = publicResult.body;
         }
 
         if (!body) continue;
@@ -2249,16 +1985,15 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
         let body: string | null = null;
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          const response = await fetch(endpoint.url, { headers, signal: controller.signal });
-          clearTimeout(timeoutId);
+
+          const response = await requestPublicWebsite(endpoint.url, { headers });
+
           if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
             body = await response.text();
           }
         } catch {
-          const curlResult = await curlFetch(endpoint.url, headers);
-          if (curlResult.ok) body = curlResult.body;
+          const publicResult = await fetchPublicText(endpoint.url, headers);
+          if (publicResult.ok) body = publicResult.body;
         }
 
         if (!body) continue;
@@ -2731,7 +2466,8 @@ export async function smartCrawl(baseUrl: string, homeDom: JSDOM, maxPages: numb
     }
     try {
       console.log(`[SmartCrawl] Crawling [${page.pageType}] ${page.url}`);
-      const { text } = await scrapeWebsite(page.url);
+      const { text, dom } = await scrapeWebsite(page.url);
+      dom.window.close();
       if (text.length > 50) { // Skip empty/blocked pages
         crawled.push({ url: page.url, type: page.pageType, title: page.title, text });
         allText += `\n\n--- ${page.title} (${page.pageType}) ---\n${text}`;
