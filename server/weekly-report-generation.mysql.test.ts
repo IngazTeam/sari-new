@@ -4,7 +4,11 @@ import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
-import { currentReportWindow, readWeeklyCohort } from "./reports/weekly-cohort";
+import {
+  currentReportWindow,
+  readWeeklyCohort,
+  readWeeklyAnalysisInput,
+} from "./reports/weekly-cohort";
 describe.skipIf(!process.env.DATABASE_URL)("weekly cohort in MySQL", () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>,
     other: typeof owner;
@@ -169,5 +173,55 @@ describe.skipIf(!process.env.DATABASE_URL)("weekly cohort in MySQL", () => {
       topKeywords: [],
       topComplaints: [],
     });
+  });
+
+  it("captures only incoming text from the tenant and time window", async () => {
+    const c = await conversation();
+    const atStart = await message(c, window.sqlStart),
+      atEnd = await message(c, window.sqlEnd);
+    await (await getPool())!.execute(
+      "UPDATE messages SET content=CASE id WHEN ? THEN 'start text' ELSE 'end text' END WHERE id IN (?,?)",
+      [atStart, atStart, atEnd]
+    );
+    await message(c, "2026-09-26 23:59:59");
+    await message(c, "2026-09-29 10:00:01");
+    await message(c, inside, "outgoing");
+    const foreign = await conversation(other.merchantId);
+    await message(foreign);
+    const old = await conversation(owner.merchantId, "2026-09-20 00:00:00");
+    await message(old);
+    expect(await readWeeklyAnalysisInput(owner.merchantId, window)).toEqual([
+      { id: c, text: "start text\nend text", unavailable: null },
+    ]);
+  });
+  it("retains empty and oversized conversations without analyzing a truncated prefix", async () => {
+    const empty = await conversation(),
+      large = await conversation(),
+      many = await conversation();
+    const id = await message(large);
+    const pool = (await getPool())!;
+    await pool.execute("UPDATE messages SET content=? WHERE id=?", [
+      "x".repeat(24001),
+      id,
+    ]);
+    await pool.execute(
+      `INSERT INTO messages (conversationId,direction,content,createdAt) VALUES ${Array.from({ length: 201 }, () => "(?,'incoming','x',?)").join(",")}`,
+      Array.from({ length: 201 }, () => [many, inside]).flat()
+    );
+    expect(await readWeeklyAnalysisInput(owner.merchantId, window)).toEqual([
+      { id: empty, text: null, unavailable: "empty" },
+      { id: large, text: null, unavailable: "input_limit" },
+      { id: many, text: null, unavailable: "input_limit" },
+    ]);
+  });
+  it("fails an oversized cohort explicitly instead of calling the first 500 a whole report", async () => {
+    const pool = (await getPool())!;
+    await pool.execute(
+      `INSERT INTO conversations (merchantId,customerPhone,createdAt) VALUES ${Array.from({ length: 501 }, () => "(?,'bounded-weekly-test',?)").join(",")}`,
+      Array.from({ length: 501 }, () => [owner.merchantId, inside]).flat()
+    );
+    await expect(
+      readWeeklyAnalysisInput(owner.merchantId, window)
+    ).rejects.toThrow("paginated generation job");
   });
 });

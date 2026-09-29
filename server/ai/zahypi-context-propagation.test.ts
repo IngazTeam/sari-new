@@ -27,6 +27,10 @@ vi.mock("../db", () => ({
 
 vi.mock("./sentiment-analysis", () => ({ analyzeSentiment }));
 vi.mock("../reports/email-sender", () => ({ sendEmail: vi.fn() }));
+vi.mock("../reports/weekly-cohort", async original => ({
+  ...await original<typeof import("../reports/weekly-cohort")>(),
+  readWeeklyAnalysisInput: vi.fn().mockResolvedValue([{ id: 10, text: "الخدمة ممتازة", unavailable: null }]),
+}));
 vi.mock("./loss-detector", () => ({
   getPipelineSummary: vi.fn().mockResolvedValue({ stages: {}, lossReasons: {} }),
 }));

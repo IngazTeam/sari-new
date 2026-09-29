@@ -4,15 +4,17 @@
 
 import {
   createWeeklySentimentReport,
-  getConversationsByMerchantId,
   getMerchantById,
-  getMessagesByConversationId,
   getUserById,
   markReportEmailSent,
 } from "../db";
 import { analyzeSentiment } from "./sentiment-analysis";
 import { sendEmail } from "../reports/email-sender";
 import { renderWeeklyReportEmail } from "../reports/weekly-report-email";
+import {
+  previousReportWindow,
+  readWeeklyAnalysisInput,
+} from "../reports/weekly-cohort";
 
 interface WeeklySentimentReport {
   merchantId: number;
@@ -28,13 +30,9 @@ interface WeeklySentimentReport {
   neutralPercentage: number;
   topKeywords: Array<{ keyword: string; count: number }>;
   improvementSuggestions: string[];
-  // P3: Sales KPIs
-  salesKPIs?: {
-    conversionRate: number;
-    totalPaid: number;
-    totalLost: number;
-    topLossReason: string | null;
-  };
+  unclassifiedCount: number;
+  failedAnalysisCount: number;
+  inputLimitedCount: number;
 }
 
 /**
@@ -44,22 +42,10 @@ export async function generateWeeklySentimentReport(
   merchantId: number
 ): Promise<WeeklySentimentReport | null> {
   try {
-    // حساب تاريخ بداية ونهاية الأسبوع الماضي
-    const now = new Date();
-    const weekEnd = new Date(now);
-    weekEnd.setDate(now.getDate() - now.getDay()); // الأحد الماضي
-    weekEnd.setHours(23, 59, 59, 999);
-
-    const weekStart = new Date(weekEnd);
-    weekStart.setDate(weekEnd.getDate() - 6); // الاثنين قبل أسبوع
-    weekStart.setHours(0, 0, 0, 0);
-
-    // الحصول على المحادثات في هذا الأسبوع
-    const conversations = await getConversationsByMerchantId(merchantId);
-    const weekConversations = conversations.filter(c => {
-      const createdAt = new Date(c.createdAt);
-      return createdAt >= weekStart && createdAt <= weekEnd;
-    });
+    const window = previousReportWindow();
+    const weekStart = window.start,
+      weekEnd = window.end;
+    const weekConversations = await readWeeklyAnalysisInput(merchantId, window);
 
     if (weekConversations.length === 0) {
       console.log(
@@ -72,21 +58,22 @@ export async function generateWeeklySentimentReport(
     let positiveCount = 0;
     let negativeCount = 0;
     let neutralCount = 0;
+    let failedAnalysisCount = 0;
     const keywordMap = new Map<string, number>();
 
     for (const conversation of weekConversations) {
-      // الحصول على رسائل المحادثة
-      const messages = await getMessagesByConversationId(conversation.id);
-      const customerMessages = messages.filter(m => m.direction === "incoming");
-
-      if (customerMessages.length === 0) continue;
-
-      // تحليل المشاعر
-      const conversationText = customerMessages.map(m => m.content).join(" ");
-      const sentiment = await analyzeSentiment(conversationText, {
-        merchantId,
-        taskType: "sari.sentiment.weekly",
-      });
+      const conversationText = conversation.text;
+      if (!conversationText) continue;
+      let sentiment;
+      try {
+        sentiment = await analyzeSentiment(conversationText, {
+          merchantId,
+          taskType: "sari.sentiment.weekly",
+        });
+      } catch {
+        failedAnalysisCount++;
+        continue;
+      }
 
       if (sentiment.sentiment === "positive" || sentiment.sentiment === "happy")
         positiveCount++;
@@ -97,7 +84,11 @@ export async function generateWeeklySentimentReport(
         sentiment.sentiment === "frustrated"
       )
         negativeCount++;
-      else neutralCount++;
+      else if (sentiment.sentiment === "neutral") neutralCount++;
+      else {
+        failedAnalysisCount++;
+        continue;
+      }
 
       // استخراج الكلمات المفتاحية (بسيط)
       const words = conversationText.split(/\s+/);
@@ -123,12 +114,7 @@ export async function generateWeeklySentimentReport(
     const improvementSuggestions = [];
     if (negativePercentage > 20) {
       improvementSuggestions.push(
-        "نسبة المشاعر السلبية مرتفعة. يُنصح بمراجعة الردود وتحسين خدمة العملاء."
-      );
-    }
-    if (positivePercentage < 50) {
-      improvementSuggestions.push(
-        "يمكن تحسين رضا العملاء من خلال ردود أسرع وأكثر ودية."
+        "راجع الرسائل المصنفة سلبية في العينة قبل اتخاذ إجراء؛ هذا تصنيف آلي وليس قياس رضا."
       );
     }
     if (topKeywords.length > 0) {
@@ -146,6 +132,12 @@ export async function generateWeeklySentimentReport(
       weekStartDate: weekStart,
       weekEndDate: weekEnd,
       totalConversations,
+      unclassifiedCount:
+        totalConversations - positiveCount - negativeCount - neutralCount,
+      failedAnalysisCount,
+      inputLimitedCount: weekConversations.filter(
+        c => c.unavailable === "input_limit"
+      ).length,
       positiveCount,
       negativeCount,
       neutralCount,
@@ -155,42 +147,6 @@ export async function generateWeeklySentimentReport(
       topKeywords,
       improvementSuggestions,
     };
-
-    // P3: Load Sales KPIs from loss-detector pipeline
-    try {
-      const { getPipelineSummary } = await import("./loss-detector");
-      const pipeline = await getPipelineSummary(merchantId);
-      const totalPaid = pipeline.stages["paid"] || 0;
-      const totalLost = pipeline.stages["lost"] || 0;
-      const total = totalPaid + totalLost;
-      const topLoss = Object.entries(pipeline.lossReasons).sort(
-        (a, b) => b[1] - a[1]
-      )[0];
-      report.salesKPIs = {
-        conversionRate: total > 0 ? Math.round((totalPaid / total) * 100) : 0,
-        totalPaid,
-        totalLost,
-        topLossReason: topLoss ? topLoss[0] : null,
-      };
-      // Sales-based improvement suggestions
-      if (report.salesKPIs.conversionRate < 20 && total > 0) {
-        improvementSuggestions.push(
-          `📉 نسبة التحويل منخفضة (${report.salesKPIs.conversionRate}%). راجع أسعارك أو أضف عروض.`
-        );
-      }
-      if (report.salesKPIs.topLossReason === "price") {
-        improvementSuggestions.push(
-          "💰 أكثر سبب لخسارة العملاء هو السعر. فكّر بإضافة باقات بأسعار مختلفة."
-        );
-      }
-      if (report.salesKPIs.topLossReason === "no_response") {
-        improvementSuggestions.push(
-          "👻 كثير من العملاء يختفون. حاول تحسين المتابعة الاستباقية."
-        );
-      }
-    } catch {
-      // Sales KPIs are supplementary — non-blocking
-    }
 
     // حفظ التقرير في قاعدة البيانات
     const reportId = await createWeeklySentimentReport({

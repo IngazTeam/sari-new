@@ -5,6 +5,15 @@ import { currentConversationUnderstanding } from './conversation-understanding-c
  */
 
 import { callGPT4 } from './openai';
+import { z } from 'zod';
+
+const weeklySentimentResult = z.object({
+  sentiment: z.enum(['positive', 'negative', 'neutral', 'angry', 'happy', 'sad', 'frustrated']),
+  confidence: z.number().finite().min(0).max(100),
+  keywords: z.array(z.string().max(255)).max(20),
+  reasoning: z.string().max(2000),
+  suggestedTone: z.string().max(100).optional(),
+});
 
 export type SentimentType = 'positive' | 'negative' | 'neutral' | 'angry' | 'happy' | 'sad' | 'frustrated';
 
@@ -23,7 +32,7 @@ export async function analyzeSentiment(
   message: string,
   context?: { merchantId: number; taskType: 'sari.sentiment.weekly' },
 ): Promise<SentimentResult> {
-  const interpretation = currentConversationUnderstanding(message);
+  const interpretation = context ? null : currentConversationUnderstanding(message);
   if (interpretation) return { sentiment: interpretation.sentiment, confidence: Math.round(interpretation.confidence * 100), keywords: [], reasoning: interpretation.summary, suggestedTone: 'friendly' };
   try {
     const prompt = `حلل المشاعر في هذه الرسالة من العميل:
@@ -74,6 +83,8 @@ export async function analyzeSentiment(
     const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
     const result = JSON.parse(cleaned);
 
+    if (context) return weeklySentimentResult.parse(result);
+
     return {
       sentiment: result.sentiment || 'neutral',
       confidence: Math.min(100, Math.max(0, result.confidence || 50)),
@@ -82,6 +93,8 @@ export async function analyzeSentiment(
       suggestedTone: result.suggestedTone || 'friendly',
     };
   } catch (error) {
+    // Reporting must retain failed classifications as unavailable, never keyword guesses.
+    if (context) throw new Error('Weekly sentiment classification unavailable');
     console.error('Error analyzing sentiment:', error);
     
     // Fallback: simple keyword-based analysis

@@ -25,6 +25,12 @@ vi.mock("./db", () => ({
   getAllMerchants: m.merchants,
 }));
 vi.mock("./reports/email-sender", () => ({ sendEmail: m.send }));
+vi.mock("./reports/weekly-cohort", async original => ({
+  ...(await original<typeof import("./reports/weekly-cohort")>()),
+  readWeeklyAnalysisInput: vi
+    .fn()
+    .mockResolvedValue([{ id: 10, text: "message", unavailable: null }]),
+}));
 vi.mock("./_core/llm", () => ({ invokeLLM: vi.fn() }));
 vi.mock("./ai/sentiment-analysis", () => ({ analyzeSentiment: m.analyze }));
 vi.mock("./ai/loss-detector", () => ({

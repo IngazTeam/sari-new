@@ -22,6 +22,85 @@ export function currentReportWindow(now = new Date()) {
   };
 }
 
+/** The last completed Sunday–Saturday UTC week, including runs early on Sunday. */
+export function previousReportWindow(now = new Date()) {
+  const current = currentReportWindow(now);
+  const start = new Date(current.start.getTime() - 7 * 86400000);
+  const end = new Date(current.start.getTime() - 1000);
+  return {
+    start,
+    end,
+    sqlStart: start.toISOString().slice(0, 19).replace("T", " "),
+    sqlEnd: end.toISOString().slice(0, 19).replace("T", " "),
+  };
+}
+
+/** Capture inputs before provider calls. Oversized input is explicit, never silently truncated. */
+export async function readWeeklyAnalysisInput(
+  merchantId: number,
+  window = previousReportWindow()
+) {
+  if (!Number.isSafeInteger(merchantId) || merchantId < 1)
+    throw Error("Invalid merchant");
+  const db = await getDb();
+  if (!db) throw Error("Report data unavailable");
+  return db.transaction(
+    async tx => {
+      const rows = await tx
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.merchantId, merchantId),
+            gte(conversations.createdAt, window.sqlStart),
+            lte(conversations.createdAt, window.sqlEnd)
+          )
+        )
+        .orderBy(asc(conversations.id))
+        .limit(501);
+      if (rows.length > 500)
+        throw Error("Weekly report requires a paginated generation job");
+      const result: Array<{
+        id: number;
+        text: string | null;
+        unavailable: "empty" | "input_limit" | null;
+      }> = [];
+      for (const row of rows) {
+        const parts = await tx
+          .select({ content: sql<string>`left(${messages.content}, 24001)` })
+          .from(messages)
+          .innerJoin(
+            conversations,
+            eq(conversations.id, messages.conversationId)
+          )
+          .where(
+            and(
+              eq(conversations.merchantId, merchantId),
+              eq(messages.conversationId, row.id),
+              eq(messages.direction, "incoming"),
+              gte(messages.createdAt, window.sqlStart),
+              lte(messages.createdAt, window.sqlEnd)
+            )
+          )
+          .orderBy(asc(messages.createdAt), asc(messages.id))
+          .limit(201);
+        const text = parts
+          .map(p => p.content)
+          .filter(p => p.trim())
+          .join("\n");
+        const tooLarge = parts.length > 200 || text.length > 24000;
+        result.push({
+          id: row.id,
+          text: tooLarge || !text.trim() ? null : text,
+          unavailable: tooLarge ? "input_limit" : !text.trim() ? "empty" : null,
+        });
+      }
+      return result;
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" }
+  );
+}
+
 /** One stored incoming-message classification per conversation created in the same UTC window.
  * This is a descriptive sample, not a satisfaction survey or evidence of sales conversion.
  */
