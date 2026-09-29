@@ -26,6 +26,12 @@ export const sectionListInput = z
   })
   .default({ search: "", type: "all", state: "all", page: 1 });
 export const sectionReadInput = z.object({ id: z.number().int().positive() });
+export const sectionCreationReadInput = z.object({
+  requestId: z.string().uuid(),
+});
+export type SectionCreationReceipt =
+  | { state: "not_found" }
+  | { state: "saved" | "changed" | "deleted"; id: number };
 export const sectionContentFits = (text: string) =>
   new TextEncoder().encode(text).length <= 65535;
 export const sectionFields = z.object({

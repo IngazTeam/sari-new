@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
+import {
+  readSectionDraft,
+  writeSectionDraft,
+  forgetSectionDraft,
+  type SectionDraftSnapshot,
+} from "@/lib/knowledge-section-draft";
 import { useKnowledgeSectionCopy } from "@/hooks/useKnowledgeSectionCopy";
 import { KnowledgeWorkspaceScope } from "./KnowledgeWorkspaceScope";
 import {
@@ -44,11 +51,11 @@ const signature = (d: Draft) =>
 export function KnowledgeSectionWorkspace() {
   return (
     <KnowledgeWorkspaceScope slot="sections">
-      {key => <Workspace key={key} />}
+      {key => <Workspace key={key} scope={key} />}
     </KnowledgeWorkspaceScope>
   );
 }
-function Workspace() {
+function Workspace({ scope }: { scope: string }) {
   const c = useKnowledgeSectionCopy(),
     { t } = useTranslation(),
     utils = trpc.useUtils();
@@ -65,6 +72,17 @@ function Workspace() {
   const create = trpc.sariBrain.createWorkspaceSection.useMutation(),
     update = trpc.sariBrain.updateWorkspaceSection.useMutation(),
     remove = trpc.sariBrain.deleteWorkspaceSection.useMutation();
+  const [initial] = useState(() => {
+    try {
+      return { draft: readSectionDraft(scope), error: false };
+    } catch {
+      return { draft: null, error: true };
+    }
+  });
+  const [restorable, setRestorable] = useState(initial.draft),
+    [storageError, setStorageError] = useState(initial.error),
+    [rebaseReview, setRebaseReview] = useState<SectionReview | null>(null);
+  const epoch = useRef(knowledgeCacheEpoch());
   const [draft, setDraft] = useState<Draft | null>(null),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(false),
@@ -87,8 +105,58 @@ function Workspace() {
     if (draft) panel.current?.focus();
   }, [draft?.id, draft?.requestId]);
   const canManage = !!list.data?.canManage && !list.isError;
+  const persist = (value: Draft, phase: SectionDraftSnapshot["phase"]) => {
+    try {
+      writeSectionDraft(
+        scope,
+        {
+          version: 1,
+          savedAt: Date.now(),
+          id: value.id,
+          title: value.title,
+          content: value.content,
+          useInBot: value.useInBot,
+          sectionType: value.sectionType as SectionDraftSnapshot["sectionType"],
+          parentId: value.parentId,
+          requestId: value.requestId,
+          revision: value.review?.revision || null,
+          phase,
+        },
+        epoch.current
+      );
+      setStorageError(false);
+      return true;
+    } catch {
+      setStorageError(true);
+      return false;
+    }
+  };
+  useEffect(() => {
+    if (draft && canManage)
+      persist(
+        draft,
+        uncertain ? "uncertain" : busy && !deleting ? "submitting" : "editing"
+      );
+  }, [draft, canManage, busy, uncertain, deleting]);
+  useEffect(() => {
+    if (list.data && !list.data.canManage && !list.isError) {
+      setRestorable(null);
+      try {
+        forgetSectionDraft(scope);
+      } catch {
+        setStorageError(true);
+      }
+    }
+  }, [list.data?.canManage, list.isError, scope]);
   const name = (key: string) => c[key as keyof typeof c] || key;
   const close = () => {
+    try {
+      forgetSectionDraft(scope);
+    } catch {
+      setStorageError(true);
+    }
+    setRestorable(null);
+    setRebaseReview(null);
     setDraft(null);
     setAck(false);
     setError("");
@@ -139,6 +207,7 @@ function Workspace() {
       };
       d.baseline = signature(d);
       setDraft(d);
+      setRebaseReview(null);
       setAck(false);
       setUncertain(false);
       setDeleting(false);
@@ -163,6 +232,7 @@ function Workspace() {
     };
     d.baseline = signature(d);
     setDraft(d);
+    setRebaseReview(null);
     setAck(false);
     setError("");
     setMessage("");
@@ -173,6 +243,80 @@ function Workspace() {
     setAck(false);
     setError("");
   };
+  const restore = async () => {
+    if (!restorable || !canManage || locked.current) return;
+    locked.current = true;
+    setLoading(true);
+    setError("");
+    try {
+      const current = restorable.id
+        ? await utils.sariBrain.sectionReview.fetch(
+            { id: restorable.id },
+            { staleTime: 0 }
+          )
+        : null;
+      if (!alive.current || epoch.current !== knowledgeCacheEpoch()) return;
+      const changed =
+        current &&
+        (current.revision !== restorable.revision ||
+          restorable.phase !== "editing");
+      setRebaseReview(changed ? current : null);
+      setDraft({
+        id: restorable.id,
+        title: restorable.title,
+        content: restorable.content,
+        useInBot: restorable.useInBot,
+        sectionType: restorable.sectionType,
+        parentId: restorable.parentId,
+        requestId: restorable.requestId,
+        baseline: "",
+        review: current
+          ? { ...current, revision: restorable.revision || current.revision }
+          : null,
+      });
+      setUncertain(restorable.phase !== "editing");
+      setAck(false);
+      setDeleting(false);
+      setRestorable(null);
+      setMessage(c.draftRestored);
+    } catch {
+      if (alive.current) setError(c.loadError);
+    } finally {
+      locked.current = false;
+      if (alive.current) setLoading(false);
+    }
+  };
+  const receiptMessage = (state?: string) =>
+    state === "deleted"
+      ? c.creationDeleted
+      : state === "changed"
+        ? c.creationChanged
+        : c.creationSaved;
+  const checkCreation = async () => {
+    if (!draft || draft.id !== null || !canManage || locked.current) return;
+    locked.current = true;
+    setLoading(true);
+    setError("");
+    setAck(false);
+    try {
+      const result = await utils.sariBrain.sectionCreationReceipt.fetch(
+        { requestId: draft.requestId },
+        { staleTime: 0 }
+      );
+      if (!alive.current) return;
+      if (result.state === "not_found") setMessage(c.creationMissing);
+      else {
+        close();
+        setMessage(receiptMessage(result.state));
+        refresh();
+      }
+    } catch {
+      if (alive.current) setError(c.loadError);
+    } finally {
+      locked.current = false;
+      if (alive.current) setLoading(false);
+    }
+  };
   const canEnable =
     !draft?.review ||
     sectionState({ ...draft.review.section, useInBot: true }) === "eligible";
@@ -182,6 +326,7 @@ function Workspace() {
       locked.current ||
       !draft ||
       !canManage ||
+      !!rebaseReview ||
       !ack ||
       (uncertain && draft.id !== null)
     )
@@ -201,11 +346,17 @@ function Workspace() {
       return;
     }
     if (!deleting && (pending || (draft.useInBot && !canEnable))) return;
+    if (draft.id === null && !persist(draft, "submitting")) return;
     locked.current = true;
     setBusy(true);
     setError("");
     try {
-      let result: { success: boolean; indexing?: string };
+      let result: {
+        success: boolean;
+        indexing?: string;
+        replayed?: boolean;
+        state?: string;
+      };
       if (deleting && draft.id && draft.review)
         result = await remove.mutateAsync({
           id: draft.id,
@@ -234,7 +385,7 @@ function Workspace() {
       if (!alive.current) return;
       close();
       setMessage(
-        c.saved +
+        (result.replayed ? receiptMessage(result.state) : c.saved) +
           (result.indexing === "ready"
             ? " " + c.indexed
             : result.indexing === "unconfirmed"
@@ -260,6 +411,40 @@ function Workspace() {
         <CardDescription className="leading-7">{c.help}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 min-w-0">
+        {storageError && (
+          <p role="alert" className="leading-7">
+            {c.draftStorageError}
+          </p>
+        )}
+        {restorable && canManage && !draft && (
+          <section
+            className="rounded-xl border p-4 space-y-3"
+            aria-label={c.draftAvailable}
+          >
+            <h3 className="font-semibold">{c.draftAvailable}</h3>
+            <p className="text-sm leading-7">{c.draftPolicy}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={loading} onClick={() => void restore()}>
+                {c.restoreDraft}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={loading}
+                onClick={() => {
+                  try {
+                    forgetSectionDraft(scope);
+                    setRestorable(null);
+                    setStorageError(false);
+                  } catch {
+                    setStorageError(true);
+                  }
+                }}
+              >
+                {c.discardDraft}
+              </Button>
+            </div>
+          </section>
+        )}
         {message && <p role="status">{message}</p>}
         {error && !draft && (
           <p role="alert" className="leading-7">
@@ -341,7 +526,10 @@ function Workspace() {
               </div>
             </form>
             {canManage && (
-              <Button disabled={loading} onClick={() => fresh()}>
+              <Button
+                disabled={loading || !!restorable}
+                onClick={() => fresh()}
+              >
                 {c.new}
               </Button>
             )}
@@ -385,7 +573,7 @@ function Workspace() {
                         )}
                         <Button
                           variant="outline"
-                          disabled={loading}
+                          disabled={loading || !!restorable}
                           onClick={() => void open(row.id)}
                         >
                           {c.open}
@@ -435,6 +623,41 @@ function Workspace() {
             <h3 className="font-semibold">
               {deleting ? c.deleteTitle : draft.id ? c.reviewTitle : c.new}
             </h3>
+            {canManage && <p className="text-sm leading-7">{c.draftPolicy}</p>}
+            {rebaseReview && (
+              <section
+                className="rounded-xl border p-4 space-y-3"
+                aria-label={c.currentText}
+              >
+                <p role="alert" className="leading-7">
+                  {c.restoreChanged}
+                </p>
+                <h4 className="font-semibold">{c.currentText}</h4>
+                <p className="[overflow-wrap:anywhere]" dir="auto">
+                  {rebaseReview.section.title} ·{" "}
+                  {name(rebaseReview.section.state)}
+                </p>
+                <p
+                  className="whitespace-pre-wrap [overflow-wrap:anywhere] leading-7"
+                  dir="auto"
+                >
+                  {rebaseReview.section.content}
+                </p>
+                <Button
+                  className="whitespace-normal h-auto min-h-11"
+                  disabled={busy || loading || !canManage}
+                  onClick={() => {
+                    setDraft(d => (d ? { ...d, review: rebaseReview } : d));
+                    setRebaseReview(null);
+                    setUncertain(false);
+                    setAck(false);
+                    setError("");
+                  }}
+                >
+                  {c.useDraft}
+                </Button>
+              </section>
+            )}
             {draft.review && (
               <div className="rounded-xl bg-muted/40 p-4 space-y-2 text-sm [overflow-wrap:anywhere]">
                 <p>
@@ -494,7 +717,9 @@ function Workspace() {
             ) : (
               <>
                 <fieldset
-                  disabled={!canManage || busy || uncertain || pending}
+                  disabled={
+                    !canManage || busy || uncertain || pending || !!rebaseReview
+                  }
                   className="space-y-4"
                 >
                   {!draft.id && (
@@ -578,6 +803,7 @@ function Workspace() {
                   disabled={
                     busy ||
                     loading ||
+                    !!rebaseReview ||
                     (uncertain && draft.id !== null) ||
                     (!deleting && pending)
                   }
@@ -594,6 +820,7 @@ function Workspace() {
                     busy ||
                     loading ||
                     !ack ||
+                    !!rebaseReview ||
                     (uncertain && draft.id !== null) ||
                     (!deleting && (pending || (draft.useInBot && !canEnable)))
                   }
@@ -608,6 +835,16 @@ function Workspace() {
                         : c.save}
                 </Button>
               )}
+              {canManage && draft.id === null && uncertain && (
+                <Button
+                  variant="outline"
+                  className="whitespace-normal h-auto min-h-11"
+                  disabled={busy || loading}
+                  onClick={() => void checkCreation()}
+                >
+                  {c.checkCreation}
+                </Button>
+              )}
               {draft.id && (
                 <Button
                   variant="outline"
@@ -620,7 +857,7 @@ function Workspace() {
               {draft.id && canManage && !deleting && (
                 <Button
                   variant="outline"
-                  disabled={busy || loading || uncertain}
+                  disabled={busy || loading || uncertain || !!rebaseReview}
                   onClick={() => {
                     setDeleting(true);
                     setAck(false);
@@ -636,6 +873,7 @@ function Workspace() {
                     busy ||
                     loading ||
                     uncertain ||
+                    !!rebaseReview ||
                     signature(draft) !== draft.baseline
                   }
                   onClick={() => fresh(draft.id)}

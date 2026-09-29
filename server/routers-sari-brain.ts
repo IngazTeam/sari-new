@@ -1,3 +1,5 @@
+import { sectionCreationReadInput } from '../shared/knowledge-sections';
+import { readSectionCreation } from './knowledge/section-workspace';
 import { readKnowledgeSourceInventory } from './knowledge/source-inventory';
 import { retiredSectionMutation } from './knowledge/retired-section-mutation';
 import { sectionListInput, sectionReadInput, sectionCreateInput, sectionUpdateInput, sectionDeleteInput } from '../shared/knowledge-sections';
@@ -1730,8 +1732,11 @@ ${fencedContent}`,
     try { return await readSectionWorkspace(ctx.merchantId,input.id); }
     catch(error) { if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section review unavailable'}); }
   }),
+  sectionCreationReceipt: permissionProcedure('bot_settings.manage').input(sectionCreationReadInput).query(async ({ctx,input})=>{
+    try{return await readSectionCreation(ctx.merchantId,input.requestId);}catch{throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section creation receipt unavailable'});}
+  }),
   createWorkspaceSection: permissionProcedure('bot_settings.manage').input(sectionCreateInput).mutation(async ({ctx,input})=>{
-    try { const result=await createWorkspaceSection(ctx.merchantId,input);return {...result,indexing:input.useInBot?await indexApprovedConflict(ctx.merchantId,result.id):'not_requested' as const}; }
+    try { const result=await createWorkspaceSection(ctx.merchantId,input);return {...result,indexing:input.useInBot&&!result.replayed?await indexApprovedConflict(ctx.merchantId,result.id):'not_requested' as const}; }
     catch(error){if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Section result unconfirmed'});}
   }),
   updateWorkspaceSection: permissionProcedure('bot_settings.manage').input(sectionUpdateInput).mutation(async ({ctx,input})=>{

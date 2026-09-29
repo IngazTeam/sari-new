@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   list: {} as any,
   health: {} as any,
   read: vi.fn(),
+  receipt: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       sariBrain: {
         sectionReview: { fetch: api.read },
+        sectionCreationReceipt: { fetch: api.receipt },
         ...Object.fromEntries(
           [
             "getHealthScore",
@@ -138,6 +140,7 @@ it("rejects oversized multi-byte content before making a request", async () => {
 });
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   vi.stubGlobal("React", React);
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   api.scope = "10:20:sections";
@@ -146,6 +149,7 @@ beforeEach(() => {
   };
   api.health = {};
   api.read.mockResolvedValue(review());
+  api.receipt.mockResolvedValue({ state: "not_found" });
   api.create.mockResolvedValue({
     success: true,
     id: 7,
@@ -195,6 +199,140 @@ const set = (label: string, value: string) =>
     el.dispatchEvent(new Event("input", { bubbles: true }));
   });
 const check = (label: string) => act(async () => field(label).click());
+const reload = async () => {
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await render();
+};
+it("restores a new draft after remount without approval or automatic submission", async () => {
+  await render();
+  await click(c.new);
+  await set(c.sectionTitle, "Local draft");
+  await set(c.content, "Private draft text");
+  await check(c.ack);
+  await reload();
+  expect(container.textContent).toContain(c.draftAvailable);
+  expect(button(c.new).disabled).toBe(true);
+  await click(c.restoreDraft);
+  expect(field(c.content).value).toBe("Private draft text");
+  expect(field(c.ack).checked).toBe(false);
+  expect(api.create).not.toHaveBeenCalled();
+});
+it("restores an uncertain create with the identical request after a lost response", async () => {
+  await render();
+  await click(c.new);
+  await set(c.sectionTitle, "New");
+  await set(c.content, "Text");
+  api.create.mockRejectedValueOnce(Error("Lost response"));
+  await check(c.ack);
+  await click(c.save);
+  const first = api.create.mock.calls[0][0];
+  await reload();
+  await click(c.restoreDraft);
+  expect(field(c.content).matches(":disabled")).toBe(true);
+  await click(c.checkCreation);
+  expect(api.receipt).toHaveBeenCalledWith(
+    { requestId: first.requestId },
+    { staleTime: 0 }
+  );
+  expect(container.textContent).toContain(c.creationMissing);
+  await check(c.ack);
+  await click(c.retrySame);
+  expect(api.create.mock.calls[1][0]).toEqual(first);
+});
+it.each(["saved", "changed", "deleted"])(
+  "reconciles %s receipts without a second mutation",
+  async state => {
+    await render();
+    await click(c.new);
+    await set(c.sectionTitle, "New");
+    await set(c.content, "Text");
+    api.create.mockRejectedValueOnce(Error("Lost response"));
+    await check(c.ack);
+    await click(c.save);
+    await reload();
+    await click(c.restoreDraft);
+    api.receipt.mockResolvedValue({ state, id: 7 });
+    await click(c.checkCreation);
+    expect(api.create).toHaveBeenCalledTimes(1);
+    expect(container.querySelector("[data-section-editor]")).toBeNull();
+    expect(sessionStorage.length).toBe(0);
+    expect(container.textContent).toContain(
+      state === "deleted"
+        ? c.creationDeleted
+        : state === "changed"
+          ? c.creationChanged
+          : c.creationSaved
+    );
+  }
+);
+it("requires an explicit comparison before rebasing a restored edit onto a newer revision", async () => {
+  await render();
+  await click(c.open);
+  await set(c.content, "My draft");
+  await check(c.ack);
+  await reload();
+  api.read.mockResolvedValue({
+    ...review(),
+    section: { ...row(), content: "Concurrent text" },
+    revision: "c".repeat(64),
+  });
+  await click(c.restoreDraft);
+  expect(container.textContent).toContain("Concurrent text");
+  expect(field(c.content).value).toBe("My draft");
+  expect(field(c.ack).disabled).toBe(true);
+  await reload();
+  await click(c.restoreDraft);
+  expect(button(c.useDraft)).toBeTruthy();
+  await click(c.useDraft);
+  expect(field(c.ack).checked).toBe(false);
+  await check(c.ack);
+  await click(c.save);
+  expect(api.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      content: "My draft",
+      expectedRevision: "c".repeat(64),
+    })
+  );
+});
+it("never restores a deletion or its approval", async () => {
+  await render();
+  await click(c.open);
+  await click(c.remove);
+  await check(c.ack);
+  await reload();
+  await click(c.restoreDraft);
+  expect(button(c.deleteConfirm)).toBeUndefined();
+  expect(field(c.ack).checked).toBe(false);
+  expect(api.remove).not.toHaveBeenCalled();
+});
+it("does not send a new creation if its request identity cannot be retained", async () => {
+  await render();
+  await click(c.new);
+  await set(c.sectionTitle, "New");
+  await set(c.content, "Text");
+  const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw Error("Quota");
+  });
+  try {
+    await check(c.ack);
+    await click(c.save);
+    expect(api.create).not.toHaveBeenCalled();
+    expect(container.textContent).toContain(c.draftStorageError);
+  } finally {
+    spy.mockRestore();
+  }
+});
+it("does not reveal cached text when write permission has been removed", async () => {
+  await render();
+  await click(c.new);
+  await set(c.content, "Hidden cached text");
+  api.list.data.canManage = false;
+  await reload();
+  expect(container.textContent).not.toContain(c.draftAvailable);
+  expect(container.textContent).not.toContain("Hidden cached text");
+  expect(sessionStorage.length).toBe(0);
+});
 it("distinguishes read errors and empty lists", async () => {
   api.list = { isError: true };
   await render();

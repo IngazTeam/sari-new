@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getPool, closeDb } from "../db/connection";
 import {
@@ -11,6 +12,7 @@ import {
   readSectionWorkspace,
   listSectionWorkspace,
   sectionReadiness,
+  readSectionCreation,
 } from "./section-workspace";
 describe.skipIf(!process.env.DATABASE_URL)("section workspace on MySQL", () => {
   const users: number[] = [];
@@ -70,6 +72,139 @@ describe.skipIf(!process.env.DATABASE_URL)("section workspace on MySQL", () => {
       ...patch,
     });
   };
+  it("keeps a creation receipt after reviewed tree deletion and does not resurrect either row", async () => {
+    const rootInput = input(),
+      root = await createWorkspaceSection(merchantId, rootInput);
+    const childInput = input({ parentId: root.id }),
+      child = await createWorkspaceSection(merchantId, childInput);
+    const r = await readSectionWorkspace(merchantId, root.id);
+    await changeWorkspaceSection(
+      merchantId,
+      { id: root.id, expectedRevision: r.deleteRevision, acknowledged: true },
+      true
+    );
+    for (const [data, id] of [
+      [rootInput, root.id],
+      [childInput, child.id],
+    ] as const) {
+      expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+        state: "deleted",
+        id,
+      });
+      expect(await createWorkspaceSection(merchantId, data)).toMatchObject({
+        id,
+        replayed: true,
+        state: "deleted",
+      });
+    }
+    expect((await list()).total).toBe(0);
+    expect(
+      await q(
+        "SELECT id FROM sari_activity_log WHERE merchant_id=? AND action_type='section_created'",
+        [merchantId]
+      )
+    ).toHaveLength(2);
+  });
+  it("returns a changed receipt without reverting later edits", async () => {
+    const data = input(),
+      created = await createWorkspaceSection(merchantId, data);
+    expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+      state: "saved",
+      id: created.id,
+    });
+    await change(created.id, { content: "Later text" });
+    expect(await createWorkspaceSection(merchantId, data)).toMatchObject({
+      replayed: true,
+      state: "changed",
+    });
+    expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+      state: "changed",
+      id: created.id,
+    });
+    expect(
+      (await readSectionWorkspace(merchantId, created.id)).section.content
+    ).toBe("Later text");
+  });
+  it("preserves receipts across direct section deletion", async () => {
+    const data = input(),
+      created = await createWorkspaceSection(merchantId, data);
+    await q("DELETE FROM knowledge_sections WHERE merchant_id=?", [merchantId]);
+    expect(await createWorkspaceSection(merchantId, data)).toMatchObject({
+      id: created.id,
+      state: "deleted",
+    });
+    expect((await list()).total).toBe(0);
+  });
+  it("scopes receipt identity and returns only status and section id", async () => {
+    const data = input(),
+      created = await createWorkspaceSection(merchantId, data);
+    const other = await createDisposableMerchant("receipt-foreign");
+    users.push(other.userId);
+    expect(await readSectionCreation(other.merchantId, data.requestId)).toEqual(
+      { state: "not_found" }
+    );
+    const second = await createWorkspaceSection(other.merchantId, data);
+    expect(second.id).not.toBe(created.id);
+    expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+      state: "saved",
+      id: created.id,
+    });
+  });
+  it("rolls back a rejected parent without leaving a receipt", async () => {
+    const data = input({ parentId: 2147483647 });
+    await expect(
+      createWorkspaceSection(merchantId, data)
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+      state: "not_found",
+    });
+    expect((await list()).total).toBe(0);
+  });
+  it("recovers an older provenance receipt without rewriting edited content", async () => {
+    const data = input(),
+      created = await createWorkspaceSection(merchantId, data);
+    await q("DELETE FROM knowledge_section_creations WHERE merchant_id=?", [
+      merchantId,
+    ]);
+    await change(created.id, { content: "Edited legacy content" });
+    expect(await createWorkspaceSection(merchantId, data)).toMatchObject({
+      id: created.id,
+      replayed: true,
+      state: "changed",
+    });
+    expect(
+      await q(
+        "SELECT id FROM knowledge_section_creations WHERE merchant_id=?",
+        [merchantId]
+      )
+    ).toHaveLength(1);
+    expect(
+      (await readSectionWorkspace(merchantId, created.id)).section.content
+    ).toBe("Edited legacy content");
+  });
+  it("backfills legacy provenance idempotently through migration 0161", async () => {
+    const data = input(),
+      created = await createWorkspaceSection(merchantId, data);
+    await q("DELETE FROM knowledge_section_creations WHERE merchant_id=?", [
+      merchantId,
+    ]);
+    const statement = readFileSync(
+      "drizzle/0161_knowledge_section_creations.sql",
+      "utf8"
+    ).split("--> statement-breakpoint")[1];
+    await q(statement);
+    await q(statement);
+    expect(
+      await q(
+        "SELECT id FROM knowledge_section_creations WHERE merchant_id=?",
+        [merchantId]
+      )
+    ).toHaveLength(1);
+    expect(await readSectionCreation(merchantId, data.requestId)).toEqual({
+      state: "saved",
+      id: created.id,
+    });
+  });
   it("retries an identical creation once under concurrent requests", async () => {
     const data = input();
     const a = await Promise.all([
@@ -78,6 +213,12 @@ describe.skipIf(!process.env.DATABASE_URL)("section workspace on MySQL", () => {
     ]);
     expect(a[0].id).toBe(a[1].id);
     expect((await list()).total).toBe(1);
+    expect(
+      await q(
+        "SELECT id FROM knowledge_section_creations WHERE merchant_id=?",
+        [merchantId]
+      )
+    ).toHaveLength(1);
     expect(
       await q(
         "SELECT id FROM sari_activity_log WHERE merchant_id=? AND action_type='section_created'",

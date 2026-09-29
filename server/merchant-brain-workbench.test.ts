@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const base = "prototypes/tenant-dashboard/site/",
   key = "sary-brain-workbench-v1";
 let dom: JSDOM, w: any, errors: Error[];
-function boot(stored?: string) {
+function boot(stored?: string, sectionDraft?: string) {
   errors = [];
   const console = new VirtualConsole();
   console.on("jsdomError", e => errors.push(e));
@@ -31,6 +31,7 @@ function boot(stored?: string) {
     this.removeAttribute("open");
   };
   if (stored) w.localStorage.setItem(key, stored);
+  if (sectionDraft) w.sessionStorage.setItem('sary-demo-section-draft-v1',sectionDraft);
   for (const script of [...w.document.querySelectorAll("script[src]")] as any[])
     runInContext(
       readFileSync(base + script.getAttribute("src"), "utf8"),
@@ -223,6 +224,35 @@ function reply(fail = false) {
 const sw = (a: string,id?:number)=>node('[data-sw-action="'+a+'"]'+(id?'[data-id="'+id+'"]':'')).click();
 const swInput=(key:string,value:string)=>{const el=node('[data-sw-field="'+key+'"]');el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));};
 const swCheck=(key='ack')=>{const el=node('[data-sw-'+key+']');el.checked=!el.checked;el.dispatchEvent(new w.Event('change',{bubbles:true}));};
+const rebootSection = (stored=w.localStorage.getItem(key),draft=w.sessionStorage.getItem('sary-demo-section-draft-v1')) => {
+  expect(errors).toEqual([]);expect(w.fetch).not.toHaveBeenCalled();dom.window.close();boot(stored||undefined,draft||undefined);
+};
+it('restores a local section draft after reload without restoring consent',()=>{
+  sw('new');swInput('title','Draft title');swInput('content','Text before reload');swCheck();
+  rebootSection();expect(main()).toContain('مسودة قسم محفوظة');sw('restore');
+  expect(node('[data-sw-field="content"]').value).toBe('Text before reload');
+  expect(node('[data-sw-ack]').checked).toBe(false);expect(data()).toBeNull();
+});
+it('reconciles a deleted creation from a separate mock receipt after reload',()=>{
+  sw('new');swInput('title','New synthetic');swInput('content','Synthetic text');swCheck();
+  lab('mode','failure');sw('save');
+  const uncertain=w.sessionStorage.getItem('sary-demo-section-draft-v1');
+  lab('mode','success');swCheck();sw('save');
+  const id=data().sections.at(-1).id;
+  sw('open',id);sw('delete');swCheck();sw('save');
+  const saved=w.localStorage.getItem(key);expect(data().sectionReceipts).toHaveLength(1);
+  rebootSection(saved,uncertain);sw('restore');sw('receipt');
+  expect(main()).toContain('حُذف');expect(data().sections).toHaveLength(2);
+});
+it('compares a restored mock edit with current content before accepting a fresh review',()=>{
+  sw('open',1);swInput('content','Local draft');swCheck();
+  const cached=w.sessionStorage.getItem('sary-demo-section-draft-v1');
+  sw('change');sw('refresh');swInput('content','Concurrent saved text');swCheck();sw('save');
+  rebootSection(w.localStorage.getItem(key),cached);sw('restore');
+  expect(main()).toContain('Concurrent saved text');expect(node('[data-sw-action="save"]').disabled).toBe(true);
+  sw('rebase');expect(node('[data-sw-ack]').checked).toBe(false);
+  swCheck();sw('save');expect(data().sections[0].content).toBe('Local draft');
+});
 it("validates manual sections, escapes markup and prevents bypassing pending review",()=>{
  sw('new');swCheck();sw('save');expect(main()).toContain('أدخل العنوان');
  expect(node('[data-sw-field="content"]').maxLength).toBe(50000);

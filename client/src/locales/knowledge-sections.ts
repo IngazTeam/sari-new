@@ -1,4 +1,24 @@
 export const knowledgeSectionsEn = {
+  draftAvailable: "A section draft is saved in this tab.",
+  draftPolicy:
+    "Draft text is kept in this tab for up to 24 hours and cleared on logout. Closing the tab may remove it. Approval and deletion decisions are never restored.",
+  restoreDraft: "Restore draft",
+  discardDraft: "Discard saved draft",
+  draftRestored: "Draft restored. Review it again before saving.",
+  draftStorageError:
+    "Could not keep this draft in the tab. Keep a copy of your text before leaving. A new creation cannot be sent until its request can be retained.",
+  restoreChanged:
+    "The saved section changed while you were away. Compare the current text below with your draft.",
+  currentText: "Current saved text",
+  useDraft: "Continue with my draft after reviewing the current version",
+  checkCreation: "Check creation result",
+  creationMissing:
+    "No saved creation receipt is visible yet. You can retry the same request; no new request number is assigned.",
+  creationSaved: "This creation was already saved. No duplicate was created.",
+  creationChanged:
+    "This creation was saved earlier, then the section changed. No text was overwritten.",
+  creationDeleted:
+    "This creation was saved earlier, then the section was deleted. It has not been recreated.",
   tooLarge:
     "The text is too long to save. Shorten it or split it into sections.",
   manual: "Manual entry",
@@ -96,6 +116,24 @@ export const knowledgeSectionsEn = {
 };
 export type KnowledgeSectionsCopy = typeof knowledgeSectionsEn;
 export const knowledgeSectionsAr: KnowledgeSectionsCopy = {
+  draftAvailable: "توجد مسودة قسم محفوظة في هذا التبويب.",
+  draftPolicy:
+    "يُحفظ نص المسودة في هذا التبويب لمدة أقصاها 24 ساعة ويُمسح عند الخروج. قد يُحذف عند إغلاق التبويب. لا تُستعاد الموافقة أو قرارات الحذف.",
+  restoreDraft: "استعادة المسودة",
+  discardDraft: "تجاهل المسودة المحفوظة",
+  draftRestored: "استُعيدت المسودة. راجعها مجددًا قبل الحفظ.",
+  draftStorageError:
+    "تعذّر حفظ المسودة في التبويب. احتفظ بنسخة من النص قبل المغادرة. لن يُرسل إنشاء جديد حتى يمكن الاحتفاظ بطلبه.",
+  restoreChanged:
+    "تغيّر القسم المحفوظ أثناء غيابك. قارن النص الحالي أدناه بمسودتك.",
+  currentText: "النص المحفوظ الآن",
+  useDraft: "متابعة مسودتي بعد مراجعة النسخة الحالية",
+  checkCreation: "التحقق من نتيجة الإنشاء",
+  creationMissing:
+    "لا يظهر إيصال إنشاء محفوظ بعد. يمكنك إعادة الطلب نفسه دون تخصيص رقم جديد.",
+  creationSaved: "سبق حفظ هذا الإنشاء. لم يُنشأ سجل مكرر.",
+  creationChanged: "سبق حفظ الإنشاء ثم تغيّر القسم. لم يُستبدل النص الحالي.",
+  creationDeleted: "سبق حفظ الإنشاء ثم حُذف القسم. لم تُعد إضافته.",
   tooLarge: "النص أطول من سعة الحفظ. اختصره أو قسّمه إلى أقسام.",
   manual: "إدخال يدوي",
   website: "موقع إلكتروني",

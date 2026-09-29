@@ -5,6 +5,7 @@ import {
   knowledgeSections as table,
   knowledgeChangelog,
   sariActivityLog,
+  knowledgeSectionCreations as creations,
 } from "../../drizzle/schema";
 import { getDb } from "../db/connection";
 import { databaseTimeEpoch } from "../db/time";
@@ -22,6 +23,7 @@ import {
   summarizeSectionReadiness,
   type SectionReview,
   type SectionListItem,
+  type SectionCreationReceipt,
 } from "../../shared/knowledge-sections";
 import type { z } from "zod";
 const { embedding, embeddingContentHash, updatedAt, ...columns } =
@@ -36,6 +38,27 @@ const provenance = (value: unknown) =>
     ? (value as Record<string, unknown>)
     : {};
 const revision = (row: Row) => hash(row);
+function creationState(
+  row: Row | undefined,
+  requestId: string,
+  inputHash: string
+): "saved" | "changed" | "deleted" {
+  if (!row) return "deleted";
+  const payload = {
+    title: row.title,
+    content: row.content,
+    useInBot: !!row.useInBot,
+    sectionType: row.sectionType,
+    parentId: row.parentId,
+    requestId,
+    acknowledged: true,
+  };
+  return hash(payload) === inputHash &&
+    row.status === "approved" &&
+    row.injectAs === "fact"
+    ? "saved"
+    : "changed";
+}
 const expired =
   sql<boolean>`(${table.validUntil} IS NOT NULL AND ${table.validUntil} <= UTC_TIMESTAMP(3))`.mapWith(
     Boolean
@@ -176,35 +199,65 @@ async function audit(
   after: string | null,
   details: unknown
 ) {
-  await tx
-    .insert(knowledgeChangelog)
-    .values({
-      merchantId,
-      sectionId: action === "delete" ? null : id,
-      action,
-      oldContent: before,
-      newContent: after,
-      source: "manual",
-      reason: "مراجعة يدوية من مساحة أقسام المعرفة",
-    });
-  await tx
-    .insert(sariActivityLog)
-    .values({
-      merchantId,
-      actionType:
-        action === "add"
-          ? "section_created"
-          : action === "delete"
-            ? "section_deleted"
-            : "section_updated",
-      description: "تحديث أقسام المعرفة بعد المراجعة",
-      details: JSON.stringify({ sectionId: id, ...Object(details) }),
-    });
+  await tx.insert(knowledgeChangelog).values({
+    merchantId,
+    sectionId: action === "delete" ? null : id,
+    action,
+    oldContent: before,
+    newContent: after,
+    source: "manual",
+    reason: "مراجعة يدوية من مساحة أقسام المعرفة",
+  });
+  await tx.insert(sariActivityLog).values({
+    merchantId,
+    actionType:
+      action === "add"
+        ? "section_created"
+        : action === "delete"
+          ? "section_deleted"
+          : "section_updated",
+    description: "تحديث أقسام المعرفة بعد المراجعة",
+    details: JSON.stringify({ sectionId: id, ...Object(details) }),
+  });
 }
 export async function createWorkspaceSection(merchantId: number, raw: unknown) {
   const input = sectionCreateInput.parse(raw),
     inputHash = hash(input);
   return withKnowledgeTransaction(merchantId, async tx => {
+    const [receipt] = await tx
+      .select()
+      .from(creations)
+      .where(
+        and(
+          eq(creations.merchantId, merchantId),
+          eq(creations.requestId, input.requestId)
+        )
+      )
+      .for("update");
+    if (receipt) {
+      if (receipt.inputHash !== inputHash)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Manual request changed",
+        });
+      const [row] = await tx
+        .select({ ...columns, expired })
+        .from(table)
+        .where(
+          and(eq(table.merchantId, merchantId), eq(table.id, receipt.sectionId))
+        )
+        .for("update");
+      return {
+        success: true,
+        id: receipt.sectionId,
+        replayed: true,
+        state: creationState(
+          row as Row | undefined,
+          input.requestId,
+          inputHash
+        ),
+      };
+    }
     const [prior] = await tx
       .select({ ...columns, expired })
       .from(table)
@@ -216,21 +269,25 @@ export async function createWorkspaceSection(merchantId: number, raw: unknown) {
       )
       .for("update");
     if (prior) {
-      if (
-        provenance(prior.provenance).manualInputHash !== inputHash ||
-        prior.title !== input.title ||
-        prior.content !== input.content ||
-        !!prior.useInBot !== input.useInBot ||
-        prior.parentId !== input.parentId ||
-        prior.sectionType !== input.sectionType ||
-        prior.status !== "approved" ||
-        prior.injectAs !== "fact"
-      )
+      if (provenance(prior.provenance).manualInputHash !== inputHash)
         throw new TRPCError({
           code: "CONFLICT",
           message: "Manual request changed",
         });
-      return { success: true, id: prior.id };
+      await tx
+        .insert(creations)
+        .values({
+          merchantId,
+          requestId: input.requestId,
+          inputHash,
+          sectionId: prior.id,
+        });
+      return {
+        success: true,
+        id: prior.id,
+        replayed: true,
+        state: creationState(prior as Row, input.requestId, inputHash),
+      };
     }
     if (input.parentId !== null) {
       const [parent] = await tx
@@ -246,29 +303,74 @@ export async function createWorkspaceSection(merchantId: number, raw: unknown) {
           message: "Parent unavailable",
         });
     }
-    const [created] = await tx
-      .insert(table)
-      .values({
-        merchantId,
-        parentId: input.parentId,
-        sectionType: input.sectionType,
-        title: input.title,
-        content: input.content,
-        source: "manual",
-        status: "approved",
-        useInBot: input.useInBot ? 1 : 0,
-        injectAs: "fact",
-        merchantEdited: 1,
-        provenance: {
-          manualRequestId: input.requestId,
-          manualInputHash: inputHash,
-        },
-      });
+    const [created] = await tx.insert(table).values({
+      merchantId,
+      parentId: input.parentId,
+      sectionType: input.sectionType,
+      title: input.title,
+      content: input.content,
+      source: "manual",
+      status: "approved",
+      useInBot: input.useInBot ? 1 : 0,
+      injectAs: "fact",
+      merchantEdited: 1,
+      provenance: {
+        manualRequestId: input.requestId,
+        manualInputHash: inputHash,
+      },
+    });
     await audit(tx, merchantId, created.insertId, "add", null, input.content, {
       useInBot: input.useInBot,
     });
-    return { success: true, id: created.insertId };
+    await tx
+      .insert(creations)
+      .values({
+        merchantId,
+        requestId: input.requestId,
+        inputHash,
+        sectionId: created.insertId,
+      });
+    return {
+      success: true,
+      id: created.insertId,
+      replayed: false,
+      state: "saved" as const,
+    };
   });
+}
+export async function readSectionCreation(
+  merchantId: number,
+  requestId: string
+): Promise<SectionCreationReceipt> {
+  return (await database()).transaction(
+    async tx => {
+      const [receipt] = await tx
+        .select()
+        .from(creations)
+        .where(
+          and(
+            eq(creations.merchantId, merchantId),
+            eq(creations.requestId, requestId)
+          )
+        );
+      if (!receipt) return { state: "not_found" };
+      const [row] = await tx
+        .select({ ...columns, expired })
+        .from(table)
+        .where(
+          and(eq(table.merchantId, merchantId), eq(table.id, receipt.sectionId))
+        );
+      return {
+        state: creationState(
+          row as Row | undefined,
+          requestId,
+          receipt.inputHash
+        ),
+        id: receipt.sectionId,
+      };
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" }
+  );
 }
 export async function changeWorkspaceSection(
   merchantId: number,

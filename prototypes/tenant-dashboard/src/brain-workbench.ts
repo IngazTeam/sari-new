@@ -93,6 +93,7 @@ window.SaryBrainWorkbench = (() => {
         approved: false,
       },
     ],
+    sectionReceipts: [],
     faqs: [
       {
         id: 1,
@@ -1323,7 +1324,7 @@ window.SaryBrainWorkbench = (() => {
       persist();
     },
   });
-  const sectionWorkspace = createSectionWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.sections,commit,refresh,alert});
+  const sectionWorkspace = createSectionWorkspace({esc,owner,blocked:()=>!!pending,rows:()=>data.sections,receipts:()=>data.sectionReceipts,commit,refresh,alert});
   const conflictWorkspace = createConflictReview({esc,owner,blocked:()=>!!pending,rows:()=>data.conflicts,commit,refresh,alert});
   const faqList = createFaqList({esc,owner,blocked:()=>!!pending,rows:()=>data.faqs,refresh});
   const knowledgeWorkbench = createBrainKnowledge({

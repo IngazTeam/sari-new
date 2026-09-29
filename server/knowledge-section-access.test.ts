@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   health: vi.fn(),
   create: vi.fn(),
   change: vi.fn(),
+  receipt: vi.fn(),
+  index: vi.fn(async () => "unconfirmed"),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
@@ -16,9 +18,10 @@ vi.mock("./knowledge/section-workspace", () => ({
   sectionReadiness: mocks.health,
   createWorkspaceSection: mocks.create,
   changeWorkspaceSection: mocks.change,
+  readSectionCreation: mocks.receipt,
 }));
 vi.mock("./knowledge/conflict-indexing", () => ({
-  indexApprovedConflict: vi.fn(async () => "unconfirmed"),
+  indexApprovedConflict: mocks.index,
 }));
 import { sariBrainRouter } from "./routers-sari-brain";
 const caller = () =>
@@ -93,6 +96,53 @@ it("rejects blind updates and deletions", async () => {
     });
   expect(mocks.change).not.toHaveBeenCalled();
 });
+it.each(["saved", "changed", "deleted"])(
+  "does not reindex a %s replay",
+  async state => {
+    mocks.create.mockResolvedValue({
+      success: true,
+      id: 3,
+      replayed: true,
+      state,
+    });
+    const result = await caller().createWorkspaceSection({
+      title: "Title",
+      content: "Text",
+      useInBot: true,
+      sectionType: "custom",
+      parentId: null,
+      requestId: "a56f25af-4b44-4f29-baa9-15a3874e7a87",
+      acknowledged: true,
+    });
+    expect(result.indexing).toBe("not_requested");
+    expect(mocks.index).not.toHaveBeenCalled();
+  }
+);
+it("scopes receipt reads to authenticated merchant and redacts storage failures", async () => {
+  const requestId = "a56f25af-4b44-4f29-baa9-15a3874e7a87";
+  mocks.receipt.mockResolvedValue({ state: "deleted", id: 3 });
+  expect(await caller().sectionCreationReceipt({ requestId })).toEqual({
+    state: "deleted",
+    id: 3,
+  });
+  expect(mocks.receipt).toHaveBeenCalledWith(20, requestId);
+  mocks.receipt.mockRejectedValue(Error("Secret DB"));
+  await expect(
+    caller().sectionCreationReceipt({ requestId })
+  ).rejects.toMatchObject({ message: "Section creation receipt unavailable" });
+});
+it.each(["viewer", "sales_supervisor"])(
+  "blocks %s receipt access",
+  async role => {
+    mocks.access.mockResolvedValue({ merchantId: 20, role });
+    await expect(
+      caller().sectionCreationReceipt({
+        requestId: "a56f25af-4b44-4f29-baa9-15a3874e7a87",
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.receipt).not.toHaveBeenCalled();
+  }
+);
 it("redacts read and readiness failures instead of returning zeros or empty lists", async () => {
   mocks.list.mockRejectedValue(Error("Database secret"));
   mocks.health.mockRejectedValue(Error("Database secret"));

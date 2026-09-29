@@ -389,6 +389,16 @@ export const merchantKnowledgeDocs = mysqlTable("merchant_knowledge_docs", {
 export type MerchantKnowledgeDoc = InferSelectModel<typeof merchantKnowledgeDocs>;
 export type InsertMerchantKnowledgeDoc = InferInsertModel<typeof merchantKnowledgeDocs>;
 
+// Deliberately no section FK: the creation receipt must survive section deletion/reset.
+export const knowledgeSectionCreations = mysqlTable('knowledge_section_creations', {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  requestId: varchar('request_id', { length: 36 }).notNull(),
+  inputHash: varchar('input_hash', { length: 64 }).notNull(),
+  sectionId: int('section_id').notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_section_creation_request').on(table.merchantId, table.requestId)]);
+
 export const knowledgeIntakeReceipts = mysqlTable('knowledge_intake_receipts', {
   id: int().autoincrement().primaryKey(),
   merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

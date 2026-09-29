@@ -1,0 +1,37 @@
+[
+  {
+    "case": "restored-concurrent-edit",
+    "currentText": "تغيّر القسم المحفوظ أثناء غيابك. قارن النص الحالي أدناه بمسودتك.النص المحفوظ الآنفحص استعادة سبتمبر · قسم وهمي · الاستخدام متوقفنسخة أحدث محفوظة من التبويب الثاني. محتوى وهمي لاختبار منع الكتابة فوق التعديل.متابعة مسودتي بعد مراجعة النسخة الحالية",
+    "draftText": "مسودة محلية محفوظة قبل التعديل المتزامن، للاختبار فقط.",
+    "saveDisabled": true,
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "case": "draft-prompt",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "case": "restored-editor",
+    "content": "مسودة هاتف تجريبية محفوظة محليًا. لا تُستخدم في الردود.",
+    "saveDisabled": true,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "ack": false,
+    "case": "mock-restored-draft",
+    "content": "مسودة توضيحية لاختبار الاستعادة. لا تتصل بخادم ولا تغيّر بيانات متجر.",
+    "saveDisabled": true,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "ack": false,
+    "case": "restored-approval-keyboard",
+    "focused": "راجعت المحتوى وأثر هذا الإجراء.",
+    "scrollWidth": 375,
+    "width": 390
+  }
+]

@@ -6,7 +6,9 @@ export type KnowledgeDraft = {
   faq?: { id?: number; revision?: string; category: string; isActive: boolean; useInBot: boolean; requestId: string; baseline: string; uncertain: boolean };
 };
 
-// Business text and binary files live only in memory. Only opaque request IDs
+// Intake/FAQ text and binary files live only in memory. Section editor drafts
+// have a separate, account-scoped 24-hour sessionStorage policy (cleared below).
+// For intake/upload attempts, only opaque request IDs
 // and opaque file fingerprints enter sessionStorage. Never persist file bytes,
 // filenames, text, model reports or approval consent.
 const drafts = new Map<string, KnowledgeDraft>();
@@ -34,7 +36,11 @@ export function discardKnowledgeDraft(key: string) {
   drafts.delete(key);
   if (!drafts.size) window.removeEventListener('beforeunload', warn);
 }
-export function hasKnowledgeDrafts() { return drafts.size > 0; }
+export function hasKnowledgeDrafts() {
+  if(drafts.size)return true;
+  try { return Array.from({length:sessionStorage.length},(_,i)=>sessionStorage.key(i)).some(k=>k?.startsWith('sary:section-draft:v1:')); }
+  catch { return false; }
+}
 export function readKnowledgeAttempt(key: string): string | null {
   const value = sessionStorage.getItem(prefix + key);
   if (!value) return null;
@@ -85,6 +91,6 @@ export function clearKnowledgeWorkspace() {
   window.removeEventListener('beforeunload', warn);
   try {
     const keys = Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index));
-    keys.filter((key): key is string => !!key?.startsWith(prefix)).forEach(key => sessionStorage.removeItem(key));
+    keys.filter((key): key is string => !!key && (key.startsWith(prefix) || key.startsWith('sary:section-draft:v1:'))).forEach(key => sessionStorage.removeItem(key));
   } catch { /* Browser storage may be unavailable. Keys are also account-scoped. */ }
 }

@@ -1,0 +1,108 @@
+{
+  "date": "2026-09-29",
+  "scope": "section draft recovery and durable creation receipts",
+  "baseCommit": "89b99d7e",
+  "branch": "main",
+  "pushed": false,
+  "deployed": false,
+  "tests": {
+    "passed": 291,
+    "failed": 0,
+    "files": [
+      {
+        "file": "server/knowledge-access.test.ts",
+        "passed": 101,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-section-access.test.ts",
+        "passed": 15,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-section-draft.test.ts",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-section-ui.test.ts",
+        "passed": 25,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-source-inventory-access.test.ts",
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-brain-knowledge-prototype.test.ts",
+        "passed": 32,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-brain-prototype.test.ts",
+        "passed": 15,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-brain-workbench.test.ts",
+        "passed": 34,
+        "failed": 0
+      },
+      {
+        "file": "server/merchant-semantic-i18n-pentest.test.ts",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge/section-workspace.mysql.test.ts",
+        "passed": 33,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-workspace-cache.test.ts",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "file": "server/knowledge-workspace-scope.test.ts",
+        "passed": 2,
+        "failed": 0
+      }
+    ]
+  },
+  "typescript": "passed",
+  "translation": {
+    "callsChecked": 8605,
+    "dynamicKeysChecked": 346,
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "worker": "passed",
+    "mainRawBytes": 337291,
+    "mainGzipBytes": 103360,
+    "budget": "passed",
+    "warnings": [
+      "Existing Vite chunk size warning >600 kB"
+    ]
+  },
+  "migration": {
+    "file": "drizzle/0161_knowledge_section_creations.sql",
+    "loopbackDatabase": "sari_pages_test",
+    "appliedTwice": true,
+    "legacyBackfillTest": "passed",
+    "productionMigrationRun": false,
+    "localJournalAdvanced": false
+  },
+  "browserEvidence": "browser-checks.json",
+  "limits": [
+    "Chrome viewport checks do not verify Safari or physical iPhone",
+    "Old eight security fixture failures documented in previous report remain unresolved and were not rerun",
+    "Not a full penetration test or complete 126-route audit",
+    "Tab-close persistence is not guaranteed",
+    "Receipts cannot be recovered for legacy sections deleted before migration"
+  ]
+}

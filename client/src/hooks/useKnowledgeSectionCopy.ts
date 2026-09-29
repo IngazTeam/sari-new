@@ -2,6 +2,20 @@ import { useTranslation } from "react-i18next";
 export function useKnowledgeSectionCopy() {
   const { t } = useTranslation();
   return {
+    draftAvailable: t("merchantUx.knowledgeSections.draftAvailable"),
+    draftPolicy: t("merchantUx.knowledgeSections.draftPolicy"),
+    restoreDraft: t("merchantUx.knowledgeSections.restoreDraft"),
+    discardDraft: t("merchantUx.knowledgeSections.discardDraft"),
+    draftRestored: t("merchantUx.knowledgeSections.draftRestored"),
+    draftStorageError: t("merchantUx.knowledgeSections.draftStorageError"),
+    restoreChanged: t("merchantUx.knowledgeSections.restoreChanged"),
+    currentText: t("merchantUx.knowledgeSections.currentText"),
+    useDraft: t("merchantUx.knowledgeSections.useDraft"),
+    checkCreation: t("merchantUx.knowledgeSections.checkCreation"),
+    creationMissing: t("merchantUx.knowledgeSections.creationMissing"),
+    creationSaved: t("merchantUx.knowledgeSections.creationSaved"),
+    creationChanged: t("merchantUx.knowledgeSections.creationChanged"),
+    creationDeleted: t("merchantUx.knowledgeSections.creationDeleted"),
     tooLarge: t("merchantUx.knowledgeSections.tooLarge"),
     manual: t("merchantUx.knowledgeSections.manual"),
     website: t("merchantUx.knowledgeSections.website"),
