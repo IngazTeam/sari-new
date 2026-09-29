@@ -1,4 +1,9 @@
 export const knowledgeDocumentEn = {
+  rateLimited: 'The temporary request limit has been reached. Wait before sending again; this response does not confirm the outcome of an earlier attempt.',
+  waitShort: 'You can try again in less than a minute. No automatic retry will be sent.', waitMinutes: 'You can try again in about {{minutes}} minutes. No automatic retry will be sent.',
+  signedOut: 'Your session has ended. Sign in again to continue.', noAccess: 'This account cannot manage knowledge for the selected store. Check the store and your permissions.',
+  conflict: 'A knowledge operation is running, or this reference belongs to another file. Check the saved request or the file library.',
+  invalidFile: 'The server did not accept this file or its request reference. Check the format, file contents and size.',
   title: 'Upload a knowledge document', description: 'Upload → extract text → review the plan → approve knowledge. Uploading alone does not change the assistant’s knowledge.',
   choose: 'Choose PDF, Word or Excel', fileHint: 'PDF, DOCX, XLSX · up to 5 MB. Full extracted text must fit 30,000 characters and storage limits; larger files are rejected, never shortened silently. No image OCR. Excel uses saved values and does not create catalog products.',
   fileError: 'Choose a non-empty PDF, DOCX or XLSX file up to 5 MB.', start: 'Save file and extract text', working: 'Saving and extracting…',
@@ -20,6 +25,11 @@ export const knowledgeDocumentEn = {
 };
 export type KnowledgeDocumentCopy = { [K in keyof typeof knowledgeDocumentEn]: string };
 export const knowledgeDocumentAr: KnowledgeDocumentCopy = {
+  rateLimited: 'بلغت حد الطلبات المؤقت. انتظر قبل الإرسال مجددًا؛ هذا الرد لا يؤكد نتيجة محاولة سابقة.',
+  waitShort: 'يمكنك المحاولة بعد أقل من دقيقة. لن نعيد الإرسال تلقائيًا.', waitMinutes: 'يمكنك المحاولة بعد نحو {{minutes}} دقيقة. لن نعيد الإرسال تلقائيًا.',
+  signedOut: 'انتهت جلسة الدخول. سجّل الدخول مجددًا للمتابعة.', noAccess: 'الحساب لا يملك صلاحية إدارة معرفة المتجر المحدد. تحقق من المتجر وصلاحياتك.',
+  conflict: 'توجد عملية معرفة جارية أو أن الرقم مرتبط بملف آخر. تحقق من الطلب المحفوظ أو مكتبة الملفات.',
+  invalidFile: 'لم يقبل الخادم الملف أو رقم طلبه. تحقق من صيغة الملف ومحتواه وحجمه.',
   title: 'رفع ملف معرفة', description: 'ارفع الملف ← استخرج النص ← راجع الخطة ← اعتمد المعرفة. الرفع وحده لا يغيّر معرفة المساعد.',
   choose: 'اختيار PDF أو Word أو Excel', fileHint: 'PDF، DOCX، XLSX · حتى 5 ميجابايت. النص الكامل حتى 30000 حرف ضمن سعة التخزين؛ يُرفض الزائد دون اختصار صامت. لا يُقرأ النص داخل الصور. Excel يقرأ القيم المحفوظة ولا ينشئ منتجات في الكتالوج.',
   fileError: 'اختر ملف PDF أو DOCX أو XLSX غير فارغ وبحجم لا يتجاوز 5 ميجابايت.', start: 'حفظ الملف واستخراج النص', working: 'جارٍ الحفظ والاستخراج…',

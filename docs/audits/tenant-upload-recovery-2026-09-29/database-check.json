@@ -1,0 +1,35 @@
+{
+  "merchantId": 1,
+  "buckets": [
+    {
+      "request_count": 5,
+      "expires_at": "2026-09-29T02:13:18.997Z",
+      "expired": 0
+    }
+  ],
+  "counts": [
+    {
+      "count": 27
+    }
+  ],
+  "docs": [
+    {
+      "id": 957,
+      "file_name": "ملف تجربة الاستخراج.docx",
+      "intake_request_id": "8404058f-7987-4efd-9998-70570df7a18a",
+      "extraction_status": "completed"
+    },
+    {
+      "id": 956,
+      "file_name": "extraction-blank.pdf",
+      "intake_request_id": "3479f619-c88f-40da-a598-3279ab9ba743",
+      "extraction_status": "failed"
+    },
+    {
+      "id": 719,
+      "file_name": "نتيجة فحص مرتبطة · مثال محلي.txt",
+      "intake_request_id": "e2406cc8-88c1-4c92-8241-7d94c5edab8f",
+      "extraction_status": "completed"
+    }
+  ]
+}

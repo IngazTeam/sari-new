@@ -17,7 +17,7 @@ vi.mock('@/lib/trpc', () => ({ trpc: { auth: { me: { useQuery: () => ({ data: { 
 import { KnowledgeDocumentUpload } from '../client/src/components/KnowledgeDocumentUpload';
 let root: Root, container: HTMLDivElement;
 beforeEach(() => { clearKnowledgeWorkspace(); sessionStorage.clear(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); vi.stubGlobal('fetch', api.fetch); vi.stubGlobal('crypto', { randomUUID, subtle: { digest: async (_algorithm: string, bytes: Uint8Array) => Uint8Array.from(createHash('sha256').update(bytes).digest()).buffer } }); container = document.createElement('div'); document.body.append(container); root = createRoot(container); });
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 const render = (props = {}) => act(async () => root.render(React.createElement(KnowledgeDocumentUpload, props)));
 const button = (label: string) => Array.from(container.querySelectorAll('button')).find(b => b.textContent === label)!;
 const click = (label: string) => act(async () => { expect(button(label)).toBeTruthy(); button(label).click(); });
@@ -90,4 +90,32 @@ it('verifies the original bytes and filename before explicitly retrying a recove
   await select('Example.pdf', 'Changed file bytes'); expect(container.textContent).toContain(draftCopy.differentFile); expect(button(copy.retrySame)).toBeUndefined();
   await select(); expect(api.fetch).toHaveBeenCalledTimes(1); expect(button(copy.retrySame).disabled).toBe(false);
   await click(copy.retrySame); expect(api.fetch.mock.calls[1][1].headers['x-knowledge-request-id']).toBe(requestId); expect(container.textContent).toContain(copy.unknown);
+});
+
+it('explains a temporary limit, honors Retry-After and never retries on its own', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-29T01:00:00Z'));
+  api.fetch.mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '3' } });
+  await render(); await select(); await click(copy.start);
+  expect(container.textContent).toContain(copy.rateLimited); expect(container.textContent).toContain(copy.waitShort); expect(button(copy.start).disabled).toBe(true);
+  await click(copy.start); expect(api.fetch).toHaveBeenCalledTimes(1);
+  await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+  expect(button(copy.start).disabled).toBe(false); expect(container.querySelector('[data-upload-cooldown]')).toBeNull(); expect(api.fetch).toHaveBeenCalledTimes(1);
+});
+it('keeps an earlier unresolved request readable while a throttled replay is cooling down', async () => {
+  api.fetch.mockRejectedValueOnce(Error('Lost response')).mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '120' } });
+  await render(); await select(); await click(copy.start); const id = api.fetch.mock.calls[0][1].headers['x-knowledge-request-id']; await click(copy.retrySame);
+  expect(container.textContent).toContain(copy.rateLimited); expect(container.textContent).toContain(copy.unknown); expect(button(copy.retrySame).disabled).toBe(true);
+  expect(button(intake.receiptRefresh).disabled).toBe(false); api.receipt.mockResolvedValue(saved(id)); await click(intake.receiptRefresh);
+  expect(api.receipt).toHaveBeenCalledWith({ requestId: id }, { staleTime: 0 }); expect(api.fetch).toHaveBeenCalledTimes(2);
+  expect(container.querySelector('[data-upload-cooldown]')).toBeNull();
+  await click(copy.another); await select(); expect(button(copy.start).disabled).toBe(true);
+});
+it.each([[400,'invalidFile'], [401,'signedOut'], [403,'noAccess'], [409,'conflict']])('explains HTTP %i without showing arbitrary server errors', async (status, message) => {
+  api.fetch.mockResolvedValueOnce({ ok: false, status, json: async () => ({ error: '<img src=x onerror=alert(1)>secret' }) });
+  await render(); await select(); await click(copy.start);
+  expect(container.textContent).toContain(copy[message as keyof typeof copy]); expect(container.textContent).not.toContain('secret'); expect(container.querySelector('img')).toBeNull();
+});
+it('shows a re-extraction limit without changing it into a success or leaking the server message', async () => {
+  api.reprocess.mockRejectedValueOnce({ data: { code: 'TOO_MANY_REQUESTS' }, message: 'private details' }); await render({ sourceDocumentId: 30 }); await click(copy.start);
+  expect(container.textContent).toContain(copy.rateLimited); expect(container.textContent).not.toContain('private details'); expect(button(copy.review)).toBeUndefined();
 });

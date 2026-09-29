@@ -482,3 +482,33 @@ it('offers an explicit same-reference retry only after selecting the matching or
   node('[data-kd-action="original"]').click(); expect(node('[data-kd-document]').textContent).toContain('لم يُرسل بعد');
   node('[data-kd-action="retry"]').click(); expect(node('[data-kd-reference]').textContent).toBe(reference);
 });
+
+it('keeps an uncertain reference readable while the mock retry is rate limited', () => {
+  sources(); set('[data-kd-scenario]', 'unknown', 'change'); node('[data-kd-action="extract"]').click();
+  const reference = node('[data-kd-reference]').textContent;
+  node('[data-kd-action="limit"]').click();
+  expect(node('[data-kd-action="retry"]').disabled).toBe(true);
+  expect(node('[data-kd-cooldown]').textContent).toContain('لا إعادة إرسال تلقائية');
+  node('[data-kd-action="check"]').click();
+  expect(node('[data-kd-reference]').textContent).toBe(reference);
+  expect(node('[data-kd-document]').textContent).toContain('النص محفوظ وجاهز للفحص');
+  expect(w.document.querySelector('[data-kd-cooldown]')).toBeNull();
+  expect(node('[data-kd-action="reextract"]').disabled).toBe(true);
+  node('[data-kd-action="new"]').click(); expect(node('[data-kd-action="extract"]').disabled).toBe(true);
+});
+it('ends a simulated cooldown without submitting or creating a receipt', () => {
+  sources(); set('[data-kd-scenario]', 'rateLimited', 'change'); node('[data-kd-action="extract"]').click();
+  expect(w.document.querySelector('[data-kd-reference]')).toBeNull();
+  expect(node('[data-kd-action="new"]').disabled).toBe(false);
+  node('[data-kd-action="limit-end"]').click();
+  expect(node('[data-kd-action="extract"]').disabled).toBe(false);
+  expect(w.document.querySelector('[data-kd-reference]')).toBeNull();
+  expect(w.document.querySelector('[data-kd-action="review"]')).toBeNull();
+});
+it.each(['signedOut', 'noAccess', 'invalidFile', 'conflict'])('shows the %s rejection separately from saved extraction results', scenario => {
+  sources(); set('[data-kd-scenario]', scenario, 'change'); node('[data-kd-action="extract"]').click();
+  expect(w.document.querySelector('[data-kd-reference]')).toBeNull();
+  expect(w.document.querySelector('[data-kd-action="review"]')).toBeNull();
+  expect(w.document.querySelector('[data-kd-action="check"]')).toBeNull();
+  expect(node('[data-kd-document]').textContent).not.toContain('undefined');
+});
