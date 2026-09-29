@@ -49,7 +49,7 @@ export const botSettingsRouter = router({
         }
 
         const settings = await getAssistantSettings(merchant.id);
-        return { ...settings, formRevision: botSettingsFormRevision(settings) };
+        return { ...settings, formRevision: botSettingsFormRevision(settings), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') };
     }),
 
     // Update bot settings

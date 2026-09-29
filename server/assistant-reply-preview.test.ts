@@ -36,10 +36,16 @@ const reply = {
   historyTruncated: false,
 };
 const busy = vi.fn();
-async function render(selection: PreviewSelection = { mode: "store" }) {
+async function render(
+  selection: PreviewSelection = { mode: "store" },
+  enabled = true,
+  key = "scope-1"
+) {
   await act(async () =>
     root.render(
       React.createElement(AssistantReplyPreview, {
+        key,
+        enabled,
         selection,
         onBusyChange: busy,
       })
@@ -84,6 +90,59 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("embedded saved-settings preview", () => {
+  it("does not expose test controls or call the model when management permission is absent", async () => {
+    await render({ mode: "store" }, false);
+    expect(container.querySelector("textarea")).toBeNull();
+    expect(container.textContent).toContain(ar.testSariPage.accessDenied);
+    expect(m.quick).not.toHaveBeenCalled();
+  });
+  it("ignores an old store's late response and busy callback after the scope changes", async () => {
+    let resolve!: (value: typeof reply) => void;
+    m.quick.mockReturnValueOnce(
+      new Promise(done => {
+        resolve = done;
+      })
+    );
+    await render();
+    await fill("old scope");
+    await send();
+    await render({ mode: "store" }, true, "scope-2");
+    await fill("new scope");
+    const calls = busy.mock.calls.length;
+    await act(async () => resolve(reply));
+    expect(container.querySelector("section")).toBeNull();
+    expect(container.querySelector("textarea")!.value).toBe("new scope");
+    expect(busy).toHaveBeenCalledTimes(calls);
+  });
+  it("hides a pending result after permission is withdrawn", async () => {
+    let resolve!: (value: typeof reply) => void;
+    m.quick.mockReturnValueOnce(
+      new Promise(done => {
+        resolve = done;
+      })
+    );
+    await render();
+    await fill("question");
+    await send();
+    await render({ mode: "store" }, false);
+    await act(async () => resolve(reply));
+    expect(container.querySelector("section")).toBeNull();
+    expect(container.textContent).toContain(ar.testSariPage.accessDenied);
+  });
+  it("discloses that older dialogue has left the bounded context", async () => {
+    await render({ mode: "automatic", time: "10:00" });
+    for (let i = 0; i < 11; i++) {
+      await fill(`question ${i}`);
+      await send();
+    }
+    expect(container.textContent).toContain(ar.testSariPage.contextTruncated);
+    await fill("next");
+    await send();
+    expect(m.persona.mock.calls.at(-1)![0]).toMatchObject({
+      historyTruncated: true,
+    });
+    expect(m.persona.mock.calls.at(-1)![0].history).toHaveLength(20);
+  });
   it("uses a bounded labelled editor and sends only the current independent question", async () => {
     await render();
     expect(container.querySelector("label")!.htmlFor).toBe(

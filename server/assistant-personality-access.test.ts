@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   read: vi.fn(),
   update: vi.fn(),
   bot: vi.fn(),
+  settings: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
@@ -20,6 +21,7 @@ vi.mock("./db", async original => ({
   getOrCreatePersonalitySettings: m.read,
   updateSariPersonalitySettings: m.update,
   updateBotSettings: m.bot,
+  getAssistantSettings: m.settings,
 }));
 import { appRouter } from "./routers";
 const caller = () =>
@@ -34,8 +36,25 @@ beforeEach(() => {
   m.read.mockResolvedValue({ tone: "enthusiastic" });
   m.update.mockResolvedValue({ tone: "enthusiastic" });
   m.bot.mockResolvedValue({ merchantId: 20, tone: "enthusiastic" });
+  m.settings.mockResolvedValue({ merchantId: 20, tone: "friendly" });
 });
 describe("mounted personality compatibility and unified settings", () => {
+  it.each([
+    ["owner", true],
+    ["manager", true],
+    ["viewer", false],
+    ["sales_supervisor", false],
+  ])(
+    "reports %s management capability from verified membership",
+    async (role, canManage) => {
+      m.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
+      expect(await caller().botSettings.get()).toMatchObject({
+        merchantId: 20,
+        canManage,
+      });
+      expect(m.settings).toHaveBeenCalledWith(20);
+    }
+  );
   it("uses the saved personality options and the full permitted brand voice in the prompt", () => {
     const prompt = buildSystemPrompt({
       tone: "enthusiastic",

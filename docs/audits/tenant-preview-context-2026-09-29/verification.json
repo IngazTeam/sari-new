@@ -1,0 +1,26 @@
+{
+  "typecheck": {
+    "command": "tsc --noEmit",
+    "exitCode": 0,
+    "scope": "full workspace"
+  },
+  "build": {
+    "exitCode": 0,
+    "entryRaw": 337291,
+    "entryGzip": 103364
+  },
+  "tests": {
+    "passed": 120,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "engine": "Chrome",
+    "viewport": 320,
+    "dialogWidth": 256,
+    "dialogScrollWidth": 256,
+    "realSafari": false
+  },
+  "externalAIInvoked": false,
+  "externalWhatsAppSent": false
+}

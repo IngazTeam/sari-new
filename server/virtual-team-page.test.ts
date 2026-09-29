@@ -282,6 +282,18 @@ describe("rendered virtual team workflow", () => {
       (button(`${ar.virtualTeamUx.edit} نورة`) as HTMLButtonElement).disabled
     ).toBe(true);
     expect(document.body.textContent).toContain(ar.virtualTeamReview.readOnly);
+    expect(
+      (
+        button(
+          `${ar.personaPreviewUx.testNamed.replace("{{name}}", "نورة")}`
+        ) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
+    await fill("routing-message", "سؤال");
+    expect(
+      (button(ar.personaPreviewUx.testRouting) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(m.preview).not.toHaveBeenCalled();
   });
   it("shows availability only before AI and opens contextual routing without locally predicting an agent", async () => {
     m.data.push({

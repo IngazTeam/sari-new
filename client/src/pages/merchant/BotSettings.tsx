@@ -100,6 +100,8 @@ export default function BotSettings() {
     staleTime: 0,
   });
   const { data: settings, isLoading } = settingsQuery;
+  const canManage =
+    !!settings?.canManage && !settingsQuery.isError && !authQuery.isError;
   const { data: shouldRespond } = trpc.botSettings.shouldRespond.useQuery();
   const draftKey =
     settings && authQuery.data?.id
@@ -267,6 +269,7 @@ export default function BotSettings() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
+      !canManage ||
       saveLock.current ||
       restorable ||
       conflict ||
@@ -540,7 +543,9 @@ export default function BotSettings() {
                         }
                         className="w-full"
                         onClick={() => applyTemplate(template)}
-                        disabled={Boolean(restorable) || reviewLoading}
+                        disabled={
+                          !canManage || Boolean(restorable) || reviewLoading
+                        }
                       >
                         {t("assistantSettingsReviewUx.applyToDraft")}
                       </Button>
@@ -576,7 +581,9 @@ export default function BotSettings() {
                         variant="outline"
                         className="w-full"
                         onClick={() => applyTemplate(template)}
-                        disabled={Boolean(restorable) || reviewLoading}
+                        disabled={
+                          !canManage || Boolean(restorable) || reviewLoading
+                        }
                       >
                         {t("botSettingsPage.text0")}
                       </Button>
@@ -622,6 +629,11 @@ export default function BotSettings() {
           ? t("assistantDraftUx.unsaved")
           : t("assistantSectionsUx.saved")}
       </p>
+      {!canManage && (
+        <p role="note" className="rounded-xl border p-4 text-sm">
+          {t("virtualTeamReview.readOnly")}
+        </p>
+      )}
       <form
         onSubmit={handleSubmit}
         className="space-y-6"
@@ -636,7 +648,7 @@ export default function BotSettings() {
         }}
       >
         <fieldset
-          disabled={Boolean(restorable) || reviewLoading}
+          disabled={!canManage || Boolean(restorable) || reviewLoading}
           className="contents"
         >
           {/* Auto-Reply Toggle */}
@@ -1119,7 +1131,11 @@ export default function BotSettings() {
                     {t("assistantSettingsReviewUx.unsavedPreview")}
                   </p>
                 )}
-                <AssistantReplyPreview selection={{ mode: "store" }} />
+                <AssistantReplyPreview
+                  key={draftKey}
+                  enabled={canManage}
+                  selection={{ mode: "store" }}
+                />
               </CardContent>
             </Card>
           </section>
@@ -1401,8 +1417,9 @@ export default function BotSettings() {
               type="button"
               variant="outline"
               size="lg"
-              onClick={() => sendTestMutation.mutate()}
+              onClick={() => canManage && sendTestMutation.mutate()}
               disabled={
+                !canManage ||
                 sendTestMutation.isPending ||
                 savedSnapshot !== currentSnapshot ||
                 updateMutation.isPending
@@ -1417,7 +1434,9 @@ export default function BotSettings() {
             <Button
               type="submit"
               size="lg"
-              disabled={updateMutation.isPending || conflict || !revision}
+              disabled={
+                !canManage || updateMutation.isPending || conflict || !revision
+              }
             >
               <Save className="h-4 w-4 ml-2" />
               {updateMutation.isPending

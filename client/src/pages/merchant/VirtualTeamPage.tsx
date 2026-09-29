@@ -172,6 +172,7 @@ function VirtualTeamWorkspace() {
   const busy = create.isPending || update.isPending || reviewBusy;
   const agents = query.data?.agents || [];
   const canManage = !!query.data?.canManage && !query.isError && !actionError;
+  const canPreview = !!query.data?.canManage && !query.isError;
   async function loadReview() {
     if (reviewBusy) return;
     setReviewBusy(true);
@@ -577,6 +578,7 @@ function VirtualTeamWorkspace() {
                       aria-label={t("personaPreviewUx.testNamed", {
                         name: agent.name,
                       })}
+                      disabled={!canPreview}
                       onClick={() =>
                         setPreview({
                           selection: { mode: "manual", agentId: agent.id },
@@ -680,6 +682,7 @@ function VirtualTeamWorkspace() {
             type="button"
             className="min-h-11"
             disabled={
+              !canPreview ||
               !routingAvailable ||
               !routingMessage.trim() ||
               !/^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime)
@@ -1210,6 +1213,7 @@ function VirtualTeamWorkspace() {
           {preview && (
             <AssistantReplyPreview
               key={JSON.stringify(preview.selection)}
+              enabled={canPreview}
               selection={preview.selection}
               initialQuestion={preview.question}
               onBusyChange={busy => {

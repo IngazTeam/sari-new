@@ -114,6 +114,7 @@ beforeEach(() => {
   );
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   m.settings = {
+    canManage: true,
     merchantId: 20,
     formRevision: "a".repeat(64),
     autoReplyEnabled: 1,
@@ -144,6 +145,29 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("assistant settings review", () => {
+  it("keeps saved settings readable while blocking editing, AI preview and external test sends for a reader", async () => {
+    m.settings.canManage = false;
+    await render();
+    expect(container.textContent).toContain(ar.virtualTeamReview.readOnly);
+    expect(
+      (button(ar.botSettingsPage.saveSettings) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(
+      (button(ar.assistantSettingsReviewUx.sendWhatsApp) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    await act(async () =>
+      container
+        .querySelector("form")!
+        .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+    );
+    expect(m.update).not.toHaveBeenCalled();
+    expect(m.send).not.toHaveBeenCalled();
+    await click(ar.assistantSectionsUx.preview);
+    expect(container.textContent).toContain(ar.testSariPage.accessDenied);
+    expect(container.querySelector("#saved-preview-question")).toBeNull();
+    expect(m.query).not.toHaveBeenCalled();
+  });
   it("retains legacy personality fields through navigation and saves them alongside operating instructions", async () => {
     Object.assign(m.settings, {
       tone: "enthusiastic",

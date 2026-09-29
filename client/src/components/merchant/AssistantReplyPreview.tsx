@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,12 @@ export function AssistantReplyPreview({
   selection,
   initialQuestion = "",
   onBusyChange,
+  enabled = true,
 }: {
   selection: PreviewSelection;
   initialQuestion?: string;
   onBusyChange?: (busy: boolean) => void;
+  enabled?: boolean;
 }) {
   const { t } = useTranslation();
   const quick = trpc.ai.chat.useMutation();
@@ -45,9 +47,23 @@ export function AssistantReplyPreview({
   const [historyTruncated, setHistoryTruncated] = useState(false);
   const earlierHistory = result ? history.slice(0, -2) : history;
   const lock = useRef(false);
+  const alive = useRef(true);
+  const allowed = useRef(enabled);
+  allowed.current = enabled;
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const editor = useRef<HTMLTextAreaElement>(null);
   const send = async () => {
-    if (lock.current || !question.trim() || question.trim().length > 2000)
+    if (
+      !allowed.current ||
+      lock.current ||
+      !question.trim() ||
+      question.trim().length > 2000
+    )
       return;
     lock.current = true;
     setBusy(true);
@@ -67,6 +83,7 @@ export function AssistantReplyPreview({
                 ? { history, currentAgentId, historyTruncated }
                 : {}),
             });
+      if (!alive.current || !allowed.current) return;
       setResult(reply);
       if (selection.mode === "automatic") {
         const nextHistory = appendPersonaPreviewHistory(
@@ -84,16 +101,25 @@ export function AssistantReplyPreview({
         setQuestion("");
       }
     } catch (failure) {
+      if (!alive.current || !allowed.current) return;
       setError(
         (failure as { data?: { code?: string } })?.data?.code ||
           "INTERNAL_SERVER_ERROR"
       );
     } finally {
       lock.current = false;
-      setBusy(false);
-      onBusyChange?.(false);
+      if (alive.current) {
+        setBusy(false);
+        onBusyChange?.(false);
+      }
     }
   };
+  if (!enabled)
+    return (
+      <p role="note" className="rounded-xl border p-4 text-sm">
+        {t("testSariPage.accessDenied")}
+      </p>
+    );
   return (
     <div className="min-w-0 space-y-4" data-assistant-reply-preview>
       <p className="text-sm leading-6 text-muted-foreground">
@@ -160,6 +186,11 @@ export function AssistantReplyPreview({
       </p>
       {selection.mode === "automatic" && history.length > 0 && (
         <div className="space-y-3">
+          {historyTruncated && (
+            <p role="note" className="text-sm text-muted-foreground">
+              {t("testSariPage.contextTruncated")}
+            </p>
+          )}
           <Button
             type="button"
             variant="outline"

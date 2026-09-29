@@ -21,6 +21,29 @@ const input=(name:string,value:string|boolean)=>{const el=w.document.getElementB
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
+  it('makes a routing sample an explicit design choice, retains dialogue and failures, then resets it',()=>{
+    route('virtual-team');input('routing-message','لا أريد مبيعات');click('preview-routing');
+    expect(w.document.getElementById('as-preview-sample').value).toBe('');
+    click('preview-send');expect(w.document.getElementById('as-preview-result').textContent).toBe('');
+    input('preview-sample','2');click('preview-send');expect(w.document.getElementById('as-preview-result').textContent).toContain('مثال ثابت');
+    expect(w.document.getElementById('as-preview-question').value).toBe('');
+    input('preview-question','<img src=x onerror=alert(1)>');click('preview-failure');
+    expect(w.document.getElementById('as-preview-question').value).toContain('<img');
+    expect(w.document.getElementById('dialog').textContent).toContain('لا أريد مبيعات');
+    click('preview-send');expect(w.document.querySelector('#as-preview-result img')).toBeNull();
+    expect(w.document.getElementById('dialog').textContent).toContain('الرسائل السابقة');
+    click('preview-reset');expect(w.document.getElementById('as-preview-question').value).toBe('');
+    expect(w.document.getElementById('as-preview-sample').value).toBe('');
+    expect(w.document.getElementById('dialog').textContent).not.toContain('لا أريد مبيعات');
+    expect(data()).toBeNull();
+  });
+  it('bounds the local dialogue and discloses omitted context without writing a session to storage',()=>{
+    route('virtual-team');input('routing-message','افتتاح');click('preview-routing');input('preview-sample','2');click('preview-send');
+    for(let i=0;i<11;i++){input('preview-question',`سؤال ${i}`);click('preview-send');}
+    expect(w.document.getElementById('dialog').textContent).toContain('اقتُصر السياق');
+    expect(w.document.getElementById('dialog').textContent).not.toContain('افتتاح');
+    expect(data()).toBeNull();
+  });
   it('reviews conflicting persona fields, merges untouched fields, and saves only after a separate confirmation',()=>{
     route('virtual-team');click('edit','[data-id="2"]');input('name','مسودتي');
     click('agent-external');submit('agent');expect(data().agents.find((a:any)=>a.id===2).name).toBe('اسم محفوظ من نافذة أخرى');
@@ -141,10 +164,10 @@ describe('production persona form contract',()=>{
 });
 
 
-it('previews persona routing and persists priority changes',()=>{
-  route('virtual-team');input('routing-message','السعر لو سمحت');expect(w.document.getElementById('as-routing-result').textContent).toContain('فهد');
+it('shows only availability before the model and persists priority changes',()=>{
+  route('virtual-team');input('routing-message','لا أريد مبيعات ولا دعم');expect(w.document.getElementById('as-routing-result').textContent).toContain('3');expect(w.document.getElementById('as-routing-result').textContent).not.toContain('فهد');
   click('move-up','[data-id="2"]');expect(data().agents.map((a:any)=>a.id)).toEqual([2,1,3]);
   click('edit','[data-id="2"]');click('agent-tab','[data-value="routing"]');input('shiftStart','22:00');input('shiftEnd','06:00');submit('agent');
-  input('routing-time','12:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('سارة');
-  input('routing-time','23:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('فهد');
+  input('routing-time','12:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('2');
+  input('routing-time','23:00');expect(w.document.getElementById('as-routing-result').textContent).toContain('3');
 });

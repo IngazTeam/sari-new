@@ -9231,7 +9231,7 @@
     "loadFailed": "The latest version could not be loaded. Your draft remains here; saving stays blocked until review completes.",
     "actionChanged": "This change could not be confirmed. The team may have changed in another window. Refresh and review the list before trying again.",
     "refresh": "Refresh team list",
-    "readOnly": "You can review the team and test replies. Editing requires assistant management permission.",
+    "readOnly": "You can review these settings. Editing and testing replies require assistant management permission.",
     "shiftStart": "Shift starts",
     "shiftEnd": "Shift ends",
     "yes": "Yes",
