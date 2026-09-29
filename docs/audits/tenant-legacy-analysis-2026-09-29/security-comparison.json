@@ -1,0 +1,14 @@
+{
+  "failures": [
+    "PEN-12: Loss Detector & updateDealStage hardening all 3 loss-detector UPDATEs must include AND merchantId = ?",
+    "PEN-12: Loss Detector & updateDealStage hardening all 3 loss-detector UPDATEs must pass row.merchantId",
+    "PEN-12: Loss Detector & updateDealStage hardening updateDealStage must accept merchantId parameter",
+    "PEN-12: Loss Detector & updateDealStage hardening updateDealStage call site must pass params.merchantId",
+    "PEN-17: bot_settings → AI layer bridge bot_settings.tone must override personality.tone when different",
+    "PEN-30: forceAll=true after every ingestContent doc upload must use forceAll=true",
+    "PEN-30: forceAll=true after every ingestContent knowledge docs reprocess must use forceAll=true",
+    "PEN-46: GAP-5 — tone enum consistency router tone normalizer must match schema exactly (3 values)"
+  ],
+  "baseline": "tenant-page-intake-2026-09-29/security-baseline-comparison.json",
+  "newFailures": []
+}

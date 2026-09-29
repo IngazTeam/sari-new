@@ -3,8 +3,6 @@ import { router, merchantProcedure, permissionProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
-  deleteDiscoveredPage,
-  deleteExtractedFaq,
   getActiveFaqsForBot,
   getAnalysisStats,
   getDiscoveredPagesByMerchantId,
@@ -15,9 +13,6 @@ import {
   getMerchantWebsiteInfo,
   getProductsByMerchantId,
   searchFaqsByQuestion,
-  updateDiscoveredPage,
-  updateExtractedFaq,
-  updateMerchantWebsiteInfo,
 } from "../db";
 import {
   importPreviewInput,
@@ -223,64 +218,24 @@ export const analysisRouter = router({
    * Update Discovered Page
    */
   updatePage: permissionProcedure("bot_settings.manage")
-    .input(
-      z.object({
-        pageId: z.number(),
-        title: z.string().optional(),
-        url: z.string().url().optional(),
-        content: z.string().optional(),
-        isActive: z.boolean().optional(),
-        useInBot: z.boolean().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // IDOR FIX: Verify ownership before update
-      const merchant = await getMerchantOrThrow(ctx.merchantId);
-      const pages = await getDiscoveredPagesByMerchantId(merchant.id);
-      const owned = pages.find((p: any) => p.id === input.pageId);
-      if (!owned) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "الصفحة غير موجودة",
-        });
-      }
-      const { pageId, ...data } = input;
-      await updateDiscoveredPage(pageId, data);
-      // Invalidate cache so bot sees changes immediately
-      try {
-        const kDb = await import("../db/knowledge");
-        await kDb.invalidateCache(merchant.id);
-      } catch {
-        /* non-blocking */
-      }
-      return { success: true };
+    .input(z.unknown().optional())
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Open the reviewed page workspace before changing knowledge.",
+      });
     }),
 
   /**
    * Delete Discovered Page
    */
   deletePage: permissionProcedure("bot_settings.manage")
-    .input(z.object({ pageId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      // IDOR FIX: Verify ownership before delete
-      const merchant = await getMerchantOrThrow(ctx.merchantId);
-      const pages = await getDiscoveredPagesByMerchantId(merchant.id);
-      const owned = pages.find((p: any) => p.id === input.pageId);
-      if (!owned) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "الصفحة غير موجودة",
-        });
-      }
-      await deleteDiscoveredPage(input.pageId);
-      // Invalidate cache so bot stops using deleted page
-      try {
-        const kDb = await import("../db/knowledge");
-        await kDb.invalidateCache(merchant.id);
-      } catch {
-        /* non-blocking */
-      }
-      return { success: true };
+    .input(z.unknown().optional())
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Open the reviewed page workspace before changing knowledge.",
+      });
     }),
 
   /**
@@ -313,59 +268,24 @@ export const analysisRouter = router({
    * Update FAQ
    */
   updateFaq: permissionProcedure("bot_settings.manage")
-    .input(
-      z.object({
-        faqId: z.number(),
-        question: z.string().optional(),
-        answer: z.string().optional(),
-        category: z.string().optional(),
-        isActive: z.boolean().optional(),
-        useInBot: z.boolean().optional(),
-        priority: z.number().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // IDOR FIX: Verify ownership before update
-      const merchant = await getMerchantOrThrow(ctx.merchantId);
-      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
-      const owned = faqs.find((f: any) => f.id === input.faqId);
-      if (!owned) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "السؤال غير موجود" });
-      }
-      const { faqId, ...data } = input;
-      await updateExtractedFaq(faqId, data);
-      // Invalidate cache so bot sees FAQ changes
-      try {
-        const kDb = await import("../db/knowledge");
-        await kDb.invalidateCache(merchant.id);
-      } catch {
-        /* non-blocking */
-      }
-      return { success: true };
+    .input(z.unknown().optional())
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Open the reviewed FAQ workspace before changing knowledge.",
+      });
     }),
 
   /**
    * Delete FAQ
    */
   deleteFaq: permissionProcedure("bot_settings.manage")
-    .input(z.object({ faqId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      // IDOR FIX: Verify ownership before delete
-      const merchant = await getMerchantOrThrow(ctx.merchantId);
-      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
-      const owned = faqs.find((f: any) => f.id === input.faqId);
-      if (!owned) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "السؤال غير موجود" });
-      }
-      await deleteExtractedFaq(input.faqId);
-      // Invalidate cache so bot stops using deleted FAQ
-      try {
-        const kDb = await import("../db/knowledge");
-        await kDb.invalidateCache(merchant.id);
-      } catch {
-        /* non-blocking */
-      }
-      return { success: true };
+    .input(z.unknown().optional())
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Open the reviewed FAQ workspace before changing knowledge.",
+      });
     }),
 
   /**

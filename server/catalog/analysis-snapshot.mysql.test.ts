@@ -164,8 +164,8 @@ describe.skipIf(!process.env.DATABASE_URL)('analysis snapshot isolation and reco
     await applyAnalysisSnapshot(other.merchantId, input());
     const [page] = await query('SELECT id FROM discovered_pages WHERE merchant_id=?', [other.merchantId]);
     const [faq] = await query('SELECT id FROM extracted_faqs WHERE merchant_id=?', [other.merchantId]);
-    await expect(caller().analysis.deletePage({ pageId: page.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    await expect(caller().analysis.deleteFaq({ faqId: faq.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(caller().analysis.deletePage({ pageId: page.id })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    await expect(caller().analysis.deleteFaq({ faqId: faq.id })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
     await expect(caller(owner.userId, other.merchantId).analysis.applyAnalysis(input())).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await query("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',0)", [other.merchantId, owner.userId]);
     await expect(caller(owner.userId, other.merchantId).websiteAnalysis.listAnalyses()).rejects.toMatchObject({ code: 'FORBIDDEN' });
