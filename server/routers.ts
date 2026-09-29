@@ -1,3 +1,4 @@
+import { testMetricsWorkspaceRouter } from "./routers-test-metrics-workspace";
 import { overviewWorkspaceRouter } from "./routers-overview-workspace";
 import { messageAnalyticsRouter } from "./routers-message-analytics";
 import { weeklyReportsRouter } from './routers-weekly-reports';
@@ -3689,6 +3690,7 @@ export const appRouter = router({
 
   messageWorkspace: messageWorkspaceRouter,
   overviewWorkspace: overviewWorkspaceRouter,
+  testMetricsWorkspace: testMetricsWorkspaceRouter,
   // Message Analytics APIs
   messageAnalytics: messageAnalyticsRouter,
 
