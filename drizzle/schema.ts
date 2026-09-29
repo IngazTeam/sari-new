@@ -1160,10 +1160,25 @@ export const testMessages = mysqlTable("testMessages", {
 	responseTime: int(),
 	rating: mysqlEnum(['positive', 'negative']),
 	ratedAt: timestamp({ mode: 'string' }),
+	ratingRevision: int().notNull().default(0),
+	replySource: mysqlEnum(['model', 'guardrail']),
 	productsRecommended: text(),
 	wasClicked: tinyint().default(0).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 }, table => [uniqueIndex('test_message_request').on(table.conversationId, table.clientMessageId)]);
+
+export const testMessageFeedback = mysqlTable("test_message_feedback", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull(),
+  requestId: char("request_id", {length:36}).notNull(),
+  messageId: int("message_id").notNull().references(()=>testMessages.id,{onDelete:"cascade"}),
+  reviewerId: int("reviewer_id").notNull(),
+  expectedRevision: int("expected_revision").notNull(),
+  revision: int().notNull(),
+  previousRating: mysqlEnum("previous_rating",['positive','negative']),
+  rating: mysqlEnum(['positive','negative']),
+  createdAt: timestamp("created_at",{mode:'string',fsp:3}).defaultNow().notNull(),
+},table=>[uniqueIndex('uq_test_feedback_request').on(table.merchantId,table.requestId),index('idx_test_feedback_message').on(table.messageId,table.revision)]);
 
 export const testMetricsDaily = mysqlTable("testMetricsDaily", {
 	id: int().autoincrement().primaryKey(),

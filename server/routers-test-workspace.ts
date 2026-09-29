@@ -19,6 +19,16 @@ import {
   TestWorkspaceError,
 } from "./test-sari-store";
 import { testMetricsInput } from "../shared/test-metrics-workspace";
+import {
+  testSessionListInput,
+  testTranscriptInput,
+  testFeedbackInput,
+} from "../shared/test-feedback-workspace";
+import {
+  listSavedTestSessions,
+  readSavedTestTranscript,
+  saveTestFeedback,
+} from "./test-feedback-workspace";
 
 async function run<T>(work: () => Promise<T>): Promise<T> {
   try {
@@ -58,6 +68,21 @@ export const quickPreviewProcedure = manage
     })
   );
 export const testSariRouter = router({
+  listSessions: permissionProcedure("conversations.read")
+    .input(testSessionListInput)
+    .query(({ ctx, input }) =>
+      run(() => listSavedTestSessions(ctx.merchantId, input))
+    ),
+  transcript: permissionProcedure("conversations.read")
+    .input(testTranscriptInput)
+    .query(({ ctx, input }) =>
+      run(() => readSavedTestTranscript(ctx.merchantId, input))
+    ),
+  rateReply: manage
+    .input(testFeedbackInput)
+    .mutation(({ ctx, input }) =>
+      run(() => saveTestFeedback(ctx.merchantId, ctx.user.id, input))
+    ),
   createConversation: manage
     .input(testSessionInput)
     .mutation(({ ctx, input }) =>

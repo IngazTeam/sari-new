@@ -9,8 +9,13 @@ export const testMessageInput = z
     sender: z.enum(["user", "sari"]),
     content: z.string().trim().min(1).max(5000),
     responseTime: z.number().int().min(0).max(3600000).optional(),
+    replySource: z.enum(["model", "guardrail"]).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    input => input.sender === "sari" || input.replySource === undefined,
+    "Only replies have a reply source"
+  );
 export const testChatInput = z
   .object({
     conversationId: testConversationId,

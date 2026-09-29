@@ -18,13 +18,17 @@ import {
 import type { z } from "zod";
 
 export class TestWorkspaceError extends Error {
-  constructor(readonly code: "NOT_FOUND" | "CONFLICT" | "PRECONDITION_FAILED") {
+  constructor(
+    readonly code: "NOT_FOUND" | "CONFLICT" | "PRECONDITION_FAILED",
+    message?: string
+  ) {
     super(
-      code === "NOT_FOUND"
-        ? "Test conversation not available"
-        : code === "CONFLICT"
-          ? "A different result is already saved"
-          : "Test workspace requires a database update"
+      message ??
+        (code === "NOT_FOUND"
+          ? "Test conversation not available"
+          : code === "CONFLICT"
+            ? "A different result is already saved"
+            : "Test workspace requires a database update")
     );
   }
 }
@@ -41,7 +45,7 @@ async function poolReady() {
     },
     {
       table: "testMessages",
-      columns: ["clientMessageId"],
+      columns: ["clientMessageId", "replySource", "ratingRevision"],
       uniqueIndexes: [
         {
           name: "test_message_request",
@@ -170,26 +174,28 @@ export async function saveOwnedTestMessage(
   const input = testMessageInput.parse(raw);
   return owned(merchantId, input.conversationId, async connection => {
     const [prior] = await connection.execute<RowDataPacket[]>(
-      "SELECT id,sender,content FROM testMessages WHERE conversationId=? AND clientMessageId=?",
+      "SELECT id,sender,content,replySource FROM testMessages WHERE conversationId=? AND clientMessageId=?",
       [input.conversationId, input.clientMessageId]
     );
     if (prior[0]) {
       if (
         prior[0].sender !== input.sender ||
-        prior[0].content !== input.content
+        prior[0].content !== input.content ||
+        prior[0].replySource !== (input.replySource ?? null)
       )
         throw new TestWorkspaceError("CONFLICT");
       return { messageId: Number(prior[0].id) };
     }
     const [result] = await connection.execute<ResultSetHeader>(
-      `INSERT INTO testMessages(conversationId,clientMessageId,sender,content,responseTime,sentAt)
-      VALUES (?,?,?,?,?,UTC_TIMESTAMP())`,
+      `INSERT INTO testMessages(conversationId,clientMessageId,sender,content,responseTime,replySource,sentAt)
+      VALUES (?,?,?,?,?,?,UTC_TIMESTAMP())`,
       [
         input.conversationId,
         input.clientMessageId,
         input.sender,
         input.content,
         input.responseTime ?? null,
+        input.replySource ?? null,
       ]
     );
     await connection.execute(
@@ -199,6 +205,7 @@ export async function saveOwnedTestMessage(
     return { messageId: Number(result.insertId) };
   });
 }
+export { owned as withOwnedTestSession, poolReady as testWorkspacePool };
 export async function saveOwnedTestDeal(
   merchantId: number,
   raw: z.infer<typeof testDealInput>
