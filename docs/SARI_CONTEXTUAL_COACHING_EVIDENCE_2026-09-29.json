@@ -1,0 +1,808 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T01:10:28.572Z",
+  "scope": "Contextual merchant coaching Q&A reviews tied to delivered questions and durable private WhatsApp replies",
+  "branch": "main",
+  "startingHead": "73f8654b1ebc21049d5bd9a862aaa966b0310e0c",
+  "validationBaseHead": "e04345ac880a2c4d690160f6dd0ce44d4adabe99",
+  "runtime": {
+    "node": "v22.23.2",
+    "pnpm": "10.4.1",
+    "database": "MySQL 8.0 synthetic localhost:33089",
+    "databaseStopped": true
+  },
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "productionDataUsed": false,
+    "externalNetworkBlocked": true,
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "files": 58,
+    "passed": 1284,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 116,
+    "newCoachingMysqlTests": 48,
+    "coachingContractTests": 38
+  },
+  "reports": [
+    {
+      "file": ".tmp/coaching-checks/tests.json",
+      "sha256": "672aad902c1108a4ecc6ff0738fe1378d1c319a0b4726505b17565bf6d0b03c2",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/coaching-checks/coaching-unit.json",
+      "sha256": "aa6baba38519481e93d417009e8bb15799aa4072d42e33acbe75b8700fd48bd9",
+      "passed": 110,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/coaching-checks/coaching-mysql.json",
+      "sha256": "b12920e3ddf8348e635fb72ae052942ec1835272299e24c07a5fd1d77e042859",
+      "passed": 116,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "suites": [
+    {
+      "file": "server/ai-settings-provider-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/action-execution.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/automatic-followup-context.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/budget-boundaries.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/coaching.mysql.test.ts",
+      "report": ".tmp/coaching-checks/coaching-mysql.json",
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-agent-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-followup.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-generation.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-learning-contract.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-memory-contract.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-reply-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-sales-loss-contract.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding-evaluation.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory-chat.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/followup-policy.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-analysis-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 37,
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-signal-capture-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/loss-detector.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/merchant-teaching-understanding.test.ts",
+      "report": ".tmp/coaching-checks/coaching-unit.json",
+      "tests": 37,
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/openai-zahypi.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-prompt.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-provider-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/requested-followup-time.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-decisions.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-learning.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-prompt.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-transport.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-turn-policy.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sari-preview.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 42,
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/task-catalog.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/transactional-truth.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-callsite-governance.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-client.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 102,
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-context-propagation.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-runtime-config.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-access-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 30,
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-context.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/assistant-reply-preview.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/bot-audit-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/byaan-conversation-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/coaching-bugfix-pentest.test.ts",
+      "report": ".tmp/coaching-checks/coaching-unit.json",
+      "tests": 38,
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/knowledge/merchant-teaching.test.ts",
+      "report": ".tmp/coaching-checks/coaching-unit.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/knowledge/sales-knowledge.mysql.test.ts",
+      "report": ".tmp/coaching-checks/coaching-mysql.json",
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/knowledge/whatsapp-teaching.mysql.test.ts",
+      "report": ".tmp/coaching-checks/coaching-mysql.json",
+      "tests": 35,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/merchant-persona-routing.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/messaging/inbound-process.mysql.test.ts",
+      "report": ".tmp/coaching-checks/coaching-mysql.json",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/messaging/inbound.mysql.test.ts",
+      "report": ".tmp/coaching-checks/coaching-mysql.json",
+      "tests": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview-history.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/remediation-regression.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sales-hardening-pentest.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 34,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sari-quick-preview.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/virtual-team-page.test.ts",
+      "report": ".tmp/coaching-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-escalation.test.ts",
+      "report": ".tmp/coaching-checks/coaching-unit.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-teaching.test.ts",
+      "report": ".tmp/coaching-checks/coaching-unit.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\coaching-checks\\tests.json"
+      ],
+      "profile": "tests",
+      "log": ".tmp/coaching-checks/regression.log",
+      "logSha256": "2852d4874114f77bd29fab97f5daaad9f3c719d50b388f5496356f6cd09a316e"
+    },
+    {
+      "name": "coaching-unit",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/coaching-bugfix-pentest.test.ts",
+        "server/webhooks/greenapi-teaching.test.ts",
+        "server/webhooks/greenapi-escalation.test.ts",
+        "server/ai/merchant-teaching-understanding.test.ts",
+        "server/knowledge/merchant-teaching.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\coaching-checks\\coaching-unit.json"
+      ],
+      "profile": "coaching-unit",
+      "log": ".tmp/coaching-checks/coaching-unit.log",
+      "logSha256": "721c82a9059126ae9f2d50af0707a793a93af342eb8cb04ef804da3e4f27c72b"
+    },
+    {
+      "name": "coaching-mysql",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/ai/coaching.mysql.test.ts",
+        "server/knowledge/whatsapp-teaching.mysql.test.ts",
+        "server/knowledge/sales-knowledge.mysql.test.ts",
+        "server/messaging/inbound.mysql.test.ts",
+        "server/messaging/inbound-process.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\coaching-checks\\coaching-mysql.json"
+      ],
+      "profile": "coaching-mysql",
+      "log": ".tmp/coaching-checks/coaching-mysql.log",
+      "logSha256": "f81860764c468a3d550933251e5580dd5364aefcf12d23da1034ea969bd1ac68"
+    },
+    {
+      "name": "types",
+      "exitCode": 0,
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "profile": "static",
+      "log": ".tmp/coaching-checks/types.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "profile": "static",
+      "log": ".tmp/coaching-checks/translations.log",
+      "logSha256": "c00036539442db361542adc7119b73c917d5772bea0eb5380725f6a519082f96"
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "profile": "static",
+      "log": ".tmp/coaching-checks/eval-dry-run.log",
+      "logSha256": "941d4016c3e7fd8785fd86f2d964b3e18b4e01414b67d30b79ec95395e236657"
+    },
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\coaching-checks\\type-snapshot-a1795538-5590-4937-8784-f4cacd01a171\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\coaching-checks\\type-snapshot-a1795538-5590-4937-8784-f4cacd01a171",
+      "baseHead": "e04345ac880a2c4d690160f6dd0ce44d4adabe99",
+      "overlaySha256": {
+        "drizzle/0158_contextual_coaching.sql": "a737f962888ce25e69484c9d87c1a59d036742baeb6edcf864ddd085c5f0f94e",
+        "drizzle/meta/_journal.json": "7ad6350d35069ad94dbd34ff7e4214ac1204497eaf4ba63b0913cb3749400bfe",
+        "drizzle/schema.ts": "b2d582637bee96b03c78c5005da80a9e0d097f7dc2c86aa00865fd9542de9e4c",
+        "server/ai/coaching-understanding.ts": "e1ad611e66d40b713848553e82b07a971b5356043724571d9f7ecdbb4040489b",
+        "server/ai/coaching-store.ts": "9b782b2b1281d9d14969da08e58fe4afa46d9800798b7028d26620828e0eefd9",
+        "server/ai/coaching-delivery.ts": "bb2393cba04dfc60f92de12ded7ab2ec4327744fb9bc937066c1235e38860126",
+        "server/ai/coaching-handler.ts": "a19ed31574c44dab952fcce62cb35b840569746a9b40e1f203ab5e046c939222",
+        "server/ai/coaching-engine.ts": "ed028009494d49c451b36c600dbd0334311bd14026c27fa6ec45571a620f587e",
+        "server/db/coaching.ts": "64da30d7de26959c566ad94c388cb85a8ca0d18ebe9b0e466a47ff6713a0c5a3",
+        "server/ai/merchant-mode.ts": "18c1a20e26611e9284cdd0e2aab7e8ee59b9f6eeb6f2c29d9a3ec6c725652081",
+        "server/ai/task-catalog.ts": "aa0a5c4ee9be3877f202bf7f726e50260128a8ac943807468b9b0414b23bb6e9",
+        "server/knowledge/whatsapp-teaching-source.ts": "94d5775955b0736974581bff2f609f5d7171a283022d7e1a6c6a7a03ce8ff614",
+        "server/channels/whatsapp/types.ts": "24c9a53ab3b09eedf1ebde521f35b8f26539360b7b0ea2a9ce870011521a2c3e",
+        "server/channels/whatsapp/service.ts": "9fc538f961f8b0096d7f64bbb967acab7ef5773a1470f6d4982ee5b3a2a9cfd5",
+        "server/webhooks/greenapi.ts": "1dbc79ad1cba9581c2b952eeb31bc95c82c703e4143593b9468f836ce4589c15",
+        "server/webhooks/greenapi-teaching.test.ts": "2280801a2dbea815bfd62d280838cd7b5211b0f5df9fb691a4fcf1713b03c134",
+        "server/coaching-bugfix-pentest.test.ts": "85e374fb5a371a47c3fbd5938ee288feeac9e664b2327051c47b025b833681b5",
+        "server/ai/coaching.mysql.test.ts": "571d1dfe08511eff061b24001b8c13c02aaf1efdfc568fbe5918b26b2ecce97d",
+        "server/tests/helpers/coaching-schema.ts": "6f9fa2456e8685c56382812110216b7fc10d7fd7cfdb252b6970f2b9d6ab6c24"
+      },
+      "source": "Tracked main plus only contextual merchant coaching; no .env or unrelated uncommitted edits",
+      "profile": "snapshot",
+      "log": ".tmp/coaching-checks/snapshot-types.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "args": [
+        ".tmp/tools/pnpm-10.4.1/package/bin/pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "profile": "build",
+      "log": ".tmp/coaching-checks/build.log",
+      "logSha256": "87b0e918ce5e46944d8b3f08c9f401f704f34dae6aca31769d9af1c990570f94"
+    }
+  ],
+  "translationCheck": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8365,
+    "dynamicKeysChecked": 346,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "languageEvaluation": {
+    "mode": "dry-run",
+    "cases": 82,
+    "live": false,
+    "logSha256": "941d4016c3e7fd8785fd86f2d964b3e18b4e01414b67d30b79ec95395e236657"
+  },
+  "earlierAttempts": [
+    {
+      "name": "editing-script SQL replacement corruption",
+      "resolution": "Rebuilt the file from tracked HEAD and applied the replacement using a function instead of string replacement special tokens; subsequent compilation and database tests passed."
+    },
+    {
+      "file": ".tmp/coaching-checks/types-iterator-failure.log",
+      "sha256": "a25a0bd049150d4d3180c63c4c043c65c6de611cfdeff530f57f018865f12040",
+      "errors": 2,
+      "resolution": "Converted array entry iterators to explicit arrays for the repository TypeScript target; workspace and independent snapshot checks passed."
+    }
+  ],
+  "coverage": [
+    "central tenant-scoped AI provider/model selection and full role-marked conversation",
+    "closed structured verdict with source basis/evidence/confidence/ambiguity/condition validation",
+    "no keyword verdict or unquoted pending-session recovery",
+    "atomic session with all complete sourced questions and active tenant-owned channel",
+    "AI answer authorship validated; staff/unknown/changed output not sampled",
+    "quote binds actual delivery receipt, question, current recipient, tenant, provider and instance",
+    "durable inbound event/partition/account/lease/current authority checked again after inference",
+    "context/source/forget-cutoff/position/delivery/recipient drift blocks mutation",
+    "correction/provenance/audit/verdict/counters atomic, injected audit failure rolls back all",
+    "six concurrent same-event writes produce one verdict and one pending section",
+    "replay never consumes the next question or republishes deleted knowledge",
+    "two competing source events cannot overwrite one question",
+    "confirmation and skip do not fabricate positive learning signals; skipped questions excluded from confirmation rate",
+    "WhatsApp provider boundary verifies current context before send; stable keys prevent uncertain re-send",
+    "retryFailed cannot bypass a failed coaching guard by removing it",
+    "sensitive email/account/card patterns masked in both displayed texts with originals retained",
+    "late expired reviews accepted only within bounded session age and current position",
+    "real webhook routing, original connection acknowledgement, next question after confirmed acknowledgement",
+    "regression of memory, learning, responses, actions, followups, reminders, providers and budgets"
+  ],
+  "compatibility": {
+    "migrationAdded": "0158_contextual_coaching",
+    "migrationAppliedToSyntheticMySql": true,
+    "legacyQuestionsRewritten": false,
+    "legacyUnprovenQuestions": "not actionable through the new review path",
+    "positiveLearningSignalEmitted": false,
+    "taskType": "sari.merchant.intent",
+    "sourceHistoryMessages": 21,
+    "questionAndAnswerLimit": 3000,
+    "promptLimit": 4096,
+    "correctionLimit": 2000,
+    "sourceMessageLimit": 16000,
+    "decisionConfidenceMinimum": 0.9,
+    "sessionIdleExpiryHours": 8,
+    "reviewMaximumSessionAgeHours": 24,
+    "questionReference": "quoted WhatsApp provider message ID matched to an owned persisted delivery",
+    "knowledgePublication": "pending_review, use_in_bot=0; explicit dashboard review/approval required"
+  },
+  "limitations": [
+    "AI and provider outputs in tests are simulated; no measured live semantic accuracy, sales lift, conversion, latency or cost",
+    "Other merchant directives/onboarding and multi-message teaching history/conflict resolution remain separate work",
+    "Groups, multiple opportunities, historical derived evidence invalidation and live/human/business/operational evaluation remain open",
+    "Source drift/forgetting prevents future use but does not automatically erase historical coaching snapshots or pending knowledge",
+    "PII display masking is pattern-based, not complete data anonymization; original context still exists in tenant storage and AI input",
+    "Scheduling retains the existing server business-hours check and worker cohort behavior",
+    "Local adversarial testing is not production penetration-test certification",
+    "Hashes verify application consistency, not protection from an administrator rewriting all records and hashes",
+    "Concurrent knowledge workspace work was committed separately; isolated main-plus-owned-overlay verification passed"
+  ],
+  "pushed": false,
+  "deployed": false,
+  "sourceSha256": {
+    "drizzle/0158_contextual_coaching.sql": "a737f962888ce25e69484c9d87c1a59d036742baeb6edcf864ddd085c5f0f94e",
+    "drizzle/meta/_journal.json": "7ad6350d35069ad94dbd34ff7e4214ac1204497eaf4ba63b0913cb3749400bfe",
+    "drizzle/schema.ts": "b2d582637bee96b03c78c5005da80a9e0d097f7dc2c86aa00865fd9542de9e4c",
+    "server/ai/coaching-understanding.ts": "e1ad611e66d40b713848553e82b07a971b5356043724571d9f7ecdbb4040489b",
+    "server/ai/coaching-store.ts": "9b782b2b1281d9d14969da08e58fe4afa46d9800798b7028d26620828e0eefd9",
+    "server/ai/coaching-delivery.ts": "bb2393cba04dfc60f92de12ded7ab2ec4327744fb9bc937066c1235e38860126",
+    "server/ai/coaching-handler.ts": "a19ed31574c44dab952fcce62cb35b840569746a9b40e1f203ab5e046c939222",
+    "server/ai/coaching-engine.ts": "ed028009494d49c451b36c600dbd0334311bd14026c27fa6ec45571a620f587e",
+    "server/db/coaching.ts": "64da30d7de26959c566ad94c388cb85a8ca0d18ebe9b0e466a47ff6713a0c5a3",
+    "server/ai/merchant-mode.ts": "18c1a20e26611e9284cdd0e2aab7e8ee59b9f6eeb6f2c29d9a3ec6c725652081",
+    "server/ai/task-catalog.ts": "aa0a5c4ee9be3877f202bf7f726e50260128a8ac943807468b9b0414b23bb6e9",
+    "server/knowledge/whatsapp-teaching-source.ts": "94d5775955b0736974581bff2f609f5d7171a283022d7e1a6c6a7a03ce8ff614",
+    "server/channels/whatsapp/types.ts": "24c9a53ab3b09eedf1ebde521f35b8f26539360b7b0ea2a9ce870011521a2c3e",
+    "server/channels/whatsapp/service.ts": "9fc538f961f8b0096d7f64bbb967acab7ef5773a1470f6d4982ee5b3a2a9cfd5",
+    "server/webhooks/greenapi.ts": "1dbc79ad1cba9581c2b952eeb31bc95c82c703e4143593b9468f836ce4589c15",
+    "server/webhooks/greenapi-teaching.test.ts": "2280801a2dbea815bfd62d280838cd7b5211b0f5df9fb691a4fcf1713b03c134",
+    "server/coaching-bugfix-pentest.test.ts": "85e374fb5a371a47c3fbd5938ee288feeac9e664b2327051c47b025b833681b5",
+    "server/ai/coaching.mysql.test.ts": "571d1dfe08511eff061b24001b8c13c02aaf1efdfc568fbe5918b26b2ecce97d",
+    "server/tests/helpers/coaching-schema.ts": "6f9fa2456e8685c56382812110216b7fc10d7fd7cfdb252b6970f2b9d6ab6c24",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "2b8196d7535098bb2760cefe168868b7840a7dce3dcb71829ab61b5ef8bec433",
+    "docs/SARI_CONTEXTUAL_COACHING_2026-09-29.md": "98b3e645b345528b7ce33ea3d2944edc4e00bab5373fadaddcd2e29b27533d44"
+  }
+}

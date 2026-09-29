@@ -296,10 +296,10 @@ async function sendMerchantReport(params: {
       const stats = await getCoachingStats(params.merchantId);
       if (stats.totalSessions > 0) {
         const accuracy = (stats.correctRate * 100).toFixed(0);
-        coachingText = `\n🧠 *ذكاء البوت:*\n` +
+        coachingText = `\n🧠 *مراجعة ردود ساري:*\n` +
           `• جلسات التدريب: ${stats.totalSessions}\n` +
           `• الردود المراجعة: ${stats.totalReviewed}\n` +
-          `• نسبة الدقة: ${accuracy}%`;
+          `• نسبة الردود التي أكدها التاجر: ${accuracy}%`;
       }
     } catch { /* non-blocking */ }
 

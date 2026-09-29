@@ -1,23 +1,27 @@
 /**
  * Coaching Database Module — Sari Coaching Sessions
- * 
+ *
  * Tables:
  *   - sari_coaching_sessions: Session state machine (pending → active → completed)
  *   - sari_coaching_questions: Individual Q&A items within a session
- * 
+ *
  * A coaching session is a WhatsApp-based Q&A review where Sari asks the merchant
  * to validate or correct its recent responses to customers.
  */
 
-import { getPool } from '../db';
-import { assertRuntimeSchema } from './schema-readiness';
+import { getPool } from "./connection";
+import {
+  assertCoachingSchema,
+  type CoachingCandidate,
+} from "../ai/coaching-store";
+import { assertRuntimeSchema } from "./schema-readiness";
 
 // ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
 
-export type SessionStatus = 'pending' | 'active' | 'completed' | 'expired';
-export type QuestionVerdict = 'correct' | 'corrected' | 'skipped';
+export type SessionStatus = "pending" | "active" | "completed" | "expired";
+export type QuestionVerdict = "correct" | "corrected" | "skipped";
 
 export interface CoachingSession {
   id: number;
@@ -52,9 +56,10 @@ export interface CoachingQuestion {
 // ═══════════════════════════════════════════════════════════════
 
 export async function ensureCoachingTables(): Promise<void> {
-  await assertRuntimeSchema('merchant coaching', [
-    { table: 'sari_coaching_sessions' },
-    { table: 'sari_coaching_questions' },
+  await assertCoachingSchema();
+  await assertRuntimeSchema("merchant coaching", [
+    { table: "sari_coaching_sessions" },
+    { table: "sari_coaching_questions" },
   ]);
 }
 
@@ -62,58 +67,10 @@ export async function ensureCoachingTables(): Promise<void> {
 // Sessions — CRUD
 // ═══════════════════════════════════════════════════════════════
 
-/** Create a new coaching session with its questions */
-export async function createCoachingSession(
-  merchantId: number,
-  questions: { customerQuestion: string; botResponse: string; conversationId?: number }[]
-): Promise<number | null> {
-  await ensureCoachingTables();
-  const pool = await getPool();
-  if (!pool || questions.length === 0) return null;
-
-  try {
-    // Create session
-    const [result] = await pool.execute(
-      `INSERT INTO sari_coaching_sessions (merchant_id, total_questions, status) VALUES (?, ?, 'active')`,
-      [merchantId, questions.length]
-    );
-    const sessionId = (result as any).insertId;
-    if (!sessionId) return null;
-
-    // Insert questions
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      await pool.execute(
-        `INSERT INTO sari_coaching_questions
-         (session_id, merchant_id, conversation_id, customer_question, bot_response, question_order)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          sessionId,
-          merchantId,
-          q.conversationId || null,
-          q.customerQuestion.substring(0, 2000),
-          q.botResponse.substring(0, 2000),
-          i + 1,
-        ]
-      );
-    }
-
-    // Mark as started
-    await pool.execute(
-      `UPDATE sari_coaching_sessions SET started_at = NOW() WHERE id = ?`,
-      [sessionId]
-    );
-
-    console.log(`[Coaching] 🎓 Session #${sessionId} created for merchant ${merchantId}: ${questions.length} questions`);
-    return sessionId;
-  } catch (e: any) {
-    console.error('[Coaching] createCoachingSession failed:', e.message);
-    return null;
-  }
-}
-
 /** Get active coaching session for a merchant */
-export async function getActiveSession(merchantId: number): Promise<CoachingSession | null> {
+export async function getActiveSession(
+  merchantId: number
+): Promise<CoachingSession | null> {
   await ensureCoachingTables();
   const pool = await getPool();
   if (!pool) return null;
@@ -125,105 +82,22 @@ export async function getActiveSession(merchantId: number): Promise<CoachingSess
     [merchantId]
   );
 
-  return (rows as any[])[0] as CoachingSession || null;
-}
-
-/** Get the current question for an active session — PEN-COACH-02 FIX: merchant_id guard */
-export async function getCurrentQuestion(sessionId: number, currentIndex: number, merchantId?: number): Promise<CoachingQuestion | null> {
-  const pool = await getPool();
-  if (!pool) return null;
-
-  const query = merchantId
-    ? `SELECT * FROM sari_coaching_questions WHERE session_id = ? AND question_order = ? AND merchant_id = ?`
-    : `SELECT * FROM sari_coaching_questions WHERE session_id = ? AND question_order = ?`;
-  const params = merchantId
-    ? [sessionId, currentIndex + 1, merchantId]
-    : [sessionId, currentIndex + 1];
-
-  const [rows] = await pool.execute(query, params);
-  return (rows as any[])[0] as CoachingQuestion || null;
-}
-
-/** Record merchant's verdict on a question */
-export async function recordVerdict(
-  questionId: number,
-  merchantId: number,
-  verdict: QuestionVerdict,
-  correction?: string
-): Promise<void> {
-  const pool = await getPool();
-  if (!pool) return;
-
-  await pool.execute(
-    `UPDATE sari_coaching_questions
-     SET merchant_verdict = ?, merchant_correction = ?, reviewed_at = NOW()
-     WHERE id = ? AND merchant_id = ?`,
-    [verdict, correction?.substring(0, 2000) || null, questionId, merchantId]
-  );
-}
-
-/** PEN-COACH-01/02 FIX: Whitelist columns + merchant_id guard */
-const VERDICT_COLUMN_MAP: Record<string, string> = {
-  correct: 'correct_count',
-  corrected: 'corrected_count',
-  skipped: 'skipped_count',
-};
-
-/** Advance session to next question, returns new index */
-export async function advanceSession(sessionId: number, verdict: QuestionVerdict, merchantId?: number): Promise<number> {
-  const pool = await getPool();
-  if (!pool) return -1;
-
-  // PEN-COACH-01 FIX: Whitelist column name — never interpolate user-derived values
-  const countField = VERDICT_COLUMN_MAP[verdict] || 'skipped_count';
-
-  if (merchantId) {
-    await pool.execute(
-      `UPDATE sari_coaching_sessions
-       SET current_question_index = current_question_index + 1,
-           ${countField} = ${countField} + 1
-       WHERE id = ? AND merchant_id = ?`,
-      [sessionId, merchantId]
-    );
-  } else {
-    await pool.execute(
-      `UPDATE sari_coaching_sessions
-       SET current_question_index = current_question_index + 1,
-           ${countField} = ${countField} + 1
-       WHERE id = ?`,
-      [sessionId]
-    );
-  }
-
-  // Return new index
-  const [rows] = await pool.execute(
-    `SELECT current_question_index FROM sari_coaching_sessions WHERE id = ?`,
-    [sessionId]
-  );
-
-  return (rows as any[])[0]?.current_question_index ?? -1;
-}
-
-/** Complete a coaching session — PEN-COACH-02 FIX: merchant_id guard */
-export async function completeSession(sessionId: number, merchantId?: number): Promise<void> {
-  const pool = await getPool();
-  if (!pool) return;
-
-  if (merchantId) {
-    await pool.execute(
-      `UPDATE sari_coaching_sessions
-       SET status = 'completed', completed_at = NOW()
-       WHERE id = ? AND merchant_id = ?`,
-      [sessionId, merchantId]
-    );
-  } else {
-    await pool.execute(
-      `UPDATE sari_coaching_sessions
-       SET status = 'completed', completed_at = NOW()
-       WHERE id = ?`,
-      [sessionId]
-    );
-  }
+  const row = (rows as any[])[0];
+  return row
+    ? {
+        id: row.id,
+        merchantId: row.merchant_id,
+        status: row.status,
+        totalQuestions: row.total_questions,
+        correctCount: row.correct_count,
+        correctedCount: row.corrected_count,
+        skippedCount: row.skipped_count,
+        currentQuestionIndex: row.current_question_index,
+        startedAt: row.started_at ? new Date(row.started_at) : null,
+        completedAt: row.completed_at ? new Date(row.completed_at) : null,
+        createdAt: new Date(row.created_at),
+      }
+    : null;
 }
 
 /** Expire stale sessions (> 8 hours without response — matches SESSION_TIMEOUT_HOURS) */
@@ -243,14 +117,16 @@ export async function expireStaleSessions(): Promise<number> {
 }
 
 /** Get the date of the last coaching session for a merchant */
-export async function getLastSessionDate(merchantId: number): Promise<Date | null> {
+export async function getLastSessionDate(
+  merchantId: number
+): Promise<Date | null> {
   await ensureCoachingTables();
   const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
     `SELECT created_at FROM sari_coaching_sessions
-     WHERE merchant_id = ? AND status IN ('completed', 'active')
+     WHERE merchant_id = ? AND status IN ('completed', 'active', 'expired')
      ORDER BY created_at DESC LIMIT 1`,
     [merchantId]
   );
@@ -267,12 +143,14 @@ export async function getLastSessionDate(merchantId: number): Promise<Date | nul
 export async function getReviewCandidates(
   merchantId: number,
   limit: number = 5
-): Promise<{ customerQuestion: string; botResponse: string; conversationId: number }[]> {
+): Promise<CoachingCandidate[]> {
   await ensureCoachingTables();
   const pool = await getPool();
   if (!pool) return [];
 
-  const safeLimit = Math.min(Math.max(limit, 1), 10);
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(Math.floor(limit), 1), 10)
+    : 1;
 
   try {
     // Get recent outgoing messages with customer context (last 72 hours)
@@ -280,8 +158,8 @@ export async function getReviewCandidates(
     // BUG-FIX: Use TRIM + LENGTH to exclude whitespace-only and media-placeholder content
     const [rows] = await pool.execute(
       `SELECT 
-        TRIM(m_in.content) AS customer_question,
-        TRIM(m_out.content) AS bot_response,
+        m_in.content AS customer_question, m_in.id AS incoming_id,
+        m_out.content AS bot_response, m_out.id AS outgoing_id,
         m_out.conversationId AS conversation_id
        FROM messages m_out
        INNER JOIN messages m_in ON m_in.conversationId = m_out.conversationId
@@ -295,6 +173,10 @@ export async function getReviewCandidates(
        INNER JOIN conversations c ON c.id = m_out.conversationId
        WHERE c.merchantId = ?
          AND m_out.direction = 'outgoing'
+         AND m_out.sender_type = 'assistant' AND m_out.isProcessed = 1 AND m_out.aiResponse = m_out.content
+         AND m_out.messageType = 'text' AND m_in.messageType = 'text'
+         AND CHAR_LENGTH(m_out.content)+CHAR_LENGTH(m_in.content)<=3000
+         AND c.customerPhone REGEXP '^[1-9][0-9]{7,14}$'
          AND m_out.createdAt > DATE_SUB(NOW(), INTERVAL 72 HOUR)
          AND m_out.content IS NOT NULL
          AND m_in.content IS NOT NULL
@@ -318,9 +200,11 @@ export async function getReviewCandidates(
       customerQuestion: r.customer_question,
       botResponse: r.bot_response,
       conversationId: r.conversation_id,
+      incomingId: r.incoming_id,
+      outgoingId: r.outgoing_id,
     }));
   } catch (e: any) {
-    console.error('[Coaching] getReviewCandidates failed:', e.message);
+    console.error("[Coaching] getReviewCandidates failed:", e.message);
     return [];
   }
 }
@@ -339,7 +223,7 @@ export async function getCoachingStats(merchantId: number): Promise<{
     const [rows] = await pool.execute(
       `SELECT
         COUNT(*) as total_sessions,
-        SUM(correct_count + corrected_count + skipped_count) as total_reviewed,
+        SUM(correct_count + corrected_count) as total_reviewed,
         SUM(correct_count) as total_correct
        FROM sari_coaching_sessions
        WHERE merchant_id = ? AND status = 'completed'`,
@@ -355,52 +239,7 @@ export async function getCoachingStats(merchantId: number): Promise<{
       totalReviewed,
       correctRate: totalReviewed > 0 ? totalCorrect / totalReviewed : 0,
     };
-  } catch { return { totalSessions: 0, totalReviewed: 0, correctRate: 0 }; }
-}
-
-/**
- * Get the most recently expired coaching session for a merchant (within last 24h).
- * Used to gracefully handle late merchant replies to coaching questions.
- */
-export async function getLastExpiredSession(merchantId: number): Promise<CoachingSession | null> {
-  await ensureCoachingTables();
-  const pool = await getPool();
-  if (!pool) return null;
-
-  try {
-    const [rows] = await pool.execute(
-      `SELECT * FROM sari_coaching_sessions
-       WHERE merchant_id = ? AND status = 'expired'
-       AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
-       ORDER BY created_at DESC LIMIT 1`,
-      [merchantId]
-    );
-
-    return (rows as any[])[0] as CoachingSession || null;
-  } catch (e: any) {
-    console.error('[Coaching] getLastExpiredSession failed:', e.message);
-    return null;
-  }
-}
-
-/**
- * Re-activate an expired session so it can process late merchant replies.
- * Sets status back to 'active' temporarily.
- */
-export async function reactivateSession(sessionId: number, merchantId: number): Promise<boolean> {
-  const pool = await getPool();
-  if (!pool) return false;
-
-  try {
-    const [result] = await pool.execute(
-      `UPDATE sari_coaching_sessions
-       SET status = 'active', started_at = NOW()
-       WHERE id = ? AND merchant_id = ? AND status = 'expired'`,
-      [sessionId, merchantId]
-    );
-    return (result as any).affectedRows > 0;
-  } catch (e: any) {
-    console.error('[Coaching] reactivateSession failed:', e.message);
-    return false;
+  } catch {
+    return { totalSessions: 0, totalReviewed: 0, correctRate: 0 };
   }
 }

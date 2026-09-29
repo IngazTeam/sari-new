@@ -4050,6 +4050,12 @@ export const sariCoachingQuestions = mysqlTable("sari_coaching_questions", {
 	conversationId: int("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
 	customerQuestion: text("customer_question").notNull(),
 	botResponse: text("bot_response").notNull(),
+	contextJson: json("context_json"),
+	contextDigest: char("context_digest", { length: 64 }),
+	deliveryKey: varchar("delivery_key", { length: 100 }),
+	reviewEventKey: char("review_event_key", { length: 64 }),
+	reviewSourceDigest: char("review_source_digest", { length: 64 }),
+	reviewAnalysis: json("review_analysis"),
 	merchantVerdict: varchar("merchant_verdict", { length: 20 }),
 	merchantCorrection: text("merchant_correction"),
 	questionOrder: int("question_order").default(0),
@@ -4058,6 +4064,8 @@ export const sariCoachingQuestions = mysqlTable("sari_coaching_questions", {
 }, table => [
 	index("idx_coaching_question_session_order").on(table.sessionId, table.questionOrder),
 	index("idx_coaching_question_merchant").on(table.merchantId),
+	uniqueIndex("uq_coaching_delivery").on(table.deliveryKey),
+	uniqueIndex("uq_coaching_review_event").on(table.merchantId, table.reviewEventKey),
 ]);
 
 export const sariLearningSignals = mysqlTable("sari_learning_signals", {

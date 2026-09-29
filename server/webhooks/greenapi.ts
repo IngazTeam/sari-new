@@ -904,6 +904,18 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
           const exactQuote = quotedEscalationMessageId(payload);
           if (exactQuote) {
+            const { handleCoachingReply, sendCurrentCoachingQuestion } = await import('../ai/coaching-engine');
+            const review = await handleCoachingReply(instance.merchantId, incomingText, exactQuote);
+            if (review.handled) {
+              if (!review.response) return { success: false, message: 'Coaching response unavailable' };
+              const acknowledgement = await sendMessageWithCredentials(instance.instanceId, instance.token,
+                instance.apiUrl || 'https://api.green-api.com', customerPhone, review.response);
+              if (!acknowledgement.success) return { success: false, message: 'Coaching acknowledgement not confirmed' };
+              if (review.nextSessionId && !await sendCurrentCoachingQuestion(instance.merchantId, review.nextSessionId)) {
+                return { success: false, message: 'Coaching next question delivery not confirmed' };
+              }
+              return { success: true, message: 'Coaching quoted review processed' };
+            }
             const { handleMerchantChat } = await import('../ai/merchant-mode');
             await handleMerchantChat({ merchantId: instance.merchantId, merchantPhone: customerPhone, message: incomingText,
               quotedText: extractQuotedText(payload), quotedMessageId: exactQuote, instanceRecordId: instance.id,
@@ -921,16 +933,6 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               instance.apiUrl || 'https://api.green-api.com', customerPhone, teachResult.response);
             if (!acknowledgement.success) return { success: false, message: 'Merchant teaching acknowledgement not confirmed' };
             return { success: true, message: 'Merchant teaching analysis processed' };
-          }
-
-          // Priority 2: Coaching session reply (active OR recently expired)
-          // BUG-FIX: Always try handleCoachingReply — it now internally recovers expired sessions
-          // so late merchant replies (e.g., "تخطى" sent hours after the question) are handled correctly
-          const { handleCoachingReply } = await import('../ai/coaching-engine');
-          const coachResult = await handleCoachingReply(instance.merchantId, incomingText);
-          if (coachResult.handled) {
-            console.log(`[Coaching] ✅ Training reply processed for merchant ${instance.merchantId}`);
-            return { success: true, message: 'Coaching reply processed' };
           }
 
           // Priority 2.5: Onboarding interview reply

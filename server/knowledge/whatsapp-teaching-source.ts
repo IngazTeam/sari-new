@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { getDb, type SariDb } from "../db/connection";
 import { currentInboundExecution } from "../messaging/inbound-context";
 import type { KnowledgeTransaction } from "./transaction";
+import { quotedEscalationMessageId } from "../ai/escalation-relay";
 
 export type TeachingSource = Readonly<{
   merchantId: number;
@@ -12,6 +13,7 @@ export type TeachingSource = Readonly<{
   authorPhone: string;
   text: string;
   digest: string;
+  quotedMessageId?: string;
 }>;
 const decode = (value: unknown): any =>
   typeof value === "string" ? JSON.parse(value) : value;
@@ -32,7 +34,8 @@ export async function readTeachingSource(
   merchantId: number,
   text: string,
   executor?: SariDb | KnowledgeTransaction,
-  lock = false
+  lock = false,
+  quotedMessageId?: string
 ): Promise<TeachingSource> {
   const execution = currentInboundExecution();
   if (
@@ -99,10 +102,18 @@ export async function readTeachingSource(
     !sender ||
     sender !== chat ||
     sourceText !== text ||
-    !["textMessage", "extendedTextMessage"].includes(md?.typeMessage) ||
-    md?.quotedMessage ||
-    md?.extendedTextMessageData?.quotedMessage ||
-    md?.extendedTextMessageData?.stanzaId
+    !(
+      quotedMessageId
+        ? ["textMessage", "extendedTextMessage", "quotedMessage"]
+        : ["textMessage", "extendedTextMessage"]
+    ).includes(md?.typeMessage) ||
+    (quotedMessageId
+      ? quotedEscalationMessageId(payload) !== quotedMessageId
+      : !!(
+          md?.quotedMessage ||
+          md?.extendedTextMessageData?.quotedMessage ||
+          md?.extendedTextMessageData?.stanzaId
+        ))
   ) {
     throw Error("Teaching requires an original private message");
   }
@@ -129,6 +140,7 @@ export async function readTeachingSource(
     eventKey: row.event_key as string,
     authorPhone: sender,
     text,
+    ...(quotedMessageId ? { quotedMessageId } : {}),
   };
   if (!/^[a-f0-9]{64}$/.test(value.eventKey))
     throw Error("Invalid teaching event");
