@@ -41,9 +41,6 @@ const MIN_HOURS_BETWEEN_SESSIONS = 24;
 const SESSION_TIMEOUT_HOURS = 8; // Extended from 2 — merchants often reply hours later
 const MIN_CANDIDATES_TO_TRIGGER = 3; // Need 3+ unreviewed Q&As before triggering
 
-// PEN-COACH-03 FIX: Rate limit for #علم_ساري commands (max 10/day per merchant)
-const _teachRateLimit: Record<number, { count: number; resetAt: number }> = {};
-
 // Confirmation keywords (Arabic/English)
 const CONFIRM_KEYWORDS = ['صح', 'صحيح', 'تمام', 'ممتاز', 'اي', 'نعم', 'صحيحة', 'yes', 'correct', 'ok', '👍', '✅'];
 const SKIP_KEYWORDS = ['تخطى', 'تخطي', 'skip', 'لا', 'تجاوز'];
@@ -52,111 +49,8 @@ const SKIP_KEYWORDS = ['تخطى', 'تخطي', 'skip', 'لا', 'تجاوز'];
 // #علم_ساري — Natural WhatsApp Training Command
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Detect and handle the #علم_ساري command from merchant.
- * Format: "#علم_ساري إذا سأل العميل عن X قل له Y"
- * Returns true if command was detected and handled.
- */
-export async function handleTeachCommand(
-  merchantId: number,
-  messageText: string
-): Promise<{ handled: boolean; response?: string }> {
-  // Accept many natural teaching patterns — not just #علم_ساري
-  const teachPatterns = [
-    /#علم[_\s]?ساري\s+([\s\S]+)/,           // #علم_ساري ... (legacy)
-    /#علم\s+([\s\S]+)/,                       // #علم ...
-    /^علم[:\s]+([\s\S]+)/,                    // علم: ...
-    /^تعلم[:\s]+([\s\S]+)/,                   // تعلم: ...
-    /^أضف معلومة[:\s]+([\s\S]+)/,            // أضف معلومة: ...
-    /^اضف معلومة[:\s]+([\s\S]+)/,            // اضف معلومة (بدون همزة)
-    /^حفظ[:\s]+([\s\S]+)/,                    // حفظ: ...
-    /^سجل[:\s]+([\s\S]+)/,                    // سجل: ...
-    /^احفظ[:\s]+([\s\S]+)/,                   // احفظ: ...
-    /^معلومة[:\s]+([\s\S]+)/,                 // معلومة: ...
-  ];
-
-  let match: RegExpMatchArray | null = null;
-  for (const pattern of teachPatterns) {
-    match = messageText.trim().match(pattern);
-    if (match) break;
-  }
-  if (!match) return { handled: false };
-
-  const instruction = match[1].trim();
-  if (instruction.length < 10) {
-    return { handled: true, response: '⚠️ *التعليمة قصيرة جداً*\n\nحاول تكتب مثلاً:\n#علم_ساري إذا سأل العميل عن الضمان قل له الضمان سنتين شامل' };
-  }
-
-  // PEN-COACH-03 FIX: Rate limit (max 10 per day per merchant)
-  const now = Date.now();
-  const limit = _teachRateLimit[merchantId];
-  if (limit && limit.resetAt > now && limit.count >= 10) {
-    return { handled: true, response: '⚠️ *وصلت الحد اليومي*\n\nالحد الأقصى 10 تعليمات في اليوم.\nجرب بكرة! 😊' };
-  }
-  if (!limit || limit.resetAt <= now) {
-    _teachRateLimit[merchantId] = { count: 1, resetAt: now + 24 * 60 * 60 * 1000 };
-  } else {
-    _teachRateLimit[merchantId].count++;
-  }
-  const usedToday = _teachRateLimit[merchantId].count;
-
-  // Parse "إذا سأل عن X قل/رد Y" pattern
-  // @ts-ignore
-  const ifPattern = /(?:إذا|لو|لما)\s+(?:سأل|يسأل|سألك?)\s+(?:العميل\s+)?(?:عن\s+)?(.+?)(?:\s+(?:قل|رد|قول|جاوب)\s+(?:له\s+)?(.+))/s;
-  const parsed = instruction.match(ifPattern);
-
-  let question: string;
-  let answer: string;
-  let isStructured = false;
-
-  if (parsed) {
-    question = parsed[1].trim();
-    answer = parsed[2].trim();
-    isStructured = true;
-  } else {
-    // Free-form instruction — store as general knowledge
-    question = instruction.substring(0, 200);
-    answer = instruction;
-  }
-
-  // Sanitize against prompt injection
-  const safeAnswer = sanitizeDNAText(answer).substring(0, 2000);
-  const safeQuestion = sanitizeDNAText(question).substring(0, 500);
-
-  // Persist first; never acknowledge a disabled cache or a failed write as learning.
-  try {
-    await saveMerchantTeaching({ merchantId, question: safeQuestion, answer: safeAnswer, origin: 'teach_command' });
-  } catch {
-    return { handled: true, response: 'تعذر حفظ المعلومة الآن. لم يتم اعتمادها؛ حاول مرة أخرى.' };
-  }
-
-  // Record as merchant_correction signal (weight 3.0 — highest)
-  await captureSignal({
-    merchantId,
-    conversationId: 0,
-    signalType: 'merchant_correction',
-    signalWeight: 3.0,
-    customerMessage: safeQuestion,
-    merchantCorrection: safeAnswer,
-    contextSummary: 'تعليم مباشر من التاجر عبر #علم_ساري',
-  }).catch(() => undefined);
-
-  console.log(`[Coaching] 📝 #علم_ساري: merchant ${merchantId} taught: "${safeQuestion.substring(0, 50)}..."`);
-
-  // Build rich confirmation
-  const structuredFeedback = isStructured
-    ? `\n❓ *السؤال:* "${safeQuestion.substring(0, 150)}"\n💬 *الجواب:* "${safeAnswer.substring(0, 150)}"`
-    : `\n📝 *المعلومة:* "${safeAnswer.substring(0, 200)}"`;
-
-  return {
-    handled: true,
-    response: `تم حفظ المعلومة في معرفة النشاط.
-${structuredFeedback}
-
-سيستخدمها ساري عندما تناسب السؤال، مع الرجوع للكتالوج الحالي في السعر والتوفر. يمكنك تعديلها أو حذفها من صفحة المعرفة.
-استخدمت ${usedToday}/10 تعليمات اليوم.`,
-  };
-}
+/** Teaching admission uses the centrally selected AI and a verified durable inbound source. */
+export { handleMerchantTeaching as handleTeachCommand } from './merchant-teaching-handler';
 
 // ═══════════════════════════════════════════════════════════════
 // Priority Engine — Should we trigger coaching?

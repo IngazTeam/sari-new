@@ -629,7 +629,7 @@ const TASK_DEFINITIONS: readonly TaskDefinition[] = [
     status: "existing",
     priority: "P0",
     owner: "sari-merchant-team",
-    sourceFiles: ["server/ai/merchant-mode.ts"],
+    sourceFiles: ["server/ai/merchant-mode.ts", "server/ai/merchant-teaching-understanding.ts"],
     execution: "sync",
     inputKind: "message",
     outputKind: "classification",

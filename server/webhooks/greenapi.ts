@@ -911,26 +911,16 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             return { success: true, message: 'Merchant quoted reply reviewed' };
           }
 
-          // Priority 1: Teaching command (expanded natural patterns)
-          const teachTriggers = ['#علم', 'علم:', 'علم ', 'تعلم:', 'تعلم ', 'أضف معلومة', 'اضف معلومة', 'حفظ:', 'حفظ ', 'سجل:', 'سجل ', 'احفظ:', 'احفظ ', 'معلومة:'];
+          // Understand the complete private merchant message; no lexical teaching gate.
           const textTrimmed = incomingText.trim();
-          const isTeachAttempt = teachTriggers.some(t => textTrimmed.startsWith(t) || textTrimmed.includes('#علم'));
-          if (isTeachAttempt) {
-            const { handleTeachCommand } = await import('../ai/coaching-engine');
-            const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
-            if (teachResult.handled && teachResult.response) {
-              const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
-              const inst = instances.find((i: any) => i.status === 'active');
-              if (inst) {
-                const { sendMessageWithCredentials } = await import('../whatsapp');
-                await sendMessageWithCredentials(
-                  (inst as any).instanceId, (inst as any).token,
-                  (inst as any).apiUrl || 'https://api.green-api.com',
-                  customerPhone, teachResult.response
-                );
-              }
-              return { success: true, message: 'Teach command processed' };
-            }
+          const { handleTeachCommand } = await import('../ai/coaching-engine');
+          const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
+          if (teachResult.handled && teachResult.response) {
+            const { sendMessageWithCredentials } = await import('../whatsapp');
+            const acknowledgement = await sendMessageWithCredentials(instance.instanceId, instance.token,
+              instance.apiUrl || 'https://api.green-api.com', customerPhone, teachResult.response);
+            if (!acknowledgement.success) return { success: false, message: 'Merchant teaching acknowledgement not confirmed' };
+            return { success: true, message: 'Merchant teaching analysis processed' };
           }
 
           // Priority 2: Coaching session reply (active OR recently expired)
