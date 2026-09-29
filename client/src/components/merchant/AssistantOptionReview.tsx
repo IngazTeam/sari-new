@@ -33,7 +33,7 @@ export function AssistantOptionReview<
   return (
     <section
       aria-label={t("assistantOptionUx.review")}
-      className="space-y-4 rounded-xl border p-4"
+      className="min-w-0 space-y-4 rounded-xl border p-3 sm:p-4"
     >
       <h2 className="font-semibold">{t("assistantOptionUx.review")}</h2>
       <p className="text-sm text-muted-foreground">
@@ -85,6 +85,7 @@ export function AssistantOptionReview<
       ))}
       <Button
         type="button"
+        className="h-auto min-h-11 max-w-full whitespace-normal py-2"
         disabled={disabled || conflicts.some(key => !choices[String(key)])}
         onClick={() => {
           const merged = { ...latest };

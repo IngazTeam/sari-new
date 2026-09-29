@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-29",
+  "unitAndUiTests": 117,
+  "failedTests": 0,
+  "types": "passed full workspace",
+  "build": "passed",
+  "entryRawBytes": 337291,
+  "entryGzipBytes": 103362,
+  "translationCalls": 8877,
+  "translationIssues": 0,
+  "browser": {
+    "engine": "Chrome",
+    "actual": [
+      {
+        "viewport": 320,
+        "dialogClientWidth": 256,
+        "dialogScrollWidth": 256,
+        "state": "conflict comparison after repair"
+      },
+      {
+        "viewport": 390,
+        "dialogClientWidth": 341,
+        "dialogScrollWidth": 341,
+        "state": "reviewed delete, cancelled"
+      }
+    ],
+    "prototype": {
+      "viewport": 320,
+      "dialogClientWidth": 256,
+      "dialogScrollWidth": 256
+    },
+    "realSafari": false,
+    "realIPhone": false,
+    "liveTwoWindowConflict": true,
+    "fixtureRestored": {
+      "priority": 0,
+      "isActive": false,
+      "response": "هذا مثال فحص محلي للردود السريعة."
+    }
+  },
+  "deployment": "not pushed or deployed",
+  "databaseMigrations": 0
+}
