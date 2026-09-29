@@ -1,4 +1,5 @@
 import { weeklyReportsRouter } from './routers-weekly-reports';
+import { messageWorkspaceRouter } from './routers-message-workspace';
 import { keywordsRouter } from './routers-keywords';
 import { quickResponsesRouter } from './routers-quick-responses';
 import { testSariRouter } from './routers-test-sari';
@@ -3689,6 +3690,7 @@ export const appRouter = router({
       }),
   }),
 
+  messageWorkspace: messageWorkspaceRouter,
   // Message Analytics APIs
   messageAnalytics: router({
     // إحصائيات الرسائل
