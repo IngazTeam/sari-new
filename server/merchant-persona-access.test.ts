@@ -8,6 +8,7 @@ vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
 }));
 vi.mock("./db", () => ({ getMerchantById: mocks.merchant, getDb: mocks.db }));
+import { virtualTeamRevision } from "./virtual-team-version";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
 const caller = () =>
   virtualAgentsRouter.createCaller({
@@ -52,7 +53,12 @@ beforeEach(() => {
 });
 describe("persona mutations obey selected tenant and permissions", () => {
   it("reports a missing or foreign delete without claiming success", async () => {
-    await expect(caller().delete({ id: 99 })).rejects.toMatchObject({
+    await expect(
+      caller().delete({
+        expectedRevision: virtualTeamRevision(20, current),
+        id: 99,
+      })
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
     expect(transaction).toHaveBeenCalledOnce();
@@ -67,7 +73,10 @@ describe("persona mutations obey selected tenant and permissions", () => {
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
       await expect(
-        caller().reorder({ orderedIds: [2, 1] })
+        caller().reorder({
+          expectedRevision: virtualTeamRevision(20, current),
+          orderedIds: [2, 1],
+        })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       expect(mocks.db).not.toHaveBeenCalled();
     }
@@ -76,13 +85,19 @@ describe("persona mutations obey selected tenant and permissions", () => {
     "rejects duplicate, missing or foreign persona ids: %s",
     async (...ids) => {
       await expect(
-        caller().reorder({ orderedIds: ids as number[] })
+        caller().reorder({
+          expectedRevision: virtualTeamRevision(20, current),
+          orderedIds: ids as number[],
+        })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       expect(writes).not.toHaveBeenCalled();
     }
   );
   it("persists a full reorder in one transaction", async () => {
-    await caller().reorder({ orderedIds: [2, 1] });
+    await caller().reorder({
+      expectedRevision: virtualTeamRevision(20, current),
+      orderedIds: [2, 1],
+    });
     expect(transaction).toHaveBeenCalledOnce();
     expect(writes).toHaveBeenCalledTimes(2);
   });
@@ -93,6 +108,7 @@ describe("persona mutations obey selected tenant and permissions", () => {
     }));
     await expect(
       caller().create({
+        expectedRevision: virtualTeamRevision(20, current),
         name: "سارة",
         role: "استقبال",
         personalityPrompt: "تعليمات",
@@ -104,6 +120,7 @@ describe("persona mutations obey selected tenant and permissions", () => {
   it("rejects whitespace-only identity even when the UI is bypassed", async () => {
     await expect(
       caller().create({
+        expectedRevision: virtualTeamRevision(20, current),
         name: "  ",
         role: "مبيعات",
         personalityPrompt: "تعليمات",
@@ -118,6 +135,7 @@ describe("persona mutations obey selected tenant and permissions", () => {
     ])
       await expect(
         caller().create({
+          expectedRevision: virtualTeamRevision(20, current),
           name: "سارة",
           role: "مبيعات",
           personalityPrompt: "تعليمات",

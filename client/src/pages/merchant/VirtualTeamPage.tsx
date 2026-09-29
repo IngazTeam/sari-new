@@ -1,4 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
+import {
+  VirtualAgentReview,
+  type TeamReview,
+} from "@/components/merchant/VirtualAgentReview";
+import { agentDraft } from "@shared/virtual-agent-review";
 import {
   AssistantReplyPreview,
   type PreviewSelection,
@@ -52,10 +58,33 @@ import {
 } from "@shared/virtual-agent-routing";
 
 export default function VirtualTeamPage() {
+  return (
+    <KnowledgeWorkspaceScope slot="virtual-team">
+      {key => <VirtualTeamWorkspace key={key} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+
+function VirtualTeamWorkspace() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const query = trpc.virtualAgents.list.useQuery();
-  type Agent = NonNullable<typeof query.data>[number];
+  const query = trpc.virtualAgents.listReview.useQuery();
+  type Agent = NonNullable<typeof query.data>["agents"][number];
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const [revision, setRevision] = useState("");
+  const [base, setBase] = useState<VirtualAgentDraft>({ ...emptyVirtualAgent });
+  const [conflict, setConflict] = useState(false);
+  const [review, setReview] = useState<TeamReview | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const [deleteRevision, setDeleteRevision] = useState("");
   const [open, setOpen] = useState(false),
     [editing, setEditing] = useState<number | null>(null);
   const [form, setForm] = useState<VirtualAgentDraft>({ ...emptyVirtualAgent });
@@ -80,18 +109,29 @@ export default function VirtualTeamPage() {
   const previewBusy = useRef(false);
   const reorder = trpc.virtualAgents.reorder.useMutation({
     onSuccess: () => {
+      if (!alive.current) return;
       void query.refetch();
       toast.success(t("virtualTeamUx.reordered"));
     },
-    onError: () => toast.error(t("virtualTeamUx.reorderFailed")),
+    onError: () => {
+      if (alive.current) setActionError(true);
+    },
   });
   const saved = () => {
+    if (!alive.current) return;
+    void utils.virtualAgents.listReview.invalidate();
     void utils.virtualAgents.list.invalidate();
     setOpen(false);
     setSaveError(false);
     toast.success(t("virtualTeamUx.saved"));
   };
-  const failed = () => setSaveError(true);
+  const failed = (error?: { data?: { code?: string } | null }) => {
+    if (!alive.current) return;
+    if (error?.data?.code === "CONFLICT") {
+      setConflict(true);
+      setReview(null);
+    } else setSaveError(true);
+  };
   const create = trpc.virtualAgents.create.useMutation({
     onSuccess: saved,
     onError: failed,
@@ -108,19 +148,56 @@ export default function VirtualTeamPage() {
   });
   const remove = trpc.virtualAgents.delete.useMutation({
     onSuccess: () => {
+      if (!alive.current) return;
       setDeleting(null);
       void query.refetch();
       toast.success(t("virtualTeamUx.deleted"));
     },
+    onError: () => {
+      if (alive.current) {
+        setDeleting(null);
+        setActionError(true);
+      }
+    },
   });
   const seed = trpc.virtualAgents.seedTemplates.useMutation({
     onSuccess: () => {
+      if (!alive.current) return;
       void query.refetch();
     },
-    onError: () => toast.error(t("virtualTeamUx.saveFailed")),
+    onError: () => {
+      if (alive.current) setActionError(true);
+    },
   });
-  const busy = create.isPending || update.isPending;
-  const agents = query.data || [];
+  const busy = create.isPending || update.isPending || reviewBusy;
+  const agents = query.data?.agents || [];
+  const canManage = !!query.data?.canManage && !query.isError && !actionError;
+  async function loadReview() {
+    if (reviewBusy) return;
+    setReviewBusy(true);
+    setReviewError(false);
+    try {
+      const result = await query.refetch();
+      if (!alive.current) return;
+      if (result.error || !result.data) throw Error("unavailable");
+      setReview(result.data);
+    } catch {
+      if (alive.current) setReviewError(true);
+    } finally {
+      if (alive.current) setReviewBusy(false);
+    }
+  }
+  async function refreshActions() {
+    setReviewBusy(true);
+    try {
+      const result = await query.refetch();
+      if (alive.current && !result.error && result.data) setActionError(false);
+    } catch {
+      /* Keep actions blocked until a successful explicit refresh. */
+    } finally {
+      if (alive.current) setReviewBusy(false);
+    }
+  }
   const validRoutingTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(routingTime);
   const routingAvailable = validRoutingTime
     ? agents.filter(
@@ -130,27 +207,21 @@ export default function VirtualTeamPage() {
       ).length
     : 0;
   function edit(agent?: Agent) {
+    if (!canManage || !query.data) return;
+    setRevision(query.data.revision);
+    setConflict(false);
+    setReview(null);
+    setReviewError(false);
     setEditing(agent?.id ?? null);
     setKeywords("");
     setErrors({});
     setSaveError(false);
     setTab("identity");
     const initial: VirtualAgentDraft = agent
-      ? {
-          name: agent.name,
-          role: agent.role,
-          department: agent.department || "",
-          personalityPrompt: agent.personalityPrompt,
-          tone: agent.tone,
-          avatarEmoji: agent.avatarEmoji || "default",
-          isDefault: Boolean(agent.isDefault),
-          isActive: Boolean(agent.isActive),
-          triggerKeywords: parseAgentKeywords(agent.triggerKeywords),
-          shiftStart: agent.shiftStart || "",
-          shiftEnd: agent.shiftEnd || "",
-        }
+      ? agentDraft(agent)
       : { ...emptyVirtualAgent, triggerKeywords: [] };
     setForm(initial);
+    setBase(initial);
     initialDraft.current = JSON.stringify(initial);
     setConfirmDiscard(false);
     setOpen(true);
@@ -175,7 +246,8 @@ export default function VirtualTeamPage() {
     setKeywords("");
   }
   function save() {
-    if (saveLock.current) return;
+    if (saveLock.current || conflict || !canManage || !revision || reviewBusy)
+      return;
     const draft = {
       ...form,
       triggerKeywords: parseAgentKeywords([
@@ -199,10 +271,13 @@ export default function VirtualTeamPage() {
       return;
     }
     const payload = virtualAgentPayload(draft);
+    setForm(draft);
+    setKeywords("");
     saveLock.current = true;
     // null explicitly removes an existing shift; undefined leaves it unchanged.
     if (editing !== null)
       update.mutate({
+        expectedRevision: revision,
         id: editing,
         ...payload,
         isActive: draft.isActive,
@@ -211,6 +286,7 @@ export default function VirtualTeamPage() {
       });
     else
       create.mutate({
+        expectedRevision: revision,
         ...payload,
         shiftStart: draft.shiftStart || undefined,
         shiftEnd: draft.shiftEnd || undefined,
@@ -271,7 +347,7 @@ export default function VirtualTeamPage() {
         {t("virtualTeamUx.loading")}
       </p>
     );
-  if (query.isError)
+  if (query.isError && !open && !query.data)
     return <WorkspaceState kind="error" onRetry={() => void query.refetch()} />;
   return (
     <div className="mx-auto max-w-6xl space-y-6 py-4">
@@ -288,12 +364,30 @@ export default function VirtualTeamPage() {
         <Button
           type="button"
           onClick={() => edit()}
-          disabled={agents.length >= 10}
+          disabled={!canManage || agents.length >= 10}
         >
           <Plus className="size-4" />
           {t("virtualTeamUx.new")}
         </Button>
       </header>
+      {(actionError || query.isError) && (
+        <div role="alert" className="space-y-3 rounded-xl border p-4">
+          <p>{t("virtualTeamReview.actionChanged")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={reviewBusy}
+            onClick={() => void refreshActions()}
+          >
+            {t("virtualTeamReview.refresh")}
+          </Button>
+        </div>
+      )}
+      {query.data && !query.data.canManage && (
+        <p className="text-sm text-muted-foreground">
+          {t("virtualTeamReview.readOnly")}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4">
         <Badge variant="secondary">
           {agents.length} / 10 {t("virtualTeamUx.personas")}
@@ -336,8 +430,11 @@ export default function VirtualTeamPage() {
             </p>
             <Button
               type="button"
-              onClick={() => seed.mutate()}
-              disabled={seed.isPending}
+              onClick={() =>
+                query.data &&
+                seed.mutate({ expectedRevision: query.data.revision })
+              }
+              disabled={!canManage || seed.isPending}
             >
               {seed.isPending
                 ? t("virtualTeamUx.loading")
@@ -363,9 +460,14 @@ export default function VirtualTeamPage() {
                     size="icon"
                     variant="ghost"
                     aria-label={t("virtualTeamUx.moveUp", { name: agent.name })}
-                    disabled={reorder.isPending || agents[0]?.id === agent.id}
+                    disabled={
+                      !canManage ||
+                      reorder.isPending ||
+                      agents[0]?.id === agent.id
+                    }
                     onClick={() =>
                       reorder.mutate({
+                        expectedRevision: query.data!.revision,
                         orderedIds: moveAgentIds(
                           agents.map(a => a.id),
                           agent.id,
@@ -384,11 +486,13 @@ export default function VirtualTeamPage() {
                       name: agent.name,
                     })}
                     disabled={
+                      !canManage ||
                       reorder.isPending ||
                       agents[agents.length - 1]?.id === agent.id
                     }
                     onClick={() =>
                       reorder.mutate({
+                        expectedRevision: query.data!.revision,
                         orderedIds: moveAgentIds(
                           agents.map(a => a.id),
                           agent.id,
@@ -487,6 +591,7 @@ export default function VirtualTeamPage() {
                       className="flex-1"
                       variant="outline"
                       onClick={() => edit(agent)}
+                      disabled={!canManage}
                       aria-label={`${t("virtualTeamUx.edit")} ${agent.name}`}
                     >
                       <Pencil className="size-4" />
@@ -497,8 +602,10 @@ export default function VirtualTeamPage() {
                       variant="ghost"
                       onClick={() => {
                         remove.reset();
+                        setDeleteRevision(query.data!.revision);
                         setDeleting(agent);
                       }}
+                      disabled={!canManage}
                       aria-label={`${t("virtualTeamUx.delete")} ${agent.name}`}
                     >
                       <Trash2 className="size-4" />
@@ -619,13 +726,14 @@ export default function VirtualTeamPage() {
             }}
           >
             <div
-              className="flex gap-2 border-b px-5 py-3"
+              className="grid min-w-0 grid-cols-2 gap-2 border-b px-3 py-3 sm:px-5"
               aria-label={t("virtualTeamUx.sections")}
             >
               {(["identity", "routing"] as const).map(value => (
                 <Button
                   key={value}
                   type="button"
+                  className="h-auto min-h-11 min-w-0 whitespace-normal px-2"
                   variant={tab === value ? "secondary" : "ghost"}
                   aria-pressed={tab === value}
                   onClick={() => setTab(value)}
@@ -640,8 +748,48 @@ export default function VirtualTeamPage() {
             </div>
             <fieldset
               disabled={busy}
-              className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-5"
+              className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5"
             >
+              {conflict && (
+                <div className="mb-5 space-y-3">
+                  <p role="alert" className="text-sm">
+                    {t("virtualTeamReview.changed")}
+                  </p>
+                  {reviewError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {t("virtualTeamReview.loadFailed")}
+                    </p>
+                  )}
+                  {!review && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={reviewBusy}
+                      onClick={() => void loadReview()}
+                    >
+                      {t("virtualTeamReview.load")}
+                    </Button>
+                  )}
+                  {review && (
+                    <VirtualAgentReview
+                      key={review.revision}
+                      latest={review}
+                      editing={editing}
+                      base={base}
+                      draft={form}
+                      onApply={(merged, latest) => {
+                        setForm(merged);
+                        setBase(latest);
+                        setRevision(review.revision);
+                        initialDraft.current = JSON.stringify(latest);
+                        setConflict(false);
+                        setReview(null);
+                        setErrors({});
+                      }}
+                    />
+                  )}
+                </div>
+              )}
               {tab === "identity" ? (
                 <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -966,9 +1114,18 @@ export default function VirtualTeamPage() {
                     >
                       {t("virtualTeamUx.cancel")}
                     </Button>
-                    <Button type="submit" disabled={busy}>
+                    <Button
+                      type="submit"
+                      disabled={busy || conflict || !canManage}
+                    >
                       <Save className="size-4" />
-                      {t(busy ? "virtualTeamUx.saving" : "virtualTeamUx.save")}
+                      {t(
+                        reviewBusy
+                          ? "virtualTeamUx.loading"
+                          : busy
+                            ? "virtualTeamUx.saving"
+                            : "virtualTeamUx.save"
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -1012,8 +1169,14 @@ export default function VirtualTeamPage() {
             <Button
               type="button"
               variant="destructive"
-              disabled={remove.isPending}
-              onClick={() => deleting && remove.mutate({ id: deleting.id })}
+              disabled={remove.isPending || !canManage}
+              onClick={() =>
+                deleting &&
+                remove.mutate({
+                  id: deleting.id,
+                  expectedRevision: deleteRevision,
+                })
+              }
             >
               {t(
                 remove.isPending

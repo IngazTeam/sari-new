@@ -8,6 +8,11 @@ vi.hoisted(async () => {
 });
 const m = vi.hoisted(() => ({
   data: [] as any[],
+  revision: "a".repeat(64),
+  canManage: true,
+  scope: "store-1",
+  refetch: vi.fn(),
+  updateCallbacks: {} as any,
   create: vi.fn(),
   update: vi.fn(),
   preview: vi.fn(),
@@ -16,17 +21,36 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
-    useUtils: () => ({ virtualAgents: { list: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      virtualAgents: {
+        list: { invalidate: vi.fn() },
+        listReview: { invalidate: vi.fn() },
+      },
+    }),
     ai: { chat: { useMutation: () => ({ mutateAsync: vi.fn() }) } },
     virtualAgents: {
-      list: { useQuery: () => ({ data: m.data, refetch: vi.fn() }) },
+      listReview: {
+        useQuery: () => ({
+          data: {
+            agents: m.data,
+            revision: m.revision,
+            canManage: m.canManage,
+          },
+          refetch: m.refetch,
+        }),
+      },
       create: {
         useMutation: (callbacks: any) => {
           m.callbacks = callbacks;
           return { mutate: m.create, isPending: m.pending };
         },
       },
-      update: { useMutation: () => ({ mutate: m.update, isPending: false }) },
+      update: {
+        useMutation: (callbacks: any) => {
+          m.updateCallbacks = callbacks;
+          return { mutate: m.update, isPending: false };
+        },
+      },
       delete: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       reorder: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       seedTemplates: {
@@ -35,6 +59,9 @@ vi.mock("../client/src/lib/trpc", () => ({
       preview: { useMutation: () => ({ mutateAsync: m.preview }) },
     },
   },
+}));
+vi.mock("../client/src/components/KnowledgeWorkspaceScope", () => ({
+  KnowledgeWorkspaceScope: ({ children }: any) => children(m.scope),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("react-i18next", () => ({
@@ -93,6 +120,10 @@ beforeEach(() => {
   );
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   m.pending = false;
+  m.revision = "a".repeat(64);
+  m.canManage = true;
+  m.scope = "store-1";
+  m.refetch.mockReset();
   m.data = [
     {
       id: 12,
@@ -133,6 +164,125 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("rendered virtual team workflow", () => {
+  it("retains a stale draft, fails closed on refresh failure, and requires choices plus a separate save", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "تعديلي");
+    await click(ar.virtualTeamUx.save);
+    expect(m.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        expectedRevision: "a".repeat(64),
+        name: "تعديلي",
+      })
+    );
+    await act(async () => {
+      m.updateCallbacks.onError({ data: { code: "CONFLICT" } });
+      m.updateCallbacks.onSettled();
+    });
+    expect((button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    m.refetch.mockResolvedValueOnce({
+      error: Error("offline"),
+      data: { agents: m.data, revision: "b".repeat(64), canManage: true },
+    });
+    await click(ar.virtualTeamReview.load);
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamReview.loadFailed
+    );
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("تعديلي");
+    m.data = [{ ...m.data[0], name: "تعديل آخر", role: "مبيعات" }];
+    m.revision = "b".repeat(64);
+    m.refetch.mockResolvedValueOnce({
+      data: { agents: m.data, revision: m.revision, canManage: true },
+    });
+    await click(ar.virtualTeamReview.load);
+    expect(
+      (button(ar.virtualTeamReview.applyReview) as HTMLButtonElement).disabled
+    ).toBe(true);
+    const mine = [...document.querySelectorAll("label")]
+      .find(label => label.textContent === ar.virtualTeamReview.chooseMine)!
+      .querySelector("input")!;
+    await act(async () => mine.click());
+    await click(ar.virtualTeamReview.applyReview);
+    expect(m.update).toHaveBeenCalledTimes(1);
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("تعديلي");
+    expect(
+      (document.getElementById("agent-role") as HTMLInputElement).value
+    ).toBe("مبيعات");
+    await click(ar.virtualTeamUx.save);
+    expect(m.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        expectedRevision: "b".repeat(64),
+        name: "تعديلي",
+        role: "مبيعات",
+      })
+    );
+  });
+  it("preserves a deleted persona draft without offering to recreate it", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "مسودة باقية");
+    await click(ar.virtualTeamUx.save);
+    await act(async () => {
+      m.updateCallbacks.onError({ data: { code: "CONFLICT" } });
+      m.updateCallbacks.onSettled();
+    });
+    m.refetch.mockResolvedValue({
+      data: { agents: [], revision: "b".repeat(64), canManage: true },
+    });
+    await click(ar.virtualTeamReview.load);
+    expect(document.body.textContent).toContain(ar.virtualTeamReview.missing);
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("مسودة باقية");
+    expect((button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect(m.create).not.toHaveBeenCalled();
+  });
+  it("does not silently advance an open draft when the list refreshes in the background", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    m.revision = "b".repeat(64);
+    m.data = [{ ...m.data[0], role: "Changed" }];
+    await render();
+    await fill("agent-name", "Mine");
+    await click(ar.virtualTeamUx.save);
+    expect(m.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expectedRevision: "a".repeat(64), role: "دعم" })
+    );
+  });
+  it("discards the prior store's form on scope change and ignores its late success", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "old store");
+    await click(ar.virtualTeamUx.save);
+    const old = m.updateCallbacks;
+    m.scope = "store-2";
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "new store draft");
+    await act(async () => old.onSuccess());
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("new store draft");
+  });
+  it("shows read-only permissions without enabling changes", async () => {
+    m.canManage = false;
+    await render();
+    expect((button(ar.virtualTeamUx.new) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect(
+      (button(`${ar.virtualTeamUx.edit} نورة`) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(document.body.textContent).toContain(ar.virtualTeamReview.readOnly);
+  });
   it("shows availability only before AI and opens contextual routing without locally predicting an agent", async () => {
     m.data.push({
       ...m.data[0],

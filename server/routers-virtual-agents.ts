@@ -12,6 +12,10 @@ import { isCompleteAgentOrder } from "../shared/virtual-agent-routing";
 import { merchants, virtualAgents } from "../drizzle/schema";
 import type { SariDb } from "./db/connection";
 import { personaPreviewProcedure } from "./routers-persona-preview";
+import { virtualTeamRevision } from "./virtual-team-version";
+import { hasPermission } from "./_core/permissions";
+
+const expectedRevision = z.string().regex(/^[a-f0-9]{64}$/);
 
 function checkShift(start: unknown, end: unknown) {
   if (Boolean(start) !== Boolean(end) || (start && start === end))
@@ -25,6 +29,7 @@ type TeamTransaction = Parameters<Parameters<SariDb["transaction"]>[0]>[0];
 
 async function writeTeam<T>(
   merchantId: number,
+  revision: string,
   write: (tx: TeamTransaction) => Promise<T>
 ): Promise<T> {
   const db = await getDb();
@@ -47,6 +52,15 @@ async function writeTeam<T>(
           code: "NOT_FOUND",
           message: "Merchant not found",
         });
+      const agents = await tx
+        .select()
+        .from(virtualAgents)
+        .where(eq(virtualAgents.merchantId, merchantId));
+      if (virtualTeamRevision(merchantId, agents) !== revision)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "VIRTUAL_TEAM_CHANGED",
+        });
       return write(tx);
     });
   } catch (error) {
@@ -60,6 +74,24 @@ async function writeTeam<T>(
 
 export const virtualAgentsRouter = router({
   preview: personaPreviewProcedure,
+  listReview: merchantProcedure.query(async ({ ctx }) => {
+    const pool = await getDb();
+    if (!pool)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
+    const agents = await pool
+      .select()
+      .from(virtualAgents)
+      .where(eq(virtualAgents.merchantId, ctx.merchantId))
+      .orderBy(virtualAgents.sortOrder);
+    return {
+      agents,
+      revision: virtualTeamRevision(ctx.merchantId, agents),
+      canManage: hasPermission(ctx.merchantRole, "bot_settings.manage"),
+    };
+  }),
   // List all agents for the current merchant
   list: merchantProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
@@ -84,6 +116,7 @@ export const virtualAgentsRouter = router({
   create: permissionProcedure("bot_settings.manage")
     .input(
       z.object({
+        expectedRevision,
         name: z.string().trim().min(1).max(100),
         role: z.string().trim().min(1).max(100),
         department: z.string().max(100).optional(),
@@ -112,7 +145,7 @@ export const virtualAgentsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) =>
-      writeTeam(ctx.merchantId, async pool => {
+      writeTeam(ctx.merchantId, input.expectedRevision, async pool => {
         const merchant = { id: ctx.merchantId };
 
         checkShift(input.shiftStart, input.shiftEnd);
@@ -165,6 +198,7 @@ export const virtualAgentsRouter = router({
   update: permissionProcedure("bot_settings.manage")
     .input(
       z.object({
+        expectedRevision,
         id: z.number().int().positive(),
         name: z.string().trim().min(1).max(100).optional(),
         role: z.string().trim().min(1).max(100).optional(),
@@ -197,7 +231,7 @@ export const virtualAgentsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) =>
-      writeTeam(ctx.merchantId, async pool => {
+      writeTeam(ctx.merchantId, input.expectedRevision, async pool => {
         const merchant = { id: ctx.merchantId };
         const { id, ...data } = input;
 
@@ -271,9 +305,9 @@ export const virtualAgentsRouter = router({
 
   // Delete an agent
   delete: permissionProcedure("bot_settings.manage")
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(z.object({ expectedRevision, id: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) =>
-      writeTeam(ctx.merchantId, async pool => {
+      writeTeam(ctx.merchantId, input.expectedRevision, async pool => {
         const merchant = { id: ctx.merchantId };
         const result = await pool
           .delete(virtualAgents)
@@ -296,10 +330,13 @@ export const virtualAgentsRouter = router({
   // Reorder agents
   reorder: permissionProcedure("bot_settings.manage")
     .input(
-      z.object({ orderedIds: z.array(z.number().int().positive()).max(10) })
+      z.object({
+        expectedRevision,
+        orderedIds: z.array(z.number().int().positive()).max(10),
+      })
     )
     .mutation(async ({ input, ctx }) =>
-      writeTeam(ctx.merchantId, async pool => {
+      writeTeam(ctx.merchantId, input.expectedRevision, async pool => {
         const merchant = { id: ctx.merchantId };
 
         // Validate all IDs belong to this merchant
@@ -336,9 +373,10 @@ export const virtualAgentsRouter = router({
     ),
 
   // Seed template agents (convenience)
-  seedTemplates: permissionProcedure("bot_settings.manage").mutation(
-    async ({ ctx }) =>
-      writeTeam(ctx.merchantId, async pool => {
+  seedTemplates: permissionProcedure("bot_settings.manage")
+    .input(z.object({ expectedRevision }))
+    .mutation(async ({ ctx, input }) =>
+      writeTeam(ctx.merchantId, input.expectedRevision, async pool => {
         const merchant = { id: ctx.merchantId };
 
         // Check if already has agents
@@ -426,7 +464,7 @@ export const virtualAgentsRouter = router({
 
         return { success: true, count: templates.length };
       })
-  ),
+    ),
 });
 
 export type VirtualAgentsRouter = typeof virtualAgentsRouter;

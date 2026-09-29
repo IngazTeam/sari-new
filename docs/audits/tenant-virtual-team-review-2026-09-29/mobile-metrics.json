@@ -1,0 +1,54 @@
+[
+  {
+    "dialog": [
+      {
+        "height": 706,
+        "scrollWidth": 271,
+        "width": 271
+      }
+    ],
+    "documentWidth": 305,
+    "height": 740,
+    "tabs": [
+      {
+        "height": 56,
+        "scrollWidth": 120,
+        "text": "الشخصية والأسلوب",
+        "width": 120
+      },
+      {
+        "height": 56,
+        "scrollWidth": 120,
+        "text": "التحويل والدوام",
+        "width": 120
+      }
+    ],
+    "width": 320
+  },
+  {
+    "dialog": [
+      {
+        "height": 758,
+        "scrollWidth": 341,
+        "width": 341
+      }
+    ],
+    "documentWidth": 375,
+    "height": 844,
+    "tabs": [
+      {
+        "height": 44,
+        "scrollWidth": 155,
+        "text": "الشخصية والأسلوب",
+        "width": 155
+      },
+      {
+        "height": 44,
+        "scrollWidth": 155,
+        "text": "التحويل والدوام",
+        "width": 155
+      }
+    ],
+    "width": 390
+  }
+]

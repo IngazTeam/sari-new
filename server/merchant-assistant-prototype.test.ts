@@ -21,6 +21,21 @@ const input=(name:string,value:string|boolean)=>{const el=w.document.getElementB
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
+  it('reviews conflicting persona fields, merges untouched fields, and saves only after a separate confirmation',()=>{
+    route('virtual-team');click('edit','[data-id="2"]');input('name','مسودتي');
+    click('agent-external');submit('agent');expect(data().agents.find((a:any)=>a.id===2).name).toBe('اسم محفوظ من نافذة أخرى');
+    click('agent-review');const form=w.document.querySelector('[data-as-form="agent-review"]');expect(form.reportValidity()).toBe(false);
+    form.querySelector('input[name="name"][value="mine"]').checked=true;submit('agent-review');
+    expect(w.document.getElementById('as-name').value).toBe('مسودتي');expect(w.document.getElementById('as-role').value).toBe('متابعة المبيعات');
+    expect(data().agents.find((a:any)=>a.id===2).name).toBe('اسم محفوظ من نافذة أخرى');
+    submit('agent');expect(data().agents.find((a:any)=>a.id===2)).toMatchObject({name:'مسودتي',role:'متابعة المبيعات'});
+  });
+  it('keeps the persona draft when another window deletes it and never recreates it',()=>{
+    route('virtual-team');click('edit','[data-id="2"]');input('name','باقية');click('agent-external-delete');
+    click('agent-review');expect(w.document.getElementById('dialog').textContent).toContain('لن نعيد إنشاءها');
+    click('agent-review-back');expect(w.document.getElementById('as-name').value).toBe('باقية');submit('agent');
+    expect(data().agents.some((a:any)=>a.id===2)).toBe(false);
+  });
   it('preserves every legacy personality option in the settings draft and save',()=>{
     route('bot-settings');
     expect(w.document.getElementById('as-tone').options).toHaveLength(4);
