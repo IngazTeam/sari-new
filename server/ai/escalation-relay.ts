@@ -8,6 +8,7 @@ import { sendMerchantWhatsApp } from '../channels/whatsapp/service';
 import type { SendMerchantWhatsAppInput,WhatsAppProviderConfig } from '../channels/whatsapp/types';
 import { assertSalesStaffAcceptanceSchema,freezeStaffRelayBasis,staffRelayAccountIsCurrent } from './sales-staff-acceptance';
 import { readStaffRelayBasis } from './sales-staff-acceptance-contract';
+import type { MerchantDirectiveProof } from './merchant-directive-store';
 
 export type EscalationTransportGuard = { id: number; version: number; sourceMessageId: number; mode: 'alert' | 'relay' | 'exhaustion'; relayId?: number };
 const positive = (id: unknown): id is number => Number.isSafeInteger(id) && Number(id) > 0;
@@ -114,7 +115,7 @@ export async function sendSourcedEscalationAlert(input: { merchantId: number; es
     escalationGuard: { id: input.escalationId, mode: 'alert', sourceMessageId: rows[0].source_message_id, version: rows[0].handoff_version } });
 }
 
-export type RelayInput = { merchantId: number; instanceRecordId?: number; merchantPhone: string; quotedMessageId?: string; replyText: string };
+export type RelayInput = { merchantId: number; instanceRecordId?: number; merchantPhone: string; quotedMessageId?: string; replyText: string; directive?: MerchantDirectiveProof };
 export type RelayResult = { handled: boolean; accepted: boolean; status: 'accepted' | 'unknown' | 'failed' | 'suppressed' | 'unavailable'; customerPhone?: string };
 
 export async function relayEscalationReply(input: RelayInput): Promise<RelayResult> {
@@ -151,6 +152,10 @@ export async function relayEscalationReply(input: RelayInput): Promise<RelayResu
     if (!['pending', 'notified'].includes(e.status) || !e.live || e.source_message_id !== guard.sourceMessageId || e.handoff_version !== guard.version
       || conv.human_takeover || conv.handoff_version !== guard.version || latest[0].id !== guard.sourceMessageId
       || normalizeCampaignPhone(conv.customerPhone) !== normalizeCampaignPhone(e.customer_phone)) return null;
+    if (input.directive) {
+      const { recordMerchantRelayDirective } = await import('./merchant-directive-store');
+      await recordMerchantRelayDirective(c, input.directive, conversationId, input.replyText);
+    }
     const ownership = await transitionOwnershipInTransaction(c, conversationId, { humanTakeover: 1, humanExpiresAt: new Date(Date.now() + 86400000) },
       { merchantId: input.merchantId, expectedVersion: guard.version });
     const [insert] = await c.execute<any>(`INSERT INTO sales_escalation_relays

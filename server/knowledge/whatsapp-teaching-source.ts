@@ -33,7 +33,7 @@ function phone(value: unknown): string | null {
 export async function readTeachingSource(
   merchantId: number,
   text: string,
-  executor?: SariDb | KnowledgeTransaction,
+  executor?: Pick<SariDb | KnowledgeTransaction, "execute">,
   lock = false,
   quotedMessageId?: string
 ): Promise<TeachingSource> {

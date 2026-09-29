@@ -108,11 +108,14 @@ describe("ZahyPi tenant propagation", () => {
 
   it("scopes every merchant-mode AI operation", () => {
     const source = readFileSync(new URL("./merchant-mode.ts", import.meta.url), "utf8");
-    expect(source).toContain("taskType: 'sari.merchant.intent'");
-    expect(source).toContain("taskType: 'sari.merchant.assistant'");
+    const interpreter = readFileSync(new URL("./merchant-directive-understanding.ts", import.meta.url), "utf8");
+    expect(interpreter).toMatch(/taskType: ["']sari\.merchant\.intent["']/);
+    expect(source).toMatch(/taskType: ["']sari\.merchant\.assistant["']/);
     // Employee reply approval now uses a durable quoted alert, never a merchant-wide draft.
     expect(source).not.toContain('_pendingReplies');
-    expect(source.match(/callGPT4\([\s\S]*?taskType: 'sari\.merchant\./g)).toHaveLength(2);
+    expect(source.match(/callGPT4\(/g)).toHaveLength(1);
+    expect(interpreter.match(/callGPT4\(/g)).toHaveLength(1);
+    expect(source + interpreter).not.toContain('gpt-4o-mini');
   });
 
   it("scopes product search, product suggestions, and welcome generation", () => {

@@ -4026,6 +4026,20 @@ export const sessionContexts = mysqlTable("session_contexts", {
 	index("idx_session_context_expires").on(table.expiresAt),
 ]);
 
+export const merchantDirectiveActions = mysqlTable('merchant_directive_actions', {
+  id: int('id').autoincrement().primaryKey(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  eventKey: char('event_key', { length: 64 }).notNull(),
+  sourceDigest: char('source_digest', { length: 64 }).notNull(),
+  basisHash: char('basis_hash', { length: 64 }).notNull(),
+  conversationId: int('conversation_id').notNull(),
+  intent: varchar('intent', { length: 20 }).notNull(),
+  contextJson: json('context_json').notNull(),
+  decisionJson: json('decision_json').notNull(),
+  resultJson: json('result_json').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, table => [uniqueIndex('uq_merchant_directive_event').on(table.merchantId, table.eventKey)]);
+
 export const sariCoachingSessions = mysqlTable("sari_coaching_sessions", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

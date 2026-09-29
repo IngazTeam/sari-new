@@ -1,0 +1,841 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T01:43:15.703Z",
+  "scope": "Contextual merchant directives, one sourced customer target and atomic ownership/relay decision ledger",
+  "branch": "main",
+  "startingHead": "b22a0ff468eab46e01696b47380727628c0c62ee",
+  "validationBaseHead": "e39ae831d13d297eb50b0b8aa8be7b7d24770778",
+  "runtime": {
+    "node": "v22.23.2",
+    "pnpm": "10.4.1",
+    "database": "MySQL 8.0 synthetic localhost:33089",
+    "databaseStopped": true
+  },
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "productionDataUsed": false,
+    "externalNetworkBlocked": true,
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "files": 60,
+    "passed": 1442,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 232,
+    "newDirectiveMysqlTests": 29,
+    "directiveContractTests": 26,
+    "directiveRoutingTests": 17
+  },
+  "reports": [
+    {
+      "file": ".tmp/directive-checks/tests.json",
+      "sha256": "289e69f928df522414a7cbcd744c8da0ffc36e99493bfa0f5fd4a0f2cfd79b57",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/directive-checks/directive-unit.json",
+      "sha256": "1caed2005f00f98293fcc6e5bdc2ef961388434bcb7a41d0e5411a07d43930a9",
+      "passed": 152,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/directive-checks/directive-mysql.json",
+      "sha256": "80d9ecbe615bbba519331a4d44f5df70771da93e09df6e725090a091687f9dfb",
+      "passed": 232,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "suites": [
+    {
+      "file": "server/ai-settings-provider-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/action-execution.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/automatic-followup-context.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/budget-boundaries.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/coaching.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-agent-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-followup.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-generation.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-learning-contract.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-memory-contract.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-reply-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/contextual-sales-loss-contract.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-handoff.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding-evaluation.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory-chat.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/customer-memory.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/escalation-reconciliation.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 49,
+      "passed": 49,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/escalation-relay.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 49,
+      "passed": 49,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/escalation-routing.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/followup-policy.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-analysis-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 37,
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/learning-signal-capture-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/loss-detector.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/merchant-directive-understanding.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/merchant-directive.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/openai-zahypi.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-prompt.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/preview-provider-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/requested-followup-time.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-decisions.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-brain-learning.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-prompt.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-reply-transport.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sales-turn-policy.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/sari-preview.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 42,
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/task-catalog.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/transactional-truth.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-callsite-governance.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-client.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 102,
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-context-propagation.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/ai/zahypi-runtime-config.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-access-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 30,
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-context.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/appointment-reminder-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/assistant-reply-preview.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/bot-audit-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/bot-hardening-pentest.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 57,
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/byaan-conversation-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/knowledge/whatsapp-teaching.mysql.test.ts",
+      "report": ".tmp/directive-checks/directive-mysql.json",
+      "tests": 35,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/merchant-persona-routing.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview-history.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/persona-preview.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/remediation-regression.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sales-hardening-pentest.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 34,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/sari-quick-preview.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/tests/takeover-hardening-pentest.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/virtual-team-page.test.ts",
+      "report": ".tmp/directive-checks/tests.json",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-escalation.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-teaching.test.ts",
+      "report": ".tmp/directive-checks/directive-unit.json",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\tests.json"
+      ],
+      "profile": "tests",
+      "log": ".tmp/directive-checks/regression.log",
+      "logSha256": "7287c9d2303df859da8018dfcec63454143f77cadcc687021dcea3adf55d22a5"
+    },
+    {
+      "name": "directive-unit",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/merchant-directive-understanding.test.ts",
+        "server/ai/escalation-routing.test.ts",
+        "server/webhooks/greenapi-teaching.test.ts",
+        "server/webhooks/greenapi-escalation.test.ts",
+        "server/tests/takeover-hardening-pentest.test.ts",
+        "server/bot-hardening-pentest.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\directive-unit.json"
+      ],
+      "profile": "directive-unit",
+      "log": ".tmp/directive-checks/directive-unit.log",
+      "logSha256": "c8fff49c48dc958213f5e34628d73f12c9c98dbea3e602d0399366209401a90e"
+    },
+    {
+      "name": "directive-mysql",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/ai/merchant-directive.mysql.test.ts",
+        "server/ai/escalation-relay.mysql.test.ts",
+        "server/ai/escalation-reconciliation.mysql.test.ts",
+        "server/ai/conversation-handoff.mysql.test.ts",
+        "server/ai/coaching.mysql.test.ts",
+        "server/knowledge/whatsapp-teaching.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\directive-mysql.json"
+      ],
+      "profile": "directive-mysql",
+      "log": ".tmp/directive-checks/directive-mysql.log",
+      "logSha256": "d951bc52205b49469e17da08b5744fdb9b0c1124c0e49e31416bcc7593423695"
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "profile": "proof-static",
+      "log": ".tmp/directive-checks/translations.log",
+      "logSha256": "7a833003fb555e28d81c4bce1673960bfcf96000bdd5dcb5e111c2417ec0b4f5"
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "profile": "proof-static",
+      "log": ".tmp/directive-checks/eval-dry-run.log",
+      "logSha256": "941d4016c3e7fd8785fd86f2d964b3e18b4e01414b67d30b79ec95395e236657"
+    },
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\type-snapshot-a1eb0e9f-8153-46a6-af51-a1aa80583fb5\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\type-snapshot-a1eb0e9f-8153-46a6-af51-a1aa80583fb5",
+      "baseHead": "e39ae831d13d297eb50b0b8aa8be7b7d24770778",
+      "overlaySha256": {
+        "drizzle/0159_merchant_directive_actions.sql": "a4911f2e32407c903b6428045971fb2f0ba0eedfc9de280d3bd10d787fe6baa7",
+        "drizzle/meta/_journal.json": "3d3f6a88a00ada5e6eb129d3398f087c3b4b9cce37d3efa638eb66302d5bc5ef",
+        "drizzle/schema.ts": "0a28055ee9d7a1d297fd76eb8c51ba295d513a4b8f46bfa1500582eaac35bfc9",
+        "server/ai/escalation-relay.ts": "dc5c9db06005ac2aa19c68304af66c2a3059887c7735318f9e6d76b9661f9840",
+        "server/ai/escalation-routing.test.ts": "5cacfe8c44f30876740e4fcb5d8223a9bf7d367242508c632b8caeb7326102fc",
+        "server/ai/merchant-mode.ts": "88cd889d8b26184ad48e6879f71f59d610be1d1a4d0cbebcfbb5947308b90d98",
+        "server/ai/task-catalog.ts": "652062205953450ff0ebadf9ca4f64f36539076a4232e2bdb6effcf6573653d5",
+        "server/ai/zahypi-context-propagation.test.ts": "8f4a0da15d420cddf5adc255c5033276b90f05a43eae5cc9c243902708a06fc0",
+        "server/bot-hardening-pentest.test.ts": "b7013d1a08ab045449f375fe9af09342c312d12b1d9520340c334aa6601791c5",
+        "server/knowledge/whatsapp-teaching-source.ts": "4a1ea4472adf8537709b090a19004bc0fe70c106e19ac62c437edd521cf35807",
+        "server/tests/takeover-hardening-pentest.test.ts": "037f4587480fef07acca75121d0e2ffaa69d8bbb18a32dbacabd900e1ddd5201",
+        "server/ai/merchant-directive-understanding.ts": "caa0df655c39d9f86a842166e4b1c7a8784c38ad0695dbdcccb928a634d28f14",
+        "server/ai/merchant-directive-store.ts": "d3ffaf4d15ff65aca383da1c1d1bb2e58242bec5d28b855770b645b643b0c3e1",
+        "server/ai/merchant-directive-understanding.test.ts": "bac67812c8f9951ab19a8aad819f476ffceb0a8ff655d15c896d462b6ea21e01",
+        "server/ai/merchant-directive.mysql.test.ts": "58aaea76a046fe11ed326c2db027ca1684bb132eaa8c69ed477355a94936a11d",
+        "server/tests/helpers/merchant-directive-schema.ts": "861b86a07010b6e81b49d6cd87a886ef4ec55be58385119b45a8ee843198ab05"
+      },
+      "source": "Tracked main plus only contextual merchant directives; no .env or unrelated uncommitted edits",
+      "profile": "snapshot",
+      "log": ".tmp/directive-checks/snapshot-types.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\directive-checks\\type-snapshot-a1eb0e9f-8153-46a6-af51-a1aa80583fb5",
+      "baseHead": "e39ae831d13d297eb50b0b8aa8be7b7d24770778",
+      "overlaySha256": {
+        "drizzle/0159_merchant_directive_actions.sql": "a4911f2e32407c903b6428045971fb2f0ba0eedfc9de280d3bd10d787fe6baa7",
+        "drizzle/meta/_journal.json": "3d3f6a88a00ada5e6eb129d3398f087c3b4b9cce37d3efa638eb66302d5bc5ef",
+        "drizzle/schema.ts": "0a28055ee9d7a1d297fd76eb8c51ba295d513a4b8f46bfa1500582eaac35bfc9",
+        "server/ai/escalation-relay.ts": "dc5c9db06005ac2aa19c68304af66c2a3059887c7735318f9e6d76b9661f9840",
+        "server/ai/escalation-routing.test.ts": "5cacfe8c44f30876740e4fcb5d8223a9bf7d367242508c632b8caeb7326102fc",
+        "server/ai/merchant-mode.ts": "88cd889d8b26184ad48e6879f71f59d610be1d1a4d0cbebcfbb5947308b90d98",
+        "server/ai/task-catalog.ts": "652062205953450ff0ebadf9ca4f64f36539076a4232e2bdb6effcf6573653d5",
+        "server/ai/zahypi-context-propagation.test.ts": "8f4a0da15d420cddf5adc255c5033276b90f05a43eae5cc9c243902708a06fc0",
+        "server/bot-hardening-pentest.test.ts": "b7013d1a08ab045449f375fe9af09342c312d12b1d9520340c334aa6601791c5",
+        "server/knowledge/whatsapp-teaching-source.ts": "4a1ea4472adf8537709b090a19004bc0fe70c106e19ac62c437edd521cf35807",
+        "server/tests/takeover-hardening-pentest.test.ts": "037f4587480fef07acca75121d0e2ffaa69d8bbb18a32dbacabd900e1ddd5201",
+        "server/ai/merchant-directive-understanding.ts": "caa0df655c39d9f86a842166e4b1c7a8784c38ad0695dbdcccb928a634d28f14",
+        "server/ai/merchant-directive-store.ts": "d3ffaf4d15ff65aca383da1c1d1bb2e58242bec5d28b855770b645b643b0c3e1",
+        "server/ai/merchant-directive-understanding.test.ts": "bac67812c8f9951ab19a8aad819f476ffceb0a8ff655d15c896d462b6ea21e01",
+        "server/ai/merchant-directive.mysql.test.ts": "58aaea76a046fe11ed326c2db027ca1684bb132eaa8c69ed477355a94936a11d",
+        "server/tests/helpers/merchant-directive-schema.ts": "861b86a07010b6e81b49d6cd87a886ef4ec55be58385119b45a8ee843198ab05"
+      },
+      "profile": "snapshot-build",
+      "log": ".tmp/directive-checks/snapshot-build.log",
+      "logSha256": "d59de50a8b0cff6385b9d18f4e9c7505c1d9cc0e854f17b8326e8b7ad62fec0f"
+    }
+  ],
+  "translationCheck": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8372,
+    "dynamicKeysChecked": 346,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "languageEvaluation": {
+    "mode": "dry-run",
+    "cases": 82,
+    "live": false,
+    "logSha256": "941d4016c3e7fd8785fd86f2d964b3e18b4e01414b67d30b79ec95395e236657"
+  },
+  "earlierAttempts": [
+    {
+      "name": "Drizzle executor type mismatch",
+      "resolution": "Narrowed shared source-reader executor to the execute method it uses, allowing actual transaction-connection reads without a pool type assertion; isolated type check and actual MySQL checks passed."
+    },
+    {
+      "file": ".tmp/directive-checks/workspace-build-missing-faq.log",
+      "sha256": "a5c7dd9ade6c8d18e15ee1e1c6ac09b0551d7a788532e2684f22221010dd597c",
+      "exitCode": 1,
+      "scope": "shared workspace with concurrent FAQ UI edits",
+      "reason": "SariBrain imported KnowledgeFaqWorkspace before the other task had created the module",
+      "resolution": "Built tracked main plus owned directive overlay successfully in an isolated snapshot; unrelated UI work left untouched."
+    },
+    {
+      "file": ".tmp/directive-checks/workspace-types-faq.log",
+      "sha256": "70bafe206bfefd94c2d8b31f95e5c8730f1048c135ece0b467791db1bc760dde",
+      "exitCode": 2,
+      "scope": "shared workspace with concurrent FAQ UI edits",
+      "reason": "TS2307 KnowledgeFaqWorkspace unavailable",
+      "resolution": "Independent main-plus-owned-overlay TypeScript validation passed; no claim that concurrent work was complete."
+    }
+  ],
+  "coverage": [
+    "full merchant text and role-marked customer history through superadmin-selected provider/model",
+    "no keyword fast path, latest-customer guess, short-reply escalation guess or bulk resume",
+    "strict AI verdict/evidence/confidence/scope/conditional/reviewed contract",
+    "one explicit phone identity or an owned delivered alert; duplicate phone identities rejected",
+    "quote provider, source, guard version, recipient, receipt and request digest revalidated",
+    "durable inbound tenant/account/partition/event/lease/active-owner authority checked inside mutation",
+    "closed conversations and source/history/new-message/forget-cutoff/handoff changes block actions",
+    "atomic ownership transition and decision audit; induced audit failure rolls back dependent effects",
+    "six concurrent same-event writes perform one transition",
+    "replays preserve later human changes and do not reclassify reserved relay requests",
+    "resume checks reviewed claim and latest message boundary, does not process old messages or affect another conversation",
+    "quoted administrative commands are interpreted before any customer relay",
+    "original relay text must be a contiguous suffix, never generated or missing trailing conditions",
+    "native escalation relay transaction records semantic decision before taking ownership and reserving send",
+    "acknowledgement uses stored channel credentials, rejects route spoofing and fails truthfully on provider rejection/error",
+    "general assistant uses full input and central model with no action tools",
+    "regression: teaching, coaching, escalation, handoff, memory, learning, response, followups, providers, budgets"
+  ],
+  "compatibility": {
+    "migrationAdded": "0159_merchant_directive_actions",
+    "migrationAppliedToSyntheticMySql": true,
+    "legacyRecordsRewritten": false,
+    "taskTypes": [
+      "sari.merchant.intent",
+      "sari.merchant.assistant"
+    ],
+    "sourceMessageLimit": 16000,
+    "targetHistoryMessages": 21,
+    "maximumTargets": 5,
+    "relayTextLimit": 2000,
+    "decisionConfidenceMinimum": 0.9,
+    "unqualifiedOrBulkDirective": "clarify and use dashboard",
+    "resume": "one target and explicit reviewed claim",
+    "temporaryLegacyStopConfirmations": "not restored or consumed",
+    "receiptUniqueness": "merchant_id,event_key",
+    "ownershipTransition": "shared versioned transaction; metadata preserved and old automated work invalidated",
+    "report": "today only; order value and order/conversation ratio are not collected revenue or measured conversion"
+  },
+  "limitations": [
+    "AI responses and WhatsApp network outputs are simulated; no live semantic accuracy, persuasion or commercial lift measured",
+    "Explicit reviewed=true represents the merchant statement, not independent proof they read every message",
+    "Full-phone parsing identifies candidates only; names and references across prior merchant turns remain clarification cases",
+    "Onboarding/update interview still separate; multi-message teaching/conflict resolution, groups, multiple opportunities and derived-evidence retraction remain open",
+    "Merchant teaching and directive classifiers remain separate calls within existing central provider/budget policy; actual latency and cost unmeasured",
+    "Snapshots and event audit retention are not automatic historical data erasure",
+    "Report timing and legacy knowledge statistics were not redesigned; only misleading revenue/conversion labels corrected",
+    "Local adversarial testing is not production penetration-test certification",
+    "Hashes verify application consistency, not protection against a database administrator rewriting all records",
+    "Shared-workspace FAQ work was in progress; independent main-plus-owned-overlay type/build results validate this commit only"
+  ],
+  "pushed": false,
+  "deployed": false,
+  "sourceSha256": {
+    "drizzle/0159_merchant_directive_actions.sql": "a4911f2e32407c903b6428045971fb2f0ba0eedfc9de280d3bd10d787fe6baa7",
+    "drizzle/meta/_journal.json": "3d3f6a88a00ada5e6eb129d3398f087c3b4b9cce37d3efa638eb66302d5bc5ef",
+    "drizzle/schema.ts": "0a28055ee9d7a1d297fd76eb8c51ba295d513a4b8f46bfa1500582eaac35bfc9",
+    "server/ai/escalation-relay.ts": "dc5c9db06005ac2aa19c68304af66c2a3059887c7735318f9e6d76b9661f9840",
+    "server/ai/escalation-routing.test.ts": "5cacfe8c44f30876740e4fcb5d8223a9bf7d367242508c632b8caeb7326102fc",
+    "server/ai/merchant-mode.ts": "88cd889d8b26184ad48e6879f71f59d610be1d1a4d0cbebcfbb5947308b90d98",
+    "server/ai/task-catalog.ts": "652062205953450ff0ebadf9ca4f64f36539076a4232e2bdb6effcf6573653d5",
+    "server/ai/zahypi-context-propagation.test.ts": "8f4a0da15d420cddf5adc255c5033276b90f05a43eae5cc9c243902708a06fc0",
+    "server/bot-hardening-pentest.test.ts": "b7013d1a08ab045449f375fe9af09342c312d12b1d9520340c334aa6601791c5",
+    "server/knowledge/whatsapp-teaching-source.ts": "4a1ea4472adf8537709b090a19004bc0fe70c106e19ac62c437edd521cf35807",
+    "server/tests/takeover-hardening-pentest.test.ts": "037f4587480fef07acca75121d0e2ffaa69d8bbb18a32dbacabd900e1ddd5201",
+    "server/ai/merchant-directive-understanding.ts": "caa0df655c39d9f86a842166e4b1c7a8784c38ad0695dbdcccb928a634d28f14",
+    "server/ai/merchant-directive-store.ts": "d3ffaf4d15ff65aca383da1c1d1bb2e58242bec5d28b855770b645b643b0c3e1",
+    "server/ai/merchant-directive-understanding.test.ts": "bac67812c8f9951ab19a8aad819f476ffceb0a8ff655d15c896d462b6ea21e01",
+    "server/ai/merchant-directive.mysql.test.ts": "58aaea76a046fe11ed326c2db027ca1684bb132eaa8c69ed477355a94936a11d",
+    "server/tests/helpers/merchant-directive-schema.ts": "861b86a07010b6e81b49d6cd87a886ef4ec55be58385119b45a8ee843198ab05",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "5cc5e37305a3a93428c48a21a4af7fc58c50e1dcfb47251e1958658844b526ff",
+    "docs/SARI_CONTEXTUAL_MERCHANT_DIRECTIVES_2026-09-29.md": "6d976ae9e8a95cbb00d1a39a69d05a87fd4a940b63b713c975e6baf465ea06e0"
+  }
+}
