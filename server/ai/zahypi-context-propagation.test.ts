@@ -130,14 +130,16 @@ describe("ZahyPi tenant propagation", () => {
     expect(personality).toContain("taskType: 'sari.welcome'");
   });
 
-  it("scopes quick-response suggestions in both keyword routers", () => {
+  it("scopes the standalone suggestion generator and keeps keyword reads non-generative", () => {
     const analysis = readFileSync(new URL("./keyword-analysis.ts", import.meta.url), "utf8");
     expect(analysis).toContain("taskType: 'sari.keyword.quick_responses'");
 
-    for (const file of ["../routers-keywords.ts", "../routers.ts"]) {
-      const routerSource = readFileSync(new URL(file, import.meta.url), "utf8");
-      expect(routerSource).toMatch(/suggestQuickResponses\([\s\S]{0,500}merchantId: merchant\.id/);
-    }
+    const keywordRouter = readFileSync(new URL("../routers-keywords.ts", import.meta.url), "utf8");
+    expect(keywordRouter).toMatch(/readKeywordRecords\(\s*ctx\.merchantId/);
+    expect(keywordRouter).not.toContain("suggestQuickResponses(");
+    const appRouter = readFileSync(new URL("../routers.ts", import.meta.url), "utf8");
+    expect(appRouter).toContain("keywords: keywordsRouter");
+    expect(appRouter).not.toContain("suggestQuickResponses(");
   });
 
   it("keeps OpenAI health probes non-generative", () => {

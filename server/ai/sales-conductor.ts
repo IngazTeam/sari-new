@@ -17,6 +17,9 @@
 
 import { getAllMerchants, getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import type { PoolConnection } from 'mysql2/promise';
+import { z } from 'zod';
+import { parseObjectionWindow, prepareObjectionWindow, readVerifiedObjections } from './sales-objection-evidence';
 
 // ═══════════════════════════════════════════════════════════════
 // Types — MerchantPlaybook
@@ -78,28 +81,38 @@ export interface MerchantPlaybook {
  * Get the playbook for a merchant. Reads the persisted version shared by all workers.
  */
 export async function getPlaybook(merchantId: number): Promise<MerchantPlaybook> {
+  z.number().int().positive().safe().parse(merchantId);
   const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
   await assertRuntimeSchema('sales playbook', [{ table: 'ai_sales_playbooks' }]);
-  const [rows] = await pool.execute<any[]>('SELECT * FROM ai_sales_playbooks WHERE merchant_id = ?', [merchantId]);
-  const row = rows[0], result = createEmptyPlaybook(merchantId);
-  if (!row) return result;
-  const parse = (value: unknown) => typeof value === 'string' ? JSON.parse(value) : value;
-  const daily = parse(row.daily_analysis) as any, weekly = parse(row.weekly_analysis) as any;
-  if (daily?.schemaVersion === 1) {
-    result.strategyWeights = daily.strategyWeights || [];
-    result.goldenHours = daily.goldenHours || [];
-    result.lastDailyUpdate = new Date(row.daily_updated_at);
+  const c = await pool.getConnection();
+  try {
+    await c.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await c.query('START TRANSACTION READ ONLY');
+    const [rows] = await c.execute<any[]>('SELECT * FROM ai_sales_playbooks WHERE merchant_id = ?', [merchantId]);
+    const row = rows[0], result = createEmptyPlaybook(merchantId);
+    if (row) {
+      const daily = typeof row.daily_analysis === 'string' ? JSON.parse(row.daily_analysis) : row.daily_analysis;
+      if (daily?.schemaVersion === 1) {
+        result.strategyWeights = daily.strategyWeights || [];
+        result.goldenHours = daily.goldenHours || [];
+        result.lastDailyUpdate = new Date(row.daily_updated_at);
+      }
+      const weekly = parseObjectionWindow(row.weekly_analysis, row.weekly_updated_at);
+      if (weekly) {
+        result.topObjections = await readVerifiedObjections(c, merchantId, weekly);
+        result.lastWeeklyUpdate = new Date(row.weekly_updated_at);
+      }
+    }
+    await c.commit();
+    return result;
+  } finally {
+    try { await c.rollback(); } finally { c.release(); }
   }
-  if (weekly?.schemaVersion === 1) {
-    result.topObjections = weekly.topObjections || [];
-    result.lastWeeklyUpdate = new Date(row.weekly_updated_at);
-  }
-  return result;
 }
 
-async function saveAnalysis(merchantId: number, kind: 'daily' | 'weekly', payload: unknown): Promise<void> {
-  const pool = await getPool();
+async function saveAnalysis(merchantId: number, kind: 'daily' | 'weekly', payload: unknown, connection?: PoolConnection): Promise<void> {
+  const pool = connection || await getPool();
   if (!pool) throw new Error('DB unavailable');
   await assertRuntimeSchema('sales playbook', [{ table: 'ai_sales_playbooks' }]);
   // Each job replaces only its own section. Concurrent daily/weekly workers cannot erase each other.
@@ -204,38 +217,27 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
  * Analyzes objection patterns and strategy-intent combinations.
  */
 export async function runWeeklyAnalysis(merchantId: number): Promise<void> {
+  z.number().int().positive().safe().parse(merchantId);
   const pool = await getPool();
   if (!pool) return;
-
-  const playbook = createEmptyPlaybook(merchantId);
-
+  const c = await pool.getConnection();
   try {
-    // 1. Top objection patterns from learning signals
-    const [objRows] = await pool.execute(
-      `SELECT signal_type, COUNT(*) as frequency, COUNT(DISTINCT conversation_id) as independent_conversations
-       FROM sari_learning_signals
-       WHERE merchant_id = ?
-          AND signal_type IN ('price_objection', 'sales_objection')
-         AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        GROUP BY signal_type
-       ORDER BY frequency DESC
-       LIMIT 10`,
-      [merchantId]
-    );
-
-    playbook.topObjections = ((objRows as any[]) || []).map((row: any) => ({
-      objection: row.signal_type,
-      bestStrategy: null, winRate: null, // No winning strategy/rate without a measured policy experiment.
-      frequency: Number(row.frequency), independentConversations: Number(row.independent_conversations),
-    }));
-
-    playbook.lastWeeklyUpdate = new Date();
-    await saveAnalysis(merchantId, 'weekly', { schemaVersion: 1, measurement: 'observed_objections', windowDays: 30,
-      topObjections: playbook.topObjections });
-
-    console.log(`[Conductor] Weekly analysis complete for merchant ${merchantId}: ${playbook.topObjections.length} objection patterns found`);
+    await c.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await c.beginTransaction();
+    // Serialize publication before taking the read snapshot. A waiting older job
+    // must observe the new boundary instead of overwriting a newer publication.
+    // The seed is uncommitted and disappears on failure; saveAnalysis advances it to revision 1.
+    await c.execute(`INSERT INTO ai_sales_playbooks (merchant_id, revision) VALUES (?,0)
+      ON DUPLICATE KEY UPDATE merchant_id=VALUES(merchant_id)`, [merchantId]);
+    const window = await prepareObjectionWindow(c, merchantId);
+    const objections = await readVerifiedObjections(c, merchantId, window);
+    await saveAnalysis(merchantId, 'weekly', window, c);
+    await c.commit();
+    console.log(`[Conductor] Weekly analysis complete for merchant ${merchantId}: ${objections.length} verified objection patterns found`);
   } catch (err) {
     console.warn(`[Conductor] Weekly analysis failed for merchant ${merchantId}:`, err);
+  } finally {
+    try { await c.rollback(); } finally { c.release(); }
   }
 }
 

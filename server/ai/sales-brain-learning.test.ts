@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), signal: vi.fn(), count: vi.fn(), schema: vi.fn() }));
-vi.mock('../db', () => ({ getPool: async () => ({ execute: mocks.execute, getConnection: async()=>({execute:mocks.execute,beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{}}) }), getAllMerchants: async () => [] }));
+vi.mock('../db', () => ({ getPool: async () => ({ execute: mocks.execute, getConnection: async()=>({execute:mocks.execute,query:async()=>{},beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{}}) }), getAllMerchants: async () => [] }));
 vi.mock('../db/schema-readiness', () => ({ assertRuntimeSchema: mocks.schema }));
 vi.mock('../db/connection', () => ({ getPool: async()=>({getConnection:async()=>({execute:mocks.execute,beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{}})}) }));
 vi.mock('./openai', () => ({ callGPT4: vi.fn() }));
@@ -40,14 +40,17 @@ describe('sales memory and learning boundaries', () => {
     expect(second.totalConversations).toBe(first.totalConversations);
     expect(mocks.execute.mock.calls.some(([sql]) => sql.includes('total_conversations + 1'))).toBe(false);
   });
-  it('uses the real signal schema in weekly analysis', async () => {
+  it('publishes an observation window instead of unverified copied objection counts', async () => {
+    mocks.execute.mockImplementation(async (sql: string) => sql.includes('observed_at') ? [[{ observed_at: new Date().toISOString() }]]
+      : sql.includes('MAX(id)') ? [[{ latest: 12 }]]
+      : sql.includes('SELECT s.*') ? [[{ id: 12, merchant_id: 1, conversation_id: 2, signal_type: 'price_objection', source_key: null, customer_message: 'غالي' }]] : [[]]);
     await runWeeklyAnalysis(1);
-    const query = mocks.execute.mock.calls.find(([sql]) => sql.includes('FROM sari_learning_signals'))![0];
-    expect(query).toContain('COUNT(DISTINCT conversation_id)');
-    expect(query).toContain("'price_objection'");
-    expect(query).toContain("'sales_objection'");
-    expect(query).not.toContain("'customer_left'");
-    expect(query).not.toContain('GROUP BY signal_type, signal_value');
+    const published = mocks.execute.mock.calls.find(([sql]) => sql.includes('weekly_analysis'));
+    expect(published).toBeDefined();
+    const manifest = JSON.parse(published![1][1]);
+    expect(manifest).toMatchObject({schemaVersion: 2, measurement: 'verified_interpreted_objections', maxSignalId: 12, windowDays: 30});
+    expect(manifest).not.toHaveProperty('topObjections');
+    expect(JSON.stringify(manifest)).not.toContain('غالي');
   });
   it('never stores or replays a legacy personalized final response', async () => {
     await cacheSuccessfulResponse(1, 'كم سعر الدورة؟', 'أهلاً أحمد، سعر عرض حسابك الخاص 230 ريال');
