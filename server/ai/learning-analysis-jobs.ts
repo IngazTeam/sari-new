@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { verifiedContextualLearningSources } from './contextual-learning-source';
 import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
@@ -48,6 +49,7 @@ async function currentSnapshot(c: PoolConnection, merchantId: number, ids: numbe
   const [owned] = await c.execute<any[]>(`SELECT id FROM conversations WHERE merchantId=?
     AND id IN (${conversations.map(() => '?').join(',')}) ORDER BY id FOR SHARE`, [merchantId,...conversations]);
   if (owned.length !== conversations.length) return null;
+  if ((await verifiedContextualLearningSources(c, merchantId, rows, true)).length !== rows.length) return null;
   const snapshot = snapshotLearningSignals(merchantId, rows);
   return snapshot.digest === digest ? snapshot : null;
 }

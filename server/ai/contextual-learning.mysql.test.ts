@@ -7,7 +7,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 const model = vi.hoisted(() => ({ call: vi.fn(), settings: vi.fn() }));
 vi.mock("./openai", () => ({ callGPT4: model.call }));
 vi.mock("../db_ai_settings", () => ({
@@ -35,7 +35,27 @@ import {
 import { captureConversationSignals } from "./learning-engine";
 import { persistLearningAnalysis } from "./learning-analysis";
 import { snapshotLearningSignals } from "./learning-analysis-contract";
-import { getLearningEvidence } from "../db/learning";
+import { getLearningEvidence, getUnanalyzedSignals } from "../db/learning";
+import { verifiedContextualLearningSources } from "./contextual-learning-source";
+import {
+  claimLearningAnalysis,
+  dispatchLearningAnalysis,
+  storeLearningResponse,
+  resumeLearningAnalysis,
+} from "./learning-analysis-jobs";
+import {
+  getLearningPolicyReview,
+  recordLearningPolicyReview,
+} from "./learning-policy-review";
+import {
+  getLearningPolicyCandidate,
+  createLearningPolicyCandidate,
+  requireCurrentLearningPolicyCandidate,
+} from "./learning-policy-candidates";
+import {
+  learningPolicyReviewSuite,
+  learningPolicyReviewSuiteDigest,
+} from "./learning-policy-review-contract";
 import { buildReplyPlan } from "../messaging/reply-plan";
 import {
   stageInteraction,
@@ -147,6 +167,509 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await cleanupDisposableMerchants(users);
     });
     afterAll(closeDb);
+    const historicalSources = async () => {
+      await interpret();
+      expect(await capture()).toBe(2);
+      return rows();
+    };
+    const proposedAnalysis = (sources: any[]) => ({
+      updates: [
+        {
+          dimension: "objection_handling" as const,
+          insight: "اشرح فرق القيمة المناسب للاحتياج قبل طلب القرار.",
+          confidence: 0.7,
+          supporting_signal_ids: sources.map(s => s.id),
+          contrary_signal_ids: [],
+        },
+      ],
+      knowledge_gaps: [],
+    });
+    const withdraw = () => q("DELETE FROM messages WHERE id=?", [previousId]);
+    const prepareProposal = async () => {
+      const sources = await historicalSources();
+      await persistLearningAnalysis(
+        snapshotLearningSignals(owner.merchantId, sources),
+        proposedAnalysis(sources)
+      );
+      return Number(
+        (
+          await q("SELECT id FROM ai_learning_proposals WHERE merchant_id=?", [
+            owner.merchantId,
+          ])
+        )[0].id
+      );
+    };
+    const reviewRequest = async (proposalId: number) => {
+      const source = await getLearningPolicyReview(owner.merchantId, {
+        proposalId,
+      });
+      return {
+        proposalId,
+        requestId: randomUUID(),
+        sourceDigest: source.sourceDigest,
+        suiteDigest: learningPolicyReviewSuiteDigest,
+        expectedRevision: source.revision,
+        styleOnly: true as const,
+        cases: learningPolicyReviewSuite.cases.map(c => ({
+          caseId: c.id as any,
+          baselineResponse: "Synthetic baseline response",
+          candidateResponse: "Synthetic candidate response",
+          baselineVerdict: "pass" as const,
+          candidateVerdict: "pass" as const,
+          reason: "Synthetic independent review for the stored test case.",
+        })),
+      };
+    };
+    it("keeps the evidence workspace count and excerpts consistent with source eligibility", async () => {
+      const proposalId = await prepareProposal();
+      expect(
+        (await getLearningEvidence(owner.merchantId)).proposals[0]
+      ).toMatchObject({ id: proposalId, evidenceCount: 1 });
+      await withdraw();
+      expect(
+        (await getLearningEvidence(owner.merchantId)).proposals[0]
+      ).toMatchObject({ id: proposalId, evidenceCount: 0, evidence: [] });
+      expect(await rows()).toHaveLength(2);
+    });
+    it("retains surviving excerpts but never cherry-picks around an invalid contrary source", async () => {
+      const proposalId = await prepareProposal(),
+        sources = await rows();
+      await q(
+        "UPDATE ai_learning_evidence_links SET relation='contrary' WHERE proposal_id=? AND signal_id=?",
+        [proposalId, sources[0].id]
+      );
+      await q(
+        "UPDATE sari_learning_signals SET bot_message='مقتطف مختلف' WHERE id=?",
+        [sources[0].id]
+      );
+      const workspace = (await getLearningEvidence(owner.merchantId))
+        .proposals[0];
+      expect(workspace.evidenceCount).toBe(1);
+      expect(workspace.evidence.map(s => s.signalId)).toEqual([sources[1].id]);
+      expect(
+        await getLearningPolicyReview(owner.merchantId, { proposalId })
+      ).toMatchObject({ eligible: false, independentConversations: 1 });
+    });
+    it("propagates a source read failure instead of treating it as an empty or valid proof", async () => {
+      const sources = await historicalSources(),
+        c = await (await getPool())!.getConnection();
+      const execute = c.execute.bind(c);
+      try {
+        vi.spyOn(c, "execute").mockImplementation((async (
+          sql: any,
+          values: any
+        ) => {
+          if (String(sql).includes("FROM messages m"))
+            throw Error("Synthetic source storage failure");
+          return execute(sql, values);
+        }) as any);
+        await expect(
+          verifiedContextualLearningSources(c, owner.merchantId, sources)
+        ).rejects.toThrow("Synthetic source storage failure");
+      } finally {
+        vi.restoreAllMocks();
+        c.release();
+      }
+    });
+    it("rejects oversized proof batches before making a database query", async () => {
+      const execute = vi.fn();
+      await expect(
+        verifiedContextualLearningSources(
+          { execute } as any,
+          owner.merchantId,
+          Array(2001).fill({})
+        )
+      ).rejects.toThrow("too large");
+      expect(execute).not.toHaveBeenCalled();
+    });
+    it("filters invalid excerpts before the display limit while keeping the full proposal ineligible", async () => {
+      const proposalId = await prepareProposal(),
+        original = await rows();
+      for (let n = 0; n < 21; n++) {
+        const saved = await q(
+          "INSERT INTO sari_learning_signals(merchant_id,conversation_id,signal_type,source_key,context_summary) VALUES (?,?,'price_objection',?,'broken')",
+          [
+            owner.merchantId,
+            input.conversationId,
+            `contextual_learning:invalid:${n}`,
+          ]
+        );
+        await q(
+          "INSERT INTO ai_learning_evidence_links(proposal_id,signal_id,merchant_id,relation) VALUES (?,?,?,'contrary')",
+          [proposalId, saved.insertId, owner.merchantId]
+        );
+      }
+      const result = (await getLearningEvidence(owner.merchantId)).proposals[0];
+      expect(result.evidenceCount).toBe(1);
+      expect(result.evidence.map(e => e.signalId)).toEqual(
+        original.map((s: any) => s.id).reverse()
+      );
+      expect(
+        await getLearningPolicyReview(owner.merchantId, { proposalId })
+      ).toMatchObject({ eligible: false, evidenceLinks: 23 });
+    });
+    it("refuses an oversized proposal rather than publishing a truncated evidence count", async () => {
+      const proposalId = await prepareProposal();
+      const values = Array.from({ length: 1999 }, (_, n) => [
+        owner.merchantId,
+        input.conversationId,
+        `boundary:${n}`,
+      ]).flat();
+      await q(
+        `INSERT INTO sari_learning_signals(merchant_id,conversation_id,signal_type,source_key) VALUES ${Array.from({ length: 1999 }, () => "(?,?,'long_conversation',?)").join(",")}`,
+        values
+      );
+      await q(
+        "INSERT INTO ai_learning_evidence_links(proposal_id,signal_id,merchant_id,relation) SELECT ?,id,merchant_id,'observed' FROM sari_learning_signals WHERE merchant_id=? AND source_key LIKE 'boundary:%'",
+        [proposalId, owner.merchantId]
+      );
+      await expect(getLearningEvidence(owner.merchantId)).rejects.toThrow(
+        "exceeds review capacity"
+      );
+      await expect(
+        getLearningPolicyReview(owner.merchantId, { proposalId })
+      ).rejects.toThrow("changed");
+    });
+    it("rechecks historical sources without another AI call after a newer turn and handoff", async () => {
+      const before = await historicalSources();
+      await q(
+        "INSERT INTO messages(conversationId,direction,messageType,content) VALUES (?,'incoming','text','رسالة لاحقة')",
+        [input.conversationId]
+      );
+      await q(
+        "UPDATE conversations SET human_takeover=1,handoff_version=handoff_version+1 WHERE id=?",
+        [input.conversationId]
+      );
+      expect(await getUnanalyzedSignals(owner.merchantId)).toEqual(
+        [...before].reverse()
+      );
+      expect(model.call).toHaveBeenCalledOnce();
+    });
+    it.each([
+      "deleted_source",
+      "deleted_reply",
+      "source_text",
+      "reply_text",
+      "authorship",
+      "ai_receipt",
+      "message_time",
+      "interpretation_deleted",
+      "interpretation_state",
+      "interpretation_digest",
+      "foreign_conversation",
+      "source_key",
+      "metadata",
+      "weight",
+      "copied_customer",
+      "copied_bot",
+      "correction",
+      "target",
+      "financial_claim",
+    ])(
+      "withdraws %s evidence before analysis without deleting its audit history",
+      async change => {
+        const sources = await historicalSources();
+        if (change === "deleted_source")
+          await q("DELETE FROM messages WHERE id=?", [input.incomingMessageId]);
+        if (change === "deleted_reply") await withdraw();
+        if (change === "source_text")
+          await q("UPDATE messages SET content='الرد لم يفدني' WHERE id=?", [
+            input.incomingMessageId,
+          ]);
+        if (change === "reply_text")
+          await q("UPDATE messages SET content='نص مختلف' WHERE id=?", [
+            previousId,
+          ]);
+        if (change === "authorship")
+          await q("UPDATE messages SET sender_type='merchant' WHERE id=?", [
+            previousId,
+          ]);
+        if (change === "ai_receipt")
+          await q("UPDATE messages SET aiResponse=NULL WHERE id=?", [
+            previousId,
+          ]);
+        if (change === "message_time")
+          await q(
+            "UPDATE messages SET createdAt=TIMESTAMPADD(SECOND,1,createdAt) WHERE id=?",
+            [previousId]
+          );
+        if (change === "interpretation_deleted")
+          await q(
+            "DELETE FROM ai_conversation_understanding WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "interpretation_state")
+          await q(
+            "UPDATE ai_conversation_understanding SET state='failed',result_json=NULL,result_digest=NULL WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "interpretation_digest")
+          await q(
+            "UPDATE ai_conversation_understanding SET result_digest=REPEAT('a',64) WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "foreign_conversation") {
+          const other = await createDisposableMerchant("learning-source-other");
+          users.push(other.userId);
+          const conv = await q(
+            "INSERT INTO conversations(merchantId,customerPhone) VALUES (?,'966500000089')",
+            [other.merchantId]
+          );
+          await q("UPDATE messages SET conversationId=? WHERE id=?", [
+            conv.insertId,
+            previousId,
+          ]);
+        }
+        if (change === "source_key")
+          await q(
+            "UPDATE sari_learning_signals SET source_key=CONCAT('contextual_learning:',conversation_id,':999999999') WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "metadata")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary='broken' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "weight")
+          await q(
+            "UPDATE sari_learning_signals SET signal_weight=9 WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "copied_customer")
+          await q(
+            "UPDATE sari_learning_signals SET customer_message='دليل مزور' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "copied_bot")
+          await q(
+            "UPDATE sari_learning_signals SET bot_message='رد مزور' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "correction")
+          await q(
+            "UPDATE sari_learning_signals SET merchant_correction='تعليم مصطنع' WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "target")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary=JSON_SET(context_summary,'$.aboutAssistantMessageId',NULL) WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        if (change === "financial_claim")
+          await q(
+            "UPDATE sari_learning_signals SET context_summary=JSON_SET(context_summary,'$.financialOutcome','paid') WHERE merchant_id=?",
+            [owner.merchantId]
+          );
+        expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(0);
+        expect(await rows()).toHaveLength(sources.length);
+        expect(model.call).toHaveBeenCalledOnce();
+      }
+    );
+    it("rechecks full original content beyond the copied 2000-character preview", async () => {
+      input.message += " توضيح".repeat(420);
+      await q("UPDATE messages SET content=? WHERE id=?", [
+        input.message,
+        input.incomingMessageId,
+      ]);
+      await historicalSources();
+      expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(2);
+      await q(
+        "UPDATE messages SET content=CONCAT(content,' تغيير أخير') WHERE id=?",
+        [input.incomingMessageId]
+      );
+      expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(0);
+    });
+    it("does not reconstruct a missing interpretation when a copied signal is renamed", async () => {
+      await historicalSources();
+      await q(
+        "UPDATE sari_learning_signals SET source_key=NULL WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(0);
+    });
+    it.each(["claim", "dispatch", "response", "recovery", "projection"])(
+      "rejects revoked evidence at the %s checkpoint",
+      async checkpoint => {
+        const sources = await historicalSources(),
+          snapshot = snapshotLearningSignals(owner.merchantId, sources);
+        const analysis = proposedAnalysis(sources);
+        if (checkpoint === "claim") {
+          await withdraw();
+          expect(await claimLearningAnalysis(snapshot)).toMatchObject({
+            status: "stale",
+          });
+        } else if (checkpoint === "projection") {
+          await withdraw();
+          await expect(
+            persistLearningAnalysis(snapshot, analysis)
+          ).rejects.toThrow("source changed");
+          expect(await rows()).toEqual(sources);
+        } else {
+          const acquired = await claimLearningAnalysis(snapshot);
+          expect(acquired.status).toBe("claimed");
+          if (acquired.status !== "claimed")
+            throw Error("Expected isolated claim");
+          if (checkpoint === "dispatch") {
+            await withdraw();
+            expect(await dispatchLearningAnalysis(acquired.claim)).toBe(false);
+          } else {
+            expect(await dispatchLearningAnalysis(acquired.claim)).toBe(true);
+            if (checkpoint === "recovery") {
+              expect(
+                await storeLearningResponse(
+                  acquired.claim,
+                  JSON.stringify(analysis)
+                )
+              ).not.toBeNull();
+              await withdraw();
+              expect(
+                await resumeLearningAnalysis(owner.merchantId)
+              ).toMatchObject({ status: "stale" });
+            } else {
+              await withdraw();
+              expect(
+                await storeLearningResponse(
+                  acquired.claim,
+                  JSON.stringify(analysis)
+                )
+              ).toBeNull();
+            }
+          }
+        }
+        expect(
+          await q("SELECT id FROM ai_learning_proposals WHERE merchant_id=?", [
+            owner.merchantId,
+          ])
+        ).toHaveLength(0);
+      }
+    );
+    it("invalidates the reviewed proposal and excludes revoked excerpts without erasing the review", async () => {
+      const proposalId = await prepareProposal(),
+        request = await reviewRequest(proposalId);
+      await recordLearningPolicyReview(owner.merchantId, owner.userId, request);
+      const before = await getLearningPolicyReview(owner.merchantId, {
+        proposalId,
+      });
+      expect(before).toMatchObject({
+        eligible: true,
+        stage: "offline_review_passed",
+        independentConversations: 1,
+      });
+      await withdraw();
+      const after = await getLearningPolicyReview(owner.merchantId, {
+        proposalId,
+      });
+      expect(after).toMatchObject({
+        eligible: false,
+        stage: "stale",
+        independentConversations: 0,
+        evidencePreview: [],
+      });
+      expect(after.sourceDigest).not.toBe(before.sourceDigest);
+      expect(after.latestReview!.id).toBe(before.latestReview!.id);
+      await expect(
+        recordLearningPolicyReview(owner.merchantId, owner.userId, {
+          ...request,
+          requestId: randomUUID(),
+          expectedRevision: 1,
+        })
+      ).rejects.toThrow("changed");
+    });
+    it("invalidates an existing candidate through the same source reader and prevents a new candidate", async () => {
+      const proposalId = await prepareProposal();
+      await recordLearningPolicyReview(
+        owner.merchantId,
+        owner.userId,
+        await reviewRequest(proposalId)
+      );
+      const basis = await getLearningPolicyCandidate(owner.merchantId, {
+        proposalId,
+      });
+      const request = {
+        proposalId,
+        requestId: randomUUID(),
+        reviewId: basis.reviewId!,
+        sourceDigest: basis.sourceDigest,
+        baselineDigest: basis.baselineDigest,
+        expectedVersion: basis.expectedVersion,
+      };
+      const candidate = await createLearningPolicyCandidate(
+        owner.merchantId,
+        owner.userId,
+        request
+      );
+      await withdraw();
+      expect(
+        await getLearningPolicyCandidate(owner.merchantId, { proposalId })
+      ).toMatchObject({
+        canCreate: false,
+        latestCandidate: { current: false },
+      });
+      await expect(
+        createLearningPolicyCandidate(owner.merchantId, owner.userId, {
+          ...request,
+          requestId: randomUUID(),
+          expectedVersion: 1,
+        })
+      ).rejects.toThrow("changed");
+      const c = await (await getPool())!.getConnection();
+      try {
+        await c.beginTransaction();
+        await expect(
+          requireCurrentLearningPolicyCandidate(
+            c,
+            owner.merchantId,
+            candidate.id,
+            candidate.artifactDigest
+          )
+        ).rejects.toThrow("changed");
+      } finally {
+        await c.rollback();
+        c.release();
+      }
+    });
+    it.each(["message", "interpretation"])(
+      "holds the %s proof against concurrent changes until validation commits",
+      async target => {
+        const sources = await historicalSources(),
+          pool = (await getPool())!;
+        const c = await pool.getConnection(),
+          other = await pool.getConnection();
+        const [[settings]] = await other.query<any[]>(
+          "SELECT @@SESSION.innodb_lock_wait_timeout AS seconds"
+        );
+        const sql =
+          target === "message"
+            ? "UPDATE messages SET content=CONCAT(content,' changed') WHERE id=?"
+            : "UPDATE ai_conversation_understanding SET result_digest=REPEAT('b',64) WHERE incoming_message_id=?";
+        const id = target === "message" ? previousId : input.incomingMessageId;
+        try {
+          await other.query("SET SESSION innodb_lock_wait_timeout=1");
+          await c.beginTransaction();
+          expect(
+            await verifiedContextualLearningSources(
+              c,
+              owner.merchantId,
+              sources,
+              true
+            )
+          ).toHaveLength(2);
+          await expect(other.execute(sql, [id])).rejects.toMatchObject({
+            code: "ER_LOCK_WAIT_TIMEOUT",
+          });
+          await c.commit();
+          await other.execute(sql, [id]);
+          expect(await getUnanalyzedSignals(owner.merchantId)).toHaveLength(0);
+        } finally {
+          await c.rollback();
+          c.release();
+          await other.query("SET SESSION innodb_lock_wait_timeout=?", [
+            Number(settings.seconds),
+          ]);
+          other.release();
+        }
+      }
+    );
     it.each(["openai", "zahypi"])(
       "uses the shared %s interpretation once and deduplicates concurrent learning",
       async provider => {

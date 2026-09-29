@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedContextualLearningSources } from './contextual-learning-source';
 import { getPool } from '../db/connection';
 import { ensureLearningTables } from '../db/learning';
 import { attachLearningEvidenceInTransaction } from './learning-evidence';
@@ -39,6 +40,8 @@ export async function persistLearningAnalysis(snapshot: LearningAnalysisSnapshot
     const [owned] = await connection.execute<any[]>(`SELECT id FROM conversations WHERE merchantId=?
       AND id IN (${conversations.map(() => '?').join(',')}) ORDER BY id FOR SHARE`, [snapshot.merchantId, ...conversations]);
     if (owned.length !== conversations.length) throw Error('Learning conversation tenant mismatch');
+    if ((await verifiedContextualLearningSources(connection, snapshot.merchantId, current, true)).length !== current.length)
+      throw Error('Learning interpretation source changed');
     if (snapshotLearningSignals(snapshot.merchantId, current).digest !== original.digest) throw Error('Learning source changed during analysis');
     if (current.some(row => Number(row.analyzed) !== 0)) {
       if (claim) {

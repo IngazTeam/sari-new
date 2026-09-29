@@ -9,6 +9,7 @@
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { createHash } from 'node:crypto';
+import { verifiedContextualLearningSources } from '../ai/contextual-learning-source';
 import { captureLearningSignals, type LearningSignalInput } from '../ai/learning-signal-capture';
 
 // ═══════════════════════════════════════════════════════════════
@@ -99,21 +100,38 @@ export async function captureSignals(data: readonly LearningSignalInput[]): Prom
 /** Get recent unanalyzed signals for a merchant */
 export async function getUnanalyzedSignals(
   merchantId: number,
-  limit: number = 100
+  limit: number = 100,
 ): Promise<LearningSignal[]> {
   await ensureLearningTables();
   const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
-  const [rows] = await pool.execute(
-    `SELECT s.* FROM sari_learning_signals s
-     JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
-     WHERE s.merchant_id = ? AND s.analyzed = 0
-     ORDER BY s.created_at DESC, s.id DESC LIMIT ${safeLimit}`,
-    [merchantId]
-  );
-  return rows as LearningSignal[];
+  const connection = await pool.getConnection();
+  try {
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION READ ONLY');
+    const [rows] = await connection.execute<any[]>(
+      `SELECT s.* FROM sari_learning_signals s
+       JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
+       WHERE s.merchant_id = ? AND s.analyzed = 0
+       ORDER BY s.created_at DESC, s.id DESC LIMIT ${safeLimit}`,
+      [merchantId],
+    );
+    const verified = await verifiedContextualLearningSources(
+      connection,
+      merchantId,
+      rows,
+    );
+    await connection.commit();
+    return verified as LearningSignal[];
+  } finally {
+    try {
+      await connection.rollback();
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 /** Mark signals as analyzed */
@@ -210,41 +228,103 @@ export async function getDNAGeneration(merchantId: number): Promise<number> {
 export async function getLearningEvidence(merchantId: number) {
   const pool = await getPool();
   if (!pool) throw new Error('Learning evidence unavailable');
-  const [proposals] = await pool.execute<any[]>(`SELECT p.id, p.dimension, p.insight,
-    (SELECT COUNT(DISTINCT s.conversation_id) FROM ai_learning_evidence_links e
-      JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
-      JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
-      WHERE e.proposal_id = p.id AND e.merchant_id = p.merchant_id) AS evidence_count
+  const connection = await pool.getConnection();
+  try {
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION READ ONLY');
+    const [proposals] = await connection.execute<any[]>(
+      `SELECT p.id, p.dimension, p.insight
     FROM ai_learning_proposals p WHERE p.merchant_id = ?
-    AND p.status = 'proposed' ORDER BY p.id DESC LIMIT 20`, [merchantId]);
-  const evidenceByProposal = new Map<number, Array<{ signalId: number; conversationId: number; relation: string; type: string; excerpt: string }>>();
-  if (proposals.length) {
-    const [evidence] = await pool.execute<any[]>(`SELECT * FROM (SELECT e.proposal_id, e.signal_id, e.relation, s.conversation_id,
-      s.signal_type, LEFT(COALESCE(s.customer_message, s.context_summary, ''), 500) AS excerpt,
-      ROW_NUMBER() OVER (PARTITION BY e.proposal_id ORDER BY e.signal_id DESC) AS sample_rank
+    AND p.status = 'proposed' ORDER BY p.id DESC LIMIT 20`,
+      [merchantId],
+    );
+    const evidenceByProposal = new Map<
+      number,
+      Array<{
+        signalId: number;
+        conversationId: number;
+        relation: string;
+        type: string;
+        excerpt: string;
+      }>
+    >();
+    const conversationsByProposal = new Map<number, Set<number>>();
+    // Read one bounded proposal at a time; do not materialize 20 full transcripts' batches together.
+    for (const proposal of proposals) {
+      const [evidence] = await connection.execute<any[]>(
+        `SELECT e.proposal_id, e.signal_id, e.relation, s.*
       FROM ai_learning_evidence_links e JOIN sari_learning_signals s ON s.id = e.signal_id AND s.merchant_id = e.merchant_id
       JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
-      WHERE e.merchant_id = ? AND e.proposal_id IN (${proposals.map(() => '?').join(',')})) samples
-      WHERE sample_rank <= 20 ORDER BY proposal_id DESC, signal_id DESC`,
-    [merchantId, ...proposals.map(p => p.id)]);
-    for (const row of evidence) {
-      const list = evidenceByProposal.get(Number(row.proposal_id)) || [];
-      if (list.length < 20) list.push({ signalId: Number(row.signal_id), conversationId: Number(row.conversation_id),
-        relation: String(row.relation), type: String(row.signal_type), excerpt: String(row.excerpt) });
-      evidenceByProposal.set(Number(row.proposal_id), list);
+      WHERE e.merchant_id = ? AND e.proposal_id = ? ORDER BY e.signal_id DESC LIMIT 2001`,
+        [merchantId, proposal.id],
+      );
+      // The review gate has the same per-proposal bound. Never publish a truncated count as complete.
+      if (evidence.length > 2000)
+        throw Error('Learning evidence exceeds review capacity');
+      const verified: any[] = [];
+      for (let at = 0; at < evidence.length; at += 200)
+        verified.push(
+          ...(await verifiedContextualLearningSources(
+            connection,
+            merchantId,
+            evidence.slice(at, at + 200),
+          )),
+        );
+      for (const row of verified) {
+        const list = evidenceByProposal.get(Number(row.proposal_id)) || [];
+        if (list.length < 20)
+          list.push({
+            signalId: Number(row.signal_id),
+            conversationId: Number(row.conversation_id),
+            relation: String(row.relation),
+            type: String(row.signal_type),
+            excerpt: String(
+              row.customer_message ?? row.context_summary ?? '',
+            ).slice(0, 500),
+          });
+        evidenceByProposal.set(Number(row.proposal_id), list);
+        const conversations =
+          conversationsByProposal.get(Number(row.proposal_id)) ||
+          new Set<number>();
+        conversations.add(Number(row.conversation_id));
+        conversationsByProposal.set(Number(row.proposal_id), conversations);
+      }
     }
-  }
-  const [counts] = await pool.execute<any[]>(`SELECT COUNT(*) AS count FROM ai_learning_proposals
-    WHERE merchant_id = ? AND status = 'proposed'`, [merchantId]);
-  const [outcomes] = await pool.execute<any[]>(`SELECT
+    const [counts] = await connection.execute<any[]>(
+      `SELECT COUNT(*) AS count FROM ai_learning_proposals
+    WHERE merchant_id = ? AND status = 'proposed'`,
+      [merchantId],
+    );
+    const [outcomes] = await connection.execute<any[]>(
+      `SELECT
     COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_completed' AND p.status = 'captured' THEN e.payment_id END) AS purchases,
     COUNT(DISTINCT CASE WHEN e.outcome_type = 'purchase_refunded' AND p.status = 'refunded' THEN e.payment_id END) AS refunds
     FROM ai_purchase_outcomes e JOIN order_payments p ON p.id = e.payment_id AND p.merchant_id = e.merchant_id
-    WHERE e.merchant_id = ?`, [merchantId]);
-  return { proposalCount: Number(counts[0]?.count || 0), verifiedPurchases: Number(outcomes[0]?.purchases || 0),
-    verifiedRefunds: Number(outcomes[0]?.refunds || 0), source: 'tap' as const,
-    proposals: proposals.map(row => ({ id: Number(row.id), dimension: String(row.dimension), insight: String(row.insight),
-      evidenceCount: Number(row.evidence_count), evidence: evidenceByProposal.get(Number(row.id)) || [], status: 'proposed' as const })) };
+    WHERE e.merchant_id = ?`,
+      [merchantId],
+    );
+    await connection.commit();
+    return {
+      proposalCount: Number(counts[0]?.count || 0),
+      verifiedPurchases: Number(outcomes[0]?.purchases || 0),
+      verifiedRefunds: Number(outcomes[0]?.refunds || 0),
+      source: 'tap' as const,
+      proposals: proposals.map((row) => ({
+        id: Number(row.id),
+        dimension: String(row.dimension),
+        insight: String(row.insight),
+        evidenceCount: conversationsByProposal.get(Number(row.id))?.size || 0,
+        evidence: evidenceByProposal.get(Number(row.id)) || [],
+        status: 'proposed' as const,
+      })),
+    };
+  } finally {
+    try {
+      await connection.rollback();
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 /** Upsert a DNA dimension (create or evolve) */

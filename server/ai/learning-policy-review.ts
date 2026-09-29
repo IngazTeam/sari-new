@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedContextualLearningSources } from './contextual-learning-source';
 import { z } from 'zod';
 import type { PoolConnection } from 'mysql2/promise';
 import { checkoutTransaction } from './checkout-agreements';
@@ -39,13 +40,16 @@ export async function getLearningPolicySourceSnapshot(connection: PoolConnection
     if (rows.length !== ids.length) conflict();
     sources = rows;
   }
-  const independentConversations = new Set(sources.map(row => row.conversation_id)).size;
+  const verifiedSources = await verifiedContextualLearningSources(connection, merchantId, sources.map(row => ({ ...row, merchant_id: merchantId })), true);
+  const verifiedIds = new Set(verifiedSources.map(row => Number(row.id)));
+  const invalidSourceIds = sources.filter(row => !verifiedIds.has(Number(row.id))).map(row => Number(row.id));
+  const independentConversations = new Set(verifiedSources.map(row => row.conversation_id)).size;
   const validContent = createHash('sha256').update(proposal.insight).digest('hex') === proposal.content_hash;
-  const eligible = proposal.status === 'proposed' && styleDimensions.has(proposal.dimension) && validContent && independentConversations > 0;
-  const sourceDigest = reviewDigest({ merchantId, proposal, links, sources });
+  const eligible = !invalidSourceIds.length && proposal.status === 'proposed' && styleDimensions.has(proposal.dimension) && validContent && independentConversations > 0;
+  const sourceDigest = reviewDigest({ merchantId, proposal, links, sources, ...(invalidSourceIds.length ? { invalidSourceIds } : {}) });
   // No duplicated customer transcript in the durable review record.
   return { sourceDigest, eligible, independentConversations, evidenceLinks: links.length,
-    evidencePreview: links.slice(-20).reverse().map(link => {
+    evidencePreview: links.filter(link => !invalidSourceIds.includes(Number(link.signal_id))).slice(-20).reverse().map(link => {
       const source = sources.find(row => Number(row.id) === Number(link.signal_id))!;
       return { signalId: Number(link.signal_id), relation: String(link.relation),
         excerpt: String(source.customer_message || source.context_summary || '').slice(0, 500) };

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedContextualLearningSources } from './contextual-learning-source';
 import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { learningEvidenceIds } from './learning-analysis-contract';
@@ -14,10 +15,12 @@ export async function attachLearningEvidenceInTransaction(connection: PoolConnec
   if (!Number.isSafeInteger(input.merchantId) || input.merchantId <= 0) throw Error('Invalid learning merchant');
   const [merchants] = await connection.execute<any[]>('SELECT id FROM merchants WHERE id=? FOR UPDATE', [input.merchantId]);
   if (!merchants.length) throw Error('Learning merchant unavailable');
-  const [signals] = await connection.execute<any[]>(`SELECT s.id FROM sari_learning_signals s
+  const [signals] = await connection.execute<any[]>(`SELECT s.* FROM sari_learning_signals s
     JOIN conversations c ON c.id=s.conversation_id AND c.merchantId=s.merchant_id
     WHERE s.merchant_id=? AND s.id IN (${observed.map(() => '?').join(',')}) ORDER BY s.id FOR SHARE`, [input.merchantId, ...observed]);
   if (signals.length !== observed.length) throw Error('Learning evidence tenant mismatch');
+  if ((await verifiedContextualLearningSources(connection, input.merchantId, signals, true)).length !== signals.length)
+    throw Error('Learning interpretation source changed');
   const [proposals] = await connection.execute<any[]>(`SELECT id FROM ai_learning_proposals WHERE merchant_id=?
     AND dimension=? AND content_hash=? AND status='proposed' FOR UPDATE`, [input.merchantId, input.dimension,
     createHash('sha256').update(input.insight).digest('hex')]);
