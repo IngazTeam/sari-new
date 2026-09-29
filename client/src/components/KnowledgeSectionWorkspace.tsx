@@ -694,6 +694,19 @@ function Workspace({ scope }: { scope: string }) {
                 {draft.parentId ? ` · ${c.parent}: #${draft.parentId}` : ""}
               </p>
             )}
+            {draft.review?.section.state === "unverified" && (
+              <p
+                role="status"
+                className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 leading-7"
+              >
+                {c.unverifiedHelp}
+              </p>
+            )}
+            {!deleting && draft.review?.section.replacesTeachingSource && (
+              <p className="rounded-xl border p-4 leading-7">
+                {c.teachingReviewHelp}
+              </p>
+            )}
             {deleting ? (
               <>
                 <p className="leading-7">{c.deleteHelp}</p>

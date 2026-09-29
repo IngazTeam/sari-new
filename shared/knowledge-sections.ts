@@ -3,6 +3,7 @@ import { knowledgeSectionType } from "./knowledge-plan";
 
 export const sectionStates = [
   "eligible",
+  "unverified",
   "pending",
   "paused",
   "expired",
@@ -92,6 +93,7 @@ export type SectionReview = {
     summary: string | null;
     sourceUrl: string | null;
     validUntil: string | null;
+    replacesTeachingSource: boolean;
   };
   revision: string;
   deleteRevision: string;

@@ -31,6 +31,8 @@ import { analyzeTeachingPolicy } from "./teaching-policy-review";
 import {
   readSectionWorkspace,
   changeWorkspaceSection,
+  listSectionWorkspace,
+  sectionReadiness,
 } from "./section-workspace";
 import { saveContextualMerchantTeaching } from "./whatsapp-teaching";
 import { teachingTextHash } from "../ai/merchant-teaching-understanding";
@@ -113,6 +115,173 @@ describe.skipIf(!process.env.DATABASE_URL)(
       plain: (await getBotSections(f.merchantId)).map(r => r.id),
       rag: (await getBotSectionsWithEmbedding(f.merchantId)).map(r => r.id),
     });
+    const list = (state: any = "all", page = 1) =>
+      listSectionWorkspace(f.merchantId, {
+        search: "",
+        type: "all",
+        state,
+        page,
+      });
+    async function expectUnverified() {
+      expect((await list("eligible")).total).toBe(0);
+      expect((await list("unverified")).items.map(r => r.id)).toEqual([id]);
+      expect(
+        (await readSectionWorkspace(f.merchantId, id)).section
+      ).toMatchObject({
+        state: "unverified",
+        useInBot: true,
+        status: "approved",
+        replacesTeachingSource: true,
+      });
+      expect(await sectionReadiness(f.merchantId)).toMatchObject({
+        total: 0,
+        covered: 0,
+        saved: 1,
+        counts: { eligible: 0, unverified: 1 },
+      });
+    }
+    it("shows the same valid teaching in coverage, list, review and both bot readers", async () => {
+      expect((await list("eligible")).items.map(r => r.id)).toEqual([id]);
+      expect((await readSectionWorkspace(f.merchantId, id)).section.state).toBe(
+        "eligible"
+      );
+      expect(await sectionReadiness(f.merchantId)).toMatchObject({
+        covered: 1,
+        saved: 1,
+        counts: { eligible: 1, unverified: 0 },
+      });
+      expect(await visible()).toEqual({ plain: [id], rag: [id] });
+    });
+    it("filters unverified sources before pagination and excludes them from coverage", async () => {
+      // Nine saved sections share one real turn; changed identities cannot borrow its approval.
+      for (let at = 0; at < 8; at++)
+        await q(
+          `INSERT INTO knowledge_sections
+        (merchant_id,section_type,title,content,source,source_url,provenance,status,use_in_bot,inject_as)
+        SELECT merchant_id,section_type,title,content,source,source_url,provenance,status,use_in_bot,inject_as
+        FROM knowledge_sections WHERE id=?`,
+          [id]
+        );
+      await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+        event.execution.id,
+      ]);
+      const first = await list("unverified"),
+        second = await list("unverified", 99);
+      expect(first).toMatchObject({ total: 9, page: 1, totalPages: 2 });
+      expect(first.items).toHaveLength(8);
+      expect(second).toMatchObject({ total: 9, page: 2, totalPages: 2 });
+      expect(second.items).toHaveLength(1);
+      expect((await list("eligible")).total).toBe(0);
+      expect(await sectionReadiness(f.merchantId)).toMatchObject({
+        saved: 9,
+        total: 0,
+        counts: { unverified: 9 },
+      });
+    });
+    it.each([
+      ["paused", "use_in_bot=0"],
+      ["expired", "valid_until='2020-01-01'"],
+      ["excluded", "inject_as='none'"],
+      ["pending", "status='pending_review'"],
+    ])(
+      "keeps %s distinct from failed source verification",
+      async (state, patch) => {
+        await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+          event.execution.id,
+        ]);
+        await q(`UPDATE knowledge_sections SET ${patch} WHERE id=?`, [id]);
+        expect((await list(state)).items.map(r => r.id)).toEqual([id]);
+        expect((await list("unverified")).total).toBe(0);
+        expect(
+          (await readSectionWorkspace(f.merchantId, id)).section.state
+        ).toBe(state);
+        expect(await sectionReadiness(f.merchantId)).toMatchObject({
+          total: 0,
+          counts: { [state]: 1, unverified: 0 },
+        });
+      }
+    );
+    it("restores eligibility only after an acknowledged independent manual review", async () => {
+      await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+        event.execution.id,
+      ]);
+      await expectUnverified();
+      const r = await readSectionWorkspace(f.merchantId, id);
+      const input = {
+        id,
+        title: r.section.title,
+        content: r.section.content,
+        useInBot: true,
+        expectedRevision: r.revision,
+      };
+      await expect(
+        changeWorkspaceSection(f.merchantId, input)
+      ).rejects.toThrow();
+      await expectUnverified();
+      await changeWorkspaceSection(f.merchantId, {
+        ...input,
+        acknowledged: true,
+      });
+      expect((await list("eligible")).total).toBe(1);
+      expect((await list("unverified")).total).toBe(0);
+      expect((await sectionReadiness(f.merchantId)).covered).toBe(1);
+      expect(await visible()).toEqual({ plain: [id], rag: [id] });
+      expect((await readSectionWorkspace(f.merchantId, id)).section.state).toBe(
+        "eligible"
+      );
+    });
+    it("does not expose teaching bodies, provenance or original payloads through another tenant workspace", async () => {
+      const other = await createTeachingFixture();
+      users.push(other.userId);
+      expect(
+        (
+          await listSectionWorkspace(other.merchantId, {
+            search: "",
+            type: "all",
+            state: "all",
+            page: 1,
+          })
+        ).total
+      ).toBe(0);
+      expect((await sectionReadiness(other.merchantId)).saved).toBe(0);
+      await expect(
+        readSectionWorkspace(other.merchantId, id)
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      const [entry] = (await list()).items;
+      for (const key of [
+        "content",
+        "provenance",
+        "payload_json",
+        "merchantId",
+        "sourceUrl",
+      ])
+        expect(entry).not.toHaveProperty(key);
+    });
+    it("fails workspace reads instead of reporting zero coverage or usable knowledge when proof queries fail", async () => {
+      const db = (await getDb())!,
+        original = db.transaction.bind(db);
+      vi.spyOn(db, "transaction").mockImplementation(((run: any, config: any) =>
+        original(async (tx: any) => {
+          const execute = tx.execute.bind(tx);
+          tx.execute = (s: any) => {
+            if (
+              tx.dialect
+                .sqlToQuery(s)
+                .sql.includes("FROM merchant_teaching_turns")
+            )
+              throw Error("fixture proof query failed");
+            return execute(s);
+          };
+          return run(tx);
+        }, config)) as any);
+      await expect(list()).rejects.toThrow("fixture proof query failed");
+      await expect(sectionReadiness(f.merchantId)).rejects.toThrow(
+        "fixture proof query failed"
+      );
+      await expect(readSectionWorkspace(f.merchantId, id)).rejects.toThrow(
+        "fixture proof query failed"
+      );
+    });
     it("retains a reviewed policy in both readers before and after legitimate source minimization", async () => {
       expect(await visible()).toEqual({ plain: [id], rag: [id] });
       await q(
@@ -163,6 +332,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
             );
         }
         expect(await visible()).toEqual({ plain: [], rag: [] });
+        await expectUnverified();
         expect((await f.sections())[0].status).toBe("approved"); // Read does not silently rewrite the review history.
       }
     );
@@ -199,6 +369,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
             ]
           );
         expect(await visible()).toEqual({ plain: [], rag: [] });
+        await expectUnverified();
       }
     );
     it("rejects conflicting quote identifiers even when the quote parser cannot resolve one", async () => {

@@ -30,6 +30,7 @@ import {
   type SectionCreationReceipt,
 } from "../../shared/knowledge-sections";
 import type { z } from "zod";
+import { readVerifiedBotSectionsInTransaction } from "./teaching-read";
 const { embedding, embeddingContentHash, updatedAt, ...columns } =
   getTableColumns(table);
 type Row = Pick<typeof table.$inferSelect, keyof typeof columns> & {
@@ -92,6 +93,29 @@ const item = (
   expired: row.expired,
   state: sectionState(row),
 });
+async function resolveEligibility(
+  tx: KnowledgeTransaction,
+  merchantId: number,
+  items: SectionListItem[],
+  sectionIds?: number[]
+): Promise<SectionListItem[]> {
+  if (!items.some(r => r.state === "eligible")) return items;
+  const verified = new Set(
+    (
+      await readVerifiedBotSectionsInTransaction(
+        tx,
+        merchantId,
+        false,
+        sectionIds
+      )
+    ).map(r => r.id)
+  );
+  return items.map(r =>
+    r.state === "eligible" && !verified.has(r.id)
+      ? { ...r, state: "unverified" }
+      : r
+  );
+}
 async function database() {
   const db = await getDb();
   if (!db) throw Error("Knowledge database unavailable");
@@ -134,6 +158,10 @@ function review(rows: Row[], id: number): SectionReview {
       content: row.content,
       summary: row.summary,
       sourceUrl: row.sourceUrl,
+      replacesTeachingSource: isSourcedTeaching(
+        provenance(row.provenance),
+        row.sourceUrl
+      ),
       validUntil: row.validUntil
         ? new Date(databaseTimeEpoch(row.validUntil)).toISOString()
         : null,
@@ -152,13 +180,17 @@ export async function listSectionWorkspace(
 ) {
   return (await database()).transaction(
     async tx => {
-      const rows = (
-        await tx
-          .select(metadata)
-          .from(table)
-          .where(eq(table.merchantId, merchantId))
-          .orderBy(table.id)
-      ).map(item);
+      const rows = await resolveEligibility(
+        tx,
+        merchantId,
+        (
+          await tx
+            .select(metadata)
+            .from(table)
+            .where(eq(table.merchantId, merchantId))
+            .orderBy(table.id)
+        ).map(item)
+      );
       const search = input.search.toLocaleLowerCase();
       const matches = rows.filter(
         r =>
@@ -182,15 +214,32 @@ export async function listSectionWorkspace(
   );
 }
 export async function sectionReadiness(merchantId: number) {
-  const rows = await (await database())
-    .select(metadata)
-    .from(table)
-    .where(eq(table.merchantId, merchantId));
-  return summarizeSectionReadiness(rows.map(item));
+  return (await database()).transaction(
+    async tx => {
+      const rows = await tx
+        .select(metadata)
+        .from(table)
+        .where(eq(table.merchantId, merchantId));
+      return summarizeSectionReadiness(
+        await resolveEligibility(tx, merchantId, rows.map(item))
+      );
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" }
+  );
 }
 export async function readSectionWorkspace(merchantId: number, id: number) {
   return (await database()).transaction(
-    async tx => review(await records(tx, merchantId, id), id),
+    async tx => {
+      const result = review(await records(tx, merchantId, id), id);
+      const [resolved] = await resolveEligibility(
+        tx,
+        merchantId,
+        [result.section],
+        [id]
+      );
+      result.section.state = resolved.state;
+      return result;
+    },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   );
 }

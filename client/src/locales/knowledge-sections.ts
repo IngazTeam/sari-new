@@ -44,6 +44,11 @@ export const knowledgeSectionsEn = {
   next: "Next",
   count: "{{count}} sections · page {{page}} of {{pages}}",
   eligible: "Eligible for reply retrieval",
+  unverified: "Excluded: source verification required",
+  unverifiedHelp:
+    "This saved section is excluded from replies and coverage because its source or review could not be verified. Its saved approval and usage setting have not changed.",
+  teachingReviewHelp:
+    "Saving this teaching records a new independent manual review of the displayed text. Read and correct the full content first. With reply usage enabled, this review replaces reliance on the original WhatsApp messages.",
   pending: "Awaiting conflict review",
   paused: "Usage paused",
   expired: "Expired",
@@ -104,7 +109,7 @@ export const knowledgeSectionsEn = {
     "Changing the title or content clears the previous generated summary.",
   coverageTitle: "Knowledge section coverage",
   coverageHelp:
-    "Percentage of six areas with at least one eligible section. Each area has equal weight. This excludes separate product, FAQ and raw-file stores; it is not an answer-quality or sales score.",
+    "Percentage of six areas with at least one section eligible for retrieval, including current source checks. Each area has equal weight. This excludes separate product, FAQ and raw-file stores; it is not an answer-quality or sales score.",
   coverage: "{{covered}} of {{areas}} areas · {{total}}%",
   savedCount: "{{count}} saved sections",
   areaCount: "{{count}} eligible sections",
@@ -158,6 +163,11 @@ export const knowledgeSectionsAr: KnowledgeSectionsCopy = {
   next: "التالي",
   count: "{{count}} قسم · صفحة {{page}} من {{pages}}",
   eligible: "مؤهل للاختيار في الردود",
+  unverified: "مستبعد: يحتاج التحقق من المصدر",
+  unverifiedHelp:
+    "هذا القسم محفوظ لكنه مستبعد من الردود والتغطية لتعذّر التحقق من مصدره أو مراجعته. لم تتغيّر حالة اعتماده أو إعداد استخدامه المحفوظ.",
+  teachingReviewHelp:
+    "حفظ هذا التعليم يسجّل مراجعة يدوية مستقلة للنص المعروض. اقرأ المحتوى كاملًا وصحّحه أولًا. عند السماح باستخدامه في الردود، تحلّ هذه المراجعة محل الاعتماد على رسائل واتساب الأصلية.",
   pending: "بانتظار مراجعة التعارض",
   paused: "الاستخدام متوقف",
   expired: "انتهت الصلاحية",
@@ -216,7 +226,7 @@ export const knowledgeSectionsAr: KnowledgeSectionsCopy = {
   summaryHelp: "تعديل العنوان أو النص يمسح الملخص المولّد السابق.",
   coverageTitle: "تغطية أقسام المعرفة",
   coverageHelp:
-    "نسبة ستة مجالات يوجد بكل منها قسم مؤهل واحد على الأقل، بأوزان متساوية. لا تشمل مخازن المنتجات والأسئلة الشائعة والملفات الخام المنفصلة، ولا تقيس جودة الإجابات أو احتراف المبيعات.",
+    "نسبة ستة مجالات يوجد بكل منها قسم مؤهل للاختيار في الردود بعد فحوص المصدر الحالية، بأوزان متساوية. لا تشمل مخازن المنتجات والأسئلة الشائعة والملفات الخام المنفصلة، ولا تقيس جودة الإجابات أو احتراف المبيعات.",
   coverage: "{{covered}} من {{areas}} مجالات · {{total}}%",
   savedCount: "{{count}} قسم محفوظ",
   areaCount: "{{count}} قسم مؤهل",

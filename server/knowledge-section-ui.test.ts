@@ -89,6 +89,7 @@ const row = () => ({
   source: "manual",
   sourceUrl: null,
   validUntil: null,
+  replacesTeachingSource: false,
 });
 const review = () => ({
   section: row(),
@@ -485,20 +486,74 @@ it("reports a coverage read failure without a fabricated zero score", async () =
   expect(container.textContent).toContain(c.healthError);
   expect(container.textContent).not.toContain("0%");
 });
+it("explains withdrawn teaching and requires fresh acknowledgement before independent review", async () => {
+  const section = {
+    ...row(),
+    useInBot: true,
+    state: "unverified",
+    replacesTeachingSource: true,
+  };
+  api.list.data.items = [section];
+  api.read.mockResolvedValue({ ...review(), section });
+  await render();
+  expect(container.textContent).toContain(c.unverified);
+  await click(c.open);
+  expect(container.textContent).toContain(c.unverifiedHelp);
+  expect(container.textContent).toContain(c.teachingReviewHelp);
+  expect(field(c.use).checked).toBe(true);
+  expect(button(c.save).disabled).toBe(true);
+  expect(api.update).not.toHaveBeenCalled();
+  await check(c.ack);
+  await click(c.save);
+  expect(api.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      id: 4,
+      content: section.content,
+      acknowledged: true,
+      expectedRevision: "a".repeat(64),
+    })
+  );
+});
+it("lets a reader inspect an unverified source without offering an approval action", async () => {
+  api.list.data.canManage = false;
+  api.read.mockResolvedValue({
+    ...review(),
+    section: { ...row(), state: "unverified", replacesTeachingSource: true },
+  });
+  await render();
+  await click(c.open);
+  expect(container.textContent).toContain(c.unverifiedHelp);
+  expect(button(c.save)).toBeUndefined();
+  expect(field(c.content).matches(":disabled")).toBe(true);
+  expect(api.update).not.toHaveBeenCalled();
+});
 it("renders the coverage definition and independent eligibility counts", async () => {
   api.health = {
     data: {
       total: 17,
       covered: 1,
       areas: 6,
-      saved: 5,
-      counts: { eligible: 1, pending: 1, paused: 1, expired: 1, excluded: 1 },
+      saved: 7,
+      counts: {
+        eligible: 1,
+        unverified: 2,
+        pending: 1,
+        paused: 1,
+        expired: 1,
+        excluded: 1,
+      },
       breakdown: [{ key: "identity", count: 1 }],
     },
   };
   await render(true);
   expect(container.textContent).toContain("1 of 6 areas · 17%");
   expect(container.textContent).toContain(c.coverageHelp);
-  for (const s of ["pending", "paused", "expired", "excluded"] as const)
+  for (const s of [
+    "unverified",
+    "pending",
+    "paused",
+    "expired",
+    "excluded",
+  ] as const)
     expect(container.textContent).toContain(c[s]);
 });
