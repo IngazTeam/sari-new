@@ -1,4 +1,4 @@
-// Read-only local design data. No merchant reads, provider calls or message sends.
+// Local design data with session-only keyword review. No provider calls or message sends.
 window.InsightsPreview = (() => {
   const routes = [
     "/merchant/insights",
@@ -48,6 +48,10 @@ window.InsightsPreview = (() => {
   const initial = () => ({
     keywords: Array.from({ length: 24 }, (_, i) => ({
       id: i + 1,
+      merchantId: 1,
+      revision: 1,
+      sampleMessages: ["مثال محلي: هل يمكن توضيح " + names[i % 6] + "؟"],
+      reviewedAt: null,
       keyword: names[i % names.length] + " · " + (i + 1),
       category: Object.keys(categories)[i % 6],
       frequency: 40 - i,
@@ -204,7 +208,7 @@ window.InsightsPreview = (() => {
       )
       .join(
         ""
-      )}</dl><section class='panel panel-pad'><h2>توزيع سجلات الكلمات</h2>${categoriesIn.length ? `<ul class='in-categories'>${categoriesIn.map(row => `<li><div><span>${row.label}</span><span>${number(row.count)}</span></div><progress value='${row.count}' max='${current.count}' aria-label='${row.label}'></progress></li>`).join("")}</ul>` : "<p>لا توجد كلمات محفوظة بآخر ظهور ضمن هذه الفترة.</p>"}</section>${current.rows.map(row => `<article class='panel panel-pad in-card'><header><h2>${e(row.keyword)}</h2><span>${categories[row.category]} · ${statuses[row.status]}</span></header><p>التكرار التراكمي المسجل: ${number(row.frequency)}</p><p class='hint'>أول ظهور: ${date(row.firstSeenAt)} · آخر ظهور: ${date(row.lastSeenAt)}</p><details><summary>مراجعة النص المقترح</summary><p class='in-text'>${e(row.suggestedResponse?.trim() || "لا يوجد نص مقترح محفوظ لهذا السجل.")}</p><p class='hint'>اقتراح محفوظ يحتاج مراجعة المصادر والحقائق. لم يُنشأ أو يُفعّل رد من هذه الشاشة.</p></details></article>`).join("")}<a class='button' href='#/page/merchant/quick-responses'>إدارة الردود السريعة</a>`;
+      )}</dl><section class='panel panel-pad'><h2>توزيع سجلات الكلمات</h2>${categoriesIn.length ? `<ul class='in-categories'>${categoriesIn.map(row => `<li><div><span>${row.label}</span><span>${number(row.count)}</span></div><progress value='${row.count}' max='${current.count}' aria-label='${row.label}'></progress></li>`).join("")}</ul>` : "<p>لا توجد كلمات محفوظة بآخر ظهور ضمن هذه الفترة.</p>"}</section>${current.rows.map(row => `<article class='panel panel-pad in-card'><header><h2>${e(row.keyword)}</h2><span>${categories[row.category]} · ${statuses[row.status]}</span></header><p>التكرار التراكمي المسجل: ${number(row.frequency)}</p><p class='hint'>أول ظهور: ${date(row.firstSeenAt)} · آخر ظهور: ${date(row.lastSeenAt)}</p><details><summary>مراجعة النص المقترح</summary><p class='in-text'>${e(row.suggestedResponse?.trim() || "لا يوجد نص مقترح محفوظ لهذا السجل.")}</p><p class='hint'>اقتراح محفوظ يحتاج مراجعة المصادر والحقائق. لم يُنشأ أو يُفعّل رد من هذه الشاشة.</p></details>${button("مراجعة سجل الكلمة", "review", `data-id='${row.id}'`)}</article>`).join("")}<a class='button' href='#/page/merchant/quick-responses'>إدارة الردود السريعة</a>`;
   }
   function reportsView(current) {
     return `<p class='hint'>تظهر التقارير التي ينتهي نطاقها داخل الفترة المختارة. تُعرض كل عينة مستقلة؛ قد تتداخل فترات التقارير، فلا تُجمع كعملاء فريدين.</p>${
@@ -284,6 +288,7 @@ window.InsightsPreview = (() => {
       busy = pending || mode === "loading";
     return `<div class='in-workspace'><div class='in-actions'>${button("تصدير الصفحة CSV", "export", failed || busy || !current.rows.length ? "disabled" : "")}</div><details><summary>حالات مصدر البيانات لتجربة التصميم</summary><label class='field'>حالة المصدر<select id='in-mode'>${[
       ["normal", "البيانات"],
+      ["viewer", "عرض فقط"],
       ["empty", "عينة فارغة"],
       ["loading", "تحميل"],
       ["error", "فشل القراءة"],
@@ -484,6 +489,53 @@ window.InsightsPreview = (() => {
     const button = event.target.closest("[data-in-action]");
     if (!button || button.disabled) return;
     const action = button.dataset.inAction;
+    if (action === "review") {
+      const id = Number(button.dataset.id);
+      const fault = code => Object.assign(new Error(code), { code });
+      const read = async () => {
+        if (["error", "offline", "forbidden", "loading"].includes(mode))
+          throw fault("READ_FAILED");
+        const row = source.keywords.find(row => row.id === id);
+        if (!row) throw fault("NOT_FOUND");
+        return structuredClone({ ...row, canManage: mode !== "viewer" });
+      };
+      window.KeywordReviewPreview.open({
+        read,
+        async write(change) {
+          if (mode === "viewer" || mode === "forbidden")
+            throw fault("FORBIDDEN");
+          const row = await read();
+          if (change.revision !== row.revision) throw fault("CONFLICT");
+          const index = source.keywords.findIndex(row => row.id === id);
+          if (change.kind === "delete") {
+            source.keywords.splice(index, 1);
+            return { deleted: true };
+          }
+          source.keywords[index] = {
+            ...source.keywords[index],
+            status: change.status,
+            reviewedAt:
+              change.status === "new" ? null : new Date().toISOString(),
+            revision: row.revision + 1,
+          };
+          return { row: await read() };
+        },
+        simulate(kind) {
+          const row = source.keywords.find(row => row.id === id);
+          if (kind === "revoke") mode = "viewer";
+          if (kind === "external-delete" && row)
+            source.keywords.splice(source.keywords.indexOf(row), 1);
+          if (kind === "external" && row) {
+            row.status = row.status === "ignored" ? "reviewed" : "ignored";
+            row.suggestedResponse =
+              "نص محلي تغيّر في نافذة أخرى؛ راجع المصدر قبل الاعتماد.";
+            row.sampleMessages.push("مثال محلي جديد بعد فتح المراجعة");
+            row.frequency++;
+            row.revision++;
+          }
+        },
+      });
+    }
     if (action === "tab") {
       tab = button.dataset.value;
       window.render();

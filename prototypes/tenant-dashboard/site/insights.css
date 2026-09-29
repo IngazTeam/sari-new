@@ -152,6 +152,84 @@
 .in-workspace [role="alert"] {
   color: #963b2d;
 }
+#dialog.in-review-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+}
+#dialog.in-review-dialog .dialog-head {
+  flex-shrink: 0;
+}
+#dialog.in-review-dialog .dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.in-review-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+.in-review-foot {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  background: var(--white);
+}
+.in-review-dialog .button,
+.in-review-dialog .check-label,
+.in-review-dialog summary {
+  min-height: 44px;
+  white-space: normal;
+}
+.in-review-dialog .button {
+  height: auto;
+}
+.in-review-dialog .check-label {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  line-height: 1.7;
+}
+.in-review-dialog input[type="checkbox"],
+.in-review-dialog input[type="radio"] {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-block-start: 4px;
+}
+.in-review-dialog h3,
+.in-review-dialog h4,
+.in-review-dialog p {
+  overflow-wrap: anywhere;
+}
+.in-review-record,
+.in-review-latest {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.in-review-dialog .in-samples {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.in-review-dialog .in-samples dd {
+  font-size: 14px;
+}
+.in-review-dialog fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
 @media (max-width: 600px) {
   .in-stats,
   .in-arms {

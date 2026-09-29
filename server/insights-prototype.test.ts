@@ -49,6 +49,13 @@ beforeEach(() => {
   w = dom.window;
   w.structuredClone = structuredClone;
   w.scrollTo = () => {};
+  w.HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute("open", "");
+  };
+  w.HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute("open");
+    this.dispatchEvent(new w.Event("close"));
+  };
   w.URL.createObjectURL = (blob: Blob) => {
     exported.push({ blob });
     return "blob:local-test";
@@ -67,6 +74,7 @@ beforeEach(() => {
     "notifications.js",
     "quick-responses.js",
     "insights.js",
+    "keyword-review.js",
     "pages.js",
     "app.js",
   ])
@@ -216,15 +224,13 @@ describe("insights prototype matches the read-only workspace", () => {
   });
   it("supports RTL tab navigation, Home/End and focus after rerender", () => {
     const key = (value: string) =>
-      w.document
-        .querySelector("[role=tab][aria-selected=true]")
-        .dispatchEvent(
-          new w.KeyboardEvent("keydown", {
-            key: value,
-            bubbles: true,
-            cancelable: true,
-          })
-        );
+      w.document.querySelector("[role=tab][aria-selected=true]").dispatchEvent(
+        new w.KeyboardEvent("keydown", {
+          key: value,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     key("ArrowLeft");
     expect(w.document.activeElement.id).toBe("in-tab-reports");
     key("End");
@@ -268,5 +274,183 @@ describe("insights prototype matches the read-only workspace", () => {
     click("tab", "tests");
     expect({ ...w.localStorage }).toEqual(saved);
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+const settle = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
+const review = async () => {
+  w.document.querySelector('[data-in-action=review][data-id="2"]').click();
+  await settle();
+};
+const dialog = () => w.document.getElementById("dialog");
+const kr = (action: string) => {
+  const el = dialog().querySelector(`[data-kr-action="${action}"]`);
+  expect(el).toBeTruthy();
+  el.click();
+};
+const pick = (status: string) => {
+  const el = w.document.getElementById("kr-status");
+  el.value = status;
+  el.dispatchEvent(new w.Event("change", { bubbles: true }));
+};
+const card = () =>
+  w.document
+    .querySelector('[data-in-action=review][data-id="2"]')
+    .closest("article");
+describe("keyword review prototype parity", () => {
+  it("reads the full suggestion and samples, saves a status only, and keeps data local to this session", async () => {
+    const stored = { ...w.localStorage };
+    await review();
+    expect(dialog().textContent).toContain(
+      "مثال محلي: هل يمكن توضيح طرق الدفع؟"
+    );
+    expect(dialog().textContent).toContain("لا ينشئ أو يفعل ردًا سريعًا");
+    pick("reviewed");
+    kr("save");
+    await settle();
+    expect(card().textContent).toContain("مراجع");
+    expect({ ...w.localStorage }).toEqual(stored);
+    expect(dialog().querySelector("[data-kr-action=save]").disabled).toBe(true);
+  });
+  it("guards the close button and native Escape while a status choice is unsaved", async () => {
+    await review();
+    pick("ignored");
+    dialog().querySelector("[data-action=close]").click();
+    expect(dialog().open).toBe(true);
+    expect(dialog().textContent).toContain("لديك تغيير في الحالة");
+    kr("continue");
+    expect(w.document.getElementById("kr-status").value).toBe("ignored");
+    dialog().dispatchEvent(
+      new w.Event("cancel", { bubbles: false, cancelable: true })
+    );
+    expect(dialog().textContent).toContain("لديك تغيير في الحالة");
+    kr("discard");
+    expect(dialog().open).toBe(false);
+    expect(card().textContent).toContain("جديد");
+  });
+  it("preserves a choice and compares full changed evidence before a separate write", async () => {
+    await review();
+    pick("reviewed");
+    kr("external");
+    kr("save");
+    await settle();
+    expect(dialog().textContent).toContain("تغيّر السجل منذ فتحه");
+    expect(dialog().querySelector("[data-kr-action=save]").disabled).toBe(true);
+    kr("review");
+    await settle();
+    expect(dialog().textContent).toContain("مثال محلي جديد بعد فتح المراجعة");
+    expect(dialog().querySelector("[data-kr-action=accept]").disabled).toBe(
+      true
+    );
+    dialog().querySelector("input[value=mine]").click();
+    kr("accept");
+    expect(w.document.getElementById("kr-status").value).toBe("reviewed");
+    expect(dialog().querySelector(".in-review-record").textContent).toContain(
+      "متجاهل"
+    );
+    kr("save");
+    await settle();
+    expect(card().textContent).toContain("مراجع");
+  });
+  it("requires a fresh deletion confirmation after accepting a newer record", async () => {
+    await review();
+    kr("begin-delete");
+    expect(dialog().querySelector("[data-kr-action=delete]").disabled).toBe(
+      true
+    );
+    dialog().querySelector("#kr-reviewed").click();
+    kr("external");
+    kr("delete");
+    await settle();
+    expect(dialog().querySelector("#kr-reviewed").checked).toBe(false);
+    kr("review");
+    await settle();
+    kr("accept");
+    expect(dialog().querySelector("#kr-reviewed").checked).toBe(false);
+    expect(dialog().querySelector("[data-kr-action=delete]").disabled).toBe(
+      true
+    );
+    dialog().querySelector("#kr-reviewed").click();
+    kr("delete");
+    await settle();
+    expect(dialog().open).toBe(false);
+    expect(
+      w.document.querySelector('[data-in-action=review][data-id="2"]')
+    ).toBeNull();
+    expect(text()).toContain("21 سجل");
+  });
+  it("cancels deletion without changing the record", async () => {
+    await review();
+    kr("begin-delete");
+    dialog().querySelector("#kr-reviewed").click();
+    kr("cancel-delete");
+    kr("close");
+    expect(card().textContent).toContain("جديد");
+    expect(text()).toContain("22 سجل");
+  });
+  it("does not accept a failed read and recovers without automatic saving", async () => {
+    await review();
+    pick("reviewed");
+    kr("external");
+    kr("save");
+    await settle();
+    kr("fail-read");
+    kr("review");
+    await settle();
+    expect(dialog().textContent).toContain("تعذّر قراءة النسخة الحالية");
+    expect(dialog().querySelector("[data-kr-action=accept]")).toBeNull();
+    expect(dialog().querySelector("[data-kr-action=save]").disabled).toBe(true);
+    kr("restore");
+    kr("review");
+    await settle();
+    expect(dialog().querySelector("[data-kr-action=accept]")).toBeTruthy();
+    expect(w.document.getElementById("kr-status").value).toBe("reviewed");
+  });
+  it("never recreates a deleted-elsewhere record", async () => {
+    await review();
+    pick("reviewed");
+    kr("external-delete");
+    kr("save");
+    await settle();
+    expect(dialog().textContent).toContain("لن نعيد إنشاءه");
+    expect(dialog().querySelector("[data-kr-action=save]")).toBeNull();
+    expect(dialog().querySelector("[data-kr-action=begin-delete]")).toBeNull();
+  });
+  it("offers read-only review to viewers and reflects permission loss on refresh", async () => {
+    mode("viewer");
+    await review();
+    expect(dialog().textContent).toContain(
+      "تغيير الحالة والحذف يحتاجان صلاحية"
+    );
+    expect(dialog().querySelector("select")).toBeNull();
+    kr("close");
+    mode("normal");
+    await review();
+    pick("reviewed");
+    kr("revoke");
+    kr("save");
+    await settle();
+    kr("review");
+    await settle();
+    kr("accept");
+    expect(dialog().querySelector("select")).toBeNull();
+    expect(dialog().querySelector("[data-kr-action=save]")).toBeNull();
+  });
+  it("ignores a read that completes after closing or navigation", async () => {
+    w.document.querySelector('[data-in-action=review][data-id="2"]').click();
+    kr("close");
+    await settle();
+    expect(dialog().open).toBe(false);
+    w.document.querySelector('[data-in-action=review][data-id="2"]').click();
+    route("ab-tests");
+    await settle();
+    expect(dialog().open).toBe(false);
+    expect(w.document.querySelector("[role=tab][aria-selected=true]").id).toBe(
+      "in-tab-tests"
+    );
   });
 });
