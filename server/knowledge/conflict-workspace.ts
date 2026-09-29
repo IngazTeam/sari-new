@@ -14,6 +14,7 @@ import {
 } from "./transaction";
 import { knowledgePlanSchema } from "../../shared/knowledge-plan";
 import { knowledgeSectionLinksSchema } from "../../shared/knowledge-section-links";
+import { readTeachingPolicyReview } from "./teaching-policy-review";
 import {
   conflictDecisionInput,
   type ConflictReview,
@@ -155,8 +156,12 @@ async function context(
       usable(parent));
   const wouldDisableParent =
     link === "verified" && current?.id === proposed.parentId;
+  const teaching =
+    provenance.origin === "contextual_whatsapp_dialogue"
+      ? await readTeachingPolicyReview(tx, merchantId, proposed, lock)
+      : undefined;
   const canApprove =
-    provenance.origin !== "contextual_whatsapp_dialogue" &&
+    (!teaching || teaching.canApprove) &&
     link !== "unavailable" &&
     usable(proposed) &&
     parentReady &&
@@ -170,6 +175,7 @@ async function context(
         parent: parent || null,
         receipt: receipt || null,
         log,
+        teaching,
       })
     )
     .digest("hex");
@@ -182,6 +188,7 @@ async function context(
     link,
     canApprove,
     revision,
+    ...(teaching ? { teaching } : {}),
   };
   return { view, proposed, current };
 }
@@ -248,17 +255,22 @@ export async function decideKnowledgeConflict(
       });
     const replace =
       input.action === "approve" && view.link === "verified" && current;
-    if (replace)
+    const replaceIds =
+      input.action === "approve"
+        ? view.teaching?.replaceIds || (replace ? [current.id] : [])
+        : [];
+    for (const replacedId of replaceIds)
       await tx
         .update(sections)
         .set({ useInBot: 0, merchantEdited: 1 })
         .where(
-          and(eq(sections.merchantId, merchantId), eq(sections.id, current.id))
+          and(eq(sections.merchantId, merchantId), eq(sections.id, replacedId))
         );
     const decision = {
       action: input.action,
       revision: view.revision,
       replacedSectionId: replace ? current.id : null,
+      replacedSectionIds: replaceIds,
     };
     await tx
       .update(sections)
@@ -298,6 +310,7 @@ export async function decideKnowledgeConflict(
       success: true,
       action: input.action,
       replacedSectionId: replace ? current.id : null,
+      replacedSectionIds: replaceIds,
       indexing: "not_requested" as const,
     };
   });

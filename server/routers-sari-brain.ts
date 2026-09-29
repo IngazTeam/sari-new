@@ -9,7 +9,8 @@ import { readKnowledgeSourceInventory } from './knowledge/source-inventory';
 import { retiredSectionMutation } from './knowledge/retired-section-mutation';
 import { sectionListInput, sectionReadInput, sectionCreateInput, sectionUpdateInput, sectionDeleteInput } from '../shared/knowledge-sections';
 import { listSectionWorkspace, readSectionWorkspace, createWorkspaceSection, changeWorkspaceSection, sectionReadiness } from './knowledge/section-workspace';
-import { conflictListInput, conflictReviewInput, conflictDecisionInput } from '../shared/knowledge-conflicts';
+import { conflictListInput, conflictReviewInput, conflictDecisionInput, teachingPolicyReviewInput } from '../shared/knowledge-conflicts';
+import { analyzeTeachingPolicy } from './knowledge/teaching-policy-review';
 import { indexApprovedConflict } from './knowledge/conflict-indexing';
 import { listConflictWorkspace, readConflictReview, decideKnowledgeConflict } from './knowledge/conflict-workspace';
 import { faqCreateInput, faqUpdateInput, faqDeleteInput, faqListInput } from '../shared/knowledge-faq';
@@ -1419,6 +1420,10 @@ ${sanitizedContent}`
   conflictReview: merchantProcedure.input(conflictReviewInput).query(async ({ctx,input}) => {
     try { return await readConflictReview(ctx.merchantId,input.sectionId); }
     catch(error) { if(error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge proposal review unavailable'}); }
+  }),
+  analyzeTeachingPolicy: permissionProcedure('bot_settings.manage').input(teachingPolicyReviewInput).mutation(async ({ctx,input}) => {
+    try { checkIngestionRateLimit(ctx.merchantId); return await analyzeTeachingPolicy(ctx.merchantId,input.sectionId,input.expectedBasisHash); }
+    catch(error) { if(error instanceof TRPCError) throw error; throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Teaching policy analysis unavailable'}); }
   }),
   approveSection: permissionProcedure('bot_settings.manage').input(conflictDecisionInput).mutation(async ({ctx,input}) => {
     try {

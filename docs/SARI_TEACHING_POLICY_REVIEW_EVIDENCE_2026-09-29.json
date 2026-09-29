@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T16:23:27.116Z",
+  "scope": "Semantic comparison and reviewed atomic activation of sourced teaching policies",
+  "branch": "main",
+  "validationBaseHead": "a24ed5b591a4e8d2b1be069ed39a909bd7c146aa",
+  "runtime": {
+    "node": "v22.23.2",
+    "database": "MySQL 8.0 synthetic loopback:33089"
+  },
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "productionDataUsed": false,
+    "externalNetworkBlocked": true,
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "files": 57,
+    "passed": 1253,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 107,
+    "policyMysqlTests": 22,
+    "policyContractTests": 17
+  },
+  "reports": [
+    {
+      "file": ".tmp/phase37-checks/policy-unit.json",
+      "sha256": "358fed6cd52f86cf2e18bfdaf856150ea8899c0e1ea89cb210d123b4d04abb87",
+      "passed": 88,
+      "failed": 0,
+      "skipped": 0,
+      "files": 5
+    },
+    {
+      "file": ".tmp/phase37-checks/policy-mysql.json",
+      "sha256": "e5228d26b288fa0a79e785a907602e3c972af89dce8ba3218b05af3fbb66b1da",
+      "passed": 107,
+      "failed": 0,
+      "skipped": 0,
+      "files": 4
+    },
+    {
+      "file": ".tmp/phase37-checks/tests.json",
+      "sha256": "5fafaf07dcde9272245493813aef558ea1d8b2750e31132f074e2b38ce146ddc",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0,
+      "files": 48
+    }
+  ],
+  "checks": [
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb",
+      "baseHead": "a24ed5b591a4e8d2b1be069ed39a909bd7c146aa",
+      "overlaySha256": {
+        "client/src/components/KnowledgeConflictWorkspace.tsx": "78afb9571feb732916336bd57558283a883c78593ad01dd3a564c4dea004f884",
+        "client/src/locales/knowledge-conflicts.ts": "06fc5cb03aa970f98aa52731f547494b29c61704b8caf3067d72648503f52560",
+        "shared/knowledge-conflicts.ts": "8c0a9a8aaf685bbde4c9c91af8f65ba9c05b98fb5cf021e7a02238dc67342f4a",
+        "server/routers-sari-brain.ts": "12bd5792ebb137d47208226dd63f5b029939d6c3109d6cdd061fd6de509f2524",
+        "server/knowledge/conflict-workspace.ts": "d05b1d778b4c839a29999eb97a97ef20ccc058c58c480b9f8ce812dd821f18f5",
+        "server/knowledge/teaching-policy-review.ts": "1858343fa8a6369f8542e430b6abd37fd0718d8d54b9263a7dc0d68de9bfe7d7",
+        "server/knowledge/teaching-policy-review.mysql.test.ts": "8eea3ddc70e64226d991a50c4b67953231b5f50aec9c822d3ced7ece567c6b7d",
+        "server/ai/teaching-policy-understanding.ts": "bf59da5ea48c24fdce9f08a45f954b9152d2d53dbfc8ae9da9e72d3cc2565568",
+        "server/ai/teaching-policy-understanding.test.ts": "e9d915e2f4dff32dfca28c0cb22bb12c2a33fb928857a5e2bff23423be4ee60b",
+        "server/knowledge-conflict-access.test.ts": "50c54b73c39f782f7cb7240d664a700572db0204b57222d591047c58dd3d0028",
+        "server/knowledge-conflict-ui.test.ts": "2e87aee2acdd68df187f5ac29e2d406aa30d471c74735a3c52aef60f1fd2b6cf"
+      },
+      "source": "Tracked main plus only contextual merchant phase37s; no .env or unrelated uncommitted edits"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb",
+      "baseHead": "a24ed5b591a4e8d2b1be069ed39a909bd7c146aa",
+      "overlaySha256": {
+        "client/src/components/KnowledgeConflictWorkspace.tsx": "78afb9571feb732916336bd57558283a883c78593ad01dd3a564c4dea004f884",
+        "client/src/locales/knowledge-conflicts.ts": "06fc5cb03aa970f98aa52731f547494b29c61704b8caf3067d72648503f52560",
+        "shared/knowledge-conflicts.ts": "8c0a9a8aaf685bbde4c9c91af8f65ba9c05b98fb5cf021e7a02238dc67342f4a",
+        "server/routers-sari-brain.ts": "12bd5792ebb137d47208226dd63f5b029939d6c3109d6cdd061fd6de509f2524",
+        "server/knowledge/conflict-workspace.ts": "d05b1d778b4c839a29999eb97a97ef20ccc058c58c480b9f8ce812dd821f18f5",
+        "server/knowledge/teaching-policy-review.ts": "1858343fa8a6369f8542e430b6abd37fd0718d8d54b9263a7dc0d68de9bfe7d7",
+        "server/knowledge/teaching-policy-review.mysql.test.ts": "c2f6408888bb73cf1d3bfaa80ab58181e0c60b4e2623e3902f207f7a3469642c",
+        "server/ai/teaching-policy-understanding.ts": "bf59da5ea48c24fdce9f08a45f954b9152d2d53dbfc8ae9da9e72d3cc2565568",
+        "server/ai/teaching-policy-understanding.test.ts": "e9d915e2f4dff32dfca28c0cb22bb12c2a33fb928857a5e2bff23423be4ee60b",
+        "server/knowledge-conflict-access.test.ts": "50c54b73c39f782f7cb7240d664a700572db0204b57222d591047c58dd3d0028",
+        "server/knowledge-conflict-ui.test.ts": "2e87aee2acdd68df187f5ac29e2d406aa30d471c74735a3c52aef60f1fd2b6cf"
+      }
+    },
+    {
+      "name": "snapshot-translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb"
+    },
+    {
+      "name": "snapshot-eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb"
+    },
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\tests.json"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase37-checks\\type-snapshot-28d41a12-500e-4da3-ba68-f353cd15f3eb"
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8711,
+    "dynamicKeysChecked": 344,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "dryRun": {
+    "total": 82,
+    "live": false
+  },
+  "sourceSha256": {
+    "client/src/components/KnowledgeConflictWorkspace.tsx": "78afb9571feb732916336bd57558283a883c78593ad01dd3a564c4dea004f884",
+    "client/src/locales/knowledge-conflicts.ts": "06fc5cb03aa970f98aa52731f547494b29c61704b8caf3067d72648503f52560",
+    "shared/knowledge-conflicts.ts": "8c0a9a8aaf685bbde4c9c91af8f65ba9c05b98fb5cf021e7a02238dc67342f4a",
+    "server/routers-sari-brain.ts": "12bd5792ebb137d47208226dd63f5b029939d6c3109d6cdd061fd6de509f2524",
+    "server/knowledge/conflict-workspace.ts": "d05b1d778b4c839a29999eb97a97ef20ccc058c58c480b9f8ce812dd821f18f5",
+    "server/knowledge/teaching-policy-review.ts": "1858343fa8a6369f8542e430b6abd37fd0718d8d54b9263a7dc0d68de9bfe7d7",
+    "server/knowledge/teaching-policy-review.mysql.test.ts": "8eea3ddc70e64226d991a50c4b67953231b5f50aec9c822d3ced7ece567c6b7d",
+    "server/ai/teaching-policy-understanding.ts": "bf59da5ea48c24fdce9f08a45f954b9152d2d53dbfc8ae9da9e72d3cc2565568",
+    "server/ai/teaching-policy-understanding.test.ts": "e9d915e2f4dff32dfca28c0cb22bb12c2a33fb928857a5e2bff23423be4ee60b",
+    "server/knowledge-conflict-access.test.ts": "50c54b73c39f782f7cb7240d664a700572db0204b57222d591047c58dd3d0028",
+    "server/knowledge-conflict-ui.test.ts": "2e87aee2acdd68df187f5ac29e2d406aa30d471c74735a3c52aef60f1fd2b6cf"
+  },
+  "limitations": [
+    "AI outputs are mocked locally; this is not a model quality or conversion score.",
+    "Only full knowledge-section replacements can be applied here. FAQ, page and setup conflicts need correction at their source.",
+    "Historical derived-evidence withdrawal after approval is a separate outstanding phase.",
+    "A workspace regression encountered unrelated in-progress website-import changes. Final regression, types, build and translations use tracked main plus only this phase overlay.",
+    "One late multi-message MySQL regression was added after the build; it was executed and typechecked afterward. Production build inputs were unchanged.",
+    "No push or deployment."
+  ]
+}

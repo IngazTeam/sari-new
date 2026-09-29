@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   list: {} as any,
   review: {} as any,
   decide: vi.fn(),
+  compare: vi.fn(),
   refresh: vi.fn(),
   invalidate: vi.fn(),
   scope: "10:20:conflicts",
@@ -44,6 +45,9 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ ...api.review, refetch: api.refresh }),
       },
       approveSection: { useMutation: () => ({ mutateAsync: api.decide }) },
+      analyzeTeachingPolicy: {
+        useMutation: () => ({ mutateAsync: api.compare }),
+      },
     },
   },
 }));
@@ -118,6 +122,85 @@ const open = async () => {
   await render();
   await click(copy.review);
 };
+function teachingView(analyzed = false) {
+  api.review.data = {
+    ...api.review.data,
+    current: null,
+    link: "unlinked",
+    canApprove: analyzed,
+    teaching: {
+      available: true,
+      basisHash: "b".repeat(64),
+      canApprove: analyzed,
+      replaceIds: analyzed ? [3, 5] : [],
+      reason: "Comparison rationale",
+      analyzed,
+      candidates: [
+        {
+          key: "section:3",
+          title: "Warranty",
+          content: "Full warranty conditions ".repeat(30),
+          replaceable: true,
+          relation: analyzed ? "replace" : null,
+          reason: "Superseded warranty",
+        },
+        {
+          key: "section:5",
+          title: "Second policy",
+          content: "Full second policy",
+          replaceable: true,
+          relation: analyzed ? "replace" : null,
+          reason: "Superseded policy",
+        },
+      ],
+    },
+  };
+}
+it("shows every teaching replacement and complete text with explicit approval effects", async () => {
+  teachingView(true);
+  await open();
+  expect(container.textContent).toContain(
+    "Full warranty conditions ".repeat(30)
+  );
+  expect(container.textContent).toContain("Full second policy");
+  expect(container.textContent).toContain(copy.teachingReplace);
+  await check(copy.teachingApprove);
+  await check(copy.ack);
+  await click(copy.save);
+  expect(api.decide).toHaveBeenCalledWith(
+    expect.objectContaining({
+      expectedRevision: "a".repeat(64),
+      acknowledged: true,
+    })
+  );
+});
+it("compares the displayed basis without approving or publishing the proposal", async () => {
+  teachingView();
+  await open();
+  await click(copy.teachingAnalyze);
+  expect(api.compare).toHaveBeenCalledWith({
+    sectionId: 4,
+    expectedBasisHash: "b".repeat(64),
+  });
+  expect(api.decide).not.toHaveBeenCalled();
+  expect(api.refresh).toHaveBeenCalled();
+  expect(button(copy.save).disabled).toBe(true);
+});
+it("requires reload after an unconfirmed comparison and keeps publication disabled", async () => {
+  teachingView();
+  api.compare.mockRejectedValueOnce(Error("offline"));
+  await open();
+  await click(copy.teachingAnalyze);
+  expect(container.textContent).toContain(copy.teachingError);
+  expect(button(copy.save).disabled).toBe(true);
+  expect(button(copy.teachingAnalyze).disabled).toBe(true);
+});
+it("does not offer AI comparison to a read-only role", async () => {
+  teachingView();
+  api.list.data.canManage = false;
+  await open();
+  expect(button(copy.teachingAnalyze)).toBeUndefined();
+});
 it("does not confuse failed reads with an empty queue", async () => {
   api.list = { isError: true };
   await render();

@@ -5,6 +5,11 @@ export const conflictListInput = z
 export const conflictReviewInput = z.object({
   sectionId: z.number().int().positive(),
 });
+export const teachingPolicyReviewInput = conflictReviewInput
+  .extend({
+    expectedBasisHash: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
 export const conflictDecisionInput = conflictReviewInput.extend({
   action: z.enum(["approve", "reject"]),
   expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
@@ -30,4 +35,20 @@ export type ConflictReview = {
   link: "verified" | "unlinked" | "unavailable";
   canApprove: boolean;
   revision: string;
+  teaching?: {
+    available: boolean;
+    basisHash: string | null;
+    canApprove: boolean;
+    replaceIds: number[];
+    reason: string | null;
+    analyzed: boolean;
+    candidates: Array<{
+      key: string;
+      title: string;
+      content: string;
+      replaceable: boolean;
+      relation: "compatible" | "replace" | "review" | null;
+      reason: string | null;
+    }>;
+  };
 };

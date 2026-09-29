@@ -29,6 +29,20 @@ function ConflictWorkspace() {
   const { t } = useTranslation(),
     utils = trpc.useUtils();
   const c = {
+    teachingTitle: t("merchantUx.knowledgeConflicts.teachingTitle"),
+    teachingHelp: t("merchantUx.knowledgeConflicts.teachingHelp"),
+    teachingAnalyze: t("merchantUx.knowledgeConflicts.teachingAnalyze"),
+    teachingAnalyzing: t("merchantUx.knowledgeConflicts.teachingAnalyzing"),
+    teachingError: t("merchantUx.knowledgeConflicts.teachingError"),
+    teachingUnavailable: t("merchantUx.knowledgeConflicts.teachingUnavailable"),
+    teachingPending: t("merchantUx.knowledgeConflicts.teachingPending"),
+    teachingReady: t("merchantUx.knowledgeConflicts.teachingReady"),
+    teachingBlocked: t("merchantUx.knowledgeConflicts.teachingBlocked"),
+    teachingCompatible: t("merchantUx.knowledgeConflicts.teachingCompatible"),
+    teachingReplace: t("merchantUx.knowledgeConflicts.teachingReplace"),
+    teachingReview: t("merchantUx.knowledgeConflicts.teachingReview"),
+    teachingUncompared: t("merchantUx.knowledgeConflicts.teachingUncompared"),
+    teachingApprove: t("merchantUx.knowledgeConflicts.teachingApprove"),
     indexed: t("merchantUx.knowledgeConflicts.indexed"),
     indexPending: t("merchantUx.knowledgeConflicts.indexPending"),
     title: t("merchantUx.knowledgeConflicts.title"),
@@ -99,11 +113,41 @@ function ConflictWorkspace() {
     { enabled: selected !== null, retry: false }
   );
   const mutation = trpc.sariBrain.approveSection.useMutation();
+  const compare = trpc.sariBrain.analyzeTeachingPolicy.useMutation();
   const detail =
     selected && review.data?.section.id === selected && !review.isError
       ? review.data
       : null;
   const canManage = !!list.data?.canManage && !list.isError;
+  const analyze = async () => {
+    if (
+      saving.current ||
+      !canManage ||
+      !detail?.teaching?.available ||
+      !detail.teaching.basisHash ||
+      review.isFetching
+    )
+      return;
+    saving.current = true;
+    setBusy(true);
+    setError("");
+    setAction("");
+    setAck(false);
+    setUncertain(false);
+    try {
+      await compare.mutateAsync({
+        sectionId: detail.section.id,
+        expectedBasisHash: detail.teaching.basisHash,
+      });
+      await review.refetch();
+    } catch {
+      setError(c.teachingError);
+      setUncertain(true);
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  };
   const close = () => {
     setSelected(null);
     setAction("");
@@ -285,13 +329,103 @@ function ConflictWorkspace() {
               <p role="status">{c.loading}</p>
             ) : (
               <>
-                <p className="leading-7">
-                  {detail.link === "verified"
-                    ? c.linked
-                    : detail.link === "unavailable"
-                      ? c.unavailable
-                      : c.unlinked}
-                </p>
+                {!detail.teaching && (
+                  <p className="leading-7">
+                    {detail.link === "verified"
+                      ? c.linked
+                      : detail.link === "unavailable"
+                        ? c.unavailable
+                        : c.unlinked}
+                  </p>
+                )}
+                {detail.teaching && (
+                  <section
+                    className="space-y-3 min-w-0"
+                    aria-label={c.teachingTitle}
+                  >
+                    <h4 className="font-semibold">{c.teachingTitle}</h4>
+                    <p className="text-sm leading-7">{c.teachingHelp}</p>
+                    <p role="status" className="text-sm leading-7">
+                      {!detail.teaching.available
+                        ? c.teachingUnavailable
+                        : !detail.teaching.analyzed
+                          ? c.teachingPending
+                          : detail.teaching.canApprove
+                            ? c.teachingReady
+                            : c.teachingBlocked}
+                    </p>
+                    {detail.teaching.reason && (
+                      <p
+                        dir="auto"
+                        className="whitespace-pre-wrap [overflow-wrap:anywhere] text-sm"
+                      >
+                        {detail.teaching.reason}
+                      </p>
+                    )}
+                    {canManage && (
+                      <Button
+                        className="min-h-11 whitespace-normal"
+                        variant="outline"
+                        disabled={
+                          busy ||
+                          uncertain ||
+                          review.isFetching ||
+                          !detail.teaching.available
+                        }
+                        onClick={() => void analyze()}
+                      >
+                        {compare.isPending
+                          ? c.teachingAnalyzing
+                          : c.teachingAnalyze}
+                      </Button>
+                    )}
+                    <details>
+                      <summary className="min-h-11 cursor-pointer">
+                        {t("merchantUx.knowledgeConflicts.teachingSources", {
+                          count: detail.teaching.candidates.length,
+                        })}
+                      </summary>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {detail.teaching.candidates.map(source => (
+                          <article
+                            key={source.key}
+                            className="border rounded-lg p-3 min-w-0 space-y-2"
+                          >
+                            <h5
+                              dir="auto"
+                              className="font-semibold [overflow-wrap:anywhere]"
+                            >
+                              {source.title}
+                            </h5>
+                            <p className="font-medium text-sm">
+                              {source.relation === "replace"
+                                ? c.teachingReplace
+                                : source.relation === "review"
+                                  ? c.teachingReview
+                                  : source.relation === "compatible"
+                                    ? c.teachingCompatible
+                                    : c.teachingUncompared}
+                            </p>
+                            <p
+                              dir="auto"
+                              className="whitespace-pre-wrap [overflow-wrap:anywhere] text-sm leading-7"
+                            >
+                              {source.content}
+                            </p>
+                            {source.reason && (
+                              <p
+                                dir="auto"
+                                className="[overflow-wrap:anywhere] text-sm"
+                              >
+                                {source.reason}
+                              </p>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </details>
+                  </section>
+                )}
                 <div className="grid gap-4 md:grid-cols-2">
                   {[
                     { label: c.proposal, row: detail.section },
@@ -365,7 +499,11 @@ function ConflictWorkspace() {
                         }}
                       />
                       <span>
-                        {detail.link === "verified" ? c.replace : c.approve}
+                        {detail.teaching
+                          ? c.teachingApprove
+                          : detail.link === "verified"
+                            ? c.replace
+                            : c.approve}
                       </span>
                     </label>
                     <label className="flex gap-3 items-start min-h-11">

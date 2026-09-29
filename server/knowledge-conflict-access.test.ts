@@ -4,6 +4,10 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   read: vi.fn(),
   decide: vi.fn(),
+  analyze: vi.fn(),
+}));
+vi.mock("./knowledge/teaching-policy-review", () => ({
+  analyzeTeachingPolicy: mocks.analyze,
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
@@ -73,6 +77,27 @@ it("rejects old blind decisions instead of enabling unseen knowledge", async () 
   ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   expect(mocks.decide).not.toHaveBeenCalled();
 });
+it("scopes semantic comparison to the selected authorized merchant", async () => {
+  mocks.analyze.mockResolvedValue({ saved: true });
+  await caller().analyzeTeachingPolicy({
+    sectionId: 5,
+    expectedBasisHash: "a".repeat(64),
+  });
+  expect(mocks.analyze).toHaveBeenCalledWith(20, 5, "a".repeat(64));
+});
+it.each(["viewer", "sales_supervisor"])(
+  "blocks %s policy comparison before AI",
+  async role => {
+    mocks.access.mockResolvedValue({ merchantId: 20, role });
+    await expect(
+      caller().analyzeTeachingPolicy({
+        sectionId: 5,
+        expectedBasisHash: "a".repeat(64),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  }
+);
 it("does not leak database details in reads or mutations", async () => {
   mocks.list.mockRejectedValue(Error("Database secret"));
   mocks.read.mockRejectedValue(Error("Database secret"));

@@ -1,4 +1,25 @@
 export const knowledgeConflictsEn = {
+  teachingTitle: "Compare this teaching with current knowledge",
+  teachingHelp:
+    "AI compares the complete saved teaching with enabled knowledge sections, FAQs, policy pages and confirmed setup fields. Nothing is published by this check. Review the text and proposed changes yourself.",
+  teachingAnalyze: "Compare policies with AI",
+  teachingAnalyzing: "Comparing policies…",
+  teachingError:
+    "The comparison was not confirmed. Reload the review; the proposal remains disabled.",
+  teachingUnavailable:
+    "The original teaching or full comparison context is unavailable. Restore the source or submit a complete new teaching before approval.",
+  teachingPending:
+    "Run the comparison before approving. Knowledge changes invalidate an earlier comparison.",
+  teachingReady:
+    "Read every proposed replacement before approving. Only records marked for replacement will stop being used.",
+  teachingBlocked:
+    "The comparison needs manual resolution. Conflicting FAQs, pages and setup answers must be corrected at their source; this review cannot disable them. An incomplete replacement or duplicate also needs review.",
+  teachingCompatible: "Keep this source",
+  teachingReplace: "Stop using this source on approval",
+  teachingReview: "Resolve before approval",
+  teachingUncompared: "Not compared yet",
+  teachingSources: "Sources included in the comparison ({{count}})",
+  teachingApprove: "Approve teaching and apply the displayed replacements",
   indexed: "Indexing reported ready; test an answer separately.",
   indexPending:
     "Indexing is not confirmed. The saved decision remains in effect.",
@@ -64,6 +85,27 @@ export type KnowledgeConflictsCopy = {
   [K in keyof typeof knowledgeConflictsEn]: string;
 };
 export const knowledgeConflictsAr: KnowledgeConflictsCopy = {
+  teachingTitle: "مقارنة التعليم بالمعرفة الحالية",
+  teachingHelp:
+    "يقارن AI نص التعليم المحفوظ كاملًا بأقسام المعرفة المفعلة والأسئلة الشائعة وصفحات السياسات وحقول الإعداد المؤكدة. الفحص لا ينشر شيئًا؛ راجع النص والتغييرات المقترحة بنفسك.",
+  teachingAnalyze: "مقارنة السياسات بالذكاء الاصطناعي",
+  teachingAnalyzing: "جارٍ مقارنة السياسات…",
+  teachingError:
+    "لم تتأكد المقارنة. أعد تحميل المراجعة؛ يبقى الاقتراح غير مفعّل.",
+  teachingUnavailable:
+    "تعذر التحقق من مصدر التعليم أو قراءة سياق المقارنة كاملًا. استعد المصدر أو أرسل تعليمًا جديدًا كاملًا قبل الاعتماد.",
+  teachingPending:
+    "أجرِ المقارنة قبل الاعتماد. تغيّر المعرفة يبطل المقارنة السابقة.",
+  teachingReady:
+    "راجع كل استبدال مقترح قبل الاعتماد. سيتوقف استخدام السجلات المحددة للاستبدال فقط.",
+  teachingBlocked:
+    "تحتاج المقارنة معالجة يدوية. صحّح التعارض في السؤال الشائع أو الصفحة أو إجابة الإعداد من مصدره؛ هذه المراجعة لا تعطلها. الاستبدال غير المكتمل أو التكرار يحتاج مراجعة أيضًا.",
+  teachingCompatible: "الإبقاء على هذا المصدر",
+  teachingReplace: "إيقاف استخدام هذا المصدر عند الاعتماد",
+  teachingReview: "يحتاج حسمًا قبل الاعتماد",
+  teachingUncompared: "لم يُقارن بعد",
+  teachingSources: "المصادر المشمولة بالمقارنة ({{count}})",
+  teachingApprove: "اعتماد التعليم وتنفيذ الاستبدالات المعروضة",
   indexed: "أفادت الفهرسة بالجاهزية؛ جرّب الإجابة للتحقق من جودتها.",
   indexPending: "لم تتأكد جاهزية الفهرسة. يبقى القرار المحفوظ ساريًا.",
   title: "اقتراحات معرفة تحتاج مراجعتك",
