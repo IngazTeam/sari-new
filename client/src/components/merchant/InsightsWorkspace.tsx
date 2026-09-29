@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceState, workspaceFailureKind } from "./WorkspaceState";
+import { KeywordReviewDialog } from "./KeywordReviewDialog";
 import { insightCsv } from "@shared/insight-csv";
 import type { InsightWorkspaceInput } from "@shared/insights-workspace";
 type Tab = "keywords" | "reports" | "tests";
@@ -28,6 +29,7 @@ export function InsightsWorkspace() {
     staleTime: 0,
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedKeyword, setSelectedKeyword] = useState<number | null>(null);
   const active = useRef(true),
     refreshLock = useRef(false),
     identity = useRef("");
@@ -402,6 +404,14 @@ export function InsightsWorkspace() {
                         {t("insightsWorkspace.suggestionHelp")}
                       </p>
                     </details>
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      disabled={query.isFetching || refreshing}
+                      onClick={() => setSelectedKeyword(row.id)}
+                    >
+                      {t("keywordReview.open")}
+                    </Button>
                   </article>
                 ))}
               </div>
@@ -661,6 +671,17 @@ export function InsightsWorkspace() {
             </nav>
           )}
         </>
+      )}
+      {selectedKeyword !== null && merchant.data?.id && (
+        <KeywordReviewDialog
+          key={`${merchant.data.id}:${selectedKeyword}`}
+          keywordId={selectedKeyword}
+          merchantId={merchant.data.id}
+          onClose={() => setSelectedKeyword(null)}
+          onChanged={() => {
+            void query.refetch();
+          }}
+        />
       )}
     </div>
   );
