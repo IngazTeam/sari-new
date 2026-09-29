@@ -11,7 +11,7 @@ import { eq, desc, and, gte, lte, sql, count } from "drizzle-orm";
  */
 export async function getKeywordInsights(merchantId: number, period: '7d' | '30d' | '90d') {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw new Error('Insights unavailable');
 
   const daysAgo = period === '7d' ? 7 : period === '30d' ? 30 : 90;
   const startDate = new Date();
@@ -76,7 +76,7 @@ export async function getKeywordInsights(merchantId: number, period: '7d' | '30d
  */
 export async function getWeeklyReportsList(merchantId: number, limit: number = 4) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Insights unavailable');
 
   const reports = await db.select().from(weeklySentimentReports)
     .where(eq(weeklySentimentReports.merchantId, merchantId))
@@ -101,7 +101,7 @@ export async function getWeeklyReportsList(merchantId: number, limit: number = 4
  */
 export async function getActiveABTests(merchantId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Insights unavailable');
 
   const tests = await db.select().from(abTestResults)
     .where(

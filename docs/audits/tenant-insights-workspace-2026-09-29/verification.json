@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-29",
+  "tests": 114,
+  "mysqlTests": 4,
+  "types": "passed full workspace",
+  "build": "passed",
+  "translationCalls": 8897,
+  "translationIssues": 0,
+  "entryRawBytes": 337291,
+  "entryGzipBytes": 103363,
+  "chromeViewports": [
+    {
+      "width": 320,
+      "documentWidth": 305,
+      "states": [
+        "A/B route",
+        "sentiment",
+        "7-day filter"
+      ]
+    },
+    {
+      "width": 390,
+      "documentWidth": 375,
+      "states": [
+        "keywords"
+      ]
+    }
+  ],
+  "liveCsvDownload": "attempted but not evidenced by browser tool or default file path",
+  "csvGeneration": "covered by rendered UI and shared tests",
+  "safari": false,
+  "iPhone": false,
+  "pushed": false,
+  "deployed": false
+}
