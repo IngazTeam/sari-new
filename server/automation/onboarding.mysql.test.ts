@@ -23,6 +23,8 @@ import {
   cleanupDisposableMerchants,
 } from "../tests/helpers/disposable-merchant";
 import { ensureOnboardingTestSchema } from "../tests/helpers/onboarding-schema";
+import { ensureTeachingDialogueSchema } from "../tests/helpers/teaching-dialogue-schema";
+import { purgeCompletedInboundPayloads } from "../messaging/retention";
 import { enqueueInbound, assertInboundOwned } from "../messaging/inbound-jobs";
 import {
   withInboundExecution,
@@ -56,7 +58,10 @@ describe.skipIf(!process.env.DATABASE_URL)(
       account: string;
     const query = async (s: string, a: unknown[] = []): Promise<any> =>
       (await (await getPool())!.execute(s, a))[0];
-    beforeAll(ensureOnboardingTestSchema);
+    beforeAll(async () => {
+      await ensureOnboardingTestSchema();
+      await ensureTeachingDialogueSchema();
+    });
     beforeEach(async () => {
       owner = await createDisposableMerchant("onboarding");
       users.push(owner.userId);
@@ -226,6 +231,60 @@ describe.skipIf(!process.env.DATABASE_URL)(
       });
       expect(await events()).toHaveLength(1);
       expect(await sendOnboardingQuestion(owner.merchantId, 2)).toBe(true);
+    });
+    it("keeps the unanswered active question receipt until its answer has committed", async () => {
+      const { quote } = await start();
+      await query(
+        "UPDATE whatsapp_message_deliveries SET status_updated_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 31 DAY) WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      await purgeCompletedInboundPayloads();
+      const { context } = await apply(
+        "نبيع كتبًا ونعقد دورات تدريبية",
+        "answer",
+        "businessType",
+        quote
+      );
+      expect(context.input.canAnswer).toBe(true);
+      await purgeCompletedInboundPayloads();
+      const [delivery] = await query(
+        "SELECT request_json FROM whatsapp_message_deliveries WHERE merchant_id=? AND provider_message_id=?",
+        [owner.merchantId, quote]
+      );
+      expect(delivery.request_json).toBeNull();
+      expect(await answers()).toEqual({ businessType: "both" });
+    });
+    it("keeps a quoted answer verifiable after source minimization and old question delivery cleanup", async () => {
+      const { quote } = await start();
+      const { event } = await apply(
+        "نبيع كتبًا ونعقد دورات تدريبية",
+        "answer",
+        "businessType",
+        quote
+      );
+      await query(
+        "UPDATE whatsapp_inbound_jobs SET status='completed',updated_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 31 DAY) WHERE id=?",
+        [event.execution.id]
+      );
+      await query(
+        "UPDATE whatsapp_message_deliveries SET status_updated_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 31 DAY) WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      await purgeCompletedInboundPayloads();
+      expect(await answers()).toEqual({ businessType: "both" });
+      const [source] = await query(
+        "SELECT payload_json FROM whatsapp_inbound_jobs WHERE id=?",
+        [event.execution.id]
+      );
+      expect(source.payload_json.knowledgeEvidenceVersion).toBe(1);
+      expect(source.payload_json.messageData.quotedMessage.stanzaId).toBe(
+        quote
+      );
+      const [delivery] = await query(
+        "SELECT request_json FROM whatsapp_message_deliveries WHERE merchant_id=? AND provider_message_id=?",
+        [owner.merchantId, quote]
+      );
+      expect(delivery.request_json).toBeNull();
     });
     it("does not consume an unquoted reply or a question that was never delivered", async () => {
       await beginOnboarding(owner.merchantId, instanceId, author);

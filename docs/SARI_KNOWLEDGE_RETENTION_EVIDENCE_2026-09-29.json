@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T17:00:09.227Z",
+  "scope": "Source-aware inbound retention and active onboarding question receipt lifetime",
+  "branch": "main",
+  "validationBaseHead": "d5c0d0903062fc60d5f7a2fea230d6ecb91d51bf",
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "externalNetworkBlocked": true,
+    "database": "disposable loopback MySQL",
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "uniqueFiles": 54,
+    "uniquePassed": 1218,
+    "failed": 0,
+    "mysqlPassed": 160,
+    "newRetentionTests": 20
+  },
+  "suites": {
+    "server/automation/onboarding.mysql.test.ts": 41,
+    "server/knowledge/teaching-dialogue.mysql.test.ts": 26,
+    "server/knowledge/teaching-policy-review.mysql.test.ts": 22,
+    "server/knowledge/whatsapp-teaching.mysql.test.ts": 35,
+    "server/messaging/inbound.mysql.test.ts": 18,
+    "server/messaging/knowledge-retention.mysql.test.ts": 18,
+    "server/ai-settings-provider-routing.test.ts": 10,
+    "server/appointment-reminder-access-pentest.test.ts": 30,
+    "server/appointment-reminder-context.test.ts": 21,
+    "server/appointment-reminder-pentest.test.ts": 41,
+    "server/assistant-reply-preview.test.ts": 12,
+    "server/bot-audit-pentest.test.ts": 93,
+    "server/byaan-conversation-routing.test.ts": 39,
+    "server/merchant-persona-routing.test.ts": 17,
+    "server/persona-preview-history.test.ts": 16,
+    "server/persona-preview.test.ts": 24,
+    "server/remediation-regression.test.ts": 6,
+    "server/sales-hardening-pentest.test.ts": 34,
+    "server/sari-quick-preview.test.ts": 12,
+    "server/virtual-team-page.test.ts": 6,
+    "server/ai/action-execution.test.ts": 12,
+    "server/ai/automatic-followup-context.test.ts": 24,
+    "server/ai/budget-boundaries.test.ts": 6,
+    "server/ai/contextual-agent-routing.test.ts": 15,
+    "server/ai/contextual-followup.test.ts": 32,
+    "server/ai/contextual-generation.test.ts": 32,
+    "server/ai/contextual-learning-contract.test.ts": 26,
+    "server/ai/contextual-memory-contract.test.ts": 29,
+    "server/ai/contextual-reply-routing.test.ts": 15,
+    "server/ai/contextual-sales-loss-contract.test.ts": 24,
+    "server/ai/conversation-understanding-evaluation.test.ts": 24,
+    "server/ai/conversation-understanding.test.ts": 20,
+    "server/ai/customer-memory-chat.test.ts": 6,
+    "server/ai/customer-memory.test.ts": 36,
+    "server/ai/followup-policy.test.ts": 20,
+    "server/ai/learning-analysis-pentest.test.ts": 37,
+    "server/ai/learning-signal-capture-pentest.test.ts": 32,
+    "server/ai/loss-detector.test.ts": 1,
+    "server/ai/openai-zahypi.test.ts": 6,
+    "server/ai/preview-prompt.test.ts": 7,
+    "server/ai/preview-provider-routing.test.ts": 8,
+    "server/ai/requested-followup-time.test.ts": 27,
+    "server/ai/sales-brain-decisions.test.ts": 22,
+    "server/ai/sales-brain-learning.test.ts": 7,
+    "server/ai/sales-reply-prompt.test.ts": 11,
+    "server/ai/sales-reply-transport.test.ts": 6,
+    "server/ai/sales-turn-policy.test.ts": 15,
+    "server/ai/sari-preview.test.ts": 42,
+    "server/ai/task-catalog.test.ts": 10,
+    "server/ai/transactional-truth.test.ts": 11,
+    "server/ai/zahypi-callsite-governance.test.ts": 7,
+    "server/ai/zahypi-client.test.ts": 102,
+    "server/ai/zahypi-context-propagation.test.ts": 14,
+    "server/ai/zahypi-runtime-config.test.ts": 11
+  },
+  "reports": [
+    {
+      "file": ".tmp/phase39-checks/database.json",
+      "sha256": "cc77463ca61e6be8890231f0f8a2fb06ef9d8aa5dbf1065baa9dbdf206355997",
+      "passed": 160,
+      "files": 6
+    },
+    {
+      "file": ".tmp/phase39-checks/tests.json",
+      "sha256": "cd109fd21f8a6d5caf5a6707165bd370392d0232c7bed6789542fbfc0500c2d7",
+      "passed": 1058,
+      "files": 48
+    }
+  ],
+  "checks": [
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4",
+      "baseHead": "d5c0d0903062fc60d5f7a2fea230d6ecb91d51bf",
+      "overlaySha256": {
+        "server/messaging/retention.ts": "d205c85f39b3d83c63e6525644580761c071ab59bc2cdc2a3d46c42d89339476",
+        "server/messaging/knowledge-retention-source.ts": "d417ad2e70f14e539be0ae8be4dca3a28f260d17889207f24c5f19327ecaee04",
+        "server/messaging/knowledge-retention.mysql.test.ts": "ed3b3b87909e2c6c6dad06ad99863cce440575fa162db3e85d1a2b62dd59226e",
+        "server/automation/onboarding.mysql.test.ts": "3af3a8fa26b6ee0169993077beb61111620bd7b89d34c953242aa590f73ba136"
+      },
+      "source": "Tracked main plus only contextual merchant phase39s; no .env or unrelated uncommitted edits"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4",
+      "baseHead": "d5c0d0903062fc60d5f7a2fea230d6ecb91d51bf",
+      "overlaySha256": {
+        "server/messaging/retention.ts": "d205c85f39b3d83c63e6525644580761c071ab59bc2cdc2a3d46c42d89339476",
+        "server/messaging/knowledge-retention-source.ts": "d417ad2e70f14e539be0ae8be4dca3a28f260d17889207f24c5f19327ecaee04",
+        "server/messaging/knowledge-retention.mysql.test.ts": "ed3b3b87909e2c6c6dad06ad99863cce440575fa162db3e85d1a2b62dd59226e",
+        "server/automation/onboarding.mysql.test.ts": "3af3a8fa26b6ee0169993077beb61111620bd7b89d34c953242aa590f73ba136"
+      }
+    },
+    {
+      "name": "snapshot-translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4"
+    },
+    {
+      "name": "snapshot-eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4"
+    },
+    {
+      "name": "snapshot-regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\tests.json"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\type-snapshot-3b5dbb3b-86f9-4938-b3f5-af15a437b1a4"
+    },
+    {
+      "name": "database",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/messaging/knowledge-retention.mysql.test.ts",
+        "server/automation/onboarding.mysql.test.ts",
+        "server/knowledge/teaching-policy-review.mysql.test.ts",
+        "server/knowledge/teaching-dialogue.mysql.test.ts",
+        "server/knowledge/whatsapp-teaching.mysql.test.ts",
+        "server/messaging/inbound.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase39-checks\\database.json"
+      ]
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8750,
+    "dynamicKeysChecked": 345,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "dryRun": {
+    "total": 82,
+    "live": false
+  },
+  "sourceSha256": {
+    "server/messaging/retention.ts": "d205c85f39b3d83c63e6525644580761c071ab59bc2cdc2a3d46c42d89339476",
+    "server/messaging/knowledge-retention-source.ts": "d417ad2e70f14e539be0ae8be4dca3a28f260d17889207f24c5f19327ecaee04",
+    "server/messaging/knowledge-retention.mysql.test.ts": "ed3b3b87909e2c6c6dad06ad99863cce440575fa162db3e85d1a2b62dd59226e",
+    "server/automation/onboarding.mysql.test.ts": "3af3a8fa26b6ee0169993077beb61111620bd7b89d34c953242aa590f73ba136"
+  },
+  "limitations": [
+    "Pending proposals retain minimized evidence while review remains open.",
+    "No real AI evaluation, WhatsApp, payment, live security test, push or deployment.",
+    "Withdrawal of historical derived knowledge at read time is a separate follow-up; retention does not certify all derived facts.",
+    "A fixture initially used a nonexistent rejected status; it was replaced with the actual reject workflow and the complete database suite rerun."
+  ]
+}
