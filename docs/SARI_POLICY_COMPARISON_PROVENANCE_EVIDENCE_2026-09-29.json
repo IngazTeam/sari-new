@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T17:46:43.357Z",
+  "scope": "Revalidate current teaching sources for semantic policy comparison, invalidate stale analysis and lock candidate proofs during final persistence",
+  "branch": "main",
+  "validationBaseHead": "56fe7e2f5f95bab1d9c7c41786f72d52e9dee69b",
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "externalNetworkBlocked": true,
+    "database": "disposable loopback MySQL",
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "uniqueFiles": 69,
+    "uniquePassed": 1532,
+    "failed": 0,
+    "mysqlPassed": 282,
+    "newMysqlCases": 9
+  },
+  "suites": {
+    "server/ai/coaching.mysql.test.ts": 48,
+    "server/automation/onboarding.mysql.test.ts": 41,
+    "server/messaging/knowledge-retention.mysql.test.ts": 18,
+    "server/knowledge/sales-knowledge.mysql.test.ts": 13,
+    "server/knowledge/section-workspace.mysql.test.ts": 33,
+    "server/knowledge/teaching-dialogue.mysql.test.ts": 26,
+    "server/knowledge/teaching-policy-review.mysql.test.ts": 31,
+    "server/knowledge/teaching-read.mysql.test.ts": 37,
+    "server/knowledge/whatsapp-teaching.mysql.test.ts": 35,
+    "server/ai-settings-provider-routing.test.ts": 10,
+    "server/appointment-reminder-access-pentest.test.ts": 30,
+    "server/appointment-reminder-context.test.ts": 21,
+    "server/appointment-reminder-pentest.test.ts": 41,
+    "server/assistant-reply-preview.test.ts": 16,
+    "server/bot-audit-pentest.test.ts": 93,
+    "server/byaan-conversation-routing.test.ts": 39,
+    "server/merchant-persona-routing.test.ts": 17,
+    "server/persona-preview-history.test.ts": 16,
+    "server/persona-preview.test.ts": 24,
+    "server/remediation-regression.test.ts": 6,
+    "server/sales-hardening-pentest.test.ts": 34,
+    "server/sari-quick-preview.test.ts": 12,
+    "server/virtual-team-page.test.ts": 11,
+    "server/ai/action-execution.test.ts": 12,
+    "server/ai/automatic-followup-context.test.ts": 24,
+    "server/ai/budget-boundaries.test.ts": 6,
+    "server/ai/contextual-agent-routing.test.ts": 15,
+    "server/ai/contextual-followup.test.ts": 32,
+    "server/ai/contextual-generation.test.ts": 32,
+    "server/ai/contextual-learning-contract.test.ts": 26,
+    "server/ai/contextual-memory-contract.test.ts": 29,
+    "server/ai/contextual-reply-routing.test.ts": 15,
+    "server/ai/contextual-sales-loss-contract.test.ts": 24,
+    "server/ai/conversation-understanding-evaluation.test.ts": 24,
+    "server/ai/conversation-understanding.test.ts": 20,
+    "server/ai/customer-memory-chat.test.ts": 6,
+    "server/ai/customer-memory.test.ts": 36,
+    "server/ai/followup-policy.test.ts": 20,
+    "server/ai/learning-analysis-pentest.test.ts": 37,
+    "server/ai/learning-signal-capture-pentest.test.ts": 32,
+    "server/ai/loss-detector.test.ts": 1,
+    "server/ai/openai-zahypi.test.ts": 6,
+    "server/ai/preview-prompt.test.ts": 7,
+    "server/ai/preview-provider-routing.test.ts": 8,
+    "server/ai/requested-followup-time.test.ts": 27,
+    "server/ai/sales-brain-decisions.test.ts": 22,
+    "server/ai/sales-brain-learning.test.ts": 7,
+    "server/ai/sales-reply-prompt.test.ts": 11,
+    "server/ai/sales-reply-transport.test.ts": 6,
+    "server/ai/sales-turn-policy.test.ts": 15,
+    "server/ai/sari-preview.test.ts": 42,
+    "server/ai/task-catalog.test.ts": 10,
+    "server/ai/transactional-truth.test.ts": 11,
+    "server/ai/zahypi-callsite-governance.test.ts": 7,
+    "server/ai/zahypi-client.test.ts": 102,
+    "server/ai/zahypi-context-propagation.test.ts": 14,
+    "server/ai/zahypi-runtime-config.test.ts": 11,
+    "server/knowledge-conflict-access.test.ts": 12,
+    "server/knowledge-conflict-ui.test.ts": 18,
+    "server/knowledge-section-access.test.ts": 15,
+    "server/knowledge-section-ui.test.ts": 27,
+    "server/knowledge-workspace-cache.test.ts": 5,
+    "server/learning-recovery-bootstrap-pentest.test.ts": 13,
+    "server/ai/merchant-teaching-understanding.test.ts": 37,
+    "server/ai/teaching-dialogue-understanding.test.ts": 23,
+    "server/ai/teaching-policy-understanding.test.ts": 17,
+    "server/knowledge/embedding-readiness.test.ts": 6,
+    "server/knowledge/retrieval.test.ts": 4,
+    "server/knowledge/transaction.test.ts": 6
+  },
+  "reports": [
+    {
+      "file": ".tmp/phase42-checks/database.json",
+      "sha256": "2dd0c8a95045b52de5ec65a59c90cee8152c2278fe004b7c415d5d661bc1c20f",
+      "passed": 282,
+      "files": 9
+    },
+    {
+      "file": ".tmp/phase42-checks/tests.json",
+      "sha256": "c48b1721a64d8f4158d06852e4418d1416d50893234fb71b37cef30cdebca027",
+      "passed": 1067,
+      "files": 48
+    },
+    {
+      "file": ".tmp/phase42-checks/unit.json",
+      "sha256": "cc61ff23534158a7155dec58d3f6207b75f4fbd964a2e903a0a96e52cf87dce4",
+      "passed": 183,
+      "files": 12
+    }
+  ],
+  "checks": [
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8",
+      "baseHead": "56fe7e2f5f95bab1d9c7c41786f72d52e9dee69b",
+      "overlaySha256": {
+        "server/knowledge/teaching-proposal.ts": "a3e8955fcbffafadb20f5c78d737baad0d431100bd9d445f3571975dfd8b8e34",
+        "server/knowledge/teaching-read.ts": "a6a73aaa5f905045ae602639feb85f66864f8303551d76ed7af8aeab1dea30eb",
+        "server/knowledge/teaching-policy-review.ts": "8be9d2218a0d6e4806a47fd5c5a885ded95d3255055224fddfa2585732abb0e8",
+        "server/knowledge/teaching-policy-review.mysql.test.ts": "762cf55b6bf1ee3f931c88f6c788bf90475ce2ae8fa351089b48535cb724f8f9"
+      },
+      "source": "Tracked main plus only contextual merchant phase42s; no .env or unrelated uncommitted edits"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8",
+      "baseHead": "56fe7e2f5f95bab1d9c7c41786f72d52e9dee69b",
+      "overlaySha256": {
+        "server/knowledge/teaching-proposal.ts": "a3e8955fcbffafadb20f5c78d737baad0d431100bd9d445f3571975dfd8b8e34",
+        "server/knowledge/teaching-read.ts": "a6a73aaa5f905045ae602639feb85f66864f8303551d76ed7af8aeab1dea30eb",
+        "server/knowledge/teaching-policy-review.ts": "8be9d2218a0d6e4806a47fd5c5a885ded95d3255055224fddfa2585732abb0e8",
+        "server/knowledge/teaching-policy-review.mysql.test.ts": "762cf55b6bf1ee3f931c88f6c788bf90475ce2ae8fa351089b48535cb724f8f9"
+      }
+    },
+    {
+      "name": "snapshot-translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8"
+    },
+    {
+      "name": "snapshot-eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8"
+    },
+    {
+      "name": "snapshot-regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\tests.json"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8"
+    },
+    {
+      "name": "database",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/knowledge/teaching-read.mysql.test.ts",
+        "server/knowledge/teaching-policy-review.mysql.test.ts",
+        "server/knowledge/teaching-dialogue.mysql.test.ts",
+        "server/knowledge/whatsapp-teaching.mysql.test.ts",
+        "server/knowledge/section-workspace.mysql.test.ts",
+        "server/knowledge/sales-knowledge.mysql.test.ts",
+        "server/messaging/knowledge-retention.mysql.test.ts",
+        "server/automation/onboarding.mysql.test.ts",
+        "server/ai/coaching.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\database.json"
+      ]
+    },
+    {
+      "name": "snapshot-unit",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/knowledge/retrieval.test.ts",
+        "server/knowledge/embedding-readiness.test.ts",
+        "server/knowledge/transaction.test.ts",
+        "server/knowledge-section-access.test.ts",
+        "server/knowledge-section-ui.test.ts",
+        "server/knowledge-conflict-access.test.ts",
+        "server/knowledge-conflict-ui.test.ts",
+        "server/knowledge-workspace-cache.test.ts",
+        "server/learning-recovery-bootstrap-pentest.test.ts",
+        "server/ai/teaching-policy-understanding.test.ts",
+        "server/ai/teaching-dialogue-understanding.test.ts",
+        "server/ai/merchant-teaching-understanding.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\unit.json"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\phase42-checks\\type-snapshot-fc0919df-df8b-4cf0-98dd-cd061e9585c8"
+    }
+  ],
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8804,
+    "dynamicKeysChecked": 352,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "dryRun": {
+    "total": 82,
+    "live": false
+  },
+  "sourceSha256": {
+    "server/knowledge/teaching-proposal.ts": "a3e8955fcbffafadb20f5c78d737baad0d431100bd9d445f3571975dfd8b8e34",
+    "server/knowledge/teaching-read.ts": "a6a73aaa5f905045ae602639feb85f66864f8303551d76ed7af8aeab1dea30eb",
+    "server/knowledge/teaching-policy-review.ts": "8be9d2218a0d6e4806a47fd5c5a885ded95d3255055224fddfa2585732abb0e8",
+    "server/knowledge/teaching-policy-review.mysql.test.ts": "762cf55b6bf1ee3f931c88f6c788bf90475ce2ae8fa351089b48535cb724f8f9"
+  },
+  "limitations": [
+    "Previously saved comparison hashes require fresh AI comparison before proposal approval; no automatic migration of consent.",
+    "Current source filtering is scoped to knowledge sections and their teaching proofs; it does not newly audit every FAQ, page, onboarding or derived-learning source.",
+    "The concurrency test uses a real second MySQL connection with a one-second session lock timeout, restored before releasing it.",
+    "No real AI evaluation, WhatsApp, payment, comprehensive production penetration test, push or deployment."
+  ]
+}

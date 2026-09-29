@@ -3,7 +3,7 @@ import { getDb } from "../db/connection";
 import type { KnowledgeSection } from "../db/knowledge";
 import type { KnowledgeTransaction } from "./transaction";
 import type { TeachingSource } from "./whatsapp-teaching-source";
-import { parseTeachingProposal } from "./teaching-policy-review";
+import { parseTeachingProposal } from "./teaching-proposal";
 import {
   teachingHistoryPhone,
   validateTeachingHistory,
@@ -64,11 +64,13 @@ export async function readVerifiedBotSectionsInTransaction(
   tx: KnowledgeTransaction,
   merchantId: number,
   embeddings = false,
-  sectionIds?: number[]
+  sectionIds?: number[],
+  lock = false
 ): Promise<KnowledgeSection[]> {
   if (!positive(merchantId) || sectionIds?.some(id => !positive(id)))
     throw Error("Invalid knowledge scope");
   if (sectionIds?.length === 0) return [];
+  const end = lock ? sql`FOR SHARE` : sql``;
   const all = await rows(
     tx,
     sql`SELECT id,merchant_id,parent_id,section_type,title,content,summary,source,source_url,
@@ -85,7 +87,7 @@ export async function readVerifiedBotSectionsInTransaction(
               )})`
             : sql``
         }
-        ORDER BY inject_as,sort_order`
+        ORDER BY inject_as,sort_order ${end}`
   );
   const accepted = new Set<number>(),
     teaching: Array<{ row: any; metadata: any }> = [];
@@ -122,7 +124,7 @@ export async function readVerifiedBotSectionsInTransaction(
       WHERE merchant_id=${merchantId} AND event_key IN (${sql.join(
         b.map(v => sql`${v}`),
         sql`,`
-      )})`
+      )}) ${end}`
         )
       )
     ).map(t => [t.event_key, t])
@@ -187,7 +189,7 @@ export async function readVerifiedBotSectionsInTransaction(
       WHERE j.merchant_id=${merchantId} AND j.id IN (${sql.join(
         b.map(v => sql`${v}`),
         sql`,`
-      )})`
+      )}) ${end}`
         )
       )
     ).map(r => [r.id, r])
@@ -207,7 +209,7 @@ export async function readVerifiedBotSectionsInTransaction(
       AND id IN (${sql.join(
         b.map(v => sql`${v}`),
         sql`,`
-      )})`
+      )}) ${end}`
         )
       )
     ).map(r => [r.id, r])
@@ -220,7 +222,7 @@ export async function readVerifiedBotSectionsInTransaction(
       WHERE merchant_id=${merchantId} AND action='add' AND section_id IN (${sql.join(
         b.map(v => sql`${v}`),
         sql`,`
-      )})`
+      )}) ${end}`
     )
   );
   for (const plan of plans) {

@@ -13,15 +13,23 @@ vi.mock("../ai/teaching-policy-understanding", async original => ({
   ...(await original<typeof import("../ai/teaching-policy-understanding")>()),
   understandTeachingPolicy: mocks.understand,
 }));
-import { closeDb, getDb } from "../db/connection";
-import { sariActivityLog } from "../../drizzle/schema";
+import { closeDb, getDb, getPool } from "../db/connection";
+import { sariActivityLog, knowledgeSections } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { ensureTeachingDialogueSchema } from "../tests/helpers/teaching-dialogue-schema";
 import {
   createTeachingFixture,
   dialogueQuery as q,
 } from "../tests/helpers/teaching-dialogue-fixture";
 import { cleanupDisposableMerchants } from "../tests/helpers/disposable-merchant";
-import { analyzeTeachingPolicy } from "./teaching-policy-review";
+import {
+  analyzeTeachingPolicy,
+  teachingPolicyContext,
+} from "./teaching-policy-review";
+import {
+  readSectionWorkspace,
+  changeWorkspaceSection,
+} from "./section-workspace";
 import {
   readConflictReview,
   decideKnowledgeConflict,
@@ -90,6 +98,205 @@ describe.skipIf(!process.env.DATABASE_URL)(
         expectedRevision: view.revision,
       });
     };
+    const approvedTeaching = async () => {
+      const pending = sectionId,
+        event = await f.event("توصيل الطلبات خلال يومين ولا يشمل الجمعة");
+      const saved = await event.commit();
+      sectionId = saved.sectionId!;
+      await compare();
+      await approve();
+      const id = sectionId;
+      sectionId = pending;
+      mocks.understand.mockClear();
+      return { event, id };
+    };
+    it.each(["deleted", "text", "turn"])(
+      "excludes current teaching with %s evidence from AI comparison and bot retrieval",
+      async mode => {
+        const old = await approvedTeaching();
+        expect(
+          (
+            await readConflictReview(f.merchantId, sectionId)
+          ).teaching?.candidates.map(c => c.key)
+        ).toContain(`section:${old.id}`);
+        if (mode === "deleted")
+          await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+            old.event.execution.id,
+          ]);
+        if (mode === "text")
+          await q(
+            "UPDATE whatsapp_inbound_jobs SET payload_json=JSON_SET(payload_json,'$.messageData.textMessageData.textMessage','changed fixture') WHERE id=?",
+            [old.event.execution.id]
+          );
+        if (mode === "turn")
+          await q(
+            "DELETE FROM merchant_teaching_turns WHERE merchant_id=? AND event_key=?",
+            [f.merchantId, old.event.execution.eventKey]
+          );
+        await compare();
+        const context = mocks.understand.mock.calls.at(
+          -1
+        )![1] as TeachingPolicyInput;
+        expect(context.candidates.map(c => c.key)).not.toContain(
+          `section:${old.id}`
+        );
+        expect(
+          (await getBotSections(f.merchantId)).map(r => r.id)
+        ).not.toContain(old.id);
+        expect(
+          (await f.sections()).find((s: any) => s.id === old.id)
+        ).toMatchObject({ status: "approved", use_in_bot: 1 });
+      }
+    );
+    it("invalidates an existing comparison when a candidate source is withdrawn before approval", async () => {
+      const old = await approvedTeaching();
+      await compare();
+      const before = await readConflictReview(f.merchantId, sectionId);
+      expect(before.canApprove).toBe(true);
+      await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+        old.event.execution.id,
+      ]);
+      const after = await readConflictReview(f.merchantId, sectionId);
+      expect(after.canApprove).toBe(false);
+      expect(after.teaching?.basisHash).not.toBe(before.teaching?.basisHash);
+      await expect(
+        decideKnowledgeConflict(f.merchantId, {
+          sectionId,
+          action: "approve",
+          acknowledged: true,
+          expectedRevision: before.revision,
+        })
+      ).rejects.toThrow();
+      expect(
+        (await f.sections()).find((s: any) => s.id === sectionId).use_in_bot
+      ).toBe(0);
+    });
+    it("rejects AI results if candidate evidence disappears while comparison is running", async () => {
+      const old = await approvedTeaching(),
+        original = mocks.understand.getMockImplementation()!;
+      mocks.understand.mockImplementationOnce(async (m, i) => {
+        const decision = await original(m, i);
+        await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+          old.event.execution.id,
+        ]);
+        return decision;
+      });
+      await expect(compare()).rejects.toThrow("Policy changed during analysis");
+      const review = await readConflictReview(f.merchantId, sectionId);
+      expect(review.teaching?.analyzed).toBe(false);
+      expect(review.canApprove).toBe(false);
+    });
+    it("compares independently reviewed manual teaching after the old WhatsApp original is gone", async () => {
+      const old = await approvedTeaching();
+      const r = await readSectionWorkspace(f.merchantId, old.id);
+      await changeWorkspaceSection(f.merchantId, {
+        id: old.id,
+        title: r.section.title,
+        content: "التوصيل خلال ثلاثة أيام عدا الجمعة",
+        useInBot: true,
+        expectedRevision: r.revision,
+        acknowledged: true,
+      });
+      await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+        old.event.execution.id,
+      ]);
+      await compare();
+      expect(
+        (mocks.understand.mock.calls.at(-1)![1] as TeachingPolicyInput)
+          .candidates
+      ).toContainEqual(
+        expect.objectContaining({
+          key: `section:${old.id}`,
+          content: "التوصيل خلال ثلاثة أيام عدا الجمعة",
+        })
+      );
+      await q(
+        "DELETE FROM knowledge_changelog WHERE merchant_id=? AND section_id=? AND action='manual_edit'",
+        [f.merchantId, old.id]
+      );
+      expect(
+        (await readConflictReview(f.merchantId, sectionId)).canApprove
+      ).toBe(false);
+    });
+    it("does not bypass the complete-context limit by filtering a capped set of invalid sources", async () => {
+      const placeholders = Array.from(
+        { length: 201 },
+        () =>
+          "(?,'policies','fixture','fixture','manual','approved',1,'fact','whatsapp-dialogue://missing')"
+      ).join(",");
+      await q(
+        "INSERT INTO knowledge_sections (merchant_id,section_type,title,content,source,status,use_in_bot,inject_as,source_url) VALUES " +
+          placeholders,
+        Array(201).fill(f.merchantId)
+      );
+      expect(
+        (await readConflictReview(f.merchantId, sectionId)).teaching?.available
+      ).toBe(false);
+      await expect(compare()).rejects.toThrow(
+        "Complete policy context exceeds bounds"
+      );
+      expect(mocks.understand).not.toHaveBeenCalled();
+    });
+    it("keeps parent replacement blocked while a stored active child has temporarily invalid evidence", async () => {
+      const parent = await current(),
+        old = await approvedTeaching();
+      await q("UPDATE knowledge_sections SET parent_id=? WHERE id=?", [
+        parent,
+        old.id,
+      ]);
+      await q("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+        old.event.execution.id,
+      ]);
+      const review = await readConflictReview(f.merchantId, sectionId);
+      expect(
+        review.teaching?.candidates.find(c => c.key === `section:${parent}`)
+          ?.replaceable
+      ).toBe(false);
+      expect(review.teaching?.candidates.map(c => c.key)).not.toContain(
+        `section:${old.id}`
+      );
+    });
+    it("holds current candidate evidence until the final comparison transaction completes", async () => {
+      const old = await approvedTeaching(),
+        db = (await getDb())!;
+      const [proposal] = await db
+        .select()
+        .from(knowledgeSections)
+        .where(eq(knowledgeSections.id, sectionId));
+      const other = await (await getPool())!.getConnection();
+      const [settings] = await other.query<any[]>(
+        "SELECT @@innodb_lock_wait_timeout AS timeout"
+      );
+      try {
+        await other.query("SET SESSION innodb_lock_wait_timeout=1");
+        await db.transaction(async tx => {
+          const context = await teachingPolicyContext(
+            tx,
+            f.merchantId,
+            proposal,
+            true
+          );
+          expect(context.input.candidates.map(c => c.key)).toContain(
+            `section:${old.id}`
+          );
+          await expect(
+            other.execute("DELETE FROM whatsapp_inbound_jobs WHERE id=?", [
+              old.event.execution.id,
+            ])
+          ).rejects.toMatchObject({ code: "ER_LOCK_WAIT_TIMEOUT" });
+        });
+        const [result] = await other.execute<any>(
+          "DELETE FROM whatsapp_inbound_jobs WHERE id=?",
+          [old.event.execution.id]
+        );
+        expect(result.affectedRows).toBe(1);
+      } finally {
+        await other.query("SET SESSION innodb_lock_wait_timeout=?", [
+          settings[0].timeout,
+        ]);
+        other.release();
+      }
+    });
     it("keeps comparison separate from approval and enables only a source-verified proposal after consent", async () => {
       expect(
         (await readConflictReview(f.merchantId, sectionId)).canApprove
