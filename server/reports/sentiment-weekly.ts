@@ -15,6 +15,7 @@ import { invokeLLM } from "../_core/llm";
 import { sendEmail } from "./email-sender";
 import { currentReportWindow, readWeeklyCohort } from "./weekly-cohort";
 import { z } from "zod";
+import { renderWeeklyReportEmail } from "./weekly-report-email";
 
 /**
  * توليد تقرير أسبوعي للتاجر
@@ -169,219 +170,12 @@ export async function sendReportEmail(reportId: number): Promise<boolean> {
     throw new Error("User email not found");
   }
 
-  // تحويل التواريخ
-  const weekStart = new Date(report.weekStartDate).toLocaleDateString("ar-SA");
-  const weekEnd = new Date(report.weekEndDate).toLocaleDateString("ar-SA");
-
-  // تحليل JSON
-  const topKeywords = report.topKeywords ? JSON.parse(report.topKeywords) : [];
-  const topComplaints = report.topComplaints
-    ? JSON.parse(report.topComplaints)
-    : [];
-  const recommendations = report.recommendations
-    ? JSON.parse(report.recommendations)
-    : [];
-
-  // إنشاء محتوى البريد
-  const emailHtml = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تقرير المشاعر الأسبوعي</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-      direction: rtl;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-    .header p {
-      margin: 10px 0 0;
-      opacity: 0.9;
-    }
-    .content {
-      padding: 30px;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    .stat-card {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    .stat-card .number {
-      font-size: 32px;
-      font-weight: bold;
-      color: #667eea;
-      margin-bottom: 5px;
-    }
-    .stat-card .label {
-      color: #666;
-      font-size: 14px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section h2 {
-      color: #333;
-      font-size: 18px;
-      margin-bottom: 15px;
-      border-right: 4px solid #667eea;
-      padding-right: 10px;
-    }
-    .section ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .section li {
-      background: #f8f9fa;
-      padding: 12px 15px;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      border-right: 3px solid #667eea;
-    }
-    .recommendation {
-      background: #e7f3ff;
-      border-right-color: #2196F3;
-    }
-    .footer {
-      background: #f8f9fa;
-      padding: 20px;
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-    }
-    .score {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .score .number {
-      font-size: 48px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .score .label {
-      font-size: 16px;
-      opacity: 0.9;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>📊 تقرير المشاعر الأسبوعي</h1>
-      <p>${weekStart} - ${weekEnd}</p>
-    </div>
-    
-    <div class="content">
-      <div class="score">
-        <div class="number">${report.satisfactionScore}%</div>
-        <div class="label">درجة رضا العملاء</div>
-      </div>
-
-      <div class="stats">
-        <div class="stat-card">
-          <div class="number">${report.totalConversations}</div>
-          <div class="label">إجمالي المحادثات</div>
-        </div>
-        <div class="stat-card">
-          <div class="number">${report.positivePercentage}%</div>
-          <div class="label">محادثات إيجابية</div>
-        </div>
-        <div class="stat-card">
-          <div class="number">${report.negativePercentage}%</div>
-          <div class="label">محادثات سلبية</div>
-        </div>
-        <div class="stat-card">
-          <div class="number">${report.neutralCount}</div>
-          <div class="label">محادثات محايدة</div>
-        </div>
-      </div>
-
-      ${
-        topKeywords.length > 0
-          ? `
-      <div class="section">
-        <h2>🔑 أكثر الكلمات المفتاحية تكراراً</h2>
-        <ul>
-          ${topKeywords.map((k: string) => `<li>${k}</li>`).join("")}
-        </ul>
-      </div>
-      `
-          : ""
-      }
-
-      ${
-        topComplaints.length > 0
-          ? `
-      <div class="section">
-        <h2>⚠️ أكثر الشكاوى تكراراً</h2>
-        <ul>
-          ${topComplaints.map((c: string) => `<li>${c}</li>`).join("")}
-        </ul>
-      </div>
-      `
-          : ""
-      }
-
-      ${
-        recommendations.length > 0
-          ? `
-      <div class="section">
-        <h2>💡 التوصيات</h2>
-        <ul>
-          ${recommendations.map((r: string) => `<li class="recommendation">${r}</li>`).join("")}
-        </ul>
-      </div>
-      `
-          : ""
-      }
-    </div>
-
-    <div class="footer">
-      <p>هذا تقرير تلقائي من نظام ساري AI</p>
-      <p>للمزيد من التفاصيل، قم بزيارة لوحة التحكم</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const emailHtml = renderWeeklyReportEmail(report, merchant.businessName);
 
   // إرسال البريد
   const success = await sendEmail({
     to: user.email,
-    subject: `تقرير المشاعر الأسبوعي - ${weekStart} إلى ${weekEnd}`,
+    subject: "تقرير المشاعر المحفوظ — ساري",
     html: emailHtml,
   });
 
@@ -410,9 +204,10 @@ export async function scheduleWeeklyReports() {
       const reportId = await generateWeeklyReport(merchant.id);
 
       // إرسال البريد
-      await sendReportEmail(reportId);
-
-      console.log(`[Weekly Reports] Report sent to merchant ${merchant.id}`);
+      const accepted = await sendReportEmail(reportId);
+      console.log(
+        `[Weekly Reports] Report ${reportId} generated for merchant ${merchant.id}; email provider acceptance: ${accepted}`
+      );
     } catch (error) {
       console.error(
         `[Weekly Reports] Error for merchant ${merchant.id}:`,
