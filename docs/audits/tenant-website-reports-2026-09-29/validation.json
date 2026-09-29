@@ -1,0 +1,101 @@
+{
+  "date": "2026-09-29",
+  "baseCommit": "b4d2fed1f750963595ab603e5b0c06621372c8bc",
+  "scope": "Tenant website report list, reviewed details/deletion, explicit full analysis start, partial pipeline result honesty and dedicated prototype",
+  "tests": {
+    "passed": 122,
+    "failed": 0,
+    "files": 10,
+    "database": 49,
+    "uiAccessPipelinePrototypeAndRegression": 73
+  },
+  "translations": {
+    "calls": 8696,
+    "dynamicKeys": 344,
+    "missing": 0,
+    "interpolationErrors": 0
+  },
+  "build": {
+    "client": "passed",
+    "server": "passed",
+    "worker": "passed",
+    "bundleBudget": "passed",
+    "mainAsset": "index-f7wj-4tU.js",
+    "rawBytes": 337291,
+    "gzipBytes": 103362,
+    "warning": "Existing Excel chunk exceeds 600 kB"
+  },
+  "types": {
+    "candidateAgainstHead": "passed",
+    "diagnostics": 0,
+    "method": "TypeScript compiler host uses HEAD text in memory for other tracked changes and excludes unrelated untracked files; no checkout files replaced",
+    "fullConcurrentWorkspace": "failed during this review",
+    "unrelatedDiagnostics": [
+      {
+        "file": "server/knowledge/teaching-dialogue.ts",
+        "lines": [
+          55,
+          80,
+          171
+        ],
+        "code": "TS2352"
+      },
+      {
+        "file": "server/knowledge/teaching-source-history.ts",
+        "lines": [
+          33
+        ],
+        "code": "TS2352"
+      },
+      {
+        "file": "server/tests/helpers/teaching-dialogue-fixture.ts",
+        "lines": [
+          22
+        ],
+        "code": "TS2769"
+      }
+    ]
+  },
+  "browser": {
+    "engine": "Chrome",
+    "applicationWidths": [
+      320,
+      390,
+      1440
+    ],
+    "prototypeWidths": [
+      320
+    ],
+    "horizontalOverflowInCheckedViews": false,
+    "longSourceShownWithoutHtmlExecution": true,
+    "runningReportScoresAndDeletionDisabled": true,
+    "startScopeRequiresAcknowledgment": true,
+    "prototypeAt320x740": {
+      "dialogBottom": 670,
+      "footerBottom": 649,
+      "documentWidth": 305
+    },
+    "temporaryViewportReset": true,
+    "liveExportDownloadCompletion": "unverified; complete Blob payload checked by UI test",
+    "safari": "not tested",
+    "physicalIphone": "not tested",
+    "restoredLocalApplication": "confirmed via browser UI at http://127.0.0.1:3018/merchant/smart-analysis",
+    "prototypeUrl": "http://127.0.0.1:4329/#/page/merchant/smart-analysis"
+  },
+  "security": {
+    "targetedTenantPermissionRevisionRollbackAndRenderingTests": "passed",
+    "fullPenetrationTest": "not performed in this batch",
+    "previousBaselineFailures": "8 previously documented static security failures remain open"
+  },
+  "externalAnalysisOrAiExecuted": false,
+  "newMigration": false,
+  "pushed": false,
+  "deployed": false,
+  "routeCoverage": {
+    "total": 126,
+    "generic": 100,
+    "redirect": 8,
+    "detailed": 10,
+    "partiallyDetailed": 8
+  }
+}

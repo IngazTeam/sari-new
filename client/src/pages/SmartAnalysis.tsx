@@ -1,4 +1,8 @@
 // @ts-nocheck
+import { WebsiteReportsWorkspace } from '@/components/WebsiteReportsWorkspace';
+import { KnowledgeWebsiteWorkspace } from '@/components/KnowledgeWebsiteWorkspace';
+import { KnowledgeFaqWorkspace } from '@/components/KnowledgeFaqWorkspace';
+import { useWebsiteReportsCopy } from '@/hooks/useWebsiteReportsCopy';
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -31,6 +35,7 @@ interface PreviewData {
 
 export default function SmartAnalysis() {
   const { t } = useTranslation();
+  const reportsCopy = useWebsiteReportsCopy();
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [phase, setPhase] = useState<Phase>('input');
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -51,65 +56,13 @@ export default function SmartAnalysis() {
   const { data: faqs, refetch: refetchFaqs } = trpc.analysis.getExtractedFaqs.useQuery();
   const { data: stats } = trpc.analysis.getStats.useQuery();
 
-  // ── Website Analysis APIs (merged from website-analysis page) ──
-  const [selectedAnalysisId, setSelectedAnalysisId] = useState<number | null>(null);
-  const { data: analyses, isLoading: isLoadingAnalyses } = trpc.websiteAnalysis.listAnalyses.useQuery(undefined, {
-    refetchInterval: (query) => {
-      const list = query.state.data;
-      return list?.some((a) => a.status === "analyzing") ? 5000 : false;
-    },
-  });
-  const { data: currentAnalysis } = trpc.websiteAnalysis.getAnalysis.useQuery(
-    { id: selectedAnalysisId! },
-    { enabled: !!selectedAnalysisId, refetchInterval: (query) => {
-      const data = query.state.data as any;
-      return data?.status === 'analyzing' ? 3000 : false;
-    }},
-  );
-  const { data: insights } = trpc.websiteAnalysis.getInsights.useQuery(
-    { analysisId: selectedAnalysisId! },
-    { enabled: !!selectedAnalysisId && currentAnalysis?.status === 'completed' },
-  );
-  const deepAnalyzeMutation = trpc.websiteAnalysis.analyze.useMutation({
-    onSuccess: (data: any) => {
-      setSelectedAnalysisId(data.analysisId);
-      utils.websiteAnalysis.listAnalyses.invalidate();
-    },
-  });
-  const deleteAnalysisMutation = trpc.websiteAnalysis.deleteAnalysis.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف التحليل");
-      utils.websiteAnalysis.listAnalyses.invalidate();
-      setSelectedAnalysisId(null);
-    },
-  });
-
-  // Score helpers
-  const getScoreColor = (score: number) => score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
-  const getScoreBg = (score: number) => score >= 80 ? 'bg-green-100' : score >= 60 ? 'bg-yellow-100' : 'bg-red-100';
-
-  // Export analysis as JSON
-  const handleExportAnalysis = () => {
-    if (!currentAnalysis) return;
-    const blob = new Blob([JSON.stringify({ url: currentAnalysis.url, title: currentAnalysis.title, scores: { overall: currentAnalysis.overallScore, seo: currentAnalysis.seoScore, performance: currentAnalysis.performanceScore, ux: currentAnalysis.uxScore, content: currentAnalysis.contentQuality }, insights: insights || [], analyzedAt: currentAnalysis.createdAt }, null, 2)], { type: 'application/json' });
-    const u = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = u;
-    link.download = `analysis-${Date.now()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(u);
-    toast.success('تم تصدير التقرير');
-  };
-
   const previewMutation = trpc.analysis.previewAnalysis.useMutation({
     onSuccess: (data: any) => {
       setPreview(data as any);
       const totalFound = (data.products?.length || 0) + (data.pages?.length || 0) + (data.faqs?.length || 0);
       if (totalFound === 0) {
         toast.warning("لم يتم استخراج بيانات من الموقع", {
-          description: "قد يكون الموقع محمياً أو لا يحتوي على بيانات قابلة للاستخراج. تحقق من تاب 'التقييم' للنتائج العميقة.",
+          description: reportsCopy.previewEmpty,
           duration: 8000,
         });
       }
@@ -136,17 +89,13 @@ export default function SmartAnalysis() {
       utils.analysis.getDiscoveredPages.invalidate();
       utils.analysis.getExtractedFaqs.invalidate();
       utils.analysis.getStats.invalidate();
+      void utils.sariBrain.invalidate();
     },
     onError: (error: any) => {
+      setPhase('comparing');
+      void utils.sariBrain.invalidate();
       toast.error("فشل حفظ البيانات", { description: error.message });
     },
-  });
-
-  const deletePage = trpc.analysis.deletePage.useMutation({
-    onSuccess: () => { toast.success("تم حذف الصفحة"); refetchPages(); },
-  });
-  const deleteFaq = trpc.analysis.deleteFaq.useMutation({
-    onSuccess: () => { toast.success("تم حذف السؤال"); refetchFaqs(); },
   });
 
   const handleAnalyze = () => {
@@ -155,8 +104,6 @@ export default function SmartAnalysis() {
     if (!url.startsWith('http')) url = 'https://' + url;
     setWebsiteUrl(url);
     previewMutation.mutate({ websiteUrl: url });
-    // Also trigger deep analysis for scores/insights (runs in background)
-    deepAnalyzeMutation.mutate({ url });
   };
 
   const handleApply = () => {
@@ -450,12 +397,15 @@ export default function SmartAnalysis() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />{t('smartAnalysis.auto_22')}</CardTitle>
-          <CardDescription>{t('smartAnalysis.auto_23')}</CardDescription>
+            <Globe className="h-5 w-5" />{reportsCopy.previewImport}</CardTitle>
+          <CardDescription>{reportsCopy.previewHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
+              aria-label={reportsCopy.url}
+              type="url"
+              dir="ltr"
               placeholder="https://example.com"
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
@@ -466,7 +416,7 @@ export default function SmartAnalysis() {
               {previewMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('smartAnalysis.auto_24')}</>
               ) : (
-                <><Search className="mr-2 h-4 w-4" />{t('smartAnalysis.auto_25')}</>
+                <><Search className="mr-2 h-4 w-4" />{reportsCopy.previewImport}</>
               )}
             </Button>
           </div>
@@ -527,220 +477,15 @@ export default function SmartAnalysis() {
         </div>
       )}
 
-      {/* Unified data tabs */}
-      <Tabs defaultValue="pages" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pages"><FileText className="mr-2 h-4 w-4" /> الصفحات ({pages?.length || 0})</TabsTrigger>
-          <TabsTrigger value="faqs"><MessageSquare className="mr-2 h-4 w-4" /> الأسئلة ({faqs?.length || 0})</TabsTrigger>
-          <TabsTrigger value="history"><BarChart3 className="mr-2 h-4 w-4" /> التحليلات ({analyses?.length || 0})</TabsTrigger>
-          <TabsTrigger value="scores"><TrendingUp className="mr-2 h-4 w-4" />{t('smartAnalysis.auto_26')}</TabsTrigger>
+      <Tabs defaultValue="history" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pages">{reportsCopy.tabsPages}</TabsTrigger>
+          <TabsTrigger value="faqs">{reportsCopy.tabsFaqs}</TabsTrigger>
+          <TabsTrigger value="history">{reportsCopy.tabsReports}</TabsTrigger>
         </TabsList>
-
-        {/* Pages tab (existing) */}
-        <TabsContent value="pages" className="space-y-4">
-          {pages && pages.length > 0 ? pages.map((page: any) => (
-            <Card key={page.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{page.title || page.pageType}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <Badge variant="outline">{page.pageType}</Badge>
-                      {page.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_27')}</Badge>}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deletePage.mutate({ pageId: page.id })}
-                    aria-label={t('merchantUx.actions.deleteNamed', { name: page.title || page.pageType })}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-                  {page.url} <ExternalLink className="h-3 w-3" />
-                </a>
-              </CardContent>
-            </Card>
-          )) : (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">{t('smartAnalysis.auto_28')}</CardContent></Card>
-          )}
-        </TabsContent>
-
-        {/* FAQs tab (existing) */}
-        <TabsContent value="faqs" className="space-y-4">
-          {faqs && faqs.length > 0 ? faqs.map((faq: any) => (
-            <Card key={faq.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{faq.question}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      {faq.category && <Badge variant="outline">{faq.category}</Badge>}
-                      {faq.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_29')}</Badge>}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteFaq.mutate({ faqId: faq.id })}
-                    aria-label={t('merchantUx.actions.deleteNamed', { name: faq.question })}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent><p className="text-sm text-muted-foreground">{faq.answer}</p></CardContent>
-            </Card>
-          )) : (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">{t('smartAnalysis.auto_30')}</CardContent></Card>
-          )}
-        </TabsContent>
-
-        {/* History tab (merged from website-analysis) */}
-        <TabsContent value="history" className="space-y-4">
-          {isLoadingAnalyses ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-          ) : analyses && analyses.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analyses.map((analysis) => (
-                <Card
-                  key={analysis.id}
-                  className={`cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedAnalysisId === analysis.id ? 'ring-2 ring-primary' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={selectedAnalysisId === analysis.id}
-                  aria-label={t('merchantUx.actions.viewNamed', { name: analysis.title || analysis.url })}
-                  onClick={() => setSelectedAnalysisId(analysis.id)}
-                  onKeyDown={(event) => {
-                    if (event.currentTarget !== event.target) return;
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setSelectedAnalysisId(analysis.id);
-                    }
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-1">{analysis.title || 'بدون عنوان'}</CardTitle>
-                        <CardDescription className="line-clamp-1">{analysis.url}</CardDescription>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); if (confirm('هل أنت متأكد من حذف هذا التحليل؟')) deleteAnalysisMutation.mutate({ id: analysis.id }); }}
-                        aria-label={t('merchantUx.actions.deleteNamed', { name: analysis.title || analysis.url })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        {analysis.status === 'analyzing' ? (<><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">{t('smartAnalysis.auto_31')}</span></>) :
-                         analysis.status === 'completed' ? (<><CheckCircle2 className="h-4 w-4 text-green-600" /><span className="text-sm">{t('smartAnalysis.auto_32')}</span></>) :
-                         (<><XCircle className="h-4 w-4 text-red-600" /><span className="text-sm">{t('smartAnalysis.auto_33')}</span></>)}
-                      </div>
-                      {analysis.status === 'completed' && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">{t('smartAnalysis.auto_34')}</span>
-                            <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>{analysis.overallScore}</span>
-                          </div>
-                          <Progress value={analysis.overallScore} className="h-2" />
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">{new Date(analysis.createdAt).toLocaleDateString('ar-SA')}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card><CardContent className="py-12 text-center text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p>{t('smartAnalysis.auto_35')}</p>
-              <p className="text-sm">{t('smartAnalysis.auto_36')}</p>
-            </CardContent></Card>
-          )}
-        </TabsContent>
-
-        {/* Scores & Insights tab (merged from website-analysis) */}
-        <TabsContent value="scores" className="space-y-6">
-          {currentAnalysis && currentAnalysis.status === 'completed' ? (
-            <>
-              {/* Score Cards */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{currentAnalysis.title}</h3>
-                <Button variant="outline" size="sm" onClick={handleExportAnalysis}><Download className="h-4 w-4 ml-1" />{t('smartAnalysis.auto_37')}</Button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.seoScore)}`}><Search className={`h-6 w-6 ${getScoreColor(currentAnalysis.seoScore)}`} /></div><div><p className="text-sm text-muted-foreground">SEO</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.seoScore)}`}>{currentAnalysis.seoScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.performanceScore)}`}><Zap className={`h-6 w-6 ${getScoreColor(currentAnalysis.performanceScore)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_38')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.performanceScore)}`}>{currentAnalysis.performanceScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.uxScore)}`}><Eye className={`h-6 w-6 ${getScoreColor(currentAnalysis.uxScore)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_39')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.uxScore)}`}>{currentAnalysis.uxScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.contentQuality)}`}><FileText className={`h-6 w-6 ${getScoreColor(currentAnalysis.contentQuality)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_40')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.contentQuality)}`}>{currentAnalysis.contentQuality}</p></div></div></CardContent></Card>
-              </div>
-
-              {/* SEO Issues */}
-              {currentAnalysis.seoIssues && currentAnalysis.seoIssues.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-lg">{t('smartAnalysis.auto_41')}</CardTitle></CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {currentAnalysis.seoIssues.map((issue: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2"><AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" /><span className="text-sm">{issue}</span></li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Insights */}
-              {insights && insights.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-lg">{t('smartAnalysis.auto_42')}</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    {insights.map((insight: any) => (
-                      <div key={insight.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          {insight.type === 'strength' ? <CheckCircle2 className="h-4 w-4 text-green-600" /> :
-                           insight.type === 'weakness' ? <XCircle className="h-4 w-4 text-red-600" /> :
-                           insight.type === 'opportunity' ? <TrendingUp className="h-4 w-4 text-blue-600" /> :
-                           <AlertCircle className="h-4 w-4 text-orange-600" />}
-                          <span className="font-medium">{insight.title}</span>
-                          <Badge variant={insight.priority === 'critical' ? 'destructive' : insight.priority === 'high' ? 'default' : 'secondary'}>
-                            {insight.priority === 'critical' ? 'حرج' : insight.priority === 'high' ? 'عالي' : insight.priority === 'medium' ? 'متوسط' : 'منخفض'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{insight.description}</p>
-                        {insight.recommendation && <div className="bg-blue-50 p-3 rounded-lg"><p className="text-sm font-medium text-blue-900 mb-1">{t('smartAnalysis.auto_43')}</p><p className="text-sm text-blue-800">{insight.recommendation}</p></div>}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          ) : currentAnalysis && currentAnalysis.status === 'analyzing' ? (
-            <Card><CardContent className="py-12 text-center">
-              <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
-              <p className="font-medium">جاري تحليل {currentAnalysis.title}...</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('smartAnalysis.auto_44')}</p>
-            </CardContent></Card>
-          ) : (
-            <Card><CardContent className="py-12 text-center text-muted-foreground">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-              <p>{t('smartAnalysis.auto_45')}</p>
-            </CardContent></Card>
-          )}
-        </TabsContent>
+        <TabsContent value="pages"><KnowledgeWebsiteWorkspace /></TabsContent>
+        <TabsContent value="faqs"><KnowledgeFaqWorkspace /></TabsContent>
+        <TabsContent value="history"><WebsiteReportsWorkspace /></TabsContent>
       </Tabs>
     </div>
   );

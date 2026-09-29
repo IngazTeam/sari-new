@@ -1,4 +1,7 @@
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
+import { reportListInput, reportReadInput, reportDeleteInput } from '../shared/website-reports';
+import { listWebsiteReports, readWebsiteReport, deleteReviewedWebsiteReport } from './knowledge/website-reports';
+import { hasPermission } from './_core/permissions';
 /**
  * Website Analysis Router
  * 
@@ -15,7 +18,6 @@ import {
   createWebsiteAnalysis,
   createWebsiteInsight,
   deleteCompetitorAnalysis,
-  deleteWebsiteAnalysis,
   getCompetitorAnalysesByMerchant,
   getCompetitorAnalysisById,
   getCompetitorProductsByCompetitorId,
@@ -32,13 +34,28 @@ import {
 import { mergeAnalyzedProducts } from './catalog/analysis-snapshot';
 import * as analyzer from './_core/websiteAnalyzer';
 
+async function reportOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try { return await operation(); }
+  catch (error) {
+    if (error instanceof TRPCError) throw error;
+    console.error('[WebsiteReports] Operation failed:', error);
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Website report operation unavailable' });
+  }
+}
+
 export const websiteAnalysisRouter = router({
+  reports: merchantProcedure.input(reportListInput).query(async ({ctx,input}) => reportOperation(async () => ({
+    ...await listWebsiteReports(ctx.merchantId,input), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
+  }))),
+  report: merchantProcedure.input(reportReadInput).query(({ctx,input}) => reportOperation(() => readWebsiteReport(ctx.merchantId,input.id))),
+  deleteReviewedReport: permissionProcedure('bot_settings.manage').input(reportDeleteInput).mutation(({ctx,input}) => reportOperation(() => deleteReviewedWebsiteReport(ctx.merchantId,input))),
   /**
    * تحليل موقع جديد
    */
   analyze: permissionProcedure('bot_settings.manage')
     .input(z.object({
-      url: z.string().url(),
+      url: z.string().url().max(500),
+      acknowledged: z.literal(true),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -78,14 +95,14 @@ export const websiteAnalysisRouter = router({
         });
         console.log(`[WebsiteAnalysis] ▶ Pipeline START: id=${analysisId}, url=${input.url}`);
 
-        // Start analysis in background with GLOBAL TIMEOUT (90s)
-        // BUG FIX: Without global timeout, if crawling 5 sub-pages (15s each) + LLM calls hang,
-        // the analysis stays 'analyzing' FOREVER and frontend polls indefinitely.
+        // Remote phases have deadlines; the report stays running until its database writes settle.
         const runPipeline = async () => {
           let scrapedHtml = '';
           let scrapedText = '';
           let enrichedText = '';  // Text from ALL crawled sub-pages
           let analyzedIndustry = '';  // Captured from Phase 1 for Phase 4
+          let analysisSucceeded = false;
+          const warnings: string[] = [];
 
           // Phase 1: Analyze website (120s timeout — increased for up to 30-page crawl)
           console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
@@ -122,6 +139,7 @@ export const websiteAnalysisRouter = router({
               scrapedContent: analyzer.cleanScrapedText((result._scrapedText || '') + '\n\n' + (result._enrichedText || '')),
               status: 'analyzing',
             });
+            analysisSucceeded = true;
 
             // Cache scraped content from Phase 1 for reuse in Phase 2
             if (result._scrapedHtml) {
@@ -146,6 +164,7 @@ export const websiteAnalysisRouter = router({
                   await updateMerchant(merchant.id, updateData);
                   console.log('[WebsiteAnalysis] Updated merchant contact info:', updateData);
                 } catch (contactErr: any) {
+                  warnings.push('contact');
                   console.warn('[WebsiteAnalysis] Failed to update merchant contact:', contactErr.message);
                 }
               }
@@ -154,11 +173,12 @@ export const websiteAnalysisRouter = router({
             await persistCrawledKnowledge(merchant.id, input.url, result);
 
           } catch (analysisError) {
+            warnings.push('analysis_or_knowledge');
             console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);
             // Save partial info — title was already saved at creation, just add description
             try {
-              await updateWebsiteAnalysis(analysisId, {
-                description: 'تعذر تحليل الموقع بسبب حماية أو تجاوز المهلة — تم استخراج المنتجات عبر API',
+              if (!analysisSucceeded) await updateWebsiteAnalysis(analysisId, {
+                description: 'تعذر إكمال تحليل الموقع أو تحديث معرفته. راجع النتائج المحفوظة.',
                 overallScore: 0,
               });
             } catch (dbErr) {
@@ -234,6 +254,7 @@ export const websiteAnalysisRouter = router({
                 });
                 savedCount++;
               } catch (saveError) {
+                warnings.push('product_record');
                 console.error(`[WebsiteAnalysis] Failed to save product "${product.name}":`, saveError instanceof Error ? saveError.message : saveError);
               }
             }
@@ -246,10 +267,12 @@ export const websiteAnalysisRouter = router({
                 const mainSavedCount = await mergeAnalyzedProducts(merchant.id, input.url, products);
                 console.log(`[WebsiteAnalysis] ✅ Saved ${mainSavedCount} products to MAIN products table for merchant ${merchant.id}`);
               } catch (mainErr: any) {
+                warnings.push('catalog');
                 console.error('[WebsiteAnalysis] Failed to save to main products table:', mainErr.message);
               }
             }
           } catch (productError) {
+            warnings.push('products');
             console.error('[WebsiteAnalysis] Phase 2 FAILED:', productError instanceof Error ? productError.message : productError);
           }
 
@@ -302,6 +325,7 @@ export const websiteAnalysisRouter = router({
               }
             }
           } catch (insightsError) {
+            warnings.push('insights');
             console.error('[WebsiteAnalysis] Phase 3 FAILED:', insightsError instanceof Error ? insightsError.message : insightsError);
           }
 
@@ -327,59 +351,43 @@ export const websiteAnalysisRouter = router({
               try {
                 const { embedAllSections } = await import('./ai/rag-engine');
                 await embedAllSections(merchant.id, true);
-              } catch { /* non-blocking */ }
+              } catch { warnings.push('index_or_cache'); }
 
               // Invalidate knowledge cache so bot uses new data immediately
               try {
                 const knowledgeDb = await import('./db/knowledge');
                 await knowledgeDb.invalidateCache(merchant.id);
-              } catch { /* non-blocking */ }
+              } catch { warnings.push('index_or_cache'); }
             }
           } catch (knowledgeError) {
+            warnings.push('knowledge');
             console.error('[WebsiteAnalysis] Phase 4 FAILED (non-blocking):', knowledgeError instanceof Error ? knowledgeError.message : knowledgeError);
           }
 
           // Final: Mark analysis as completed after all phases finish
           try {
-            await updateWebsiteAnalysis(analysisId, { status: 'completed' });
-            console.log(`[WebsiteAnalysis] ✅ Pipeline COMPLETE: id=${analysisId}`);
+            await updateWebsiteAnalysis(analysisId, { status: analysisSucceeded ? 'completed' : 'failed', errorMessage: warnings.length ? `Incomplete stages: ${Array.from(new Set(warnings)).join(', ')}` : undefined });
+            console.log(`[WebsiteAnalysis] Pipeline settled: id=${analysisId}, status=${analysisSucceeded ? "completed" : "failed"}`);
           } catch (finalUpdateErr) {
             console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed:', finalUpdateErr);
           }
         };
 
-        // GLOBAL TIMEOUT: 180s (increased for up to 30-page crawl: 120s Phase1 + 30s Phase2 + 10s Phase3 + overhead)
-        const globalTimeout = new Promise<void>((_, reject) =>
-          setTimeout(() => reject(new Error('Global analysis pipeline timeout (180s)')), 180000)
-        );
-
-        Promise.race([runPipeline(), globalTimeout])
-          .catch((err) => {
-            console.error('[WebsiteAnalysis] Background pipeline crashed/timed out:', err);
-          })
-          .finally(async () => {
-            // GUARANTEE: status NEVER stays 'analyzing' forever
-            try {
-              const existing = await getWebsiteAnalysisById(analysisId);
-              if (existing && existing.status === 'analyzing') {
-                const finalStatus = existing.overallScore > 0 ? 'completed' : 'failed';
-                await updateWebsiteAnalysis(analysisId, {
-                  status: finalStatus,
-                  ...(finalStatus === 'failed' ? { errorMessage: 'فشل إكمال التحليل. حاول مرة أخرى.' } : {})
-                });
-                console.log(`[WebsiteAnalysis] finally: marked analysis ${analysisId} as ${finalStatus}`);
-              }
-            } catch (finalErr) {
-              console.error('[WebsiteAnalysis] CRITICAL: finally block DB update failed:', finalErr);
-            }
-          });
+        // Per-stage deadlines bound remote work. Never mark the report terminal while
+        // this pipeline can still write children or knowledge; deletion relies on that state.
+        void runPipeline().catch(async error => {
+          console.error('[WebsiteAnalysis] Background pipeline failed:', error);
+          try { await updateWebsiteAnalysis(analysisId, { status: 'failed', errorMessage: 'Pipeline failed; partial results may exist.' }); }
+          catch (saveError) { console.error('[WebsiteAnalysis] Failed to store terminal status:', saveError); }
+        });
 
         return { analysisId, status: 'analyzing' };
       } catch (error) {
         console.error('[WebsiteAnalysis] Error starting analysis:', error);
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to start analysis',
+          message: 'Failed to start analysis',
         });
       }
     }),
@@ -471,24 +479,8 @@ export const websiteAnalysisRouter = router({
    * حذف تحليل
    */
   deleteAnalysis: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      id: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Verify ownership
-      const analysis = await getWebsiteAnalysisById(input.id);
-      if (!analysis) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
-      }
-
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant || analysis.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      await deleteWebsiteAnalysis(input.id);
-      return { success: true };
-    }),
+    .input(reportReadInput)
+    .mutation(() => { throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Open the report and review its current impact before deletion.' }); }),
 
   /**
    * إضافة منافس

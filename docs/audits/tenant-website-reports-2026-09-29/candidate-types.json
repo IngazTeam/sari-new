@@ -1,0 +1,16 @@
+{
+  "base": "b4d2fed1f750963595ab603e5b0c06621372c8bc",
+  "checked": "HEAD plus explicitly owned report files; unrelated concurrent edits read from HEAD in memory",
+  "ignoredConcurrentTrackedFiles": [
+    "docs/audits/tenant-testing-workspace-2026-09-28/REMAINING.md",
+    "drizzle/meta/_journal.json",
+    "drizzle/schema.ts",
+    "server/ai/coaching-engine.ts",
+    "server/ai/merchant-mode.ts",
+    "server/knowledge/conflict-workspace.ts",
+    "server/knowledge/whatsapp-teaching.ts",
+    "server/webhooks/greenapi-teaching.test.ts",
+    "server/webhooks/greenapi.ts"
+  ],
+  "diagnostics": []
+}

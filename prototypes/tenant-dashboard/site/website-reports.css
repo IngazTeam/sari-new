@@ -1,0 +1,12 @@
+.wr-workspace,.wr-workspace article,.wr-review{min-width:0;overflow-wrap:anywhere}
+.wr-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wr-controls{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.wr-controls label{display:grid;gap:6px;flex:1;min-width:160px}
+.wr-controls :is(input,select){width:100%;min-height:44px}
+.wr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.wr-grid h3{margin:0}.wr-grid p{overflow-wrap:anywhere}
+.wr-review{display:flex;flex-direction:column;max-height:70vh;max-height:70dvh}
+.wr-review-body{overflow-y:auto;overscroll-behavior:contain;min-height:0;padding:4px}
+.wr-review summary{cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:12px}
+.wr-footer{flex-shrink:0;padding-top:12px;margin-top:12px;border-top:1px solid var(--line);background:var(--surface,#fff)}
+@media(max-width:520px){.wr-grid{grid-template-columns:1fr}.wr-controls label{min-width:100%}.wr-footer .button{flex:1}.wr-footer{gap:8px}.wr-review{max-height:65vh;max-height:65dvh}}
