@@ -903,6 +903,20 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           console.log(`[Classify] 🏪 MERCHANT detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
 
           const exactQuote = quotedEscalationMessageId(payload);
+          const { handleOnboardingReply } = await import('../automation/onboarding-interview');
+          const onboarding = await handleOnboardingReply(instance.merchantId, incomingText, exactQuote || undefined);
+          if (onboarding.handled) {
+            const { sendMessageWithCredentials } = await import('../whatsapp');
+            const ack = await sendMessageWithCredentials(instance.instanceId, instance.token,
+              instance.apiUrl || 'https://api.green-api.com', customerPhone, onboarding.response);
+            if (!ack.success) return {success:false,message:'Onboarding acknowledgement not confirmed'};
+            if (onboarding.nextVersion) {
+              const {sendOnboardingQuestion}=await import('../automation/onboarding-delivery');
+              if(!await sendOnboardingQuestion(instance.merchantId,onboarding.nextVersion))
+                return {success:false,message:'Onboarding question delivery not confirmed'};
+            }
+            return {success:true,message:'Contextual onboarding processed'};
+          }
           if (exactQuote) {
             const { handleCoachingReply, sendCurrentCoachingQuestion } = await import('../ai/coaching-engine');
             const review = await handleCoachingReply(instance.merchantId, incomingText, exactQuote);
@@ -924,7 +938,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           }
 
           // Understand the complete private merchant message; no lexical teaching gate.
-          const textTrimmed = incomingText.trim();
+
           const { handleTeachCommand } = await import('../ai/coaching-engine');
           const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
           if (teachResult.handled && teachResult.response) {
@@ -933,50 +947,6 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               instance.apiUrl || 'https://api.green-api.com', customerPhone, teachResult.response);
             if (!acknowledgement.success) return { success: false, message: 'Merchant teaching acknowledgement not confirmed' };
             return { success: true, message: 'Merchant teaching analysis processed' };
-          }
-
-          // Priority 2.5: Onboarding interview reply
-          try {
-            const { isOnboardingActive, handleOnboardingReply, handleUpdateCommand } = await import('../automation/onboarding-interview');
-
-            // Check for update commands first (works anytime)
-            if (textTrimmed.startsWith('تحديث ')) {
-              const updateResult = await handleUpdateCommand(instance.merchantId, textTrimmed);
-              if (updateResult.handled) {
-                const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
-                const inst = instances.find((i: any) => i.status === 'active');
-                if (inst) {
-                  const { sendMessageWithCredentials } = await import('../whatsapp');
-                  await sendMessageWithCredentials(
-                    (inst as any).instanceId, (inst as any).token,
-                    (inst as any).apiUrl || 'https://api.green-api.com',
-                    customerPhone, updateResult.response
-                  );
-                }
-                return { success: true, message: 'Update command processed' };
-              }
-            }
-
-            // Check if onboarding interview is active
-            if (await isOnboardingActive(instance.merchantId)) {
-              const onboardResult = await handleOnboardingReply(instance.merchantId, textTrimmed);
-              if (onboardResult.handled) {
-                const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
-                const inst = instances.find((i: any) => i.status === 'active');
-                if (inst && onboardResult.response) {
-                  const { sendMessageWithCredentials } = await import('../whatsapp');
-                  await sendMessageWithCredentials(
-                    (inst as any).instanceId, (inst as any).token,
-                    (inst as any).apiUrl || 'https://api.green-api.com',
-                    customerPhone, onboardResult.response
-                  );
-                }
-                console.log(`[Onboarding] ✅ Interview reply processed for merchant ${instance.merchantId}`);
-                return { success: true, message: 'Onboarding interview reply processed' };
-              }
-            }
-          } catch (onbErr) {
-            console.warn('[Onboarding] Interview check failed (non-blocking):', onbErr);
           }
 
           // Priority 3+: All other messages → Merchant Mode handler

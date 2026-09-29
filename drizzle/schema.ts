@@ -3971,10 +3971,24 @@ export const campaignConsentState = mysqlTable("campaign_consent_state", {
 	index("campaign_consent_state_status_idx").on(table.merchantId, table.status),
 ]);
 
+export const merchantOnboardingSessions = mysqlTable('merchant_onboarding_sessions', {
+  merchantId:int('merchant_id').primaryKey().references(()=>merchants.id,{onDelete:'cascade'}),
+  version:int().notNull(),status:varchar({length:20}).notNull(),fieldKey:varchar('field_key',{length:50}),
+  instanceId:int('instance_id').notNull(),recipient:varchar({length:20}).notNull(),deliveryKey:varchar('delivery_key',{length:100}).notNull(),
+  promptText:text('prompt_text').notNull(),updatedAt:timestamp('updated_at',{mode:'string',fsp:3}).defaultNow().onUpdateNow().notNull(),
+});
+export const merchantOnboardingEvents = mysqlTable('merchant_onboarding_events', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  eventKey:char('event_key',{length:64}).notNull(),sourceDigest:char('source_digest',{length:64}).notNull(),basisHash:char('basis_hash',{length:64}).notNull(),
+  sourceJson:json('source_json').notNull(),decisionJson:json('decision_json').notNull(),resultJson:json('result_json').notNull(),
+  createdAt:timestamp('created_at',{mode:'string',fsp:3}).defaultNow().notNull(),
+},table=>[uniqueIndex('uq_onboarding_event').on(table.merchantId,table.eventKey)]);
 export const merchantOnboardingAnswers = mysqlTable("merchant_onboarding_answers", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	fieldKey: varchar("field_key", { length: 50 }).notNull(),
+	verifiedEventKey: char("verified_event_key", {length:64}),
+	answerDigest: char("answer_digest", {length:64}),
 	questionText: text("question_text").notNull(),
 	answerText: text("answer_text").notNull(),
 	phase: int().default(1).notNull(),

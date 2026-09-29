@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   createConversation: vi.fn(),
   instances: vi.fn(),
   settings: vi.fn(),
+  onboarding: vi.fn(),
+  onboardingNext: vi.fn(),
 }));
 vi.mock("../db", async original => ({
   ...(await original<typeof import("../db")>()),
@@ -30,8 +32,11 @@ vi.mock("../ai/coaching-engine", () => ({
 vi.mock("../ai/merchant-mode", () => ({ handleMerchantChat: mocks.chat }));
 vi.mock("../automation/onboarding-interview", () => ({
   isOnboardingActive: async () => false,
-  handleOnboardingReply: vi.fn(),
+  handleOnboardingReply: mocks.onboarding,
   handleUpdateCommand: vi.fn(),
+}));
+vi.mock("../automation/onboarding-delivery", () => ({
+  sendOnboardingQuestion: mocks.onboardingNext,
 }));
 vi.mock("../whatsapp", () => ({
   sendMessageWithCredentials: mocks.send,
@@ -59,6 +64,8 @@ beforeEach(() => {
     apiUrl: "https://api.green-api.com",
   });
   mocks.chain.mockResolvedValue(true);
+  mocks.onboarding.mockResolvedValue({ handled: false, response: "" });
+  mocks.onboardingNext.mockResolvedValue(true);
   mocks.teach.mockResolvedValue({ handled: true, response: "تعليمة محفوظة" });
   mocks.coaching.mockResolvedValue({ handled: true });
   mocks.send.mockResolvedValue({ success: true, messageId: "receipt" });
@@ -66,6 +73,60 @@ beforeEach(() => {
   mocks.settings.mockResolvedValue({ groupMode: "disabled" });
 });
 describe("semantic teaching webhook dispatch", () => {
+  it("interprets a full interview answer before general teaching and confirms delivery in the receiving account", async () => {
+    const text = "نبيع منتجات ونقدم تدريبًا\nلا تعتمد العروض السابقة";
+    mocks.onboarding.mockResolvedValueOnce({
+      handled: true,
+      response: "حفظت الإجابة",
+      nextVersion: 2,
+    });
+    const value: any = payload(text);
+    value.messageData.quotedMessage = { stanzaId: "question-receipt" };
+    expect(await handleGreenAPIWebhook(value)).toMatchObject({
+      success: true,
+      message: "Contextual onboarding processed",
+    });
+    expect(mocks.onboarding).toHaveBeenCalledWith(12, text, "question-receipt");
+    expect(mocks.teach).not.toHaveBeenCalled();
+    expect(mocks.coaching).not.toHaveBeenCalled();
+    expect(mocks.chat).not.toHaveBeenCalled();
+    expect(mocks.send).toHaveBeenCalledWith(
+      "chosen-instance",
+      "synthetic-account-token",
+      "https://api.green-api.com",
+      "966500000023",
+      "حفظت الإجابة"
+    );
+    expect(mocks.onboardingNext).toHaveBeenCalledWith(12, 2);
+    expect(mocks.send.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.onboardingNext.mock.invocationCallOrder[0]
+    );
+  });
+  it.each(["analysis", "acknowledgement", "question"])(
+    "does not fall through or claim onboarding success when %s fails",
+    async stage => {
+      mocks.onboarding.mockResolvedValueOnce({
+        handled: true,
+        response: "حفظت الإجابة",
+        nextVersion: 2,
+      });
+      if (stage === "analysis") {
+        mocks.onboarding.mockReset().mockRejectedValueOnce(Error("fixture"));
+      }
+      if (stage === "acknowledgement")
+        mocks.send.mockResolvedValueOnce({ success: false });
+      if (stage === "question")
+        mocks.onboardingNext.mockResolvedValueOnce(false);
+      expect(
+        await handleGreenAPIWebhook(payload("نعم للمتجر فقط"))
+      ).toMatchObject({ success: false });
+      expect(mocks.teach).not.toHaveBeenCalled();
+      expect(mocks.chat).not.toHaveBeenCalled();
+      expect(mocks.createConversation).not.toHaveBeenCalled();
+      if (stage !== "question")
+        expect(mocks.onboardingNext).not.toHaveBeenCalled();
+    }
+  );
   it.each([
     "السياسة الجديدة التي أريد اعتمادها لجميع العملاء هي الضمان سنتان",
     "#علم_ساري الضمان سنتان",

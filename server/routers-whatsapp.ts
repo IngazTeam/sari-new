@@ -405,20 +405,12 @@ export const whatsappRouter = router({
                     try {
                       const { needsOnboarding, startOnboardingInterview } = await import('./automation/onboarding-interview');
                       if (await needsOnboarding(merchant.id)) {
-                        const welcomeMsg = await startOnboardingInterview(merchant.id);
-                        if (welcomeMsg) {
-                          const insts = await getWhatsAppInstancesByMerchantId(merchant.id);
-                          const inst = insts.find((i) => i.status === 'active');
-                          if (inst) {
-                            const { sendMessageWithCredentials } = await import('./whatsapp');
-                            const mPhone = request.fullNumber || request.phoneNumber;
-                            await sendMessageWithCredentials(
-                              inst.instanceId, inst.token,
-                              inst.apiUrl || 'https://api.green-api.com',
-                              mPhone, welcomeMsg
-                            );
-                            console.log(`[Onboarding] Interview started for merchant ${merchant.id}`);
-                          }
+                        const insts = await getWhatsAppInstancesByMerchantId(merchant.id);
+                        const inst = insts.find(i => i.status === 'active' && i.instanceId === request.instanceId);
+                        const recipient = merchant.phone || request.fullNumber || request.phoneNumber;
+                        if(inst && recipient) {
+                          const delivered = await startOnboardingInterview(merchant.id,inst.id,recipient);
+                          console.log(delivered ? '[Onboarding] Initial question delivered' : '[Onboarding] Initial delivery requires review');
                         }
                       }
                     } catch (onbErr) {

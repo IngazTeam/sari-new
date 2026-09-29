@@ -1,0 +1,718 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T02:18:03.927Z",
+  "scope": "Contextual WhatsApp business onboarding, sourced question replies and single-field updates",
+  "branch": "main",
+  "startingHead": "2c0f37cc992fba8233a271f266d4d9f87e742ecb",
+  "validationBaseHead": "3269dabf64dbc6f33c4a0267b7ee644eac5f8c80",
+  "runtime": {
+    "node": "v22.23.2",
+    "pnpm": "10.4.1",
+    "database": "MySQL 8.0 synthetic loopback:33089",
+    "databaseStopped": true
+  },
+  "isolation": {
+    "applicationEnvLoaded": false,
+    "productionDataUsed": false,
+    "externalNetworkBlocked": true,
+    "liveProviderCalls": 0,
+    "whatsAppSends": 0,
+    "payments": 0
+  },
+  "summary": {
+    "files": 60,
+    "passed": 1353,
+    "failed": 0,
+    "skipped": 0,
+    "mysqlPassed": 151,
+    "onboardingMysqlTests": 39,
+    "onboardingContractTests": 27,
+    "sharedWebhookTests": 16
+  },
+  "reports": [
+    {
+      "file": ".tmp/onboarding-checks/tests.json",
+      "sha256": "6127eea486e17b89077a2d077ba0b19a3ef52b0f2b6871835b65bc0a0fafb3e4",
+      "passed": 1058,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/onboarding-checks/onboarding-unit.json",
+      "sha256": "7b834825b7a4b07531eacd831ba56fa27a24ee4705c52b25325678162b10cb00",
+      "passed": 144,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": ".tmp/onboarding-checks/onboarding-mysql.json",
+      "sha256": "928280b4b5943d647974b9f19238d8dcc9180294c03ab2d4f23d7a19b4a172a7",
+      "passed": 151,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "suites": [
+    {
+      "file": "server/ai-settings-provider-routing.test.ts",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/action-execution.test.ts",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/automatic-followup-context.test.ts",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/budget-boundaries.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/coaching.mysql.test.ts",
+      "tests": 48,
+      "passed": 48,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-agent-routing.test.ts",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-followup.test.ts",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-generation.test.ts",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-learning-contract.test.ts",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-memory-contract.test.ts",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-reply-routing.test.ts",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/contextual-sales-loss-contract.test.ts",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding-evaluation.test.ts",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/conversation-understanding.test.ts",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/customer-memory-chat.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/customer-memory.test.ts",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/escalation-routing.test.ts",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/followup-policy.test.ts",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/learning-analysis-pentest.test.ts",
+      "tests": 37,
+      "passed": 37,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/learning-signal-capture-pentest.test.ts",
+      "tests": 32,
+      "passed": 32,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/loss-detector.test.ts",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/merchant-directive-understanding.test.ts",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/merchant-directive.mysql.test.ts",
+      "tests": 29,
+      "passed": 29,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/openai-zahypi.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/preview-prompt.test.ts",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/preview-provider-routing.test.ts",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/requested-followup-time.test.ts",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sales-brain-decisions.test.ts",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sales-brain-learning.test.ts",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sales-reply-prompt.test.ts",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sales-reply-transport.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sales-turn-policy.test.ts",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/sari-preview.test.ts",
+      "tests": 42,
+      "passed": 42,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/task-catalog.test.ts",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/transactional-truth.test.ts",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/zahypi-callsite-governance.test.ts",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/zahypi-client.test.ts",
+      "tests": 102,
+      "passed": 102,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/zahypi-context-propagation.test.ts",
+      "tests": 14,
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "file": "server/ai/zahypi-runtime-config.test.ts",
+      "tests": 11,
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "file": "server/appointment-reminder-access-pentest.test.ts",
+      "tests": 30,
+      "passed": 30,
+      "failed": 0
+    },
+    {
+      "file": "server/appointment-reminder-context.test.ts",
+      "tests": 21,
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "file": "server/appointment-reminder-pentest.test.ts",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0
+    },
+    {
+      "file": "server/assistant-reply-preview.test.ts",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "file": "server/automation/onboarding-understanding.test.ts",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "file": "server/automation/onboarding.mysql.test.ts",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0
+    },
+    {
+      "file": "server/bot-audit-pentest.test.ts",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0
+    },
+    {
+      "file": "server/byaan-conversation-routing.test.ts",
+      "tests": 39,
+      "passed": 39,
+      "failed": 0
+    },
+    {
+      "file": "server/coaching-bugfix-pentest.test.ts",
+      "tests": 38,
+      "passed": 38,
+      "failed": 0
+    },
+    {
+      "file": "server/knowledge/whatsapp-teaching.mysql.test.ts",
+      "tests": 35,
+      "passed": 35,
+      "failed": 0
+    },
+    {
+      "file": "server/merchant-persona-routing.test.ts",
+      "tests": 17,
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "file": "server/onboarding-remediation.test.ts",
+      "tests": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "file": "server/onboarding-state-machine-pentest.test.ts",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "file": "server/persona-preview-history.test.ts",
+      "tests": 16,
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "file": "server/persona-preview.test.ts",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "file": "server/remediation-regression.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/sales-hardening-pentest.test.ts",
+      "tests": 34,
+      "passed": 34,
+      "failed": 0
+    },
+    {
+      "file": "server/sari-quick-preview.test.ts",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "file": "server/virtual-team-page.test.ts",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-escalation.test.ts",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "file": "server/webhooks/greenapi-teaching.test.ts",
+      "tests": 16,
+      "passed": 16,
+      "failed": 0
+    }
+  ],
+  "checks": [
+    {
+      "name": "regression",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/ai/customer-memory.test.ts",
+        "server/ai/contextual-memory-contract.test.ts",
+        "server/ai/loss-detector.test.ts",
+        "server/ai/contextual-learning-contract.test.ts",
+        "server/ai/contextual-sales-loss-contract.test.ts",
+        "server/ai/learning-signal-capture-pentest.test.ts",
+        "server/ai/learning-analysis-pentest.test.ts",
+        "server/ai/sales-brain-learning.test.ts",
+        "server/ai/automatic-followup-context.test.ts",
+        "server/ai/action-execution.test.ts",
+        "server/appointment-reminder-context.test.ts",
+        "server/appointment-reminder-pentest.test.ts",
+        "server/appointment-reminder-access-pentest.test.ts",
+        "server/ai/customer-memory-chat.test.ts",
+        "server/ai/contextual-followup.test.ts",
+        "server/ai/requested-followup-time.test.ts",
+        "server/ai/followup-policy.test.ts",
+        "server/ai/contextual-agent-routing.test.ts",
+        "server/ai/contextual-generation.test.ts",
+        "server/ai/sales-reply-prompt.test.ts",
+        "server/ai/sales-reply-transport.test.ts",
+        "server/ai/preview-prompt.test.ts",
+        "server/ai/preview-provider-routing.test.ts",
+        "server/ai/sari-preview.test.ts",
+        "server/ai/contextual-reply-routing.test.ts",
+        "server/ai/conversation-understanding.test.ts",
+        "server/ai/conversation-understanding-evaluation.test.ts",
+        "server/ai/sales-turn-policy.test.ts",
+        "server/ai/sales-brain-decisions.test.ts",
+        "server/ai/task-catalog.test.ts",
+        "server/ai/budget-boundaries.test.ts",
+        "server/ai/openai-zahypi.test.ts",
+        "server/ai/zahypi-client.test.ts",
+        "server/ai/zahypi-context-propagation.test.ts",
+        "server/ai/zahypi-callsite-governance.test.ts",
+        "server/ai/zahypi-runtime-config.test.ts",
+        "server/ai-settings-provider-routing.test.ts",
+        "server/ai/transactional-truth.test.ts",
+        "server/byaan-conversation-routing.test.ts",
+        "server/sales-hardening-pentest.test.ts",
+        "server/bot-audit-pentest.test.ts",
+        "server/remediation-regression.test.ts",
+        "server/merchant-persona-routing.test.ts",
+        "server/virtual-team-page.test.ts",
+        "server/assistant-reply-preview.test.ts",
+        "server/persona-preview.test.ts",
+        "server/persona-preview-history.test.ts",
+        "server/sari-quick-preview.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\tests.json"
+      ],
+      "profile": "tests",
+      "log": ".tmp/onboarding-checks/regression.log",
+      "logSha256": "88151358fce3cdd65718548f5402a2a817533b92f5f47df264a29af8d9412467"
+    },
+    {
+      "name": "onboarding-unit",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "server/automation/onboarding-understanding.test.ts",
+        "server/webhooks/greenapi-teaching.test.ts",
+        "server/onboarding-remediation.test.ts",
+        "server/onboarding-state-machine-pentest.test.ts",
+        "server/ai/merchant-directive-understanding.test.ts",
+        "server/ai/coaching-understanding.test.ts",
+        "server/coaching-bugfix-pentest.test.ts",
+        "server/ai/escalation-routing.test.ts",
+        "server/webhooks/greenapi-escalation.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\onboarding-unit.json"
+      ],
+      "profile": "onboarding-unit",
+      "log": ".tmp/onboarding-checks/onboarding-unit.log",
+      "logSha256": "02f0f0fff945f1cf4d6d7659b4678de6bdc28f724493c285313640ad3363f2f6"
+    },
+    {
+      "name": "onboarding-mysql",
+      "exitCode": 0,
+      "args": [
+        "scripts/testing/run-isolated.mjs",
+        "--with-database",
+        "server/automation/onboarding.mysql.test.ts",
+        "server/ai/merchant-directive.mysql.test.ts",
+        "server/ai/coaching.mysql.test.ts",
+        "server/knowledge/whatsapp-teaching.mysql.test.ts",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\onboarding-mysql.json"
+      ],
+      "profile": "onboarding-mysql",
+      "log": ".tmp/onboarding-checks/onboarding-mysql.log",
+      "logSha256": "ec31bbfdd41ec9444846b50ff61d9715a95bcf21a4ae2bc24fa217ba61c5cb0b"
+    },
+    {
+      "name": "translations",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/check-translation-keys.ts"
+      ],
+      "profile": "proof-static",
+      "log": ".tmp/onboarding-checks/translations.log",
+      "logSha256": "25d5ff0f1ecf3265333b2c62bc7b49a221633271c5592b35e04753e472f7076d"
+    },
+    {
+      "name": "eval-dry-run",
+      "exitCode": 0,
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/testing/evaluate-conversation-understanding.ts"
+      ],
+      "profile": "proof-static",
+      "log": ".tmp/onboarding-checks/eval-dry-run.log",
+      "logSha256": "941d4016c3e7fd8785fd86f2d964b3e18b4e01414b67d30b79ec95395e236657"
+    },
+    {
+      "name": "snapshot-types",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--tsBuildInfoFile",
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\type-snapshot-a73d72dd-1ec0-4300-83cf-4b6e942f8f74\\check.tsbuildinfo"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\type-snapshot-a73d72dd-1ec0-4300-83cf-4b6e942f8f74",
+      "baseHead": "3269dabf64dbc6f33c4a0267b7ee644eac5f8c80",
+      "overlaySha256": {
+        "drizzle/0160_contextual_onboarding.sql": "a9d1fc92c3c257fd918b294f5c5d69b48c3cc651282726e9c37b131c211d709d",
+        "drizzle/meta/_journal.json": "e6f145ed8435badb1a85e0b13dd8964d223d1f1dd06987682832a007e44a3a6a",
+        "drizzle/schema.ts": "855fde9b59fd2fd9ebd1cdd5f4e9889f726a8813cab9b928495a6ba726669263",
+        "server/ai/sari-personality.ts": "7ebf7a805deeed8c1c63d2dfb0e0b88b64f613dae2532d4b8d04e982366ad091",
+        "server/automation/onboarding-interview.ts": "a05c26cefde49ad8200b2731941ef8a080e480abffb9fa11699f1408a58cc474",
+        "server/automation/onboarding-questions.ts": "771e6c35590d4547d6789c371333400855c62803873558aba4544b9efa77d177",
+        "server/automation/onboarding-understanding.ts": "4459d4f35655d27920b4401fb770abe2185b92cd7df1c733642229e2825b42fa",
+        "server/automation/onboarding-store.ts": "32b99f9e4bb357818860ac46cff40b72743441b3edd484dab97ed803c4d5188d",
+        "server/automation/onboarding-delivery.ts": "c094ce07a25fc45086134e255b1172c09df7993f51e28747e9577fb4b321f02c",
+        "server/automation/onboarding-understanding.test.ts": "a660c7a627e62bb952690a370e4308e1e3ccff06764f643d65633a4900e3155d",
+        "server/automation/onboarding.mysql.test.ts": "d69ddf7b45aeefc5a79e95271304cc761da56199f46234b105dc378bccf0ce02",
+        "server/tests/helpers/onboarding-schema.ts": "2b970e21dc74bf0bac033b18fe749d36b88108b85482bf8c7d536e8f61951939",
+        "server/channels/whatsapp/types.ts": "644bbf2273435109ae5a78a03ec95885a842f60fa1980871217ab65396f7764a",
+        "server/channels/whatsapp/service.ts": "24627265f5784c16fb7f1181092ee0c8409bc9f09b224b39f4a8e637d984c7a7",
+        "server/webhooks/greenapi.ts": "cc0db05b839a372c358e1bbd15d34c1c33fa6176ccc61ec63dbcba8549cf1903",
+        "server/webhooks/greenapi-teaching.test.ts": "c6173ecd8cf30ce295b64cf387d608330ef0b9b21f4da60c2d26ffb902e2e0f1",
+        "server/routers-whatsapp.ts": "047dd83ffc839427f6531995c2612d7b493df590f6547af25e1ea9d2b436cffc"
+      },
+      "source": "Tracked main plus only contextual merchant onboardings; no .env or unrelated uncommitted edits",
+      "profile": "snapshot",
+      "log": ".tmp/onboarding-checks/snapshot-types.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "snapshot-build",
+      "exitCode": 0,
+      "args": [
+        "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\tools\\pnpm-10.4.1\\package\\bin\\pnpm.cjs",
+        "run",
+        "build"
+      ],
+      "cwd": "C:\\Users\\ingaz\\Herd\\sari\\.tmp\\onboarding-checks\\type-snapshot-a73d72dd-1ec0-4300-83cf-4b6e942f8f74",
+      "baseHead": "3269dabf64dbc6f33c4a0267b7ee644eac5f8c80",
+      "overlaySha256": {
+        "drizzle/0160_contextual_onboarding.sql": "a9d1fc92c3c257fd918b294f5c5d69b48c3cc651282726e9c37b131c211d709d",
+        "drizzle/meta/_journal.json": "e6f145ed8435badb1a85e0b13dd8964d223d1f1dd06987682832a007e44a3a6a",
+        "drizzle/schema.ts": "855fde9b59fd2fd9ebd1cdd5f4e9889f726a8813cab9b928495a6ba726669263",
+        "server/ai/sari-personality.ts": "7ebf7a805deeed8c1c63d2dfb0e0b88b64f613dae2532d4b8d04e982366ad091",
+        "server/automation/onboarding-interview.ts": "a05c26cefde49ad8200b2731941ef8a080e480abffb9fa11699f1408a58cc474",
+        "server/automation/onboarding-questions.ts": "771e6c35590d4547d6789c371333400855c62803873558aba4544b9efa77d177",
+        "server/automation/onboarding-understanding.ts": "4459d4f35655d27920b4401fb770abe2185b92cd7df1c733642229e2825b42fa",
+        "server/automation/onboarding-store.ts": "32b99f9e4bb357818860ac46cff40b72743441b3edd484dab97ed803c4d5188d",
+        "server/automation/onboarding-delivery.ts": "c094ce07a25fc45086134e255b1172c09df7993f51e28747e9577fb4b321f02c",
+        "server/automation/onboarding-understanding.test.ts": "a660c7a627e62bb952690a370e4308e1e3ccff06764f643d65633a4900e3155d",
+        "server/automation/onboarding.mysql.test.ts": "d69ddf7b45aeefc5a79e95271304cc761da56199f46234b105dc378bccf0ce02",
+        "server/tests/helpers/onboarding-schema.ts": "2b970e21dc74bf0bac033b18fe749d36b88108b85482bf8c7d536e8f61951939",
+        "server/channels/whatsapp/types.ts": "644bbf2273435109ae5a78a03ec95885a842f60fa1980871217ab65396f7764a",
+        "server/channels/whatsapp/service.ts": "24627265f5784c16fb7f1181092ee0c8409bc9f09b224b39f4a8e637d984c7a7",
+        "server/webhooks/greenapi.ts": "cc0db05b839a372c358e1bbd15d34c1c33fa6176ccc61ec63dbcba8549cf1903",
+        "server/webhooks/greenapi-teaching.test.ts": "c6173ecd8cf30ce295b64cf387d608330ef0b9b21f4da60c2d26ffb902e2e0f1",
+        "server/routers-whatsapp.ts": "047dd83ffc839427f6531995c2612d7b493df590f6547af25e1ea9d2b436cffc"
+      },
+      "profile": "snapshot-build",
+      "log": ".tmp/onboarding-checks/snapshot-build.log",
+      "logSha256": "9602cbd9a891083e66cd1f35b9457e9d3e2062b7f93b5789c1344d9416c8ea1a"
+    }
+  ],
+  "translationCheck": {
+    "advertisedLocale": "ar",
+    "callsChecked": 8429,
+    "dynamicKeysChecked": 346,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "languageEvaluation": {
+    "mode": "dry-run",
+    "cases": 82,
+    "live": false
+  },
+  "earlierAttempts": [
+    {
+      "issue": "SQL argument and nullable next-question TypeScript errors",
+      "resolution": "Corrected driver argument type and narrowed nullable next question; final isolated type check passed."
+    },
+    {
+      "issue": "Existing interview used nonexistent snake-case merchant onboarding columns",
+      "resolution": "Removed writes to shared account wizard fields entirely; dedicated interview session owns progress. Completion test proves account readiness and wizard progress unchanged."
+    },
+    {
+      "issue": "Test fixture first used an invalid instance status, then violated the primary-must-be-active database constraint",
+      "resolution": "Fixture now deactivates the connection and clears its primary flag in one statement; all MySQL cases passed."
+    },
+    {
+      "issue": "Another authorized task committed FAQ UI work to main during verification",
+      "resolution": "Build guard refused stale validation base. Recreated main-plus-owned-overlay snapshot from current main and reran types and build."
+    }
+  ],
+  "coverage": [
+    "central provider/model with no lexical intent fallback",
+    "complete current statement, current question and source-verified answers in AI input",
+    "strict confidence/evidence/explicitness/conditional contract",
+    "quoted current delivered question bound to provider receipt, channel, recipient, prompt and version",
+    "durable inbound tenant/event/partition/lease/current-owner checks repeated in transaction",
+    "atomic field/session/event persistence and rollback on audit failure",
+    "durable pause/resume separate from account setup wizard",
+    "concurrent replay does not advance twice or overwrite a later correction; processed answers remain handled after deletion of the question receipt",
+    "older queued update cannot overwrite newer field evidence",
+    "negative answers and full multiline exceptions preserved",
+    "source modifications, deleted inbound, forged value and changed quote withdraw knowledge",
+    "legacy data retained without fabricated provenance",
+    "daily write quota",
+    "question guard blocks forged recipient, prompt, inactive channel or stale session",
+    "ambiguous/rejected transport cannot be resent by stripping guard",
+    "webhook prioritizes onboarding before generic teaching and checks acknowledgements/next question",
+    "regression across coaching, teaching, merchant directives, memory, learning, reply routing, followups, providers and budgets"
+  ],
+  "compatibility": {
+    "migration": "0160_contextual_onboarding",
+    "appliedToSyntheticMysql": true,
+    "legacyAnswersDeleted": false,
+    "legacyAnswersTrusted": false,
+    "requiresLegacyReconfirmation": true,
+    "wizardReadinessMutated": false,
+    "taskType": "sari.merchant.intent",
+    "sourceLimit": 16000,
+    "storedFieldLimit": 4000,
+    "maximumFieldUpdatesPerMessage": 1,
+    "dailyMutatingEventsPerMerchant": 100,
+    "minimumDecisionConfidence": 0.9,
+    "questionAnswerReference": "native reply to current delivered WhatsApp question",
+    "receiptUniqueness": [
+      "merchant_id",
+      "event_key"
+    ]
+  },
+  "limitations": [
+    "AI and WhatsApp outputs mocked: no live semantic accuracy, persuasion, conversion, latency or cost claims",
+    "Onboarding, teaching and directives still use separate calls inside central budget/provider governance",
+    "Single-field explicit updates; multi-field messages require clarification",
+    "Unquoted interview answers require native reply to question; old questions cannot consume current field",
+    "Legacy answers require reconfirmation before inclusion in trusted business context",
+    "Deleting inbound source withdraws derived field at read time; global retention and historical derived-evidence retraction are not implemented here",
+    "Hashes enforce application consistency, not resistance to an administrator rewriting all records",
+    "Local adversarial tests are not production penetration-test certification",
+    "Multi-turn teaching/conflicts, groups, multiple sales opportunities, live/human/commercial and operational verification remain open"
+  ],
+  "pushed": false,
+  "deployed": false,
+  "sourceSha256": {
+    "drizzle/0160_contextual_onboarding.sql": "a9d1fc92c3c257fd918b294f5c5d69b48c3cc651282726e9c37b131c211d709d",
+    "drizzle/meta/_journal.json": "e6f145ed8435badb1a85e0b13dd8964d223d1f1dd06987682832a007e44a3a6a",
+    "drizzle/schema.ts": "855fde9b59fd2fd9ebd1cdd5f4e9889f726a8813cab9b928495a6ba726669263",
+    "server/ai/sari-personality.ts": "7ebf7a805deeed8c1c63d2dfb0e0b88b64f613dae2532d4b8d04e982366ad091",
+    "server/automation/onboarding-interview.ts": "a05c26cefde49ad8200b2731941ef8a080e480abffb9fa11699f1408a58cc474",
+    "server/automation/onboarding-questions.ts": "771e6c35590d4547d6789c371333400855c62803873558aba4544b9efa77d177",
+    "server/automation/onboarding-understanding.ts": "4459d4f35655d27920b4401fb770abe2185b92cd7df1c733642229e2825b42fa",
+    "server/automation/onboarding-store.ts": "32b99f9e4bb357818860ac46cff40b72743441b3edd484dab97ed803c4d5188d",
+    "server/automation/onboarding-delivery.ts": "c094ce07a25fc45086134e255b1172c09df7993f51e28747e9577fb4b321f02c",
+    "server/automation/onboarding-understanding.test.ts": "a660c7a627e62bb952690a370e4308e1e3ccff06764f643d65633a4900e3155d",
+    "server/automation/onboarding.mysql.test.ts": "d69ddf7b45aeefc5a79e95271304cc761da56199f46234b105dc378bccf0ce02",
+    "server/tests/helpers/onboarding-schema.ts": "2b970e21dc74bf0bac033b18fe749d36b88108b85482bf8c7d536e8f61951939",
+    "server/channels/whatsapp/types.ts": "644bbf2273435109ae5a78a03ec95885a842f60fa1980871217ab65396f7764a",
+    "server/channels/whatsapp/service.ts": "24627265f5784c16fb7f1181092ee0c8409bc9f09b224b39f4a8e637d984c7a7",
+    "server/webhooks/greenapi.ts": "cc0db05b839a372c358e1bbd15d34c1c33fa6176ccc61ec63dbcba8549cf1903",
+    "server/webhooks/greenapi-teaching.test.ts": "c6173ecd8cf30ce295b64cf387d608330ef0b9b21f4da60c2d26ffb902e2e0f1",
+    "server/routers-whatsapp.ts": "047dd83ffc839427f6531995c2612d7b493df590f6547af25e1ea9d2b436cffc",
+    "docs/SARI_SALES_BRAIN_10_OF_10_PLAN_2026-09-23.md": "a04aa9311d86d988b4f8c27b2e0de8ae5849cf3ddee88356f7c95360740751d4",
+    "docs/SARI_CONTEXTUAL_ONBOARDING_2026-09-29.md": "be7b37fe70cc6eecefb13ca3977866631641c88af394d3f1707f1b8995b526aa"
+  }
+}
