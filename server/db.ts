@@ -4832,42 +4832,8 @@ export async function findMatchingQuickResponse(
 
   if (responses.length === 0) return null;
 
-  const lowerMessage = message.toLowerCase().trim();
-
-  // Try exact trigger match first
-  for (const response of responses) {
-    if (lowerMessage === response.trigger.toLowerCase().trim()) {
-      return response;
-    }
-  }
-
-  // Try keyword match
-  for (const response of responses) {
-    if (response.keywords) {
-      try {
-        const parsed = JSON.parse(response.keywords);
-        const keywords = Array.isArray(parsed) ? parsed.map(String) : [];
-        const hasMatch = keywords.some(kw =>
-          lowerMessage.includes(kw.toLowerCase())
-        );
-
-        if (hasMatch) {
-          return response;
-        }
-      } catch (e) {
-        // Backward compatibility: the UI historically stored comma-separated text.
-        const keywords = response.keywords
-          .split(/[,،\n]/)
-          .map(keyword => keyword.trim())
-          .filter(Boolean);
-        if (keywords.some(keyword => lowerMessage.includes(keyword.toLowerCase()))) {
-          return response;
-        }
-      }
-    }
-  }
-
-  return null;
+  const { matchQuickResponse } = await import('../shared/quick-response');
+  return matchQuickResponse(responses, message);
 }
 
 // ============================================================================

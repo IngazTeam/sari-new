@@ -28,11 +28,11 @@ describe('10/10 remediation regression guards', () => {
 
   it('keeps quick-response updates tenant-scoped and blocks unverified action claims', () => {
     const routers = read('./server/routers.ts');
-    const quickResponses = section(routers, 'quickResponses: router({', '// Sentiment Analysis');
-
-    expect(quickResponses).toContain('getQuickResponseById(input.id)');
-    expect(quickResponses).toContain('existingResponse.merchantId !== merchant.id');
-    expect(quickResponses).toContain('containsUnverifiedActionClaim(response)');
+    expect(routers).toContain('quickResponses: quickResponsesRouter');
+    const quickResponses = read('./server/quick-response-workspace.ts');
+    expect(read('./server/routers-quick-responses.ts')).toContain('permissionProcedure("bot_settings.manage")');
+    expect(quickResponses).toContain('eq(quickResponses.merchantId, merchantId)');
+    expect(quickResponses).toContain('containsUnverifiedActionClaim(draft.response)');
   });
 
   it('resolves deterministic quick responses before off-topic classification', () => {

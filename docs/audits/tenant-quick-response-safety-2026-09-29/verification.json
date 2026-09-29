@@ -1,0 +1,29 @@
+{
+  "build": {
+    "entryGzipBytes": 103366,
+    "exitCode": 0,
+    "entryRawBytes": 337291
+  },
+  "live": {
+    "fixtureDeactivated": true,
+    "keywordsReadable": true,
+    "priorityZeroSaved": true
+  },
+  "pushed": false,
+  "realSafariTested": false,
+  "tests": {
+    "passed": 65,
+    "failed": 0
+  },
+  "mysql": {
+    "passed": 5,
+    "failed": 0
+  },
+  "date": "2026-09-29",
+  "externalMessagesSent": false,
+  "deployed": false,
+  "types": {
+    "exitCode": 0,
+    "scope": "full workspace"
+  }
+}

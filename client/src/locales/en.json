@@ -2944,6 +2944,12 @@
     "serviceWorkerSupport": "Service Worker Support",
     "error": "Error"
   },
+  "quickResponsesUx": {
+    "conflict": "The saved response or list changed. Your draft remains here. Copy it before closing, then refresh the list and reopen the current version to review.",
+    "failed": "The change could not be saved. Your data remains here; review the fields and try again.",
+    "experimentReference": "This response is linked to an experiment. You can deactivate it; deletion was blocked to preserve the experiment history.",
+    "confirmDelete": "This quick response will be permanently deleted. Continue?"
+  },
   "quickResponsesPage": {
     "text0": "Quick response added successfully",
     "text1": "Failed to add quick response",
