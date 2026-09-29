@@ -1,4 +1,6 @@
 export const groupConversationEn = {
+  continuity:
+    "Replies to Sari’s messages use verified delivery references. Sari resumes on the next message after timed staff intervention ends; manual and permanent pauses remain until you resume them.",
   mention: "When mentioned directly",
   mentionHelp:
     "AI reads the group discussion after a native WhatsApp mention of the connected account. Typing a phone number alone does not trigger a reply.",
@@ -20,6 +22,8 @@ export type GroupConversationCopy = {
   [K in keyof typeof groupConversationEn]: string;
 };
 export const groupConversationAr: GroupConversationCopy = {
+  continuity:
+    "تُفهم الردود المقتبسة من رسائل ساري عبر إيصالات إرسال موثقة. يستأنف الرد على الرسالة التالية بعد انتهاء تدخل الموظف المحدد بوقت؛ ويبقى الإيقاف اليدوي والدائم حتى تستأنفه.",
   mention: "عند الإشارة المباشرة للحساب",
   mentionHelp:
     "يقرأ AI نقاش المجموعة بعد إشارة واتساب أصلية للحساب المتصل. كتابة رقم الهاتف وحدها لا تشغّل الرد.",

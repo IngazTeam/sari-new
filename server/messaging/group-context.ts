@@ -2,6 +2,7 @@ import type { PoolConnection } from "mysql2/promise";
 import { currentInboundExecution } from "./inbound-context";
 import { groupHash, type GroupInput } from "../ai/group-understanding";
 import { teachingHistoryPhone } from "../knowledge/teaching-source-history";
+import { readVerifiedGroupReplies } from "./group-replies";
 export const groupJson = (v: any): any =>
   typeof v === "string" ? JSON.parse(v) : v;
 type Reader = Pick<PoolConnection, "execute">;
@@ -104,7 +105,8 @@ export async function readGroupContext(c: Reader, lock = false) {
   )
     throw Error("Group settings unavailable");
   const [conversations] = await c.execute<any[]>(
-    `SELECT id,handoff_version,human_takeover,automation_after_message_id FROM conversations
+    `SELECT id,handoff_version,human_takeover,automation_after_message_id,human_expires_at,agent_history,
+      (human_expires_at IS NOT NULL AND human_expires_at<=UTC_TIMESTAMP()) AS timed_expired FROM conversations
      WHERE merchantId=? AND customerPhone=? ORDER BY id LIMIT 2${end}`,
     [e.merchantId, `group_${current.jid.slice(0, -5)}`]
   );
@@ -186,27 +188,43 @@ export async function readGroupContext(c: Reader, lock = false) {
         /^[1-9]\d{7,14}@(?:c\.us|s\.whatsapp\.net)$/.test(j) &&
         teachingHistoryPhone(j) === botPhone
     );
-  const [delivered] = await c.execute<any[]>(
-    `SELECT a.inbound_id,a.decision_json,d.request_json FROM ai_group_understanding a
-    JOIN whatsapp_message_deliveries d ON d.merchant_id=a.merchant_id AND d.instance_id=a.instance_id
-      AND JSON_UNQUOTE(JSON_EXTRACT(d.request_json,'$.inboundJobId'))=CAST(a.inbound_id AS CHAR)
-    WHERE a.merchant_id=? AND a.instance_id=? AND a.inbound_id<? AND d.direction='outgoing'
-      AND d.status IN ('sent','delivered','read') AND d.provider_message_id IS NOT NULL
-      AND JSON_UNQUOTE(JSON_EXTRACT(d.request_json,'$.to'))=? ORDER BY a.inbound_id DESC LIMIT 20${end}`,
-    [e.merchantId, e.instanceId, e.id, current.jid]
+  const replies = await readVerifiedGroupReplies(
+    c,
+    {
+      merchantId: e.merchantId,
+      instanceId: e.instanceId,
+      account: owner.account,
+      provider: owner.provider,
+      groupJid: current.jid,
+      currentId: e.id,
+      messages: envelopes,
+    },
+    lock
   );
-  const assistantReplies = delivered
-    .flatMap(r => {
-      const d = groupJson(r.decision_json),
-        req = groupJson(r.request_json);
-      return envelopes.some(m => m.id === Number(r.inbound_id)) &&
-        d?.reply &&
-        d.reply === req.text &&
-        req.kind === "text"
-        ? [{ afterMessageId: Number(r.inbound_id), text: String(d.reply) }]
-        : [];
-    })
-    .reverse();
+  const assistantReplies = replies.map(({ afterMessageId, text }) => ({
+    afterMessageId,
+    text,
+  }));
+  const quoted = (m: typeof current) => {
+    const participant = m.quote
+      ? envelopes.filter(
+          other => other.id < m.id && other.providerId === m.quote
+        )
+      : [];
+    const assistant = m.quote
+      ? replies.filter(
+          r => r.afterMessageId < m.id && r.providerMessageId === m.quote
+        )
+      : [];
+    const resolved = participant.length + assistant.length === 1;
+    return {
+      quoteId: resolved ? participant[0]?.id || null : null,
+      quoteReplyAfterMessageId: resolved
+        ? assistant[0]?.afterMessageId || null
+        : null,
+      unresolvedQuote: !!m.quote && !resolved,
+    };
+  };
   const data = {
     currentMessageId: e.id,
     mode: b.group_mode as GroupInput["mode"],
@@ -223,16 +241,7 @@ export async function readGroupContext(c: Reader, lock = false) {
         m.sender,
       ]).slice(0, 16),
       text: m.text,
-      quoteId: m.quote
-        ? envelopes.find(
-            other => other.id < m.id && other.providerId === m.quote
-          )?.id || null
-        : null,
-      unresolvedQuote:
-        !!m.quote &&
-        !envelopes.some(
-          other => other.id < m.id && other.providerId === m.quote
-        ),
+      ...quoted(m),
     })),
     assistantReplies,
     facts,
@@ -249,6 +258,11 @@ export async function readGroupContext(c: Reader, lock = false) {
     group: current.jid,
     settings: b,
     authority,
+    ownershipSource: {
+      expiresAt: conversations[0]?.human_expires_at || null,
+      history: conversations[0]?.agent_history || null,
+    },
+    replyProofs: replies.map(r => r.proof),
   });
   return {
     input: { ...data, basisHash } as GroupInput,
@@ -258,5 +272,7 @@ export async function readGroupContext(c: Reader, lock = false) {
     account: owner.account,
     eventKey: e.eventKey,
     authority,
+    conversationId: conversations[0]?.id ? Number(conversations[0].id) : null,
+    timedExpired: !!conversations[0]?.timed_expired,
   };
 }

@@ -7,6 +7,7 @@ import {
   validateGroupDecision,
 } from "../ai/group-understanding";
 import { currentInboundExecution } from "./inbound-context";
+import { resumeExpiredGroupOwnership } from "./group-ownership";
 import {
   createConversation,
   createMessage,
@@ -83,7 +84,11 @@ export async function handleContextualGroup(
         success: true,
         message: "Group response not permitted by current settings or capacity",
       };
-    const context = await checkoutTransaction(c => readGroupContext(c));
+    let context = await checkoutTransaction(c => readGroupContext(c));
+    if (context.authority.humanOwned && context.timedExpired) {
+      await resumeExpiredGroupOwnership();
+      context = await checkoutTransaction(c => readGroupContext(c));
+    }
     if (context.authority.humanOwned)
       return { success: true, message: "Human owns group conversation" };
     if (context.input.mode === "mention_only" && !context.input.mentioned)

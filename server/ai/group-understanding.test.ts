@@ -36,6 +36,7 @@ const input = (): GroupInput => ({
       actor: "other",
       text: "ميزانيتي 500",
       quoteId: null,
+      quoteReplyAfterMessageId: null,
       unresolvedQuote: false,
     },
     {
@@ -43,6 +44,7 @@ const input = (): GroupInput => ({
       actor: "current",
       text: "أحتاج ترتيب شغلي بالأرقام، أي دورة تناسبني؟",
       quoteId: 1,
+      quoteReplyAfterMessageId: null,
       unresolvedQuote: false,
     },
   ],
@@ -176,3 +178,33 @@ it("preserves long context in ordered bounded transport parts", () => {
   expect(parts.map(p => p.data).join("")).toBe(JSON.stringify(i));
   expect(messages.every(m => String(m.content).length < 16000)).toBe(true);
 });
+it("keeps a verified assistant quote distinct from a participant quote", () => {
+  const i = input();
+  i.messages[1].quoteId = null;
+  i.messages[1].quoteReplyAfterMessageId = 1;
+  i.assistantReplies = [{ afterMessageId: 1, text: "ما مستوى خبرتك؟" }];
+  expect(validateGroupDecision(JSON.stringify(decision(i)), i).action).toBe(
+    "respond"
+  );
+  const parts = groupMessages(i)
+    .slice(1)
+    .map(m => JSON.parse(String(m.content)));
+  expect(JSON.parse(parts.map(p => p.data).join("")).messages[1]).toMatchObject(
+    { quoteId: null, quoteReplyAfterMessageId: 1 }
+  );
+});
+it.each(["missing", "both", "future"])(
+  "rejects an invalid assistant-quote link: %s",
+  kind => {
+    const i = input();
+    i.messages[1].quoteReplyAfterMessageId = kind === "future" ? 3 : 1;
+    i.messages[1].quoteId = kind === "both" ? 1 : null;
+    i.assistantReplies =
+      kind === "missing"
+        ? []
+        : [{ afterMessageId: kind === "future" ? 3 : 1, text: "سؤال سابق" }];
+    expect(() =>
+      validateGroupDecision(JSON.stringify(decision(i)), i)
+    ).toThrow();
+  }
+);

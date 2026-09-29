@@ -1293,6 +1293,7 @@ export default function BotSettings() {
 
                 {groupMode === "private_redirect" && <p className="rounded-xl border p-4 leading-7">{t("merchantUx.groupConversation.privateNote")}</p>}
                 <p className="text-sm text-muted-foreground leading-7">{t("merchantUx.groupConversation.scope")}</p>
+                <p className="text-sm text-muted-foreground leading-7">{t("merchantUx.groupConversation.continuity")}</p>
               </CardContent>
             </Card>
           </section>

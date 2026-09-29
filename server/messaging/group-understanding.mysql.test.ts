@@ -36,6 +36,7 @@ import { readGroupContext } from "./group-context";
 import { checkoutTransaction } from "../ai/checkout-agreements";
 import { runInteractionJob } from "../ai/interaction-jobs";
 import { canDispatchGroupReply } from "./group-handler";
+import { resumeExpiredGroupOwnership } from "./group-ownership";
 import { ordinaryReplyDigest } from "../ai/reply-reservation";
 import { purgeCompletedInboundPayloads } from "./retention";
 import { ensureTeachingDialogueSchema } from "../tests/helpers/teaching-dialogue-schema";
@@ -546,6 +547,326 @@ describe.skipIf(!process.env.DATABASE_URL)(
         expect(checked).toBe(true);
       }
     );
+    async function sentTurn() {
+      const source = await event();
+      expect((await run()).status).toBe("completed");
+      const [receipt] = await q(
+        "SELECT * FROM whatsapp_message_deliveries WHERE merchant_id=? ORDER BY id DESC LIMIT 1",
+        [f.merchantId]
+      );
+      const [decision] = await q(
+        "SELECT * FROM ai_group_understanding WHERE merchant_id=? ORDER BY id DESC LIMIT 1",
+        [f.merchantId]
+      );
+      return { source, receipt, decision };
+    }
+    const quote = (receiptId: string) => ({
+      extendedTextMessageData: {
+        text: "مبتدئ",
+        quotedMessage: {
+          stanzaId: receiptId,
+          textMessage: "forged embedded sentinel",
+        },
+      },
+    });
+    it("resolves a quoted bot question to its acknowledged reply, without trusting embedded quote text", async () => {
+      const { source, receipt } = await sentTurn();
+      await event("مبتدئ", group, sender, quote(receipt.provider_message_id));
+      expect((await run()).status).toBe("completed");
+      const i = mock.understand.mock.calls[1][1] as GroupInput;
+      expect(i.messages.at(-1)).toMatchObject({
+        quoteId: null,
+        quoteReplyAfterMessageId: source.id,
+        unresolvedQuote: false,
+      });
+      expect(i.assistantReplies).toEqual([
+        { afterMessageId: source.id, text: receipt.request_json.text },
+      ]);
+      expect(JSON.stringify(i)).not.toContain("embedded sentinel");
+      expect(mock.send).toHaveBeenCalledTimes(2);
+    });
+    it.each([
+      "recipient",
+      "request_text",
+      "paired_text",
+      "request_source",
+      "request_guard",
+      "status",
+      "provider",
+      "decision",
+      "plan",
+      "source_text",
+      "source_payload",
+      "deleted_message",
+    ])("refuses a quoted assistant reply with altered %s proof", async kind => {
+      const { source, receipt, decision } = await sentTurn();
+      if (kind === "recipient")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.to','966500000111') WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "request_text" || kind === "paired_text")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.text','tampered') WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "paired_text")
+        await q(
+          "UPDATE ai_group_understanding SET decision_json=JSON_SET(decision_json,'$.reply','tampered') WHERE id=?",
+          [decision.id]
+        );
+      if (kind === "request_source")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.inboundJobId',999999) WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "request_guard")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET request_json=JSON_SET(request_json,'$.replyGuard.incomingMessageId',999999) WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "status")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET status='failed' WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "provider")
+        await q(
+          "UPDATE whatsapp_message_deliveries SET provider='mock' WHERE id=?",
+          [receipt.id]
+        );
+      if (kind === "decision")
+        await q(
+          "UPDATE ai_group_understanding SET decision_json=JSON_SET(decision_json,'$.currentMessageId',999999) WHERE id=?",
+          [decision.id]
+        );
+      if (kind === "plan")
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET reply_plan_json=JSON_SET(reply_plan_json,'$.effects[0].text','tampered') WHERE id=?",
+          [source.id]
+        );
+      if (kind === "source_text")
+        await q("UPDATE messages SET content='tampered' WHERE id=?", [
+          decision.incoming_message_id,
+        ]);
+      if (kind === "source_payload")
+        await q(
+          "UPDATE whatsapp_inbound_jobs SET payload_json=JSON_SET(payload_json,'$.messageData.textMessageData.textMessage','tampered') WHERE id=?",
+          [source.id]
+        );
+      if (kind === "deleted_message")
+        await q("DELETE FROM messages WHERE id=?", [
+          decision.incoming_message_id,
+        ]);
+      mock.understand.mockClear();
+      mock.send.mockClear();
+      await event("مبتدئ", group, sender, quote(receipt.provider_message_id));
+      expect((await run()).status).toBe("completed");
+      expect(mock.understand).not.toHaveBeenCalled();
+      expect(mock.send).not.toHaveBeenCalled();
+    });
+    it("prevents duplicate provider receipts in storage and keeps the original quote resolvable", async () => {
+      const { receipt } = await sentTurn();
+      await expect(
+        q(
+          "INSERT INTO whatsapp_message_deliveries (merchant_id,instance_id,provider,idempotency_key,direction,status,provider_message_id,request_json) SELECT merchant_id,instance_id,provider,CONCAT(idempotency_key,':duplicate'),'outgoing','sent',provider_message_id,request_json FROM whatsapp_message_deliveries WHERE id=?",
+          [receipt.id]
+        )
+      ).rejects.toMatchObject({ code: "ER_DUP_ENTRY" });
+      mock.understand.mockClear();
+      await event("مبتدئ", group, sender, quote(receipt.provider_message_id));
+      expect((await run()).status).toBe("completed");
+      expect(mock.understand).toHaveBeenCalledOnce();
+    });
+    it("rejects a provider-id collision between a participant and an assistant quote", async () => {
+      const { source, receipt } = await sentTurn();
+      await q(
+        "UPDATE whatsapp_message_deliveries SET provider_message_id=? WHERE id=?",
+        [source.payload.idMessage, receipt.id]
+      );
+      mock.understand.mockClear();
+      await event("مبتدئ", group, sender, quote(source.payload.idMessage));
+      await run();
+      expect(mock.understand).not.toHaveBeenCalled();
+    });
+    it("does not resolve an assistant quote from a different group", async () => {
+      const { receipt } = await sentTurn();
+      mock.understand.mockClear();
+      await event(
+        "مبتدئ",
+        "120363000000099@g.us",
+        sender,
+        quote(receipt.provider_message_id)
+      );
+      await run();
+      expect(mock.understand).not.toHaveBeenCalled();
+    });
+    it("invalidates an answer when a historical receipt changes during AI even if its text is unchanged", async () => {
+      const { receipt } = await sentTurn(),
+        original = mock.understand.getMockImplementation()!;
+      mock.understand.mockImplementation(async (m, i) => {
+        const d = await original(m, i);
+        await q(
+          "UPDATE whatsapp_message_deliveries SET provider_message_id=? WHERE id=?",
+          [randomUUID(), receipt.id]
+        );
+        return d;
+      });
+      mock.send.mockClear();
+      await event("مبتدئ");
+      expect((await run()).status).toBe("review");
+      expect(mock.send).not.toHaveBeenCalled();
+    });
+    async function timedHold(kind = "expired") {
+      const turn = await sentTurn();
+      await q(
+        "UPDATE conversations SET human_takeover=1,handoff_version=1,human_takeover_at=TIMESTAMPADD(DAY,-2,UTC_TIMESTAMP()),human_expires_at=TIMESTAMPADD(MINUTE,-1,UTC_TIMESTAMP()),agent_history='{}' WHERE id=?",
+        [turn.decision.conversation_id]
+      );
+      if (kind === "future")
+        await q(
+          "UPDATE conversations SET human_expires_at=TIMESTAMPADD(DAY,1,UTC_TIMESTAMP()) WHERE id=?",
+          [turn.decision.conversation_id]
+        );
+      if (kind === "manual")
+        await q("UPDATE conversations SET human_expires_at=NULL WHERE id=?", [
+          turn.decision.conversation_id,
+        ]);
+      if (kind === "permanent")
+        await q("UPDATE conversations SET agent_history=? WHERE id=?", [
+          JSON.stringify({ permanentSilence: true }),
+          turn.decision.conversation_id,
+        ]);
+      if (kind === "malformed")
+        await q(
+          "UPDATE conversations SET agent_history='invalid-json' WHERE id=?",
+          [turn.decision.conversation_id]
+        );
+      mock.understand.mockClear();
+      mock.send.mockClear();
+      return turn;
+    }
+    it("resumes an expired explicit timed hold before AI and anchors the new message after the cutoff", async () => {
+      const { decision } = await timedHold();
+      await event("أكمل شرح الدورة");
+      expect((await run()).status).toBe("completed");
+      const [conversation] = await q("SELECT * FROM conversations WHERE id=?", [
+        decision.conversation_id,
+      ]);
+      expect(conversation.human_takeover).toBe(0);
+      expect(conversation.handoff_version).toBe(2);
+      const [latest] = await q(
+        "SELECT incoming_message_id FROM ai_group_understanding WHERE merchant_id=? ORDER BY id DESC LIMIT 1",
+        [f.merchantId]
+      );
+      expect(latest.incoming_message_id).toBeGreaterThan(
+        conversation.automation_after_message_id
+      );
+      expect(mock.understand).toHaveBeenCalledOnce();
+      expect(mock.send).toHaveBeenCalledOnce();
+      await event("ومدة الدورة؟");
+      await run();
+      expect(
+        (
+          await q("SELECT handoff_version FROM conversations WHERE id=?", [
+            conversation.id,
+          ])
+        )[0].handoff_version
+      ).toBe(2);
+    });
+    it.each(["future", "manual", "permanent", "malformed"])(
+      "preserves a %s human hold without AI or a group reply",
+      async kind => {
+        const { decision } = await timedHold(kind);
+        await event();
+        expect((await run()).status).toBe("completed");
+        expect(mock.understand).not.toHaveBeenCalled();
+        expect(mock.send).not.toHaveBeenCalled();
+        expect(
+          (
+            await q(
+              "SELECT human_takeover,handoff_version FROM conversations WHERE id=?",
+              [decision.conversation_id]
+            )
+          )[0]
+        ).toMatchObject({ human_takeover: 1, handoff_version: 1 });
+      }
+    );
+    it("rechecks a hold extended after the first read inside the expiry transaction", async () => {
+      const { decision } = await timedHold();
+      await event();
+      const job = (await claimInbound(f.merchantId))!;
+      let checked = false;
+      await executeInbound(job, async () => {
+        expect(
+          (await checkoutTransaction(c => readGroupContext(c))).timedExpired
+        ).toBe(true);
+        await q(
+          "UPDATE conversations SET human_expires_at=TIMESTAMPADD(DAY,1,UTC_TIMESTAMP()) WHERE id=?",
+          [decision.conversation_id]
+        );
+        expect(await resumeExpiredGroupOwnership()).toBe(false);
+        checked = true;
+        return { success: true };
+      });
+      expect(checked).toBe(true);
+      expect(
+        (
+          await q(
+            "SELECT human_takeover,handoff_version FROM conversations WHERE id=?",
+            [decision.conversation_id]
+          )
+        )[0]
+      ).toMatchObject({ human_takeover: 1, handoff_version: 1 });
+    });
+    it.each(["receipt", "message"])(
+      "locks the historical %s proof until the final context transaction finishes",
+      async kind => {
+        const { receipt, decision } = await sentTurn();
+        await event("مبتدئ");
+        const job = (await claimInbound(f.merchantId))!;
+        const other = await (await getPool())!.getConnection();
+        let checked = false;
+        const [[prior]] = await other.query<any[]>(
+          "SELECT @@SESSION.innodb_lock_wait_timeout AS value"
+        );
+        const sql =
+          kind === "receipt"
+            ? "UPDATE whatsapp_message_deliveries SET provider_message_id=? WHERE id=?"
+            : "UPDATE messages SET content=? WHERE id=?";
+        const args = [
+          randomUUID(),
+          kind === "receipt" ? receipt.id : decision.incoming_message_id,
+        ];
+        try {
+          await other.query("SET SESSION innodb_lock_wait_timeout=1");
+          await executeInbound(job, async () => {
+            await checkoutTransaction(async c => {
+              expect(
+                (await readGroupContext(c, true)).input.assistantReplies
+              ).toHaveLength(1);
+              await expect(other.execute(sql, args)).rejects.toMatchObject({
+                code: "ER_LOCK_WAIT_TIMEOUT",
+              });
+              checked = true;
+            });
+            await other.execute(sql, args);
+            return { success: true };
+          });
+          expect(checked).toBe(true);
+        } finally {
+          await other.query("SET SESSION innodb_lock_wait_timeout=?", [
+            Number(prior.value),
+          ]);
+          other.release();
+        }
+      }
+    );
+    it("requires an owned inbound event to resume group automation", async () => {
+      await expect(resumeExpiredGroupOwnership()).rejects.toThrow(
+        "Owned group source"
+      );
+    });
     it("redacts old terminal group evidence, retains review cases and keeps replay identifiers", async () => {
       const original = mock.understand.getMockImplementation()!;
       mock.understand.mockImplementation(async (m, i) => ({
