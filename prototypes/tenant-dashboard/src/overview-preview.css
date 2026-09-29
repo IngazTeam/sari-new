@@ -1,0 +1,20 @@
+.ov-preview {
+  --border: var(--line);
+  --card: var(--white);
+  --background: var(--white);
+  --foreground: var(--ink);
+  --muted-foreground: #6c7872;
+  --muted: var(--soft);
+  --primary: var(--forest);
+}
+.ov-preview p {
+  color: var(--muted-foreground);
+}
+.ov-preview dl,
+.ov-preview dd {
+  margin: 0;
+}
+.ov-preview table th,
+.ov-preview table td {
+  white-space: normal;
+}
