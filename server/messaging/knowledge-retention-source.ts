@@ -16,6 +16,7 @@ export const activeKnowledgeReferenceSql = `(
       AND (s.valid_until IS NULL OR s.valid_until>UTC_TIMESTAMP(3))
       AND (s.status='pending_review' OR (s.status IN ('approved','auto_approved') AND s.use_in_bot=1 AND s.inject_as<>'none'))
       AND JSON_UNQUOTE(JSON_EXTRACT(s.provenance,'$.origin'))='contextual_whatsapp_teaching'
+      AND JSON_EXTRACT(s.provenance,'$.manualReview') IS NULL
       AND JSON_EXTRACT(s.provenance,'$.version')=1
       AND JSON_EXTRACT(s.provenance,'$.inboundId')=j.id
       AND JSON_EXTRACT(s.provenance,'$.instanceId')=j.instance_id
@@ -30,6 +31,7 @@ export const activeKnowledgeReferenceSql = `(
       AND (s.valid_until IS NULL OR s.valid_until>UTC_TIMESTAMP(3))
       AND (s.status='pending_review' OR (s.status IN ('approved','auto_approved') AND s.use_in_bot=1 AND s.inject_as<>'none'))
       AND JSON_UNQUOTE(JSON_EXTRACT(s.provenance,'$.origin'))='contextual_whatsapp_dialogue'
+      AND JSON_EXTRACT(s.provenance,'$.manualReview') IS NULL
       AND JSON_EXTRACT(s.provenance,'$.version')=2
       AND s.source_url=CONCAT('whatsapp-dialogue://',t.event_key)
       AND (

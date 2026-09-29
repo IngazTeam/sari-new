@@ -13,6 +13,7 @@ import { withKnowledgeTransaction } from '../knowledge/transaction';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { runKnowledgeWrite } from '../knowledge/intake-execution';
+import { readVerifiedBotSections } from '../knowledge/teaching-read';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -132,35 +133,13 @@ export async function getSectionsByMerchantId(merchantId: number): Promise<Knowl
 /** Get sections for bot injection (approved + use_in_bot) — NO embedding */
 export async function getBotSections(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return [];
-
-  const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
-     FROM knowledge_sections 
-     WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
-       AND inject_as <> 'none' AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP(3))
-     ORDER BY inject_as, sort_order`,
-    [merchantId]
-  );
-  return rows as KnowledgeSection[];
+  return readVerifiedBotSections(merchantId);
 }
 
 /** Get sections WITH embedding for RAG semantic search — NOT for tRPC serialization! */
 export async function getBotSectionsWithEmbedding(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return [];
-
-  const [rows] = await pool.execute(
-    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, embedding_content_hash, valid_until, provenance, created_at, updated_at
-     FROM knowledge_sections 
-     WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
-       AND inject_as <> 'none' AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP(3))
-     ORDER BY inject_as, sort_order`,
-    [merchantId]
-  );
-  return rows as KnowledgeSection[];
+  return readVerifiedBotSections(merchantId,true);
 }
 
 /** Get pending review sections (conflicts) */

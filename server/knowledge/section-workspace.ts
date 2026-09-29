@@ -15,6 +15,10 @@ import {
 } from "./transaction";
 import { sectionDescendants } from "./source-lifecycle";
 import {
+  isSourcedTeaching,
+  manualTeachingReviewHash,
+} from "./teaching-manual-review";
+import {
   sectionCreateInput,
   sectionUpdateInput,
   sectionDeleteInput,
@@ -199,14 +203,19 @@ async function audit(
   after: string | null,
   details: unknown
 ) {
-  await tx.insert(knowledgeChangelog).values({
+  const contentHash = Object(details)?.contentHash;
+  const [change] = await tx.insert(knowledgeChangelog).values({
     merchantId,
     sectionId: action === "delete" ? null : id,
     action,
     oldContent: before,
     newContent: after,
     source: "manual",
-    reason: "مراجعة يدوية من مساحة أقسام المعرفة",
+    reason:
+      "مراجعة يدوية من مساحة أقسام المعرفة" +
+      (typeof contentHash === "string" && /^[a-f0-9]{64}$/.test(contentHash)
+        ? `\nSHA256:${contentHash}`
+        : ""),
   });
   await tx.insert(sariActivityLog).values({
     merchantId,
@@ -219,6 +228,7 @@ async function audit(
     description: "تحديث أقسام المعرفة بعد المراجعة",
     details: JSON.stringify({ sectionId: id, ...Object(details) }),
   });
+  return Number(change.insertId);
 }
 export async function createWorkspaceSection(merchantId: number, raw: unknown) {
   const input = sectionCreateInput.parse(raw),
@@ -274,14 +284,12 @@ export async function createWorkspaceSection(merchantId: number, raw: unknown) {
           code: "CONFLICT",
           message: "Manual request changed",
         });
-      await tx
-        .insert(creations)
-        .values({
-          merchantId,
-          requestId: input.requestId,
-          inputHash,
-          sectionId: prior.id,
-        });
+      await tx.insert(creations).values({
+        merchantId,
+        requestId: input.requestId,
+        inputHash,
+        sectionId: prior.id,
+      });
       return {
         success: true,
         id: prior.id,
@@ -322,14 +330,12 @@ export async function createWorkspaceSection(merchantId: number, raw: unknown) {
     await audit(tx, merchantId, created.insertId, "add", null, input.content, {
       useInBot: input.useInBot,
     });
-    await tx
-      .insert(creations)
-      .values({
-        merchantId,
-        requestId: input.requestId,
-        inputHash,
-        sectionId: created.insertId,
-      });
+    await tx.insert(creations).values({
+      merchantId,
+      requestId: input.requestId,
+      inputHash,
+      sectionId: created.insertId,
+    });
     return {
       success: true,
       id: created.insertId,
@@ -440,15 +446,46 @@ export async function changeWorkspaceSection(
           : {}),
       })
       .where(and(eq(table.merchantId, merchantId), eq(table.id, input.id)));
-    await audit(
+    const teaching = isSourcedTeaching(
+      provenance(old.provenance),
+      old.sourceUrl
+    );
+    const manualHash = teaching
+      ? manualTeachingReviewHash({
+          merchantId,
+          id: input.id,
+          title: patch.title,
+          content: patch.content,
+          useInBot: patch.useInBot,
+          summary:
+            old.title !== patch.title || old.content !== patch.content
+              ? null
+              : old.summary,
+        })
+      : null;
+    const changeId = await audit(
       tx,
       merchantId,
       input.id,
       "manual_edit",
       old.content,
       patch.content,
-      { useInBot: patch.useInBot, previousRevision: input.expectedRevision }
+      {
+        useInBot: patch.useInBot,
+        previousRevision: input.expectedRevision,
+        ...(manualHash ? { contentHash: manualHash } : {}),
+      }
     );
+    if (manualHash)
+      await tx
+        .update(table)
+        .set({
+          provenance: {
+            ...provenance(old.provenance),
+            manualReview: { version: 1, changeId, contentHash: manualHash },
+          },
+        })
+        .where(and(eq(table.merchantId, merchantId), eq(table.id, input.id)));
     return { success: true, id: input.id };
   });
 }

@@ -8,7 +8,7 @@ const hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const decode = (value: any) =>
   typeof value === "string" ? JSON.parse(value) : value;
-const phone = (value: any) => {
+export const teachingHistoryPhone = (value: any) => {
   if (typeof value !== "string") return null;
   let digits = value
     .replace(/@(c\.us|s\.whatsapp\.net)$/, "")
@@ -30,7 +30,11 @@ export async function verifyTeachingHistory(
     await db.execute(sql`SELECT j.payload_json,j.event_key,j.partition_key,j.instance_id,i.instance_id AS account_id,i.provider
     FROM whatsapp_inbound_jobs j JOIN whatsapp_instances i ON i.id=j.instance_id AND i.merchant_id=j.merchant_id
     WHERE j.id=${source.inboundId} AND j.merchant_id=${source.merchantId} ${lock ? sql`FOR UPDATE` : sql``}`);
-  const row = Array.isArray(rows) ? rows[0] : undefined;
+  validateTeachingHistory(source, Array.isArray(rows) ? rows[0] : undefined);
+}
+
+/** Pure validation shared by approval and batched knowledge retrieval. */
+export function validateTeachingHistory(source: TeachingSource, row: any) {
   if (!row) throw Error("Teaching history removed");
   const payload = decode(row.payload_json),
     md = payload?.messageData;
@@ -65,14 +69,20 @@ export async function verifyTeachingHistory(
         "@c.us"
       ),
     ]) !== row.partition_key ||
-    phone(payload?.senderData?.sender ?? payload?.senderData?.chatId) !==
-      source.authorPhone ||
-    phone(payload?.senderData?.chatId) !== source.authorPhone ||
+    teachingHistoryPhone(
+      payload?.senderData?.sender ?? payload?.senderData?.chatId
+    ) !== source.authorPhone ||
+    teachingHistoryPhone(payload?.senderData?.chatId) !== source.authorPhone ||
     (md?.extendedTextMessageData?.text ?? md?.textMessageData?.textMessage) !==
       source.text ||
     (quotedEscalationMessageId(payload) || undefined) !==
       source.quotedMessageId ||
     source.quotedMessageId ||
+    [
+      md?.quotedMessage?.stanzaId,
+      md?.extendedTextMessageData?.stanzaId,
+      md?.extendedTextMessageData?.quotedMessage?.stanzaId,
+    ].some(v => v !== undefined && v !== null) ||
     !["textMessage", "extendedTextMessage"].includes(md?.typeMessage)
   )
     throw Error("Teaching history changed");

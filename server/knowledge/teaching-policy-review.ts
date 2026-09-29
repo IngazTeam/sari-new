@@ -28,17 +28,12 @@ type Proposal = Pick<
   | "sourceUrl"
   | "parentId"
 >;
-export async function verifyTeachingProposal(
-  tx: KnowledgeTransaction,
+export function parseTeachingProposal(
   merchantId: number,
   proposed: Proposal,
-  lock = false
+  turn: any
 ) {
   const p = decode(proposed.provenance);
-  const [raw] = await tx.execute(
-    sql`SELECT * FROM merchant_teaching_turns WHERE merchant_id=${merchantId} AND event_key=${p?.eventKey} ${lock ? sql`FOR UPDATE` : sql``}`
-  );
-  const turn = Array.isArray(raw) ? (raw[0] as any) : null;
   if (
     !turn ||
     proposed.merchantId !== merchantId ||
@@ -91,7 +86,6 @@ export async function verifyTeachingProposal(
       (f.text.length > 2000 && f !== source)
     )
       throw Error("Teaching proof scope changed");
-    await verifyTeachingHistory(f, tx, lock);
   }
   const content =
     fragments.length === 1
@@ -105,6 +99,25 @@ export async function verifyTeachingProposal(
   )
     throw Error("Teaching text changed");
   return { source, fragments, d };
+}
+export async function verifyTeachingProposal(
+  tx: KnowledgeTransaction,
+  merchantId: number,
+  proposed: Proposal,
+  lock = false
+) {
+  const p = decode(proposed.provenance);
+  const [raw] = await tx.execute(
+    sql`SELECT * FROM merchant_teaching_turns WHERE merchant_id=${merchantId} AND event_key=${p?.eventKey} ${lock ? sql`FOR UPDATE` : sql``}`
+  );
+  const proof = parseTeachingProposal(
+    merchantId,
+    proposed,
+    Array.isArray(raw) ? raw[0] : null
+  );
+  for (const source of [...proof.fragments, proof.source])
+    await verifyTeachingHistory(source, tx, lock);
+  return proof;
 }
 async function rows(
   tx: KnowledgeTransaction,
