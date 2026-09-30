@@ -10,9 +10,6 @@ import {
     products,
     Product,
     InsertProduct,
-    productCategories,
-    ProductCategory,
-    InsertProductCategory,
     productOptions,
     ProductOption,
     InsertProductOption,
@@ -86,39 +83,6 @@ export async function deleteAllProductsByMerchantId(merchantId: number): Promise
     if (!db) return;
 
     await db.delete(products).where(and(eq(products.merchantId, merchantId),sql.raw(zidCatalogVisibleSql())));
-}
-
-// ============================================
-// Product Categories
-// ============================================
-
-export async function getCategoriesByMerchantId(merchantId: number): Promise<ProductCategory[]> {
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(productCategories)
-        .where(eq(productCategories.merchantId, merchantId))
-        .orderBy(productCategories.sortOrder);
-}
-
-export async function createCategory(data: InsertProductCategory): Promise<ProductCategory | undefined> {
-    const db = await getDb();
-    if (!db) return undefined;
-    const result = await db.insert(productCategories).values(data);
-    const id = Number(result[0].insertId);
-    const rows = await db.select().from(productCategories).where(eq(productCategories.id, id)).limit(1);
-    return rows[0];
-}
-
-export async function updateCategory(id: number, data: Partial<InsertProductCategory>): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.update(productCategories).set(data).where(eq(productCategories.id, id));
-}
-
-export async function deleteCategory(id: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.delete(productCategories).where(eq(productCategories.id, id));
 }
 
 // ============================================
