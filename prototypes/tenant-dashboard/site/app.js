@@ -185,10 +185,16 @@ function render(keepFocus=false){
 }
 function onRoute(){
   if(location.hash.startsWith('#/page/')) {
-    let path; try { path=decodeURIComponent(location.hash.slice(6)); } catch { path='/merchant/preview-state/missing'; }
+    const rawPath=location.hash.slice(6), queryAt=rawPath.indexOf('?');
+    const routeQuery=new URLSearchParams(queryAt<0?'':rawPath.slice(queryAt+1));
+    let path; try { path=decodeURIComponent(queryAt<0?rawPath:rawPath.slice(0,queryAt)); } catch { path='/merchant/preview-state/missing'; }
     ui.page=TenantPages.find(path)||TenantPages.find('/merchant/preview-state/missing');
     if(ui.page.redirect)ui.page=TenantPages.find(ui.page.redirect);
     ui.section=ui.page.group;ui.tab='';ui.demo='normal';ui.query='';ui.filter='all';
+    if(ui.page.kind==='inbox'){
+      ui.chat=null;const phone=routeQuery.get('phone');
+      if(phone){ui.query=phone;const linked=window.PipelinePreview?.linkedContact(phone);if(linked&&!data.contacts.some(c=>c.ref===linked.ref))data.contacts.push(linked);}
+    }
     TenantPages.reset(ui.page);
     if($('#dialog').open)$('#dialog').close();if($('#nav-dialog').open)$('#nav-dialog').close();
     clearTimeout(loadingTimer);render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});return;
