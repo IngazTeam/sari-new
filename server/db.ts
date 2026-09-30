@@ -3608,59 +3608,6 @@ export async function deleteNotificationTemplate(id: number) {
 export { getMessageStats, getPeakHours, getTopProducts, getConversionRate, getDailyMessageCount } from './message-analytics-legacy';
 
 /**
- * Get orders with filters (status, date range)
- */
-export async function getOrdersWithFilters(
-  merchantId: number,
-  filters?: {
-    status?: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-    startDate?: Date;
-    endDate?: Date;
-    searchQuery?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<Order[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const conditions = [eq(orders.merchantId, merchantId)];
-
-  if (filters?.status) {
-    conditions.push(eq(orders.status, filters.status));
-  }
-
-  if (filters?.startDate) {
-    conditions.push(gte(orders.createdAt, formatDateForDB(filters.startDate)));
-  }
-
-  if (filters?.endDate) {
-    conditions.push(lte(orders.createdAt, formatDateForDB(filters.endDate)));
-  }
-
-  if (filters?.searchQuery) {
-    const query = `%${filters.searchQuery}%`;
-    conditions.push(or(
-      like(orders.customerName, query),
-      like(orders.customerPhone, query),
-      like(orders.orderNumber, query),
-    )!);
-  }
-
-  const limit = Math.min(Math.max(filters?.limit || 25, 1), 100);
-  const offset = Math.max(filters?.offset || 0, 0);
-  const results = await db
-    .select()
-    .from(orders)
-    .where(and(...conditions))
-    .orderBy(desc(orders.createdAt), desc(orders.id))
-    .limit(limit)
-    .offset(offset);
-
-  return results;
-}
-
-/**
  * Get order statistics for merchant
  */
 export async function getOrderStats(merchantId: number): Promise<{
@@ -3701,20 +3648,6 @@ export async function getOrderStats(merchantId: number): Promise<{
   };
 
   return stats;
-}
-
-/**
- * Cancel order
- */
-export async function cancelOrder(id: number, reason?: string): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(orders).set({
-    status: 'cancelled',
-    notes: reason || 'تم إلغاء الطلب',
-    updatedAt: formatDateForDB(new Date())
-  }).where(eq(orders.id, id));
 }
 
 // ============================================

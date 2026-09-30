@@ -109,5 +109,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
         appRouter._def.procedures["orders.workspace.statusWrite"]
       ).toBeDefined();
     });
+    it("exposes only the scoped workspace reads for the tenant order page", () => {
+      for(const key of ["listByMerchant","getById","getWithFilters","getStats"])
+        expect(appRouter._def.procedures[`orders.${key}`]).toBeUndefined();
+      for(const key of ["list","detail","statusHistory"])
+        expect(appRouter._def.procedures[`orders.workspace.${key}`]).toBeDefined();
+    });
   }
 );

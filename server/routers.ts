@@ -205,9 +205,6 @@ import {
   getMerchantSentimentStats,
   getMessagesByConversationId,
   getOrderById,
-  getOrderStats,
-  getOrdersByMerchantId,
-  getOrdersWithFilters,
   getPaymentByTransactionId,
   getPendingWhatsAppRequests,
   getPlanById,
@@ -317,9 +314,6 @@ import { z } from 'zod';
 import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
 import { whatsappWorkspaceRouter } from './routers/whatsapp-workspace';
 import { reconnectWorkspaceInstance, workspaceUsage, listWorkspaceRequests, workspaceQR, confirmWorkspaceRequest, workspaceInstanceQR, confirmWorkspaceInstance } from './whatsapp/tenant-workspace';
-import {
-  getMerchantOrder,
-} from './orders/merchant-order-lifecycle';
 
 const passwordResetEmailSchema = z.string()
   .trim()
@@ -2178,72 +2172,6 @@ export const appRouter = router({
           replayed: result.replayed,
           confirmationMessage
         };
-      }),
-
-    // Get order by ID
-    getById: merchantProcedure
-      .input(z.object({ orderId: z.number().int().positive() }).strict())
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        const order = await getMerchantOrder(merchant.id, input.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-        }
-
-        return order;
-      }),
-
-    // List orders for merchant
-    listByMerchant: merchantProcedure
-      .query(async ({ ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getOrdersByMerchantId(merchant.id);
-      }),
-
-    // Get orders with filters
-    getWithFilters: merchantProcedure
-      .input(z.object({
-        status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).optional(),
-        startDate: z.string().datetime({ offset: true }).optional(),
-        endDate: z.string().datetime({ offset: true }).optional(),
-        searchQuery: z.string().trim().max(100).optional(),
-        search: z.string().trim().max(100).optional(),
-        page: z.number().int().min(1).max(10_000).default(1),
-        limit: z.number().int().min(1).max(100).default(25),
-      }).strict())
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const filters: any = {};
-        if (input.status) filters.status = input.status;
-        if (input.startDate) filters.startDate = new Date(input.startDate);
-        if (input.endDate) filters.endDate = new Date(input.endDate);
-        if (input.searchQuery) filters.searchQuery = input.searchQuery;
-        if (input.search) filters.searchQuery = input.search;
-        filters.limit = input.limit;
-        filters.offset = (input.page - 1) * input.limit;
-
-        return await getOrdersWithFilters(merchant.id, filters);
-      }),
-
-    // Get order statistics
-    getStats: permissionProcedure('analytics.read')
-      .query(async ({ ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await getOrderStats(merchant.id);
       }),
 
     listZidReconciliations: merchantProcedure

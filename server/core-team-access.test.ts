@@ -409,7 +409,7 @@ describe('real app router team boundaries', () => {
   });
   it('fails closed after membership revocation or identity database failure', async () => {
     mocks.access.mockResolvedValue(null);
-    await expect(caller().orders.listByMerchant()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(caller().orders.workspace.list({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
     mocks.access.mockRejectedValue(new Error('fixture connection failure'));
     await expect(caller().conversations.list()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
     expect(mocks.merchant).not.toHaveBeenCalled();

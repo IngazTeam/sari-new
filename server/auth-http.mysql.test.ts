@@ -82,6 +82,9 @@ describe.skipIf(!process.env.DATABASE_URL)('HTTP session, tenant and privilege p
   it('retires unreviewed order state mutations at the HTTP boundary',async()=>{
     expect((await rpc('orders.updateStatus',{orderId:1,status:'paid'},ownerToken,true)).status).toBe(404);
     expect((await rpc('orders.cancel',{orderId:1},ownerToken,true)).status).toBe(404);
+    for (const path of ['orders.listByMerchant','orders.getById','orders.getWithFilters','orders.getStats']) {
+      expect((await rpc(path,{orderId:1},ownerToken)).status).toBe(404);
+    }
   });
   it('does not trust a role claim even with a valid signature and live session', async () => {
     const forgedRoleToken = jwt.sign({ ...jwt.decode(viewerToken) as object, role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
