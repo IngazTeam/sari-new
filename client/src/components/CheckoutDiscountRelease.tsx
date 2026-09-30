@@ -22,7 +22,7 @@ function ReleaseReview({orderId,evidence,onSaved,onBusy}:{orderId:number;evidenc
   </div>;
 }
 
-export function CheckoutDiscountRelease({orderId}:{orderId:number}) {
+export function CheckoutDiscountRelease({orderId,onUpdated}:{orderId:number;onUpdated?:()=>Promise<unknown>}) {
   const {t,i18n}=useTranslation();const [refreshVersion,setRefreshVersion]=useState(0),[busy,setBusy]=useState(false);
   const query=trpc.orders.getCheckoutDiscountRelease.useQuery({orderId},{refetchOnWindowFocus:false});
   const refresh=async()=>{const result=await query.refetch();if(!result.isError)setRefreshVersion(n=>n+1);};
@@ -41,7 +41,7 @@ export function CheckoutDiscountRelease({orderId}:{orderId:number}) {
       <time dateTime={data.audit.at}>{new Intl.DateTimeFormat(i18n.language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(data.audit.at))}</time>
       <p>{t('merchantUx.discountRelease.counterChange',{before:data.audit.usedBefore,after:data.audit.usedAfter})}</p>
     </div>}
-    {data.state==='eligible'&&<ReleaseReview key={`${data.evidence}-${refreshVersion}`} orderId={orderId} evidence={data.evidence} onSaved={()=>query.refetch()} onBusy={setBusy} />}
+    {data.state==='eligible'&&<ReleaseReview key={`${data.evidence}-${refreshVersion}`} orderId={orderId} evidence={data.evidence} onSaved={async()=>{await query.refetch();await onUpdated?.();}} onBusy={setBusy} />}
     <Button type="button" data-coupon-release-refresh className="min-h-11" disabled={busy} onClick={refresh}>{t('merchantUx.discountRelease.refresh')}</Button>
   </section>;
 }

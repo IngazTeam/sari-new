@@ -24,7 +24,7 @@ function CheckoutReview({orderId,attemptId,evidence,onReviewed,onBusy}:{orderId:
   </div>;
 }
 
-export function OrderCheckoutAttempts({orderId}:{orderId:number}) {
+export function OrderCheckoutAttempts({orderId,onUpdated}:{orderId:number;onUpdated?:()=>Promise<unknown>}) {
   const {t,i18n}=useTranslation();
   const [refreshVersion,setRefreshVersion]=useState(0);
   const [busy,setBusy]=useState(false);
@@ -44,7 +44,7 @@ export function OrderCheckoutAttempts({orderId}:{orderId:number}) {
       <p>{t('merchantUx.checkoutAttempts.reference')}</p><code className="block break-all" dir="ltr">{attempt.reference}</code>
       {(attempt.state==='dispatching'||attempt.state==='unknown')&&<p className="leading-relaxed text-amber-800 dark:text-amber-200">{t('merchantUx.checkoutAttempts.review')}</p>}
       {attempt.lastReview&&<p data-checkout-review-outcome role="status" className="leading-relaxed">{t(attempt.lastReview.outcome==='verified'?'merchantUx.checkoutAttempts.verified':'merchantUx.checkoutAttempts.unverified')}</p>}
-      {attempt.canReview&&<CheckoutReview key={`${attempt.evidence}-${refreshVersion}`} orderId={orderId} attemptId={attempt.id} evidence={attempt.evidence} onReviewed={()=>query.refetch()} onBusy={setBusy} />}
+      {attempt.canReview&&<CheckoutReview key={`${attempt.evidence}-${refreshVersion}`} orderId={orderId} attemptId={attempt.id} evidence={attempt.evidence} onReviewed={async()=>{await query.refetch();await onUpdated?.();}} onBusy={setBusy} />}
     </article>)}
     <Button type="button" data-checkout-refresh className="min-h-11" disabled={busy} onClick={async()=>{const result=await query.refetch();if(!result.isError)setRefreshVersion(v=>v+1);}}>{t('merchantUx.checkoutAttempts.refresh')}</Button>
   </section>;

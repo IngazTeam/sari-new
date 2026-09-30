@@ -346,6 +346,7 @@ export async function readOrderStatusHistory(merchantId: number, raw: unknown) {
     return {
       merchantId,
       orderId: input.id,
+      beforeId: input.beforeId ?? null,
       items: rows.slice(0, 20).map(row => ({
         id: Number(row.id),
         receipt: saved(row, merchantId, Number(row.actor_id), row.request_id),

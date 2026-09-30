@@ -319,9 +319,6 @@ import { whatsappWorkspaceRouter } from './routers/whatsapp-workspace';
 import { reconnectWorkspaceInstance, workspaceUsage, listWorkspaceRequests, workspaceQR, confirmWorkspaceRequest, workspaceInstanceQR, confirmWorkspaceInstance } from './whatsapp/tenant-workspace';
 import {
   getMerchantOrder,
-  InvalidMerchantOrderTransitionError,
-  MerchantOrderWriteConflictError,
-  transitionMerchantOrderStatus,
 } from './orders/merchant-order-lifecycle';
 
 const passwordResetEmailSchema = z.string()
@@ -2249,61 +2246,6 @@ export const appRouter = router({
         return await getOrderStats(merchant.id);
       }),
 
-    // Cancel order
-    cancel: permissionProcedure('orders.manage')
-      .input(z.object({
-        orderId: z.number().int().positive(),
-        reason: z.string().trim().min(1).max(500).optional(),
-      }).strict())
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const order = await getMerchantOrder(merchant.id, input.orderId);
-        if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-        const { prepareOrderStatusNotification } = await import('./notifications/order-notifications');
-        const notification = await prepareOrderStatusNotification(
-          merchant.id,
-          order.customerPhone,
-          'cancelled',
-          {
-            customerName: order.customerName || 'عزيزي العميل',
-            storeName: merchant.businessName,
-            orderNumber: order.orderNumber || `ORD-${order.id}`,
-            total: order.totalAmount,
-            currency: order.currency,
-          },
-        );
-
-        try {
-          const changed = await transitionMerchantOrderStatus({
-            merchantId: merchant.id,
-            orderId: order.id,
-            expectedStatus: order.status,
-            status: 'cancelled',
-            cancellationReason: input.reason,
-            notification: notification || undefined,
-          });
-          if (!changed) {
-            return { success: true, changed: false, notificationQueued: false, message: 'الطلب ملغي مسبقًا' };
-          }
-        } catch (error) {
-          if (error instanceof InvalidMerchantOrderTransitionError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إلغاء طلب مكتمل أو ملغي' });
-          }
-          if (error instanceof MerchantOrderWriteConflictError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
-          }
-          throw error;
-        }
-
-        return {
-          success: true,
-          changed: true,
-          notificationQueued: Boolean(notification),
-          message: notification ? 'تم إلغاء الطلب وجدولة إشعار العميل' : 'تم إلغاء الطلب ولا يوجد قالب إشعار مفعّل',
-        };
-      }),
-
     listZidReconciliations: merchantProcedure
       .input(z.object({ beforeId: z.number().int().positive().safe().optional() }).strict().optional())
       .query(async ({ input, ctx }) => {
@@ -2371,62 +2313,6 @@ export const appRouter = router({
         return { approved: true, paymentUrl: link.issued ? link.paymentUrl : null };
       }),
 
-    // Update order status
-    updateStatus: permissionProcedure('orders.manage')
-      .input(z.object({
-        orderId: z.number().int().positive(),
-        status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']),
-        trackingNumber: z.string().trim().min(1).max(100).optional(),
-      }).strict())
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const order = await getMerchantOrder(merchant.id, input.orderId);
-        if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-        const { prepareOrderStatusNotification } = await import('./notifications/order-notifications');
-        const notification = await prepareOrderStatusNotification(
-          merchant.id,
-          order.customerPhone,
-          input.status,
-          {
-            customerName: order.customerName || 'عزيزي العميل',
-            storeName: merchant.businessName,
-            orderNumber: order.orderNumber || `ORD-${order.id}`,
-            total: order.totalAmount,
-            currency: order.currency,
-            trackingNumber: input.trackingNumber,
-          },
-        );
-
-        try {
-          const changed = await transitionMerchantOrderStatus({
-            merchantId: merchant.id,
-            orderId: order.id,
-            expectedStatus: order.status,
-            status: input.status,
-            trackingNumber: input.trackingNumber,
-            notification: notification || undefined,
-          });
-          if (!changed) {
-            return { success: true, changed: false, notificationQueued: false, message: 'حالة الطلب محدثة مسبقًا' };
-          }
-        } catch (error) {
-          if (error instanceof InvalidMerchantOrderTransitionError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'لا يمكن إعادة الطلب إلى حالة سابقة أو تغيير حالة نهائية' });
-          }
-          if (error instanceof MerchantOrderWriteConflictError) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الطلب؛ حدّث الصفحة وحاول مجددًا' });
-          }
-          throw error;
-        }
-
-        return {
-          success: true,
-          changed: true,
-          notificationQueued: Boolean(notification),
-          message: notification ? 'تم تحديث حالة الطلب وجدولة إشعار العميل' : 'تم تحديث حالة الطلب ولا يوجد قالب إشعار مفعّل',
-        };
-      }),
   }),
 
   // Discount Codes Management

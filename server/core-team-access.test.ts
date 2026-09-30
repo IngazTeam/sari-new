@@ -403,8 +403,8 @@ describe('real app router team boundaries', () => {
   it('blocks viewer sends, sync and order mutations before handlers run', async () => {
     await expect(caller().conversations.sendReply({ conversationId: 4, message: 'forged',requestId:'00000000-0000-4000-8000-000000000001' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(caller().conversations.syncFromWhatsApp()).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    await expect(caller().orders.cancel({ orderId: 1 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    await expect(caller().orders.updateStatus({ orderId: 1, status: 'paid' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(caller().orders.workspace.statusReview({ id: 1, status: 'cancelled', reason: 'Review', notify: false })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(caller().orders.workspace.statusWrite({ requestId:'00000000-0000-4000-8000-000000000001', intent:{id:1,status:'processing',notify:false},expectedDigest:'a'.repeat(64),reviewed:true })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(mocks.merchant).not.toHaveBeenCalled();
   });
   it('fails closed after membership revocation or identity database failure', async () => {

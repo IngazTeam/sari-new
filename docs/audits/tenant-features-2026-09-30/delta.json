@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T04:34:57.146Z",
+  "generatedAt": "2026-09-30T05:17:33.206Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 276,
-      "controls": 1922
+      "files": 281,
+      "controls": 1947
     }
   },
   "addedFiles": [
@@ -46,6 +46,11 @@
     "client/src/lib/overview-labels.ts",
     "client/src/lib/overview-export.ts",
     "client/src/components/merchant/OverviewReport.tsx",
+    "client/src/components/merchant/OrderWorkspace.tsx",
+    "client/src/lib/order-status-cache.ts",
+    "client/src/components/merchant/OrderReport.tsx",
+    "client/src/components/merchant/OrderStatusForm.tsx",
+    "client/src/components/merchant/OrderHistory.tsx",
     "client/src/components/SallaCartRecovery.tsx",
     "client/src/lib/salla-checkout-review.ts",
     "client/src/components/TestSessionHistory.tsx",
@@ -119,6 +124,9 @@
     "client/src/pages/ByaanDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
     "client/src/pages/merchant/OverviewAnalytics.tsx",
+    "client/src/pages/merchant/Orders.tsx",
+    "client/src/components/OrderCheckoutAttempts.tsx",
+    "client/src/components/CheckoutDiscountRelease.tsx",
     "client/src/components/SallaCheckoutReview.tsx",
     "client/src/pages/merchant/TestSari.tsx",
     "client/src/pages/merchant/MetricsDashboard.tsx",
@@ -568,15 +576,26 @@
     {
       "route": "/merchant/orders",
       "controlsBefore": 53,
-      "controlsNow": 58,
-      "removedQueries": [],
-      "addedQueries": [
-        "orders.listSallaCartProblems",
-        "auth.me"
+      "controlsNow": 84,
+      "removedQueries": [
+        "orders.getWithFilters",
+        "orders.getStats"
       ],
-      "removedMutations": [],
+      "addedQueries": [
+        "auth.me",
+        "orders.workspace.list",
+        "orders.workspace.detail",
+        "orders.workspace.statusReview",
+        "orders.workspace.statusReceipt",
+        "orders.workspace.statusHistory",
+        "orders.listSallaCartProblems"
+      ],
+      "removedMutations": [
+        "orders.updateStatus",
+        "orders.cancel"
+      ],
       "addedMutations": [
-        "auth.logout"
+        "orders.workspace.statusWrite"
       ]
     },
     {

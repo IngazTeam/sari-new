@@ -485,6 +485,61 @@
           "api": "sariBrain.quotations.create"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/orders"
+      ],
+      "removed": [
+        "orders.getWithFilters",
+        "orders.getStats",
+        "orders.updateStatus",
+        "orders.cancel"
+      ],
+      "required": [
+        "orders.workspace.list",
+        "orders.workspace.detail",
+        "orders.workspace.statusWrite",
+        "orders.workspace.statusReview",
+        "orders.workspace.statusReceipt",
+        "orders.workspace.statusHistory"
+      ],
+      "note": "Paged scoped orders, on-demand complete details, separately recorded payment state, reviewed manual status and durable receipt recovery replace stale-row updates. Invoice, margin, discount, payment attempts, Salla and Zid review tools remain available for their authorized scopes.",
+      "evidence": [
+        "docs/audits/tenant-order-data-2026-09-30/REPORT.md",
+        "docs/audits/tenant-order-status-review-2026-09-30/REPORT.md",
+        "docs/audits/tenant-order-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<CheckoutInvoiceReview"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<CheckoutMarginExceptionAudit"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<CheckoutDiscountBreakdown"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<OrderCheckoutAttempts"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<CheckoutDiscountRelease"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<ZidCheckoutReconciliation"
+        },
+        {
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "contains": "<SallaCheckoutReview"
+        }
+      ]
     }
   ]
 }

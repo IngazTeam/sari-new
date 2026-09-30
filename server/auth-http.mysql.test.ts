@@ -73,11 +73,15 @@ describe.skipIf(!process.env.DATABASE_URL)('HTTP session, tenant and privilege p
   it('blocks viewer role escalation, payment secrets and order mutation over HTTP', async () => {
     expect((await rpc('merchantPayments.getSettings', undefined, viewerToken)).status).toBe(403);
     expect((await rpc('team.updateRole', { memberId: 1, role: 'owner' }, viewerToken, true)).status).toBe(403);
-    expect((await rpc('orders.updateStatus', { orderId: 1, status: 'paid' }, viewerToken, true)).status).toBe(403);
+    expect((await rpc('orders.workspace.statusWrite', { requestId:'00000000-0000-4000-8000-000000000001',intent:{id:1,status:'processing',notify:false},expectedDigest:'a'.repeat(64),reviewed:true }, viewerToken, true)).status).toBe(403);
   });
   it('rejects foreign tenant analytics and SQL-shaped identifiers before business actions', async () => {
     expect((await rpc('analytics.getDashboardKPIs', { merchantId: foreign.merchantId, startDate: '2026-09-01', endDate: '2026-09-19' }, ownerToken)).status).toBe(403);
-    expect((await rpc('orders.cancel', { orderId: '1 OR 1=1' }, ownerToken, true)).status).toBe(400);
+    expect((await rpc('orders.workspace.statusReview', { id: '1 OR 1=1',status:'cancelled',reason:'Review',notify:false }, ownerToken)).status).toBe(400);
+  });
+  it('retires unreviewed order state mutations at the HTTP boundary',async()=>{
+    expect((await rpc('orders.updateStatus',{orderId:1,status:'paid'},ownerToken,true)).status).toBe(404);
+    expect((await rpc('orders.cancel',{orderId:1},ownerToken,true)).status).toBe(404);
   });
   it('does not trust a role claim even with a valid signature and live session', async () => {
     const forgedRoleToken = jwt.sign({ ...jwt.decode(viewerToken) as object, role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });

@@ -1,0 +1,211 @@
+.ow-summary {
+  display: grid;
+  gap: 18px;
+}
+.ow-help {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.ow-summary summary,
+.ow-detail summary,
+.ow-operations summary {
+  min-height: 44px;
+  padding-block: 12px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.ow-state-counts,
+.ow-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.ow-state-counts dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+.ow-list .ow-open {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  text-align: start;
+  border: 0;
+  padding: 20px 4px;
+  border-radius: 0;
+  background: transparent;
+}
+.ow-open > span {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.ow-open small {
+  color: var(--muted-foreground);
+}
+.ow-open-label {
+  color: var(--primary);
+  font-weight: 650;
+}
+.ow-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block: 12px;
+}
+.ow-open .ow-badges {
+  display: flex;
+}
+.ow-detail {
+  display: grid;
+  gap: 18px;
+}
+.ow-fields {
+  margin-top: 18px;
+}
+.ow-fields dt {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+.ow-fields dd,
+.ow-preserve,
+.ow-detail pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ow-detail pre {
+  max-height: 320px;
+  overflow: auto;
+  background: var(--muted);
+  padding: 16px;
+  border-radius: 12px;
+}
+.ow-items {
+  list-style-position: inside;
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.ow-items li {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.ow-gift {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+.ow-form {
+  display: grid;
+  gap: 18px;
+}
+.ow-form label:not(.ow-check) {
+  display: grid;
+  gap: 8px;
+}
+.ow-form textarea {
+  min-height: 110px;
+}
+.ow-form :is(input, select, textarea) {
+  width: 100%;
+  font-size: 16px;
+}
+.ow-form .ow-check {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  min-height: 44px;
+  padding-block: 8px;
+  cursor: pointer;
+}
+.ow-form .ow-check input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.ow-review {
+  display: grid;
+  gap: 16px;
+  background: #edf2e7;
+  border: 1px solid #c7d4bb;
+  border-radius: 16px;
+  padding: 20px;
+  color: #263e35;
+}
+.ow-review p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ow-warning {
+  border: 1px solid #dbcba6;
+  background: #faf5e9;
+  color: #5b4620;
+  padding: 18px;
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+}
+.ow-error {
+  color: var(--destructive);
+}
+.ow-history {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+.ow-history li {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  display: grid;
+  gap: 6px;
+}
+.ow-operations {
+  display: grid;
+  gap: 16px;
+}
+.ow-operations > details {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--card);
+}
+@media (max-width: 760px) {
+  .ow-list .ow-open {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .ow-open .ow-badges {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .ow-open-label {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 480px) {
+  .ow-fields,
+  .ow-state-counts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ow-review {
+    padding: 14px;
+  }
+  .ow-open > span:nth-child(2) {
+    text-align: end;
+  }
+}
