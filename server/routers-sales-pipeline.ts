@@ -13,11 +13,25 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { permissionProcedure, protectedProcedure, router } from "./_core/trpc";
+import { hasPermission } from "./_core/permissions";
+import { pipelineInput } from "../shared/pipeline-workspace";
+import { readPipelineWorkspace } from "./pipeline-workspace";
 import { getMerchantByUserId, getPool } from './db';
 import { getPipelineSummary } from './ai/loss-detector';
 
 export const salesPipelineRouter = router({
+
+  workspace: permissionProcedure('conversations.read')
+    .use(({ctx,next}) => {
+      if (!hasPermission(ctx.merchantRole, 'analytics.read')) throw new TRPCError({code:'FORBIDDEN',message:'Pipeline analytics permission required'});
+      return next({ctx});
+    })
+    .input(pipelineInput)
+    .query(async ({ctx,input}) => {
+      try { return await readPipelineWorkspace(ctx.merchantId,input); }
+      catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Pipeline unavailable'}); }
+    }),
 
   /**
    * Main pipeline view — all data for the Sales Pipeline Board
