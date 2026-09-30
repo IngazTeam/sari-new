@@ -22,10 +22,12 @@ import {
 import { ProductEditorWorkspace } from "./ProductEditorWorkspace";
 import { ProductDeleteWorkspace } from "./ProductDeleteWorkspace";
 import { ProductCategoriesWorkspace } from "./ProductCategoriesWorkspace";
+import { ProductDetailsWorkspace } from "./ProductDetailsWorkspace";
 import "@/styles/product-workspace.css";
 type View =
   | { kind: "list" }
   | { kind: "categories" }
+  | { kind: "details"; productId: number }
   | { kind: "editor"; target: number | "new" }
   | { kind: "delete"; ids: number[] };
 export function ProductCatalogWorkspace({
@@ -112,6 +114,7 @@ export function ProductCatalogWorkspace({
       setCached(saved);
       if (
         next.kind !== "categories" &&
+        next.kind !== "details" &&
         saved &&
         (next.kind !== "editor" ||
           saved.kind !== "editor" ||
@@ -159,6 +162,17 @@ export function ProductCatalogWorkspace({
     );
   if (view.kind === "categories")
     return <ProductCategoriesWorkspace key={scope} scope={scope} back={back} />;
+  if (view.kind === "details") {
+    const detailScope = `${scope.split(":").slice(0, 2).join(":")}:product-details:${view.productId}`;
+    return (
+      <ProductDetailsWorkspace
+        key={detailScope}
+        scope={detailScope}
+        productId={view.productId}
+        back={back}
+      />
+    );
+  }
   return (
     <section
       className="pw-workspace"
@@ -491,6 +505,15 @@ export function ProductCatalogWorkspace({
                       </div>
                     </dl>
                     <div className="pw-actions">
+                      <button
+                        type="button"
+                        disabled={!ready || storageError}
+                        onClick={() =>
+                          open({ kind: "details", productId: row.id })
+                        }
+                      >
+                        {t("detailUx.title")}
+                      </button>
                       <button
                         type="button"
                         onClick={() => open({ kind: "editor", target: row.id })}

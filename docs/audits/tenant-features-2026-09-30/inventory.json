@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T17:32:59.429Z",
+  "generatedAt": "2026-09-30T18:15:10.136Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2516,7 +2516,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "76ec29212682",
+      "hash": "edc396607fb7",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -2531,7 +2531,7 @@
     },
     {
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "hash": "89a0f9c3022f",
+      "hash": "65fa39da253d",
       "queries": [
         "products.list"
       ],
@@ -2541,17 +2541,17 @@
       "sections": [
         {
           "label": "الفلاتر · {{count}} مفعلة",
-          "line": 241,
+          "line": 255,
           "tag": "summary"
         },
         {
           "label": "ابدأ بأول منتج لا توجد منتجات في هذه النتائج",
-          "line": 407,
+          "line": 421,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 453,
+          "line": 467,
           "tag": "h2"
         }
       ],
@@ -2561,7 +2561,7 @@
         {
           "query": "products.list",
           "binding": "query",
-          "line": 51,
+          "line": 53,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -2573,9 +2573,10 @@
         "client/src/components/merchant/ProductWorkspaceView.tsx",
         "client/src/components/merchant/ProductEditorWorkspace.tsx",
         "client/src/components/merchant/ProductDeleteWorkspace.tsx",
-        "client/src/components/merchant/ProductCategoriesWorkspace.tsx"
+        "client/src/components/merchant/ProductCategoriesWorkspace.tsx",
+        "client/src/components/merchant/ProductDetailsWorkspace.tsx"
       ],
-      "controlCount": 19
+      "controlCount": 20
     },
     {
       "file": "client/src/lib/product-workspace-cache.ts",
@@ -2810,6 +2811,85 @@
     {
       "file": "client/src/lib/product-category-workspace.ts",
       "hash": "4930535360f4",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "hash": "05b9d1e1aa33",
+      "queries": [
+        "products.details.read",
+        "products.details.receipt"
+      ],
+      "mutations": [
+        "products.details.write"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "products.details.receipt",
+          "method": "fetch",
+          "expression": "utils.products.details.receipt.fetch",
+          "line": 289,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج",
+          "line": 518,
+          "tag": "h2"
+        },
+        {
+          "label": "التكلفة والتفاصيل الإضافية",
+          "line": 642,
+          "tag": "summary"
+        },
+        {
+          "label": "اختيارات هذه النسخة",
+          "line": 665,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 894,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "products.details.read",
+          "binding": "query",
+          "line": 47,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/product-details-workspace.ts",
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
+      ],
+      "controlCount": 26
+    },
+    {
+      "file": "client/src/lib/product-details-workspace.ts",
+      "hash": "598f536aeca4",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -17514,29 +17594,32 @@
         "client/src/components/merchant/ProductEditorWorkspace.tsx",
         "client/src/components/merchant/ProductDeleteWorkspace.tsx",
         "client/src/components/merchant/ProductCategoriesWorkspace.tsx",
-        "client/src/lib/product-category-workspace.ts"
+        "client/src/lib/product-category-workspace.ts",
+        "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+        "client/src/lib/product-details-workspace.ts"
       ],
       "controls": [
         "77ce5300e6f7",
-        "81c3ea2e7800",
-        "8b747e5ab9db",
-        "36ff2a1d4556",
-        "08d0bcb40494",
-        "48699af98c5b",
-        "4685f14fc15f",
-        "2d2bce36fbe7",
-        "b4de6e11c2f8",
-        "d06c199bd3bc",
-        "9b00b6f20048",
-        "91a8778e7e2c",
-        "dc2b4f801dd7",
-        "c7c3b43d9091",
-        "010b5d6a9986",
-        "2e47a685a3a2",
-        "114a8e630927",
-        "74c2e86f295a",
-        "5a48de6b3a71",
-        "6aaa93a80bff",
+        "8eeeb7289ac0",
+        "037fe97d7311",
+        "58066521c254",
+        "38dc8a90f6a7",
+        "073869cf84cf",
+        "66c235cef61a",
+        "9e1243967e5c",
+        "ddbd0c418b79",
+        "7f01121ff133",
+        "a10a973a5621",
+        "65bc49257930",
+        "d33f5f85bf25",
+        "a36fcc9e69da",
+        "05b996766cd2",
+        "773ae685d655",
+        "ecf6152d8f1d",
+        "cc9d5d899d4f",
+        "457fa5337c14",
+        "0cadfb6596be",
+        "6406c3d753eb",
         "2b16c421077d",
         "26b0ba616de7",
         "bb0158d61b7d",
@@ -17578,7 +17661,33 @@
         "6bc03d035d8e",
         "5214ab299622",
         "abd83ad61e78",
-        "7bb869056ac6"
+        "7bb869056ac6",
+        "e093850e62d6",
+        "c185f5ce76c1",
+        "1f8afd56e370",
+        "8025ca673575",
+        "c5ae6edbe01b",
+        "08f94028ff90",
+        "591bc5b08649",
+        "5dcd2d075ee9",
+        "29d8bcd43eaa",
+        "cfd1dddee1e8",
+        "6ecb6b71d785",
+        "9c0dacb4b6ea",
+        "893260e2a9fe",
+        "adcf259955cb",
+        "9e95e619fc30",
+        "9fbcfadf6bf8",
+        "a93dcedb2a1c",
+        "e19fb7faed27",
+        "6bda5739f38d",
+        "b55b06f4a831",
+        "8243e1e01140",
+        "91518d71c786",
+        "01fe4e12355a",
+        "e4aa4c48be4c",
+        "8b96ab2849f3",
+        "7778b3356d7b"
       ],
       "queries": [
         "auth.me",
@@ -17589,12 +17698,15 @@
         "products.editor.receipt",
         "products.editor.deleteReview",
         "products.editor.deleteReceipt",
-        "products.categories.receipt"
+        "products.categories.receipt",
+        "products.details.read",
+        "products.details.receipt"
       ],
       "mutations": [
         "products.editor.write",
         "products.editor.deleteWrite",
-        "products.categories.write"
+        "products.categories.write",
+        "products.details.write"
       ],
       "imperativeReads": [
         {
@@ -17619,6 +17731,14 @@
           "method": "fetch",
           "expression": "utils.products.categories.receipt.fetch",
           "line": 235,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+          "procedure": "products.details.receipt",
+          "method": "fetch",
+          "expression": "utils.products.details.receipt.fetch",
+          "line": 289,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -29561,9 +29681,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "81c3ea2e7800",
+      "id": "8eeeb7289ac0",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 174,
+      "line": 188,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29582,9 +29702,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8b747e5ab9db",
+      "id": "037fe97d7311",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 181,
+      "line": 195,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29603,9 +29723,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "36ff2a1d4556",
+      "id": "58066521c254",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 190,
+      "line": 204,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -29626,9 +29746,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "08d0bcb40494",
+      "id": "38dc8a90f6a7",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 211,
+      "line": 225,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29649,9 +29769,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "48699af98c5b",
+      "id": "073869cf84cf",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 221,
+      "line": 235,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29672,9 +29792,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4685f14fc15f",
+      "id": "66c235cef61a",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 232,
+      "line": 246,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -29693,9 +29813,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2d2bce36fbe7",
+      "id": "9e1243967e5c",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 241,
+      "line": 255,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -29714,9 +29834,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b4de6e11c2f8",
+      "id": "ddbd0c418b79",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 253,
+      "line": 267,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -29744,9 +29864,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d06c199bd3bc",
+      "id": "7f01121ff133",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 274,
+      "line": 288,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -29774,9 +29894,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9b00b6f20048",
+      "id": "a10a973a5621",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 297,
+      "line": 311,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -29808,9 +29928,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "91a8778e7e2c",
+      "id": "65bc49257930",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 317,
+      "line": 331,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29829,9 +29949,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dc2b4f801dd7",
+      "id": "d33f5f85bf25",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 377,
+      "line": 391,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -29853,9 +29973,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c7c3b43d9091",
+      "id": "a36fcc9e69da",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 394,
+      "line": 408,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29877,9 +29997,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "010b5d6a9986",
+      "id": "05b996766cd2",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 417,
+      "line": 431,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29901,9 +30021,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2e47a685a3a2",
+      "id": "773ae685d655",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 436,
+      "line": 450,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -29922,9 +30042,30 @@
       "review": "source-inventoried"
     },
     {
-      "id": "114a8e630927",
+      "id": "ecf6152d8f1d",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 494,
+      "line": 508,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "الخيارات والنسخ",
+      "section": "ProductCatalogWorkspace",
+      "binding": "() =>\n                          open({ kind: \"details\", productId: row.id })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cc9d5d899d4f",
+      "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
+      "line": 517,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29943,9 +30084,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "74c2e86f295a",
+      "id": "457fa5337c14",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 502,
+      "line": 525,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29964,9 +30105,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5a48de6b3a71",
+      "id": "0cadfb6596be",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 527,
+      "line": 550,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29987,9 +30128,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6aaa93a80bff",
+      "id": "6406c3d753eb",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 534,
+      "line": 557,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31009,6 +31150,627 @@
       "kind": "action",
       "label": "التالي",
       "section": "فئة تحتاج تصحيح الاسم",
+      "binding": "() => setPage(shownPage + 1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "shownPage === maxPage",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e093850e62d6",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 346,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ProductDetailsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "options"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c185f5ce76c1",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 354,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ProductDetailsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "multiline",
+        "options"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1f8afd56e370",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 356,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ProductDetailsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "multiline",
+        "options"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8025ca673575",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 465,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "العودة للمنتجات",
+      "section": "ProductDetailsWorkspace",
+      "binding": "back",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c5ae6edbe01b",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 468,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث",
+      "section": "ProductDetailsWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "08f94028ff90",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 484,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة المحاولة",
+      "section": "ProductDetailsWorkspace",
+      "binding": "() => (draft ? persist(draft) : load())",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "storageError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "591bc5b08649",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 534,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "التحقق من نتيجة الحفظ",
+      "section": "delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج",
+      "binding": "() => void recover()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "draft.attempt",
+        "draft"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5dcd2d075ee9",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 537,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة الطلب نفسه",
+      "section": "delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج",
+      "binding": "() => void send(draft.attempt)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "draft.attempt",
+        "draft"
+      ],
+      "disabled": "busy || !permission || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "29d8bcd43eaa",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 550,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "create تحديث المرجع مع الاحتفاظ بالمسودة تجاهل تعديلاتي وتحميل النسخة الحالية",
+      "section": "delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج",
+      "binding": "reloadDraft",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "conflict",
+        "draft.attempt"
+      ],
+      "disabled": "!permission || busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cfd1dddee1e8",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 592,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "متاحة للبيع",
+      "section": "delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج",
+      "binding": "form?.type === \"variant\" && form.isActive",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "draft.form.type === \"option\"",
+        "draft.mode === \"delete\""
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6ecb6b71d785",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 642,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "التكلفة والتفاصيل الإضافية",
+      "section": "التكلفة والتفاصيل الإضافية",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "form?.type === \"option\"",
+        "draft.mode === \"delete\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9c0dacb4b6ea",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 669,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح الاختيارات غير المقروءة في المسودة",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => change(\"selections\", \"[]\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "selected === null",
+        "form?.type === \"option\""
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "893260e2a9fe",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 689,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "دون اختيار اختيارات محفوظة تحتاج إصلاحًا؛ لم نغيّرها. يمكنك تعديل البيانات الأخرى، أو مسح هذه الاختيارات صراحةً وإعادة تحديدها.",
+      "section": "اختيارات هذه النسخة",
+      "binding": "value",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": "دون اختيار"
+        },
+        {
+          "value": "value",
+          "label": ""
+        },
+        {
+          "value": "v",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "selected === null"
+      ],
+      "disabled": "disabled || !values",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "adcf259955cb",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 799,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت التغيير وأوافق على اعتماده.",
+      "section": "اختيارات هذه النسخة",
+      "binding": "review",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "draft.attempt",
+        "draft"
+      ],
+      "disabled": "disabled || !plan || conflict",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9e95e619fc30",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 808,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "delete تأكيد الحذف النهائي اعتماد التغيير",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => void send()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "draft.attempt",
+        "draft"
+      ],
+      "disabled": "disabled || !plan || !review || conflict",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9fbcfadf6bf8",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 819,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إلغاء المسودة",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => setDiscard(true)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "draft.attempt",
+        "draft"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a93dcedb2a1c",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 826,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "نعم، تجاهل المسودة",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => {\n                          try {\n                            clearDetailDraft(scope, epoch.current);\n                            setDraft(null);\n                            setDiscard(false);\n                            setReview(false);\n                            setStorageError(false);\n                          } catch {\n                            setStorageError(true);\n                          }\n                        }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "discard",
+        "draft.attempt"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e19fb7faed27",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 841,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "الاحتفاظ بالمسودة",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => setDiscard(false)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "discard",
+        "draft.attempt"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6bda5739f38d",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 852,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => {\n                  setKind(\"variant\");\n                  setPage(1);\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b55b06f4a831",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 861,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => {\n                  setKind(\"option\");\n                  setPage(1);\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8243e1e01140",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 870,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "اختيارات هذه النسخة",
+      "binding": "() => start(kind, \"create\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "disabled || !!draft",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "91518d71c786",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 881,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "اختيارات هذه النسخة",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "01fe4e12355a",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 944,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تعديل",
+      "section": "ProductDetailsWorkspace",
+      "binding": "() => start(kind, \"update\", row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "disabled || !!draft",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e4aa4c48be4c",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 950,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة الحذف",
+      "section": "ProductDetailsWorkspace",
+      "binding": "() => start(kind, \"delete\", row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "disabled || !!draft",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8b96ab2849f3",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 961,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "ProductDetailsWorkspace",
+      "binding": "() => setPage(shownPage - 1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "shownPage === 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7778b3356d7b",
+      "file": "client/src/components/merchant/ProductDetailsWorkspace.tsx",
+      "line": 970,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "بحث بالاسم أو رمز SKU",
+      "section": "ProductDetailsWorkspace",
       "binding": "() => setPage(shownPage + 1)",
       "type": "text",
       "options": [],
