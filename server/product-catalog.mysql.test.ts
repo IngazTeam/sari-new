@@ -83,9 +83,10 @@ describe.skipIf(!process.env.DATABASE_URL)("product catalog MySQL", () => {
       sku: "AB123",
       barcode: "XYZ123",
       nameAr: "منتج محلي",
+      category: "تصنيف الاختبار",
     });
     await insert({ name: "50percentZoff" });
-    for (const search of ["%_", "\\", "AB123", "XYZ123", "محلي"])
+    for (const search of ["%_", "\\", "AB123", "XYZ123", "محلي", "تصنيف"])
       expect((await list({ search })).total).toBe(1);
     expect((await list({ search: "' OR 1=1 --" })).total).toBe(0);
   });

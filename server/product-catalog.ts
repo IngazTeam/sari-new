@@ -7,7 +7,8 @@ import { catalogVisibleSql } from "./integrations/catalog-scope";
 function count(value: unknown): number {
   const parsed = Number(value);
   if (
-    (typeof value !== "number" && (typeof value !== "string" || !/^\d+$/.test(value))) ||
+    (typeof value !== "number" &&
+      (typeof value !== "string" || !/^\d+$/.test(value))) ||
     !Number.isSafeInteger(parsed) ||
     parsed < 0
   )
@@ -59,6 +60,7 @@ export async function readProductCatalog(
         ? sql`(LOCATE(${selection.search},${products.name})>0
       OR LOCATE(${selection.search},COALESCE(${products.nameAr},''))>0
       OR LOCATE(${selection.search},COALESCE(${products.description},''))>0
+      OR LOCATE(${selection.search},COALESCE(${products.category},''))>0
       OR LOCATE(${selection.search},COALESCE(${products.sku},''))>0
       OR LOCATE(${selection.search},COALESCE(${products.barcode},''))>0)`
         : undefined;
