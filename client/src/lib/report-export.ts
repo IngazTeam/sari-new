@@ -6,6 +6,10 @@ export type ReportDocument = {
   tableTitle: string;
   columns: string[];
   rows: (string | number)[][];
+  details?: { label: string; value: string | number }[];
+  tableNote?: string;
+  tableEmptyText?: string;
+  warning?: string;
 };
 
 export function reportRows(report: ReportDocument): (string | number)[][] {
@@ -13,12 +17,18 @@ export function reportRows(report: ReportDocument): (string | number)[][] {
     [report.title],
     [report.period],
     [report.note],
+    ...(report.warning ? [[report.warning]] : []),
     [],
     ...report.metrics.map(m => [m.label, m.value]),
+    ...(report.details || []).map(m => [m.label, m.value]),
     [],
     [report.tableTitle],
+    ...(report.tableNote ? [[report.tableNote]] : []),
     report.columns,
     ...report.rows,
+    ...(!report.rows.length && report.tableEmptyText
+      ? [[report.tableEmptyText]]
+      : []),
   ];
 }
 

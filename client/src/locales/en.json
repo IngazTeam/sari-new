@@ -9739,7 +9739,24 @@
     "amountSample": "Valid-amount orders / all",
     "salesEvidence": "Items from the latest {{inspectedOrders}} of {{eligibleOrders}} orders; {{omittedOrders}} outside the sample. {{includedItems}} usable items and {{excludedItems}} excluded items; {{excludedOrders}} orders have unavailable or incomplete items. Grouped by exact name using explicit minor units before order discounts, not revenue or a complete ranking. Excluded order amounts: {{excludedAmounts}} current and {{previousExcludedAmounts}} previous.",
     "customerEvidence": "Conversations without a phone identifier: {{count}}; excluded from customer counts.",
-    "conversationEvidence": "Invalid negative purchase counters: {{count}}."
+    "conversationEvidence": "Invalid negative purchase counters: {{count}}.",
+    "previousPeriod": "Previous comparison period",
+    "previousValue": "Previous period value",
+    "evidence": "Sample and source limits",
+    "productSample": "Latest {{inspectedOrders}} of {{eligibleOrders}} orders · values before order discounts; {{excludedOrders}} orders contain unusable items. Open the method for details.",
+    "itemValue": "Item value before discounts",
+    "limited": "Some data is excluded or outside the item sample. Review the calculation method before using these figures.",
+    "customerTableNote": "Up to 5 conversations, not unique people. Counters are cumulative and legacy values have no documented currency.",
+    "conversationId": "Conversation",
+    "withPurchase": "Conversations with a positive purchase counter",
+    "empty": "No matching records in the displayed scope.",
+    "method": "Calculation method and sample",
+    "printFailed": "Could not open printing. Try again or export Excel.",
+    "refresh": "Refresh",
+    "kind": "Report type",
+    "eyebrow": "Your store in numbers",
+    "invalidSnapshot": "The report identity or scope could not be confirmed. Refresh before viewing or exporting.",
+    "noUsableItems": "Orders exist, but the item sample has no usable values with explicit units."
   },
   "tenantFormsUx": {
     "CurrencySettings": {
