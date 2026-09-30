@@ -172,6 +172,7 @@ function demoState(){
 }
 const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings,tools:toolsPage};
 function render(keepFocus=false){
+  window.ReportPreview?.unmount();
   window.OrderPreview?.unmount();
   window.QuotationPreview?.unmount();
   const focus=keepFocus?document.activeElement:null,id=focus?.id,start=focus?.selectionStart,end=focus?.selectionEnd;
@@ -179,6 +180,7 @@ function render(keepFocus=false){
   $('#main').dataset.pageRoute=ui.page?.route || '';
   window.QuotationPreview?.mount();
   window.OrderPreview?.mount();
+  window.ReportPreview?.mount();
   for(const anchor of document.querySelectorAll('a[href^="#/"]')){
     const legacy=anchor.getAttribute('href').match(/^#\/(?!page\/)([^/]+)(?:\/([^/]+))?$/);
     if(legacy)anchor.setAttribute('href',route(legacy[1],legacy[2]||''));

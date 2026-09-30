@@ -49,6 +49,8 @@ node prototypes/tenant-dashboard/build-pages.mjs
 
 ## ما نُفّذ في التطبيق
 
+موك أب التقارير يستخدم مكوّن التطبيق نفسه مع16 حالة محلية: `node prototypes/tenant-dashboard/build-reports.mjs`. فحص أنواعه: `node node_modules/typescript/bin/tsc --noEmit -p prototypes/tenant-dashboard/tsconfig.reports.json`. تفاصيل المطابقة وحدود التنزيل والمتصفح في `docs/audits/tenant-report-prototype-2026-09-30/REPORT.md`.
+
 لتحديث موك أب الطلبات من مكونات التطبيق: `node prototypes/tenant-dashboard/build-orders.mjs`. المحاكاة محلية في الذاكرة؛ حدود المطابقة الحالية موثقة في `docs/audits/tenant-order-prototype-2026-09-30/REPORT.md`.
 
 فحص أنواع موك أب الطلبات مستقل عن إعداد التطبيق: `node node_modules/typescript/bin/tsc --noEmit -p prototypes/tenant-dashboard/tsconfig.orders.json`. تشمل المحاكاة أدوات الفاتورة والهامش والدفع والخصم، وسلات سلة وفحوصها وسجلها واستعادتها، ومراجعة زد. كل الأرقام والمراجع توضيحية بلا اتصال بالمنصات؛ راجع تقريري المرحلتين65 و66.

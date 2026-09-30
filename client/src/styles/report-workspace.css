@@ -178,6 +178,7 @@
 }
 .rw-report th,
 .rw-report td {
+  white-space: normal;
   padding: 14px 10px;
   text-align: start;
   border-bottom: 1px solid var(--border, #d8e1da);

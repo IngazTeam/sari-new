@@ -1,0 +1,64 @@
+.rp-active {
+  --border: #d9dfd5;
+  --card: #fffef9;
+  --background: #fffef9;
+  --foreground: #263e35;
+  --muted-foreground: #5d6b60;
+  --muted: #5d6b60;
+  --primary: #29483a;
+  --primary-foreground: #fff;
+  --secondary: #edf2e7;
+  --mw-surface: #fffef9;
+  --mw-text: #263e35;
+}
+.rp-active .rw-workspace {
+  padding: 0;
+  max-width: none;
+}
+.rp-controls {
+  border: 1px dashed #a7b69c;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  background: #f0f3e9;
+  color: #263e35;
+}
+.rp-controls > div {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.rp-controls p {
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+.rp-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.rp-controls select,
+.rp-controls button {
+  font: inherit;
+  font-size: 16px;
+  min-height: 46px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #b1c0a7;
+  border-radius: 10px;
+  background: #fffef9;
+  color: #263e35;
+}
+.rp-active .rw-report th {
+  background: #edf2e7;
+}
+@media (max-width: 600px) {
+  .rp-controls label,
+  .rp-controls button {
+    flex: 1 1 160px;
+  }
+  .rp-active #main {
+    min-width: 0;
+  }
+}

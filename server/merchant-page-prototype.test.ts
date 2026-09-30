@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { runInContext } from 'node:vm';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TextEncoder, TextDecoder } from 'node:util';
+import { MessageChannel } from 'node:worker_threads';
 
 const base = 'prototypes/tenant-dashboard/site/';
 let dom: JSDOM, w: any;
@@ -13,12 +15,14 @@ beforeEach(() => {
   dom = new JSDOM(readFileSync(base + 'index.html', 'utf8'), { url: 'http://127.0.0.1:4329/', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
   w = dom.window;
   w.structuredClone = structuredClone;
+  w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.scrollTo = () => {};
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   for (const script of [...w.document.querySelectorAll('script[src]')] as any[]) runInContext(readFileSync(base + script.getAttribute('src'), 'utf8'), dom.getInternalVMContext());
 });
-afterEach(() => { dom.window.close(); });
+afterEach(() => { w.ReportPreview?.unmount(); w.OrderPreview?.unmount(); w.QuotationPreview?.unmount(); dom.window.close(); });
 function route(path: string) { w.history.replaceState(null, '', w.TenantPages.href(path)); w.dispatchEvent(new w.HashChangeEvent('hashchange')); }
 function click(action: string) { const node = w.document.querySelector(`[data-page-action="${action}"]`); expect(node, action).toBeTruthy(); node.click(); }
 function input(selector: string, value: string) { const node = w.document.querySelector(selector); node.value = value; node.dispatchEvent(new w.Event('input', { bubbles: true })); }
@@ -26,36 +30,46 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
-  it('renders every application route and recovery state with a single page heading and working internal links', () => {
+  it('renders every application route and recovery state with a single page heading and working internal links', async () => {
     const inventory = JSON.parse(readFileSync('docs/audits/tenant-pages-2026-09-27/inventory.json', 'utf8'));
     const routes = inventory.routes;
     for (const page of routes) expect(w.TenantPages.find(page.route), page.route).toBeTruthy();
     expect(w.TENANT_PAGES.length).toBe(133);
     for (const page of w.TENANT_PAGES) {
       route(page.route);
-      expect(w.document.querySelectorAll('#main h1').length, page.route).toBe(1);
+      await vi.waitFor(() => expect(w.document.querySelectorAll('#main h1').length, page.route).toBe(1));
       if (page.kind === 'result' && page.route.includes('/zid/')) {
         expect(text()).toContain('التحقق من ربط زد');
         expect(text()).not.toContain('تأكيد الدفع');
       }
       for (const anchor of w.document.querySelectorAll('#main a[href^="#/page/"]')) {
-        expect(w.TenantPages.find(anchor.getAttribute('href').slice(6)), anchor.getAttribute('href')).toBeTruthy();
+        const path = decodeURIComponent(anchor.getAttribute('href').slice(6).split('?')[0]);
+        expect(w.TenantPages.find(path), anchor.getAttribute('href')).toBeTruthy();
       }
     }
     expect(errors).toEqual([]);
   });
 
-  it('searches records, clears empty results and opens details without creating an order', () => {
+  it('searches the actual order list, clears empty results and opens details without creating an order', async () => {
     route('/merchant/orders');
-    input('#page-search', 'does-not-exist');
-    expect(text()).toContain('لا توجد نتائج مطابقة');
-    click('clear');
-    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(8);
-    click('primary');
-    expect(text()).toContain('سجل النشاط');
+    await vi.waitFor(() => expect(w.document.querySelectorAll('.ow-list > li')).toHaveLength(25));
+    const search = async (value: string) => {
+      const field = w.document.querySelector('#ow-search');
+      Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')!.set!.call(field, value);
+      field.dispatchEvent(new w.Event('input', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 20));
+      field.closest('form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    };
+    await search('does-not-exist');
+    await vi.waitFor(() => expect(w.document.querySelectorAll('.ow-list > li')).toHaveLength(0));
+    await search('');
+    await vi.waitFor(() => expect(w.document.querySelectorAll('.ow-list > li')).toHaveLength(25));
+    w.document.querySelector('.ow-open').click();
+    await vi.waitFor(() => expect(w.document.querySelector('.ow-detail')).not.toBeNull());
+    expect(text()).toContain('سجل تغييرات الحالة');
     expect(w.document.querySelector('[data-page-form="create"]')).toBeNull();
-    click('back');
-    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(8);
+    (Array.from(w.document.querySelectorAll('.qt-tools button')) as any[]).find(b=>b.textContent==='قائمة الطلبات').click();
+    await vi.waitFor(() => expect(w.document.querySelectorAll('.ow-list > li')).toHaveLength(25));
   });
 
   it('persists new records and renders user input as text, never executable HTML', () => {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T06:13:17.035Z",
+  "generatedAt": "2026-09-30T07:11:20.254Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14702,58 +14702,42 @@
     },
     {
       "file": "client/src/pages/Reports.tsx",
-      "hash": "a21bd886179c",
+      "hash": "de9a39e2b6e5",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/ReportsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "hash": "2ad24d7fbabf",
       "queries": [
-        "reports.getSalesReport",
-        "reports.getCustomersReport",
-        "reports.getConversationsReport"
+        "reports.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "",
-          "line": 189,
-          "tag": "h2"
-        },
-        {
-          "label": "",
-          "line": 207,
-          "tag": "h3"
-        },
-        {
           "label": "التقارير",
-          "line": 252,
+          "line": 155,
           "tag": "h1"
         }
       ],
       "choices": [
         {
-          "name": "periods",
-          "line": 31,
-          "values": [
-            {
-              "id": "day",
-              "label": "اليوم"
-            },
-            {
-              "id": "week",
-              "label": "آخر 7 أيام"
-            },
-            {
-              "id": "month",
-              "label": "آخر شهر"
-            },
-            {
-              "id": "year",
-              "label": "آخر سنة"
-            }
-          ]
-        },
-        {
           "name": "kinds",
-          "line": 37,
+          "line": 139,
           "values": [
             {
               "id": "sales",
@@ -14768,44 +14752,52 @@
               "label": "المحادثات"
             }
           ]
+        },
+        {
+          "name": "periods",
+          "line": 144,
+          "values": [
+            {
+              "id": "day",
+              "label": "اليوم بتوقيت UTC"
+            },
+            {
+              "id": "week",
+              "label": "آخر 7 أيام"
+            },
+            {
+              "id": "month",
+              "label": "آخر 30 يومًا"
+            },
+            {
+              "id": "year",
+              "label": "آخر 365 يومًا"
+            }
+          ]
         }
       ],
       "handlers": [],
       "queryStates": [
         {
-          "query": "reports.getSalesReport",
-          "binding": "sales",
-          "line": 23,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "reports.getCustomersReport",
-          "binding": "customers",
-          "line": 24,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "reports.getConversationsReport",
-          "binding": "conversations",
-          "line": 25,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "query": "reports.workspace",
+          "binding": "query",
+          "line": 36,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/lib/report-export.ts"
+        "client/src/lib/report-export.ts",
+        "client/src/lib/merchant-report-document.ts",
+        "client/src/components/merchant/MerchantReportView.tsx"
       ],
-      "controlCount": 5
+      "controlCount": 6
     },
     {
       "file": "client/src/lib/report-export.ts",
-      "hash": "905d88598da5",
+      "hash": "40ae74a9b846",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14817,6 +14809,52 @@
       "conditions": [],
       "imports": [],
       "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/merchant-report-document.ts",
+      "hash": "a2e90cf8e720",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/MerchantReportView.tsx",
+      "hash": "591e78bfbb07",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 18,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 40,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 52,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 1
     },
     {
       "file": "client/src/pages/merchant/MySubscription.tsx",
@@ -21427,19 +21465,27 @@
       ],
       "files": [
         "client/src/pages/Reports.tsx",
-        "client/src/lib/report-export.ts"
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/ReportsWorkspace.tsx",
+        "client/src/lib/report-export.ts",
+        "client/src/lib/merchant-report-document.ts",
+        "client/src/components/merchant/MerchantReportView.tsx"
       ],
       "controls": [
-        "bff86c3c06da",
-        "34587fa1dc9a",
-        "d49b081f42ae",
-        "3aba8702de84",
-        "1bf6d8d87491"
+        "77ce5300e6f7",
+        "51b0720d2664",
+        "215b548a8ada",
+        "70fe799c689a",
+        "8515b3066eeb",
+        "df5d3b8945a2",
+        "3b5896d62a62",
+        "82e3864fcd5e"
       ],
       "queries": [
-        "reports.getSalesReport",
-        "reports.getCustomersReport",
-        "reports.getConversationsReport"
+        "auth.me",
+        "merchants.getCurrent",
+        "reports.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -63254,16 +63300,16 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bff86c3c06da",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 259,
-      "tag": "Button",
+      "id": "51b0720d2664",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 159,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "تحديث",
       "section": "التقارير",
-      "binding": "() => setKind(k.id as Kind)",
-      "type": "text",
+      "binding": "() => void query.refetch()",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
@@ -63271,19 +63317,82 @@
       "required": false,
       "conditional": true,
       "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "215b548a8ada",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 166,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "جارٍ تجهيز الملف… تصدير Excel",
+      "section": "التقارير",
+      "binding": "() => void excel()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || exporting",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "70fe799c689a",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 176,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "طباعة / حفظ PDF",
+      "section": "التقارير",
+      "binding": "() =>\n              doc && setPrintJob({ document: doc, key: readyKey.current, rtl })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || exporting",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8515b3066eeb",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 190,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "التقارير",
+      "binding": "() => setSelection(s => ({ ...s, kind: k.id }))",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "34587fa1dc9a",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 272,
+      "id": "df5d3b8945a2",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 203,
       "tag": "select",
       "role": "",
       "kind": "field",
       "label": "الفترة",
       "section": "التقارير",
-      "binding": "period",
+      "binding": "selection.period",
       "type": "text",
       "options": [
         {
@@ -63301,15 +63410,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d49b081f42ae",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 290,
+      "id": "3b5896d62a62",
+      "file": "client/src/components/merchant/ReportsWorkspace.tsx",
+      "line": 223,
       "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "عملة الطلبات",
+      "label": "عملة الطلبات SAR USD",
       "section": "التقارير",
-      "binding": "currency",
+      "binding": "selection.currency",
       "type": "text",
       "options": [
         {
@@ -63327,21 +63436,21 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "kind === \"sales\""
+        "selection.kind === \"sales\""
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "3aba8702de84",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 301,
-      "tag": "Button",
+      "id": "82e3864fcd5e",
+      "file": "client/src/components/merchant/MerchantReportView.tsx",
+      "line": 40,
+      "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "جارٍ تجهيز الملف… تصدير Excel",
-      "section": "التقارير",
-      "binding": "exportExcel",
+      "label": "",
+      "section": "MerchantReportView",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -63350,28 +63459,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "!ready || exporting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1bf6d8d87491",
-      "file": "client/src/pages/Reports.tsx",
-      "line": 310,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "طباعة / حفظ PDF",
-      "section": "التقارير",
-      "binding": "print",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "!ready || exporting",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {

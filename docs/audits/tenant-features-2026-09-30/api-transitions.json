@@ -364,7 +364,7 @@
       ],
       "checks": [
         {
-          "file": "client/src/pages/Reports.tsx",
+          "file": "client/src/components/merchant/ReportsWorkspace.tsx",
           "contains": "report-export"
         }
       ]
@@ -538,6 +538,34 @@
         {
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
           "contains": "<SallaCheckoutReview"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/reports"
+      ],
+      "removed": [
+        "reports.getSalesReport",
+        "reports.getCustomersReport",
+        "reports.getConversationsReport"
+      ],
+      "required": [
+        "reports.workspace"
+      ],
+      "note": "One scoped report snapshot replaces three reads. All report types, selected period, currency, metric definitions, sample limits, Excel and print are preserved; exports reject stale tenant or selection data.",
+      "evidence": [
+        "docs/audits/tenant-report-data-2026-09-30/REPORT.md",
+        "docs/audits/tenant-report-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "contains": "reportWorkbook",
+          "file": "client/src/components/merchant/ReportsWorkspace.tsx"
+        },
+        {
+          "contains": "MerchantReportView",
+          "file": "client/src/components/merchant/ReportsWorkspace.tsx"
         }
       ]
     }
