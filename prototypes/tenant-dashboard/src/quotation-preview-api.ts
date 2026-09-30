@@ -1,7 +1,10 @@
 import { useMemo } from "react";
-import { model, usePreviewVersion } from "./quotation-preview-state";
+import { model, templates, usePreviewVersion } from "./quotation-preview-state";
 // This adapter exists only in the prototype build. It has no network implementation.
 const reads: Record<string, (input: any) => any> = {
+  templateWorkspace: input => templates.workspace(input),
+  templateDetail: input => templates.detail(input.id),
+  templateReceipt: input => templates.receipt(input.requestId),
   workspace: input => model.workspace(input),
   detail: input => model.detail(input.id),
   sendWorkspace: input => model.sendWorkspace(input.quotationId),
@@ -20,8 +23,9 @@ const query = (name: string) => ({
     const version = usePreviewVersion(),
       key = JSON.stringify(input),
       enabled = options?.enabled !== false;
+    const source = name.startsWith("template") ? templates : model;
     const result = useMemo(() => {
-      if (!enabled || model.mode === "loading")
+      if (!enabled || source.mode === "loading")
         return { data: undefined, error: null };
       try {
         return { data: reads[name](input), error: null };
@@ -31,14 +35,14 @@ const query = (name: string) => ({
     }, [version, key, enabled]);
     return {
       ...result,
-      isFetching: enabled && model.mode === "loading",
+      isFetching: enabled && source.mode === "loading",
       refetch: async () => {
         try {
           const data = reads[name](input);
-          model.changed();
+          source.changed();
           return { data, error: null };
         } catch (error) {
-          model.changed();
+          source.changed();
           return { data: undefined, error };
         }
       },
@@ -69,7 +73,25 @@ const utilities = Object.fromEntries(
     },
   ])
 );
+const templateUtilities = {
+  workspace: utilities.templateWorkspace,
+  detail: utilities.templateDetail,
+  receipt: utilities.templateReceipt,
+};
 export const trpc = {
-  sariBrain: { quotations: api },
-  useUtils: () => ({ sariBrain: { quotations: utilities } }),
+  sariBrain: {
+    quotations: api,
+    quotationTemplates: {
+      workspace: query("templateWorkspace"),
+      detail: query("templateDetail"),
+      write: mutation(input => templates.write(input)),
+    },
+  },
+  useUtils: () => ({
+    sariBrain: {
+      quotations: utilities,
+      quotationTemplates: templateUtilities,
+      getQuotationTemplates: { invalidate: async () => templates.changed() },
+    },
+  }),
 };

@@ -10,6 +10,7 @@ for (const locale of ["ar", "en"]) {
   copy[locale] = {
     quotationWorkspace: text.quotationWorkspace,
     quotationSend: text.quotationSend,
+    quotationTemplates: text.quotationTemplates,
   };
 }
 await build({

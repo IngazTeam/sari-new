@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T04:08:16.534Z",
+  "generatedAt": "2026-09-30T04:20:38.333Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -10184,7 +10184,7 @@
     },
     {
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "hash": "5eb5f40d5ab7",
+      "hash": "8846f078a574",
       "queries": [
         "sariBrain.quotationTemplates.workspace",
         "sariBrain.quotationTemplates.detail",
@@ -10212,33 +10212,33 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "طلب محفوظ يحتاج تحققًا",
-          "line": 437,
-          "tag": "h3"
-        },
-        {
           "label": "القالب المحفوظ الآن",
-          "line": 471,
+          "line": 422,
           "tag": "h2"
         },
         {
+          "label": "طلب محفوظ يحتاج تحققًا",
+          "line": 461,
+          "tag": "h3"
+        },
+        {
           "label": "قوالب عروض الأسعار",
-          "line": 566,
+          "line": 567,
           "tag": "h1"
         },
         {
           "label": "create quotationTemplates.newTitle quotationTemplates.editTitle",
-          "line": 777,
+          "line": 778,
           "tag": "h2"
         },
         {
           "label": "الصورة وترتيب القائمة",
-          "line": 791,
+          "line": 792,
           "tag": "summary"
         },
         {
           "label": "مراجعة حذف القالب",
-          "line": 858,
+          "line": 861,
           "tag": "DialogTitle"
         }
       ],
@@ -19374,37 +19374,37 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "39861725452e",
-        "98009c9efb82",
-        "7255857bfc98",
-        "e214b8433a5b",
-        "d7d3afed1f4b",
-        "cc93a67249e2",
-        "e29c481e9a2a",
-        "8f679ce984a0",
-        "71e08e3e1792",
-        "70f8a642603c",
-        "b199830a1c0e",
-        "fad0cd54c92a",
-        "6be99f61bd31",
-        "cc948eb99240",
-        "ec112377c6bc",
-        "fee3624f7909",
-        "8332a3986b31",
-        "bcee6c38081d",
-        "793333baa835",
-        "0a5d2d11254a",
-        "239f71f5f5e0",
-        "530eb5168410",
-        "1a4fe2cf5414",
-        "31e73ff0abc9",
-        "0ce68b3d1c08",
-        "606d420ab6e5",
-        "0deab9dd7ea1",
-        "3faf7a62befd",
-        "7c797c8f4a6e",
-        "47e80da64b10",
-        "4cba20e95696",
+        "33546f28b46d",
+        "dee1f14ed5df",
+        "e8adba824858",
+        "8384ecce5af6",
+        "874ae0d3c362",
+        "aac46ee1e6ec",
+        "d354541f1555",
+        "4fe845fc05d8",
+        "b6a5515672a3",
+        "3b87dfa7173d",
+        "c341bdff316d",
+        "3f1a23266ef3",
+        "2d2018bb29b0",
+        "cd69daa1accd",
+        "1542924d29c2",
+        "b79b4c4175ee",
+        "a280d10f3b81",
+        "870dd2352fcf",
+        "34b2955b821f",
+        "badd98bfd354",
+        "e7d222dfee61",
+        "75c5018c4b3b",
+        "59546e5c6512",
+        "d21a9f2b0b2f",
+        "73fef9ed9d9b",
+        "81d5a804edb7",
+        "4d2708077497",
+        "f92857c4fb96",
+        "2851141de2f2",
+        "7e1c2e657864",
+        "a35d44bd91bf",
         "3b8fac22acbf",
         "fe53da57ed6b",
         "e78e68168153"
@@ -49685,101 +49685,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "39861725452e",
+      "id": "33546f28b46d",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 430,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "إعادة فحص التخزين",
-      "section": "QuotationTemplateWorkspace",
-      "binding": "retryStorage",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "storageError"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "98009c9efb82",
-      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 440,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "تحقق من نتيجة الحفظ",
-      "section": "طلب محفوظ يحتاج تحققًا",
-      "binding": "() => void recover()",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "attempt"
-      ],
-      "disabled": "busy || !canManage",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7255857bfc98",
-      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 447,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "إعادة الطلب نفسه",
-      "section": "طلب محفوظ يحتاج تحققًا",
-      "binding": "() => void run(attempt)",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "attempt"
-      ],
-      "disabled": "busy || !canManage || storageError",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e214b8433a5b",
-      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 460,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "عرض النسخة الحالية",
-      "section": "طلب محفوظ يحتاج تحققًا",
-      "binding": "() => void reviewLatest()",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "conflict && !attempt"
-      ],
-      "disabled": "busy || storageError",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d7d3afed1f4b",
-      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 474,
+      "line": 425,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49800,9 +49708,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cc93a67249e2",
+      "id": "dee1f14ed5df",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 482,
+      "line": 433,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49824,14 +49732,106 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e29c481e9a2a",
+      "id": "e8adba824858",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 527,
+      "line": 454,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة فحص التخزين",
+      "section": "القالب المحفوظ الآن",
+      "binding": "retryStorage",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "storageError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8384ecce5af6",
+      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+      "line": 464,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحقق من نتيجة الحفظ",
+      "section": "طلب محفوظ يحتاج تحققًا",
+      "binding": "() => void recover()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt"
+      ],
+      "disabled": "busy || !canManage",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "874ae0d3c362",
+      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+      "line": 471,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة الطلب نفسه",
+      "section": "طلب محفوظ يحتاج تحققًا",
+      "binding": "() => void run(attempt)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt"
+      ],
+      "disabled": "busy || !canManage || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aac46ee1e6ec",
+      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+      "line": 484,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "عرض النسخة الحالية",
+      "section": "طلب محفوظ يحتاج تحققًا",
+      "binding": "() => void reviewLatest()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "conflict && !attempt && !latest"
+      ],
+      "disabled": "busy || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d354541f1555",
+      "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+      "line": 528,
       "tag": "textarea",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "القالب المحفوظ الآن",
+      "section": "طلب محفوظ يحتاج تحققًا",
       "binding": "",
       "type": "text",
       "options": [],
@@ -49847,14 +49847,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8f679ce984a0",
+      "id": "4fe845fc05d8",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 529,
+      "line": 530,
       "tag": "input",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "القالب المحفوظ الآن",
+      "section": "طلب محفوظ يحتاج تحققًا",
       "binding": "",
       "type": "key === \"headerImageUrl\" ? \"url\" : \"text\"",
       "options": [],
@@ -49870,14 +49870,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "71e08e3e1792",
+      "id": "b6a5515672a3",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 563,
+      "line": 564,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "عروض الأسعار",
-      "section": "القالب المحفوظ الآن",
+      "section": "طلب محفوظ يحتاج تحققًا",
       "binding": "href(\"/merchant/sales-hub\")",
       "type": "text",
       "options": [],
@@ -49891,9 +49891,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "70f8a642603c",
+      "id": "3b87dfa7173d",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 570,
+      "line": 571,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49912,9 +49912,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b199830a1c0e",
+      "id": "c341bdff316d",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 574,
+      "line": 575,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49935,9 +49935,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fad0cd54c92a",
+      "id": "3f1a23266ef3",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 585,
+      "line": 586,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49958,9 +49958,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6be99f61bd31",
+      "id": "2d2018bb29b0",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 608,
+      "line": 609,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49981,9 +49981,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cc948eb99240",
+      "id": "cd69daa1accd",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 615,
+      "line": 616,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50004,9 +50004,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ec112377c6bc",
+      "id": "1542924d29c2",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 629,
+      "line": 630,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50027,9 +50027,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fee3624f7909",
+      "id": "b79b4c4175ee",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 648,
+      "line": 649,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50050,9 +50050,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8332a3986b31",
+      "id": "a280d10f3b81",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 675,
+      "line": 676,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -50074,9 +50074,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bcee6c38081d",
+      "id": "870dd2352fcf",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 682,
+      "line": 683,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50098,9 +50098,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "793333baa835",
+      "id": "34b2955b821f",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 684,
+      "line": 685,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50122,9 +50122,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a5d2d11254a",
+      "id": "badd98bfd354",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 711,
+      "line": 712,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50147,9 +50147,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "239f71f5f5e0",
+      "id": "e7d222dfee61",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 718,
+      "line": 719,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50172,9 +50172,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "530eb5168410",
+      "id": "75c5018c4b3b",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 733,
+      "line": 734,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50197,9 +50197,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1a4fe2cf5414",
+      "id": "59546e5c6512",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 791,
+      "line": 792,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -50221,9 +50221,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "31e73ff0abc9",
+      "id": "d21a9f2b0b2f",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 795,
+      "line": 796,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -50245,9 +50245,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0ce68b3d1c08",
+      "id": "73fef9ed9d9b",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 814,
+      "line": 815,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50269,9 +50269,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "606d420ab6e5",
+      "id": "81d5a804edb7",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 827,
+      "line": 828,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50293,9 +50293,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0deab9dd7ea1",
+      "id": "4d2708077497",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 853,
+      "line": 856,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -50314,9 +50314,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3faf7a62befd",
+      "id": "f92857c4fb96",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 866,
+      "line": 869,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -50335,9 +50335,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7c797c8f4a6e",
+      "id": "2851141de2f2",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 876,
+      "line": 879,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50358,9 +50358,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "47e80da64b10",
+      "id": "7e1c2e657864",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 887,
+      "line": 890,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -50379,9 +50379,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4cba20e95696",
+      "id": "a35d44bd91bf",
       "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
-      "line": 897,
+      "line": 900,
       "tag": "button",
       "role": "",
       "kind": "action",

@@ -47,6 +47,16 @@
   font-size: 0.85rem;
   line-height: 1.9;
 }
+.qp-active .tt-selection-note {
+  background: #edf2e7;
+  color: var(--foreground);
+}
+.qp-active .tt-preview :is(p, small) {
+  color: var(--foreground);
+}
+.qp-active .tt-field small {
+  color: var(--muted-foreground);
+}
 .qp-active [data-slot="dialog-overlay"] {
   position: fixed;
   inset: 0;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QuotationWorkspace } from "../../../client/src/components/merchant/QuotationWorkspace";
+import { TemplatePreview } from "./template-preview";
 import {
   previewModes,
   previewScope,
@@ -15,7 +16,8 @@ import {
 import "./quotation-preview.css";
 let root: Root | null = null;
 export const handles = (page: { route: string }) =>
-  page?.route === "/merchant/sales-hub";
+  page?.route === "/merchant/sales-hub" ||
+  page?.route === "/merchant/quotation-templates";
 export const render = () => '<div id="quotation-prototype-root"></div>';
 export function unmount() {
   if (root) {
@@ -114,7 +116,13 @@ export function mount() {
   if (!node) return;
   document.body.classList.add("qp-active");
   root = createRoot(node);
-  root.render(<Preview />);
+  root.render(
+    location.hash.split("?")[0] === "#/page/merchant/quotation-templates" ? (
+      <TemplatePreview />
+    ) : (
+      <Preview />
+    )
+  );
 }
 document.addEventListener("click", event => {
   if (!document.body.classList.contains("qp-active")) return;

@@ -417,9 +417,33 @@ export function QuotationTemplateWorkspace({
     reviewAgain: t("quotationTemplates.reviewAgain"),
     checkFields: t("quotationTemplates.checkFields"),
   };
+  const latestReview = latest && (
+    <section className="qt-panel">
+      <h2>{t("quotationTemplates.latestTitle")}</h2>
+      <TemplatePreview value={latest} truncated={latest.truncated} />
+      <div className="qt-tools">
+        <button
+          type="button"
+          disabled={!latest.editable || busy || storageError}
+          onClick={() => adoptLatest(false)}
+        >
+          {t("quotationTemplates.useLatest")}
+        </button>
+        {draft?.mode === "update" && (
+          <button
+            type="button"
+            disabled={!latest.editable || busy || storageError}
+            onClick={() => adoptLatest(true)}
+          >
+            {t("quotationTemplates.keepEdits")}
+          </button>
+        )}
+      </div>
+    </section>
+  );
   const actions = (
     <>
-      {notice && (
+      {notice && !(attempt && notice === "uncertain") && (
         <p className="qt-note" role="status">
           {noticeCopy[notice]}
         </p>
@@ -454,7 +478,7 @@ export function QuotationTemplateWorkspace({
           </div>
         </section>
       )}
-      {conflict && !attempt && (
+      {conflict && !attempt && !latest && (
         <section className="qt-note">
           <p>{t("quotationTemplates.conflictHint")}</p>
           <button
@@ -466,30 +490,7 @@ export function QuotationTemplateWorkspace({
           </button>
         </section>
       )}
-      {latest && (
-        <section className="qt-panel">
-          <h2>{t("quotationTemplates.latestTitle")}</h2>
-          <TemplatePreview value={latest} truncated={latest.truncated} />
-          <div className="qt-tools">
-            <button
-              type="button"
-              disabled={!latest.editable || busy || storageError}
-              onClick={() => adoptLatest(false)}
-            >
-              {t("quotationTemplates.useLatest")}
-            </button>
-            {draft?.mode === "update" && (
-              <button
-                type="button"
-                disabled={!latest.editable || busy || storageError}
-                onClick={() => adoptLatest(true)}
-              >
-                {t("quotationTemplates.keepEdits")}
-              </button>
-            )}
-          </div>
-        </section>
-      )}
+      {view !== "edit" && latestReview}
     </>
   );
   const field = (
@@ -833,9 +834,11 @@ export function QuotationTemplateWorkspace({
                   </button>
                 </div>
               </form>
-              <div className="qt-panel">
-                <TemplatePreview value={draft.form} />
-              </div>
+              {latestReview || (
+                <div className="qt-panel">
+                  <TemplatePreview value={draft.form} />
+                </div>
+              )}
             </div>
           )}
         </>
