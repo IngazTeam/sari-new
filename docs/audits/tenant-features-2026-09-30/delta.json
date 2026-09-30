@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T13:43:48.830Z",
+  "generatedAt": "2026-09-30T14:18:04.008Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 302,
-      "controls": 1992
+      "files": 304,
+      "controls": 2015
     }
   },
   "addedFiles": [
@@ -123,6 +123,8 @@
     "client/src/lib/performance-report.ts",
     "client/src/components/merchant/PerformanceReport.tsx",
     "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+    "client/src/components/merchant/InventorySheetWorkspace.tsx",
+    "client/src/lib/inventory-sheet-workspace.ts",
     "client/src/components/merchant/ReportsWorkspace.tsx",
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
@@ -170,6 +172,7 @@
     "client/src/pages/merchant/Settings.tsx",
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/SheetsSettings.tsx",
+    "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
@@ -1322,11 +1325,25 @@
     {
       "route": "/merchant/sheets/inventory",
       "controlsBefore": 2,
-      "controlsNow": 2,
+      "controlsNow": 28,
       "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "products.sheetInventory.connection",
+        "products.sheetInventory.list",
+        "products.sheetInventory.read",
+        "products.sheetInventory.receipt"
+      ],
+      "removedMutations": [
+        "sheets.syncInventory",
+        "sheets.updateInventoryFromSheets"
+      ],
+      "addedMutations": [
+        "products.sheetInventory.prepare",
+        "products.sheetInventory.commit",
+        "products.sheetInventory.discard"
+      ]
     },
     {
       "route": "/merchant/payments",

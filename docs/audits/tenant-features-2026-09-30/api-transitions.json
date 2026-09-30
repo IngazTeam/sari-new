@@ -746,6 +746,39 @@
           "contains": "await assertProductSheetSource"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/sheets/inventory"
+      ],
+      "removed": [
+        "sheets.updateInventoryFromSheets",
+        "sheets.syncInventory"
+      ],
+      "required": [
+        "products.sheetInventory.connection",
+        "products.sheetInventory.list",
+        "products.sheetInventory.prepare",
+        "products.sheetInventory.read",
+        "products.sheetInventory.commit",
+        "products.sheetInventory.receipt",
+        "products.sheetInventory.discard"
+      ],
+      "note": "Inventory imports now use a scoped immutable review, explicit product IDs and quantities, atomic commit and recoverable receipt. Export remains accessible through the visible DataSync link. Legacy import server retirement and export correctness are separate follow-ups, not claimed complete here.",
+      "evidence": [
+        "docs/audits/tenant-sheet-inventory-review-2026-09-30/REPORT.md",
+        "docs/audits/tenant-sheet-inventory-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/InventorySheetWorkspace.tsx",
+          "contains": "/merchant/data-sync"
+        },
+        {
+          "file": "client/src/pages/merchant/DataSync.tsx",
+          "contains": "sheets.syncInventory"
+        }
+      ]
     }
   ]
 }
