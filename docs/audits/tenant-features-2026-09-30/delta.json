@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T12:07:08.065Z",
+  "generatedAt": "2026-09-30T13:11:58.864Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 299,
-      "controls": 1967
+      "files": 301,
+      "controls": 1991
     }
   },
   "addedFiles": [
@@ -40,6 +40,8 @@
     "client/src/components/merchant/ProductImportWorkspace.tsx",
     "client/src/lib/product-import-workspace.ts",
     "client/src/components/merchant/ProductImportProviderTools.tsx",
+    "client/src/components/merchant/ProductSheetWorkspace.tsx",
+    "client/src/lib/product-sheet-workspace.ts",
     "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
     "client/src/lib/product-file-advice-workspace.ts",
     "client/src/lib/staff-voice-attempt.ts",
@@ -350,25 +352,35 @@
     {
       "route": "/merchant/products/upload",
       "controlsBefore": 17,
-      "controlsNow": 49,
-      "removedQueries": [],
+      "controlsNow": 73,
+      "removedQueries": [
+        "products.getSheetSyncStatus"
+      ],
       "addedQueries": [
         "auth.me",
         "merchants.getCurrent",
         "products.importReview.read",
         "products.list",
         "products.importReview.receipt",
+        "products.sheetImport.connection",
+        "products.sheetImport.list",
+        "products.sheetImport.read",
+        "products.sheetImport.receipt",
         "products.fileAdvice.read"
       ],
       "removedMutations": [
         "products.uploadCSV",
         "products.uploadExcel",
-        "products.smartImport"
+        "products.smartImport",
+        "products.syncFromGoogleSheets"
       ],
       "addedMutations": [
         "products.importReview.prepare",
         "products.importReview.commit",
         "products.importReview.discard",
+        "products.sheetImport.prepare",
+        "products.sheetImport.commit",
+        "products.sheetImport.discard",
         "products.fileAdvice.start"
       ]
     },

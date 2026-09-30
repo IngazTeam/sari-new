@@ -19,7 +19,7 @@ function ImportPage({ scope }: { scope: string }) {
       >
         <summary>{t("productImportUx.providers")}</summary>
         <p>{t("productImportUx.providersHint")}</p>
-        {providers && <ProductImportProviderTools key={scope} />}
+        {providers && <ProductImportProviderTools key={scope} scope={scope} />}
       </details>
     </div>
   );

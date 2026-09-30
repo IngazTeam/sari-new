@@ -1,0 +1,131 @@
+.ps-workspace {
+  min-width: 0;
+}
+.ps-workspace > header h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+}
+.ps-workspace label {
+  display: grid;
+  gap: 0.45rem;
+  margin-block: 0.8rem;
+  min-width: 0;
+}
+.ps-workspace summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+}
+.ps-workspace .pw-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+.ps-workspace input[type="checkbox"] {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin-block: 0;
+}
+.ps-workspace .pw-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.ps-workspace .ps-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ps-workspace button,
+.ps-workspace .pw-button {
+  margin-block: 0.4rem;
+  margin-inline-end: 0.5rem;
+}
+.ps-workspace code,
+.ps-source,
+.ps-workspace bdi {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ps-row {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.85rem;
+}
+.ps-row > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  overflow-wrap: anywhere;
+}
+.ps-action {
+  flex-shrink: 0;
+  border-radius: 9px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.85rem;
+  background: var(--secondary);
+}
+.ps-create {
+  color: #146849;
+  background: #e6f7ee;
+}
+.ps-update {
+  color: #2949aa;
+  background: #edf0ff;
+}
+.ps-blocked {
+  color: #9d241b;
+  background: #fff0ec;
+}
+.ps-changes,
+.ps-raw {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.ps-changes > div,
+.ps-raw > div {
+  padding-block: 0.7rem;
+  border-block-end: 1px solid var(--border);
+  min-width: 0;
+}
+.ps-changes dt,
+.ps-raw dt {
+  font-weight: 650;
+  margin-block-end: 0.35rem;
+}
+.ps-changes dd {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+.ps-changes dd > span:only-child {
+  grid-column: 1 / -1;
+}
+.ps-changes dd span,
+.ps-raw dd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  margin: 0;
+}
+.ps-changes small {
+  display: block;
+  color: var(--muted-foreground);
+  margin-block-end: 0.25rem;
+}
+@media (max-width: 640px) {
+  .ps-workspace .pw-form-grid,
+  .ps-workspace .ps-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ps-row > summary {
+    align-items: flex-start;
+  }
+}
+@media (max-width: 380px) {
+  .ps-workspace .pw-form-grid,
+  .ps-changes dd {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -188,7 +188,7 @@ const specifics = {
     ],
     gaps: [
       "راجع tenant-product-import-workspace/prototype-2026-09-30. الملفات تقرأ محليًا في الموك أب دون رفع؛ الكتابات في الذاكرة والبصمات تجريبية وليست ضمان أمان أو حفظ خادم.",
-      "مساعدة الملف مطابقة للتطبيق؛ نصائح الموك أب ثابتة محلية وليست تحليل نموذج حقيقي. أُغلقت uploadCSV/uploadExcel/smartImport القديمة. أدوات Google Sheets ما زالت تحتاج تحويلًا؛ راجع tenant-product-file-advice-prototype-2026-09-30.",
+      "مساعدة الملف مطابقة للتطبيق؛ نصائح الموك أب ثابتة محلية وليست تحليل نموذج حقيقي. أُغلقت uploadCSV/uploadExcel/smartImport القديمة. شاشة Google Sheets الفعلية انتقلت لمراجعة ومعاملة وإيصال؛ الموك أب وإغلاقAPI القديم التاليان، راجع tenant-product-sheet-workspace-2026-09-30.",
       "تحقق العرض المكتبي و480 فقط؛ Safari/iPhone و320/390 وحفظ التنزيل ما زالت مفتوحة."
     ]
   },

@@ -3,23 +3,80 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
-      "routes": ["/merchant/products/upload"],
-      "removed": ["products.uploadCSV", "products.uploadExcel", "products.smartImport"],
-      "required": ["products.importReview.prepare", "products.importReview.read", "products.importReview.commit", "products.importReview.receipt", "products.importReview.discard", "products.fileAdvice.start", "products.fileAdvice.read", "products.syncFromGoogleSheets", "products.getSheetSyncStatus"],
+      "routes": [
+        "/merchant/products/upload"
+      ],
+      "removed": [
+        "products.uploadCSV",
+        "products.uploadExcel",
+        "products.smartImport"
+      ],
+      "required": [
+        "products.importReview.prepare",
+        "products.importReview.read",
+        "products.importReview.commit",
+        "products.importReview.receipt",
+        "products.importReview.discard",
+        "products.fileAdvice.start",
+        "products.fileAdvice.read",
+        "products.sheetImport.commit",
+        "products.sheetImport.connection"
+      ],
       "note": "CSV/XLSX import now previews exact fields and errors before an atomic reviewed commit and scoped receipt. AI is now an optional file-form assistant with a durable request, cited suggestions, sample disclosure and explicit mapping approval before ordinary import review. It does not automatically insert model prose into products, knowledge or Sheets. Sheets sync remains in its existing disclosure pending conversion. The old createSheet checkbox never sent its value and was removed; no functioning provider option was lost.",
-      "evidence": ["docs/audits/tenant-product-import-parser-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-review-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-workspace-2026-09-30/REPORT.md"],
-      "checks": [{"file":"client/src/components/merchant/ProductImportWorkspace.tsx","contains":"productImportFields"}, {"file":"client/src/lib/product-import-workspace.ts","contains":"productImportTemplate"}]
+      "evidence": [
+        "docs/audits/tenant-product-import-parser-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-import-review-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-import-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ProductImportWorkspace.tsx",
+          "contains": "productImportFields"
+        },
+        {
+          "file": "client/src/lib/product-import-workspace.ts",
+          "contains": "productImportTemplate"
+        }
+      ]
     },
     {
-      "routes": ["/merchant/products"],
-      "removed": ["products.create", "products.update", "products.delete", "products.bulkDelete"],
-      "required": ["products.list", "products.editor.read", "products.editor.write", "products.editor.receipt", "products.editor.deleteReview", "products.editor.deleteWrite", "products.editor.deleteReceipt"],
+      "routes": [
+        "/merchant/products"
+      ],
+      "removed": [
+        "products.create",
+        "products.update",
+        "products.delete",
+        "products.bulkDelete"
+      ],
+      "required": [
+        "products.list",
+        "products.editor.read",
+        "products.editor.write",
+        "products.editor.receipt",
+        "products.editor.deleteReview",
+        "products.editor.deleteWrite",
+        "products.editor.deleteReceipt"
+      ],
       "note": "The old product modal and bulk delete are replaced by a scoped editor and reviewed deletion with atomic receipts. All 16 prior editor fields, images, margin/discount previews, source locks and import navigation are preserved; currency and precise field errors are explicit. The old server CRUD remains until consumer retirement is audited.",
-      "evidence": ["docs/audits/tenant-product-workspace-2026-09-30/REPORT.md", "docs/audits/tenant-product-editor-2026-09-30/REPORT.md", "docs/audits/tenant-product-deletion-2026-09-30/REPORT.md"],
+      "evidence": [
+        "docs/audits/tenant-product-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-editor-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-deletion-2026-09-30/REPORT.md"
+      ],
       "checks": [
-        {"file":"client/src/components/merchant/ProductCatalogWorkspace.tsx","contains":"/merchant/products/upload"},
-        {"file":"client/src/components/merchant/ProductEditorWorkspace.tsx","contains":"productPricePreview"},
-        {"file":"server/product-workspace-page.test.ts","contains":"17"}
+        {
+          "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
+          "contains": "/merchant/products/upload"
+        },
+        {
+          "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
+          "contains": "productPricePreview"
+        },
+        {
+          "file": "server/product-workspace-page.test.ts",
+          "contains": "17"
+        }
       ]
     },
     {
@@ -647,6 +704,44 @@
         {
           "file": "client/src/components/merchant/CustomerAnnotations.tsx",
           "contains": "expectedRevision: tags.revision"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/products/upload"
+      ],
+      "removed": [
+        "products.getSheetSyncStatus",
+        "products.syncFromGoogleSheets"
+      ],
+      "required": [
+        "products.sheetImport.connection",
+        "products.sheetImport.list",
+        "products.sheetImport.prepare",
+        "products.sheetImport.read",
+        "products.sheetImport.commit",
+        "products.sheetImport.receipt",
+        "products.sheetImport.discard"
+      ],
+      "note": "The actual Sheets UI now selects a scoped sheet and explicit matching mode, previews original values and before/after field changes, and applies one atomic reviewed snapshot with a durable receipt. Failure is not shown as disconnection. The legacy server procedures remain until the prototype is verified and their remaining consumers are audited.",
+      "evidence": [
+        "docs/audits/tenant-product-sheet-plan-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-sheet-review-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-sheet-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
+          "contains": "source.issues.map"
+        },
+        {
+          "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
+          "contains": "checkedSheetReceipt"
+        },
+        {
+          "file": "server/product-sheet-review.ts",
+          "contains": "await assertProductSheetSource"
         }
       ]
     }
