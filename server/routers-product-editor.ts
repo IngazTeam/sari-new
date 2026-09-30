@@ -1,4 +1,14 @@
 import { TRPCError } from "@trpc/server";
+import {
+  productDeleteReviewInput,
+  productDeleteWriteInput,
+  productDeleteReceiptInput,
+} from "../shared/product-delete";
+import {
+  reviewProductDeletion,
+  deleteReviewedProducts,
+  readProductDeletionReceipt,
+} from "./product-delete";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   productEditorReadInput,
@@ -35,6 +45,23 @@ async function guarded<T>(run: () => Promise<T>) {
   }
 }
 export const productEditorRouter = router({
+  deleteReview: merchantProcedure
+    .input(productDeleteReviewInput)
+    .query(({ ctx, input }) =>
+      guarded(() => reviewProductDeletion(ctx.merchantId, ctx.user.id, input))
+    ),
+  deleteWrite: permissionProcedure("products.manage")
+    .input(productDeleteWriteInput)
+    .mutation(({ ctx, input }) =>
+      guarded(() => deleteReviewedProducts(ctx.merchantId, ctx.user.id, input))
+    ),
+  deleteReceipt: merchantProcedure
+    .input(productDeleteReceiptInput)
+    .query(({ ctx, input }) =>
+      guarded(() =>
+        readProductDeletionReceipt(ctx.merchantId, ctx.user.id, input)
+      )
+    ),
   read: merchantProcedure
     .input(productEditorReadInput)
     .query(({ ctx, input }) =>

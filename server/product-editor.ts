@@ -30,7 +30,8 @@ const validId = (value: number) => {
 const connectionDb = (c: PoolConnection) => drizzle({ client: c });
 async function transaction<T>(
   writes: boolean,
-  run: (c: PoolConnection) => Promise<T>
+  run: (c: PoolConnection) => Promise<T>,
+  serialize = false
 ): Promise<T> {
   if (writes)
     await assertRuntimeSchema("product editor receipts", [
@@ -53,7 +54,9 @@ async function transaction<T>(
   try {
     await c.query(
       writes
-        ? "SET TRANSACTION ISOLATION LEVEL READ COMMITTED"
+        ? serialize
+          ? "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"
+          : "SET TRANSACTION ISOLATION LEVEL READ COMMITTED"
         : "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"
     );
     if (!writes) await c.query("SET TRANSACTION READ ONLY");
@@ -339,3 +342,12 @@ export async function readProductEditorReceipt(
       : null;
   });
 }
+
+/** Shared transaction and source checks for the reviewed deletion workflow. */
+export const productEditorStore = {
+  transaction,
+  authority,
+  snapshot,
+  hash,
+  validId,
+};
