@@ -1,20 +1,11 @@
-// @ts-nocheck
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  ArrowRight,
-  Check,
-  Sparkles,
-  Loader2,
-  Languages,
-  PackageOpen,
-} from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+  setupTemplatePatch,
+  type SetupTemplateChoices,
+} from "@shared/setup-template";
 
 interface TemplatesStepProps {
   wizardData: Record<string, any>;
@@ -22,221 +13,295 @@ interface TemplatesStepProps {
   goToNextStep: () => void;
   skipStep: () => void;
 }
-
 export default function TemplatesStep({
   wizardData,
   updateWizardData,
   goToNextStep,
   skipStep,
 }: TemplatesStepProps) {
-  const { t } = useTranslation();
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(
-    wizardData.templateId || null
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState<"ar" | "en">(
+    i18n?.language?.startsWith("en") ? "en" : "ar"
   );
-  const [isApplying, setIsApplying] = useState(false);
-  const [language, setLanguage] = useState<"ar" | "en">("ar");
-
-  const { data: templates, isLoading } = trpc.setupWizard.getTemplates.useQuery(
-    {
-      businessType: wizardData.businessType,
-      language,
-    }
+  const [selected, setSelected] = useState<number | null>(null);
+  const [choices, setChoices] = useState<SetupTemplateChoices>({
+    catalog: "merge",
+    assistant: false,
+    workingHours: false,
+  });
+  const [error, setError] = useState("");
+  const businessType = ["store", "services", "both"].includes(
+    wizardData.businessType
+  )
+    ? (wizardData.businessType as "store" | "services" | "both")
+    : undefined;
+  const list = trpc.setupWizard.getTemplates.useQuery(
+    { businessType, language },
+    { refetchOnWindowFocus: false }
   );
-
-  const applyTemplateMutation = trpc.setupWizard.applyTemplate.useMutation();
-
-  const handleSelectTemplate = (templateId: number) => {
-    setSelectedTemplate(templateId);
-    updateWizardData({ templateId });
+  const preview = trpc.setupWizard.previewTemplate.useQuery(
+    { templateId: selected || 1, language },
+    { enabled: selected !== null, refetchOnWindowFocus: false }
+  );
+  const choose = (id: number) => {
+    setSelected(id);
+    setError("");
+    setChoices({ catalog: "merge", assistant: false, workingHours: false });
   };
-
-  const handleApplyTemplate = async () => {
-    if (!selectedTemplate) return;
-
-    setIsApplying(true);
+  const ready =
+    selected !== null &&
+    !list.isError &&
+    !list.isFetching &&
+    list.data?.some(row => row.id === selected) &&
+    preview.data?.id === selected &&
+    !preview.isFetching &&
+    !preview.isError;
+  const apply = () => {
+    if (!ready || !preview.data) return;
     try {
-      await applyTemplateMutation.mutateAsync({ templateId: selectedTemplate });
-      toast.success(t("wizardTemplatesStepPage.text0"));
+      updateWizardData(setupTemplatePatch(wizardData, preview.data, choices));
       goToNextStep();
-    } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء تطبيق القالب");
-    } finally {
-      setIsApplying(false);
+    } catch (cause) {
+      setError(
+        cause instanceof Error && cause.message === "SETUP_TEMPLATE_LIMIT"
+          ? t("setupTemplateUx.limit")
+          : t("setupTemplateUx.invalidDraft")
+      );
     }
   };
-
-  const handleSkip = () => {
-    updateWizardData({ templateId: null });
-    skipStep();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const hasTemplates = templates && templates.length > 0;
-
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <p className="text-muted-foreground">{t("templatesStep.auto_0")}</p>
-      </div>
-
-      {/* Language Switcher */}
-      <div className="flex items-center justify-center gap-3 mb-4">
-        <Languages className="h-5 w-5 text-muted-foreground" />
-        <Tabs
+    <div className="ms-template-entry space-y-5">
+      <p>{t("setupTemplateUx.intro")}</p>
+      <label className="ms-catalog-field">
+        {t("setupTemplateUx.language")}
+        <select
           value={language}
-          onValueChange={value => setLanguage(value as "ar" | "en")}
+          onChange={event => {
+            setLanguage(event.target.value as "ar" | "en");
+            setSelected(null);
+            setError("");
+          }}
         >
-          <TabsList>
-            <TabsTrigger value="ar">
-              {t("wizardTemplatesStepPage.text1")}
-            </TabsTrigger>
-            <TabsTrigger value="en">🇬🇧 English</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Templates Grid */}
-      {hasTemplates && (
-        <div className="grid md:grid-cols-2 gap-4 ms-unbounded-list max-h-[500px] overflow-y-auto pe-2">
-          {templates.map(template => {
-            const isSelected = selectedTemplate === template.id;
-
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      {list.isLoading || list.isFetching ? (
+        <p role="status">{t("setupTemplateUx.loading")}</p>
+      ) : list.isError ? (
+        <div role="alert">
+          <p>{t("setupTemplateUx.loadFailed")}</p>
+          <Button variant="outline" onClick={() => list.refetch()}>
+            {t("setupWorkspace.retry")}
+          </Button>
+        </div>
+      ) : !list.data?.length ? (
+        <p>{t("setupTemplateUx.empty")}</p>
+      ) : (
+        <div className="ms-template-grid">
+          {list.data.map(template => {
+            const title =
+              "templateName" in template
+                ? template.templateName
+                : template.template_name;
             return (
-              <Card
+              <button
                 key={template.id}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                onKeyDown={event => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleSelectTemplate(template.id);
-                  }
-                }}
-                className={`relative cursor-pointer transition-all duration-200 hover:shadow-sm ${
-                  isSelected
-                    ? "ring-2 ring-primary shadow-sm"
-                    : "hover:border-primary/50"
-                }`}
-                onClick={() => handleSelectTemplate(template.id)}
+                type="button"
+                className="ms-choice"
+                aria-pressed={selected === template.id}
+                onClick={() => choose(template.id)}
               >
-                {isSelected && (
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent0 rounded-full flex items-center justify-center shadow-sm z-10">
-                    <Check className="h-5 w-5 text-white" />
-                  </div>
-                )}
-
-                <div className="p-5 space-y-3">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{template.icon}</span>
-                      <h3 className="text-lg font-bold text-foreground">
-                        {template.templateName}
-                      </h3>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {template.usageCount || 0} استخدام
-                    </Badge>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground">
-                    {template.description}
-                  </p>
-
-                  {/* Suitable For */}
-
-                  {template.suitableFor && (
-                    <div className="pt-2 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">
-                        {t("templatesStep.auto_1")}
-                      </p>
-
-                      <p className="text-xs text-muted-foreground">
-                        {template.suitableFor}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* What's Included */}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Sparkles className="h-3 w-3 text-primary" />
-                    <span>{t("wizardTemplatesStepPage.text2")}</span>
-                  </div>
-                </div>
-              </Card>
+                <span>
+                  <strong>{template.icon} {title}</strong>
+                  <small>{template.description}</small>
+                  {('suitableFor' in template ? template.suitableFor : template.suitable_for) && <small>{t('setupTemplateUx.suitableFor')}: {'suitableFor' in template ? template.suitableFor : template.suitable_for}</small>}
+                  {typeof template.usage_count === 'number' && <small>{t('setupTemplateUx.uses', { count: template.usage_count })}</small>}
+                </span>
+              </button>
             );
           })}
         </div>
       )}
-
-      {/* Empty State - No Templates */}
-      {!hasTemplates && (
-        <div className="text-center py-12 space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent mb-2">
-            <PackageOpen className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <p className="text-muted-foreground font-medium mb-1">
-              {t("wizardTemplatesStepPage.text3")}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {t("wizardTemplatesStepPage.text4")}
-            </p>
-          </div>
-          <Button
-            onClick={handleSkip}
-            className="mt-4 bg-primary hover:bg-primary/90"
-          >
-            {t("templatesStep.auto_2")}
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Actions - only show if templates exist */}
-      {hasTemplates && (
-        <div className="ms-actions">
-          <Button variant="ghost" onClick={handleSkip}>
-            {t("templatesStep.auto_3")}
-          </Button>
-
-          <Button
-            size="lg"
-            onClick={handleApplyTemplate}
-            disabled={!selectedTemplate || isApplying}
-            className="px-8 bg-primary hover:bg-primary/90"
-          >
-            {isApplying ? (
+      {selected !== null && (
+        <section
+          className="ms-catalog-item"
+          aria-label={t("setupTemplateUx.preview")}
+        >
+          {preview.isLoading || preview.isFetching ? (
+            <p role="status">{t("setupTemplateUx.loading")}</p>
+          ) : preview.isError ? (
+            <div role="alert">
+              <p>{t("setupTemplateUx.previewFailed")}</p>
+              <Button variant="outline" onClick={() => preview.refetch()}>
+                {t("setupWorkspace.retry")}
+              </Button>
+            </div>
+          ) : (
+            ready &&
+            preview.data && (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t("templatesStep.auto_4")}
+                <h2 className="ms-field-title">{preview.data.title}</h2>
+                <p>{preview.data.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("setupTemplateUx.samples")}
+                </p>
+                <div className="ms-review-list">
+                  {[
+                    ...preview.data.products.map(row => ({
+                      ...row,
+                      kind: "product",
+                    })),
+                    ...preview.data.services.map(row => ({
+                      ...row,
+                      currency: "SAR",
+                      kind: "service",
+                    })),
+                  ].map(row => (
+                    <section key={row.id}>
+                      <header>
+                        <h3>{row.name}</h3>
+                        <bdi>
+                          {row.price} {row.currency}
+                        </bdi>
+                      </header>
+                      <p>{row.description}</p>
+                      {row.category && <small>{row.category}</small>}
+                      {"durationMinutes" in row && (
+                        <small>
+                          {t("setupTemplateUx.duration", {
+                            minutes: row.durationMinutes,
+                          })}
+                        </small>
+                      )}
+                    </section>
+                  ))}
+                </div>
+                <label className="ms-catalog-field">
+                  {t("setupTemplateUx.catalogAction")}
+                  <select
+                    value={choices.catalog}
+                    onChange={event => {
+                      setError("");
+                      setChoices(previous => ({
+                        ...previous,
+                        catalog: event.target
+                          .value as SetupTemplateChoices["catalog"],
+                      }));
+                    }}
+                  >
+                    <option value="merge">{t("setupTemplateUx.merge")}</option>
+                    <option value="replace">
+                      {t("setupTemplateUx.replace")}
+                    </option>
+                    <option value="skip">
+                      {t("setupTemplateUx.skipCatalog")}
+                    </option>
+                  </select>
+                </label>
+                {choices.catalog === "replace" && (
+                  <p className="ms-catalog-error">
+                    {t("setupTemplateUx.replaceHint")}
+                  </p>
+                )}
+                {Object.keys(preview.data.assistant).length > 0 && (
+                  <details className="ms-details" open>
+                    <summary>{t("setupWorkspace.reviewAssistant")}</summary>
+                    <p>
+                      {preview.data.assistant.tone === "professional"
+                        ? t("setupWorkspace.toneProfessional")
+                        : preview.data.assistant.tone === "casual"
+                          ? t("setupWorkspace.toneCasual")
+                          : preview.data.assistant.tone === "friendly"
+                            ? t("setupWorkspace.toneFriendly")
+                            : ""}{" "}
+                      <bdi>{({ ar: 'العربية', en: 'English', both: t('setupTemplateUx.bothLanguages'), fr: 'Français', tr: 'Türkçe', es: 'Español', it: 'Italiano' } as Record<string, string>)[preview.data.assistant.language || '']}</bdi>
+                    </p>
+                    <p>{preview.data.assistant.welcomeMessage}</p>
+                    <label className="ms-template-check">
+                      <input
+                        type="checkbox"
+                        checked={choices.assistant}
+                        onChange={event =>
+                          setChoices(previous => ({
+                            ...previous,
+                            assistant: event.target.checked,
+                          }))
+                        }
+                      />
+                      {t("setupTemplateUx.applyAssistant")}
+                    </label>
+                  </details>
+                )}
+                {Object.keys(preview.data.workingHours).length > 0 && (
+                  <details className="ms-details">
+                    <summary>{t("setupTemplateUx.hours")}</summary>
+                    <dl>
+                      {Object.entries(preview.data.workingHours).map(
+                        ([name, value]) => (
+                          <div className="ms-template-hours" key={name}>
+                            <dt>
+                              {
+                                {
+                                  saturday: t("setupTemplateUx.saturday"),
+                                  sunday: t("setupTemplateUx.sunday"),
+                                  monday: t("setupTemplateUx.monday"),
+                                  tuesday: t("setupTemplateUx.tuesday"),
+                                  wednesday: t("setupTemplateUx.wednesday"),
+                                  thursday: t("setupTemplateUx.thursday"),
+                                  friday: t("setupTemplateUx.friday"),
+                                }[
+                                  name as keyof typeof preview.data.workingHours
+                                ]
+                              }
+                            </dt>
+                            <dd>
+                              <bdi>
+                                {value.isOpen
+                                  ? `${value.open} – ${value.close}`
+                                  : t("setupTemplateUx.closed")}
+                              </bdi>
+                            </dd>
+                          </div>
+                        )
+                      )}
+                    </dl>
+                    <label className="ms-template-check">
+                      <input
+                        type="checkbox"
+                        checked={choices.workingHours}
+                        onChange={event =>
+                          setChoices(previous => ({
+                            ...previous,
+                            workingHours: event.target.checked,
+                          }))
+                        }
+                      />
+                      {t("setupTemplateUx.applyHours")}
+                    </label>
+                  </details>
+                )}
               </>
-            ) : (
-              <>
-                {t("templatesStep.auto_5")}
-                <ArrowRight className="h-5 w-5" />
-              </>
-            )}
-          </Button>
-        </div>
+            )
+          )}
+        </section>
       )}
-
-      {/* Info Box */}
-      <div className="bg-accent border border-border rounded-xl p-4">
-        <p className="text-sm text-primary">
-          💡 <strong>{t("wizardTemplatesStepPage.text5")}</strong>
-          {t("templatesStep.auto_6")}
+      {error && (
+        <p role="alert" className="ms-catalog-error">
+          {error}
         </p>
+      )}
+      <div className="ms-actions">
+        <Button variant="ghost" onClick={skipStep}>
+          {t("setupTemplateUx.back")}
+        </Button>
+        <Button onClick={apply} disabled={!ready}>
+          {t("setupTemplateUx.addDraft")}
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">
+        {t("setupTemplateUx.draftOnly")}
+      </p>
     </div>
   );
 }

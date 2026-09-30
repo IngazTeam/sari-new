@@ -362,6 +362,14 @@
 .ms-catalog-empty { padding: 24px 16px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--muted-foreground); font-size: 13px; }
 .ms-catalog-entry pre { white-space: pre-wrap; overflow-wrap: anywhere; direction: ltr; text-align: left; font-size: 12px; }
 .ms-catalog-image { object-fit: contain; border-radius: 8px; background: var(--muted); }
+.ms-template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.ms-template-grid .ms-choice { text-align: start; align-items: flex-start; }
+.ms-template-grid .ms-choice small { display: block; }
+.ms-template-check { display: flex; gap: 12px; align-items: center; min-height: 48px; font-size: 13px; cursor: pointer; }
+.ms-template-check input { width: 20px; min-height: 20px; flex: none; accent-color: var(--primary); }
+.ms-template-hours { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; padding: 6px 0; }
+.ms-template-entry .ms-review-list { max-height: 440px; overflow-y: auto; }
+@media (max-width: 600px) { .ms-template-entry .ms-review-list { max-height: none; overflow: visible; } }
 @media (max-width: 480px) { .ms-catalog-price { grid-template-columns: minmax(0, 1fr); } }
 .ms-catalog-modes button {
   flex: 1;

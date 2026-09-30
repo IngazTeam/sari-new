@@ -3,6 +3,14 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/setup-wizard"],
+      "removed": ["setupWizard.applyTemplate"],
+      "required": ["setupWizard.previewTemplate", "setupWizard.completeSetup"],
+      "note": "Templates are read-only previews with explicit local draft choices; live catalog and settings are persisted only by final setup approval.",
+      "evidence": ["server/setup-template-api.test.ts", "server/setup-template-ui.test.ts", "shared/setup-template.ts"],
+      "checks": [{ "file": "client/src/pages/setup-wizard/TemplatesStep.tsx", "contains": "setupTemplatePatch" }]
+    },
+    {
       "routes": ["/merchant/sheets/settings"],
       "removed": ["sheets.getReportSettings", "sheets.setupSpreadsheet"],
       "required": ["sheets.getStatus", "sheets.updateReportSettings", "sheets.disconnect", "sheets.setup.start", "sheets.setup.read", "sheets.setup.recover", "sheets.setup.acknowledge"],

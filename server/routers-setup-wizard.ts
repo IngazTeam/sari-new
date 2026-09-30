@@ -9,19 +9,19 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { protectedProcedure, publicProcedure, router } from './_core/trpc';
 import { setupProductSchema, setupServiceSchema } from '../shared/setup-catalog';
+import { setupTemplatePreview } from '../shared/setup-template';
 import {
   completeSetupWizard,
   createProduct,
   createService,
   createSetupWizardProgress,
-  getBusinessTemplateById,
+  getBusinessTemplateByIdWithTranslations,
   getBusinessTemplatesWithTranslations,
   getMerchantByUserId,
   getMerchantWebsiteInfo,
   getProductsByMerchantId,
   getServicesByMerchant,
   getSetupWizardProgress,
-  incrementTemplateUsage,
   updateBotSettings,
   updateMerchant,
   updateMerchantWebsiteInfo,
@@ -76,16 +76,6 @@ function serializeDraft(draft: Record<string, unknown>): string {
     });
   }
   return serialized;
-}
-
-function parseTemplateArray(value: string | null | undefined): Array<Record<string, any>> {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Template data is invalid' });
-  }
 }
 
 export const setupWizardRouter = router({
@@ -238,7 +228,8 @@ export const setupWizardRouter = router({
           description: service.description || null,
           basePrice: service.priceMinor,
           priceType: 'fixed',
-          durationMinutes: 30,
+          durationMinutes: service.durationMinutes,
+          category: service.category || null,
           isActive: 1,
         });
         if (!serviceId) {
@@ -276,68 +267,16 @@ export const setupWizardRouter = router({
     }))
     .query(async ({ input }) => getBusinessTemplatesWithTranslations(input.language, input.businessType)),
 
-  applyTemplate: protectedProcedure
-    .input(z.object({ templateId: z.number().int().positive() }))
-    .mutation(async ({ ctx, input }) => {
+  previewTemplate: protectedProcedure
+    .input(z.object({ templateId: z.number().int().positive(), language: z.enum(['ar', 'en']) }).strict())
+    .query(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const template = await getBusinessTemplateById(input.templateId);
-      if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
-
-      const templateServices = parseTemplateArray(template.services);
-      const templateProducts = parseTemplateArray(template.products);
-      const existingProducts = await getProductsByMerchantId(merchant.id);
-      const existingServices = await getServicesByMerchant(merchant.id);
-      const productNames = new Set(existingProducts.map(product => normalizeCatalogName(product.name)));
-      const serviceNames = new Set(existingServices.map(service => normalizeCatalogName(service.name)));
-
-      for (const service of templateServices) {
-        const name = String(service.name || '').trim();
-        if (!name || serviceNames.has(normalizeCatalogName(name))) continue;
-        await createService({
-          merchantId: merchant.id,
-          name: name.slice(0, 255),
-          description: String(service.description || '').slice(0, 5000),
-          basePrice: Math.max(0, Math.round(Number(service.price || 0) * 100)),
-          priceType: 'fixed',
-          durationMinutes: Number(service.durationMinutes || 30),
-          category: service.category ? String(service.category).slice(0, 100) : null,
-        });
-        serviceNames.add(normalizeCatalogName(name));
-      }
-
-      for (const product of templateProducts) {
-        const name = String(product.name || '').trim();
-        if (!name || productNames.has(normalizeCatalogName(name))) continue;
-        await createProduct({
-          merchantId: merchant.id,
-          name: name.slice(0, 255),
-          description: String(product.description || '').slice(0, 5000),
-          price: Math.max(0, Math.round(Number(product.price || 0) * 100)),
-          currency: product.currency === 'USD' ? 'USD' : 'SAR',
-          isActive: 1,
-          status: 'active',
-        });
-        productNames.add(normalizeCatalogName(name));
-      }
-
-      let workingHours: Record<string, unknown> = {};
-      let botPersonality: Record<string, unknown> = {};
-      try {
-        workingHours = template.working_hours ? JSON.parse(template.working_hours) : {};
-        botPersonality = template.bot_personality ? JSON.parse(template.bot_personality) : {};
-      } catch {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Template settings are invalid' });
-      }
-
-      await updateMerchant(merchant.id, { workingHours: JSON.stringify(workingHours) });
-      await updateBotSettings(merchant.id, botPersonality);
-      await incrementTemplateUsage(input.templateId);
-
-      return { success: true };
+      const template = await getBusinessTemplateByIdWithTranslations(input.templateId, input.language);
+      if (!template || template.is_active !== 1) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+      try { return setupTemplatePreview(template); }
+      catch { throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'SETUP_TEMPLATE_INVALID' }); }
     }),
-
   resetWizard: protectedProcedure.mutation(async ({ ctx }) => {
     const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:46:37.617Z",
+  "generatedAt": "2026-09-30T20:02:22.487Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -237,65 +237,59 @@
     },
     {
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "hash": "23fc4c8ca132",
+      "hash": "7fb390ad187a",
       "queries": [
-        "setupWizard.getTemplates"
+        "setupWizard.getTemplates",
+        "setupWizard.previewTemplate"
       ],
-      "mutations": [
-        "setupWizard.applyTemplate"
-      ],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "🇸🇦 العربية",
-          "line": 97,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "🇬🇧 English",
-          "line": 100,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 144,
+          "tag": "h2"
         },
         {
           "label": "",
-          "line": 141,
+          "line": 163,
           "tag": "h3"
+        },
+        {
+          "label": "إعدادات المساعد",
+          "line": 209,
+          "tag": "summary"
+        },
+        {
+          "label": "أوقات العمل المقترحة",
+          "line": 238,
+          "tag": "summary"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleSelectTemplate",
-          "line": 48,
-          "calls": []
-        },
-        {
-          "name": "handleApplyTemplate",
-          "line": 53,
-          "calls": [
-            "applyTemplateMutation"
-          ]
-        },
-        {
-          "name": "handleSkip",
-          "line": 68,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
           "query": "setupWizard.getTemplates",
-          "binding": "{ data: templates, isLoading }",
-          "line": 39,
-          "errorSignal": false,
+          "binding": "list",
+          "line": 38,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
+        },
+        {
+          "query": "setupWizard.previewTemplate",
+          "binding": "preview",
+          "line": 42,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "selected !== null"
         }
       ],
       "conditions": [],
       "imports": [],
-      "controlCount": 6
+      "controlCount": 11
     },
     {
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
@@ -399,7 +393,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "hash": "fb45a963a3a1",
+      "hash": "afc92e998188",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -407,39 +401,39 @@
       "sections": [
         {
           "label": "",
-          "line": 132,
+          "line": 133,
           "tag": "h3"
         },
         {
           "label": "عرض البيانات الأصلية",
-          "line": 135,
+          "line": 136,
           "tag": "summary"
         },
         {
           "label": "",
-          "line": 261,
+          "line": 272,
           "tag": "h3"
         },
         {
           "label": "الوصف والروابط والتفاصيل",
-          "line": 283,
+          "line": 301,
           "tag": "summary"
         },
         {
           "label": "products setupCatalogUx.products setupCatalogUx.services /",
-          "line": 355,
+          "line": 379,
           "tag": "h2"
         },
         {
           "label": "عرض البيانات الأصلية",
-          "line": 391,
+          "line": 415,
           "tag": "summary"
         }
       ],
       "choices": [
         {
           "name": "rows",
-          "line": 91,
+          "line": 92,
           "values": [
             "...rowsFor(removed.kind)"
           ]
@@ -448,12 +442,12 @@
       "handlers": [
         {
           "name": "remove",
-          "line": 76,
+          "line": 77,
           "calls": []
         },
         {
           "name": "update",
-          "line": 101,
+          "line": 102,
           "calls": []
         }
       ],
@@ -17127,12 +17121,17 @@
         "19fe30d480ac",
         "8785ed4b5980",
         "fcd72f676fda",
-        "edb77f105677",
-        "5f8c3610cc4a",
-        "898a03943ecc",
-        "f5870139d6b4",
-        "6beab56d2cd3",
-        "1b51b8b00d0b",
+        "2b01b3c825bf",
+        "ded747b7ea0c",
+        "77b413437a0e",
+        "5e7019b63722",
+        "c0f86ff6f5b4",
+        "63f0033e065e",
+        "5df669b98f9f",
+        "558cb702d3be",
+        "66d74c3fedfa",
+        "6204ad3c9cdb",
+        "c1b4c678c19f",
         "d9b84a62cb8d",
         "c12a3e0765e7",
         "70067fb6b4c8",
@@ -17146,18 +17145,18 @@
         "8adff5f1d876",
         "9dc16491af5f",
         "297333db9a78",
-        "e28407fb6260",
-        "8e694598c87f",
-        "e59c5f2836ad",
-        "7a39a757131e",
-        "15a562170111",
-        "8f9549a9062c",
-        "8322c41f0c74",
-        "3318e317c35a",
-        "7b2dc52f8f7d",
-        "fa99fb765498",
-        "1704cad65983",
-        "d0391cc1fdd7",
+        "c0b69de193b4",
+        "28e7afe08768",
+        "a61e0fbd33bc",
+        "ba74866d3235",
+        "e0da5d395c17",
+        "385dbecdfdc1",
+        "d911da2b7981",
+        "5824f736b046",
+        "8e76f4b88b3d",
+        "a02a53f337ba",
+        "93de516f5b0c",
+        "00559551611f",
         "6712705ff64c",
         "61df4f2ad053",
         "f1e21de09880",
@@ -17176,12 +17175,12 @@
       ],
       "queries": [
         "setupWizard.getProgress",
-        "setupWizard.getTemplates"
+        "setupWizard.getTemplates",
+        "setupWizard.previewTemplate"
       ],
       "mutations": [
         "setupWizard.saveProgress",
         "setupWizard.completeSetup",
-        "setupWizard.applyTemplate",
         "analysis.previewAnalysis",
         "testSari.createConversation",
         "testSari.saveMessage",
@@ -23863,15 +23862,258 @@
       "review": "source-inventoried"
     },
     {
-      "id": "edb77f105677",
+      "id": "2b01b3c825bf",
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 97,
-      "tag": "TabsTrigger",
+      "line": 77,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "لغة القوالب العربية English",
+      "section": "TemplatesStep",
+      "binding": "language",
+      "type": "text",
+      "options": [
+        {
+          "value": "ar",
+          "label": "العربية"
+        },
+        {
+          "value": "en",
+          "label": "English"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ded747b7ea0c",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 94,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "🇸🇦 العربية",
-      "section": "🇸🇦 العربية",
-      "binding": "ar",
+      "label": "إعادة المحاولة",
+      "section": "TemplatesStep",
+      "binding": "() => list.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "list.isError",
+        "list.isLoading || list.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "77b413437a0e",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 108,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "suitableFor مناسب لـ : suitableFor number الاستخدامات المسجلة: {{count}}",
+      "section": "TemplatesStep",
+      "binding": "() => choose(template.id)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!list.data?.length",
+        "list.isError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5e7019b63722",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 136,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة المحاولة",
+      "section": "TemplatesStep",
+      "binding": "() => preview.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "preview.isError",
+        "preview.isLoading || preview.isFetching",
+        "selected !== null"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c0f86ff6f5b4",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 182,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "إضافة كتالوج القالب إضافة إلى العناصر الحالية استبدال عناصر المسودة بالقالب الاحتفاظ بعناصري دون إضافة كتالوج القالب",
+      "section": "TemplatesStep",
+      "binding": "choices.catalog",
+      "type": "text",
+      "options": [
+        {
+          "value": "merge",
+          "label": "إضافة إلى العناصر الحالية"
+        },
+        {
+          "value": "replace",
+          "label": "استبدال عناصر المسودة بالقالب"
+        },
+        {
+          "value": "skip",
+          "label": "الاحتفاظ بعناصري دون إضافة كتالوج القالب"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ready &&\n            preview.data",
+        "preview.isError",
+        "preview.isLoading || preview.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "63f0033e065e",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 209,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "استخدام أسلوب المساعد ولغته ورسالته من هذا القالب",
+      "section": "إعدادات المساعد",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "Object.keys(preview.data.assistant).length > 0",
+        "ready &&\n            preview.data",
+        "preview.isError",
+        "preview.isLoading || preview.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5df669b98f9f",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 222,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "استخدام أسلوب المساعد ولغته ورسالته من هذا القالب",
+      "section": "إعدادات المساعد",
+      "binding": "choices.assistant",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "Object.keys(preview.data.assistant).length > 0",
+        "ready &&\n            preview.data",
+        "preview.isError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "558cb702d3be",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 238,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "استخدام أوقات العمل المعروضة بدل المسودة الحالية",
+      "section": "أوقات العمل المقترحة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "Object.keys(preview.data.workingHours).length > 0",
+        "ready &&\n            preview.data",
+        "preview.isError",
+        "preview.isLoading || preview.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "66d74c3fedfa",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 270,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "استخدام أوقات العمل المعروضة بدل المسودة الحالية",
+      "section": "أوقات العمل المقترحة",
+      "binding": "choices.workingHours",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "Object.keys(preview.data.workingHours).length > 0",
+        "ready &&\n            preview.data",
+        "preview.isError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6204ad3c9cdb",
+      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+      "line": 295,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "لغة القوالب العربية English",
+      "section": "أوقات العمل المقترحة",
+      "binding": "skipStep",
       "type": "text",
       "options": [],
       "min": "",
@@ -23884,15 +24126,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5f8c3610cc4a",
+      "id": "c1b4c678c19f",
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 100,
-      "tag": "TabsTrigger",
+      "line": 298,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "🇬🇧 English",
-      "section": "🇬🇧 English",
-      "binding": "en",
+      "label": "لغة القوالب العربية English",
+      "section": "أوقات العمل المقترحة",
+      "binding": "apply",
       "type": "text",
       "options": [],
       "min": "",
@@ -23901,99 +24143,7 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "898a03943ecc",
-      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 112,
-      "tag": "Card",
-      "role": "button",
-      "kind": "action",
-      "label": "استخدام مناسب لـ: يتضمن منتجات/خدمات + إعدادات + رسائل جاهزة",
-      "section": "🇬🇧 English",
-      "binding": "() => handleSelectTemplate(template.id)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "hasTemplates"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f5870139d6b4",
-      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 195,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تخطي والمتابعة",
-      "section": "TemplatesStep",
-      "binding": "handleSkip",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "!hasTemplates"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "6beab56d2cd3",
-      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 208,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تخطي - سأضيف يدوياً",
-      "section": "TemplatesStep",
-      "binding": "handleSkip",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "hasTemplates"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1b51b8b00d0b",
-      "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 212,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري التطبيق... تطبيق القالب",
-      "section": "TemplatesStep",
-      "binding": "handleApplyTemplate",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "hasTemplates"
-      ],
-      "disabled": "!selectedTemplate || isApplying",
+      "disabled": "!ready",
       "review": "source-inventoried"
     },
     {
@@ -24299,9 +24449,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e28407fb6260",
+      "id": "c0b69de193b4",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 135,
+      "line": 136,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -24320,9 +24470,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8e694598c87f",
+      "id": "28e7afe08768",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 138,
+      "line": 139,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24341,9 +24491,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e59c5f2836ad",
+      "id": "a61e0fbd33bc",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 212,
+      "line": 221,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -24377,9 +24527,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7a39a757131e",
+      "id": "ba74866d3235",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 231,
+      "line": 240,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -24401,9 +24551,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "15a562170111",
+      "id": "e0da5d395c17",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 233,
+      "line": 242,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -24425,9 +24575,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8f9549a9062c",
+      "id": "385dbecdfdc1",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 262,
+      "line": 273,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24446,9 +24596,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8322c41f0c74",
+      "id": "d911da2b7981",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 283,
+      "line": 301,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -24467,9 +24617,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3318e317c35a",
+      "id": "5824f736b046",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 326,
+      "line": 350,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24490,9 +24640,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7b2dc52f8f7d",
+      "id": "8e76f4b88b3d",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 366,
+      "line": 390,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24511,9 +24661,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa99fb765498",
+      "id": "a02a53f337ba",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 391,
+      "line": 415,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -24534,9 +24684,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1704cad65983",
+      "id": "93de516f5b0c",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 394,
+      "line": 418,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24557,9 +24707,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d0391cc1fdd7",
+      "id": "00559551611f",
       "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-      "line": 412,
+      "line": 436,
       "tag": "Button",
       "role": "",
       "kind": "action",

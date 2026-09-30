@@ -26,6 +26,7 @@ interface ProductsServicesStepProps {
 }
 type Kind = "products" | "services";
 type Field =
+  | "durationMinutes"
   | "name"
   | "price"
   | "description"
@@ -149,6 +150,7 @@ export default function ProductsServicesStep({
     const showError = (field: Field) =>
       fieldError(field) && (attempted || touched.has(idFor(field)));
     const optionalError = [
+      "durationMinutes",
       "description",
       "category",
       "imageUrl",
@@ -157,6 +159,7 @@ export default function ProductsServicesStep({
     const fields = (field: Field, multiline = false) => {
       const id = idFor(field);
       const label = {
+        durationMinutes: t("setupCatalogUx.duration"),
         name: t("setupCatalogUx.name"),
         price: t("setupCatalogUx.price"),
         description: t("setupCatalogUx.description"),
@@ -166,6 +169,7 @@ export default function ProductsServicesStep({
         currency: t("setupCatalogUx.currency"),
       }[field];
       const maxLength = {
+        durationMinutes: 4,
         name: 255,
         price: 32,
         description: 5000,
@@ -175,6 +179,7 @@ export default function ProductsServicesStep({
         currency: 3,
       }[field];
       const error = {
+        durationMinutes: t("setupCatalogUx.durationError"),
         name: t("setupCatalogUx.nameError"),
         price: t("setupCatalogUx.priceError"),
         description: t("setupCatalogUx.descriptionError"),
@@ -185,7 +190,11 @@ export default function ProductsServicesStep({
       }[field];
       const props = {
         id,
-        value: fieldText(raw[field]),
+        value: fieldText(
+          field === "durationMinutes" && raw[field] === undefined
+            ? 30
+            : raw[field]
+        ),
         maxLength,
         "aria-invalid": showError(field),
         "aria-describedby":
@@ -234,11 +243,13 @@ export default function ProductsServicesStep({
               {...props}
               type="text"
               inputMode={
-                field === "price"
-                  ? "decimal"
-                  : field.endsWith("Url")
-                    ? "url"
-                    : "text"
+                field === "durationMinutes"
+                  ? "numeric"
+                  : field === "price"
+                    ? "decimal"
+                    : field.endsWith("Url")
+                      ? "url"
+                      : "text"
               }
               dir={
                 field === "price" || field.endsWith("Url") ? "ltr" : undefined
@@ -269,8 +280,15 @@ export default function ProductsServicesStep({
             <Trash2 aria-hidden="true" />
           </Button>
         </header>
-      {fields("name")}
-      {typeof raw.websiteOriginalPrice === "string" && <p className="text-xs text-muted-foreground">{t('setupCatalogUx.sourcePrice', { value: raw.websiteOriginalPrice || t('setupWorkspace.notProvided') })}</p>}
+        {fields("name")}
+        {typeof raw.websiteOriginalPrice === "string" && (
+          <p className="text-xs text-muted-foreground">
+            {t("setupCatalogUx.sourcePrice", {
+              value:
+                raw.websiteOriginalPrice || t("setupWorkspace.notProvided"),
+            })}
+          </p>
+        )}
         <div className="ms-catalog-price">
           {fields("price")}
           {kind === "products" ? (
@@ -282,6 +300,12 @@ export default function ProductsServicesStep({
         <details className="ms-details" open={optionalError || undefined}>
           <summary>{t("setupCatalogUx.more")}</summary>
           {fields("description", true)}
+          {kind === "services" && (
+            <>
+              {fields("durationMinutes")}
+              {fields("category")}
+            </>
+          )}
           {kind === "products" && (
             <>
               {fields("category")}

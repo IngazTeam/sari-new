@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T19:46:37.617Z",
+  "generatedAt": "2026-09-30T20:02:22.487Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 313,
-      "controls": 2106
+      "controls": 2111
     }
   },
   "addedFiles": [
@@ -152,6 +152,7 @@
   ],
   "changedFiles": [
     "client/src/pages/SetupWizard.tsx",
+    "client/src/pages/setup-wizard/TemplatesStep.tsx",
     "client/src/pages/setup-wizard/WebsiteStep.tsx",
     "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
     "client/src/components/PreviewChat.tsx",
@@ -243,10 +244,14 @@
     {
       "route": "/merchant/setup-wizard",
       "controlsBefore": 59,
-      "controlsNow": 63,
+      "controlsNow": 68,
       "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
+      "addedQueries": [
+        "setupWizard.previewTemplate"
+      ],
+      "removedMutations": [
+        "setupWizard.applyTemplate"
+      ],
       "addedMutations": [
         "testSari.createConversation",
         "testSari.saveMessage",

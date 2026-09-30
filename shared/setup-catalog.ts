@@ -29,11 +29,16 @@ export const setupProductSchema = z.object({
   productUrl: setupWebUrl.optional().default(""),
   category: z.string().trim().max(100).optional().default(""),
 });
-export const setupServiceSchema = setupProductSchema.pick({
-  name: true,
-  description: true,
-  priceMinor: true,
-});
+export const setupServiceSchema = setupProductSchema
+  .pick({
+    name: true,
+    description: true,
+    priceMinor: true,
+    category: true,
+  })
+  .extend({
+    durationMinutes: z.number().int().min(1).max(1440).optional().default(30),
+  });
 
 // Blank, malformed and over-precise input must never become a free item.
 const draftPrice = z.union([z.string(), z.number()]).transform((raw, ctx) => {
@@ -56,7 +61,16 @@ const productDraft = setupProductSchema
   .transform(({ price, ...row }) => ({ ...row, priceMinor: price }));
 const serviceDraft = setupServiceSchema
   .omit({ priceMinor: true })
-  .extend({ price: draftPrice })
+  .extend({
+    price: draftPrice,
+    durationMinutes: z.preprocess(
+      value =>
+        typeof value === "string" && /^\d+$/.test(value)
+          ? Number(value)
+          : value,
+      setupServiceSchema.shape.durationMinutes
+    ),
+  })
   .transform(({ price, ...row }) => ({ ...row, priceMinor: price }));
 
 function whollyEmpty(value: unknown) {
@@ -69,6 +83,7 @@ function whollyEmpty(value: unknown) {
     "imageUrl",
     "productUrl",
     "category",
+    "durationMinutes",
   ].every(
     key =>
       row[key] === undefined ||

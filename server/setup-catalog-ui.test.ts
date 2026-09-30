@@ -31,6 +31,15 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 describe('setup catalog fields and draft preservation', () => {
+  it('reviews template service duration and category and rejects invalid minutes', async () => {
+    await render({ businessType: 'services', services: [{ name: 'موعد', price: '0', durationMinutes: 90, category: 'عناية' }] });
+    expect((container.querySelector('#setup-services-0-durationMinutes') as HTMLInputElement).value).toBe('90');
+    expect((container.querySelector('#setup-services-0-category') as HTMLInputElement).value).toBe('عناية');
+    await fill('#setup-services-0-durationMinutes', '0'); await click(ar.setupCatalogUx.next);
+    expect(container.textContent).toContain(ar.setupCatalogUx.durationError); expect(next).not.toHaveBeenCalled();
+    await fill('#setup-services-0-durationMinutes', '45'); await click(ar.setupCatalogUx.next);
+    expect(next).toHaveBeenCalledOnce(); expect(latest.services[0]).toMatchObject({ durationMinutes: '45', category: 'عناية' });
+  });
   it('shows field errors, preserves an unnamed priced row, then permits explicit correction', async () => {
     await render({ businessType: 'store', products: [{ name: '', price: '12.345' }] });
     await click(ar.setupCatalogUx.next);
