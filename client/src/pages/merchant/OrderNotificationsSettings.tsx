@@ -20,6 +20,7 @@ import { AlertTriangle, Bell, Check, Clock, Loader2, X } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import { orderNotificationVariables } from '@shared/order-notification-template';
 
 type OrderNotificationStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -226,6 +227,10 @@ export default function OrderNotificationsSettings() {
                     <p className="text-xs text-muted-foreground mt-2">
                       {t('orderNotificationsSettingsPage.text34')}
                     </p>
+                    <div className="flex flex-wrap gap-2 mt-2" dir="ltr">
+                      {orderNotificationVariables.map(variable => <code key={variable} className="text-xs rounded bg-muted px-2 py-1">{'{{' + variable + '}}'}</code>)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{t('orderNotificationsSettingsPage.moneyHint')}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button type="button" onClick={() => handleSave(template.status, template.enabled)} size="sm" disabled={updateTemplate.isPending}>

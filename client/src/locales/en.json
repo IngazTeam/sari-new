@@ -2755,6 +2755,7 @@
     "text54": "Disabled"
   },
   "orderNotificationsSettingsPage": {
+    "moneyHint": "Totals use major currency units, such as 34.53, and the order's own currency. Place the currency variable beside the total, and review any amounts or currency labels entered manually in your template.",
     "text0": "Loading...",
     "text1": "Order Notifications Settings",
     "text2": "Enabled Notifications",

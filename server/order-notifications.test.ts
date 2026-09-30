@@ -151,6 +151,7 @@ describe('Order Notifications System', () => {
           storeName: 'Test Store',
           orderNumber: 'TEST-001',
           total: 100,
+          currency: 'SAR',
         }
       );
       

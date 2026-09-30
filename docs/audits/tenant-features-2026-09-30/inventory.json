@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T04:20:38.333Z",
+  "generatedAt": "2026-09-30T04:34:57.146Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -11306,7 +11306,7 @@
     },
     {
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "hash": "23b11d5b9c98",
+      "hash": "d195ec55e672",
       "queries": [
         "orderNotifications.getTemplates",
         "orderNotifications.getHealth"
@@ -11320,37 +11320,37 @@
       "sections": [
         {
           "label": "إعدادات إشعارات الطلبات",
-          "line": 113,
+          "line": 114,
           "tag": "h1"
         },
         {
           "label": "الإشعارات المفعلة",
-          "line": 142,
+          "line": 143,
           "tag": "CardTitle"
         },
         {
           "label": "الإشعارات المعطلة",
-          "line": 157,
+          "line": 158,
           "tag": "CardTitle"
         },
         {
           "label": "آخر تحديث",
-          "line": 172,
+          "line": 173,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 195,
+          "line": 196,
           "tag": "CardTitle"
         },
         {
           "label": "💡 نصائح",
-          "line": 266,
+          "line": 271,
           "tag": "CardTitle"
         },
         {
           "label": "إقرار مراجعة الإشعارات الملتبسة",
-          "line": 279,
+          "line": 284,
           "tag": "AlertDialogTitle"
         }
       ],
@@ -11358,26 +11358,26 @@
       "handlers": [
         {
           "name": "handleToggle",
-          "line": 64,
+          "line": 65,
           "calls": [
             "updateTemplate"
           ]
         },
         {
           "name": "handleEdit",
-          "line": 74,
+          "line": 75,
           "calls": []
         },
         {
           "name": "handleSave",
-          "line": 79,
+          "line": 80,
           "calls": [
             "updateTemplate"
           ]
         },
         {
           "name": "handleCancel",
-          "line": 90,
+          "line": 91,
           "calls": []
         }
       ],
@@ -11385,7 +11385,7 @@
         {
           "query": "orderNotifications.getTemplates",
           "binding": "{ data: templates, isLoading, refetch }",
-          "line": 29,
+          "line": 30,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -11393,7 +11393,7 @@
         {
           "query": "orderNotifications.getHealth",
           "binding": "{ data: health, refetch: refetchHealth }",
-          "line": 30,
+          "line": 31,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -19891,15 +19891,15 @@
         "client/src/lib/i18n.ts"
       ],
       "controls": [
-        "b0fc8f2c1e07",
-        "4af94c321d5e",
-        "e13c7f0f7dd8",
-        "7e3e786ea7d2",
-        "feca802ef651",
-        "27b6dca94940",
-        "645db03d6815",
-        "c6f927a16f29",
-        "cdcd3be516d9"
+        "913fea555dea",
+        "d0fb536a5d2d",
+        "b631e9b03778",
+        "2f8c6c3cf0ee",
+        "76c34406b881",
+        "dc62558492dc",
+        "068e11bf7a39",
+        "9d4177cac7dc",
+        "b68ed9b98cf7"
       ],
       "queries": [
         "orderNotifications.getTemplates",
@@ -53280,9 +53280,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b0fc8f2c1e07",
+      "id": "913fea555dea",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 131,
+      "line": 132,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -53303,9 +53303,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4af94c321d5e",
+      "id": "d0fb536a5d2d",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 200,
+      "line": 201,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -53324,9 +53324,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e13c7f0f7dd8",
+      "id": "b631e9b03778",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 218,
+      "line": 219,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -53339,7 +53339,7 @@
       "max": "",
       "maxLength": "3500",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "editingId === index"
       ],
@@ -53347,9 +53347,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e3e786ea7d2",
+      "id": "2f8c6c3cf0ee",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 231,
+      "line": 236,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -53370,9 +53370,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "feca802ef651",
+      "id": "76c34406b881",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 235,
+      "line": 240,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -53393,9 +53393,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "27b6dca94940",
+      "id": "dc62558492dc",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 248,
+      "line": 253,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -53416,9 +53416,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "645db03d6815",
+      "id": "068e11bf7a39",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 277,
+      "line": 282,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -53437,9 +53437,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c6f927a16f29",
+      "id": "9d4177cac7dc",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 285,
+      "line": 290,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -53458,9 +53458,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cdcd3be516d9",
+      "id": "b68ed9b98cf7",
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 288,
+      "line": 293,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",

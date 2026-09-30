@@ -2270,6 +2270,7 @@ export const appRouter = router({
             storeName: merchant.businessName,
             orderNumber: order.orderNumber || `ORD-${order.id}`,
             total: order.totalAmount,
+            currency: order.currency,
           },
         );
 
@@ -2392,6 +2393,7 @@ export const appRouter = router({
             storeName: merchant.businessName,
             orderNumber: order.orderNumber || `ORD-${order.id}`,
             total: order.totalAmount,
+            currency: order.currency,
             trackingNumber: input.trackingNumber,
           },
         );

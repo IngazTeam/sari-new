@@ -2179,15 +2179,15 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 131 | Button | مراجعة الحالات | إعدادات إشعارات الطلبات |
-| 200 | Switch | مفعّل معطّل | OrderNotificationsSettings |
-| 218 | Textarea | قالب الرسالة | OrderNotificationsSettings |
-| 231 | Button | حفظ | OrderNotificationsSettings |
-| 235 | Button | إلغاء | OrderNotificationsSettings |
-| 248 | Button | تعديل القالب | OrderNotificationsSettings |
-| 277 | AlertDialogContent | إقرار مراجعة الإشعارات الملتبسة أكد فقط بعد مراجعة سجل مزود واتساب. لن تُحذف السجلات ولن يعاد إرسال الرسائل، وسيُحفظ حساب المستخدم الذي أقر المراجعة. العودة تمت المراجعة دون إعادة إرسال | 💡 نصائح |
-| 285 | AlertDialogCancel | العودة | إقرار مراجعة الإشعارات الملتبسة |
-| 288 | AlertDialogAction | تمت المراجعة دون إعادة إرسال | إقرار مراجعة الإشعارات الملتبسة |
+| 132 | Button | مراجعة الحالات | إعدادات إشعارات الطلبات |
+| 201 | Switch | مفعّل معطّل | OrderNotificationsSettings |
+| 219 | Textarea | قالب الرسالة | OrderNotificationsSettings |
+| 236 | Button | حفظ | OrderNotificationsSettings |
+| 240 | Button | إلغاء | OrderNotificationsSettings |
+| 253 | Button | تعديل القالب | OrderNotificationsSettings |
+| 282 | AlertDialogContent | إقرار مراجعة الإشعارات الملتبسة أكد فقط بعد مراجعة سجل مزود واتساب. لن تُحذف السجلات ولن يعاد إرسال الرسائل، وسيُحفظ حساب المستخدم الذي أقر المراجعة. العودة تمت المراجعة دون إعادة إرسال | 💡 نصائح |
+| 290 | AlertDialogCancel | العودة | إقرار مراجعة الإشعارات الملتبسة |
+| 293 | AlertDialogAction | تمت المراجعة دون إعادة إرسال | إقرار مراجعة الإشعارات الملتبسة |
 
 ## client/src/pages/merchant/Settings.tsx
 

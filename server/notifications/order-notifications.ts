@@ -5,6 +5,7 @@ import {
 } from '../db';
 import { notificationTemplates } from '../../drizzle/schema';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { fillOrderNotificationTemplate, type OrderNotificationData } from '../../shared/order-notification-template';
 
 export const ORDER_NOTIFICATION_STATUSES = [
   'pending',
@@ -33,7 +34,7 @@ export const defaultTemplates: Record<OrderNotificationStatus, string> = {
 
 📦 *تفاصيل الطلب:*
 رقم الطلب: #{{orderNumber}}
-الإجمالي: {{total}} ريال
+الإجمالي: {{total}} {{currency}}
 
 سنقوم بمراجعة طلبك والتأكيد عليه قريباً.
 
@@ -45,7 +46,7 @@ export const defaultTemplates: Record<OrderNotificationStatus, string> = {
 
 📦 *تفاصيل الطلب:*
 رقم الطلب: #{{orderNumber}}
-الإجمالي: {{total}} ريال
+الإجمالي: {{total}} {{currency}}
 
 سيبدأ تجهيز طلبك وفق حالة المتجر.
 
@@ -56,7 +57,7 @@ export const defaultTemplates: Record<OrderNotificationStatus, string> = {
 بدأ تجهيز طلبك من {{storeName}}
 
 رقم الطلب: #{{orderNumber}}
-الإجمالي: {{total}} ريال
+الإجمالي: {{total}} {{currency}}
 
 شكراً لثقتك بنا! 💙`,
 
@@ -95,20 +96,7 @@ export const defaultTemplates: Record<OrderNotificationStatus, string> = {
 };
 
 // Replace template variables with actual values
-export function fillTemplate(template: string, data: {
-  customerName: string;
-  storeName: string;
-  orderNumber: string;
-  total: number;
-  trackingNumber?: string;
-}): string {
-  return template
-    .replace(/{{customerName}}/g, data.customerName)
-    .replace(/{{storeName}}/g, data.storeName)
-    .replace(/{{orderNumber}}/g, data.orderNumber)
-    .replace(/{{total}}/g, data.total.toString())
-    .replace(/{{trackingNumber}}/g, data.trackingNumber || 'غير متوفر');
-}
+export const fillTemplate = fillOrderNotificationTemplate;
 
 // Get notification template for a specific status
 export async function getNotificationTemplate(merchantId: number, status: string): Promise<string | null> {
@@ -170,13 +158,7 @@ export async function prepareOrderStatusNotification(
   merchantId: number,
   customerPhone: string,
   status: string,
-  orderData: {
-    customerName: string;
-    storeName: string;
-    orderNumber: string;
-    total: number;
-    trackingNumber?: string;
-  },
+  orderData: OrderNotificationData,
 ): Promise<{ customerPhone: string; message: string } | null> {
   const template = await getNotificationTemplate(merchantId, status);
   if (!template) return null;
