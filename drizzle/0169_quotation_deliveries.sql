@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS `quotation_deliveries` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `merchant_id` INT NOT NULL,
+  `quotation_id` INT NOT NULL,
+  `review_id` INT NOT NULL,
+  `actor_id` INT NOT NULL,
+  `request_id` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `input_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `state` ENUM('preparing','ready','dispatching') NOT NULL DEFAULT 'preparing',
+  `pdf_url` TEXT NULL,
+  `prepare_token` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  `prepare_until` DATETIME(3) NULL,
+  `prepare_error` VARCHAR(50) NULL,
+  `dispatch_started_at` DATETIME(3) NULL,
+  `projection` ENUM('pending','recorded','quote_changed') NOT NULL DEFAULT 'pending',
+  `active_quotation_id` INT GENERATED ALWAYS AS (CASE WHEN `state`='dispatching' THEN `quotation_id` ELSE NULL END) VIRTUAL,
+  `created_at` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY `uq_quotation_delivery_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_quotation_delivery_review` (`merchant_id`,`review_id`),
+  UNIQUE KEY `uq_quotation_delivery_once` (`merchant_id`,`active_quotation_id`),
+  KEY `idx_quotation_delivery_quote` (`merchant_id`,`quotation_id`,`id`),
+  CONSTRAINT `fk_quotation_delivery_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE
+);

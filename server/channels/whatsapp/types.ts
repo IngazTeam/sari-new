@@ -53,6 +53,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   escalationGuard?: import('../../ai/escalation-relay').EscalationTransportGuard;
   salesOfferGuard?: import('../../ai/sales-offer-delivery').SalesOfferTransportGuard;
   salesReplyGuard?: import('../../ai/sales-reply-delivery').SalesReplyTransportGuard;
+  quotationGuard?: import('../../../shared/quotation-delivery').QuotationDeliveryGuard;
   onboardingGuard?: { version:number };
   coachingGuard?: { questionId: number };
   staffReplyGuard?: { id:number; basisDigest:string };

@@ -42,6 +42,11 @@ describe('provider outcome classification', () => {
   }
 });
 describe('durable delivery boundaries', () => {
+  it('never retries a failed quotation even if its authority is omitted from the retry', async () => {
+    mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',error_code:'http_400',request_json:{quotationGuard:{deliveryId:2,snapshotHash:'a'.repeat(64)}}}]]);
+    expect(await sendMerchantWhatsApp({...input,retryFailed:true})).toMatchObject({accepted:false,duplicate:true});
+    expect(mocks.execute).toHaveBeenCalledTimes(2);expect(mocks.post).not.toHaveBeenCalled();
+  });
   it('does not contact the provider if the merchant disappears before outbox reservation', async () => {
     mocks.execute.mockResolvedValueOnce([{ affectedRows: 0 }]);
     await expect(sendMerchantWhatsApp(input)).rejects.toThrow('reservation unavailable');expect(mocks.post).not.toHaveBeenCalled();

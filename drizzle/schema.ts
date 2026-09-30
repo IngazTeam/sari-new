@@ -3680,6 +3680,28 @@ export const quotationDeliveryReviews = mysqlTable('quotation_delivery_reviews',
 }, table => [uniqueIndex('uq_quotation_review_request').on(table.merchantId, table.requestId),
 	index('idx_quotation_review_quote').on(table.merchantId, table.quotationId, table.id)]);
 
+export const quotationDeliveries = mysqlTable('quotation_deliveries', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	quotationId: int('quotation_id').notNull(),
+	reviewId: int('review_id').notNull(),
+	actorId: int('actor_id').notNull(),
+	requestId: char('request_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(),
+	state: mysqlEnum('state', ['preparing','ready','dispatching']).notNull().default('preparing'),
+	pdfUrl: text('pdf_url'),
+	prepareToken: char('prepare_token', { length: 36 }),
+	prepareUntil: datetime('prepare_until', { mode: 'string', fsp: 3 }),
+	prepareError: varchar('prepare_error', { length: 50 }),
+	dispatchStartedAt: datetime('dispatch_started_at', { mode: 'string', fsp: 3 }),
+	projection: mysqlEnum('projection', ['pending','recorded','quote_changed']).notNull().default('pending'),
+	activeQuotationId: int('active_quotation_id').generatedAlwaysAs(sql`CASE WHEN \`state\` = 'dispatching' THEN \`quotation_id\` ELSE NULL END`, { mode: 'virtual' }),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_quotation_delivery_request').on(table.merchantId,table.requestId),
+	uniqueIndex('uq_quotation_delivery_review').on(table.merchantId,table.reviewId),
+	uniqueIndex('uq_quotation_delivery_once').on(table.merchantId,table.activeQuotationId),
+	index('idx_quotation_delivery_quote').on(table.merchantId,table.quotationId,table.id)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

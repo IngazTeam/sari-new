@@ -96,6 +96,16 @@ describe("quotation HTML", () => {
   });
 });
 describe("offline renderer and storage", () => {
+  it("refuses changed reviewed HTML before launching Chromium", async () => {
+    await expect(
+      renderPreparedQuotationPDF(
+        { data: document(), logoDataUrl: null, logoOmitted: false },
+        "a".repeat(64)
+      )
+    ).rejects.toThrow("Reviewed document layout changed");
+    expect(mocks.launch).not.toHaveBeenCalled();
+    expect(mocks.storage).not.toHaveBeenCalled();
+  });
   it("disables scripts and networking before parsing HTML and bounds rendering", async () => {
     await generateQuotationPDF(document());
     expect(mocks.page.setJavaScriptEnabled).toHaveBeenCalledWith(false);

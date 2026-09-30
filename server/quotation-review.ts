@@ -159,7 +159,7 @@ export async function loadQuotationReviewBasis(
     (q.valid_until && q.valid_until < now.slice(0, 10)) ||
     parsed.rawItems !== null ||
     parsed.itemsTruncated ||
-    !/^\+?\d{8,20}$/.test(q.customer_phone ?? "")
+    !/^\+?\d{8,15}$/.test(q.customer_phone ?? "")
   )
     throw new QuotationConflict();
   const [accounts] = await c.execute<any[]>(

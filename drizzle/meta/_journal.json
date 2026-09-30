@@ -1184,6 +1184,13 @@
       "when": 1795392000030,
       "tag": "0168_quotation_delivery_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 169,
+      "version": "5",
+      "when": 1795392000031,
+      "tag": "0169_quotation_deliveries",
+      "breakpoints": true
     }
   ]
 }

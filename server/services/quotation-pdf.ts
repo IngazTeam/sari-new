@@ -41,9 +41,16 @@ export async function generateQuotationPDF(
 }
 
 export async function renderPreparedQuotationPDF(
-  prepared: PreparedQuotationDocument
+  prepared: PreparedQuotationDocument,
+  expectedHtmlDigest?: string
 ): Promise<string> {
   const html = buildQuotationHTML(prepared.data, prepared.logoDataUrl);
+  if (
+    expectedHtmlDigest &&
+    createHash("sha256").update(JSON.stringify(html)).digest("hex") !==
+      expectedHtmlDigest
+  )
+    throw new Error("[QuotationPDF] Reviewed document layout changed");
 
   // Generate PDF using puppeteer-core
   const pdfBuffer = await renderHTMLtoPDF(html);
