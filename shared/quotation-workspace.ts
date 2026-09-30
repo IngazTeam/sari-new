@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const quotationStatuses = [
+  "draft",
   "sent",
   "viewed",
   "accepted",
@@ -62,6 +63,7 @@ export interface QuotationRow {
   conversationId: number | null;
   orderId: number | null;
   revision: number;
+  taxBasisPoints: number | null;
 }
 export interface QuotationDetail extends QuotationRow {
   items: Array<{
@@ -92,6 +94,7 @@ export interface QuotationWorkspace {
   target: {
     id: number;
     amountMinor: number | null;
+    revision: number;
     periodStart: string;
     periodEnd: string;
   } | null;

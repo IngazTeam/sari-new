@@ -1170,6 +1170,13 @@
       "when": 1795392000028,
       "tag": "0166_test_feedback_history",
       "breakpoints": true
+    },
+    {
+      "idx": 167,
+      "version": "5",
+      "when": 1795392000029,
+      "tag": "0167_manual_quotation_receipts",
+      "breakpoints": true
     }
   ]
 }

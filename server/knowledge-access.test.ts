@@ -10,7 +10,7 @@ import { sariBrainRouter } from './routers-sari-brain';
 
 const caller = () => appRouter.createCaller({ user: { id: 7, role: 'user' }, req: { headers: { 'x-merchant-id': '20' } }, res: {}, merchantId: 999 } as any);
 const mutations = Object.entries(sariBrainRouter._def.procedures).filter(([, procedure]) => procedure._def.type === 'mutation').map(([name]) => name);
-const salesMutations = new Set(['createQuotation', 'updateQuotationStatus', 'sendQuotationToCustomer', 'createQuotationTemplate', 'updateQuotationTemplate', 'deleteQuotationTemplate']);
+const salesMutations = new Set(['createQuotation', 'updateQuotationStatus', 'sendQuotationToCustomer', 'createQuotationTemplate', 'updateQuotationTemplate', 'deleteQuotationTemplate', 'quotations.create', 'quotations.change']);
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.access.mockResolvedValue({ merchantId: 20, role: 'viewer', memberId: 3 });

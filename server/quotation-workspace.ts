@@ -30,11 +30,12 @@ const status = sql`CASE WHEN BINARY q.status IN (${known}) THEN q.status ELSE 'u
 // These fields identify agreements governed by the checkout/consent lifecycle.
 export const quotationManagedSql = sql`(q.source_message_id IS NOT NULL OR q.consent_message_id IS NOT NULL
   OR q.checkout_snapshot IS NOT NULL OR q.external_provider IS NOT NULL OR q.external_snapshot IS NOT NULL
-  OR q.execution_state IS NOT NULL OR q.order_id IS NOT NULL)`;
+  OR q.execution_state IS NOT NULL OR q.order_id IS NOT NULL OR q.external_result IS NOT NULL
+  OR q.execution_attempt_id IS NOT NULL OR q.external_order_key IS NOT NULL OR q.offer_expires_at IS NOT NULL)`;
 const columns = sql`q.id,q.merchant_id merchantId,q.quotation_number number,q.customer_name customerName,q.customer_phone customerPhone,
   ${status} status,q.currency,q.subtotal,q.tax_amount taxAmount,q.total,
   DATE_FORMAT(q.created_at,'%Y-%m-%dT%H:%i:%s.000Z') createdAt,DATE_FORMAT(q.valid_until,'%Y-%m-%d') validUntil,
-  ${quotationManagedSql} managed,q.external_provider provider,q.offer_version revision,
+  ${quotationManagedSql} managed,q.external_provider provider,q.offer_version revision,q.tax_basis_points taxBasisPoints,
   CASE WHEN EXISTS (SELECT 1 FROM conversations c WHERE c.id=q.conversation_id AND c.merchantId=q.merchant_id) THEN q.conversation_id END conversationId,
   CASE WHEN EXISTS (SELECT 1 FROM orders o WHERE o.id=q.order_id AND o.merchantId=q.merchant_id) THEN q.order_id END orderId`;
 export function mapQuotationRow(r: any, now: Date): QuotationRow {
@@ -59,6 +60,7 @@ export function mapQuotationRow(r: any, now: Date): QuotationRow {
     conversationId: r.conversationId == null ? null : count(r.conversationId),
     orderId: r.orderId == null ? null : count(r.orderId),
     revision: count(r.revision),
+    taxBasisPoints: r.taxBasisPoints == null ? null : count(r.taxBasisPoints),
   };
 }
 export function parseQuotationItems(
@@ -140,11 +142,12 @@ export async function readQuotationWorkspace(
       COALESCE(SUM(CASE WHEN BINARY q.status='accepted' AND BINARY q.currency='SAR' AND q.total>=0 THEN q.total*100 ELSE 0 END),0) minor
       FROM sales_quotations q WHERE ${owned} AND ${month}`);
       const [targetRow] =
-        await rows(sql`SELECT id,target_amount amount,DATE_FORMAT(period_start,'%Y-%m-%d') periodStart,DATE_FORMAT(period_end,'%Y-%m-%d') periodEnd
+        await rows(sql`SELECT id,revision,target_amount amount,DATE_FORMAT(period_start,'%Y-%m-%d') periodStart,DATE_FORMAT(period_end,'%Y-%m-%d') periodEnd
       FROM sales_targets WHERE merchant_id=${merchantId} AND period_type='monthly' AND period_start=${currentMonth.from.slice(0, 10)} LIMIT 1`);
       const target = targetRow
         ? {
             id: count(targetRow.id),
+            revision: count(targetRow.revision),
             amountMinor: quotationMinor(targetRow.amount),
             periodStart: targetRow.periodStart,
             periodEnd: targetRow.periodEnd,

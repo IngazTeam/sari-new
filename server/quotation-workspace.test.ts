@@ -66,7 +66,7 @@ describe("quotation read boundary", () => {
   });
   it.each([
     { merchantId: 1 },
-    { status: "draft" },
+    { status: "made-up" },
     { page: 1.2 },
     { page: 0 },
     { page: 100001 },

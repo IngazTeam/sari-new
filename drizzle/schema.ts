@@ -3603,9 +3603,10 @@ export const salesQuotations = mysqlTable("sales_quotations", {
 	items: text().notNull(), // JSON
 	subtotal: decimal({ precision: 10, scale: 2 }).notNull(),
 	taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default('0').notNull(),
+	taxBasisPoints: int('tax_basis_points'),
 	total: decimal({ precision: 10, scale: 2 }).notNull(),
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
-	status: mysqlEnum(['sent', 'viewed', 'accepted', 'rejected', 'expired']).default('sent').notNull(),
+	status: mysqlEnum(['sent', 'viewed', 'accepted', 'rejected', 'expired', 'draft']).default('sent').notNull(),
 	validUntil: date("valid_until", { mode: 'string' }),
 	pdfUrl: varchar("pdf_url", { length: 500 }),
 	conversationId: int("conversation_id"),
@@ -3647,12 +3648,24 @@ export const salesTargets = mysqlTable("sales_targets", {
 	achievedAmount: decimal("achieved_amount", { precision: 12, scale: 2 }).default('0').notNull(),
 	quotationsSent: int("quotations_sent").default(0).notNull(),
 	quotationsWon: int("quotations_won").default(0).notNull(),
+	revision: int('revision').default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	uniqueIndex("idx_merchant_period").on(table.merchantId, table.periodType, table.periodStart),
 ]);
 
 // --- Quotation Templates ---
+export const quotationActionReceipts = mysqlTable('quotation_action_receipts', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	requestId: char('request_id', { length: 36 }).notNull(),
+	action: mysqlEnum('action', ['create', 'status', 'target']).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(),
+	actorId: int('actor_id').notNull(),
+	result: json('result').notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_quotation_action_request').on(table.merchantId, table.requestId)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
