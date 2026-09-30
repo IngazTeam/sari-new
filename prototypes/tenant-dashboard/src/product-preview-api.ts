@@ -1,10 +1,42 @@
-import { products, categories, useProductVersion } from "./product-preview-state";
+import {
+  products,
+  categories,
+  details,
+  useProductVersion,
+} from "./product-preview-state";
+function detailResult(input: { productId: number }) {
+  useProductVersion();
+  let data: unknown,
+    error: unknown = null;
+  try {
+    data = details.read(input);
+  } catch (reason) {
+    error = reason;
+  }
+  const loading = details.mode === "loading" || products.mode === "loading",
+    paused = details.mode === "offline" || products.mode === "offline";
+  return {
+    data,
+    error,
+    isLoading: loading,
+    isFetching: loading,
+    fetchStatus: paused ? "paused" : "idle",
+    refetch: details.refresh,
+  };
+}
 function categoryResult() {
   useProductVersion();
-  let data: unknown, error: unknown = null;
-  try { data = categories.read(); } catch (reason) { error = reason; }
+  let data: unknown,
+    error: unknown = null;
+  try {
+    data = categories.read();
+  } catch (reason) {
+    error = reason;
+  }
   return {
-    data, error, isLoading: categories.mode === "loading",
+    data,
+    error,
+    isLoading: categories.mode === "loading",
     isFetching: categories.mode === "loading",
     fetchStatus: categories.mode === "offline" ? "paused" : "idle",
     refetch: categories.refresh,
@@ -40,6 +72,10 @@ function result(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    details: {
+      read: { useQuery: detailResult },
+      write: { useMutation: () => ({ mutateAsync: details.write }) },
+    },
     categories: {
       read: { useQuery: categoryResult },
       write: { useMutation: () => ({ mutateAsync: categories.write }) },
@@ -62,7 +98,18 @@ export const trpc = {
   },
   useUtils: () => ({
     products: {
-      categories: { receipt: { fetch: (input: { requestId: string }) => categories.receipt(input.requestId) } },
+      details: {
+        receipt: {
+          fetch: (input: { requestId: string }) =>
+            details.receipt(input.requestId),
+        },
+      },
+      categories: {
+        receipt: {
+          fetch: (input: { requestId: string }) =>
+            categories.receipt(input.requestId),
+        },
+      },
       editor: {
         receipt: {
           fetch: (input: { requestId: string }) =>

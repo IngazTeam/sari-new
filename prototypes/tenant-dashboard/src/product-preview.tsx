@@ -3,6 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { ProductCatalogWorkspace } from "../../../client/src/components/merchant/ProductCatalogWorkspace";
 import { clearProductWorkspaceCache } from "../../../client/src/lib/product-workspace-cache";
 import { clearCategoryDraft } from "../../../client/src/lib/product-category-workspace";
+import { clearDetailDraft } from "../../../client/src/lib/product-details-workspace";
+import { detailModes, type DetailMode } from "./product-detail-model";
 import { categoryModes, type CategoryMode } from "./product-category-model";
 import { knowledgeCacheEpoch } from "../../../client/src/lib/knowledge-workspace-cache";
 import {
@@ -13,6 +15,7 @@ import {
 import {
   products,
   categories,
+  details,
   useProductVersion,
   productLanguage,
   setProductLanguage,
@@ -35,8 +38,9 @@ function Preview() {
         <p>
           موك أب بشاشات المنتجات الفعلية. البيانات والحفظ والحذف والإيصالات
           محاكاة في ذاكرة الصفحة وتعود عند إعادة التحميل. المسودات محلية معزولة؛
-          لا اتصال بخادم أو متجر خارجي.
-          إذا أعدت تحميل الصفحة أثناء طلب فئات معلق، استخدم «إعادة المثال» لبدء محاكاة جديدة؛ إيصالات المثال ليست محفوظة على خادم.
+          لا اتصال بخادم أو متجر خارجي. إذا أعدت تحميل الصفحة أثناء طلب معلق،
+          استخدم «إعادة المثال» لبدء محاكاة جديدة؛ إيصالات المثال ليست محفوظة
+          على خادم.
         </p>
         <div>
           <label>
@@ -64,11 +68,36 @@ function Preview() {
           </label>
           <label>
             حالة الفئات
-            <select value={categories.mode} onChange={e => categories.setMode(e.target.value as CategoryMode)}>
-              {Object.entries(categoryModes).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            <select
+              value={categories.mode}
+              onChange={e => categories.setMode(e.target.value as CategoryMode)}
+            >
+              {Object.entries(categoryModes).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
             </select>
           </label>
-          <button type="button" onClick={categories.conflict}>محاكاة تعديل زميل للفئات</button>
+          <button type="button" onClick={categories.conflict}>
+            محاكاة تعديل زميل للفئات
+          </button>
+          <label>
+            حالة الخيارات والنسخ
+            <select
+              value={details.mode}
+              onChange={e => details.setMode(e.target.value as DetailMode)}
+            >
+              {Object.entries(detailModes).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={details.conflict}>
+            محاكاة تعديل زميل للخيارات والنسخ
+          </button>
           <button type="button" onClick={products.conflict}>
             محاكاة تعديل زميل للمنتج 27
           </button>
@@ -87,7 +116,22 @@ function Preview() {
                     productPreviewScope,
                     knowledgeCacheEpoch()
                   );
-                  clearCategoryDraft(productPreviewScope, knowledgeCacheEpoch());
+                  clearCategoryDraft(
+                    productPreviewScope,
+                    knowledgeCacheEpoch()
+                  );
+                  const prefix =
+                    "sary:product-detail:v1:" +
+                    productPreviewScope.split(":").slice(0, 2).join(":") +
+                    ":product-details:";
+                  for (const key of Object.keys(sessionStorage).filter(key =>
+                    key.startsWith(prefix)
+                  ))
+                    clearDetailDraft(
+                      key.slice("sary:product-detail:v1:".length),
+                      knowledgeCacheEpoch()
+                    );
+                  details.reset();
                   categories.reset();
                   products.reset();
                   setGeneration(v => v + 1);
@@ -135,7 +179,11 @@ export function unmount() {
 document.addEventListener(
   "click",
   event => {
-    if (!document.body.classList.contains("pp-active") || document.body.classList.contains("pi-active")) return;
+    if (
+      !document.body.classList.contains("pp-active") ||
+      document.body.classList.contains("pi-active")
+    )
+      return;
     const anchor = (event.target as Element)?.closest<HTMLAnchorElement>(
       'a[href^="/merchant/"],a[href="/login"],a[href="/support"]'
     );

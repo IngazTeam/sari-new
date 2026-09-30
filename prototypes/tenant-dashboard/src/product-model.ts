@@ -80,6 +80,22 @@ function fixture(id: number): ProductWorkspaceRow {
   };
 }
 export class ProductPreviewStore {
+  detailSummary?: (id: number) => {
+    options: number;
+    variants: number;
+    digest: string;
+  };
+  removeDetails?: (ids: number[]) => void;
+  applyDetailFlag(id: number, hasVariants: 0 | 1) {
+    const row = this.rows.get(id);
+    if (!row) throw error("NOT_FOUND");
+    this.rows.set(id, { ...row, hasVariants });
+    this.detailRevisions.set(id, (this.detailRevisions.get(id) ?? 0) + 1);
+  }
+  private detailRevisions = new Map<number, number>();
+  private editorDigest(row: ProductWorkspaceRow) {
+    return fingerprint([row, this.detailRevisions.get(row.id) ?? 0]);
+  }
   categorySource?: () => unknown;
   categoryUsage = () => {
     const counts = new Map<number, number>();
@@ -129,6 +145,7 @@ export class ProductPreviewStore {
     this.changed();
   };
   reset = () => {
+    this.detailRevisions.clear();
     this.rows = new Map(
       Array.from({ length: 27 }, (_, i) => [i + 1, fixture(i + 1)])
     );
@@ -224,7 +241,7 @@ export class ProductPreviewStore {
       merchantId: this.identity(),
       selection: this.mode === "wrongSelection" ? { id: raw.id + 1 } : raw,
       product,
-      digest: fingerprint(product),
+      digest: this.editorDigest(product),
       external: this.mode === "source",
       canManage: this.canManage(),
       integrationSource: this.source(),
@@ -252,8 +269,10 @@ export class ProductPreviewStore {
           priceUnit: row.priceUnit,
           currency: row.currency,
           status: row.status,
-          variants: row.hasVariants ? 2 : 0,
-          options: row.hasVariants ? 1 : 0,
+          variants:
+            this.detailSummary?.(id).variants ?? (row.hasVariants ? 2 : 0),
+          options:
+            this.detailSummary?.(id).options ?? (row.hasVariants ? 1 : 0),
           locked: this.mode === "source",
           blocked: this.mode === "references",
           references: {
@@ -272,7 +291,11 @@ export class ProductPreviewStore {
         this.mode === "wrongSelection"
           ? { ids: selection.ids.map(id => id + 1) }
           : selection,
-      digest: fingerprint([items, selection.ids.map(id => this.find(id))]),
+      digest: fingerprint([
+        items,
+        selection.ids.map(id => this.find(id)),
+        selection.ids.map(id => this.detailSummary?.(id).digest),
+      ]),
       canManage: this.canManage(),
       canDelete:
         this.canManage() && !items.some(row => row.locked || row.blocked),
@@ -323,7 +346,10 @@ export class ProductPreviewStore {
             category: null,
             hasVariants: 0,
           };
-    if (input.kind === "update" && input.expectedDigest !== fingerprint(row))
+    if (
+      input.kind === "update" &&
+      input.expectedDigest !== this.editorDigest(row)
+    )
       throw error("CONFLICT");
     if (
       input.kind === "update" &&
@@ -371,7 +397,7 @@ export class ProductPreviewStore {
       requestId: input.requestId,
       kind: input.kind,
       productId: next.id,
-      digest: fingerprint(next),
+      digest: this.editorDigest(next),
       createdAt,
     });
   };
@@ -384,6 +410,7 @@ export class ProductPreviewStore {
     if (!review.canDelete) throw error("PRECONDITION_FAILED");
     if (input.expectedDigest !== review.digest) throw error("CONFLICT");
     input.ids.forEach(id => this.rows.delete(id));
+    this.removeDetails?.(input.ids);
     return this.finish(input, {
       merchantId: productPreviewId,
       actorId: productPreviewId,

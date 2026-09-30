@@ -1,7 +1,11 @@
 import { useSyncExternalStore } from "react";
 import { ProductPreviewStore } from "./product-model";
 import { ProductCategoryPreviewStore } from "./product-category-model";
+import { ProductDetailPreviewStore } from "./product-detail-model";
 export const products = new ProductPreviewStore();
+export const details = new ProductDetailPreviewStore(products);
+products.detailSummary = details.summary;
+products.removeDetails = details.remove;
 export const categories = new ProductCategoryPreviewStore(
   () => products.changed(),
   () => products.categoryUsage()
