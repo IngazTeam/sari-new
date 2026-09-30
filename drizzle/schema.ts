@@ -2017,6 +2017,16 @@ export const setupWizardProgress = mysqlTable("setup_wizard_progress", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
+export const knowledgeRemovalReceipts = mysqlTable("knowledge_removal_receipts", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  actorId: int("actor_id").notNull(),
+  requestId: char("request_id", { length: 36 }).notNull(),
+  inputHash: char("input_hash", { length: 64 }).notNull(),
+  result: json().$type<import('../shared/knowledge-source-removal').KnowledgeRemovalReceipt>().notNull(),
+  createdAt: timestamp("created_at", { mode: "string", fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex("uq_knowledge_removal_request").on(table.merchantId, table.requestId)]);
+
 export const setupCompletionReceipts = mysqlTable("setup_completion_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

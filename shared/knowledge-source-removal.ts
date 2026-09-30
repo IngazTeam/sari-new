@@ -22,6 +22,68 @@ export const knowledgeRemovalReceiptInput = z
   .object({ requestId: z.string().uuid() })
   .strict();
 
+const count = z.number().int().nonnegative();
+export const knowledgeRemovalCounts = z
+  .object({
+    documents: count,
+    products: count,
+    analyses: count,
+    pages: count,
+    faqs: count,
+    sections: count,
+  })
+  .strict();
+export const knowledgeRemovalRelatedCounts = z
+  .object({
+    documentReviews: count,
+    documentReceipts: count,
+    websitePreviews: count,
+    websiteImportReviews: count,
+    sectionHistory: count,
+    productOptions: count,
+    productVariants: count,
+    loyaltyLinks: count,
+    competitorLinks: count,
+    websiteInsights: count,
+    extractedProducts: count,
+    faqPageLinks: count,
+  })
+  .strict();
+export const knowledgeRemovalReview = z
+  .object({
+    merchantId: id,
+    actorId: id,
+    target: knowledgeRemovalTarget,
+    businessName: z.string().trim().min(1).max(255),
+    revision,
+    counts: knowledgeRemovalCounts,
+    related: knowledgeRemovalRelatedCounts,
+    blockers: z.array(
+      z.enum([
+        "running_intake",
+        "external_catalog",
+        "missing_source",
+        "empty",
+        "foreign_relationship",
+      ])
+    ),
+  })
+  .strict();
+export type KnowledgeRemovalReview = z.infer<typeof knowledgeRemovalReview>;
+export const knowledgeRemovalReceipt = z
+  .object({
+    merchantId: id,
+    actorId: id,
+    requestId: z.string().uuid(),
+    target: knowledgeRemovalTarget,
+    revision,
+    counts: knowledgeRemovalCounts,
+    related: knowledgeRemovalRelatedCounts,
+    completedAt: z.string().datetime(),
+  })
+  .strict();
+export type KnowledgeRemovalReceipt = z.infer<typeof knowledgeRemovalReceipt>;
+
 const row = z.object({ id, merchantId: id }).strict();
 const rows = <T extends z.ZodTypeAny>(schema: T) =>
   z

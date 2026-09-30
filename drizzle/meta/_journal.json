@@ -1282,6 +1282,13 @@
       "when": 1795392000044,
       "tag": "0182_setup_completion_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 183,
+      "version": "5",
+      "when": 1795392000045,
+      "tag": "0183_knowledge_removal_receipts",
+      "breakpoints": true
     }
   ]
 }

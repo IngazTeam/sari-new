@@ -5,9 +5,11 @@ import type { SectionSource } from '../db/knowledge';
 import { knowledgeIntakeReceipts, knowledgeIntakeReviews, knowledgePagePreviews } from '../../drizzle/schema';
 import { TRPCError } from '@trpc/server';
 import { websiteImportReviews } from '../../drizzle/website-import-schema';
+// The reviewed removal store supplies an already-open transaction connection.
+export type KnowledgeWriteConnection = Pick<KnowledgeTransaction, 'select' | 'insert' | 'update' | 'delete'>;
 
 // Called while holding the merchant lock, shared with intake reservation.
-async function assertNoRunningIntake(tx: KnowledgeTransaction, merchantId: number) {
+async function assertNoRunningIntake(tx: KnowledgeWriteConnection, merchantId: number) {
   const [running] = await tx.select({ id: knowledgeIntakeReceipts.id }).from(knowledgeIntakeReceipts)
     .where(and(eq(knowledgeIntakeReceipts.merchantId, merchantId), eq(knowledgeIntakeReceipts.state, 'processing'))).limit(1);
   if (running) throw new TRPCError({ code: 'CONFLICT', message: 'توجد إضافة معرفة قيد المعالجة. راجع نتيجتها من مكتبة الملفات قبل الحذف أو إعادة الضبط.' });
@@ -33,7 +35,7 @@ export function sectionDescendants(rows: Array<{ id: number; parentId: number | 
   return Array.from(result);
 }
 
-async function deleteSections(tx: KnowledgeTransaction, merchantId: number, source?: SectionSource) {
+async function deleteSections(tx: KnowledgeWriteConnection, merchantId: number, source?: SectionSource) {
   await assertNoRunningIntake(tx, merchantId);
   const rows = await tx.select({ id: knowledgeSections.id, parentId: knowledgeSections.parentId, source: knowledgeSections.source })
     .from(knowledgeSections).where(eq(knowledgeSections.merchantId, merchantId)).for('update');
@@ -62,7 +64,7 @@ function validateSourceId(merchantId: number, source: Source, sourceId?: string)
   if (['products', 'faqs'].includes(source) && sourceId !== `${source}-${merchantId}`) throw new KnowledgeSourceNotFoundError();
 }
 
-async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source: Source, sourceId?: string) {
+async function deleteSource(tx: KnowledgeWriteConnection, merchantId: number, source: Source, sourceId?: string) {
   await assertNoRunningIntake(tx, merchantId);
   validateSourceId(merchantId, source, sourceId);
   let deleted = 0, sections = 0;
@@ -102,16 +104,23 @@ async function deleteSource(tx: KnowledgeTransaction, merchantId: number, source
 
 export async function removeKnowledgeSource(merchantId: number, source: Source, sourceId?: string) {
   validateSourceId(merchantId, source, sourceId);
-  return withKnowledgeTransaction(merchantId, async tx => {
+  return withKnowledgeTransaction(merchantId, tx => removeKnowledgeSourceInTransaction(tx, merchantId, source, sourceId));
+}
+
+/** Internal DB-only operation. Caller must hold the merchant lock and clear reply caches atomically. */
+export async function removeKnowledgeSourceInTransaction(tx: KnowledgeWriteConnection, merchantId: number, source: Source, sourceId?: string) {
     const result = await deleteSource(tx, merchantId, source, sourceId);
     await tx.insert(sariActivityLog).values({ merchantId, actionType: `${source}_deleted`, description: 'تم حذف مصدر المعرفة وبياناته المرتبطة', details: JSON.stringify({ source, ...result }) });
     return result;
-  });
 }
 
 /** Full reset keeps account, conversations, orders and settings outside its scope. */
 export async function resetKnowledgeSources(merchantId: number) {
-  return withKnowledgeTransaction(merchantId, async tx => {
+  return withKnowledgeTransaction(merchantId, tx => resetKnowledgeSourcesInTransaction(tx, merchantId));
+}
+
+/** Internal DB-only reset; the same lock/cache requirements apply. */
+export async function resetKnowledgeSourcesInTransaction(tx: KnowledgeWriteConnection, merchantId: number) {
     const deletedSources: string[] = [];
     const counts: Record<string, number> = {};
     for (const source of ['document', 'products', 'website', 'faqs'] as const) {
@@ -124,5 +133,4 @@ export async function resetKnowledgeSources(merchantId: number) {
     if (counts.knowledge_sections) deletedSources.push('knowledge_sections');
     await tx.insert(sariActivityLog).values({ merchantId, actionType: 'brain_reset', description: 'تم إعادة ضبط مصادر المعرفة', details: JSON.stringify({ deletedSources, counts }) });
     return { deletedSources, counts };
-  });
 }

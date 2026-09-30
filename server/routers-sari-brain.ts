@@ -59,6 +59,8 @@ import {
   updateWebsiteAnalysis,
 } from './db';
 import { removeKnowledgeSource, resetKnowledgeSources, KnowledgeSourceNotFoundError } from './knowledge/source-lifecycle';
+import { knowledgeRemovalTarget, knowledgeRemovalWrite, knowledgeRemovalReceiptInput } from '../shared/knowledge-source-removal';
+import { reviewKnowledgeRemoval, removeReviewedKnowledge, readKnowledgeRemovalReceipt, KnowledgeRemovalForbidden, KnowledgeRemovalConflict, KnowledgeRemovalBlocked } from './knowledge/source-removal';
 import { assertRuntimeSchema } from './db/schema-readiness';
 import { getIntegrationAudienceCount } from './integrations/audience-count';
 import { getSalesSectorSettings, updateSalesSectorSettings, salesSectorSelectionSchema } from './ai/sales-sector-settings';
@@ -357,6 +359,14 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
   }
 }
 
+function sourceRemovalError(error: unknown): TRPCError {
+  if (error instanceof KnowledgeRemovalForbidden) return new TRPCError({code:'FORBIDDEN',message:'Knowledge removal is not permitted'});
+  if (error instanceof KnowledgeRemovalConflict) return new TRPCError({code:'CONFLICT',message:'Refresh the removal review before continuing'});
+  if (error instanceof KnowledgeRemovalBlocked) return new TRPCError({code:'PRECONDITION_FAILED',message:'The current removal review cannot be approved'});
+  // A network/commit failure can have an unknown outcome; never promise rollback here.
+  return new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Check the saved removal receipt before making another request'});
+}
+
 export const sariBrainRouter = router({
   getSalesReplySendWorkspace: permissionProcedure('bot_settings.manage').input(replySendReadInput).query(async ({ ctx, input }) => {
     if (ctx.merchantRole !== 'owner') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the current owner can access reply sending' });
@@ -641,6 +651,19 @@ export const sariBrainRouter = router({
     });
 
     return sanitizeForTRPC(sources);
+  }),
+
+  reviewSourceRemoval: permissionProcedure('bot_settings.manage').input(knowledgeRemovalTarget).query(async ({ctx,input}) => {
+    try { return await reviewKnowledgeRemoval(ctx.merchantId,ctx.user.id,input); }
+    catch (error) { throw sourceRemovalError(error); }
+  }),
+  removeSources: permissionProcedure('bot_settings.manage').input(knowledgeRemovalWrite).mutation(async ({ctx,input}) => {
+    try { return await removeReviewedKnowledge(ctx.merchantId,ctx.user.id,input); }
+    catch (error) { throw sourceRemovalError(error); }
+  }),
+  sourceRemovalReceipt: permissionProcedure('bot_settings.manage').input(knowledgeRemovalReceiptInput).query(async ({ctx,input}) => {
+    try { return await readKnowledgeRemovalReceipt(ctx.merchantId,ctx.user.id,input); }
+    catch (error) { throw sourceRemovalError(error); }
   }),
 
   // Delete a specific knowledge source
