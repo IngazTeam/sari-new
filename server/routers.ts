@@ -1,3 +1,4 @@
+import { orderWorkspaceRouter } from "./routers-order-workspace";
 import { testMetricsWorkspaceRouter } from "./routers-test-metrics-workspace";
 import { overviewWorkspaceRouter } from "./routers-overview-workspace";
 import { messageAnalyticsRouter } from "./routers-message-analytics";
@@ -2115,6 +2116,7 @@ export const appRouter = router({
 
   // Orders from WhatsApp Chat
   orders: router({
+    workspace: orderWorkspaceRouter,
     ...sallaCheckoutEvidenceProcedures,
     // Create order from chat
     prepareSallaCheckout: permissionProcedure('orders.manage')
