@@ -1,4 +1,15 @@
-import { products, useProductVersion } from "./product-preview-state";
+import { products, categories, useProductVersion } from "./product-preview-state";
+function categoryResult() {
+  useProductVersion();
+  let data: unknown, error: unknown = null;
+  try { data = categories.read(); } catch (reason) { error = reason; }
+  return {
+    data, error, isLoading: categories.mode === "loading",
+    isFetching: categories.mode === "loading",
+    fetchStatus: categories.mode === "offline" ? "paused" : "idle",
+    refetch: categories.refresh,
+  };
+}
 function result(read: () => unknown, enabled = true) {
   useProductVersion();
   let data: unknown,
@@ -29,6 +40,10 @@ function result(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    categories: {
+      read: { useQuery: categoryResult },
+      write: { useMutation: () => ({ mutateAsync: categories.write }) },
+    },
     list: { useQuery: (input: unknown) => result(() => products.list(input)) },
     editor: {
       read: {
@@ -47,6 +62,7 @@ export const trpc = {
   },
   useUtils: () => ({
     products: {
+      categories: { receipt: { fetch: (input: { requestId: string }) => categories.receipt(input.requestId) } },
       editor: {
         receipt: {
           fetch: (input: { requestId: string }) =>

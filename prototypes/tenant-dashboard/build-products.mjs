@@ -7,7 +7,7 @@ for (const language of ["ar", "en"]) {
   const text = JSON.parse(
     readFileSync(`client/src/locales/${language}.json`, "utf8")
   );
-  copy[language] = { productWorkspaceUx: text.productWorkspaceUx };
+  copy[language] = { productWorkspaceUx: text.productWorkspaceUx, categoryUx: text.categoryUx };
 }
 await build({
   entryPoints: [root + "product-preview.tsx"],

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ProductCatalogWorkspace } from "../../../client/src/components/merchant/ProductCatalogWorkspace";
 import { clearProductWorkspaceCache } from "../../../client/src/lib/product-workspace-cache";
+import { clearCategoryDraft } from "../../../client/src/lib/product-category-workspace";
+import { categoryModes, type CategoryMode } from "./product-category-model";
 import { knowledgeCacheEpoch } from "../../../client/src/lib/knowledge-workspace-cache";
 import {
   productModes,
@@ -10,6 +12,7 @@ import {
 } from "./product-model";
 import {
   products,
+  categories,
   useProductVersion,
   productLanguage,
   setProductLanguage,
@@ -33,6 +36,7 @@ function Preview() {
           موك أب بشاشات المنتجات الفعلية. البيانات والحفظ والحذف والإيصالات
           محاكاة في ذاكرة الصفحة وتعود عند إعادة التحميل. المسودات محلية معزولة؛
           لا اتصال بخادم أو متجر خارجي.
+          إذا أعدت تحميل الصفحة أثناء طلب فئات معلق، استخدم «إعادة المثال» لبدء محاكاة جديدة؛ إيصالات المثال ليست محفوظة على خادم.
         </p>
         <div>
           <label>
@@ -58,6 +62,13 @@ function Preview() {
               <option value="en">English</option>
             </select>
           </label>
+          <label>
+            حالة الفئات
+            <select value={categories.mode} onChange={e => categories.setMode(e.target.value as CategoryMode)}>
+              {Object.entries(categoryModes).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={categories.conflict}>محاكاة تعديل زميل للفئات</button>
           <button type="button" onClick={products.conflict}>
             محاكاة تعديل زميل للمنتج 27
           </button>
@@ -76,6 +87,8 @@ function Preview() {
                     productPreviewScope,
                     knowledgeCacheEpoch()
                   );
+                  clearCategoryDraft(productPreviewScope, knowledgeCacheEpoch());
+                  categories.reset();
                   products.reset();
                   setGeneration(v => v + 1);
                   setConfirm(false);

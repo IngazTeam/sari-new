@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
 import { MessageChannel } from "node:worker_threads";
 import { JSDOM, VirtualConsole } from "jsdom";
+import arCopy from "../client/src/locales/ar.json";
 import {
   ProductPreviewStore,
   productModes,
@@ -263,6 +264,57 @@ describe("built product prototype with actual UI", () => {
     expect(errors).toEqual([]);
     expect(w.fetch).not.toHaveBeenCalled();
     dom.window.close();
+  });
+  const c = arCopy.categoryUx;
+  const categoryMode = (value: string) => choose(".pp-controls label:nth-of-type(3) select", value);
+  const field = (key: keyof typeof c) => Array.from(w.document.querySelectorAll(".pw-workspace label")).find((l: any) => l.textContent.startsWith(c[key])) as any;
+  async function categoryName(value: string) {
+    const el = field("name").querySelector("input");
+    Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, "value")!.set!.call(el, value);
+    el.dispatchEvent(new w.Event("input", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 20));
+  }
+  async function reviewCategory() {
+    field("reviewed").querySelector("input").click();
+    await new Promise(r => setTimeout(r, 20));
+  }
+  it("shows all category pages, blocks used deletion and translates the same UI", async () => {
+    await click(c.title); expect(text()).toContain("القهوة");
+    expect(button(c.delete).disabled).toBe(true);
+    await click(c.next); expect(text()).toContain("فئة توضيحية 25");
+    await choose(".pp-controls label:nth-of-type(2) select", "en");
+    expect(w.document.querySelector(".pw-workspace").dir).toBe("ltr");
+    expect(text()).not.toContain("categoryUx.");
+  });
+  it.each(["loading", "error", "offline", "forbidden", "session", "wrongTenant"])("hides category rows for %s", async value => {
+    await click(c.title); await categoryMode(value);
+    expect(text()).not.toContain("قهوة مختصة"); expect(button(c.add)).toBeUndefined();
+    expect(w.document.querySelector("[data-state]")).not.toBeNull();
+  });
+  it("keeps category drafts when navigating and recovers a lost reply once", async () => {
+    await click(c.title); await click(c.add); await categoryName("فئة اختبار الاستعادة");
+    await click(c.back); await click(c.title);
+    expect(field("name").querySelector("input").value).toBe("فئة اختبار الاستعادة");
+    await categoryMode("uncertain"); await reviewCategory(); await click(c.save);
+    expect(text()).toContain(c.uncertain); expect(button(c.discard)).toBeUndefined();
+    await click(c.recover);
+    expect(w.sessionStorage.getItem("sary:product-category:v1:9000082:9000082:products")).toBeNull();
+    expect(text()).toContain("فئة اختبار الاستعادة");
+    expect(text()).toContain(c.saved.split("{{")[0]);
+  });
+  it("requires another review after a category snapshot changes", async () => {
+    await click(c.title); await click(c.add); await categoryName("مسودة محفوظة"); await reviewCategory();
+    await click("محاكاة تعديل زميل للفئات");
+    expect(text()).toContain(c.conflict); expect(button(c.save).disabled).toBe(true);
+    await click(c.reload); expect(field("name").querySelector("input").value).toBe("مسودة محفوظة");
+    expect(field("reviewed").querySelector("input").checked).toBe(false);
+  });
+  it("resets only the preview category draft with explicit consent", async () => {
+    w.sessionStorage.setItem("sary:product-category:v1:1:1:products", "keep");
+    await click(c.title); await click(c.add); await categoryName("Local draft");
+    await click("إعادة المثال"); await click("نعم، إعادة المثال");
+    expect(w.sessionStorage.getItem("sary:product-category:v1:1:1:products")).toBe("keep");
+    expect(w.sessionStorage.getItem("sary:product-category:v1:9000082:9000082:products")).toBeNull();
   });
   it("renders saved markup literally after leaving and reopening the workspace", async () => {
     await click("إضافة منتج");
